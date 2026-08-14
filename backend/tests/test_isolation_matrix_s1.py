@@ -134,8 +134,13 @@ async def test_foreign_webhook_get_delete_test_404(client, db_session):
 async def test_foreign_stock_count_and_warehouse_transfer_404(client, db_session):
     ac, seed = client
     tenant_id = seed["t2"].id
-    wh_a = m.Warehouse(tenant_id=tenant_id, name="Beta Count WH", code="B-CNT")
-    wh_b = m.Warehouse(tenant_id=tenant_id, name="Beta Xfer WH", code="B-XFR")
+    company_id = seed["c2"].id
+    wh_a = m.Warehouse(
+        tenant_id=tenant_id, company_id=company_id, name="Beta Count WH", code="B-CNT"
+    )
+    wh_b = m.Warehouse(
+        tenant_id=tenant_id, company_id=company_id, name="Beta Xfer WH", code="B-XFR"
+    )
     db_session.add_all([wh_a, wh_b])
     await db_session.flush()
 
@@ -145,9 +150,11 @@ async def test_foreign_stock_count_and_warehouse_transfer_404(client, db_session
         user_id=seed["u2"].id,
         warehouse_id=wh_a.id,
         notes="Beta count",
+        company_id=company_id,
     )
     transfer = m.StockTransfer(
         tenant_id=tenant_id,
+        company_id=company_id,
         transfer_number="TR-BETA-S18",
         from_warehouse_id=wh_a.id,
         to_warehouse_id=wh_b.id,

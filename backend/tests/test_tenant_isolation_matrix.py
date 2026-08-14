@@ -556,6 +556,8 @@ async def test_foreign_backup_download_404(client, db_session, tmp_path, monkeyp
     await db_session.commit()
 
     headers = await _super_headers(ac, seed)
+    # Backup download requires tenant workspace (default login resolves to company).
+    headers["X-Workspace-Kind"] = "tenant"
     r = await ac.get(f"/api/v1/backup/{job.id}/download", headers=headers)
     assert r.status_code == 404
 

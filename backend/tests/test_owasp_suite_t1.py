@@ -125,7 +125,15 @@ async def test_a01_foreign_webhook_and_expense_idor(client, db_session):
     await db_session.commit()
 
     alpha = await _super(ac, seed)
-    assert (await ac.get(f"/api/v1/expenses/{expense.id}", headers=alpha)).status_code == 404
+    # Expenses are company-operational; tenant workspace 403s before IDOR. Use alpha company.
+    company_alpha = {
+        **alpha,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": seed["c1"].id,
+    }
+    assert (
+        await ac.get(f"/api/v1/expenses/{expense.id}", headers=company_alpha)
+    ).status_code == 404
     assert (await ac.get(f"/api/v1/webhooks/{hook.id}", headers=alpha)).status_code == 404
 
 

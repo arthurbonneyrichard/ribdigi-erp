@@ -440,8 +440,6 @@ export default function Page() {
         )}
       </div>
 
-      </div>
-
       <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }} id="profile">
         <p className="muted" style={{ margin: 0 }}>
           {brandingScope === 'company'
