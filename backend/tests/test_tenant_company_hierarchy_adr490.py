@@ -4291,7 +4291,7 @@ async def test_phase28_scan_warehouse_coa_uom_scope(client, db_session):
     adjust = await ac.post(
         f"/api/v1/inventory/adjust/{seed['p1'].id}",
         headers=headers_a,
-        json={"quantity": 1, "reason": "correction", "warehouse_id": wh_b.id},
+        json={"quantity": 1, "reason": "damage", "warehouse_id": wh_b.id},
     )
     assert adjust.status_code == 404, adjust.text
 
