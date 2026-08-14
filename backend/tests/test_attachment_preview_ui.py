@@ -6,6 +6,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_attachment_preview_component_and_helpers():
+    main = (ROOT / "backend/app/main.py").read_text(encoding="utf-8")
+    assert "Content-Disposition" in main
+    assert "expose_headers" in main
+
     helper = (ROOT / "frontend/lib/attachments.ts").read_text(encoding="utf-8")
     assert "fetchAttachment" in helper
     assert "isImageContentType" in helper

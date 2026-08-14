@@ -34,7 +34,7 @@ export async function fetchAttachment(apiPath: string): Promise<FetchedAttachmen
   const contentType = blob.type || res.headers.get('Content-Type') || 'application/octet-stream';
   return {
     blob,
-    filename: match?.[1] || 'attachment',
+    filename: match?.[1] || '',
     contentType,
   };
 }

@@ -12,6 +12,8 @@ type Props = {
   /** API path under /api/v1, e.g. `/expenses/{id}/attachment` */
   apiPath: string;
   title?: string;
+  /** Optional fallback label when Content-Disposition is not exposed cross-origin */
+  fallbackName?: string;
   onClose: () => void;
   onError?: (message: string) => void;
 };
@@ -20,7 +22,14 @@ type Props = {
  * Inline preview modal for expense / PI / JE attachments (BR-9.4).
  * Uses authenticated blob fetch + object URL (works even when Content-Disposition is attachment).
  */
-export default function AttachmentPreview({ open, apiPath, title, onClose, onError }: Props) {
+export default function AttachmentPreview({
+  open,
+  apiPath,
+  title,
+  fallbackName,
+  onClose,
+  onError,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [filename, setFilename] = useState('');
@@ -39,7 +48,7 @@ export default function AttachmentPreview({ open, apiPath, title, onClose, onErr
         if (revoked) return;
         url = URL.createObjectURL(att.blob);
         setObjectUrl(url);
-        setFilename(att.filename);
+        setFilename(att.filename || fallbackName || '');
         setContentType(att.contentType);
       })
       .catch((err: any) => {
@@ -55,7 +64,7 @@ export default function AttachmentPreview({ open, apiPath, title, onClose, onErr
       revoked = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [open, apiPath, onError]);
+  }, [open, apiPath, fallbackName, onError]);
 
   useEffect(() => {
     if (!open) return;
@@ -106,7 +115,11 @@ export default function AttachmentPreview({ open, apiPath, title, onClose, onErr
             Close
           </button>
         </div>
-        {filename ? <p className="muted" style={{ margin: 0 }}>{filename}</p> : null}
+        {filename && filename.toLowerCase() !== 'attachment' ? (
+          <p className="muted" style={{ margin: 0 }}>
+            {filename}
+          </p>
+        ) : null}
         {loading && <p className="muted">Loading…</p>}
         {localError && <p style={{ color: '#b91c1c' }}>{localError}</p>}
         {showImage && (
