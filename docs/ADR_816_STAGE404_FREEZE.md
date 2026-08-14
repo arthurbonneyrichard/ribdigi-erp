@@ -26,7 +26,9 @@ Stage 404 Tenant MVP ADR-002 Paid Billing Pack Remaining-Gate Index Fidelity del
 
 Stage 405 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 404 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Business Metrics Pack Remaining-Gate Index Fidelity — single index of business-metrics-pack blockers (business metrics/KPI materials non-claim as paid billing / go-live) with explicit non-claim. Prefixed `BUSINESS_METRICS_PACK_*` remaining-gate docs if a prior remaining-gate exists. Distinct from Stage 404 ADR-002 paid billing pack remaining-gate, Stage 403 ADR-005 store membership pack, Stage 392 `OFFLINE_CONNECTIVITY_BADGE_PACK_*`, and Stage 329 `OFFLINE_COMPLETE_PACK_*`. Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` §4. Do **not** reopen `RESIDUAL_RISK_PACK_*` or `GOLIVE_PACK_*` Completes.
+**Runner-up outline (not opened):** Tenant MVP Attestation Workflow Pack Remaining-Gate Index Fidelity — single index of attestation-workflow-pack blockers (attestation materials non-claim as Offline Complete / go-live) with explicit non-claim. Prefixed `ATTESTATION_WORKFLOW_PACK_*` remaining-gate docs if a prior remaining-gate exists. Distinct from Stage 404 ADR-002 paid billing pack remaining-gate, Stage 403 ADR-005 store membership pack, Stage 392 `OFFLINE_CONNECTIVITY_BADGE_PACK_*`, and Stage 329 `OFFLINE_COMPLETE_PACK_*`. Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` §5. Do **not** reopen `RESIDUAL_RISK_PACK_*` or `GOLIVE_PACK_*` Completes.
+
+**Collision note:** Stage 371 already froze `BUSINESS_METRICS_PACK_*`; do not reopen that pack as Stage 405.
 
 ## Non-claims
 

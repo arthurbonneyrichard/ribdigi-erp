@@ -11,7 +11,7 @@ def test_stage404_exit_criteria_and_freeze_adr():
     assert "Stage 404" in freeze
     assert "frozen" in freeze.lower() or "Freeze" in freeze
     assert "Stage 405" in freeze and "Stage 403" in freeze and "Accepted" in freeze
-    assert "BUSINESS_METRICS_PACK_" in freeze
+    assert "ATTESTATION_WORKFLOW_PACK_" in freeze
     plan = (ROOT / "docs" / "STAGE_404_PLAN.md").read_text(encoding="utf-8")
     assert "Closed" in plan or "exit met" in plan.lower() or "ADR-816" in plan
     for ws in ("I1", "B1", "P1", "D1", "H404x"):
