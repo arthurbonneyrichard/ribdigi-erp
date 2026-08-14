@@ -31,3 +31,9 @@ Stage 293 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for signed DPA, subprocessor register live, legal counsel, contract execution, paid billing, or go-live.
+
+## Amendment — Stage 293 opened
+
+Stage 293 opened under **ADR-593** after CONTINUE/NEXT (Tenant MVP Commercial Terms Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-594**. Stage 292 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 293 runner-up outline was approved and opened (ADR-593); freeze ADR-594. Do not reopen Stage 292 scope.

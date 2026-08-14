@@ -1,0 +1,61 @@
+{
+  "id": "commercial-terms-pack-rg-pointers",
+  "stage": 293,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_TERMS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_terms": "docs/COMMERCIAL_TERMS_MVP.md",
+    "commercial_dpa_pack_remaining_gate": "docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md",
+    "commercial_privacy_notice_pack_remaining_gate": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "msa_addendum": "docs/MSA_ADDENDUM_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "tos_signed_claimed": false,
+  "aup_enforced_claimed": false,
+  "clickwrap_live": false,
+  "legal_counsel_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_terms_stage76",
+    "commercial_dpa_pack_remaining_gate_stage292",
+    "commercial_privacy_notice_pack_remaining_gate_stage291",
+    "msa_addendum_stage39",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ctprp-stage76",
+      "title": "Point to Stage 76 T1 commercial terms",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctprp-stage292",
+      "title": "Point to Stage 292 commercial DPA pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctprp-stage291",
+      "title": "Point to Stage 291 commercial privacy notice pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctprp-stage39",
+      "title": "Point to Stage 39 MSA addendum adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctprp-tos-remaining",
+      "title": "Signed ToS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 293 P1 commercial terms pack RG pointers packaging only. Do not claim signed ToS Complete."
+}

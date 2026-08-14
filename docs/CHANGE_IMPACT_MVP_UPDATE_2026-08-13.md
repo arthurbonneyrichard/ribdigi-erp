@@ -611,3 +611,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 292 decision (opened after Stage 291 freeze)
 
 **Tenant MVP Commercial DPA Pack Remaining-Gate Index Fidelity** — commercial DPA pack remaining-gate hub (I1), blocker matrix (B1), Stage 77 A1 / Stage 291 / Stage 290 / Stage 39 pointers with explicit non-claim (P1). Prefixed `COMMERCIAL_DPA_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 77 A1 `COMMERCIAL_DPA_MVP.md`). Signed DPA / subprocessor register live / legal counsel / contract execution / paid billing / go-live Completes remain deferred (Stage 293+; ADR-002 in force). Distinct from Stage 291 commercial privacy notice pack remaining-gate, Stage 290 cookie privacy notice pack remaining-gate, and Stage 77 A1 commercial DPA packaging. Open ADR-591 / freeze ADR-592.
+
+## Stage 293 decision (opened after Stage 292 freeze)
+
+**Tenant MVP Commercial Terms Pack Remaining-Gate Index Fidelity** — commercial terms pack remaining-gate hub (I1), blocker matrix (B1), Stage 76 T1 / Stage 292 / Stage 291 / Stage 39 pointers with explicit non-claim (P1). Prefixed `COMMERCIAL_TERMS_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 76 T1 `COMMERCIAL_TERMS_MVP.md`). Signed ToS / AUP enforced / clickwrap live / legal counsel / paid billing / go-live Completes remain deferred (Stage 294+; ADR-002 in force). Distinct from Stage 292 commercial DPA pack remaining-gate, Stage 291 commercial privacy notice pack remaining-gate, and Stage 76 T1 commercial terms packaging. Open ADR-593 / freeze ADR-594.

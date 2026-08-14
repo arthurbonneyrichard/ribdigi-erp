@@ -1,0 +1,58 @@
+{
+  "id": "commercial-terms-pack-remaining-gate",
+  "stage": 293,
+  "pack": "I1",
+  "doc": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMMERCIAL_TERMS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMMERCIAL_TERMS_PACK_RG_POINTERS_MVP.md",
+    "commercial_terms": "docs/COMMERCIAL_TERMS_MVP.md",
+    "commercial_dpa_pack_remaining_gate": "docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md",
+    "commercial_privacy_notice_pack_remaining_gate": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "msa_addendum": "docs/MSA_ADDENDUM_MVP.md"
+  },
+  "packaging_complete": true,
+  "tos_signed_claimed": false,
+  "aup_enforced_claimed": false,
+  "clickwrap_live": false,
+  "legal_counsel_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage76_commercial_terms": true,
+  "distinct_from_stage292_commercial_dpa_pack_remaining_gate": true,
+  "distinct_from_stage291_commercial_privacy_notice_pack_remaining_gate": true,
+  "distinct_from_stage39_msa_addendum": true,
+  "steps": [
+    {
+      "id": "ctpr-read-blockers",
+      "title": "Read B1 commercial terms pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctpr-follow-pointers",
+      "title": "Follow P1 Stage 76 T1 / Stage 292 / Stage 291 / Stage 39 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctpr-tos-missing",
+      "title": "Reaffirm signed ToS / clickwrap live MISSING until real commercial terms ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctpr-no-packaging-as-live",
+      "title": "Do not treat Stage 76 T1 / Stage 292 / Stage 291 as signed ToS Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctpr-tos-remaining",
+      "title": "Signed ToS / AUP / clickwrap / legal counsel / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 293 I1 commercial terms pack remaining-gate index packaging only. Do not claim signed ToS Complete."
+}
