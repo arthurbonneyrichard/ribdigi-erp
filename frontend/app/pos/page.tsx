@@ -1236,7 +1236,9 @@ export default function Page() {
                 <span>Customer {paymentMethod === 'credit' ? '(required)' : '(optional)'}</span>
                 <select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
                   <option value="">Walk-in / none</option>
-                  {customers.map((c) => (
+                  {customers
+                    .filter((c) => c.status !== 'inactive')
+                    .map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                       {c.customer_group

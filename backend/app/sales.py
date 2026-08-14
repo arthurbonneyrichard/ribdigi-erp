@@ -106,6 +106,15 @@ async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.
     return customer
 
 
+async def require_active_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.Party:
+    """Resolve customer for new sales documents; inactive customers cannot be newly assigned."""
+    customer = await get_customer(db, tenant_id, customer_id)
+    status = (getattr(customer, "status", None) or "active").strip().lower()
+    if status != "active":
+        raise HTTPException(status_code=400, detail="Customer is inactive")
+    return customer
+
+
 async def get_invoice(db: AsyncSession, tenant_id: str, invoice_id: str) -> m.SalesInvoice:
     invoice = (
         await db.execute(
@@ -281,7 +290,7 @@ async def create_sales_invoice(
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
-    await get_customer(db, tenant_id, customer_id)
+    await require_active_customer(db, tenant_id, customer_id)
 
     from app.fx import resolve_rate
 

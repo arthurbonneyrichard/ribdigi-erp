@@ -467,8 +467,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Customer relationship and information management.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [x] **Customer Profile:** Name, code, type (walk-in/registered), status (`parties.code` / `profile_type` / `status`; create/PATCH/GET `/customers`)
+  - [x] **Customer Profile:** Name, code, type (walk-in/registered), status (`parties.code` / `profile_type` / `status`; create/PATCH/GET `/customers`; Sales **Deactivate** / **Activate**; inactive blocked on new QT/SO/INV/POS)
   - [x] **Contact Details:** Phone, email, address, GPS coordinates (`parties.phone` / `email` / `address` / `latitude` / `longitude`)
+  - [x] **Soft-deactivate:** Hide from new sales docs without data loss (`status=inactive` via `PATCH /customers/{id}`; existing invoices/orders can still settle)
   - [x] **Customer Groups:** Wholesale, Retail, VIP, etc. with group-based pricing (`GET|POST|PATCH /customers/groups`; Sales UI create + **Save discount** + soft **Deactivate** / **Activate**; inactive blocked on customer assign; pricing ignores inactive groups)
   - [x] **Customer Balance:** Real-time outstanding receivable balance (`GET /customers/{id}/credit`; Credit UI Balance)
   - [x] **Credit Limit:** Per-customer credit limit with enforcement (`GET /customers/{id}/credit` + post/POS override; see BR-11.1)

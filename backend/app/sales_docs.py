@@ -16,7 +16,7 @@ from app.doc_numbers import (
     next_sales_order_number,
     next_sales_return_number,
 )
-from app.sales import create_sales_invoice, get_customer, get_invoice, list_invoice_items
+from app.sales import create_sales_invoice, get_customer, require_active_customer, get_invoice, list_invoice_items
 from app.tax import resolve_product_tax
 from app.catalog import get_variant, resolve_sale_line
 
@@ -157,7 +157,7 @@ async def create_quotation(
     notes: str | None = None,
     valid_days: int = 14,
 ) -> m.SalesQuotation:
-    await get_customer(db, tenant_id, customer_id)
+    await require_active_customer(db, tenant_id, customer_id)
     subtotal, tax_total, prepared = await _prepare_lines(
         db, tenant_id, items, customer_id=customer_id
     )
@@ -363,7 +363,7 @@ async def create_order(
     delivery_date: datetime | None = None,
     delivery_address: str | None = None,
 ) -> m.SalesOrder:
-    await get_customer(db, tenant_id, customer_id)
+    await require_active_customer(db, tenant_id, customer_id)
     if quotation_id:
         quote = await get_quotation(db, tenant_id, quotation_id)
         if quote.customer_id != customer_id:
