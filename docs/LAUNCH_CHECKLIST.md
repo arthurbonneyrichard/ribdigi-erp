@@ -1275,6 +1275,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 56 / Stage 246 / Stage 243 / Stage 48 pointers (Stage 247 P1: `test_stage247_pointers_p1.py`, `docs/IMPLEMENTATION_ONBOARDING_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 247 fidelity sync (D1: `test_stage247_fidelity_d1.py`, `docs/STAGE_247_FIDELITY.md`)
 - [x] Stage 247 exit + freeze (H247x: `test_stage247_exit_h247x.py`, `docs/STAGE_247_EXIT_CRITERIA.md`, ADR-502)
+- [x] Stage 248 track opened (ADR-503: `test_stage248_open.py`, `docs/STAGE_248_PLAN.md`) — Release Pipeline Pack Remaining-Gate Index; closed under ADR-504
+- [x] Release pipeline pack remaining-gate hub (Stage 248 I1: `test_stage248_index_i1.py`, `docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md`)
+- [x] Release pipeline pack blocker matrix (Stage 248 B1: `test_stage248_blockers_b1.py`, `docs/RELEASE_PIPELINE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 65 / Stage 247 / Stage 246 / Stage 229 pointers (Stage 248 P1: `test_stage248_pointers_p1.py`, `docs/RELEASE_PIPELINE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 248 fidelity sync (D1: `test_stage248_fidelity_d1.py`, `docs/STAGE_248_FIDELITY.md`)
+- [x] Stage 248 exit + freeze (H248x: `test_stage248_exit_h248x.py`, `docs/STAGE_248_EXIT_CRITERIA.md`, ADR-504)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

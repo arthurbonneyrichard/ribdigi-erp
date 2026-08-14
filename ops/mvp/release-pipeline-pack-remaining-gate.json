@@ -1,0 +1,58 @@
+{
+  "id": "release-pipeline-pack-remaining-gate",
+  "stage": 248,
+  "pack": "I1",
+  "doc": "docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/RELEASE_PIPELINE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/RELEASE_PIPELINE_PACK_RG_POINTERS_MVP.md",
+    "release_pipeline": "docs/RELEASE_PIPELINE_MVP.md",
+    "implementation_onboarding_pack_remaining_gate": "docs/IMPLEMENTATION_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "business_pilot_pack_remaining_gate": "docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md",
+    "staging_gha_pack_remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+    "release_pipeline_register": "ops/mvp/release-pipeline.json"
+  },
+  "packaging_complete": true,
+  "mvp_release_candidate_signed": false,
+  "release_pipeline_live_claimed": false,
+  "staging_promotion_live_claimed": false,
+  "security_review_signed_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage65_r1_release_pipeline": true,
+  "distinct_from_stage247_implementation_onboarding_pack_remaining_gate": true,
+  "distinct_from_stage246_business_pilot_pack_remaining_gate": true,
+  "distinct_from_stage229_staging_gha_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "rppr-read-blockers",
+      "title": "Read B1 release pipeline pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rppr-follow-pointers",
+      "title": "Follow P1 Stage 65 / Stage 247 / Stage 246 / Stage 229 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rppr-rc-missing",
+      "title": "Reaffirm signed MVP RC / live pipeline MISSING until real RC sign-off / pipeline execution ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rppr-no-packaging-as-live",
+      "title": "Do not treat Stage 65 R1 / Stage 229 as signed RC Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rppr-rc-remaining",
+      "title": "Signed RC / live pipeline / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 248 I1 release pipeline pack remaining-gate index packaging only. Do not claim signed MVP RC or live release pipeline Complete."
+}

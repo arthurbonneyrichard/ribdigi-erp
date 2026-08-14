@@ -27,3 +27,9 @@ Stage 247 Tenant MVP Implementation Onboarding Pack Remaining-Gate Index Fidelit
 Stage 248 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 247 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP Release Pipeline Pack Remaining-Gate Index Fidelity — single index of release-pipeline-pack blockers (packaged Stage 65 R1 release-pipeline materials non-claim as signed RC / live release Complete) with explicit non-claim. Prefixed `RELEASE_PIPELINE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 247 implementation onboarding pack remaining-gate and Stage 246 business pilot pack remaining-gate.
+
+## Amendment — Stage 248 opened
+
+Stage 248 opened under **ADR-503** after CONTINUE/NEXT (Release Pipeline Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-504**. Stage 247 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 248 runner-up outline was approved and opened (ADR-503); freeze ADR-504. Do not reopen Stage 247 scope.
