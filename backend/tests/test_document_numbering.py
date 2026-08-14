@@ -102,6 +102,36 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
     assert grn.status_code == 200, grn.text
     assert grn.json()["data"]["grn_number"] == f"GRN-{year}-0009"
 
+    # Purchase invoice numbering (BR-6.5 / BR-20.4)
+    purch_pi = await ac.patch(
+        "/api/v1/purchasing/settings",
+        headers=admin,
+        json={"purchase_invoice_numbering": {"prefix": "PINV", "next_number": 7}},
+    )
+    assert purch_pi.status_code == 200, purch_pi.text
+    assert purch_pi.json()["data"]["purchase_invoice_numbering"]["preview"] == f"PINV-{year}-0007"
+    get_settings = await ac.get("/api/v1/purchasing/settings", headers=admin)
+    assert get_settings.status_code == 200
+    assert get_settings.json()["data"]["purchase_invoice_numbering"]["preview"] == f"PINV-{year}-0007"
+
+    inv = await ac.post(
+        "/api/v1/purchasing/invoices",
+        headers=admin,
+        json={
+            "supplier_id": supplier_id,
+            "items": [
+                {
+                    "product_id": seed["p1"].id,
+                    "quantity": 1,
+                    "unit_price": 10,
+                    "tax_rate": 0,
+                }
+            ],
+        },
+    )
+    assert inv.status_code == 200, inv.text
+    assert inv.json()["data"]["invoice_number"] == f"PINV-{year}-0007"
+
     # Counter advanced for next GRN
     assert await next_grn_number(db_session, seed["t1"].id) == f"GRN-{year}-0010"
     await db_session.commit()

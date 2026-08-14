@@ -799,6 +799,8 @@ Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`
 **Pay:** `POST /purchases/invoices/{invoice_id}/payments`  
 **Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` — allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted; idempotent when already cancelled. Serialize includes `can_cancel`. Purchasing Invoices UI Cancel (BR-6.5).
 
+**Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_invoice_numbering` (`prefix`, `next_number`, `preview`) alongside PO/GRN. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PINV`) — not a timestamp (BR-6.5 / BR-20.4).
+
 Create accepts header `discount_amount` and per-line `discount` (≥0). Line tax is computed on qty×unit_price before line discount; invoice `total_amount` subtracts header discount from gross (or from subtotal when reverse charge). Purchasing create forms + invoice detail show discounts (BR-6.5). PATCH does not update discounts.
 
 Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced invoices copy the PO line snapshot including proportional `items[].discount` (`accepted_qty / ordered_qty × PO line discount`). When header `discount_amount` is omitted/0 on from-GRN create, it defaults to the sum of those line discounts so `total_amount` matches negotiated PO economics; an explicit header discount overrides that default while line discounts still appear on lines (BR-6.5 / BR-6.3).

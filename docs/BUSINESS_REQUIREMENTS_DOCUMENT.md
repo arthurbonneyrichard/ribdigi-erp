@@ -440,7 +440,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [ ] Create invoice from GRN or manually
-  - [ ] Invoice number, date, due date
+  - [x] Invoice number, date, due date (tenant series `GET|PATCH /purchasing/settings` → `purchase_invoice_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `PINV`; date/due via party payment terms)
   - [x] Line items with quantity, rate, tax, discount (`items[].discount` + header `discount_amount` on create; from-GRN inherits proportional PO line discount; Purchasing create + detail UI; tax before line discount)
   - [ ] Attach supplier invoice document (PDF/image)
   - [x] Status: Draft, Approved (`unpaid`), Paid, Partially Paid, Overdue, Cancelled (`POST /purchasing/invoices/{id}/cancel`; `can_cancel` when unpaid with zero payments; Purchasing Cancel invoice UI)
@@ -994,7 +994,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, quotation numbering (`GET|PATCH /purchasing/settings`, quotation via `/sales/settings`)
+  - [x] Configure PO, GRN, purchase invoice, quotation numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI; quotation via `/sales/settings`)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

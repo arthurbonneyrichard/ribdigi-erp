@@ -12,7 +12,7 @@ from app import models as m
 from app.inventory import apply_stock_change
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
-from app.doc_numbers import next_grn_number, next_purchase_order_number
+from app.doc_numbers import next_grn_number, next_purchase_invoice_number, next_purchase_order_number
 
 
 async def _purchase_line_tax(
@@ -1900,7 +1900,7 @@ async def create_purchase_invoice(
 
     inv = m.PurchaseInvoice(
         tenant_id=tenant_id,
-        invoice_number=f"PINV-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        invoice_number=await next_purchase_invoice_number(db, tenant_id),
         supplier_id=supplier_id,
         purchase_order_id=purchase_order_id or (po.id if po else None),
         goods_receipt_id=grn.id if grn else None,

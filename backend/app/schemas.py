@@ -972,6 +972,7 @@ class SalesSettingsUpdate(BaseModel):
 class PurchasingNumberingUpdate(BaseModel):
     purchase_order_numbering: DocumentNumberingFields | None = None
     grn_numbering: DocumentNumberingFields | None = None
+    purchase_invoice_numbering: DocumentNumberingFields | None = None
 
 
 class PrintBrandingUpdate(BaseModel):
