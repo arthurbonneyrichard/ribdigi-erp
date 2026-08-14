@@ -31,3 +31,9 @@ Stage 361 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for shift handover pointers, Offline Complete, support SLA, attestation, zero-conflict, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 361 opened under **ADR-729** after CONTINUE/NEXT (Tenant MVP E2E Sale Payment Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-730**. Stage 360 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 361 runner-up outline was approved and opened (ADR-729); freeze ADR-730. Do not reopen Stage 360 scope.

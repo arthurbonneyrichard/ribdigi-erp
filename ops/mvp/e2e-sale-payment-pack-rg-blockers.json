@@ -1,0 +1,62 @@
+{
+  "id": "e2e-sale-payment-pack-rg-blockers",
+  "stage": 361,
+  "pack": "B1",
+  "doc": "docs/E2E_SALE_PAYMENT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_SALE_PAYMENT_PACK_REMAINING_GATE_MVP.md",
+    "e2e_sale_payment": "docs/E2E_SALE_PAYMENT_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_sale_payment_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "usb_serial_drivers_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_sale_payment_claimed": "REMAINING",
+    "e2e_smoke_executed_claimed": "REMAINING",
+    "demo_tenant_claimed": "REMAINING",
+    "usb_serial_drivers_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage35_as_live_e2e_sale_payment": "NON_CLAIM",
+    "live_sale_payment_claimed_flag": "false",
+    "e2e_smoke_executed_claimed_flag": "false",
+    "demo_tenant_claimed_flag": "false",
+    "usb_serial_drivers_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "espprb-live-sale",
+      "title": "Mark live sale-payment Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprb-e2e-smoke",
+      "title": "Mark E2E smoke Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprb-demo",
+      "title": "Mark demo tenant Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprb-stage35-nonclaim",
+      "title": "Mark Stage 35 as non-claim for live E2E sale-payment Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprb-checklist-remaining",
+      "title": "Live E2E sale-payment Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 361 B1 E2E sale payment pack RG blocker matrix packaging only. Live E2E sale-payment Completes remain MISSING."
+}

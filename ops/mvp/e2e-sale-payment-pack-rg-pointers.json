@@ -1,0 +1,60 @@
+{
+  "id": "e2e-sale-payment-pack-rg-pointers",
+  "stage": 361,
+  "pack": "P1",
+  "doc": "docs/E2E_SALE_PAYMENT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_SALE_PAYMENT_PACK_REMAINING_GATE_MVP.md",
+    "e2e_sale_payment": "docs/E2E_SALE_PAYMENT_MVP.md",
+    "shift_handover_pointers_pack_remaining_gate": "docs/SHIFT_HANDOVER_POINTERS_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_sale_payment_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "usb_serial_drivers_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "e2e_sale_payment_stage35",
+    "shift_handover_pointers_pack_remaining_gate_stage360",
+    "e2e_backup_restore_pack_remaining_gate_stage320",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "espprp-stage35",
+      "title": "Point to Stage 35 E2E sale-payment packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprp-stage360",
+      "title": "Point to Stage 360 shift handover pointers pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprp-stage320",
+      "title": "Point to Stage 320 E2E backup restore pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "espprp-checklist-remaining",
+      "title": "Live E2E sale-payment Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 361 P1 E2E sale payment pack RG pointers packaging only. Do not claim live E2E sale-payment Complete."
+}

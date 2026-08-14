@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_361_EXIT_CRITERIA.md` / `docs/ADR_730_STAGE361_FREEZE.md` (`backend/tests/test_stage361_exit_h361x.py`) — Stage 361 H361x
+- `docs/STAGE_361_FIDELITY.md` (`backend/tests/test_stage361_fidelity_d1.py`) — Stage 361 D1
+- `docs/STAGE_361_PLAN.md` (`backend/tests/test_stage361_open.py`) — Stage 361 open (ADR-729)
+- `docs/E2E_SALE_PAYMENT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/e2e-sale-payment-pack-remaining-gate.json` — Stage 361 I1
+- `docs/E2E_SALE_PAYMENT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/e2e-sale-payment-pack-rg-blockers.json` — Stage 361 B1
+- `docs/E2E_SALE_PAYMENT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/e2e-sale-payment-pack-rg-pointers.json` — Stage 361 P1
 - `docs/STAGE_360_EXIT_CRITERIA.md` / `docs/ADR_728_STAGE360_FREEZE.md` (`backend/tests/test_stage360_exit_h360x.py`) — Stage 360 H360x
 - `docs/STAGE_360_FIDELITY.md` (`backend/tests/test_stage360_fidelity_d1.py`) — Stage 360 D1
 - `docs/STAGE_360_PLAN.md` (`backend/tests/test_stage360_open.py`) — Stage 360 open (ADR-727)
@@ -5443,6 +5449,16 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 361 exit
+
+H361x met — `docs/STAGE_361_EXIT_CRITERIA.md`, ADR-730. Stages 1–361 frozen for Stage 361 feature scope.
+
+## Stage 361 D1 — Tenant MVP E2E Sale Payment Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_361_FIDELITY.md` (`test_stage361_fidelity_d1.py`). `E2E_SALE_PAYMENT_PACK_*` remaining-gate index; live sale-payment / E2E smoke / demo tenant / USB-serial / go-live still MISSING.
+
+## Stage 361 open
 
 ## Stage 360 exit
 

@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 361 open (2026-08-14):** Tenant MVP E2E Sale Payment Pack Remaining-Gate Index Fidelity — `docs/ADR_729_STAGE361_OPEN.md` + `docs/STAGE_361_PLAN.md` (I1 next).
+
+**Stage 361 I1 (2026-08-14):** E2E sale payment pack remaining-gate index hub (`test_stage361_index_i1.py`).
+
+**Stage 361 B1 (2026-08-14):** E2E sale payment pack blocker matrix (`test_stage361_blockers_b1.py`).
+
+**Stage 361 P1 (2026-08-14):** Stage 35 / Stage 360 / Stage 320 / Stage 329 pointers (`test_stage361_pointers_p1.py`).
+
+**Stage 361 D1 (2026-08-14):** E2E Sale Payment Pack Remaining-Gate Index fidelity sync — `docs/STAGE_361_FIDELITY.md` (`test_stage361_fidelity_d1.py`).
+
+**Stage 361 exit (2026-08-14):** I1, B1, P1, D1, H361x met — `docs/STAGE_361_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_730_STAGE361_FREEZE.md`. Fidelity: `docs/STAGE_361_FIDELITY.md`.
+
 **Stage 360 open (2026-08-14):** Tenant MVP Shift Handover Pointers Pack Remaining-Gate Index Fidelity — `docs/ADR_727_STAGE360_OPEN.md` + `docs/STAGE_360_PLAN.md` (I1 next).
 
 **Stage 360 I1 (2026-08-14):** Shift handover pointers pack remaining-gate index hub (`test_stage360_index_i1.py`).

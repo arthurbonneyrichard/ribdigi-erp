@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 361 open** | E2E Sale Payment Pack Remaining-Gate Index — `docs/STAGE_361_PLAN.md`, ADR-729 (`test_stage361_open.py`) |
+| **Stage 361 I1** | E2E sale payment pack remaining-gate index hub (`test_stage361_index_i1.py`) |
+| **Stage 361 B1** | E2E sale payment pack blocker matrix (`test_stage361_blockers_b1.py`) |
+| **Stage 361 P1** | Stage 35 / Stage 360 / Stage 320 / Stage 329 pointers (`test_stage361_pointers_p1.py`) |
+| **Stage 361 D1** | E2E sale payment pack remaining-gate fidelity — `docs/STAGE_361_FIDELITY.md` (`test_stage361_fidelity_d1.py`) |
+| **Stage 361 H361x** | Exit + freeze — `docs/STAGE_361_EXIT_CRITERIA.md`, ADR-730 (`test_stage361_exit_h361x.py`); Stages 1–361 frozen |
 | **Stage 360 open** | Shift Handover Pointers Pack Remaining-Gate Index — `docs/STAGE_360_PLAN.md`, ADR-727 (`test_stage360_open.py`) |
 | **Stage 360 I1** | Shift handover pointers pack remaining-gate index hub (`test_stage360_index_i1.py`) |
 | **Stage 360 B1** | Shift handover pointers pack blocker matrix (`test_stage360_blockers_b1.py`) |
