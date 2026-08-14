@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -1558,13 +1558,18 @@ async def inventory_transfers(
     status: str | None = None,
     from_store_id: str | None = None,
     to_store_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    """Inter-store transfer history & reporting (BR-13.2)."""
+    """Inter-store transfer history & reporting (BR-13.2 / BR-14.5).
+
+    Optional ``store_id`` matches transfers where the store is source **or**
+    destination. Directional ``from_store_id`` / ``to_store_id`` still apply.
+    """
+    from fastapi import HTTPException
+
     if status:
         key = status.strip().lower()
         if key not in TRANSFER_REPORT_STATUSES:
-            from fastapi import HTTPException
-
             raise HTTPException(
                 status_code=400,
                 detail=(
@@ -1573,6 +1578,21 @@ async def inventory_transfers(
                 ),
             )
         status = key
+
+    store_name = None
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.id == store_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        store_id = store.id
+        store_name = store.name
 
     stores = {
         s.id: s
@@ -1587,6 +1607,13 @@ async def inventory_transfers(
     )
     if status:
         stmt = stmt.where(m.StockTransfer.status == status)
+    if store_id:
+        stmt = stmt.where(
+            or_(
+                m.StockTransfer.from_store_id == store_id,
+                m.StockTransfer.to_store_id == store_id,
+            )
+        )
     if from_store_id:
         stmt = stmt.where(m.StockTransfer.from_store_id == from_store_id)
     if to_store_id:
@@ -1668,6 +1695,8 @@ async def inventory_transfers(
         "from_date": from_date,
         "to_date": to_date,
         "status": status,
+        "store_id": store_id,
+        "store_name": store_name,
         "from_store_id": from_store_id,
         "to_store_id": to_store_id,
         "transfer_count": len(transfers),
