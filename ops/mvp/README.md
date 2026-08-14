@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_413_EXIT_CRITERIA.md` / `docs/ADR_834_STAGE413_FREEZE.md` (`backend/tests/test_stage413_exit_h413x.py`) — Stage 413 H413x
+- `docs/STAGE_413_FIDELITY.md` (`backend/tests/test_stage413_fidelity_d1.py`) — Stage 413 D1
+- `docs/STAGE_413_PLAN.md` (`backend/tests/test_stage413_open.py`) — Stage 413 open (ADR-833)
+- `docs/FIRST_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/first-tenant-honesty-pack-remaining-gate.json` — Stage 413 I1
+- `docs/FIRST_TENANT_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/first-tenant-honesty-pack-rg-blockers.json` — Stage 413 B1
+- `docs/FIRST_TENANT_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/first-tenant-honesty-pack-rg-pointers.json` — Stage 413 P1
 - `docs/STAGE_412_EXIT_CRITERIA.md` / `docs/ADR_832_STAGE412_FREEZE.md` (`backend/tests/test_stage412_exit_h412x.py`) — Stage 412 H412x
 - `docs/STAGE_412_FIDELITY.md` (`backend/tests/test_stage412_fidelity_d1.py`) — Stage 412 D1
 - `docs/STAGE_412_PLAN.md` (`backend/tests/test_stage412_open.py`) — Stage 412 open (ADR-831)
@@ -5755,6 +5761,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 413 exit
+
+H413x met — `docs/STAGE_413_EXIT_CRITERIA.md`, ADR-834. Stages 1–413 frozen for Stage 413 feature scope.
+
+## Stage 413 D1 — Tenant MVP First Tenant Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / First Tenant honesty / go-live Completes remain MISSING. See `docs/STAGE_413_FIDELITY.md`.
+
+## Stage 413 open
+
+Opened under ADR-833; plan `docs/STAGE_413_PLAN.md`.
 
 ## Stage 412 exit
 

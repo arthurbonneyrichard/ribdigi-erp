@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 413 First Tenant Honesty Pack remaining-gate — `docs/FIRST_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/FIRST_TENANT_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; prior `FIRST_TENANT_GOLIVE_PACK_*` ≠ first-tenant / go-live Completes).
 Stage 412 Launch Gate Honesty Pack remaining-gate — `docs/LAUNCH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/LAUNCH_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 408 `GOLIVE_HONESTY_PACK_*` / launch checklist ≠ go-live Completes).
 Stage 411 Business Metrics Honesty Pack remaining-gate — `docs/BUSINESS_METRICS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/BUSINESS_METRICS_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 371 `BUSINESS_METRICS_PACK_*` ≠ business-metrics Completes).
 Stage 410 Attestation Completes Honesty Pack remaining-gate — `docs/ATTESTATION_COMPLETES_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/ATTESTATION_COMPLETES_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 405 `ATTESTATION_WORKFLOW_PACK_*` ≠ attestation Completes).
