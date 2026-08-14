@@ -1,0 +1,59 @@
+{
+  "id": "permission-alias-map-pack-remaining-gate",
+  "stage": 401,
+  "pack": "I1",
+  "doc": "docs/PERMISSION_ALIAS_MAP_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PERMISSION_ALIAS_MAP_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PERMISSION_ALIAS_MAP_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_sync_push_idempotency_pack_remaining_gate": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md",
+    "offline_conflict_ux_pack_remaining_gate": "docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "permission_alias_map_complete_claimed": false,
+  "alias_map_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage400_offline_sync_push_idempotency_pack_remaining_gate": true,
+  "distinct_from_stage399_offline_conflict_ux_pack_remaining_gate": true,
+  "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "pampr-read-blockers",
+      "title": "Read B1 permission alias map pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pampr-follow-pointers",
+      "title": "Follow P1 Stage 400 / Stage 399 / Stage 392 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pampr-checklist-missing",
+      "title": "Reaffirm Offline Complete / permission alias-map / alias map / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pampr-no-packaging-as-live",
+      "title": "Do not treat Stage 392 / Stage 400 / Stage 399 as Offline Complete or permission alias-map Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pampr-checklist-remaining",
+      "title": "Offline Complete / permission alias-map / alias map / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 401 I1 permission alias map pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

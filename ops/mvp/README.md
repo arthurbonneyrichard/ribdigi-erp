@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_401_EXIT_CRITERIA.md` / `docs/ADR_810_STAGE401_FREEZE.md` (`backend/tests/test_stage401_exit_h401x.py`) — Stage 401 H401x
+- `docs/STAGE_401_FIDELITY.md` (`backend/tests/test_stage401_fidelity_d1.py`) — Stage 401 D1
+- `docs/STAGE_401_PLAN.md` (`backend/tests/test_stage401_open.py`) — Stage 401 open (ADR-809)
+- `docs/PERMISSION_ALIAS_MAP_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/permission-alias-map-pack-remaining-gate.json` — Stage 401 I1
+- `docs/PERMISSION_ALIAS_MAP_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/permission-alias-map-pack-rg-blockers.json` — Stage 401 B1
+- `docs/PERMISSION_ALIAS_MAP_PACK_RG_POINTERS_MVP.md` / `ops/mvp/permission-alias-map-pack-rg-pointers.json` — Stage 401 P1
 - `docs/STAGE_400_EXIT_CRITERIA.md` / `docs/ADR_808_STAGE400_FREEZE.md` (`backend/tests/test_stage400_exit_h400x.py`) — Stage 400 H400x
 - `docs/STAGE_400_FIDELITY.md` (`backend/tests/test_stage400_fidelity_d1.py`) — Stage 400 D1
 - `docs/STAGE_400_PLAN.md` (`backend/tests/test_stage400_open.py`) — Stage 400 open (ADR-807)
@@ -5683,6 +5689,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 401 exit
+
+H401x met — `docs/STAGE_401_EXIT_CRITERIA.md`, ADR-810. Stages 1–401 frozen for Stage 401 feature scope.
+
+## Stage 401 D1 — Tenant MVP Permission Alias Map Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_401_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 401 open
+
+Opened under ADR-809; plan `docs/STAGE_401_PLAN.md`.
 
 ## Stage 400 exit
 

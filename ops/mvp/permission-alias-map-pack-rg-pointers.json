@@ -1,0 +1,67 @@
+{
+  "id": "permission-alias-map-pack-rg-pointers",
+  "stage": 401,
+  "pack": "P1",
+  "doc": "docs/PERMISSION_ALIAS_MAP_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PERMISSION_ALIAS_MAP_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_sync_push_idempotency_pack": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md",
+    "offline_conflict_ux_pack": "docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "permission_alias_map_complete_claimed": false,
+  "alias_map_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_permission_alias_map": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_sync_push_idempotency_pack_remaining_gate_stage400": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md",
+    "offline_conflict_ux_pack_remaining_gate_stage399": "docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / permission_alias_map / alias_map / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "pamprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 permission alias map",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pamprp-stage400",
+      "title": "Point to Stage 400 offline sync push/idempotency pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pamprp-stage399",
+      "title": "Point to Stage 399 offline conflict UX pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pamprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pamprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pamprp-checklist-remaining",
+      "title": "Offline Complete / permission alias-map Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 401 P1 permission alias map pack RG pointers packaging only."
+}

@@ -31,3 +31,9 @@ Stage 401 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline sync-push-idempotency, sync push/idempotency as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 401 opened under **ADR-809** after CONTINUE/NEXT (Tenant MVP Permission Alias Map Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-810**. Stage 400 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 400 runner-up outline was approved and opened (ADR-809); freeze ADR-810. Do not reopen Stage 400 scope.
