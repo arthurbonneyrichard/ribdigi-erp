@@ -1545,13 +1545,92 @@ async def inventory_transfers(
     }
 
 
+async def _resolve_purchase_location_filters(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
+) -> tuple[str | None, str | None, str | None, str | None, list[str] | None]:
+    """Validate optional warehouse/store filters for purchase reports.
+
+    Returns (warehouse_id, warehouse_name, store_id, store_name, warehouse_ids).
+    ``warehouse_ids`` is None when no location filter; otherwise the PO.warehouse_id
+    values that match (empty list means no matching warehouses / no rows).
+    """
+    from fastapi import HTTPException
+
+    warehouse_name = None
+    store_name = None
+    warehouse_ids: list[str] | None = None
+
+    if warehouse_id:
+        wh = (
+            await db.execute(
+                select(m.Warehouse).where(
+                    m.Warehouse.tenant_id == tenant_id,
+                    m.Warehouse.id == warehouse_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not wh:
+            raise HTTPException(status_code=404, detail="Warehouse not found")
+        if store_id and wh.store_id and wh.store_id != store_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Warehouse does not belong to the selected store",
+            )
+        warehouse_id = wh.id
+        warehouse_name = wh.name
+        if wh.store_id and not store_id:
+            store_id = wh.store_id
+        warehouse_ids = [wh.id]
+
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.id == store_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        store_id = store.id
+        store_name = store.name
+        if warehouse_ids is None:
+            whs = (
+                await db.execute(
+                    select(m.Warehouse).where(
+                        m.Warehouse.tenant_id == tenant_id,
+                        m.Warehouse.store_id == store_id,
+                    )
+                )
+            ).scalars().all()
+            warehouse_ids = [w.id for w in whs]
+
+    return warehouse_id, warehouse_name, store_id, store_name, warehouse_ids
+
+
 async def purchases_summary(
     db: AsyncSession,
     tenant_id: str,
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
     stmt = select(m.PurchaseOrder).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
@@ -1560,6 +1639,11 @@ async def purchases_summary(
         stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.PurchaseOrder.created_at <= to_date)
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            stmt = stmt.where(m.PurchaseOrder.id == None)  # noqa: E711
+        else:
+            stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     orders = (await db.execute(stmt)).scalars().all()
     by_status: dict[str, int] = defaultdict(int)
     total = 0.0
@@ -1571,6 +1655,10 @@ async def purchases_summary(
     return {
         "from_date": from_date,
         "to_date": to_date,
+        "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
         "order_count": len(orders),
         "total_amount": round(total, 2),
         "outstanding_amount": round(pending, 2),
@@ -1589,11 +1677,22 @@ async def purchases_pending_orders(
     to_date: datetime | None = None,
     supplier_id: str | None = None,
     status: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
     """POs not yet fully received (BR-14.3 Pending Orders).
 
     Includes draft / sent / partially_received. Excludes received and cancelled.
     """
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
     statuses = PENDING_PO_STATUSES
     if status:
         key = status.strip().lower()
@@ -1624,6 +1723,11 @@ async def purchases_pending_orders(
         stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.PurchaseOrder.created_at <= to_date)
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            stmt = stmt.where(m.PurchaseOrder.id == None)  # noqa: E711
+        else:
+            stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
 
     rows = (await db.execute(stmt)).all()
     orders: list[dict] = []
@@ -1670,6 +1774,10 @@ async def purchases_pending_orders(
         "to_date": to_date,
         "supplier_id": supplier_id,
         "status": status,
+        "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
         "order_count": len(orders),
         "total_amount": round(total_amount, 2),
         "total_outstanding_qty": round(total_outstanding_qty, 3),
@@ -1822,7 +1930,18 @@ async def purchases_by_supplier(
     supplier_id: str | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
     stmt = select(m.PurchaseOrder, m.Party).join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
@@ -1833,6 +1952,11 @@ async def purchases_by_supplier(
         stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.PurchaseOrder.created_at <= to_date)
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            stmt = stmt.where(m.PurchaseOrder.id == None)  # noqa: E711
+        else:
+            stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     rows = (await db.execute(stmt)).all()
     agg: dict[str, dict] = {}
     for po, party in rows:
@@ -1843,7 +1967,14 @@ async def purchases_by_supplier(
         row["order_count"] += 1
         row["total_amount"] = round(row["total_amount"] + float(po.total_amount or 0), 2)
     suppliers = sorted(agg.values(), key=lambda x: x["total_amount"], reverse=True)
-    return {"suppliers": suppliers, "total_amount": round(sum(s["total_amount"] for s in suppliers), 2)}
+    return {
+        "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
+        "suppliers": suppliers,
+        "total_amount": round(sum(s["total_amount"] for s in suppliers), 2),
+    }
 
 
 async def expenses_summary(
