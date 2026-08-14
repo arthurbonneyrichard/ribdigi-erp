@@ -160,6 +160,8 @@ async def resolve_sale_line(
     percent is applied (BR-7.1). Explicit ``unit_price`` is treated as an override.
     """
     product = await get_product(db, tenant_id, item["product_id"])
+    if not product.is_active:
+        raise HTTPException(status_code=400, detail="Product is inactive")
     variant = None
     variant_id = item.get("variant_id")
     if variant_id:

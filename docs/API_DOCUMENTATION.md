@@ -476,7 +476,7 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
 **List:** `GET /products?category_id=&brand_id=&low_stock=true`  
 **Create:** `POST /products`  
 **Get:** `GET /products/{product_id}`  
-**Update:** `PATCH /products/{product_id}`  
+**Update:** `PATCH /products/{product_id}` — partial fields include `name`, `sku`, `barcode`, prices, physical dims, tax flags, and soft-deactivate via `is_active` (false hides from POS search and blocks new sale/PR/PO/PI lines; Inventory UI **Activate** / **Deactivate**; stock ops still allowed)  
 **Delete:** `DELETE /products/{product_id}`
 
 **Create Product Request:**

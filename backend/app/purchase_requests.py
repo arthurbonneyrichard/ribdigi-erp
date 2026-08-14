@@ -308,6 +308,8 @@ async def create_request(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        if not product.is_active:
+            raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
         qty = float(item.get("quantity") or 0)
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be > 0")

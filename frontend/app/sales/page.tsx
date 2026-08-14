@@ -853,7 +853,9 @@ export default function Page() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">Product</option>
-            {products.map((p) => (
+            {products
+              .filter((p) => p.is_active !== false)
+              .map((p) => (
               <option key={p.id} value={p.id}>
                 {p.sku} — {p.name}
               </option>

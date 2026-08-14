@@ -1248,7 +1248,9 @@ export default function Page() {
               </select>
               <select value={prProductId} onChange={(e) => setPrProductId(e.target.value)}>
                 <option value="">Select product</option>
-                {products.map((p) => (
+                {products
+                  .filter((p) => p.is_active !== false)
+                  .map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
                   </option>
@@ -1453,7 +1455,9 @@ export default function Page() {
           </select>
           <select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="">Select product</option>
-            {products.map((p) => (
+            {products
+              .filter((p) => p.is_active !== false)
+              .map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} ({p.sku})
               </option>
@@ -1919,7 +1923,9 @@ export default function Page() {
           </select>
           <select value={manualInvProductId} onChange={(e) => setManualInvProductId(e.target.value)}>
             <option value="">Select product</option>
-            {products.map((p) => (
+            {products
+              .filter((p) => p.is_active !== false)
+              .map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} ({p.sku})
               </option>

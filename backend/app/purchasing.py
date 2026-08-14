@@ -309,6 +309,8 @@ async def create_purchase_order(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        if not product.is_active:
+            raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
         unit_id, qty, _qty_base = await resolve_line_unit(
             db,
             tenant_id=tenant_id,
@@ -533,6 +535,8 @@ async def amend_purchase_order(
             ).scalar_one_or_none()
             if not product:
                 raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+            if not product.is_active:
+                raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
             unit_id, qty, _qty_base = await resolve_line_unit(
                 db,
                 tenant_id=tenant_id,
@@ -1772,6 +1776,8 @@ async def _prepare_invoice_lines(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        if not product.is_active:
+            raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
         qty = float(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be positive")
