@@ -1,0 +1,57 @@
+{
+  "id": "service-credit-warranty-pack-remaining-gate",
+  "stage": 311,
+  "pack": "I1",
+  "doc": "docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SERVICE_CREDIT_WARRANTY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SERVICE_CREDIT_WARRANTY_PACK_RG_POINTERS_MVP.md",
+    "service_credit_warranty": "docs/SERVICE_CREDIT_WARRANTY_MVP.md",
+    "liability_indemnity_pack_remaining_gate": "docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md",
+    "data_retention_return_pack_remaining_gate": "docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md",
+    "status_uptime": "docs/STATUS_UPTIME_MVP.md"
+  },
+  "packaging_complete": true,
+  "service_credits_live": false,
+  "warranty_live_claimed": false,
+  "uptime_credit_claimed": false,
+  "remedy_schedule_live": false,
+  "go_live_claimed": false,
+  "distinct_from_stage46_service_credit_warranty": true,
+  "distinct_from_stage310_liability_indemnity_pack_remaining_gate": true,
+  "distinct_from_stage309_data_retention_return_pack_remaining_gate": true,
+  "distinct_from_stage40_status_uptime": true,
+  "steps": [
+    {
+      "id": "scwpr-read-blockers",
+      "title": "Read B1 service credit warranty pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwpr-follow-pointers",
+      "title": "Follow P1 Stage 46 W1 / Stage 310 / Stage 309 / Stage 40 U1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwpr-credits-missing",
+      "title": "Reaffirm live service credits / warranty MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwpr-no-packaging-as-live",
+      "title": "Do not treat Stage 46 W1 / Stage 310 / Stage 309 as live service credits Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwpr-credits-remaining",
+      "title": "Live service credits / warranty / uptime credit / remedy / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 311 I1 service credit warranty pack remaining-gate index packaging only. Do not claim live service credits Complete."
+}

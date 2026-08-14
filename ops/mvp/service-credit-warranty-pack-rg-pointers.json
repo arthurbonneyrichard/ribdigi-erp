@@ -1,0 +1,60 @@
+{
+  "id": "service-credit-warranty-pack-rg-pointers",
+  "stage": 311,
+  "pack": "P1",
+  "doc": "docs/SERVICE_CREDIT_WARRANTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md",
+    "service_credit_warranty": "docs/SERVICE_CREDIT_WARRANTY_MVP.md",
+    "liability_indemnity_pack_remaining_gate": "docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md",
+    "data_retention_return_pack_remaining_gate": "docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md",
+    "status_uptime": "docs/STATUS_UPTIME_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "service_credits_live": false,
+  "warranty_live_claimed": false,
+  "uptime_credit_claimed": false,
+  "remedy_schedule_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "service_credit_warranty_stage46",
+    "liability_indemnity_pack_remaining_gate_stage310",
+    "data_retention_return_pack_remaining_gate_stage309",
+    "status_uptime_stage40",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "scwprp-stage46",
+      "title": "Point to Stage 46 W1 service credit warranty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprp-stage310",
+      "title": "Point to Stage 310 liability indemnity pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprp-stage309",
+      "title": "Point to Stage 309 data retention return pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprp-stage40",
+      "title": "Point to Stage 40 U1 status uptime adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprp-credits-remaining",
+      "title": "Live service credits Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 311 P1 service credit warranty pack RG pointers packaging only. Do not claim live service credits Complete."
+}

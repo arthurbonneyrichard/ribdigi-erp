@@ -372,6 +372,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Liability indemnity pack remaining-gate index (Stage 310):** Status index is `docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md` → blockers `docs/LIABILITY_INDEMNITY_PACK_RG_BLOCKERS_MVP.md` → Stage 46/309/308/46W1 pointers `docs/LIABILITY_INDEMNITY_PACK_RG_POINTERS_MVP.md`. Signed liability-cap Complete and indemnity signed Complete remain MISSING (not claimed). Prefixed `LIABILITY_INDEMNITY_PACK_*` remaining-gate docs (≠ Stage 46 L1 `LIABILITY_INDEMNITY_MVP.md`).
 
+**Service credit warranty pack remaining-gate index (Stage 311):** Status index is `docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SERVICE_CREDIT_WARRANTY_PACK_RG_BLOCKERS_MVP.md` → Stage 46/310/309/40 pointers `docs/SERVICE_CREDIT_WARRANTY_PACK_RG_POINTERS_MVP.md`. Live service credits Complete and warranty Complete remain MISSING (not claimed). Prefixed `SERVICE_CREDIT_WARRANTY_PACK_*` remaining-gate docs (≠ Stage 46 W1 `SERVICE_CREDIT_WARRANTY_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

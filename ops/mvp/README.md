@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_311_EXIT_CRITERIA.md` / `docs/ADR_630_STAGE311_FREEZE.md` (`backend/tests/test_stage311_exit_h311x.py`) — Stage 311 H311x
+- `docs/STAGE_311_FIDELITY.md` (`backend/tests/test_stage311_fidelity_d1.py`) — Stage 311 D1
+- `docs/STAGE_311_PLAN.md` (`backend/tests/test_stage311_open.py`) — Stage 311 open (ADR-629)
+- `docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/service-credit-warranty-pack-remaining-gate.json` — Stage 311 I1
+- `docs/SERVICE_CREDIT_WARRANTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/service-credit-warranty-pack-rg-blockers.json` — Stage 311 B1
+- `docs/SERVICE_CREDIT_WARRANTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/service-credit-warranty-pack-rg-pointers.json` — Stage 311 P1
 - `docs/STAGE_310_EXIT_CRITERIA.md` / `docs/ADR_628_STAGE310_FREEZE.md` (`backend/tests/test_stage310_exit_h310x.py`) — Stage 310 H310x
 - `docs/STAGE_310_FIDELITY.md` (`backend/tests/test_stage310_fidelity_d1.py`) — Stage 310 D1
 - `docs/STAGE_310_PLAN.md` (`backend/tests/test_stage310_open.py`) — Stage 310 open (ADR-627)
@@ -5143,6 +5149,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 311 exit
+
+H311x met — `docs/STAGE_311_EXIT_CRITERIA.md`, ADR-630. Stages 1–311 frozen for Stage 311 feature scope.
+
+## Stage 311 D1 — Tenant MVP Service Credit Warranty Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`). `SERVICE_CREDIT_WARRANTY_PACK_*` remaining-gate index; live service credits / warranty / go-live still MISSING.
+
+## Stage 311 open
+
+ADR-629 / `docs/STAGE_311_PLAN.md`.
 
 ## Stage 310 exit
 

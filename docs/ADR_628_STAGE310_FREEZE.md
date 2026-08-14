@@ -31,3 +31,10 @@ Stage 311 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for signed liability-cap, indemnity signed, legal counsel, contract liability live, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 311 opened under **ADR-629** after CONTINUE/NEXT (Tenant MVP Service Credit Warranty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-630**. Stage 310 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 311 runner-up outline was approved and opened (ADR-629); freeze ADR-630. Do not reopen Stage 310 scope.
+

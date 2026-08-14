@@ -4344,6 +4344,18 @@ Every feature in every phase must meet:
 
 **Stage 310 exit (2026-08-14):** I1, B1, P1, D1, H310x met — `docs/STAGE_310_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_628_STAGE310_FREEZE.md`. Fidelity: `docs/STAGE_310_FIDELITY.md`.
 
+**Stage 311 open (2026-08-14):** Tenant MVP Service Credit Warranty Pack Remaining-Gate Index Fidelity — `docs/ADR_629_STAGE311_OPEN.md` + `docs/STAGE_311_PLAN.md` (I1 next).
+
+**Stage 311 I1 (2026-08-14):** Service credit warranty pack remaining-gate index hub (`test_stage311_index_i1.py`).
+
+**Stage 311 B1 (2026-08-14):** Service credit warranty pack blocker matrix (`test_stage311_blockers_b1.py`).
+
+**Stage 311 P1 (2026-08-14):** Stage 46 W1 / Stage 310 / Stage 309 / Stage 40 U1 pointers (`test_stage311_pointers_p1.py`).
+
+**Stage 311 D1 (2026-08-14):** Service Credit Warranty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`).
+
+**Stage 311 exit (2026-08-14):** I1, B1, P1, D1, H311x met — `docs/STAGE_311_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_630_STAGE311_FREEZE.md`. Fidelity: `docs/STAGE_311_FIDELITY.md`.
+
 
 
 

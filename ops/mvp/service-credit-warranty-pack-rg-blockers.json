@@ -1,0 +1,63 @@
+{
+  "id": "service-credit-warranty-pack-rg-blockers",
+  "stage": 311,
+  "pack": "B1",
+  "doc": "docs/SERVICE_CREDIT_WARRANTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md",
+    "service_credit_warranty": "docs/SERVICE_CREDIT_WARRANTY_MVP.md"
+  },
+  "packaging_complete": true,
+  "service_credits_live": false,
+  "warranty_live_claimed": false,
+  "uptime_credit_claimed": false,
+  "remedy_schedule_live": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "service_credits_live": "REMAINING",
+    "warranty_live_claimed": "REMAINING",
+    "uptime_credit_claimed": "REMAINING",
+    "remedy_schedule_live": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage46_as_service_credits": "NON_CLAIM",
+    "stage310_as_liability_cap": "NON_CLAIM",
+    "service_credits_live_flag": "false",
+    "warranty_live_claimed_flag": "false",
+    "uptime_credit_claimed_flag": "false",
+    "remedy_schedule_live_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "scwprb-credits",
+      "title": "Mark live service credits Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprb-warranty",
+      "title": "Mark warranty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprb-uptime",
+      "title": "Mark uptime credit Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprb-stage46-nonclaim",
+      "title": "Mark Stage 46 W1 as non-claim for live service credits Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scwprb-credits-remaining",
+      "title": "Live service credits Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 311 B1 service credit warranty pack RG blocker matrix packaging only. Live service credits Completes remain MISSING."
+}
