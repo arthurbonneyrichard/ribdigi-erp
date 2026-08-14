@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_372_EXIT_CRITERIA.md` / `docs/ADR_752_STAGE372_FREEZE.md` (`backend/tests/test_stage372_exit_h372x.py`) — Stage 372 H372x
+- `docs/STAGE_372_FIDELITY.md` (`backend/tests/test_stage372_fidelity_d1.py`) — Stage 372 D1
+- `docs/STAGE_372_PLAN.md` (`backend/tests/test_stage372_open.py`) — Stage 372 open (ADR-751)
+- `docs/AI_METRICS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ai-metrics-pack-remaining-gate.json` — Stage 372 I1
+- `docs/AI_METRICS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ai-metrics-pack-rg-blockers.json` — Stage 372 B1
+- `docs/AI_METRICS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ai-metrics-pack-rg-pointers.json` — Stage 372 P1
 - `docs/STAGE_371_EXIT_CRITERIA.md` / `docs/ADR_750_STAGE371_FREEZE.md` (`backend/tests/test_stage371_exit_h371x.py`) — Stage 371 H371x
 - `docs/STAGE_371_FIDELITY.md` (`backend/tests/test_stage371_fidelity_d1.py`) — Stage 371 D1
 - `docs/STAGE_371_PLAN.md` (`backend/tests/test_stage371_open.py`) — Stage 371 open (ADR-749)
@@ -5509,6 +5515,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 372 exit
+
+H372x met — `docs/STAGE_372_EXIT_CRITERIA.md`, ADR-752. Stages 1–372 frozen for Stage 372 feature scope.
+
+## Stage 372 D1 — Tenant MVP AI Metrics Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `AI_METRICS_PACK_REMAINING_GATE_MVP.md` / `AI_METRICS_PACK_RG_BLOCKERS_MVP.md` / `AI_METRICS_PACK_RG_POINTERS_MVP.md` ≠ measured AI Completes. Store Membership Pack skipped (Stage 273 collision). Source: `AI_METRICS_MVP.md`.
+
+## Stage 372 open
+
+ADR-751 / `docs/STAGE_372_PLAN.md`.
 
 ## Stage 371 exit
 

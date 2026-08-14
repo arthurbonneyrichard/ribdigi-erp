@@ -1,0 +1,59 @@
+{
+  "id": "ai-metrics-pack-rg-pointers",
+  "stage": 372,
+  "pack": "P1",
+  "doc": "docs/AI_METRICS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AI_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "ai_metrics_mvp": "docs/AI_METRICS_MVP.md",
+    "business_metrics_pack": "docs/BUSINESS_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "ai_provider_boundary": "docs/AI_PROVIDER_BOUNDARY_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "ai_feature_adoption_measured_claimed": false,
+  "prediction_accuracy_measured_claimed": false,
+  "chat_resolution_measured_claimed": false,
+  "ai_metrics_program_live_claimed": false,
+  "go_live_claimed": false,
+  "topics": {
+    "ai_metrics_mvp_stage58": "docs/AI_METRICS_MVP.md",
+    "business_metrics_pack_remaining_gate_stage371": "docs/BUSINESS_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "ai_provider_boundary": "docs/AI_PROVIDER_BOUNDARY_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "ai_feature_adoption_measured / prediction_accuracy_measured / chat_resolution_measured / ai_metrics_program_live / go_live remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "aimprgp-stage58",
+      "title": "Point to Stage 58 AI_METRICS_MVP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aimprgp-stage371",
+      "title": "Point to Stage 371 business metrics pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aimprgp-provider",
+      "title": "Point to AI provider boundary",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aimprgp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aimprgp-checklist-remaining",
+      "title": "Measured AI adoption / prediction accuracy / chat resolution Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 372 P1 AI metrics pack RG pointers packaging only."
+}

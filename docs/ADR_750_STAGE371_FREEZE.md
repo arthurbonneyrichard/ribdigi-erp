@@ -31,3 +31,10 @@ Stage 372 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for measured MRR, paying customers, NRR/GRR, business-metrics program live, or go-live.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 372 opened under **ADR-751** after CONTINUE/NEXT (Tenant MVP AI Metrics Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-752**. Stage 371 feature scope remains frozen.
+
+**Amendment (2026-08-14):** The ADR-750 Store Membership Pack runner-up **collides** with Stage 273 `STORE_MEMBERSHIP_PACK_*` Remaining-Gate Index Completes — do **not** reopen it. Approved alternate outline opened (ADR-751); freeze ADR-752. Do not reopen Stage 371 scope.
+
