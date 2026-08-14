@@ -107,6 +107,7 @@ type PurchaseInvoice = {
   has_attachment?: boolean;
   attachment_url?: string | null;
   subtotal?: number;
+  discount_amount?: number;
   can_cancel?: boolean;
   items?: {
     id: string;
@@ -114,6 +115,7 @@ type PurchaseInvoice = {
     quantity: number;
     unit_price: number;
     tax_rate: number;
+    discount?: number;
     line_subtotal?: number;
     line_tax?: number;
     line_total: number;
@@ -187,6 +189,9 @@ export default function Page() {
   const [manualInvQty, setManualInvQty] = useState('1');
   const [manualInvPrice, setManualInvPrice] = useState('0');
   const [manualInvTaxRate, setManualInvTaxRate] = useState('');
+  const [manualInvLineDiscount, setManualInvLineDiscount] = useState('0');
+  const [manualInvHeaderDiscount, setManualInvHeaderDiscount] = useState('0');
+  const [grnInvHeaderDiscount, setGrnInvHeaderDiscount] = useState('0');
   const [manualInvRc, setManualInvRc] = useState(false);
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
@@ -523,16 +528,19 @@ export default function Page() {
   async function createInvoiceFromGrn() {
     setError('');
     try {
+      const headerDisc = Math.max(0, Number(grnInvHeaderDiscount) || 0);
       const r = await api('/purchasing/invoices', {
         method: 'POST',
         body: JSON.stringify({
           goods_receipt_id: invoiceGrnId,
           supplier_invoice_number: supplierInvoiceNo || undefined,
+          discount_amount: headerDisc,
         }),
       });
       setMessage(`Invoice ${r.data.invoice_number} drafted`);
       setTab('invoices');
       setSupplierInvoiceNo('');
+      setGrnInvHeaderDiscount('0');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -542,17 +550,21 @@ export default function Page() {
   async function createManualInvoice() {
     setError('');
     try {
+      const lineDisc = Math.max(0, Number(manualInvLineDiscount) || 0);
+      const headerDisc = Math.max(0, Number(manualInvHeaderDiscount) || 0);
       const r = await api('/purchasing/invoices', {
         method: 'POST',
         body: JSON.stringify({
           supplier_id: manualInvSupplierId,
           supplier_invoice_number: supplierInvoiceNo || undefined,
           is_reverse_charge: manualInvRc,
+          discount_amount: headerDisc,
           items: [
             {
               product_id: manualInvProductId,
               quantity: Number(manualInvQty),
               unit_price: Number(manualInvPrice),
+              discount: lineDisc,
               ...(manualInvTaxRate.trim() !== ''
                 ? { tax_rate: Number(manualInvTaxRate) }
                 : {}),
@@ -566,6 +578,8 @@ export default function Page() {
       );
       setTab('invoices');
       setSupplierInvoiceNo('');
+      setManualInvLineDiscount('0');
+      setManualInvHeaderDiscount('0');
       setManualInvRc(false);
       await refresh();
     } catch (err: any) {
@@ -1204,6 +1218,14 @@ export default function Page() {
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
           />
+          <input
+            value={grnInvHeaderDiscount}
+            onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
+            placeholder="Header discount amount"
+            type="number"
+            min={0}
+            step="0.01"
+          />
           <button onClick={createInvoiceFromGrn} disabled={!invoiceGrnId}>
             Draft invoice from GRN
           </button>
@@ -1235,6 +1257,22 @@ export default function Page() {
             value={manualInvTaxRate}
             onChange={(e) => setManualInvTaxRate(e.target.value)}
             placeholder="Tax rate % (blank = auto)"
+          />
+          <input
+            value={manualInvLineDiscount}
+            onChange={(e) => setManualInvLineDiscount(e.target.value)}
+            placeholder="Line discount amount"
+            type="number"
+            min={0}
+            step="0.01"
+          />
+          <input
+            value={manualInvHeaderDiscount}
+            onChange={(e) => setManualInvHeaderDiscount(e.target.value)}
+            placeholder="Header discount amount"
+            type="number"
+            min={0}
+            step="0.01"
           />
           <input
             value={supplierInvoiceNo}
@@ -1737,6 +1775,7 @@ export default function Page() {
                   <th>Qty</th>
                   <th>Unit</th>
                   <th>Tax %</th>
+                  <th>Discount</th>
                   <th>Line tax</th>
                   <th>Line total</th>
                 </tr>
@@ -1748,6 +1787,7 @@ export default function Page() {
                     <td>{it.quantity}</td>
                     <td>{it.unit_price}</td>
                     <td>{it.tax_rate}</td>
+                    <td>{it.discount ?? 0}</td>
                     <td>
                       {it.line_tax ?? 0}
                       {(it.tax_components || []).length
@@ -1769,6 +1809,10 @@ export default function Page() {
               <div className="card">
                 <div className="muted">Tax</div>
                 <div className="kpi">{selectedInvoice.tax_amount ?? 0}</div>
+              </div>
+              <div className="card">
+                <div className="muted">Discount</div>
+                <div className="kpi">{selectedInvoice.discount_amount ?? 0}</div>
               </div>
               <div className="card">
                 <div className="muted">Total</div>

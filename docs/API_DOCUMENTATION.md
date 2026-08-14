@@ -791,6 +791,8 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 **Pay:** `POST /purchases/invoices/{invoice_id}/payments`  
 **Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` — allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted; idempotent when already cancelled. Serialize includes `can_cancel`. Purchasing Invoices UI Cancel (BR-6.5).
 
+Create accepts header `discount_amount` and per-line `discount` (≥0). Line tax is computed on qty×unit_price before line discount; invoice `total_amount` subtracts header discount from gross (or from subtotal when reverse charge). Purchasing create forms + invoice detail show discounts (BR-6.5). PATCH does not update discounts.
+
 Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced invoices copy the PO line snapshot.
 
 Response lines include `line_subtotal`, `line_tax`, and optional `tax_components`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Purchasing → Invoices UI shows per-line tax and by-rate totals when an invoice number is selected.
