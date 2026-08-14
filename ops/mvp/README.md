@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_323_EXIT_CRITERIA.md` / `docs/ADR_654_STAGE323_FREEZE.md` (`backend/tests/test_stage323_exit_h323x.py`) — Stage 323 H323x
+- `docs/STAGE_323_FIDELITY.md` (`backend/tests/test_stage323_fidelity_d1.py`) — Stage 323 D1
+- `docs/STAGE_323_PLAN.md` (`backend/tests/test_stage323_open.py`) — Stage 323 open (ADR-653)
+- `docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/first-tenant-live-onboarding-pack-remaining-gate.json` — Stage 323 I1
+- `docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/first-tenant-live-onboarding-pack-rg-blockers.json` — Stage 323 B1
+- `docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/first-tenant-live-onboarding-pack-rg-pointers.json` — Stage 323 P1
 - `docs/STAGE_322_EXIT_CRITERIA.md` / `docs/ADR_652_STAGE322_FREEZE.md` (`backend/tests/test_stage322_exit_h322x.py`) — Stage 322 H322x
 - `docs/STAGE_322_FIDELITY.md` (`backend/tests/test_stage322_fidelity_d1.py`) — Stage 322 D1
 - `docs/STAGE_322_PLAN.md` (`backend/tests/test_stage322_open.py`) — Stage 322 open (ADR-651)
@@ -5215,6 +5221,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 323 exit
+
+H323x met — `docs/STAGE_323_EXIT_CRITERIA.md`, ADR-654. Stages 1–323 frozen for Stage 323 feature scope.
+
+## Stage 323 D1 — Tenant MVP First Tenant Live Onboarding Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_323_FIDELITY.md` (`test_stage323_fidelity_d1.py`). `FIRST_TENANT_LIVE_ONBOARDING_PACK_*` remaining-gate index; first-tenant live onboarding / go-live still MISSING.
+
+## Stage 323 open
+
+ADR-653 / `docs/STAGE_323_PLAN.md`.
 
 ## Stage 322 exit
 

@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 323 open (2026-08-14):** Tenant MVP First Tenant Live Onboarding Pack Remaining-Gate Index Fidelity — `docs/ADR_653_STAGE323_OPEN.md` + `docs/STAGE_323_PLAN.md` (I1 next).
+
+**Stage 323 I1 (2026-08-14):** First-tenant live onboarding pack remaining-gate index hub (`test_stage323_index_i1.py`).
+
+**Stage 323 B1 (2026-08-14):** First-tenant live onboarding pack blocker matrix (`test_stage323_blockers_b1.py`).
+
+**Stage 323 P1 (2026-08-14):** Stage 194 / Stage 322 / Stage 321 / Stage 195 pointers (`test_stage323_pointers_p1.py`).
+
+**Stage 323 D1 (2026-08-14):** First Tenant Live Onboarding Pack Remaining-Gate Index fidelity sync — `docs/STAGE_323_FIDELITY.md` (`test_stage323_fidelity_d1.py`).
+
+**Stage 323 exit (2026-08-14):** I1, B1, P1, D1, H323x met — `docs/STAGE_323_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_654_STAGE323_FREEZE.md`. Fidelity: `docs/STAGE_323_FIDELITY.md`.
+
 **Stage 322 open (2026-08-14):** Tenant MVP Live Migration Pack Remaining-Gate Index Fidelity — `docs/ADR_651_STAGE322_OPEN.md` + `docs/STAGE_322_PLAN.md` (I1 next).
 
 **Stage 322 I1 (2026-08-14):** Live migration pack remaining-gate index hub (`test_stage322_index_i1.py`).

@@ -1,0 +1,57 @@
+{
+  "id": "first-tenant-live-onboarding-pack-remaining-gate",
+  "stage": 323,
+  "pack": "I1",
+  "doc": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_RG_POINTERS_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "live_migration_pack_remaining_gate": "docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md",
+    "live_dr_pack_remaining_gate": "docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md",
+    "customer_assurance_remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "first_paying_tenant_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage194_first_tenant_live_onboarding_remaining_gate": true,
+  "distinct_from_first_tenant_onboarding_pack": true,
+  "distinct_from_first_tenant_golive_pack": true,
+  "distinct_from_stage322_live_migration_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ftlopr-read-blockers",
+      "title": "Read B1 first-tenant live onboarding pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftlopr-follow-pointers",
+      "title": "Follow P1 Stage 194 / Stage 322 / Stage 321 / Stage 195 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftlopr-onboarding-missing",
+      "title": "Reaffirm first-tenant live onboarding MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftlopr-no-packaging-as-live",
+      "title": "Do not treat Stage 194 / Stage 33 / Stage 66 / Stage 322 as live first-tenant Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftlopr-onboarding-remaining",
+      "title": "First-tenant onboarded / live onboarding / first paying tenant / demo tenant / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 323 I1 first-tenant live onboarding pack remaining-gate index packaging only. Do not claim live first-tenant Complete."
+}

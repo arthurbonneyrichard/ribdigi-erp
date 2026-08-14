@@ -31,3 +31,10 @@ Stage 323 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live migration, production migrate, CI deploy, live DR, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 323 opened under **ADR-653** after CONTINUE/NEXT (Tenant MVP First Tenant Live Onboarding Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-654**. Stage 322 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 323 runner-up outline was approved and opened (ADR-653); freeze ADR-654. Do not reopen Stage 322 scope.
+
