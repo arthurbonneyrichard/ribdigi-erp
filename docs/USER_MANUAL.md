@@ -240,6 +240,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **First-tenant onboarding pack remaining-gate index (Stage 244):** Status index is `docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md` → blockers `docs/FIRST_TENANT_ONBOARDING_PACK_RG_BLOCKERS_MVP.md` → Stage 33/243/194/66 pointers `docs/FIRST_TENANT_ONBOARDING_PACK_RG_POINTERS_MVP.md`. Live onboarding Complete remains MISSING (not claimed). Prefixed `FIRST_TENANT_ONBOARDING_PACK_*` remaining-gate docs (≠ Stage 33 F1 `FIRST_TENANT_ONBOARDING_*` / Stage 194 `FIRST_TENANT_LIVE_ONBOARDING_*`).
 
+**First-tenant go-live pack remaining-gate index (Stage 245):** Status index is `docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/FIRST_TENANT_GOLIVE_PACK_RG_BLOCKERS_MVP.md` → Stage 66/244/194/180 pointers `docs/FIRST_TENANT_GOLIVE_PACK_RG_POINTERS_MVP.md`. First paying tenant Complete and go-live Complete remain MISSING (not claimed). Prefixed `FIRST_TENANT_GOLIVE_PACK_*` remaining-gate docs (≠ Stage 66 T1 `FIRST_TENANT_GOLIVE_*` / Stage 180 `GOLIVE_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

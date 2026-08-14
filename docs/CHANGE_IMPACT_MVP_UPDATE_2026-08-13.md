@@ -392,3 +392,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 244 decision (opened after Stage 243 freeze)
 
 **Tenant MVP First-Tenant Onboarding Pack Remaining-Gate Index Fidelity** — first-tenant onboarding pack remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 243 / Stage 194 / Stage 66 pointers with explicit non-claim (P1). Prefixed `FIRST_TENANT_ONBOARDING_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 33 F1 `FIRST_TENANT_ONBOARDING_*` / Stage 194 `FIRST_TENANT_LIVE_ONBOARDING_*`). Live onboarding Completes remain deferred (Stage 245+). Distinct from Stage 243 professional services SOW pack remaining-gate, Stage 194 first-tenant live onboarding remaining-gate, and Stage 33 F1 first-tenant onboarding packaging. Open ADR-495 / freeze ADR-496.
+
+## Stage 245 decision (opened after Stage 244 freeze)
+
+**Tenant MVP First-Tenant Go-Live Pack Remaining-Gate Index Fidelity** — first-tenant go-live pack remaining-gate hub (I1), blocker matrix (B1), Stage 66 / Stage 244 / Stage 194 / Stage 180 pointers with explicit non-claim (P1). Prefixed `FIRST_TENANT_GOLIVE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 66 T1 `FIRST_TENANT_GOLIVE_*` / Stage 180 `GOLIVE_*` / Stage 194 `FIRST_TENANT_LIVE_ONBOARDING_*`). First paying tenant / go-live Completes remain deferred (Stage 246+). Distinct from Stage 244 first-tenant onboarding pack remaining-gate, Stage 194 first-tenant live onboarding remaining-gate, and Stage 66 T1 first-tenant go-live packaging. Open ADR-497 / freeze ADR-498.

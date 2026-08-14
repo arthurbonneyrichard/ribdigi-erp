@@ -27,3 +27,9 @@ Stage 244 Tenant MVP First-Tenant Onboarding Pack Remaining-Gate Index Fidelity 
 Stage 245 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 244 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP First-Tenant Go-Live Pack Remaining-Gate Index Fidelity — single index of first-tenant-golive-pack blockers (packaged Stage 66 T1 first-tenant go-live materials non-claim as live go-live Complete) with explicit non-claim. Prefixed `FIRST_TENANT_GOLIVE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 244 first-tenant onboarding pack remaining-gate and Stage 194 first-tenant live onboarding remaining-gate.
+
+## Amendment — Stage 245 opened
+
+Stage 245 opened under **ADR-497** after CONTINUE/NEXT (First-Tenant Go-Live Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-498**. Stage 244 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 245 runner-up outline was approved and opened (ADR-497); freeze ADR-498. Do not reopen Stage 244 scope.

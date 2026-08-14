@@ -3551,3 +3551,15 @@ Every feature in every phase must meet:
 **Stage 244 D1 (2026-08-14):** First-Tenant Onboarding Pack Remaining-Gate Index fidelity sync — `docs/STAGE_244_FIDELITY.md` (`test_stage244_fidelity_d1.py`).
 
 **Stage 244 exit (2026-08-14):** I1, B1, P1, D1, H244x met — `docs/STAGE_244_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_496_STAGE244_FREEZE.md`. Fidelity: `docs/STAGE_244_FIDELITY.md`.
+
+**Stage 245 open (2026-08-14):** Tenant MVP First-Tenant Go-Live Pack Remaining-Gate Index Fidelity — `docs/ADR_497_STAGE245_OPEN.md` + `docs/STAGE_245_PLAN.md` (I1 next).
+
+**Stage 245 I1 (2026-08-14):** First-tenant go-live pack remaining-gate index hub (`test_stage245_index_i1.py`).
+
+**Stage 245 B1 (2026-08-14):** First-tenant go-live pack blocker matrix (`test_stage245_blockers_b1.py`).
+
+**Stage 245 P1 (2026-08-14):** Stage 66 / Stage 244 / Stage 194 / Stage 180 pointers (`test_stage245_pointers_p1.py`).
+
+**Stage 245 D1 (2026-08-14):** First-Tenant Go-Live Pack Remaining-Gate Index fidelity sync — `docs/STAGE_245_FIDELITY.md` (`test_stage245_fidelity_d1.py`).
+
+**Stage 245 exit (2026-08-14):** I1, B1, P1, D1, H245x met — `docs/STAGE_245_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_498_STAGE245_FREEZE.md`. Fidelity: `docs/STAGE_245_FIDELITY.md`.

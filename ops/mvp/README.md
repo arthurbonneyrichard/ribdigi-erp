@@ -898,6 +898,12 @@ Authoritative MVP docs:
 - `docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/first-tenant-onboarding-pack-remaining-gate.json` — Stage 244 I1
 - `docs/FIRST_TENANT_ONBOARDING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/first-tenant-onboarding-pack-rg-blockers.json` — Stage 244 B1
 - `docs/FIRST_TENANT_ONBOARDING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/first-tenant-onboarding-pack-rg-pointers.json` — Stage 244 P1
+- `docs/STAGE_245_EXIT_CRITERIA.md` / `docs/ADR_498_STAGE245_FREEZE.md` (`backend/tests/test_stage245_exit_h245x.py`) — Stage 245 H245x
+- `docs/STAGE_245_FIDELITY.md` (`backend/tests/test_stage245_fidelity_d1.py`) — Stage 245 D1
+- `docs/STAGE_245_PLAN.md` (`backend/tests/test_stage245_open.py`) — Stage 245 open (ADR-497)
+- `docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/first-tenant-golive-pack-remaining-gate.json` — Stage 245 I1
+- `docs/FIRST_TENANT_GOLIVE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/first-tenant-golive-pack-rg-blockers.json` — Stage 245 B1
+- `docs/FIRST_TENANT_GOLIVE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/first-tenant-golive-pack-rg-pointers.json` — Stage 245 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4291,4 +4297,16 @@ H244x met — `docs/STAGE_244_EXIT_CRITERIA.md`, ADR-496. Stages 1–244 frozen 
 ## Stage 244 open
 
 `docs/ADR_495_STAGE244_OPEN.md` + `docs/STAGE_244_PLAN.md` (`test_stage244_open.py`).
+
+## Stage 245 exit
+
+H245x met — `docs/STAGE_245_EXIT_CRITERIA.md`, ADR-498. Stages 1–245 frozen for Stage 245 feature scope.
+
+## Stage 245 D1 — Tenant MVP First-Tenant Go-Live Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_245_FIDELITY.md` (`test_stage245_fidelity_d1.py`). `FIRST_TENANT_GOLIVE_PACK_*` remaining-gate index; first paying tenant / go-live still MISSING.
+
+## Stage 245 open
+
+`docs/ADR_497_STAGE245_OPEN.md` + `docs/STAGE_245_PLAN.md` (`test_stage245_open.py`).
 

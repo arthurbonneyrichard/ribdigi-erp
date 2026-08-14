@@ -1,0 +1,57 @@
+{
+  "id": "first-tenant-golive-pack-remaining-gate",
+  "stage": 245,
+  "pack": "I1",
+  "doc": "docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/FIRST_TENANT_GOLIVE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/FIRST_TENANT_GOLIVE_PACK_RG_POINTERS_MVP.md",
+    "first_tenant_golive": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+    "first_tenant_onboarding_pack_remaining_gate": "docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "first_tenant_golive_register": "ops/mvp/first-tenant-golive.json"
+  },
+  "packaging_complete": true,
+  "first_paying_tenant_claimed": false,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage66_t1_first_tenant_golive": true,
+  "distinct_from_stage244_first_tenant_onboarding_pack_remaining_gate": true,
+  "distinct_from_stage194_first_tenant_live_onboarding_remaining_gate": true,
+  "distinct_from_stage180_golive_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ftgpr-read-blockers",
+      "title": "Read B1 first-tenant go-live pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgpr-follow-pointers",
+      "title": "Follow P1 Stage 66 / Stage 244 / Stage 194 / Stage 180 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgpr-golive-missing",
+      "title": "Reaffirm first paying tenant / go-live MISSING until a real paying commercial tenant succeeds",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgpr-no-packaging-as-live",
+      "title": "Do not treat Stage 66 T1 / Stage 244 as go-live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgpr-golive-remaining",
+      "title": "First paying tenant / live onboarding / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 245 I1 first-tenant go-live pack remaining-gate index packaging only. Do not claim first paying tenant or go-live Complete."
+}
