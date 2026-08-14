@@ -989,6 +989,7 @@ class AccountingSettingsUpdate(BaseModel):
 
 class PosSettingsUpdate(BaseModel):
     pos_sale_numbering: DocumentNumberingFields | None = None
+    pos_session_numbering: DocumentNumberingFields | None = None
 
 
 class PrintBrandingUpdate(BaseModel):

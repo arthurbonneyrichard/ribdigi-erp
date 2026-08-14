@@ -538,7 +538,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Cashier accountability and reconciliation.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] **Shift Opening:** Record opening cash float, timestamp, cashier (`POST /pos/sessions/open`)
+  - [x] **Shift Opening:** Record opening cash float, timestamp, cashier (`POST /pos/sessions/open`; `session_number` via tenant series `GET|PATCH /pos/settings` → `pos_session_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `SHIFT`; POS Document numbering Shift row)
   - [x] **Shift Closing:** Record closing cash, card total, other payments (`POST /pos/sessions/{id}/close`; card/other from session tender totals)
   - [x] **Cash Reconciliation:** System sales vs actual cash; variance reporting (expected vs actual + `shift_variance` notification)
   - [x] **Shift Report:** Sales summary, returns, discounts, payment breakdown (`GET /pos/sessions/{id}/report` with `summary` / `returns`)
@@ -995,7 +995,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal, POS sale numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE; `GET|PATCH /pos/settings` for POS)
+  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal, POS sale/shift numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE; `GET|PATCH /pos/settings` for POS sale + SHIFT session)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

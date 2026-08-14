@@ -108,6 +108,12 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.Transaction,
         "field": "reference",
     },
+    "pos_session": {
+        "default_prefix": "SHIFT",
+        "storage": "json",
+        "model": m.PosSession,
+        "field": "session_number",
+    },
 }
 
 # Back-compat aliases
@@ -250,6 +256,11 @@ async def next_daily_number(
 async def next_pos_sale_number(db: AsyncSession, tenant_id: str) -> str:
     """Allocate next POS sale reference from tenant year series (default POS-YYYY-NNNN)."""
     return await next_series_document_number(db, tenant_id, "pos_sale")
+
+
+async def next_pos_session_number(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate next POS shift session number (default SHIFT-YYYY-NNNN)."""
+    return await next_series_document_number(db, tenant_id, "pos_session")
 
 
 async def next_series_document_number(db: AsyncSession, tenant_id: str, kind: str) -> str:

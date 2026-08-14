@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.doc_numbers import next_pos_sale_number  # re-exported for API callers
+from app.doc_numbers import next_pos_sale_number, next_pos_session_number  # re-exported for API callers
 
 
 def compute_expected_cash(opening_cash: float, cash_sales: float) -> float:
@@ -28,12 +28,7 @@ def normalize_payment_method(method: str | None) -> str:
 
 
 async def next_session_number(db: AsyncSession, tenant_id: str) -> str:
-    count = len(
-        (
-            await db.execute(select(m.PosSession.id).where(m.PosSession.tenant_id == tenant_id))
-        ).scalars().all()
-    )
-    return f"POS-{datetime.utcnow():%Y%m%d}-{count + 1:04d}"
+    return await next_pos_session_number(db, tenant_id)
 
 
 async def get_session(db: AsyncSession, tenant_id: str, session_id: str) -> m.PosSession:
