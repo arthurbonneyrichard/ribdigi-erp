@@ -745,29 +745,24 @@ async def create_grn(
         )
 
         if accepted_qty > 0:
-            from app.uom import to_stock_qty
+            from app.catalog import stock_in_with_batch
 
-            product = await db.get(m.Product, po_item.product_id)
-            if not product or product.tenant_id != tenant_id:
-                raise HTTPException(status_code=404, detail="Product not found for GRN line")
-            stock_qty, _entered_unit, _entered = await to_stock_qty(
+            batch_number = (raw.get("batch_number") or "").strip() or None
+            await stock_in_with_batch(
                 db,
                 tenant_id=tenant_id,
-                quantity=accepted_qty,
-                from_unit_id=line_unit_id,
-                product=product,
-            )
-            await apply_stock_change(
-                db,
-                tenant_id=tenant_id,
-                product_id=po_item.product_id,
-                quantity_delta=stock_qty,
-                movement_type="stock_in",
                 user_id=user_id,
+                product_id=po_item.product_id,
+                quantity=accepted_qty,
+                unit_id=line_unit_id,
+                notes=f"GRN {grn.grn_number}",
+                warehouse_id=grn.warehouse_id,
+                batch_number=batch_number,
+                manufacturing_date=raw.get("manufacturing_date"),
+                expiry_date=raw.get("expiry_date"),
+                movement_type="stock_in",
                 reference_type="grn",
                 reference_id=grn.id,
-                warehouse_id=grn.warehouse_id,
-                notes=f"GRN {grn.grn_number}",
             )
             accepted_value += accepted_qty * float(po_item.unit_price) * (1 + float(po_item.tax_rate or 0) / 100.0)
 
@@ -831,6 +826,55 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
             )
         )
     ).scalars().all()
+    movements = (
+        await db.execute(
+            select(m.StockMovement).where(
+                m.StockMovement.tenant_id == grn.tenant_id,
+                m.StockMovement.reference_type == "grn",
+                m.StockMovement.reference_id == grn.id,
+            )
+        )
+    ).scalars().all()
+    batch_ids = {mv.batch_id for mv in movements if mv.batch_id}
+    batches: dict[str, m.ProductBatch] = {}
+    if batch_ids:
+        rows = (
+            await db.execute(select(m.ProductBatch).where(m.ProductBatch.id.in_(batch_ids)))
+        ).scalars().all()
+        batches = {b.id: b for b in rows}
+    used_mv: set[str] = set()
+
+    def _batch_fields_for(item: m.GoodsReceiptItem) -> dict:
+        if float(item.accepted_qty or 0) <= 0:
+            return {
+                "batch_number": None,
+                "manufacturing_date": None,
+                "expiry_date": None,
+            }
+        for mv in movements:
+            if mv.id in used_mv:
+                continue
+            if mv.product_id != item.product_id:
+                continue
+            used_mv.add(mv.id)
+            batch = batches.get(mv.batch_id) if mv.batch_id else None
+            if not batch:
+                return {
+                    "batch_number": None,
+                    "manufacturing_date": None,
+                    "expiry_date": None,
+                }
+            return {
+                "batch_number": batch.batch_number,
+                "manufacturing_date": batch.manufacturing_date,
+                "expiry_date": batch.expiry_date,
+            }
+        return {
+            "batch_number": None,
+            "manufacturing_date": None,
+            "expiry_date": None,
+        }
+
     return {
         "id": grn.id,
         "grn_number": grn.grn_number,
@@ -850,6 +894,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
                 "accepted_qty": float(i.accepted_qty),
                 "rejected_qty": float(i.rejected_qty),
                 "rejection_reason": i.rejection_reason,
+                **_batch_fields_for(i),
             }
             for i in items
         ],

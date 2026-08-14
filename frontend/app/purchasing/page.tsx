@@ -14,7 +14,7 @@ type Supplier = {
   category?: string | null;
   status?: string | null;
 };
-type Product = { id: string; name: string; sku: string; cost_price: number };
+type Product = { id: string; name: string; sku: string; cost_price: number; tracks_batches?: boolean };
 type PurchaseRequest = {
   id: string;
   request_number: string;
@@ -73,6 +73,9 @@ type GrnItem = {
   received_qty: number;
   rejected_qty?: number;
   rejection_reason?: string | null;
+  batch_number?: string | null;
+  manufacturing_date?: string | null;
+  expiry_date?: string | null;
 };
 type Grn = {
   id: string;
@@ -142,7 +145,18 @@ export default function Page() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [receiveDrafts, setReceiveDrafts] = useState<
-    Record<string, { received: string; accepted: string; rejected: string; reason: string }>
+    Record<
+      string,
+      {
+        received: string;
+        accepted: string;
+        rejected: string;
+        reason: string;
+        batch: string;
+        mfg: string;
+        expiry: string;
+      }
+    >
   >({});
   const [supplierId, setSupplierId] = useState('');
   const [supplierName, setSupplierName] = useState('');
@@ -371,11 +385,29 @@ export default function Page() {
 
   function openAmend(po: PurchaseOrder) {
     setSelected(po);
-    const drafts: Record<string, { received: string; accepted: string; rejected: string; reason: string }> =
-      {};
+    const drafts: Record<
+      string,
+      {
+        received: string;
+        accepted: string;
+        rejected: string;
+        reason: string;
+        batch: string;
+        mfg: string;
+        expiry: string;
+      }
+    > = {};
     for (const i of po.items.filter((x) => x.outstanding_qty > 0)) {
       const out = String(i.outstanding_qty);
-      drafts[i.id] = { received: out, accepted: out, rejected: '0', reason: '' };
+      drafts[i.id] = {
+        received: out,
+        accepted: out,
+        rejected: '0',
+        reason: '',
+        batch: '',
+        mfg: '',
+        expiry: '',
+      };
     }
     setReceiveDrafts(drafts);
     const line = po.items?.[0];
@@ -426,12 +458,30 @@ export default function Page() {
     try {
       const items = po.items
         .filter((i) => i.outstanding_qty > 0)
-        .map((i) => ({
-          po_item_id: i.id,
-          received_qty: i.outstanding_qty,
-          accepted_qty: i.outstanding_qty,
-          rejected_qty: 0,
-        }));
+        .map((i) => {
+          const d = receiveDrafts[i.id] || {
+            received: String(i.outstanding_qty),
+            accepted: String(i.outstanding_qty),
+            rejected: '0',
+            reason: '',
+            batch: '',
+            mfg: '',
+            expiry: '',
+          };
+          const product = products.find((p) => p.id === i.product_id);
+          if (product?.tracks_batches && !(d.batch || '').trim()) {
+            throw new Error(`Batch number required for ${product.name || i.product_id}`);
+          }
+          return {
+            po_item_id: i.id,
+            received_qty: i.outstanding_qty,
+            accepted_qty: i.outstanding_qty,
+            rejected_qty: 0,
+            batch_number: d.batch.trim() || undefined,
+            manufacturing_date: d.mfg.trim() || undefined,
+            expiry_date: d.expiry.trim() || undefined,
+          };
+        });
       if (!items.length) {
         setError('Nothing left to receive');
         return;
@@ -463,16 +513,26 @@ export default function Page() {
             accepted: String(i.outstanding_qty),
             rejected: '0',
             reason: '',
+            batch: '',
+            mfg: '',
+            expiry: '',
           };
           const received_qty = Number(d.received) || 0;
           const accepted_qty = Number(d.accepted) || 0;
           const rejected_qty = Number(d.rejected) || 0;
+          const product = products.find((p) => p.id === i.product_id);
+          if (accepted_qty > 0 && product?.tracks_batches && !(d.batch || '').trim()) {
+            throw new Error(`Batch number required for ${product.name || i.product_id}`);
+          }
           return {
             po_item_id: i.id,
             received_qty,
             accepted_qty,
             rejected_qty,
             rejection_reason: d.reason.trim() || undefined,
+            batch_number: d.batch.trim() || undefined,
+            manufacturing_date: d.mfg.trim() || undefined,
+            expiry_date: d.expiry.trim() || undefined,
           };
         })
         .filter((i) => i.received_qty > 0);
@@ -493,11 +553,29 @@ export default function Page() {
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
-      const drafts: Record<string, { received: string; accepted: string; rejected: string; reason: string }> =
-        {};
+      const drafts: Record<
+        string,
+        {
+          received: string;
+          accepted: string;
+          rejected: string;
+          reason: string;
+          batch: string;
+          mfg: string;
+          expiry: string;
+        }
+      > = {};
       for (const i of (updated.data.items || []).filter((x: PoItem) => x.outstanding_qty > 0)) {
         const out = String(i.outstanding_qty);
-        drafts[i.id] = { received: out, accepted: out, rejected: '0', reason: '' };
+        drafts[i.id] = {
+          received: out,
+          accepted: out,
+          rejected: '0',
+          reason: '',
+          batch: '',
+          mfg: '',
+          expiry: '',
+        };
       }
       setReceiveDrafts(drafts);
       setTab('grn');
@@ -1408,6 +1486,9 @@ export default function Page() {
                         <th>Accept</th>
                         <th>Reject</th>
                         <th>Reject reason</th>
+                        <th>Batch</th>
+                        <th>Mfg</th>
+                        <th>Expiry</th>
                       </>
                     )}
                   </tr>
@@ -1419,10 +1500,14 @@ export default function Page() {
                       accepted: String(i.outstanding_qty),
                       rejected: '0',
                       reason: '',
+                      batch: '',
+                      mfg: '',
+                      expiry: '',
                     };
                     const receivable =
                       (selected.status === 'sent' || selected.status === 'partially_received') &&
                       i.outstanding_qty > 0;
+                    const tracks = products.find((p) => p.id === i.product_id)?.tracks_batches;
                     return (
                       <tr key={i.id}>
                         <td>{i.product_id}</td>
@@ -1497,6 +1582,57 @@ export default function Page() {
                                 '—'
                               )}
                             </td>
+                            <td>
+                              {receivable ? (
+                                <input
+                                  style={{ minWidth: 100 }}
+                                  value={draft.batch}
+                                  placeholder={tracks ? 'Batch required' : 'Batch (opt)'}
+                                  onChange={(e) =>
+                                    setReceiveDrafts((prev) => ({
+                                      ...prev,
+                                      [i.id]: { ...draft, batch: e.target.value },
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td>
+                              {receivable ? (
+                                <input
+                                  style={{ width: 120 }}
+                                  type="date"
+                                  value={draft.mfg}
+                                  onChange={(e) =>
+                                    setReceiveDrafts((prev) => ({
+                                      ...prev,
+                                      [i.id]: { ...draft, mfg: e.target.value },
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td>
+                              {receivable ? (
+                                <input
+                                  style={{ width: 120 }}
+                                  type="date"
+                                  value={draft.expiry}
+                                  onChange={(e) =>
+                                    setReceiveDrafts((prev) => ({
+                                      ...prev,
+                                      [i.id]: { ...draft, expiry: e.target.value },
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                '—'
+                              )}
+                            </td>
                           </>
                         )}
                       </tr>
@@ -1514,7 +1650,8 @@ export default function Page() {
                       Receive all accepted
                     </button>
                     <span className="muted">
-                      Rejected qty requires a reason; only accepted qty is stocked.
+                      Rejected qty requires a reason; only accepted qty is stocked. Batch/expiry apply to
+                      accepted stock (required when product tracks batches).
                     </span>
                   </div>
                 )}
@@ -1598,6 +1735,7 @@ export default function Page() {
               <th>Lines</th>
               <th>Accepted</th>
               <th>Rejected</th>
+              <th>Batches</th>
               <th>Reject reasons</th>
             </tr>
           </thead>
@@ -1609,6 +1747,13 @@ export default function Page() {
                 .filter((i) => (i.rejected_qty || 0) > 0 && i.rejection_reason)
                 .map((i) => i.rejection_reason)
                 .join('; ');
+              const batches = (g.items || [])
+                .filter((i) => i.batch_number)
+                .map((i) => {
+                  const exp = i.expiry_date ? String(i.expiry_date).slice(0, 10) : '';
+                  return exp ? `${i.batch_number} (exp ${exp})` : i.batch_number;
+                })
+                .join('; ');
               return (
                 <tr key={g.id}>
                   <td>{g.grn_number}</td>
@@ -1617,6 +1762,7 @@ export default function Page() {
                   <td>{g.items?.length || 0}</td>
                   <td>{accepted}</td>
                   <td>{rejected}</td>
+                  <td>{batches || '—'}</td>
                   <td>{reasons || '—'}</td>
                 </tr>
               );
