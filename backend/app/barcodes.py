@@ -217,16 +217,60 @@ async def assert_barcode_unique(
     tenant_id: str,
     barcode_value: str,
     exclude_product_id: str | None = None,
+    exclude_variant_id: str | None = None,
 ) -> None:
-    stmt = select(m.Product).where(
+    """Ensure barcode is unique across products and variants in the tenant."""
+    pstmt = select(m.Product).where(
         m.Product.tenant_id == tenant_id,
         m.Product.barcode == barcode_value,
     )
     if exclude_product_id:
-        stmt = stmt.where(m.Product.id != exclude_product_id)
-    clash = (await db.execute(stmt)).scalar_one_or_none()
-    if clash:
-        raise HTTPException(status_code=409, detail="Barcode already assigned to another product")
+        pstmt = pstmt.where(m.Product.id != exclude_product_id)
+    if (await db.execute(pstmt)).scalar_one_or_none():
+        raise HTTPException(
+            status_code=409, detail="Barcode already assigned to another product"
+        )
+
+    vstmt = select(m.ProductVariant).where(
+        m.ProductVariant.tenant_id == tenant_id,
+        m.ProductVariant.barcode == barcode_value,
+    )
+    if exclude_variant_id:
+        vstmt = vstmt.where(m.ProductVariant.id != exclude_variant_id)
+    if (await db.execute(vstmt)).scalar_one_or_none():
+        raise HTTPException(
+            status_code=409, detail="Barcode already assigned to another variant"
+        )
+
+
+async def allocate_unique_barcode(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    sku: str,
+    symbology: str,
+    seed: str,
+    exclude_product_id: str | None = None,
+    exclude_variant_id: str | None = None,
+) -> str:
+    sym = normalize_symbology(symbology)
+    for i in range(0, 50):
+        try_code = suggest_barcode(sku, symbology=sym, seed=seed, attempt=i)
+        try_code = normalize_barcode(try_code, symbology=sym)
+        assert try_code
+        try:
+            await assert_barcode_unique(
+                db,
+                tenant_id=tenant_id,
+                barcode_value=try_code,
+                exclude_product_id=exclude_product_id,
+                exclude_variant_id=exclude_variant_id,
+            )
+            return try_code
+        except HTTPException as exc:
+            if exc.status_code != 409:
+                raise
+    raise HTTPException(status_code=409, detail="Could not allocate a unique barcode")
 
 
 def label_html(

@@ -507,7 +507,8 @@ Product responses include `stock_qty`, `reorder_level`, plus traffic-light field
 - `POST /products/{id}/barcode/generate?symbology=code128|ean13|upca&force=false` — Code 128 from SKU; EAN-13 / UPC-A allocate unique internal GTINs (prefixes `200` / `2`) with valid check digits. Response includes `symbology`.  
 - `GET /products/{id}/barcode.png?symbology=` — PNG render (auto-detects EAN-13/UPC-A from digits when omitted).  
 - `GET /products/{id}/barcode/label?copies=&symbology=` — printable HTML labels.  
-Assigning a 12/13-digit barcode via create/PATCH validates the check digit.
+- Variant equivalents: `POST|GET /products/{pid}/variants/{vid}/barcode/generate|png|label` (same symbology query params). Inventory Variants tab: barcode column + Generate/Label.  
+Barcodes are unique across **products and variants** in the tenant (409 on clash). Assigning a 12/13-digit barcode via create/PATCH validates the check digit.
 
 ### 5.5 Stock Operations
 

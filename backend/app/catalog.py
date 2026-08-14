@@ -231,12 +231,20 @@ async def create_variant(
         await assert_sku_available(db, tenant_id, sku_norm)
     sku = sku_norm
 
+    from app import barcodes as barcodes_svc
+
+    barcode_norm = barcodes_svc.normalize_barcode(barcode)
+    if barcode_norm:
+        await barcodes_svc.assert_barcode_unique(
+            db, tenant_id=tenant_id, barcode_value=barcode_norm
+        )
+
     variant = m.ProductVariant(
         tenant_id=tenant_id,
         product_id=product.id,
         name=name,
         sku=sku,
-        barcode=_clean_attr(barcode),
+        barcode=barcode_norm,
         size=_clean_attr(size),
         color=_clean_attr(color),
         flavor=_clean_attr(flavor),
@@ -296,7 +304,17 @@ async def update_variant(
     if clear_barcode:
         variant.barcode = None
     elif barcode is not None:
-        variant.barcode = barcode.strip() or None
+        from app import barcodes as barcodes_svc
+
+        barcode_norm = barcodes_svc.normalize_barcode(barcode)
+        if barcode_norm:
+            await barcodes_svc.assert_barcode_unique(
+                db,
+                tenant_id=tenant_id,
+                barcode_value=barcode_norm,
+                exclude_variant_id=variant.id,
+            )
+        variant.barcode = barcode_norm
     if clear_size:
         variant.size = None
     elif size is not None:
