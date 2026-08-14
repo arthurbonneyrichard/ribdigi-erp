@@ -17,6 +17,7 @@ export default function Page() {
   const [includeOpenPr, setIncludeOpenPr] = useState(false);
   const [lastDocExtract, setLastDocExtract] = useState<any | null>(null);
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
+  const [draftPiBusy, setDraftPiBusy] = useState(false);
 
   async function go() {
     setError('');
@@ -294,6 +295,42 @@ export default function Page() {
     }
   }
 
+  async function createDraftPurchaseInvoiceFromDoc() {
+    const poMatch = lastDocExtract?.matches?.purchase_orders?.[0];
+    if (!poMatch?.purchase_order_id) {
+      setError('No matched purchase order — analyze an invoice that references a PO number first');
+      return;
+    }
+    const ex = lastDocExtract?.extracted || {};
+    setError('');
+    setMessage('');
+    setDraftPiBusy(true);
+    try {
+      const r = await api('/ai/documents/create-purchase-invoice', {
+        method: 'POST',
+        body: JSON.stringify({
+          purchase_order_id: poMatch.purchase_order_id,
+          supplier_id: poMatch.supplier_id || null,
+          supplier_invoice_number: ex.reference || null,
+          notes: ex.description || null,
+          invoice_date: ex.expense_date || null,
+          is_reverse_charge: false,
+        }),
+      });
+      const inv = r.data?.purchase_invoice || r.data;
+      const poNum = r.data?.po_number || poMatch.po_number || '';
+      setMessage(
+        `Draft purchase invoice ${inv?.invoice_number || inv?.id || ''} created from ${poNum} (${inv?.status || 'draft'}) — open Purchasing → Invoices to review/approve.`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to create draft purchase invoice');
+    } finally {
+      setDraftPiBusy(false);
+    }
+  }
+
+  const hasPoMatch = Boolean(lastDocExtract?.matches?.purchase_orders?.[0]?.purchase_order_id);
+
   return (
     <Shell>
       <h1>AI Business Assistant</h1>
@@ -331,6 +368,14 @@ export default function Page() {
             title="Creates a pending expense from the last Analyze document result (requires expenses:write)"
           >
             {draftExpenseBusy ? 'Creating draft expense…' : 'Create draft expense'}
+          </button>
+          <button
+            type="button"
+            onClick={createDraftPurchaseInvoiceFromDoc}
+            disabled={draftPiBusy || !hasPoMatch}
+            title="Creates a draft purchase invoice by copying lines from the top matched PO (requires purchasing:write)"
+          >
+            {draftPiBusy ? 'Creating draft PI…' : 'Create draft purchase invoice'}
           </button>
           <button onClick={loadInsights}>Load insights</button>
           <button onClick={loadInventoryPredictions} disabled={predBusy}>

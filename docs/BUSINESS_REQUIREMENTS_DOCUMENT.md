@@ -1103,6 +1103,8 @@ All modules listed in Section 4 are within MVP scope, including:
     - Complete (MVP): missing fields, low confidence, amount/PO mismatches, duplicate supplier/expense references
   - [x] Save reviewed extract as draft expense
     - Complete (MVP): `POST /ai/documents/create-expense` + AI **Create draft expense**; requires `expenses:write`; analyze remains suggest-only
+  - [x] Save reviewed extract as draft purchase invoice (PO-matched)
+    - Complete (MVP): `POST /ai/documents/create-purchase-invoice` + AI **Create draft purchase invoice**; copies PO lines; requires `purchasing:write`; no line-item OCR
 
 #### BR-21.9 AI Customer Assistant (Basic)
 - **Description:** Customer intelligence.
