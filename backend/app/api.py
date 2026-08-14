@@ -9089,6 +9089,7 @@ async def calculate_tax(
 async def reports_tax(
     from_date: str | None = None,
     to_date: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9098,6 +9099,7 @@ async def reports_tax(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=store_id or None,
         )
     )
 
@@ -9107,6 +9109,7 @@ async def reports_tax_filing(
     from_date: str | None = None,
     to_date: str | None = None,
     jurisdiction: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9122,6 +9125,7 @@ async def reports_tax_filing(
                 from_date=fd,
                 to_date=td,
                 jurisdiction=jurisdiction,
+                store_id=store_id or None,
             )
         )
     # Default: neutral pack + government section for tenant jurisdiction when supported
@@ -9135,12 +9139,17 @@ async def reports_tax_filing(
                 from_date=fd,
                 to_date=td,
                 jurisdiction=juris,
+                store_id=store_id or None,
             )
         )
     except HTTPException as exc:
         if exc.status_code == 400:
             pack = await tax_svc.tax_filing_pack(
-                db, claims["tenant_id"], from_date=fd, to_date=td
+                db,
+                claims["tenant_id"],
+                from_date=fd,
+                to_date=td,
+                store_id=store_id or None,
             )
             pack["jurisdiction"] = juris
             pack["government"] = None
