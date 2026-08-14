@@ -551,6 +551,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             department_id=department_id or None,
+            store_id=store_id or None,
         )
     if report_type == "sales_customers":
         return await reports_svc.sales_by_customer(

@@ -640,11 +640,31 @@ async def sales_by_salesperson(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     department_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    """Aggregate posted invoices + POS sales by salesperson (invoice created_by / POS session user)."""
+    """Aggregate posted invoices + POS sales by salesperson (invoice created_by / POS session user).
+
+    Optional ``store_id`` scopes invoices by ``SalesInvoice.store_id`` and POS by session store.
+    """
     dept_id, dept_name, dept_user_ids = await _resolve_department_filter(
         db, tenant_id, department_id
     )
+    store_name = None
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.id == store_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Store not found")
+        store_id = store.id
+        store_name = store.name
 
     def _bucket(agg: dict[str, dict], user_id: str | None) -> dict:
         key = user_id or "unknown"
@@ -680,6 +700,8 @@ async def sales_by_salesperson(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
     if dept_user_ids is not None:
         if not dept_user_ids:
             inv_stmt = inv_stmt.where(m.SalesInvoice.id == None)  # noqa: E711 — empty dept membership
@@ -708,6 +730,8 @@ async def sales_by_salesperson(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if store_id:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
     if dept_user_ids is not None:
         if not dept_user_ids:
             pos_stmt = pos_stmt.where(m.Transaction.id == None)  # noqa: E711
@@ -768,6 +792,8 @@ async def sales_by_salesperson(
         "to_date": to_date,
         "department_id": dept_id,
         "department_name": dept_name,
+        "store_id": store_id,
+        "store_name": store_name,
         "salespeople": salespeople,
         "total_revenue": round(sum(s["revenue"] for s in salespeople), 2),
         "total_sales": sum(s["sale_count"] for s in salespeople),
