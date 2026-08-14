@@ -4135,3 +4135,227 @@ async def test_phase27_create_fk_and_scan_scope(client, db_session):
     await db_session.refresh(quote_a)
     assert quote_b.status == "sent"
     assert quote_a.status == "expired"
+
+
+@pytest.mark.asyncio
+async def test_phase28_scan_warehouse_coa_uom_scope(client, db_session):
+    """Phase 28: scan scope, warehouse/COA/UoM FK, expense category GL."""
+    from datetime import datetime, timedelta
+
+    from app import accounting as accounting_svc
+
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P28B",
+        name="Alpha Phase28 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P28 Customer B",
+        status="active",
+        credit_limit=50,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P28 Product B",
+        sku="P28-SKU-B",
+        selling_price=4,
+        cost_price=1,
+        stock_qty=10,
+        is_active=True,
+    )
+    store_b = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P28SB",
+        name="P28 Store B",
+        is_active=True,
+    )
+    wh_b = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P28WB",
+        name="P28 WH B",
+        is_active=True,
+    )
+    unit_b = m.UnitOfMeasure(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P28BX",
+        name="P28 Box",
+        conversion_factor=1,
+        is_active=True,
+    )
+    cat_b = m.ExpenseCategory(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P28CAT",
+        name="P28 Only Cat",
+        budget_amount=100,
+        is_active=True,
+    )
+    db_session.add_all([cust_b, prod_b, store_b, wh_b, unit_b, cat_b])
+    await db_session.flush()
+    wh_b.store_id = store_b.id
+
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=c_b.id
+    )
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=seed["c1"].id
+    )
+    exp_acct_b = await accounting_svc.get_account_by_code(
+        db_session, seed["t1"].id, "6000", company_id=c_b.id
+    )
+    parent_b = await accounting_svc.get_account_by_code(
+        db_session, seed["t1"].id, "1000", company_id=c_b.id
+    )
+
+    inv_b = m.SalesInvoice(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        invoice_number="INV-P28-B",
+        customer_id=cust_b.id,
+        status="posted",
+        subtotal=40,
+        tax_amount=0,
+        total_amount=40,
+        paid_amount=0,
+        due_date=datetime.utcnow() - timedelta(days=1),
+        posted_at=datetime.utcnow(),
+        created_by=seed["super"].id,
+    )
+    inv_a = m.SalesInvoice(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        invoice_number="INV-P28-A",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=20,
+        tax_amount=0,
+        total_amount=20,
+        paid_amount=0,
+        due_date=datetime.utcnow() - timedelta(days=1),
+        posted_at=datetime.utcnow(),
+        created_by=seed["super"].id,
+    )
+    rec_b = m.RecurringExpense(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        category="ops",
+        description="P28 recurring B",
+        amount=9,
+        frequency="monthly",
+        next_run_at=datetime.utcnow() - timedelta(hours=1),
+        created_by=seed["super"].id,
+    )
+    db_session.add_all([inv_b, inv_a, rec_b])
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # Stock mutate with sibling warehouse
+    stock_in = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers_a,
+        json={
+            "product_id": seed["p1"].id,
+            "quantity": 1,
+            "warehouse_id": wh_b.id,
+        },
+    )
+    assert stock_in.status_code == 404, stock_in.text
+
+    adjust = await ac.post(
+        f"/api/v1/inventory/adjust/{seed['p1'].id}",
+        headers=headers_a,
+        json={"quantity": 1, "reason": "correction", "warehouse_id": wh_b.id},
+    )
+    assert adjust.status_code == 404, adjust.text
+
+    # Expense category with sibling GL account
+    cat = await ac.post(
+        "/api/v1/expenses/categories",
+        headers=headers_a,
+        json={
+            "code": "P28A",
+            "name": "P28 A Cat",
+            "account_id": exp_acct_b.id,
+            "budget_amount": 10,
+        },
+    )
+    assert cat.status_code == 404, cat.text
+
+    # COA parent from sibling company
+    coa = await ac.post(
+        "/api/v1/accounting/accounts",
+        headers=headers_a,
+        json={
+            "code": "P2810",
+            "name": "P28 Nested Cash",
+            "account_type": "asset",
+            "parent_id": parent_b.id,
+        },
+    )
+    assert coa.status_code == 404, coa.text
+
+    # UoM convert / create with sibling base
+    conv = await ac.get(
+        "/api/v1/catalog/units/convert",
+        headers=headers_a,
+        params={
+            "from_unit_id": unit_b.id,
+            "to_unit_id": unit_b.id,
+            "quantity": 1,
+        },
+    )
+    assert conv.status_code == 404, conv.text
+
+    unit = await ac.post(
+        "/api/v1/catalog/units",
+        headers=headers_a,
+        json={
+            "code": "P28PK",
+            "name": "P28 Pack",
+            "base_unit_id": unit_b.id,
+            "conversion_factor": 6,
+        },
+    )
+    assert unit.status_code == 404, unit.text
+
+    # Scan-due must not notify/mutate company B
+    last_b_before = rec_b.last_notified_for
+    scan = await ac.post("/api/v1/notifications/scan-due", headers=headers_a)
+    assert scan.status_code == 200, scan.text
+    await db_session.refresh(rec_b)
+    assert rec_b.last_notified_for == last_b_before
+    notes = await ac.get("/api/v1/notifications", headers=headers_a)
+    assert notes.status_code == 200, notes.text
+    entity_ids = {n.get("entity_id") for n in notes.json()["data"]}
+    assert inv_b.id not in entity_ids
+    assert rec_b.id not in entity_ids
+    assert inv_a.id in entity_ids or any(
+        "INV-P28-A" in (n.get("message") or "") for n in notes.json()["data"]
+    )

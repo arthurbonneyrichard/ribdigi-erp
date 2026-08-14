@@ -225,13 +225,16 @@ def suggest_from_media(media: storage_svc.MediaObject) -> dict[str, Any]:
     }
 
 
-async def suggest_for_expense(db, *, tenant_id: str, expense_id: str) -> dict[str, Any]:
+async def suggest_for_expense(
+    db, *, tenant_id: str, expense_id: str, company_id: str | None = None
+) -> dict[str, Any]:
     from app import expenses as expenses_svc
     from app.ai_expenses import suggest_category_from_text
     from sqlalchemy import select
     from app import models as m
 
     expense = await expenses_svc.get_expense(db, tenant_id, expense_id)
+    scope_cid = company_id or getattr(expense, "company_id", None)
     if not expense.attachment_url:
         raise HTTPException(status_code=400, detail="Upload a receipt attachment before OCR")
     if "://" in expense.attachment_url:
@@ -239,18 +242,13 @@ async def suggest_for_expense(db, *, tenant_id: str, expense_id: str) -> dict[st
     media = storage_svc.read_object(expense.attachment_url, tenant_id=tenant_id)
     result = suggest_from_media(media)
 
-    cats = (
-        await db.execute(
-            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
-        )
-    ).scalars().all()
+    cat_q = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+    if scope_cid:
+        cat_q = cat_q.where(m.ExpenseCategory.company_id == scope_cid)
+    cats = (await db.execute(cat_q)).scalars().all()
     if not cats:
-        await expenses_svc.ensure_default_categories(db, tenant_id)
-        cats = (
-            await db.execute(
-                select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
-            )
-        ).scalars().all()
+        await expenses_svc.ensure_default_categories(db, tenant_id, company_id=scope_cid)
+        cats = (await db.execute(cat_q)).scalars().all()
     text_blob = " ".join(
         filter(
             None,

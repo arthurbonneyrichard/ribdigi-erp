@@ -235,3 +235,11 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Customer-group resolve, expense department resolve, product `tax_rate_id`, PO/PR warehouse FK, and POS hold product soft-reserve assert company.
 - Quotation-expiry notification scan scopes mutate/notify by workspace `company_id` when set; bank recon match asserts journal-line company vs statement.
 - Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design.
+
+## Phase 28 — Scan scope + warehouse/COA/UoM FK (2026-08-14)
+
+- Payment-due and recurring-expense notification scans accept workspace `company_id` (interactive `/notifications/scan-due`); quotation expiry already scoped in Phase 27.
+- Stock-in/out/adjust/opening pass `company_id` into warehouse FK checks via `apply_stock_change` / catalog helpers.
+- Expense-category GL account resolve and COA parent validate assert company; expense OCR category suggestions scoped by company.
+- UoM base-unit validate and unit convert reject sibling-company units.
+- Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design.

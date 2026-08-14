@@ -244,14 +244,18 @@ async def ensure_default_categories(
 
 
 async def resolve_expense_gl_account(
-    db: AsyncSession, *, tenant_id: str, account_id: str | None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    account_id: str | None,
+    company_id: str | None = None,
 ) -> m.Account | None:
     """Validate optional category GL account (must be tenant expense-type, active)."""
     if not account_id:
         return None
     from app.accounting import get_tenant_account
 
-    account = await get_tenant_account(db, tenant_id, account_id)
+    account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
     if (account.account_type or "").strip().lower() != "expense":
         raise HTTPException(
             status_code=400,
@@ -309,6 +313,7 @@ async def update_category(
     is_active: bool | None = None,
     account_id: str | None = None,
     clear_account: bool = False,
+    company_id: str | None = None,
 ) -> m.ExpenseCategory:
     cat = (
         await db.execute(
@@ -335,7 +340,10 @@ async def update_category(
         cat.account_id = None
     elif account_id is not None:
         account = await resolve_expense_gl_account(
-            db, tenant_id=tenant_id, account_id=account_id
+            db,
+            tenant_id=tenant_id,
+            account_id=account_id,
+            company_id=company_id or getattr(cat, "company_id", None),
         )
         cat.account_id = account.id if account else None
     await db.flush()

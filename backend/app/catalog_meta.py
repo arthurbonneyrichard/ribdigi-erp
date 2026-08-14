@@ -550,12 +550,13 @@ async def _validate_base_unit(
     tenant_id: str,
     unit_id: str | None,
     base_unit_id: str | None,
+    company_id: str | None = None,
 ) -> str | None:
     if not base_unit_id:
         return None
     if unit_id and base_unit_id == unit_id:
         raise HTTPException(status_code=400, detail="base_unit_id cannot reference itself")
-    base = await get_unit(db, tenant_id, base_unit_id)
+    base = await get_unit(db, tenant_id, base_unit_id, company_id=company_id)
     # One-level conversions only: base unit must itself be a base (no chain)
     if getattr(base, "base_unit_id", None):
         raise HTTPException(
@@ -582,12 +583,13 @@ async def convert_quantity(
     from_unit_id: str,
     to_unit_id: str,
     quantity: float,
+    company_id: str | None = None,
 ) -> dict:
     qty = float(quantity)
     if qty < 0:
         raise HTTPException(status_code=400, detail="quantity cannot be negative")
-    from_unit = await get_unit(db, tenant_id, from_unit_id)
-    to_unit = await get_unit(db, tenant_id, to_unit_id)
+    from_unit = await get_unit(db, tenant_id, from_unit_id, company_id=company_id)
+    to_unit = await get_unit(db, tenant_id, to_unit_id, company_id=company_id)
     from_base, from_base_qty = quantity_in_base(from_unit, qty)
     to_base, _ = quantity_in_base(to_unit, 1)
     if from_base != to_base:
@@ -642,7 +644,11 @@ async def create_unit(
     if dup:
         raise HTTPException(status_code=409, detail="Unit code exists")
     base_id = await _validate_base_unit(
-        db, tenant_id=tenant_id, unit_id=None, base_unit_id=base_unit_id
+        db,
+        tenant_id=tenant_id,
+        unit_id=None,
+        base_unit_id=base_unit_id,
+        company_id=company_id,
     )
     if base_id is None:
         factor = 1.0
@@ -701,7 +707,11 @@ async def update_unit(
         row.conversion_factor = 1
     elif base_unit_id is not None:
         row.base_unit_id = await _validate_base_unit(
-            db, tenant_id=tenant_id, unit_id=row.id, base_unit_id=base_unit_id
+            db,
+            tenant_id=tenant_id,
+            unit_id=row.id,
+            base_unit_id=base_unit_id,
+            company_id=scope_company,
         )
     if conversion_factor is not None and not clear_base_unit:
         factor = float(conversion_factor)

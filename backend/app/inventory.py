@@ -671,7 +671,7 @@ async def apply_stock_change(
 
     product.stock_qty = after
     if warehouse_id:
-        await get_warehouse(db, tenant_id, warehouse_id)
+        await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,

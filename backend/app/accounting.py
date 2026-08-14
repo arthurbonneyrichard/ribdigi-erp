@@ -373,12 +373,13 @@ async def _validate_parent(
     account_type: str,
     parent_id: str | None,
     self_id: str | None = None,
+    company_id: str | None = None,
 ) -> None:
     if not parent_id:
         return
     if self_id and parent_id == self_id:
         raise HTTPException(status_code=400, detail="Account cannot be its own parent")
-    parent = await get_tenant_account(db, tenant_id, parent_id)
+    parent = await get_tenant_account(db, tenant_id, parent_id, company_id=company_id)
     if parent.account_type != account_type:
         raise HTTPException(
             status_code=400,
@@ -437,7 +438,11 @@ async def create_coa_account(
         raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
 
     await _validate_parent(
-        db, tenant_id=tenant_id, account_type=type_norm, parent_id=parent_id
+        db,
+        tenant_id=tenant_id,
+        account_type=type_norm,
+        parent_id=parent_id,
+        company_id=company_id,
     )
 
     row = m.Account(
@@ -531,6 +536,7 @@ async def update_coa_account(
             account_type=row.account_type,
             parent_id=parent_id,
             self_id=row.id,
+            company_id=company_id or getattr(row, "company_id", None),
         )
         row.parent_id = parent_id
 

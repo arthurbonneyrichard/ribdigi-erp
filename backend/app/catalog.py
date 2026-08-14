@@ -353,6 +353,7 @@ async def stock_in_with_batch(
     reference_type: str | None = None,
     reference_id: str | None = None,
     movement_type: str = "stock_in",
+    company_id: str | None = None,
 ) -> dict:
     quantity = float(quantity)
     if quantity <= 0:
@@ -416,6 +417,7 @@ async def stock_in_with_batch(
         batch_id=batch.id if batch else None,
         reference_type=reference_type,
         reference_id=reference_id,
+        company_id=company_id or getattr(product, "company_id", None),
     )
     if variant:
         variant.stock_qty = float(variant.stock_qty or 0) + quantity
@@ -446,6 +448,7 @@ async def record_opening_stock(
     manufacturing_date: datetime | None = None,
     expiry_date: datetime | None = None,
     fiscal_period: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Initialize stock for go-live / fiscal year start (BR-5.2 Opening Stock)."""
     from app.inventory import get_or_create_warehouse_stock, get_warehouse
@@ -459,8 +462,9 @@ async def record_opening_stock(
         raise HTTPException(status_code=400, detail="quantity cannot be negative")
 
     product = await get_product(db, tenant_id, product_id)
+    scope_cid = company_id or getattr(product, "company_id", None)
     if warehouse_id:
-        await get_warehouse(db, tenant_id, warehouse_id)
+        await get_warehouse(db, tenant_id, warehouse_id, company_id=scope_cid)
         wh_row = await get_or_create_warehouse_stock(
             db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product.id
         )
@@ -509,6 +513,7 @@ async def record_opening_stock(
         reference_type="opening_stock",
         reference_id=fiscal_period.strip() if fiscal_period and fiscal_period.strip() else None,
         movement_type="opening_stock",
+        company_id=scope_cid,
     )
     result["mode"] = mode_norm
     result["current_qty_before"] = current
@@ -524,6 +529,7 @@ async def record_opening_stock_batch(
     user_id: str,
     items: list[dict],
     fiscal_period: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     if not items:
         raise HTTPException(status_code=400, detail="items required")
@@ -547,6 +553,7 @@ async def record_opening_stock_batch(
                     manufacturing_date=item.get("manufacturing_date"),
                     expiry_date=item.get("expiry_date"),
                     fiscal_period=item.get("fiscal_period") or fiscal_period,
+                    company_id=company_id,
                 )
             )
         except HTTPException as exc:
@@ -571,6 +578,7 @@ async def stock_out_with_batch(
     batch_id: str | None = None,
     reference_type: str | None = None,
     reference_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     quantity = float(quantity)
     if quantity <= 0:
@@ -676,6 +684,7 @@ async def stock_out_with_batch(
         batch_id=primary_batch_id,
         reference_type=reference_type,
         reference_id=reference_id,
+        company_id=company_id or getattr(product, "company_id", None),
     )
     if variant:
         variant.stock_qty = max(float(variant.stock_qty or 0) - quantity, 0)

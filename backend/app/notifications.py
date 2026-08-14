@@ -481,22 +481,27 @@ async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
     return created
 
 
-async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 3) -> int:
+async def scan_payment_due(
+    db: AsyncSession,
+    tenant_id: str,
+    within_days: int = 3,
+    *,
+    company_id: str | None = None,
+) -> int:
     """Notify when AR invoices or AP bills approach/pass due date (BR-10.4 / 10.5 / 15.1)."""
     now = datetime.utcnow()
     horizon = now + timedelta(days=within_days)
     created = 0
 
-    ar_invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial"]),
-                m.SalesInvoice.due_date.is_not(None),
-                m.SalesInvoice.due_date <= horizon,
-            )
-        )
-    ).scalars().all()
+    ar_q = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial"]),
+        m.SalesInvoice.due_date.is_not(None),
+        m.SalesInvoice.due_date <= horizon,
+    )
+    if company_id:
+        ar_q = ar_q.where(m.SalesInvoice.company_id == company_id)
+    ar_invoices = (await db.execute(ar_q)).scalars().all()
     for inv in ar_invoices:
         due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
         if due <= 0:
@@ -528,16 +533,15 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
         )
         created += 1
 
-    ap_bills = (
-        await db.execute(
-            select(m.PurchaseInvoice).where(
-                m.PurchaseInvoice.tenant_id == tenant_id,
-                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
-                m.PurchaseInvoice.due_date.is_not(None),
-                m.PurchaseInvoice.due_date <= horizon,
-            )
-        )
-    ).scalars().all()
+    ap_q = select(m.PurchaseInvoice).where(
+        m.PurchaseInvoice.tenant_id == tenant_id,
+        m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+        m.PurchaseInvoice.due_date.is_not(None),
+        m.PurchaseInvoice.due_date <= horizon,
+    )
+    if company_id:
+        ap_q = ap_q.where(m.PurchaseInvoice.company_id == company_id)
+    ap_bills = (await db.execute(ap_q)).scalars().all()
     for bill in ap_bills:
         due = max(float(bill.total_amount) - float(bill.paid_amount or 0), 0)
         if due <= 0:
@@ -662,20 +666,23 @@ async def scan_quotation_expiry(
 
 
 async def scan_recurring_expense_upcoming(
-    db: AsyncSession, tenant_id: str, within_days: int = 1
+    db: AsyncSession,
+    tenant_id: str,
+    within_days: int = 1,
+    *,
+    company_id: str | None = None,
 ) -> dict[str, int]:
     """Notify before recurring expenses auto-generate (BR-9.5)."""
     now = datetime.utcnow()
     horizon = now + timedelta(days=max(0, int(within_days)))
-    rows = (
-        await db.execute(
-            select(m.RecurringExpense).where(
-                m.RecurringExpense.tenant_id == tenant_id,
-                m.RecurringExpense.is_active == True,  # noqa: E712
-                m.RecurringExpense.next_run_at <= horizon,
-            )
-        )
-    ).scalars().all()
+    rec_q = select(m.RecurringExpense).where(
+        m.RecurringExpense.tenant_id == tenant_id,
+        m.RecurringExpense.is_active == True,  # noqa: E712
+        m.RecurringExpense.next_run_at <= horizon,
+    )
+    if company_id:
+        rec_q = rec_q.where(m.RecurringExpense.company_id == company_id)
+    rows = (await db.execute(rec_q)).scalars().all()
     reminded = 0
     for row in rows:
         if row.end_date and row.end_date < now:

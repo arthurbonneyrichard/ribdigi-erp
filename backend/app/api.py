@@ -4232,6 +4232,7 @@ async def add_product(
             reference_type="product",
             reference_id=product.id,
             notes="Opening stock on product create",
+            company_id=claims.get("company_id"),
         )
     await audit_svc.record_event(
         db,
@@ -4758,6 +4759,7 @@ async def catalog_convert_units(
         from_unit_id=from_unit_id,
         to_unit_id=to_unit_id,
         quantity=quantity,
+        company_id=claims.get("company_id"),
     )
     return env(result)
 
@@ -5467,6 +5469,7 @@ async def adjust(
         notes=payload.notes,
         warehouse_id=payload.warehouse_id,
         allow_negative=True,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -5498,6 +5501,7 @@ async def stock_in(
         batch_number=payload.batch_number,
         manufacturing_date=payload.manufacturing_date,
         expiry_date=payload.expiry_date,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(result, "Stock in recorded")
@@ -5521,6 +5525,7 @@ async def opening_stock(
             user_id=claims["sub"],
             items=[item.model_dump() for item in payload.items],
             fiscal_period=payload.fiscal_period,
+            company_id=claims.get("company_id"),
         )
         await audit_svc.record_event(
             db,
@@ -5555,6 +5560,7 @@ async def opening_stock(
         manufacturing_date=payload.manufacturing_date,
         expiry_date=payload.expiry_date,
         fiscal_period=payload.fiscal_period,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(result, "Opening stock recorded")
@@ -5578,6 +5584,7 @@ async def stock_out(
         warehouse_id=payload.warehouse_id,
         variant_id=payload.variant_id,
         batch_id=payload.batch_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(result, "Stock out recorded")
@@ -9297,7 +9304,10 @@ async def create_expense_category(
     db: AsyncSession = Depends(get_db),
 ):
     account = await expenses_svc.resolve_expense_gl_account(
-        db, tenant_id=claims["tenant_id"], account_id=payload.account_id
+        db,
+        tenant_id=claims["tenant_id"],
+        account_id=payload.account_id,
+        company_id=claims.get("company_id"),
     )
     cat = m.ExpenseCategory(
         tenant_id=claims["tenant_id"],
@@ -9346,6 +9356,7 @@ async def update_expense_category(
         is_active=payload.is_active,
         account_id=payload.account_id,
         clear_account=bool(payload.clear_account),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -9716,7 +9727,10 @@ async def expense_ocr_suggest(
     workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
     result = await ocr_svc.suggest_for_expense(
-        db, tenant_id=claims["tenant_id"], expense_id=expense_id
+        db,
+        tenant_id=claims["tenant_id"],
+        expense_id=expense_id,
+        company_id=claims.get("company_id"),
     )
     return env(result, "OCR suggestions ready — review before applying")
 
@@ -14029,12 +14043,14 @@ async def scan_due_notifications(
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    payment_created = await notifications_svc.scan_payment_due(db, claims["tenant_id"])
+    payment_created = await notifications_svc.scan_payment_due(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     quote_scan = await notifications_svc.scan_quotation_expiry(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )
     recurring_scan = await notifications_svc.scan_recurring_expense_upcoming(
-        db, claims["tenant_id"]
+        db, claims["tenant_id"], company_id=claims.get("company_id")
     )
     await db.commit()
     total = (
