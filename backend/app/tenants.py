@@ -91,6 +91,9 @@ def is_read_only(tenant: m.Tenant) -> bool:
 
 def serialize_tenant(tenant: m.Tenant, *, company: m.Company | None = None) -> dict:
     numbering_raw = numbering_source_for_serialize(tenant, company)
+    from app.print_branding import print_templates_for_serialize
+
+    print_tpl = print_templates_for_serialize(tenant, company)
     now = datetime.utcnow()
     days_left = None
     if tenant.status == "trial":
@@ -150,10 +153,12 @@ def serialize_tenant(tenant: m.Tenant, *, company: m.Company | None = None) -> d
         "document_numbering_preview": preview_document_numbering(numbering_raw),
         "document_numbering_scope": "company" if company is not None else "tenant",
         "document_numbering_company_id": company.id if company is not None else None,
-        "invoice_print_template": getattr(tenant, "invoice_print_template", None) or "a4",
-        "receipt_print_template": getattr(tenant, "receipt_print_template", None) or "thermal_80",
-        "document_header": getattr(tenant, "document_header", None),
-        "document_footer": getattr(tenant, "document_footer", None),
+        "invoice_print_template": print_tpl["invoice_print_template"],
+        "receipt_print_template": print_tpl["receipt_print_template"],
+        "document_header": print_tpl["document_header"],
+        "document_footer": print_tpl["document_footer"],
+        "print_templates_scope": "company" if company is not None else "tenant",
+        "print_templates_company_id": company.id if company is not None else None,
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "created_at": tenant.created_at,
@@ -414,6 +419,7 @@ async def update_profile(
     receipt_print_template: str | None = None,
     document_header: str | None = None,
     document_footer: str | None = None,
+    print_templates_company: m.Company | None = None,
     plan_code: str | None = None,
     legal_name: str | None = None,
     registration_number: str | None = None,
@@ -499,7 +505,10 @@ async def update_profile(
                 status_code=400,
                 detail=f"invoice_print_template must be one of: {sorted(INVOICE_PRINT_TEMPLATES)}",
             )
-        tenant.invoice_print_template = tpl
+        if print_templates_company is not None:
+            print_templates_company.invoice_print_template = tpl
+        else:
+            tenant.invoice_print_template = tpl
     if receipt_print_template is not None:
         from app.receipts import RECEIPT_PRINT_TEMPLATES
 
@@ -509,17 +518,26 @@ async def update_profile(
                 status_code=400,
                 detail=f"receipt_print_template must be one of: {sorted(RECEIPT_PRINT_TEMPLATES)}",
             )
-        tenant.receipt_print_template = rtpl
+        if print_templates_company is not None:
+            print_templates_company.receipt_print_template = rtpl
+        else:
+            tenant.receipt_print_template = rtpl
     if document_header is not None:
         header = document_header.strip()
         if len(header) > 500:
             raise HTTPException(status_code=400, detail="document_header must be at most 500 characters")
-        tenant.document_header = header or None
+        if print_templates_company is not None:
+            print_templates_company.document_header = header or None
+        else:
+            tenant.document_header = header or None
     if document_footer is not None:
         footer = document_footer.strip()
         if len(footer) > 500:
             raise HTTPException(status_code=400, detail="document_footer must be at most 500 characters")
-        tenant.document_footer = footer or None
+        if print_templates_company is not None:
+            print_templates_company.document_footer = footer or None
+        else:
+            tenant.document_footer = footer or None
     if plan_code is not None:
         plan = plan_code.strip().lower()
         if plan not in VALID_PLAN_CODES:

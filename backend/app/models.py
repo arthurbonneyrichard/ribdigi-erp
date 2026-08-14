@@ -149,6 +149,11 @@ class Company(Base):
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     # ADR-490 phase 16 — per-company document number series (falls back to tenant JSON).
     document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # ADR-490 phase 17 — per-company print templates (falls back to tenant columns).
+    invoice_print_template: Mapped[str] = mapped_column(String(20), default="a4")
+    receipt_print_template: Mapped[str] = mapped_column(String(20), default="thermal_80")
+    document_header: Mapped[str | None] = mapped_column(Text, nullable=True)
+    document_footer: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

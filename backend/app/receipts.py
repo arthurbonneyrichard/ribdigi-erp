@@ -18,11 +18,18 @@ RECEIPT_TEMPLATE_TO_PAPER = {"thermal_80": "80mm", "thermal_58": "58mm"}
 PAPER_TO_RECEIPT_TEMPLATE = {"80mm": "thermal_80", "58mm": "thermal_58"}
 
 
-def resolve_receipt_paper(tenant: m.Tenant | None, paper: str | None = None) -> str:
-    """Resolve POS receipt paper width from explicit paper or tenant default template."""
+def resolve_receipt_paper(
+    tenant: m.Tenant | None,
+    paper: str | None = None,
+    company: m.Company | None = None,
+) -> str:
+    """Resolve POS receipt paper width from explicit paper or company/tenant default template."""
     if paper in THERMAL_WIDTHS:
         return paper  # type: ignore[return-value]
-    tpl = (getattr(tenant, "receipt_print_template", None) or "thermal_80").strip().lower()
+    from app.print_branding import print_templates_for_serialize
+
+    tpl = print_templates_for_serialize(tenant, company)["receipt_print_template"]
+    tpl = (tpl or "thermal_80").strip().lower()
     if tpl not in RECEIPT_PRINT_TEMPLATES:
         tpl = "thermal_80"
     return RECEIPT_TEMPLATE_TO_PAPER[tpl]
@@ -69,6 +76,7 @@ def build_receipt_payload(
     tx: m.Transaction,
     tenant: m.Tenant | None,
     cashier_name: str | None = None,
+    company: m.Company | None = None,
 ) -> dict[str, Any]:
     from app.print_branding import tenant_document_brand
 
@@ -102,8 +110,8 @@ def build_receipt_payload(
                 "variant_id": raw.get("variant_id"),
             }
         )
-    brand = tenant_document_brand(tenant)
-    default_paper = resolve_receipt_paper(tenant)
+    brand = tenant_document_brand(tenant, company)
+    default_paper = resolve_receipt_paper(tenant, company=company)
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
@@ -116,9 +124,14 @@ def build_receipt_payload(
         "document_footer": brand["document_footer"],
         "receipt_print_template": PAPER_TO_RECEIPT_TEMPLATE.get(default_paper, "thermal_80"),
         "default_paper": default_paper,
-        "company_phone": brand["company_phone"] or (tenant.phone if tenant else None),
-        "company_address": brand["company_address"] or (tenant.address if tenant else None),
-        "currency": tenant.currency if tenant else "GHS",
+        "company_phone": brand["company_phone"]
+        or (getattr(company, "phone", None) if company else None)
+        or (tenant.phone if tenant else None),
+        "company_address": brand["company_address"]
+        or (getattr(company, "address", None) if company else None)
+        or (tenant.address if tenant else None),
+        "currency": (getattr(company, "currency", None) if company else None)
+        or (tenant.currency if tenant else "GHS"),
         "cashier_name": cashier_name,
         "customer_name": payload.get("customer_name"),
         "subtotal": float(tx.subtotal or 0),
@@ -289,8 +302,16 @@ async def build_sale_receipt(
     if company_id and tx.company_id and tx.company_id != company_id:
         raise HTTPException(status_code=404, detail="POS sale not found")
     tenant = await db.get(m.Tenant, tenant_id)
+    company = None
+    cid = company_id or getattr(tx, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if company and company.tenant_id != tenant_id:
+            company = None
     cashier_name = None
     if user_id:
         user = await db.get(m.User, user_id)
         cashier_name = user.full_name if user else None
-    return build_receipt_payload(tx=tx, tenant=tenant, cashier_name=cashier_name)
+    return build_receipt_payload(
+        tx=tx, tenant=tenant, cashier_name=cashier_name, company=company
+    )

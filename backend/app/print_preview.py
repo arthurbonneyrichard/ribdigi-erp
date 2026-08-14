@@ -57,10 +57,15 @@ SAMPLE_RECEIPT: dict[str, Any] = {
 
 
 def render_sample_invoice_preview(
-    tenant: m.Tenant, *, template: str | None = None, fmt: str = "html"
+    tenant: m.Tenant,
+    *,
+    company: m.Company | None = None,
+    template: str | None = None,
+    fmt: str = "html",
 ) -> tuple[str, str]:
-    """Return (media_type, body) for a sample invoice using tenant print defaults."""
-    tpl = (template or getattr(tenant, "invoice_print_template", None) or "a4").strip().lower()
+    """Return (media_type, body) for a sample invoice using company/tenant print defaults."""
+    doc_brand = tenant_document_brand(tenant, company)
+    tpl = (template or doc_brand.get("invoice_print_template") or "a4").strip().lower()
     if tpl not in sales_svc.INVOICE_PRINT_TEMPLATES:
         raise HTTPException(
             status_code=400,
@@ -69,9 +74,8 @@ def render_sample_invoice_preview(
     fmt_n = (fmt or "html").strip().lower()
     if fmt_n not in {"html", "text"}:
         raise HTTPException(status_code=400, detail="format must be html or text")
-    doc_brand = tenant_document_brand(tenant)
     data = dict(SAMPLE_INVOICE)
-    data["currency"] = tenant.currency or "GHS"
+    data["currency"] = (company.currency if company and company.currency else None) or tenant.currency or "GHS"
     brand = dict(
         company_name=doc_brand["company_name"],
         customer_name="Sample Customer",
@@ -96,10 +100,15 @@ def render_sample_invoice_preview(
 
 
 def render_sample_receipt_preview(
-    tenant: m.Tenant, *, template: str | None = None, fmt: str = "text"
+    tenant: m.Tenant,
+    *,
+    company: m.Company | None = None,
+    template: str | None = None,
+    fmt: str = "text",
 ) -> tuple[str, str]:
-    """Return (media_type, body) for a sample POS receipt using tenant print defaults."""
-    tpl = (template or getattr(tenant, "receipt_print_template", None) or "thermal_80").strip().lower()
+    """Return (media_type, body) for a sample POS receipt using company/tenant print defaults."""
+    doc_brand = tenant_document_brand(tenant, company)
+    tpl = (template or doc_brand.get("receipt_print_template") or "thermal_80").strip().lower()
     if tpl not in receipts_svc.RECEIPT_PRINT_TEMPLATES:
         raise HTTPException(
             status_code=400,
@@ -109,7 +118,6 @@ def render_sample_receipt_preview(
     if fmt_n not in {"html", "text"}:
         raise HTTPException(status_code=400, detail="format must be html or text")
     paper = receipts_svc.RECEIPT_TEMPLATE_TO_PAPER[tpl]
-    doc_brand = tenant_document_brand(tenant)
     receipt = dict(SAMPLE_RECEIPT)
     receipt.update(
         {
@@ -117,7 +125,9 @@ def render_sample_receipt_preview(
             "trading_name": doc_brand["trading_name"],
             "company_address": doc_brand["company_address"],
             "company_phone": doc_brand["company_phone"],
-            "currency": tenant.currency or "GHS",
+            "currency": (company.currency if company and company.currency else None)
+            or tenant.currency
+            or "GHS",
             "document_header": doc_brand["document_header"],
             "document_footer": doc_brand["document_footer"],
             "has_logo": doc_brand["has_logo"],

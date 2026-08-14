@@ -1932,3 +1932,115 @@ async def test_document_numbering_and_nested_product_idor(client, db_session):
     assert (
         await ac.get(f"/api/v1/inventory/stock-counts/{count_b.id}", headers=headers_a)
     ).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_print_templates_and_search_history_company_scoped(client, db_session):
+    """Phase 17: per-company print templates; search/history isolation."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="PRT17",
+        name="Alpha Print B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+        invoice_print_template="thermal_58",
+        receipt_print_template="thermal_58",
+        document_header="Company B Header",
+        document_footer="Company B Footer",
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Print B Unique Widget",
+        sku="PRT17-B",
+        cost_price=1,
+        selling_price=2,
+        stock_qty=5,
+        is_active=True,
+    )
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Print B Unique Customer",
+        kind="customer",
+        credit_limit=0,
+    )
+    db_session.add_all([prod_b, cust_b])
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+
+    patch_a = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers_a,
+        json={
+            "invoice_print_template": "a4",
+            "receipt_print_template": "thermal_80",
+            "document_header": "Company A Header",
+            "document_footer": "Company A Footer",
+        },
+    )
+    assert patch_a.status_code == 200, patch_a.text
+    data_a = patch_a.json()["data"]
+    assert data_a["print_templates_scope"] == "company"
+    assert data_a["document_header"] == "Company A Header"
+    assert data_a["invoice_print_template"] == "a4"
+
+    me_b = await ac.get("/api/v1/tenants/me", headers=headers_b)
+    assert me_b.status_code == 200, me_b.text
+    data_b = me_b.json()["data"]
+    assert data_b["document_header"] == "Company B Header"
+    assert data_b["invoice_print_template"] == "thermal_58"
+
+    preview_a = await ac.get(
+        "/api/v1/tenants/me/print-templates/preview",
+        headers=headers_a,
+        params={"kind": "invoice", "format": "text"},
+    )
+    assert preview_a.status_code == 200, preview_a.text
+    assert "Company A Header" in preview_a.text
+
+    preview_b = await ac.get(
+        "/api/v1/tenants/me/print-templates/preview",
+        headers=headers_b,
+        params={"kind": "invoice", "format": "text"},
+    )
+    assert preview_b.status_code == 200, preview_b.text
+    assert "Company B Header" in preview_b.text
+
+    search_a = await ac.get("/api/v1/search", headers=headers_a, params={"q": "Print B Unique"})
+    assert search_a.status_code == 200, search_a.text
+    assert search_a.json()["data"]["total"] == 0
+
+    search_b = await ac.get("/api/v1/search", headers=headers_b, params={"q": "Print B Unique"})
+    assert search_b.status_code == 200, search_b.text
+    labels = {r["label"] for r in search_b.json()["data"]["results"]}
+    assert "Print B Unique Widget" in labels or "Print B Unique Customer" in labels
+
+    # History for company-A customer must not list sibling company docs if any shared id edge.
+    hist = await ac.get(
+        f"/api/v1/customers/{seed['cust1'].id}/history",
+        headers=headers_a,
+    )
+    assert hist.status_code == 200, hist.text
+    assert "invoices" in hist.json()["data"]

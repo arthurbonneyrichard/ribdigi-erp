@@ -1,4 +1,4 @@
-"""Company branding for printable documents (BR-20.1)."""
+"""Company branding for printable documents (BR-20.1 / ADR-490 phase 17)."""
 
 from __future__ import annotations
 
@@ -12,8 +12,44 @@ from app import storage as storage_svc
 logger = logging.getLogger(__name__)
 
 
-def document_company_name(tenant: m.Tenant | None) -> str:
+def print_templates_for_serialize(
+    tenant: m.Tenant | None, company: m.Company | None = None
+) -> dict[str, Any]:
+    """Prefer company print templates when a company workspace/row is active."""
+    if company is not None:
+        return {
+            "invoice_print_template": (
+                getattr(company, "invoice_print_template", None)
+                or getattr(tenant, "invoice_print_template", None)
+                or "a4"
+            ),
+            "receipt_print_template": (
+                getattr(company, "receipt_print_template", None)
+                or getattr(tenant, "receipt_print_template", None)
+                or "thermal_80"
+            ),
+            "document_header": getattr(company, "document_header", None),
+            "document_footer": getattr(company, "document_footer", None),
+        }
+    return {
+        "invoice_print_template": getattr(tenant, "invoice_print_template", None) or "a4",
+        "receipt_print_template": getattr(tenant, "receipt_print_template", None) or "thermal_80",
+        "document_header": getattr(tenant, "document_header", None) if tenant else None,
+        "document_footer": getattr(tenant, "document_footer", None) if tenant else None,
+    }
+
+
+def document_company_name(
+    tenant: m.Tenant | None, company: m.Company | None = None
+) -> str:
     """Prefer legal name on documents; fall back to trading/company name."""
+    if company is not None:
+        legal = (getattr(company, "legal_name", None) or "").strip()
+        if legal:
+            return legal
+        name = (getattr(company, "name", None) or "").strip()
+        if name:
+            return name
     if tenant is None:
         return "RIBDIGI ERP"
     legal = (getattr(tenant, "legal_name", None) or "").strip()
@@ -22,8 +58,16 @@ def document_company_name(tenant: m.Tenant | None) -> str:
     return (tenant.company_name or "").strip() or "RIBDIGI ERP"
 
 
-def trading_name_if_distinct(tenant: m.Tenant | None) -> str | None:
+def trading_name_if_distinct(
+    tenant: m.Tenant | None, company: m.Company | None = None
+) -> str | None:
     """Trading/company name when different from the document headline (legal name)."""
+    if company is not None:
+        legal = (getattr(company, "legal_name", None) or "").strip()
+        trading = (getattr(company, "name", None) or "").strip()
+        if legal and trading and legal.casefold() != trading.casefold():
+            return trading
+        return None
     if tenant is None:
         return None
     legal = (getattr(tenant, "legal_name", None) or "").strip()
@@ -33,12 +77,22 @@ def trading_name_if_distinct(tenant: m.Tenant | None) -> str | None:
     return None
 
 
-def load_logo_data_url(tenant: m.Tenant | None) -> str | None:
-    """Load tenant logo as a data URI for HTML embeds. Soft-fails if missing/unreadable."""
-    if tenant is None or not getattr(tenant, "logo_url", None):
+def load_logo_data_url(
+    tenant: m.Tenant | None, company: m.Company | None = None
+) -> str | None:
+    """Load logo as a data URI for HTML embeds. Prefer company logo when set."""
+    logo_key = None
+    tenant_id = None
+    if company is not None and getattr(company, "logo_url", None):
+        logo_key = company.logo_url
+        tenant_id = company.tenant_id
+    elif tenant is not None and getattr(tenant, "logo_url", None):
+        logo_key = tenant.logo_url
+        tenant_id = tenant.id
+    if not logo_key or not tenant_id:
         return None
     try:
-        media = storage_svc.read_object(tenant.logo_url, tenant_id=tenant.id)
+        media = storage_svc.read_object(logo_key, tenant_id=tenant_id)
         if not media.data:
             return None
         b64 = base64.b64encode(media.data).decode("ascii")
@@ -47,30 +101,53 @@ def load_logo_data_url(tenant: m.Tenant | None) -> str | None:
     except Exception:
         logger.warning(
             "Failed to load logo for tenant %s key %s",
-            getattr(tenant, "id", None),
-            getattr(tenant, "logo_url", None),
+            tenant_id,
+            logo_key,
             exc_info=True,
         )
         return None
 
 
-def tenant_document_brand(tenant: m.Tenant | None) -> dict[str, Any]:
-    """Shared brand fields for invoice/receipt/quotation/credit-note prints."""
-    logo_data_url = load_logo_data_url(tenant)
-    header = (getattr(tenant, "document_header", None) or "").strip() if tenant else ""
-    footer = (getattr(tenant, "document_footer", None) or "").strip() if tenant else ""
+def tenant_document_brand(
+    tenant: m.Tenant | None, company: m.Company | None = None
+) -> dict[str, Any]:
+    """Shared brand fields for invoice/receipt/quotation/credit-note prints.
+
+    When ``company`` is provided (ADR-490 company workspace), prefer company
+    profile + print header/footer; tenant remains legacy fallback.
+    """
+    logo_data_url = load_logo_data_url(tenant, company)
+    templates = print_templates_for_serialize(tenant, company)
+    header = (templates.get("document_header") or "").strip()
+    footer = (templates.get("document_footer") or "").strip()
+    if company is not None:
+        address = getattr(company, "address", None) or (getattr(tenant, "address", None) if tenant else None)
+        phone = getattr(company, "phone", None) or (getattr(tenant, "phone", None) if tenant else None)
+        email = getattr(company, "email", None) or (getattr(tenant, "email", None) if tenant else None)
+        tax = getattr(company, "tax_registration_number", None) or (
+            getattr(tenant, "tax_registration_number", None) if tenant else None
+        )
+        legal = (getattr(company, "legal_name", None) or "").strip() or None
+    else:
+        address = getattr(tenant, "address", None) if tenant else None
+        phone = getattr(tenant, "phone", None) if tenant else None
+        email = (str(getattr(tenant, "email", None) or "") or None) if tenant else None
+        tax = getattr(tenant, "tax_registration_number", None) if tenant else None
+        legal = (getattr(tenant, "legal_name", None) or "").strip() or None if tenant else None
     return {
-        "company_name": document_company_name(tenant),
-        "legal_name": (getattr(tenant, "legal_name", None) or "").strip() or None if tenant else None,
-        "trading_name": trading_name_if_distinct(tenant),
-        "company_address": getattr(tenant, "address", None) if tenant else None,
-        "company_phone": getattr(tenant, "phone", None) if tenant else None,
-        "company_email": (str(getattr(tenant, "email", None) or "") or None) if tenant else None,
-        "tax_registration_number": getattr(tenant, "tax_registration_number", None) if tenant else None,
+        "company_name": document_company_name(tenant, company),
+        "legal_name": legal,
+        "trading_name": trading_name_if_distinct(tenant, company),
+        "company_address": address,
+        "company_phone": phone,
+        "company_email": (str(email) or None) if email else None,
+        "tax_registration_number": tax,
         "has_logo": bool(logo_data_url),
         "logo_data_url": logo_data_url,
         "document_header": header or None,
         "document_footer": footer or None,
+        "invoice_print_template": templates["invoice_print_template"],
+        "receipt_print_template": templates["receipt_print_template"],
     }
 
 

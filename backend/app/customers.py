@@ -609,14 +609,23 @@ async def delete_contact(
     await db.flush()
 
 
-async def customer_history(db: AsyncSession, *, tenant_id: str, customer_id: str) -> dict:
+async def customer_history(
+    db: AsyncSession, *, tenant_id: str, customer_id: str, company_id: str | None = None
+) -> dict:
     await get_customer(db, tenant_id, customer_id)
+
+    def _scoped(model):
+        clauses = [model.tenant_id == tenant_id]
+        if company_id and hasattr(model, "company_id"):
+            clauses.append(model.company_id == company_id)
+        return clauses
+
     invoices = list(
         (
             await db.execute(
                 select(m.SalesInvoice)
                 .where(
-                    m.SalesInvoice.tenant_id == tenant_id,
+                    *_scoped(m.SalesInvoice),
                     m.SalesInvoice.customer_id == customer_id,
                 )
                 .order_by(m.SalesInvoice.created_at.desc())
@@ -631,7 +640,7 @@ async def customer_history(db: AsyncSession, *, tenant_id: str, customer_id: str
             await db.execute(
                 select(m.SalesQuotation)
                 .where(
-                    m.SalesQuotation.tenant_id == tenant_id,
+                    *_scoped(m.SalesQuotation),
                     m.SalesQuotation.customer_id == customer_id,
                 )
                 .order_by(m.SalesQuotation.created_at.desc())
@@ -646,7 +655,7 @@ async def customer_history(db: AsyncSession, *, tenant_id: str, customer_id: str
             await db.execute(
                 select(m.SalesOrder)
                 .where(
-                    m.SalesOrder.tenant_id == tenant_id,
+                    *_scoped(m.SalesOrder),
                     m.SalesOrder.customer_id == customer_id,
                 )
                 .order_by(m.SalesOrder.created_at.desc())
@@ -661,7 +670,7 @@ async def customer_history(db: AsyncSession, *, tenant_id: str, customer_id: str
             await db.execute(
                 select(m.SalesReturn)
                 .where(
-                    m.SalesReturn.tenant_id == tenant_id,
+                    *_scoped(m.SalesReturn),
                     m.SalesReturn.customer_id == customer_id,
                 )
                 .order_by(m.SalesReturn.created_at.desc())
@@ -676,7 +685,7 @@ async def customer_history(db: AsyncSession, *, tenant_id: str, customer_id: str
             await db.execute(
                 select(m.CustomerPayment)
                 .where(
-                    m.CustomerPayment.tenant_id == tenant_id,
+                    *_scoped(m.CustomerPayment),
                     m.CustomerPayment.customer_id == customer_id,
                 )
                 .order_by(m.CustomerPayment.created_at.desc())

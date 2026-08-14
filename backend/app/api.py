@@ -506,16 +506,21 @@ async def tenant_print_templates_preview(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 119 T1 — sample invoice/receipt preview using tenant print templates (not WYSIWYG)."""
+    """Stage 119 T1 — sample invoice/receipt preview using tenant/company print templates."""
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    if claims.get("company_id"):
+        company = await db.get(m.Company, claims["company_id"])
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
     kind_n = (kind or "invoice").strip().lower()
     if kind_n == "invoice":
         media, body = print_preview_svc.render_sample_invoice_preview(
-            tenant, template=template, fmt=format
+            tenant, company=company, template=template, fmt=format
         )
     elif kind_n == "receipt":
         media, body = print_preview_svc.render_sample_receipt_preview(
-            tenant, template=template, fmt=format
+            tenant, company=company, template=template, fmt=format
         )
     else:
         raise HTTPException(status_code=400, detail="kind must be invoice or receipt")
@@ -535,10 +540,23 @@ async def tenant_me_update(
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     previous_plan = (getattr(tenant, "plan_code", None) or "trial").strip().lower()
     numbering_company = None
-    if claims.get("company_id") and payload.document_numbering is not None:
-        numbering_company = await db.get(m.Company, claims["company_id"])
-        if not numbering_company or numbering_company.tenant_id != claims["tenant_id"]:
+    print_templates_company = None
+    if claims.get("company_id"):
+        company_row = await db.get(m.Company, claims["company_id"])
+        if not company_row or company_row.tenant_id != claims["tenant_id"]:
             raise HTTPException(status_code=404, detail="Company not found")
+        if payload.document_numbering is not None:
+            numbering_company = company_row
+        if any(
+            v is not None
+            for v in (
+                payload.invoice_print_template,
+                payload.receipt_print_template,
+                payload.document_header,
+                payload.document_footer,
+            )
+        ):
+            print_templates_company = company_row
     tenant = await tenants_svc.update_profile(
         db,
         tenant,
@@ -564,6 +582,7 @@ async def tenant_me_update(
         receipt_print_template=payload.receipt_print_template,
         document_header=payload.document_header,
         document_footer=payload.document_footer,
+        print_templates_company=print_templates_company,
         plan_code=payload.plan_code,
         legal_name=payload.legal_name,
         registration_number=payload.registration_number,
@@ -608,7 +627,7 @@ async def tenant_me_update(
             },
         )
     await db.commit()
-    company = numbering_company
+    company = numbering_company or print_templates_company
     if company is None and claims.get("company_id"):
         company = await db.get(m.Company, claims["company_id"])
         if not company or company.tenant_id != claims["tenant_id"]:
@@ -3763,7 +3782,11 @@ async def global_search(
 
     if has_permission(role, "inventory", "read", overrides=overrides):
         products = await product_lookup_svc.lookup_products(
-            db, tenant_id=claims["tenant_id"], q=query, limit=12
+            db,
+            tenant_id=claims["tenant_id"],
+            q=query,
+            limit=12,
+            company_id=claims.get("company_id"),
         )
         for p in products[:8]:
             results.append(
@@ -3780,20 +3803,19 @@ async def global_search(
         role, "customers", "read", overrides=overrides
     ):
         like = f"%{query}%"
-        rows = (
-            await db.execute(
-                select(m.Party)
-                .where(
-                    m.Party.tenant_id == claims["tenant_id"],
-                    m.Party.kind == "customer",
-                    (m.Party.name.ilike(like))
-                    | (m.Party.email.ilike(like))
-                    | (m.Party.phone.ilike(like)),
-                )
-                .order_by(m.Party.name.asc())
-                .limit(8)
+        stmt = (
+            select(m.Party)
+            .where(
+                *workspace_svc.company_scope_filter(m.Party, claims),
+                m.Party.kind == "customer",
+                (m.Party.name.ilike(like))
+                | (m.Party.email.ilike(like))
+                | (m.Party.phone.ilike(like)),
             )
-        ).scalars().all()
+            .order_by(m.Party.name.asc())
+            .limit(8)
+        )
+        rows = (await db.execute(stmt)).scalars().all()
         for row in rows:
             results.append(
                 {
@@ -6045,7 +6067,10 @@ async def customer_history(
     db: AsyncSession = Depends(get_db),
 ):
     data = await customers_svc.customer_history(
-        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -6058,7 +6083,10 @@ async def customer_history_export(
 ):
     """Stage 153 C1 — customer sales history CSV (distinct from Stage 119 roster export)."""
     data = await customers_svc.customer_history(
-        db, tenant_id=claims["tenant_id"], customer_id=customer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        company_id=claims.get("company_id"),
     )
     text = tenant_ops_export_svc.export_customer_history_csv(history=data)
     return Response(
@@ -6233,7 +6261,10 @@ async def supplier_history(
     db: AsyncSession = Depends(get_db),
 ):
     data = await suppliers_svc.supplier_history(
-        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        company_id=claims.get("company_id"),
     )
     return env(data)
 
@@ -6246,7 +6277,10 @@ async def supplier_history_export(
 ):
     """Stage 153 S1 — supplier purchase history CSV (distinct from Stage 119 roster export)."""
     data = await suppliers_svc.supplier_history(
-        db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
+        db,
+        tenant_id=claims["tenant_id"],
+        supplier_id=supplier_id,
+        company_id=claims.get("company_id"),
     )
     text = tenant_ops_export_svc.export_supplier_history_csv(history=data)
     return Response(
@@ -6259,13 +6293,15 @@ async def supplier_history_export(
 
 
 async def tx_list(kind: str, claims: dict, db: AsyncSession):
-    rows = (
-        await db.execute(
-            select(m.Transaction)
-            .where(m.Transaction.tenant_id == claims["tenant_id"], m.Transaction.tx_type == kind)
-            .order_by(m.Transaction.created_at.desc())
+    stmt = (
+        select(m.Transaction)
+        .where(
+            *workspace_svc.company_scope_filter(m.Transaction, claims),
+            m.Transaction.tx_type == kind,
         )
-    ).scalars().all()
+        .order_by(m.Transaction.created_at.desc())
+    )
+    rows = (await db.execute(stmt)).scalars().all()
     return env(rows)
 
 
@@ -6296,7 +6332,13 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
     body = payload.model_dump()
     body.pop("items", None)
     body["payload"] = {**(body.get("payload") or {}), "items": items}
-    tx = m.Transaction(tenant_id=claims["tenant_id"], tx_type=kind, reference=ref, **body)
+    tx = m.Transaction(
+        tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        tx_type=kind,
+        reference=ref,
+        **body,
+    )
     db.add(tx)
     await db.flush()
 
@@ -6439,9 +6481,19 @@ async def print_sales_invoice(
 
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, invoice.created_by)
+    workspace_svc.assert_record_company(claims, invoice)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    cid = claims.get("company_id") or getattr(invoice, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
     customer = await sales_svc.get_customer(db, claims["tenant_id"], invoice.customer_id)
-    tpl = (template or getattr(tenant, "invoice_print_template", None) or "a4").strip().lower()
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant, company)
+    tpl = (template or doc_brand.get("invoice_print_template") or "a4").strip().lower()
     if tpl not in sales_svc.INVOICE_PRINT_TEMPLATES:
         raise HTTPException(
             status_code=400,
@@ -6467,9 +6519,6 @@ async def print_sales_invoice(
             )
         ).scalars().all()
         item_labels = {p.id: p.name for p in products}
-    from app.print_branding import tenant_document_brand
-
-    doc_brand = tenant_document_brand(tenant)
     brand = dict(
         company_name=doc_brand["company_name"],
         customer_name=customer.name,
@@ -6680,9 +6729,19 @@ async def print_sales_quotation(
 
     quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, quote.created_by)
+    workspace_svc.assert_record_company(claims, quote)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    cid = claims.get("company_id") or getattr(quote, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
     customer = await sales_svc.get_customer(db, claims["tenant_id"], quote.customer_id)
-    tpl = (template or getattr(tenant, "invoice_print_template", None) or "a4").strip().lower()
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant, company)
+    tpl = (template or doc_brand.get("invoice_print_template") or "a4").strip().lower()
     if tpl not in sales_docs_svc.QUOTATION_PRINT_TEMPLATES:
         raise HTTPException(
             status_code=400,
@@ -6695,7 +6754,7 @@ async def print_sales_quotation(
             detail=f"format must be one of: {sorted(sales_docs_svc.QUOTATION_PRINT_FORMATS)}",
         )
     data = await sales_docs_svc.serialize_quotation(db, quote)
-    currency = tenant.currency or "GHS"
+    currency = (company.currency if company and company.currency else None) or tenant.currency or "GHS"
     product_ids = [
         str(i.get("product_id")) for i in (data.get("items") or []) if i.get("product_id")
     ]
@@ -6710,9 +6769,6 @@ async def print_sales_quotation(
             )
         ).scalars().all()
         item_labels = {p.id: p.name for p in products}
-    from app.print_branding import tenant_document_brand
-
-    doc_brand = tenant_document_brand(tenant)
     brand = dict(
         company_name=doc_brand["company_name"],
         customer_name=customer.name,
@@ -7153,15 +7209,25 @@ async def print_sales_return_credit_note(
 
     ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, ret.created_by)
+    workspace_svc.assert_record_company(claims, ret)
     if ret.status != "posted" or not ret.credit_note_number:
         raise HTTPException(
             status_code=409,
             detail="Credit note is available after the sales return is posted",
         )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    cid = claims.get("company_id") or getattr(ret, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
     customer = await sales_svc.get_customer(db, claims["tenant_id"], ret.customer_id)
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], ret.sales_invoice_id)
-    tpl = (template or getattr(tenant, "invoice_print_template", None) or "a4").strip().lower()
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant, company)
+    tpl = (template or doc_brand.get("invoice_print_template") or "a4").strip().lower()
     if tpl not in sales_docs_svc.CREDIT_NOTE_PRINT_TEMPLATES:
         raise HTTPException(
             status_code=400,
@@ -7174,7 +7240,7 @@ async def print_sales_return_credit_note(
             detail=f"format must be one of: {sorted(sales_docs_svc.CREDIT_NOTE_PRINT_FORMATS)}",
         )
     data = await sales_docs_svc.serialize_return(db, ret)
-    currency = tenant.currency or "GHS"
+    currency = (company.currency if company and company.currency else None) or tenant.currency or "GHS"
     product_ids = [
         str(i.get("product_id")) for i in (data.get("items") or []) if i.get("product_id")
     ]
@@ -7189,9 +7255,6 @@ async def print_sales_return_credit_note(
             )
         ).scalars().all()
         item_labels = {p.id: p.name for p in products}
-    from app.print_branding import tenant_document_brand
-
-    doc_brand = tenant_document_brand(tenant)
     brand = dict(
         company_name=doc_brand["company_name"],
         customer_name=customer.name,
@@ -7763,13 +7826,23 @@ async def print_purchase_order(
 
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, po.created_by)
+    workspace_svc.assert_record_company(claims, po)
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], po.supplier_id)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    cid = claims.get("company_id") or getattr(po, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant, company)
     data = await purchasing_svc.serialize_po(db, po)
     text = purchasing_svc.render_po_text(
         data,
         supplier_name=supplier.name,
-        company_name=tenant.company_name,
+        company_name=doc_brand["company_name"],
     )
     return env({"po": data, "text": text, "supplier_name": supplier.name})
 
@@ -7944,6 +8017,7 @@ async def print_purchase_return_debit_note(
 
     ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, ret.created_by)
+    workspace_svc.assert_record_company(claims, ret)
     if ret.status != "posted" or not ret.debit_note_number:
         raise HTTPException(
             status_code=409,
@@ -7951,13 +8025,22 @@ async def print_purchase_return_debit_note(
         )
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], ret.supplier_id)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    cid = claims.get("company_id") or getattr(ret, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant, company)
     po = await purchasing_svc.get_po(db, claims["tenant_id"], ret.purchase_order_id)
     grn = await purchasing_svc.get_grn(db, claims["tenant_id"], ret.goods_receipt_id)
     data = await purchasing_svc.serialize_purchase_return(db, ret)
     text = purchasing_svc.render_debit_note_text(
         data,
         supplier_name=supplier.name,
-        company_name=tenant.company_name,
+        company_name=doc_brand["company_name"],
         po_number=po.po_number,
         grn_number=grn.grn_number,
     )
@@ -7966,7 +8049,7 @@ async def print_purchase_return_debit_note(
             "return": data,
             "text": text,
             "supplier_name": supplier.name,
-            "company_name": tenant.company_name,
+            "company_name": doc_brand["company_name"],
             "po_number": po.po_number,
             "grn_number": grn.grn_number,
         }
@@ -8700,7 +8783,12 @@ async def pos_receipt(
     )
     fmt = (format or "json").lower()
     tenant = await db.get(m.Tenant, claims["tenant_id"])
-    paper = receipts_svc.resolve_receipt_paper(tenant, paper)
+    company = None
+    if claims.get("company_id"):
+        company = await db.get(m.Company, claims["company_id"])
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
+    paper = receipts_svc.resolve_receipt_paper(tenant, paper, company=company)
     if fmt == "json":
         receipt["paper"] = paper
         receipt["text"] = receipts_svc.render_thermal_text(receipt, paper=paper)
@@ -8745,7 +8833,12 @@ async def pos_receipt_send(
         company_id=claims.get("company_id"),
     )
     tenant = await db.get(m.Tenant, claims["tenant_id"])
-    paper = receipts_svc.resolve_receipt_paper(tenant, paper)
+    company = None
+    if claims.get("company_id"):
+        company = await db.get(m.Company, claims["company_id"])
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
+    paper = receipts_svc.resolve_receipt_paper(tenant, paper, company=company)
     text = receipts_svc.render_thermal_text(receipt, paper=paper)
     channel = (channel or "email").lower()
 

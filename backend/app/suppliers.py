@@ -296,14 +296,23 @@ async def delete_contact(
     await db.flush()
 
 
-async def supplier_history(db: AsyncSession, *, tenant_id: str, supplier_id: str) -> dict:
+async def supplier_history(
+    db: AsyncSession, *, tenant_id: str, supplier_id: str, company_id: str | None = None
+) -> dict:
     await get_supplier(db, tenant_id, supplier_id)
+
+    def _scoped(model):
+        clauses = [model.tenant_id == tenant_id]
+        if company_id and hasattr(model, "company_id"):
+            clauses.append(model.company_id == company_id)
+        return clauses
+
     orders = list(
         (
             await db.execute(
                 select(m.PurchaseOrder)
                 .where(
-                    m.PurchaseOrder.tenant_id == tenant_id,
+                    *_scoped(m.PurchaseOrder),
                     m.PurchaseOrder.supplier_id == supplier_id,
                 )
                 .order_by(m.PurchaseOrder.created_at.desc())
@@ -318,7 +327,7 @@ async def supplier_history(db: AsyncSession, *, tenant_id: str, supplier_id: str
             await db.execute(
                 select(m.PurchaseInvoice)
                 .where(
-                    m.PurchaseInvoice.tenant_id == tenant_id,
+                    *_scoped(m.PurchaseInvoice),
                     m.PurchaseInvoice.supplier_id == supplier_id,
                 )
                 .order_by(m.PurchaseInvoice.created_at.desc())
@@ -333,7 +342,7 @@ async def supplier_history(db: AsyncSession, *, tenant_id: str, supplier_id: str
             await db.execute(
                 select(m.PurchaseReturn)
                 .where(
-                    m.PurchaseReturn.tenant_id == tenant_id,
+                    *_scoped(m.PurchaseReturn),
                     m.PurchaseReturn.supplier_id == supplier_id,
                 )
                 .order_by(m.PurchaseReturn.created_at.desc())
@@ -348,7 +357,7 @@ async def supplier_history(db: AsyncSession, *, tenant_id: str, supplier_id: str
             await db.execute(
                 select(m.SupplierPayment)
                 .where(
-                    m.SupplierPayment.tenant_id == tenant_id,
+                    *_scoped(m.SupplierPayment),
                     m.SupplierPayment.supplier_id == supplier_id,
                 )
                 .order_by(m.SupplierPayment.created_at.desc())

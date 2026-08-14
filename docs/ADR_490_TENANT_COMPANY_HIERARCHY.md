@@ -146,3 +146,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Nested product surfaces (images, batches, warehouse-stock) reject cross-company product IDs; product images stamp `company_id`.
 - Stock count and stock transfer by-id + lifecycle paths filter by workspace `company_id`.
 - Remaining PARTIAL: print templates still tenant-level; ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.
+
+## Phase 17 follow-up (2026-08-14)
+
+- Print templates (`invoice_print_template`, `receipt_print_template`, `document_header`/`document_footer`) move to `Company` (Alembic `20260814_0100`); `GET/PATCH /tenants/me`, preview, export, and print/receipt builders prefer the active company series; tenant columns remain legacy seed/fallback.
+- Print routes (invoice/quotation/credit note/PO/debit note) assert company record ownership and brand from the company (or claims) context.
+- Global search, party history (+ export), and legacy `/sales`/`/purchases` transaction list/create stamp and filter by workspace `company_id`.
+- Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design.

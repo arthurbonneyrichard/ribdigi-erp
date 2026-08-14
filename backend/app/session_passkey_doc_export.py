@@ -184,6 +184,9 @@ async def export_document_settings_csv(
     raw = numbering_source_for_serialize(tenant, company)
     numbering = normalize_document_numbering(raw)
     previews = preview_document_numbering(raw)
+    from app.print_branding import print_templates_for_serialize
+
+    print_tpl = print_templates_for_serialize(tenant, company)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=DOCUMENT_SETTINGS_EXPORT_COLUMNS)
     writer.writeheader()
@@ -201,28 +204,22 @@ async def export_document_settings_csv(
                 "value": "",
             }
         )
-    writer.writerow(
-        {
-            "section": "print_template",
-            "key": "invoice_print_template",
-            "prefix": "",
-            "include_year": "",
-            "pad": "",
-            "next_number": "",
-            "preview": "",
-            "value": _cell(getattr(tenant, "invoice_print_template", None) or "a4"),
-        }
-    )
-    writer.writerow(
-        {
-            "section": "print_template",
-            "key": "receipt_print_template",
-            "prefix": "",
-            "include_year": "",
-            "pad": "",
-            "next_number": "",
-            "preview": "",
-            "value": _cell(getattr(tenant, "receipt_print_template", None) or "thermal_80"),
-        }
-    )
+    for key in (
+        "invoice_print_template",
+        "receipt_print_template",
+        "document_header",
+        "document_footer",
+    ):
+        writer.writerow(
+            {
+                "section": "print_template",
+                "key": key,
+                "prefix": "",
+                "include_year": "",
+                "pad": "",
+                "next_number": "",
+                "preview": "",
+                "value": _cell(print_tpl.get(key)),
+            }
+        )
     return buf.getvalue()

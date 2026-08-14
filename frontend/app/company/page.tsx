@@ -679,6 +679,9 @@ export default function Page() {
         <p className="muted">
           Print templates — default layouts for invoices and POS receipts, plus optional
           header/footer text on printed documents (MVP Navigation: Document Templates).
+          {tenant.print_templates_scope
+            ? ` Scope: ${tenant.print_templates_scope}.`
+            : ''}
         </p>
         <label className="muted" style={{ display: 'block', marginTop: 8 }}>
           Invoice print template
