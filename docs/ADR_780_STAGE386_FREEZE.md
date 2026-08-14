@@ -31,3 +31,10 @@ Stage 387 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline hold-expiry, hold-expiry cleanup as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 387 opened under **ADR-781** after CONTINUE/NEXT (Tenant MVP Offline IndexedDB Queue Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-782**. Stage 386 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 386 runner-up outline was approved and opened (ADR-781); freeze ADR-782. Do not reopen Stage 386 scope.
+

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_387_EXIT_CRITERIA.md` / `docs/ADR_782_STAGE387_FREEZE.md` (`backend/tests/test_stage387_exit_h387x.py`) — Stage 387 H387x
+- `docs/STAGE_387_FIDELITY.md` (`backend/tests/test_stage387_fidelity_d1.py`) — Stage 387 D1
+- `docs/STAGE_387_PLAN.md` (`backend/tests/test_stage387_open.py`) — Stage 387 open (ADR-781)
+- `docs/OFFLINE_INDEXEDDB_QUEUE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-indexeddb-queue-pack-remaining-gate.json` — Stage 387 I1
+- `docs/OFFLINE_INDEXEDDB_QUEUE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-indexeddb-queue-pack-rg-blockers.json` — Stage 387 B1
+- `docs/OFFLINE_INDEXEDDB_QUEUE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-indexeddb-queue-pack-rg-pointers.json` — Stage 387 P1
 - `docs/STAGE_386_EXIT_CRITERIA.md` / `docs/ADR_780_STAGE386_FREEZE.md` (`backend/tests/test_stage386_exit_h386x.py`) — Stage 386 H386x
 - `docs/STAGE_386_FIDELITY.md` (`backend/tests/test_stage386_fidelity_d1.py`) — Stage 386 D1
 - `docs/STAGE_386_PLAN.md` (`backend/tests/test_stage386_open.py`) — Stage 386 open (ADR-779)
@@ -5599,6 +5605,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 387 exit
+
+H387x met — `docs/STAGE_387_EXIT_CRITERIA.md`, ADR-782. Stages 1–387 frozen for Stage 387 feature scope.
+
+## Stage 387 D1 — Tenant MVP Offline IndexedDB Queue Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_387_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 387 open
+
+Opened under ADR-781; plan `docs/STAGE_387_PLAN.md`.
 
 ## Stage 386 exit
 

@@ -1,0 +1,69 @@
+{
+  "id": "offline-indexeddb-queue-pack-rg-blockers",
+  "stage": 387,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_INDEXEDDB_QUEUE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_INDEXEDDB_QUEUE_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage163_fidelity": "docs/STAGE_163_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_indexeddb_queue_complete_claimed": false,
+  "indexeddb_queue_engine_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_indexeddb_queue_complete_claimed": "REMAINING",
+    "indexeddb_queue_engine_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage163_as_offline_indexeddb_queue": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_indexeddb_queue_complete_claimed_flag": "false",
+    "indexeddb_queue_engine_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "oidbqrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oidbqrb-indexeddb-queue",
+      "title": "Mark offline IndexedDB-queue Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oidbqrb-engine",
+      "title": "Mark IndexedDB queue engine Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oidbqrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oidbqrb-stage163-nonclaim",
+      "title": "Mark Stage 163 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oidbqrb-checklist-remaining",
+      "title": "Offline Complete / offline IndexedDB-queue Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 387 B1 offline IndexedDB queue pack RG blocker matrix packaging only."
+}

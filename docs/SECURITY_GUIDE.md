@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 387 open** | Offline IndexedDB Queue Pack Remaining-Gate Index — `docs/STAGE_387_PLAN.md`, ADR-781 (`test_stage387_open.py`) |
+| **Stage 387 I1** | Offline IndexedDB queue pack remaining-gate index hub (`test_stage387_index_i1.py`) |
+| **Stage 387 B1** | Offline IndexedDB queue pack blocker matrix (`test_stage387_blockers_b1.py`) |
+| **Stage 387 P1** | Stage 386 / Stage 385 / Stage 163 / CHANGE_IMPACT pointers (`test_stage387_pointers_p1.py`) |
+| **Stage 387 D1** | Offline IndexedDB queue pack remaining-gate fidelity — `docs/STAGE_387_FIDELITY.md` (`test_stage387_fidelity_d1.py`) |
+| **Stage 387 H387x** | Exit + freeze — `docs/STAGE_387_EXIT_CRITERIA.md`, ADR-782 (`test_stage387_exit_h387x.py`); Stages 1–387 frozen |
 | **Stage 386 open** | Offline Hold Expiry Pack Remaining-Gate Index — `docs/STAGE_386_PLAN.md`, ADR-779 (`test_stage386_open.py`) |
 | **Stage 386 I1** | Offline hold expiry pack remaining-gate index hub (`test_stage386_index_i1.py`) |
 | **Stage 386 B1** | Offline hold expiry pack blocker matrix (`test_stage386_blockers_b1.py`) |
