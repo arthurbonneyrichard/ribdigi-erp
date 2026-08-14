@@ -31,3 +31,10 @@ Stage 389 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline push/pull-sync, push/pull sync engine as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 389 opened under **ADR-785** after CONTINUE/NEXT (Tenant MVP Offline Client Request Id Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-786**. Stage 388 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 388 runner-up outline was approved and opened (ADR-785); freeze ADR-786. Do not reopen Stage 388 scope.
+

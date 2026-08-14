@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_389_EXIT_CRITERIA.md` / `docs/ADR_786_STAGE389_FREEZE.md` (`backend/tests/test_stage389_exit_h389x.py`) — Stage 389 H389x
+- `docs/STAGE_389_FIDELITY.md` (`backend/tests/test_stage389_fidelity_d1.py`) — Stage 389 D1
+- `docs/STAGE_389_PLAN.md` (`backend/tests/test_stage389_open.py`) — Stage 389 open (ADR-785)
+- `docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-client-request-id-pack-remaining-gate.json` — Stage 389 I1
+- `docs/OFFLINE_CLIENT_REQUEST_ID_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-client-request-id-pack-rg-blockers.json` — Stage 389 B1
+- `docs/OFFLINE_CLIENT_REQUEST_ID_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-client-request-id-pack-rg-pointers.json` — Stage 389 P1
 - `docs/STAGE_388_EXIT_CRITERIA.md` / `docs/ADR_784_STAGE388_FREEZE.md` (`backend/tests/test_stage388_exit_h388x.py`) — Stage 388 H388x
 - `docs/STAGE_388_FIDELITY.md` (`backend/tests/test_stage388_fidelity_d1.py`) — Stage 388 D1
 - `docs/STAGE_388_PLAN.md` (`backend/tests/test_stage388_open.py`) — Stage 388 open (ADR-783)
@@ -5611,6 +5617,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 389 exit
+
+H389x met — `docs/STAGE_389_EXIT_CRITERIA.md`, ADR-786. Stages 1–389 frozen for Stage 389 feature scope.
+
+## Stage 389 D1 — Tenant MVP Offline Client Request Id Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_389_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 389 open
+
+Opened under ADR-785; plan `docs/STAGE_389_PLAN.md`.
 
 ## Stage 388 exit
 

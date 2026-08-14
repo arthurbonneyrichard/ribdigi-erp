@@ -1,0 +1,75 @@
+{
+  "id": "offline-client-request-id-pack-rg-pointers",
+  "stage": 389,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_push_pull_sync_pack": "docs/OFFLINE_PUSH_PULL_SYNC_PACK_REMAINING_GATE_MVP.md",
+    "offline_indexeddb_queue_pack": "docs/OFFLINE_INDEXEDDB_QUEUE_PACK_REMAINING_GATE_MVP.md",
+    "stage165_fidelity": "docs/STAGE_165_FIDELITY.md",
+    "sync_idempotency_replay_pack": "docs/SYNC_IDEMPOTENCY_REPLAY_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_client_request_id_complete_claimed": false,
+  "client_request_id_idempotency_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section10_offline_client_request_id": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_push_pull_sync_pack_remaining_gate_stage388": "docs/OFFLINE_PUSH_PULL_SYNC_PACK_REMAINING_GATE_MVP.md",
+    "offline_indexeddb_queue_pack_remaining_gate_stage387": "docs/OFFLINE_INDEXEDDB_QUEUE_PACK_REMAINING_GATE_MVP.md",
+    "stage165_idempotency_fidelity": "docs/STAGE_165_FIDELITY.md",
+    "sync_idempotency_replay_pack_remaining_gate": "docs/SYNC_IDEMPOTENCY_REPLAY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_client_request_id / client_request_id_idempotency / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "ocriprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a710 offline client_request_id",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocriprp-stage388",
+      "title": "Point to Stage 388 offline push/pull sync pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocriprp-stage387",
+      "title": "Point to Stage 387 offline IndexedDB queue pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocriprp-stage165",
+      "title": "Point to Stage 165 idempotency fidelity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocriprp-sync-idempotency",
+      "title": "Point to SYNC_IDEMPOTENCY_REPLAY_PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocriprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocriprp-checklist-remaining",
+      "title": "Offline Complete / offline client-request-id Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 389 P1 offline client_request_id pack RG pointers packaging only."
+}
