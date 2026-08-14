@@ -416,3 +416,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 250 decision (opened after Stage 249 freeze)
 
 **Tenant MVP MVP Gate Matrix Pack Remaining-Gate Index Fidelity** — MVP gate matrix pack remaining-gate hub (I1), blocker matrix (B1), Stage 31 / Stage 249 / Stage 248 / Stage 235 pointers with explicit non-claim (P1). Prefixed `MVP_GATE_MATRIX_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 31 G1 `MVP_GATE_MATRIX_*`). Gates closed / go-live / section 7 / attestation Completes remain deferred (Stage 251+). Distinct from Stage 249 declaration pack remaining-gate, Stage 248 release pipeline pack remaining-gate, Stage 235 evidence ledger pack remaining-gate, and Stage 31 G1 MVP gate matrix packaging. Open ADR-507 / freeze ADR-508.
+
+## Stage 251 decision (opened after Stage 250 freeze)
+
+**Tenant MVP Deferred ADR Register Pack Remaining-Gate Index Fidelity** — deferred ADR register pack remaining-gate hub (I1), blocker matrix (B1), Stage 31 / Stage 250 / Stage 249 / Stage 181 pointers with explicit non-claim (P1). Prefixed `DEFERRED_ADR_REGISTER_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 31 R1 `DEFERRED_ADR_REGISTER_*`). Deferred ADR implementation / paid billing / schema-per-tenant / i18n Completes remain deferred (Stage 252+). Distinct from Stage 250 gate matrix pack remaining-gate, Stage 249 declaration pack remaining-gate, Stage 181 billing remaining-gate, and Stage 31 R1 deferred ADR register packaging. Open ADR-509 / freeze ADR-510.

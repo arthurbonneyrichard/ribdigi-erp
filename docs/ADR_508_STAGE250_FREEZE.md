@@ -31,3 +31,9 @@ Stage 251 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for gates closed, §7 signature, go-live, or attestation.
+
+## Amendment — Stage 251 opened
+
+Stage 251 opened under **ADR-509** after CONTINUE/NEXT (Deferred ADR Register Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-510**. Stage 250 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 251 runner-up outline was approved and opened (ADR-509); freeze ADR-510. Do not reopen Stage 250 scope.

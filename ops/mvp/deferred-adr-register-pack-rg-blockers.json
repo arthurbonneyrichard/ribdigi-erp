@@ -1,0 +1,62 @@
+{
+  "id": "deferred-adr-register-pack-rg-blockers",
+  "stage": 251,
+  "pack": "B1",
+  "doc": "docs/DEFERRED_ADR_REGISTER_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DEFERRED_ADR_REGISTER_PACK_REMAINING_GATE_MVP.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "billing_remaining_gate": "docs/BILLING_REMAINING_GATE_MVP.md",
+    "deferred_adr_register_json": "ops/mvp/deferred-adr-register.json"
+  },
+  "packaging_complete": true,
+  "deferred_implemented_claimed": false,
+  "billing_complete_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "i18n_packs_claimed": false,
+  "blockers": {
+    "deferred_adrs_implemented": "REMAINING",
+    "paid_billing_complete": "REMAINING",
+    "schema_per_tenant_complete": "REMAINING",
+    "i18n_packs_complete": "REMAINING",
+    "stage31_r1_as_implemented": "NON_CLAIM",
+    "stage181_as_billing_complete": "NON_CLAIM",
+    "deferred_implemented_claimed": "false",
+    "billing_complete_claimed": "false",
+    "schema_per_tenant_claimed": "false",
+    "i18n_packs_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "darprb-impl",
+      "title": "Mark deferred ADR implementation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "darprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "darprb-schema",
+      "title": "Mark schema-per-tenant Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "darprb-stage31-nonclaim",
+      "title": "Mark Stage 31 R1 as non-claim for deferred ADR Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "darprb-impl-remaining",
+      "title": "Deferred ADR implementation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 251 B1 deferred ADR register pack RG blocker matrix packaging only. Deferred ADR implementation Completes remain MISSING."
+}
