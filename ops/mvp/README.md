@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_337_EXIT_CRITERIA.md` / `docs/ADR_682_STAGE337_FREEZE.md` (`backend/tests/test_stage337_exit_h337x.py`) — Stage 337 H337x
+- `docs/STAGE_337_FIDELITY.md` (`backend/tests/test_stage337_fidelity_d1.py`) — Stage 337 D1
+- `docs/STAGE_337_PLAN.md` (`backend/tests/test_stage337_open.py`) — Stage 337 open (ADR-681)
+- `docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/faq-offline-pos-pack-remaining-gate.json` — Stage 337 I1
+- `docs/FAQ_OFFLINE_POS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/faq-offline-pos-pack-rg-blockers.json` — Stage 337 B1
+- `docs/FAQ_OFFLINE_POS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/faq-offline-pos-pack-rg-pointers.json` — Stage 337 P1
 - `docs/STAGE_336_EXIT_CRITERIA.md` / `docs/ADR_680_STAGE336_FREEZE.md` (`backend/tests/test_stage336_exit_h336x.py`) — Stage 336 H336x
 - `docs/STAGE_336_FIDELITY.md` (`backend/tests/test_stage336_fidelity_d1.py`) — Stage 336 D1
 - `docs/STAGE_336_PLAN.md` (`backend/tests/test_stage336_open.py`) — Stage 336 open (ADR-679)
@@ -5299,6 +5305,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 337 exit
+
+H337x met — `docs/STAGE_337_EXIT_CRITERIA.md`, ADR-682. Stages 1–337 frozen for Stage 337 feature scope.
+
+## Stage 337 D1 — Tenant MVP FAQ Offline POS Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_337_FIDELITY.md` (`test_stage337_fidelity_d1.py`). `FAQ_OFFLINE_POS_PACK_*` remaining-gate index; Offline Complete / hosted KB SaaS / attestation / fabricated FAQ SLA / go-live still MISSING.
+
+## Stage 337 open
+
+ADR-681 / `docs/STAGE_337_PLAN.md`.
 
 ## Stage 336 exit
 

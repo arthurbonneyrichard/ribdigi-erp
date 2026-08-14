@@ -1,0 +1,63 @@
+{
+  "id": "faq-offline-pos-pack-rg-blockers",
+  "stage": 337,
+  "pack": "B1",
+  "doc": "docs/FAQ_OFFLINE_POS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "hosted_kb_saas_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_faq_sla_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "hosted_kb_saas_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_faq_sla_claimed": "REMAINING",
+    "stage171_as_live_faq_offline_pos": "NON_CLAIM",
+    "stage169_190_as_live_faq_offline_pos": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "hosted_kb_saas_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_faq_sla_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "fopprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fopprb-kb-saas",
+      "title": "Mark hosted KB SaaS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fopprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fopprb-stage171-nonclaim",
+      "title": "Mark Stage 171 / Stage 169 / Stage 190 as non-claim for live FAQ offline POS Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fopprb-faq-remaining",
+      "title": "Live FAQ offline POS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 337 B1 FAQ offline POS pack RG blocker matrix packaging only. Live FAQ offline POS Completes remain MISSING."
+}

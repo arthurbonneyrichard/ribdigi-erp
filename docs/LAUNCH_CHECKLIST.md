@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 337 track opened (ADR-681: `test_stage337_open.py`, `docs/STAGE_337_PLAN.md`) — FAQ Offline POS Pack Remaining-Gate Index; closed under ADR-682
+- [x] FAQ offline POS pack remaining-gate hub (Stage 337 I1: `test_stage337_index_i1.py`, `docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md`)
+- [x] FAQ offline POS pack blocker matrix (Stage 337 B1: `test_stage337_blockers_b1.py`, `docs/FAQ_OFFLINE_POS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 171 / Stage 336 / Stage 335 / Stage 329 pointers (Stage 337 P1: `test_stage337_pointers_p1.py`, `docs/FAQ_OFFLINE_POS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 337 fidelity sync (D1: `test_stage337_fidelity_d1.py`, `docs/STAGE_337_FIDELITY.md`)
+- [x] Stage 337 exit + freeze (H337x: `test_stage337_exit_h337x.py`, `docs/STAGE_337_EXIT_CRITERIA.md`, ADR-682)
 - [x] Stage 336 track opened (ADR-679: `test_stage336_open.py`, `docs/STAGE_336_PLAN.md`) — Offline Sync Runbook Pack Remaining-Gate Index; closed under ADR-680
 - [x] Offline sync runbook pack remaining-gate hub (Stage 336 I1: `test_stage336_index_i1.py`, `docs/OFFLINE_SYNC_RUNBOOK_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline sync runbook pack blocker matrix (Stage 336 B1: `test_stage336_blockers_b1.py`, `docs/OFFLINE_SYNC_RUNBOOK_PACK_RG_BLOCKERS_MVP.md`)

@@ -31,3 +31,10 @@ Stage 337 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for offline sync runbook, Offline Complete, attestation, browser E2E, fabricated sync, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 337 opened under **ADR-681** after CONTINUE/NEXT (Tenant MVP FAQ Offline POS Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-682**. Stage 336 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 337 runner-up outline was approved and opened (ADR-681); freeze ADR-682. Do not reopen Stage 336 scope.
+
