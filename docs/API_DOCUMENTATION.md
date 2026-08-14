@@ -1469,6 +1469,8 @@ Rule-based velocity forecasts (7/30/90), reorder qty, dead stock, seasonality hi
 
 Omitting `lines` runs prediction then creates draft purchase requests (`purchasing:write`).
 
+**UI:** AI page (`/ai`) — **Inventory predictions** then **Create draft PR(s)** (BR-21.4). Uses loaded at-risk lines when present; otherwise re-runs prediction. Open Purchasing → Requests to submit.
+
 ### 16.5 AI Sales Analysis
 **Endpoint:** `GET /ai/sales/analysis?from_date=&to_date=`
 

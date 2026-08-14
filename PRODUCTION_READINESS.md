@@ -88,7 +88,7 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 - [x] Tenant-safe data access enforced.
   - Complete (MVP packaging): insights built from tenant-scoped dashboard only; `ai_queries` rows and `/ai/queries` list are tenant-filtered; cross-tenant previews must not leak. Full RAG/LLM context isolation remains Incomplete until provider chat lands.
 - [ ] AI functions use real tenant data and satisfy documented acceptance criteria.
-  - Partial: insights, Security Monitor, inventory predictions, sales/expense analysis, report generator, customer assistant, **document assistant** (`POST /ai/documents/analyze`) — see `docs/AI_DOCUMENT_MVP.md`. Chat / free-form LLM NL remain Incomplete.
+  - Partial: insights, Security Monitor, inventory predictions + **AI draft PR UI (BR-21.4)** (`POST /ai/inventory/low-stock-prediction/requests` via `/ai` Create draft PR(s)), sales/expense analysis, report generator, customer assistant, **document assistant** (`POST /ai/documents/analyze`) — see `docs/AI_DOCUMENT_MVP.md`. Chat / free-form LLM NL remain Incomplete.
 - [x] AI audit logging and prompt/data protections complete.
   - Complete (MVP packaging): `ai_queries` table + `audit_logs` module=`ai`; prompt SHA-256 + redacted preview (no raw secrets); max message length; injection deny-list → 400. **AI Security Monitor (BR-21.10)** Complete (MVP rule-based): `GET /ai/security/alerts`, `POST /ai/security/scan`, Celery `scan_ai_security_alerts`, in-app `security` notifications above threshold — see `docs/AI_SECURITY_MVP.md`. Output PII scanner / Isolation-Forest ML remain post-MVP.
 
