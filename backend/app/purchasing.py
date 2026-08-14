@@ -1816,14 +1816,33 @@ async def create_purchase_invoice(
                 if qty <= 0:
                     continue
                 poi = po_items.get(gi.po_item_id)
+                unit_price = float(poi.unit_price) if poi else 0.0
+                tax_rate = float(poi.tax_rate or 0) if poi else 0.0
+                # Carry proportional PO line discount (BR-6.3 → BR-6.5)
+                disc = 0.0
+                if poi is not None:
+                    ordered = float(poi.quantity or 0)
+                    line_disc = float(getattr(poi, "discount", 0) or 0)
+                    if ordered > 1e-9 and line_disc > 0:
+                        disc = round(line_disc * (qty / ordered), 2)
+                        merch = qty * unit_price
+                        if disc > merch + 1e-9:
+                            disc = round(max(merch, 0), 2)
                 items.append(
                     {
                         "product_id": gi.product_id,
                         "quantity": qty,
-                        "unit_price": float(poi.unit_price) if poi else 0,
-                        "tax_rate": float(poi.tax_rate or 0) if poi else 0,
-                        "discount": 0,
+                        "unit_price": unit_price,
+                        "tax_rate": tax_rate,
+                        "discount": disc,
                     }
+                )
+            # When client leaves header discount at 0, mirror sum of carried line discounts
+            # so invoice total_amount matches negotiated PO economics (PI totals use header).
+            if float(discount_amount or 0) <= 0:
+                discount_amount = round(
+                    sum(float(i.get("discount") or 0) for i in items),
+                    2,
                 )
     elif purchase_order_id:
         po = await get_po(db, tenant_id, purchase_order_id)
