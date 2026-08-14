@@ -994,6 +994,12 @@ Authoritative MVP docs:
 - `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-golive-closeout-pack-remaining-gate.json` — Stage 260 I1
 - `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-golive-closeout-pack-rg-blockers.json` — Stage 260 B1
 - `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-golive-closeout-pack-rg-pointers.json` — Stage 260 P1
+- `docs/STAGE_261_EXIT_CRITERIA.md` / `docs/ADR_530_STAGE261_FREEZE.md` (`backend/tests/test_stage261_exit_h261x.py`) — Stage 261 H261x
+- `docs/STAGE_261_FIDELITY.md` (`backend/tests/test_stage261_fidelity_d1.py`) — Stage 261 D1
+- `docs/STAGE_261_PLAN.md` (`backend/tests/test_stage261_open.py`) — Stage 261 open (ADR-529)
+- `docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/preflight-verification-pack-remaining-gate.json` — Stage 261 I1
+- `docs/PREFLIGHT_VERIFICATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/preflight-verification-pack-rg-blockers.json` — Stage 261 B1
+- `docs/PREFLIGHT_VERIFICATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/preflight-verification-pack-rg-pointers.json` — Stage 261 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4579,4 +4585,16 @@ H260x met — `docs/STAGE_260_EXIT_CRITERIA.md`, ADR-528. Stages 1–260 frozen 
 ## Stage 260 open
 
 `docs/ADR_527_STAGE260_OPEN.md` + `docs/STAGE_260_PLAN.md` (`test_stage260_open.py`).
+
+## Stage 261 exit
+
+H261x met — `docs/STAGE_261_EXIT_CRITERIA.md`, ADR-530. Stages 1–261 frozen for Stage 261 feature scope.
+
+## Stage 261 D1 — Tenant MVP Preflight Verification Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_261_FIDELITY.md` (`test_stage261_fidelity_d1.py`). `PREFLIGHT_VERIFICATION_PACK_*` remaining-gate index; §§1–3 verified / go-live still MISSING.
+
+## Stage 261 open
+
+`docs/ADR_529_STAGE261_OPEN.md` + `docs/STAGE_261_PLAN.md` (`test_stage261_open.py`).
 

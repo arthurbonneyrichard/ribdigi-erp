@@ -457,3 +457,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Commercial Go-Live Closeout Pack Remaining-Gate Index Fidelity** — commercial go-live closeout pack remaining-gate hub (I1), blocker matrix (B1), Stage 70 / Stage 259 / Stage 258 / Stage 200 pointers with explicit non-claim (P1). Prefixed `COMMERCIAL_GOLIVE_CLOSEOUT_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 70 G1 / Stage 200 `COMMERCIAL_GOLIVE_CLOSEOUT_*`). Commercial go-live closeout / first commercial day / go-live / §7 Completes remain deferred (Stage 261+). Distinct from Stage 259 first commercial day pack remaining-gate, Stage 258 steady-state ops pack remaining-gate, Stage 200 closeout remaining-gate, and Stage 70 G1 closeout packaging. Open ADR-527 / freeze ADR-528.
 
+## Stage 261 decision (opened after Stage 260 freeze)
+
+**Tenant MVP Preflight Verification Pack Remaining-Gate Index Fidelity** — preflight verification pack remaining-gate hub (I1), blocker matrix (B1), Stage 69 / Stage 260 / Stage 259 / Stage 201 pointers with explicit non-claim (P1). Prefixed `PREFLIGHT_VERIFICATION_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 69 V1 / Stage 201 `PREFLIGHT_VERIFICATION_*`). §§1–3 verified / preflight verified / go-live / attestation Completes remain deferred (Stage 262+). Distinct from Stage 260 commercial go-live closeout pack remaining-gate, Stage 259 first commercial day pack remaining-gate, Stage 201 preflight remaining-gate, and Stage 69 V1 preflight packaging. Open ADR-529 / freeze ADR-530.
+

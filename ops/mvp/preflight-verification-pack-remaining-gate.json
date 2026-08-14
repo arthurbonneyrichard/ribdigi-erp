@@ -1,0 +1,57 @@
+{
+  "id": "preflight-verification-pack-remaining-gate",
+  "stage": 261,
+  "pack": "I1",
+  "doc": "docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PREFLIGHT_VERIFICATION_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PREFLIGHT_VERIFICATION_PACK_RG_POINTERS_MVP.md",
+    "preflight_verification": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+    "commercial_golive_closeout_pack_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md",
+    "first_commercial_day_pack_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md",
+    "preflight_verification_remaining_gate": "docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md",
+    "preflight_verification_register": "ops/mvp/preflight-verification.json"
+  },
+  "packaging_complete": true,
+  "sections_1_3_verified": false,
+  "preflight_verified_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage69_v1_preflight_verification": true,
+  "distinct_from_stage260_commercial_golive_closeout_pack_remaining_gate": true,
+  "distinct_from_stage259_first_commercial_day_pack_remaining_gate": true,
+  "distinct_from_stage201_preflight_verification_remaining_gate": true,
+  "steps": [
+    {
+      "id": "pvpr-read-blockers",
+      "title": "Read B1 preflight verification pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvpr-follow-pointers",
+      "title": "Follow P1 Stage 69 / Stage 260 / Stage 259 / Stage 201 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvpr-preflight-missing",
+      "title": "Reaffirm \u00a7\u00a71\u20133 verified MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvpr-no-packaging-as-live",
+      "title": "Do not treat Stage 69 V1 / Stage 260 / Stage 201 as \u00a7\u00a71\u20133 verified Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvpr-preflight-remaining",
+      "title": "\u00a7\u00a71\u20133 verified / preflight verified / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 261 I1 preflight verification pack remaining-gate index packaging only. Do not claim \u00a7\u00a71\u20133 verified Complete."
+}
