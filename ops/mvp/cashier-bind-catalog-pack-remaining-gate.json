@@ -1,0 +1,57 @@
+{
+  "id": "cashier-bind-catalog-pack-remaining-gate",
+  "stage": 357,
+  "pack": "I1",
+  "doc": "docs/CASHIER_BIND_CATALOG_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CASHIER_BIND_CATALOG_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CASHIER_BIND_CATALOG_PACK_RG_POINTERS_MVP.md",
+    "cashier_bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md",
+    "store_open_lowstock_pack_remaining_gate": "docs/STORE_OPEN_LOWSTOCK_PACK_REMAINING_GATE_MVP.md",
+    "cashier_quickstart_pack_remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "offline_stock_authoritative_claimed": false,
+  "usb_serial_claimed": false,
+  "distinct_from_stage172_cashier_bind_catalog": true,
+  "distinct_from_stage356_store_open_lowstock_pack_remaining_gate": true,
+  "distinct_from_stage339_cashier_quickstart_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "cbcpr-read-blockers",
+      "title": "Read B1 cashier bind catalog pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcpr-follow-pointers",
+      "title": "Follow P1 Stage 172 / Stage 356 / Stage 339 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcpr-checklist-missing",
+      "title": "Reaffirm live cashier bind catalog / Offline Complete / attestation / authoritative offline stock MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcpr-no-packaging-as-live",
+      "title": "Do not treat Stage 172 / Stage 171 / Stage 356 / Stage 339 / Stage 329 as live cashier bind catalog Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcpr-checklist-remaining",
+      "title": "Offline Complete / attestation / authoritative offline stock / USB-serial / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 357 I1 cashier bind catalog pack remaining-gate index packaging only. Do not claim live cashier bind catalog Complete."
+}

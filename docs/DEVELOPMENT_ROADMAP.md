@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 357 open (2026-08-14):** Tenant MVP Cashier Bind Catalog Pack Remaining-Gate Index Fidelity — `docs/ADR_721_STAGE357_OPEN.md` + `docs/STAGE_357_PLAN.md` (I1 next).
+
+**Stage 357 I1 (2026-08-14):** Cashier bind catalog pack remaining-gate index hub (`test_stage357_index_i1.py`).
+
+**Stage 357 B1 (2026-08-14):** Cashier bind catalog pack blocker matrix (`test_stage357_blockers_b1.py`).
+
+**Stage 357 P1 (2026-08-14):** Stage 172 / Stage 356 / Stage 339 / Stage 329 pointers (`test_stage357_pointers_p1.py`).
+
+**Stage 357 D1 (2026-08-14):** Cashier Bind Catalog Pack Remaining-Gate Index fidelity sync — `docs/STAGE_357_FIDELITY.md` (`test_stage357_fidelity_d1.py`).
+
+**Stage 357 exit (2026-08-14):** I1, B1, P1, D1, H357x met — `docs/STAGE_357_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_722_STAGE357_FREEZE.md`. Fidelity: `docs/STAGE_357_FIDELITY.md`.
+
 **Stage 356 open (2026-08-14):** Tenant MVP Store Open Lowstock Pack Remaining-Gate Index Fidelity — `docs/ADR_719_STAGE356_OPEN.md` + `docs/STAGE_356_PLAN.md` (I1 next).
 
 **Stage 356 I1 (2026-08-14):** Store open lowstock pack remaining-gate index hub (`test_stage356_index_i1.py`).

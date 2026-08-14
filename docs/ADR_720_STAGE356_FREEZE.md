@@ -31,3 +31,10 @@ Stage 357 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for store-open lowstock, Offline Complete, attestation, auto PO, authoritative offline stock, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 357 opened under **ADR-721** after CONTINUE/NEXT (Tenant MVP Cashier Bind Catalog Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-722**. Stage 356 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 357 runner-up outline was approved and opened (ADR-721); freeze ADR-722. Do not reopen Stage 356 scope.
+

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_357_EXIT_CRITERIA.md` / `docs/ADR_722_STAGE357_FREEZE.md` (`backend/tests/test_stage357_exit_h357x.py`) — Stage 357 H357x
+- `docs/STAGE_357_FIDELITY.md` (`backend/tests/test_stage357_fidelity_d1.py`) — Stage 357 D1
+- `docs/STAGE_357_PLAN.md` (`backend/tests/test_stage357_open.py`) — Stage 357 open (ADR-721)
+- `docs/CASHIER_BIND_CATALOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/cashier-bind-catalog-pack-remaining-gate.json` — Stage 357 I1
+- `docs/CASHIER_BIND_CATALOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/cashier-bind-catalog-pack-rg-blockers.json` — Stage 357 B1
+- `docs/CASHIER_BIND_CATALOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/cashier-bind-catalog-pack-rg-pointers.json` — Stage 357 P1
 - `docs/STAGE_356_EXIT_CRITERIA.md` / `docs/ADR_720_STAGE356_FREEZE.md` (`backend/tests/test_stage356_exit_h356x.py`) — Stage 356 H356x
 - `docs/STAGE_356_FIDELITY.md` (`backend/tests/test_stage356_fidelity_d1.py`) — Stage 356 D1
 - `docs/STAGE_356_PLAN.md` (`backend/tests/test_stage356_open.py`) — Stage 356 open (ADR-719)
@@ -5419,6 +5425,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 357 exit
+
+H357x met — `docs/STAGE_357_EXIT_CRITERIA.md`, ADR-722. Stages 1–357 frozen for Stage 357 feature scope.
+
+## Stage 357 D1 — Tenant MVP Cashier Bind Catalog Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_357_FIDELITY.md` (`test_stage357_fidelity_d1.py`). `CASHIER_BIND_CATALOG_PACK_*` remaining-gate index; Offline Complete / attestation / authoritative offline stock / USB-serial / go-live still MISSING.
+
+## Stage 357 open
+
+ADR-721 / `docs/STAGE_357_PLAN.md`.
 
 ## Stage 356 exit
 
