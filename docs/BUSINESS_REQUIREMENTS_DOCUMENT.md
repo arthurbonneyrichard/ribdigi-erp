@@ -385,7 +385,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] Set minimum stock level per product per warehouse
   - [ ] Set reorder level (trigger point for purchase)
-  - [ ] Visual indicators on product list (green/yellow/red status)
+  - [x] Visual indicators on product list (green/yellow/red status) (`stock_status` / `stock_status_label` on product serialize; Inventory products Stock badge; red = ≤0 or ≤ reorder, yellow = ≤ reorder×1.5, green = OK)
   - [ ] Automated low-stock notifications to Inventory Officer and Store Manager
   - [x] Generate purchase suggestions based on reorder levels
 

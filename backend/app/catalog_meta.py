@@ -69,10 +69,38 @@ def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None)
     }
 
 
+# Near-reorder band: yellow while qty is above reorder but ≤ this factor × reorder (BR-5.5).
+STOCK_STATUS_YELLOW_FACTOR = 1.5
+
+
+def compute_stock_status(stock_qty: float, reorder_level: float) -> dict:
+    """Traffic-light stock status for product list (BR-5.5).
+
+    - red: on-hand ≤ 0, or (reorder > 0 and on-hand ≤ reorder) — matches low-stock report
+    - yellow: reorder > 0 and reorder < on-hand ≤ reorder × 1.5
+    - green: otherwise (incl. reorder unset/0 with positive stock)
+    """
+    qty = float(stock_qty or 0)
+    reorder = float(reorder_level or 0)
+    if qty <= 0 or (reorder > 0 and qty <= reorder):
+        code = "red"
+        label = "out_of_stock" if qty <= 0 else "low"
+    elif reorder > 0 and qty <= reorder * STOCK_STATUS_YELLOW_FACTOR:
+        code = "yellow"
+        label = "near_reorder"
+    else:
+        code = "green"
+        label = "ok"
+    return {"status": code, "label": label}
+
+
 def serialize_product(row: m.Product) -> dict:
     def _opt_float(value) -> float | None:
         return float(value) if value is not None else None
 
+    stock_qty = float(row.stock_qty or 0)
+    reorder_level = float(row.reorder_level or 0)
+    status = compute_stock_status(stock_qty, reorder_level)
     return {
         "id": row.id,
         "name": row.name,
@@ -91,8 +119,10 @@ def serialize_product(row: m.Product) -> dict:
         "length": _opt_float(getattr(row, "length", None)),
         "width": _opt_float(getattr(row, "width", None)),
         "height": _opt_float(getattr(row, "height", None)),
-        "stock_qty": float(row.stock_qty or 0),
-        "reorder_level": float(row.reorder_level or 0),
+        "stock_qty": stock_qty,
+        "reorder_level": reorder_level,
+        "stock_status": status["status"],
+        "stock_status_label": status["label"],
         "tax_rate_id": row.tax_rate_id,
         "tax_exempt": bool(row.tax_exempt),
         "tax_supply_class": getattr(row, "tax_supply_class", None)

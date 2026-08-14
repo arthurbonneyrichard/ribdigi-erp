@@ -501,6 +501,8 @@ Variant attributes (BR-5.1): `size`, `color`, `flavor`, `dosage` on `POST|PATCH 
 
 Optional physical fields: `weight` (kg), `length` / `width` / `height` (cm). Also accepted on `PATCH /products/{id}` and CSV import columns.
 
+Product responses include `stock_qty`, `reorder_level`, plus traffic-light fields `stock_status` (`green`|`yellow`|`red`) and `stock_status_label` (`ok`|`near_reorder`|`low`|`out_of_stock`) for Inventory list badges (BR-5.5). Rules: **red** when on-hand ≤ 0 or (reorder > 0 and on-hand ≤ reorder); **yellow** when reorder > 0 and on-hand ≤ reorder × 1.5; otherwise **green**.
+
 ### 5.5 Stock Operations
 
 **Stock In:** `POST /inventory/stock-in`
