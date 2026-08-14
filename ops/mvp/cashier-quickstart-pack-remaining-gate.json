@@ -1,0 +1,57 @@
+{
+  "id": "cashier-quickstart-pack-remaining-gate",
+  "stage": 339,
+  "pack": "I1",
+  "doc": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CASHIER_QUICKSTART_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CASHIER_QUICKSTART_PACK_RG_POINTERS_MVP.md",
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md",
+    "troubleshooting_index_pack_remaining_gate": "docs/TROUBLESHOOTING_INDEX_PACK_REMAINING_GATE_MVP.md",
+    "faq_offline_pos_pack_remaining_gate": "docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_cashier_cert_claimed": false,
+  "distinct_from_stage172_cashier_quickstart": true,
+  "distinct_from_stage338_troubleshooting_index_pack_remaining_gate": true,
+  "distinct_from_stage337_faq_offline_pos_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "cqpr-read-blockers",
+      "title": "Read B1 cashier quickstart pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqpr-follow-pointers",
+      "title": "Follow P1 Stage 172 / Stage 338 / Stage 337 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqpr-quickstart-missing",
+      "title": "Reaffirm live cashier quickstart / Offline Complete / live training / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqpr-no-packaging-as-live",
+      "title": "Do not treat Stage 172 / Stage 171 / Stage 338 / Stage 337 / Stage 329 as live cashier quickstart Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqpr-quickstart-remaining",
+      "title": "Offline Complete / live training / attestation / fabricated cashier cert / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 339 I1 cashier quickstart pack remaining-gate index packaging only. Do not claim live cashier quickstart Complete."
+}

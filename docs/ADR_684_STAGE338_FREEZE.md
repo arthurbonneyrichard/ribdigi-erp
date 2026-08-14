@@ -31,3 +31,10 @@ Stage 339 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for troubleshooting index, support-SLA, Offline Complete, live DR, attestation, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 339 opened under **ADR-685** after CONTINUE/NEXT (Tenant MVP Cashier Quickstart Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-686**. Stage 338 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 339 runner-up outline was approved and opened (ADR-685); freeze ADR-686. Do not reopen Stage 338 scope.
+
