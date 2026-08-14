@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_402_EXIT_CRITERIA.md` / `docs/ADR_812_STAGE402_FREEZE.md` (`backend/tests/test_stage402_exit_h402x.py`) — Stage 402 H402x
+- `docs/STAGE_402_FIDELITY.md` (`backend/tests/test_stage402_fidelity_d1.py`) — Stage 402 D1
+- `docs/STAGE_402_PLAN.md` (`backend/tests/test_stage402_open.py`) — Stage 402 open (ADR-811)
+- `docs/CONNECTIVITY_SYNC_STATUS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/connectivity-sync-status-pack-remaining-gate.json` — Stage 402 I1
+- `docs/CONNECTIVITY_SYNC_STATUS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/connectivity-sync-status-pack-rg-blockers.json` — Stage 402 B1
+- `docs/CONNECTIVITY_SYNC_STATUS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/connectivity-sync-status-pack-rg-pointers.json` — Stage 402 P1
 - `docs/STAGE_401_EXIT_CRITERIA.md` / `docs/ADR_810_STAGE401_FREEZE.md` (`backend/tests/test_stage401_exit_h401x.py`) — Stage 401 H401x
 - `docs/STAGE_401_FIDELITY.md` (`backend/tests/test_stage401_fidelity_d1.py`) — Stage 401 D1
 - `docs/STAGE_401_PLAN.md` (`backend/tests/test_stage401_open.py`) — Stage 401 open (ADR-809)
@@ -5689,6 +5695,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 402 exit
+
+H402x met — `docs/STAGE_402_EXIT_CRITERIA.md`, ADR-812. Stages 1–402 frozen for Stage 402 feature scope.
+
+## Stage 402 D1 — Tenant MVP Connectivity Sync Status Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_402_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 402 open
+
+Opened under ADR-811; plan `docs/STAGE_402_PLAN.md`.
 
 ## Stage 401 exit
 

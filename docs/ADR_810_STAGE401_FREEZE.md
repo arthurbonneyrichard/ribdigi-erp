@@ -31,3 +31,9 @@ Stage 402 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, permission alias-map, alias map as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 402 opened under **ADR-811** after CONTINUE/NEXT (Tenant MVP Connectivity Sync Status Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-812**. Stage 401 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 401 runner-up outline was approved and opened (ADR-811); freeze ADR-812. Do not reopen Stage 401 scope.

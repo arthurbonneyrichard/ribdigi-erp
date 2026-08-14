@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 402 D1 (2026-08-14):** Connectivity Sync Status Pack Remaining-Gate Index fidelity sync — `docs/STAGE_402_FIDELITY.md` (`test_stage402_fidelity_d1.py`). Open ADR: `docs/ADR_811_STAGE402_OPEN.md`; plan `docs/STAGE_402_PLAN.md`.
+
+**Stage 402 exit (2026-08-14):** I1, B1, P1, D1, H402x met — `docs/STAGE_402_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_812_STAGE402_FREEZE.md`. Fidelity: `docs/STAGE_402_FIDELITY.md`.
+
 **Stage 401 D1 (2026-08-14):** Permission Alias Map Pack Remaining-Gate Index fidelity sync — `docs/STAGE_401_FIDELITY.md` (`test_stage401_fidelity_d1.py`). Open ADR: `docs/ADR_809_STAGE401_OPEN.md`; plan `docs/STAGE_401_PLAN.md`.
 
 **Stage 401 exit (2026-08-14):** I1, B1, P1, D1, H401x met — `docs/STAGE_401_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_810_STAGE401_FREEZE.md`. Fidelity: `docs/STAGE_401_FIDELITY.md`.

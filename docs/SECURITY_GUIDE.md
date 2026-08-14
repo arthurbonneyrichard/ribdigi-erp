@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 402 D1 Connectivity Sync Status Pack Remaining-Gate Index Fidelity — `docs/STAGE_402_FIDELITY.md` (`test_stage402_fidelity_d1.py`); exit ADR-812 / `test_stage402_exit_h402x.py`. Honesty: Offline Complete / sync-status Completes remain MISSING.
 Stage 401 D1 Permission Alias Map Pack Remaining-Gate Index Fidelity — `docs/STAGE_401_FIDELITY.md` (`test_stage401_fidelity_d1.py`); exit ADR-810 / `test_stage401_exit_h401x.py`. Honesty: Offline Complete / alias-map Completes remain MISSING.
 Stage 400 D1 Offline Sync Push Idempotency Pack Remaining-Gate Index Fidelity — `docs/STAGE_400_FIDELITY.md` (`test_stage400_fidelity_d1.py`); exit ADR-808 / `test_stage400_exit_h400x.py`. Honesty: Offline Complete / sync-push-idempotency Completes remain MISSING.
 Stage 399 D1 Offline Conflict UX Pack Remaining-Gate Index Fidelity — `docs/STAGE_399_FIDELITY.md` (`test_stage399_fidelity_d1.py`); exit ADR-806 / `test_stage399_exit_h399x.py`. Honesty: Offline Complete / conflict-UX Completes remain MISSING.

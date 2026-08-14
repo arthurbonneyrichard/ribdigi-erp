@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 402 track opened (ADR-811: `test_stage402_open.py`, `docs/STAGE_402_PLAN.md`) — Connectivity Sync Status Pack Remaining-Gate Index; closed under ADR-812
+- [x] Connectivity sync status pack remaining-gate hub (Stage 402 I1: `test_stage402_index_i1.py`, `docs/CONNECTIVITY_SYNC_STATUS_PACK_REMAINING_GATE_MVP.md`)
+- [x] Connectivity sync status pack blocker matrix (Stage 402 B1: `test_stage402_blockers_b1.py`, `docs/CONNECTIVITY_SYNC_STATUS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 401 / Stage 400 / Stage 392 / CHANGE_IMPACT pointers (Stage 402 P1: `test_stage402_pointers_p1.py`, `docs/CONNECTIVITY_SYNC_STATUS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 402 fidelity sync (D1: `test_stage402_fidelity_d1.py`, `docs/STAGE_402_FIDELITY.md`)
+- [x] Stage 402 exit + freeze (H402x: `test_stage402_exit_h402x.py`, `docs/STAGE_402_EXIT_CRITERIA.md`, ADR-812)
 - [x] Stage 401 track opened (ADR-809: `test_stage401_open.py`, `docs/STAGE_401_PLAN.md`) — Permission Alias Map Pack Remaining-Gate Index; closed under ADR-810
 - [x] Permission alias map pack remaining-gate hub (Stage 401 I1: `test_stage401_index_i1.py`, `docs/PERMISSION_ALIAS_MAP_PACK_REMAINING_GATE_MVP.md`)
 - [x] Permission alias map pack blocker matrix (Stage 401 B1: `test_stage401_blockers_b1.py`, `docs/PERMISSION_ALIAS_MAP_PACK_RG_BLOCKERS_MVP.md`)
