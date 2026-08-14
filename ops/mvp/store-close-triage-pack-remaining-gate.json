@@ -1,0 +1,57 @@
+{
+  "id": "store-close-triage-pack-remaining-gate",
+  "stage": 355,
+  "pack": "I1",
+  "doc": "docs/STORE_CLOSE_TRIAGE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STORE_CLOSE_TRIAGE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STORE_CLOSE_TRIAGE_PACK_RG_POINTERS_MVP.md",
+    "store_close_triage": "docs/STORE_CLOSE_TRIAGE_MVP.md",
+    "store_open_health_pack_remaining_gate": "docs/STORE_OPEN_HEALTH_PACK_REMAINING_GATE_MVP.md",
+    "store_close_drain_pack_remaining_gate": "docs/STORE_CLOSE_DRAIN_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_conflict_free_claimed": false,
+  "distinct_from_stage174_store_close_triage": true,
+  "distinct_from_stage354_store_open_health_pack_remaining_gate": true,
+  "distinct_from_stage353_store_close_drain_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sctpr-read-blockers",
+      "title": "Read B1 store close triage pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctpr-follow-pointers",
+      "title": "Follow P1 Stage 174 / Stage 354 / Stage 353 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctpr-checklist-missing",
+      "title": "Reaffirm live store-close triage / Offline Complete / live DR / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctpr-no-packaging-as-live",
+      "title": "Do not treat Stage 174 / Stage 173 / Stage 354 / Stage 353 / Stage 329 as live store-close triage Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctpr-checklist-remaining",
+      "title": "Offline Complete / live DR / attestation / fabricated conflict-free / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 355 I1 store close triage pack remaining-gate index packaging only. Do not claim live store-close triage Complete."
+}

@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 355 open** | Store Close Triage Pack Remaining-Gate Index — `docs/STAGE_355_PLAN.md`, ADR-717 (`test_stage355_open.py`) |
+| **Stage 355 I1** | Store close triage pack remaining-gate index hub (`test_stage355_index_i1.py`) |
+| **Stage 355 B1** | Store close triage pack blocker matrix (`test_stage355_blockers_b1.py`) |
+| **Stage 355 P1** | Stage 174 / Stage 354 / Stage 353 / Stage 329 pointers (`test_stage355_pointers_p1.py`) |
+| **Stage 355 D1** | Store close triage pack remaining-gate fidelity — `docs/STAGE_355_FIDELITY.md` (`test_stage355_fidelity_d1.py`) |
+| **Stage 355 H355x** | Exit + freeze — `docs/STAGE_355_EXIT_CRITERIA.md`, ADR-718 (`test_stage355_exit_h355x.py`); Stages 1–355 frozen |
 | **Stage 354 open** | Store Open Health Pack Remaining-Gate Index — `docs/STAGE_354_PLAN.md`, ADR-715 (`test_stage354_open.py`) |
 | **Stage 354 I1** | Store open health pack remaining-gate index hub (`test_stage354_index_i1.py`) |
 | **Stage 354 B1** | Store open health pack blocker matrix (`test_stage354_blockers_b1.py`) |

@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 355 open (2026-08-14):** Tenant MVP Store Close Triage Pack Remaining-Gate Index Fidelity — `docs/ADR_717_STAGE355_OPEN.md` + `docs/STAGE_355_PLAN.md` (I1 next).
+
+**Stage 355 I1 (2026-08-14):** Store close triage pack remaining-gate index hub (`test_stage355_index_i1.py`).
+
+**Stage 355 B1 (2026-08-14):** Store close triage pack blocker matrix (`test_stage355_blockers_b1.py`).
+
+**Stage 355 P1 (2026-08-14):** Stage 174 / Stage 354 / Stage 353 / Stage 329 pointers (`test_stage355_pointers_p1.py`).
+
+**Stage 355 D1 (2026-08-14):** Store Close Triage Pack Remaining-Gate Index fidelity sync — `docs/STAGE_355_FIDELITY.md` (`test_stage355_fidelity_d1.py`).
+
+**Stage 355 exit (2026-08-14):** I1, B1, P1, D1, H355x met — `docs/STAGE_355_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_718_STAGE355_FREEZE.md`. Fidelity: `docs/STAGE_355_FIDELITY.md`.
+
 **Stage 354 open (2026-08-14):** Tenant MVP Store Open Health Pack Remaining-Gate Index Fidelity — `docs/ADR_715_STAGE354_OPEN.md` + `docs/STAGE_354_PLAN.md` (I1 next).
 
 **Stage 354 I1 (2026-08-14):** Store open health pack remaining-gate index hub (`test_stage354_index_i1.py`).

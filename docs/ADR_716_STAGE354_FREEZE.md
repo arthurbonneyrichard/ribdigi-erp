@@ -31,3 +31,10 @@ Stage 355 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for store-open health, Offline Complete, support SLA, attestation, zero-conflict, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 355 opened under **ADR-717** after CONTINUE/NEXT (Tenant MVP Store Close Triage Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-718**. Stage 354 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 355 runner-up outline was approved and opened (ADR-717); freeze ADR-718. Do not reopen Stage 354 scope.
+

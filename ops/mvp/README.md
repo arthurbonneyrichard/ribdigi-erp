@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_355_EXIT_CRITERIA.md` / `docs/ADR_718_STAGE355_FREEZE.md` (`backend/tests/test_stage355_exit_h355x.py`) — Stage 355 H355x
+- `docs/STAGE_355_FIDELITY.md` (`backend/tests/test_stage355_fidelity_d1.py`) — Stage 355 D1
+- `docs/STAGE_355_PLAN.md` (`backend/tests/test_stage355_open.py`) — Stage 355 open (ADR-717)
+- `docs/STORE_CLOSE_TRIAGE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-close-triage-pack-remaining-gate.json` — Stage 355 I1
+- `docs/STORE_CLOSE_TRIAGE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-close-triage-pack-rg-blockers.json` — Stage 355 B1
+- `docs/STORE_CLOSE_TRIAGE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-close-triage-pack-rg-pointers.json` — Stage 355 P1
 - `docs/STAGE_354_EXIT_CRITERIA.md` / `docs/ADR_716_STAGE354_FREEZE.md` (`backend/tests/test_stage354_exit_h354x.py`) — Stage 354 H354x
 - `docs/STAGE_354_FIDELITY.md` (`backend/tests/test_stage354_fidelity_d1.py`) — Stage 354 D1
 - `docs/STAGE_354_PLAN.md` (`backend/tests/test_stage354_open.py`) — Stage 354 open (ADR-715)
@@ -5407,6 +5413,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 355 exit
+
+H355x met — `docs/STAGE_355_EXIT_CRITERIA.md`, ADR-718. Stages 1–355 frozen for Stage 355 feature scope.
+
+## Stage 355 D1 — Tenant MVP Store Close Triage Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_355_FIDELITY.md` (`test_stage355_fidelity_d1.py`). `STORE_CLOSE_TRIAGE_PACK_*` remaining-gate index; Offline Complete / live DR / attestation / fabricated conflict-free / go-live still MISSING.
+
+## Stage 355 open
+
+ADR-717 / `docs/STAGE_355_PLAN.md`.
 
 ## Stage 354 exit
 

@@ -1,0 +1,60 @@
+{
+  "id": "store-close-triage-pack-rg-pointers",
+  "stage": 355,
+  "pack": "P1",
+  "doc": "docs/STORE_CLOSE_TRIAGE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_CLOSE_TRIAGE_PACK_REMAINING_GATE_MVP.md",
+    "store_close_triage": "docs/STORE_CLOSE_TRIAGE_MVP.md",
+    "store_open_health_pack_remaining_gate": "docs/STORE_OPEN_HEALTH_PACK_REMAINING_GATE_MVP.md",
+    "store_close_drain_pack_remaining_gate": "docs/STORE_CLOSE_DRAIN_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_conflict_free_claimed": false,
+  "topics": [
+    "store_close_triage_stage174",
+    "store_open_health_pack_remaining_gate_stage354",
+    "store_close_drain_pack_remaining_gate_stage353",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sctprp-stage174",
+      "title": "Point to Stage 174 store-close triage packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctprp-stage354",
+      "title": "Point to Stage 354 store open health pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctprp-stage353",
+      "title": "Point to Stage 353 store close drain pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sctprp-checklist-remaining",
+      "title": "Live store-close triage Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 355 P1 store close triage pack RG pointers packaging only. Do not claim live store-close triage Complete."
+}
