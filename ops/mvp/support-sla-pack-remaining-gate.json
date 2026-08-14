@@ -1,0 +1,57 @@
+{
+  "id": "support-sla-pack-remaining-gate",
+  "stage": 332,
+  "pack": "I1",
+  "doc": "docs/SUPPORT_SLA_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SUPPORT_SLA_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SUPPORT_SLA_PACK_RG_POINTERS_MVP.md",
+    "support_sla_remaining_gate": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_pack_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_PACK_REMAINING_GATE_MVP.md",
+    "offline_materials_pack_remaining_gate": "docs/OFFLINE_MATERIALS_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage188_support_sla_remaining_gate": true,
+  "distinct_from_stage188_pack_pointers": true,
+  "distinct_from_stage331_support_sla_boundary_pack_remaining_gate": true,
+  "distinct_from_stage330_offline_materials_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sspr-read-blockers",
+      "title": "Read B1 support SLA pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sspr-follow-pointers",
+      "title": "Follow P1 Stage 188 / Stage 331 / Stage 330 / Stage 36 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sspr-sla-missing",
+      "title": "Reaffirm live support-SLA / PagerDuty MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sspr-no-packaging-as-live",
+      "title": "Do not treat Stage 188 / Stage 36 / Stage 170 / Stage 331 as live support-SLA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sspr-sla-remaining",
+      "title": "Support-SLA / PagerDuty hosted / on-call rota live / incident drill / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 332 I1 support SLA pack remaining-gate index packaging only. Do not claim live support-SLA Complete."
+}

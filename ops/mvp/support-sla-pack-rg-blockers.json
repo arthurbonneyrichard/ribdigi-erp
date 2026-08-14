@@ -1,0 +1,63 @@
+{
+  "id": "support-sla-pack-rg-blockers",
+  "stage": 332,
+  "pack": "B1",
+  "doc": "docs/SUPPORT_SLA_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_SLA_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_remaining_gate": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "support_sla_claimed": "REMAINING",
+    "pagerduty_hosted_claimed": "REMAINING",
+    "oncall_rota_live": "REMAINING",
+    "incident_drill_executed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage188_as_live_support_sla": "NON_CLAIM",
+    "stage36_170_as_live_support_sla": "NON_CLAIM",
+    "support_sla_claimed_flag": "false",
+    "pagerduty_hosted_claimed_flag": "false",
+    "oncall_rota_live_flag": "false",
+    "incident_drill_executed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ssprb-sla",
+      "title": "Mark support-SLA Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssprb-pagerduty",
+      "title": "Mark PagerDuty hosted Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssprb-oncall",
+      "title": "Mark on-call rota live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssprb-stage188-nonclaim",
+      "title": "Mark Stage 188 / Stage 36 / Stage 170 as non-claim for live support-SLA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssprb-sla-remaining",
+      "title": "Live support-SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 332 B1 support SLA pack RG blocker matrix packaging only. Live support-SLA Completes remain MISSING."
+}

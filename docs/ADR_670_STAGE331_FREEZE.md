@@ -31,3 +31,10 @@ Stage 332 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live support-SLA boundary, support-SLA, PagerDuty hosted, helpdesk SaaS, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 332 opened under **ADR-671** after CONTINUE/NEXT (Tenant MVP Support SLA Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-672**. Stage 331 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 332 runner-up outline was approved and opened (ADR-671); freeze ADR-672. Do not reopen Stage 331 scope.
+

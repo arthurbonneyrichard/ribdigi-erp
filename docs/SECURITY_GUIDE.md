@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 332 open** | Support SLA Pack Remaining-Gate Index — `docs/STAGE_332_PLAN.md`, ADR-671 (`test_stage332_open.py`) |
+| **Stage 332 I1** | Support SLA pack remaining-gate index hub (`test_stage332_index_i1.py`) |
+| **Stage 332 B1** | Support SLA pack blocker matrix (`test_stage332_blockers_b1.py`) |
+| **Stage 332 P1** | Stage 188 / Stage 331 / Stage 330 / Stage 36 pointers (`test_stage332_pointers_p1.py`) |
+| **Stage 332 D1** | Support SLA pack remaining-gate fidelity — `docs/STAGE_332_FIDELITY.md` (`test_stage332_fidelity_d1.py`) |
+| **Stage 332 H332x** | Exit + freeze — `docs/STAGE_332_EXIT_CRITERIA.md`, ADR-672 (`test_stage332_exit_h332x.py`); Stages 1–332 frozen |
 | **Stage 331 open** | Support SLA Boundary Pack Remaining-Gate Index — `docs/STAGE_331_PLAN.md`, ADR-669 (`test_stage331_open.py`) |
 | **Stage 331 I1** | Support SLA boundary pack remaining-gate index hub (`test_stage331_index_i1.py`) |
 | **Stage 331 B1** | Support SLA boundary pack blocker matrix (`test_stage331_blockers_b1.py`) |

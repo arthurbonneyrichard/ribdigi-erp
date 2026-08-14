@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_332_EXIT_CRITERIA.md` / `docs/ADR_672_STAGE332_FREEZE.md` (`backend/tests/test_stage332_exit_h332x.py`) — Stage 332 H332x
+- `docs/STAGE_332_FIDELITY.md` (`backend/tests/test_stage332_fidelity_d1.py`) — Stage 332 D1
+- `docs/STAGE_332_PLAN.md` (`backend/tests/test_stage332_open.py`) — Stage 332 open (ADR-671)
+- `docs/SUPPORT_SLA_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/support-sla-pack-remaining-gate.json` — Stage 332 I1
+- `docs/SUPPORT_SLA_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/support-sla-pack-rg-blockers.json` — Stage 332 B1
+- `docs/SUPPORT_SLA_PACK_RG_POINTERS_MVP.md` / `ops/mvp/support-sla-pack-rg-pointers.json` — Stage 332 P1
 - `docs/STAGE_331_EXIT_CRITERIA.md` / `docs/ADR_670_STAGE331_FREEZE.md` (`backend/tests/test_stage331_exit_h331x.py`) — Stage 331 H331x
 - `docs/STAGE_331_FIDELITY.md` (`backend/tests/test_stage331_fidelity_d1.py`) — Stage 331 D1
 - `docs/STAGE_331_PLAN.md` (`backend/tests/test_stage331_open.py`) — Stage 331 open (ADR-669)
@@ -5269,6 +5275,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 332 exit
+
+H332x met — `docs/STAGE_332_EXIT_CRITERIA.md`, ADR-672. Stages 1–332 frozen for Stage 332 feature scope.
+
+## Stage 332 D1 — Tenant MVP Support SLA Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_332_FIDELITY.md` (`test_stage332_fidelity_d1.py`). `SUPPORT_SLA_PACK_*` remaining-gate index; support-SLA / PagerDuty hosted / on-call rota live / incident drill / go-live still MISSING.
+
+## Stage 332 open
+
+ADR-671 / `docs/STAGE_332_PLAN.md`.
 
 ## Stage 331 exit
 
