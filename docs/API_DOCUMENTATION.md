@@ -744,7 +744,8 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
       "product_id": "prod_001",
       "quantity": 100,
       "unit_price": 8.50,
-      "tax_rate": 10.0
+      "tax_rate": 10.0,
+      "discount": 25.0
     }
   ],
   "notes": "Standard monthly order"
@@ -752,6 +753,8 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 ```
 
 Optional `delivery_address` is stored on the PO, returned on GET/list/serialize, amendable via `POST /purchasing/orders/{id}/amend`, and included in supplier email bodies when set (BR-6.3).
+
+Per-line `discount` (≥0, cannot exceed qty×unit_price) is applied after tax on the line (same order as PI). `line_total` and PO `total_amount` reflect discounts; serialize/email include `discount`. Amend via `POST /purchasing/orders/{id}/amend`. Alembic `20260814_0096` (BR-6.3).
 
 Omit `tax_rate` on a line to auto-resolve **product → category (parents) → tenant default** (same as sales; BR-12.2). Explicit `tax_rate` (including `0`) wins. Resolved `%` is snapshotted on the PO/PI line.
 
