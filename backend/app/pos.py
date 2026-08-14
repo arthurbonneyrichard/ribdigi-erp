@@ -93,13 +93,9 @@ async def open_session(
         raise HTTPException(status_code=409, detail="Cashier already has an open POS shift")
 
     if store_id:
-        store = (
-            await db.execute(
-                select(m.Store).where(m.Store.id == store_id, m.Store.tenant_id == tenant_id)
-            )
-        ).scalar_one_or_none()
-        if not store:
-            raise HTTPException(status_code=404, detail="Store not found")
+        from app import stores as stores_svc
+
+        store = await stores_svc.require_active_store(db, tenant_id, store_id)
 
     cash = round(float(opening_cash or 0), 2)
     if cash < 0:

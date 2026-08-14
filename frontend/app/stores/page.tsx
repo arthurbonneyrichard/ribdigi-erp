@@ -486,6 +486,21 @@ export default function Page() {
     }
   }
 
+  async function setStoreActive(storeId: string, isActive: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/stores/${storeId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      setMessage(isActive ? 'Store reactivated' : 'Store deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   function resetDeptForm() {
     setEditDeptId('');
     setDeptCode('');
@@ -844,7 +859,9 @@ export default function Page() {
             </select>
             <select value={whStoreId} onChange={(e) => setWhStoreId(e.target.value)}>
               <option value="">Linked store (optional)</option>
-              {stores.map((s) => (
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code} — {s.name}
                 </option>
@@ -886,14 +903,18 @@ export default function Page() {
           <h3>New transfer</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <select value={fromStore} onChange={(e) => setFromStore(e.target.value)}>
-              {stores.map((s) => (
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
                 <option key={s.id} value={s.id}>
                   From: {s.name}
                 </option>
               ))}
             </select>
             <select value={toStore} onChange={(e) => setToStore(e.target.value)}>
-              {stores.map((s) => (
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
                 <option key={s.id} value={s.id}>
                   To: {s.name}
                 </option>
@@ -929,7 +950,9 @@ export default function Page() {
                 }
               }}
             >
-              {stores.map((s) => (
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({s.drawer_mode || 'none'})
                 </option>
@@ -1055,7 +1078,7 @@ export default function Page() {
       </table>
 
       <h3 style={{ marginTop: 16 }}>Stores</h3>
-      <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3).</p>
+      <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3). Soft-deactivate hides the store from POS and new sales without deleting history.</p>
       <table className="table">
         <thead>
           <tr>
@@ -1065,6 +1088,7 @@ export default function Page() {
             <th>Branch</th>
             <th>Address</th>
             <th>Hours</th>
+            <th>Active</th>
             <th></th>
           </tr>
         </thead>
@@ -1072,16 +1096,29 @@ export default function Page() {
           {stores.map((s) => (
             <tr key={s.id}>
               <td>{s.code}</td>
-              <td>{s.name}</td>
+              <td>
+                {s.name}
+                {s.is_active === false ? ' [inactive]' : ''}
+              </td>
               <td>{s.manager_id ? userLabel(s.manager_id) : '—'}</td>
               <td>{s.branch_id ? branchLabel(s.branch_id) : '—'}</td>
               <td>{s.address || '—'}</td>
               <td style={{ maxWidth: 280, fontSize: 13 }}>{summarizeHours(s.operating_hours)}</td>
+              <td>{s.is_active === false ? 'no' : 'yes'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => startEditStore(s)}>
                   Edit
                 </button>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>
+                {s.is_active === false ? (
+                  <button type="button" onClick={() => setStoreActive(s.id, true)}>
+                    Activate
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setStoreActive(s.id, false)}>
+                    Deactivate
+                  </button>
+                )}
               </td>
             </tr>
           ))}

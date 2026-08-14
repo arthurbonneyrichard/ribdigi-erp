@@ -537,7 +537,7 @@ async def _resolve_expense_store(
         return None
     from app import stores as stores_svc
 
-    store = await stores_svc.get_store(db, tenant_id, store_id)
+    store = await stores_svc.require_active_store(db, tenant_id, store_id)
     if branch_id and store.branch_id and store.branch_id != branch_id:
         raise HTTPException(
             status_code=400,

@@ -300,7 +300,7 @@ async def create_sales_invoice(
     if store_id:
         from app import stores as stores_svc
 
-        store = await stores_svc.get_store(db, tenant_id, store_id)
+        store = await stores_svc.require_active_store(db, tenant_id, store_id)
         resolved_store_id = store.id
 
     from app.uom import resolve_line_unit
