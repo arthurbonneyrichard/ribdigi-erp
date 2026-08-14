@@ -1,0 +1,58 @@
+{
+  "id": "breach-notification-pack-remaining-gate",
+  "stage": 286,
+  "pack": "I1",
+  "doc": "docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/BREACH_NOTIFICATION_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/BREACH_NOTIFICATION_PACK_RG_POINTERS_MVP.md",
+    "breach_notification": "docs/BREACH_NOTIFICATION_MVP.md",
+    "accessibility_statement_pack_remaining_gate": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+    "incident_pack_remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+    "vuln_disclosure": "docs/VULN_DISCLOSURE_MVP.md"
+  },
+  "packaging_complete": true,
+  "breach_drill_claimed": false,
+  "regulatory_filing_claimed": false,
+  "customer_notify_saas_claimed": false,
+  "security_mailbox_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage38_breach_notification": true,
+  "distinct_from_stage285_accessibility_statement_pack_remaining_gate": true,
+  "distinct_from_stage211_incident_pack_remaining_gate": true,
+  "distinct_from_stage38_vuln_disclosure": true,
+  "steps": [
+    {
+      "id": "bnpr-read-blockers",
+      "title": "Read B1 breach notification pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnpr-follow-pointers",
+      "title": "Follow P1 Stage 38 B1 / Stage 285 / Stage 237-211 / Stage 38 V1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnpr-drill-missing",
+      "title": "Reaffirm breach drill / regulatory filing MISSING until real drills / filings ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnpr-no-packaging-as-drill",
+      "title": "Do not treat Stage 38 B1 / Stage 285 / Stage 237-211 as breach drill Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnpr-drill-remaining",
+      "title": "Breach drill / regulatory filing / customer notify SaaS / mailbox / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 286 I1 breach notification pack remaining-gate index packaging only. Do not claim breach drill Complete."
+}

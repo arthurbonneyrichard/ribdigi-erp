@@ -322,6 +322,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Accessibility statement pack remaining-gate index (Stage 285):** Status index is `docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ACCESSIBILITY_STATEMENT_PACK_RG_BLOCKERS_MVP.md` → Stage 41/284/274/ADR-006 pointers `docs/ACCESSIBILITY_STATEMENT_PACK_RG_POINTERS_MVP.md`. WCAG AA Complete and accessibility audit Complete remain MISSING (not claimed). Prefixed `ACCESSIBILITY_STATEMENT_PACK_*` remaining-gate docs (≠ Stage 41 A1 `ACCESSIBILITY_STATEMENT_MVP.md`).
 
+**Breach notification pack remaining-gate index (Stage 286):** Status index is `docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/BREACH_NOTIFICATION_PACK_RG_BLOCKERS_MVP.md` → Stage 38/285/211/38V1 pointers `docs/BREACH_NOTIFICATION_PACK_RG_POINTERS_MVP.md`. Breach drill Complete and regulatory filing Complete remain MISSING (not claimed). Prefixed `BREACH_NOTIFICATION_PACK_*` remaining-gate docs (≠ Stage 38 B1 `BREACH_NOTIFICATION_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

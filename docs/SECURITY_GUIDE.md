@@ -1666,6 +1666,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 285 P1** | Stage 41 A1 / Stage 284 / Stage 274 / ADR-006 pointers (`test_stage285_pointers_p1.py`) |
 | **Stage 285 D1** | Accessibility statement pack remaining-gate fidelity — `docs/STAGE_285_FIDELITY.md` (`test_stage285_fidelity_d1.py`) |
 | **Stage 285 H285x** | Exit + freeze — `docs/STAGE_285_EXIT_CRITERIA.md`, ADR-578 (`test_stage285_exit_h285x.py`); Stages 1–285 frozen |
+| **Stage 286 open** | Breach Notification Pack Remaining-Gate Index — `docs/STAGE_286_PLAN.md`, ADR-579 (`test_stage286_open.py`) |
+| **Stage 286 I1** | Breach notification pack remaining-gate index hub (`test_stage286_index_i1.py`) |
+| **Stage 286 B1** | Breach notification pack blocker matrix (`test_stage286_blockers_b1.py`) |
+| **Stage 286 P1** | Stage 38 B1 / Stage 285 / Stage 237-211 / Stage 38 V1 pointers (`test_stage286_pointers_p1.py`) |
+| **Stage 286 D1** | Breach notification pack remaining-gate fidelity — `docs/STAGE_286_FIDELITY.md` (`test_stage286_fidelity_d1.py`) |
+| **Stage 286 H286x** | Exit + freeze — `docs/STAGE_286_EXIT_CRITERIA.md`, ADR-580 (`test_stage286_exit_h286x.py`); Stages 1–286 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

@@ -577,3 +577,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 285 decision (opened after Stage 284 freeze)
 
 **Tenant MVP Accessibility Statement Pack Remaining-Gate Index Fidelity** — accessibility statement pack remaining-gate hub (I1), blocker matrix (B1), Stage 41 A1 / Stage 284 / Stage 274 / ADR-006 pointers with explicit non-claim (P1). Prefixed `ACCESSIBILITY_STATEMENT_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 41 A1 `ACCESSIBILITY_STATEMENT_MVP.md`). WCAG AA / accessibility audit / conformance program / remediation / paid billing / go-live Completes remain deferred (Stage 286+; ADR-002 / ADR-006 in force). Distinct from Stage 284 acceptance archive pack remaining-gate, Stage 274 language i18n pack remaining-gate, and Stage 41 A1 accessibility statement packaging. Open ADR-577 / freeze ADR-578.
+
+
+## Stage 286 decision (opened after Stage 285 freeze)
+
+**Tenant MVP Breach Notification Pack Remaining-Gate Index Fidelity** — breach notification pack remaining-gate hub (I1), blocker matrix (B1), Stage 38 B1 / Stage 285 / Stage 237-211 / Stage 38 V1 pointers with explicit non-claim (P1). Prefixed `BREACH_NOTIFICATION_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 38 B1 `BREACH_NOTIFICATION_MVP.md`). Breach drill / regulatory filing / customer notification SaaS / security mailbox / paid billing / go-live Completes remain deferred (Stage 287+; ADR-002 in force). Distinct from Stage 285 accessibility statement pack remaining-gate, Stage 237/211 incident pack remaining-gate, and Stage 38 B1 breach notification packaging. Open ADR-579 / freeze ADR-580.

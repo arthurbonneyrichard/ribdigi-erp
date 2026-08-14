@@ -28,6 +28,12 @@ Stage 286 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Breach Notification Pack Remaining-Gate Index Fidelity — single index of breach-notification-pack blockers (packaged Stage 38 B1 breach notification materials non-claim as breach-drill / regulatory-filing Completes) with explicit non-claim. Prefixed `BREACH_NOTIFICATION_PACK_*` if a prior remaining-gate exists. Distinct from Stage 285 accessibility statement pack remaining-gate, Stage 237/211 incident pack remaining-gate, and `BREACH_NOTIFICATION_MVP.md` packaging. Source: `BREACH_NOTIFICATION_MVP.md`.
 
+## Amendment — Stage 286 opened
+
+Stage 286 opened under **ADR-579** after CONTINUE/NEXT (Tenant MVP Breach Notification Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-580**. Stage 285 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 286 runner-up outline was approved and opened (ADR-579); freeze ADR-580. Do not reopen Stage 285 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for WCAG AA, accessibility audit, conformance program live, remediation, paid billing, or go-live.

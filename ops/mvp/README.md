@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_286_EXIT_CRITERIA.md` / `docs/ADR_580_STAGE286_FREEZE.md` (`backend/tests/test_stage286_exit_h286x.py`) — Stage 286 H286x
+- `docs/STAGE_286_FIDELITY.md` (`backend/tests/test_stage286_fidelity_d1.py`) — Stage 286 D1
+- `docs/STAGE_286_PLAN.md` (`backend/tests/test_stage286_open.py`) — Stage 286 open (ADR-579)
+- `docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/breach-notification-pack-remaining-gate.json` — Stage 286 I1
+- `docs/BREACH_NOTIFICATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/breach-notification-pack-rg-blockers.json` — Stage 286 B1
+- `docs/BREACH_NOTIFICATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/breach-notification-pack-rg-pointers.json` — Stage 286 P1
 - `docs/STAGE_285_EXIT_CRITERIA.md` / `docs/ADR_578_STAGE285_FREEZE.md` (`backend/tests/test_stage285_exit_h285x.py`) — Stage 285 H285x
 - `docs/STAGE_285_FIDELITY.md` (`backend/tests/test_stage285_fidelity_d1.py`) — Stage 285 D1
 - `docs/STAGE_285_PLAN.md` (`backend/tests/test_stage285_open.py`) — Stage 285 open (ADR-577)
@@ -4993,6 +4999,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 286 exit
+
+H286x met — `docs/STAGE_286_EXIT_CRITERIA.md`, ADR-580. Stages 1–286 frozen for Stage 286 feature scope.
+
+## Stage 286 D1 — Tenant MVP Breach Notification Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_286_FIDELITY.md` (`test_stage286_fidelity_d1.py`). `BREACH_NOTIFICATION_PACK_*` remaining-gate index; breach drill / regulatory filing / go-live still MISSING.
+
+## Stage 286 open
+
+`docs/ADR_579_STAGE286_OPEN.md` + `docs/STAGE_286_PLAN.md` (`test_stage286_open.py`).
 
 ## Stage 285 exit
 

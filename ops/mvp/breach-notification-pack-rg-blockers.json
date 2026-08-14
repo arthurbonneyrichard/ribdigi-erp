@@ -1,0 +1,66 @@
+{
+  "id": "breach-notification-pack-rg-blockers",
+  "stage": 286,
+  "pack": "B1",
+  "doc": "docs/BREACH_NOTIFICATION_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "breach_notification": "docs/BREACH_NOTIFICATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "breach_drill_claimed": false,
+  "regulatory_filing_claimed": false,
+  "customer_notify_saas_claimed": false,
+  "security_mailbox_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "breach_drill": "REMAINING",
+    "regulatory_filing": "REMAINING",
+    "customer_notify_saas": "REMAINING",
+    "security_mailbox_live": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage38_as_breach_drill": "NON_CLAIM",
+    "stage211_as_incident_live": "NON_CLAIM",
+    "breach_drill_claimed": "false",
+    "regulatory_filing_claimed": "false",
+    "customer_notify_saas_claimed": "false",
+    "security_mailbox_live_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "bnprb-drill",
+      "title": "Mark breach drill Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprb-filing",
+      "title": "Mark regulatory filing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprb-saas",
+      "title": "Mark customer notification SaaS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprb-stage38-nonclaim",
+      "title": "Mark Stage 38 B1 as non-claim for breach drill Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprb-drill-remaining",
+      "title": "Breach drill Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 286 B1 breach notification pack RG blocker matrix packaging only. Breach drill Completes remain MISSING."
+}

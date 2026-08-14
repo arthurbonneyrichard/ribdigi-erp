@@ -1503,6 +1503,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 41 A1 / Stage 284 / Stage 274 / ADR-006 pointers (Stage 285 P1: `test_stage285_pointers_p1.py`, `docs/ACCESSIBILITY_STATEMENT_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 285 fidelity sync (D1: `test_stage285_fidelity_d1.py`, `docs/STAGE_285_FIDELITY.md`)
 - [x] Stage 285 exit + freeze (H285x: `test_stage285_exit_h285x.py`, `docs/STAGE_285_EXIT_CRITERIA.md`, ADR-578)
+- [x] Stage 286 track opened (ADR-579: `test_stage286_open.py`, `docs/STAGE_286_PLAN.md`) — Breach Notification Pack Remaining-Gate Index; closed under ADR-580
+- [x] Breach notification pack remaining-gate hub (Stage 286 I1: `test_stage286_index_i1.py`, `docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md`)
+- [x] Breach notification pack blocker matrix (Stage 286 B1: `test_stage286_blockers_b1.py`, `docs/BREACH_NOTIFICATION_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 38 B1 / Stage 285 / Stage 237-211 / Stage 38 V1 pointers (Stage 286 P1: `test_stage286_pointers_p1.py`, `docs/BREACH_NOTIFICATION_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 286 fidelity sync (D1: `test_stage286_fidelity_d1.py`, `docs/STAGE_286_FIDELITY.md`)
+- [x] Stage 286 exit + freeze (H286x: `test_stage286_exit_h286x.py`, `docs/STAGE_286_EXIT_CRITERIA.md`, ADR-580)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
