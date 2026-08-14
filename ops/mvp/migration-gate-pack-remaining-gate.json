@@ -1,0 +1,57 @@
+{
+  "id": "migration-gate-pack-remaining-gate",
+  "stage": 352,
+  "pack": "I1",
+  "doc": "docs/MIGRATION_GATE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/MIGRATION_GATE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/MIGRATION_GATE_PACK_RG_POINTERS_MVP.md",
+    "migration_gate": "docs/MIGRATION_GATE_MVP.md",
+    "quarterly_pos_ops_gates_pack_remaining_gate": "docs/QUARTERLY_POS_OPS_GATES_PACK_REMAINING_GATE_MVP.md",
+    "live_migration_pack_remaining_gate": "docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage169_migration_gate": true,
+  "distinct_from_stage351_quarterly_pos_ops_gates_pack_remaining_gate": true,
+  "distinct_from_stage322_live_migration_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "mgpr-read-blockers",
+      "title": "Read B1 migration gate pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgpr-follow-pointers",
+      "title": "Follow P1 Stage 169 / Stage 351 / Stage 322 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgpr-checklist-missing",
+      "title": "Reaffirm live migration / production migrate / CI deploy / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgpr-no-packaging-as-live",
+      "title": "Do not treat Stage 169 / Stage 193 / Stage 351 / Stage 322 / Stage 329 as live migration Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgpr-checklist-remaining",
+      "title": "Live migration / production migrate / CI deploy / attestation / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 352 I1 migration gate pack remaining-gate index packaging only. Do not claim live migration Complete."
+}

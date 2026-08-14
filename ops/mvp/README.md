@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_352_EXIT_CRITERIA.md` / `docs/ADR_712_STAGE352_FREEZE.md` (`backend/tests/test_stage352_exit_h352x.py`) — Stage 352 H352x
+- `docs/STAGE_352_FIDELITY.md` (`backend/tests/test_stage352_fidelity_d1.py`) — Stage 352 D1
+- `docs/STAGE_352_PLAN.md` (`backend/tests/test_stage352_open.py`) — Stage 352 open (ADR-711)
+- `docs/MIGRATION_GATE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/migration-gate-pack-remaining-gate.json` — Stage 352 I1
+- `docs/MIGRATION_GATE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/migration-gate-pack-rg-blockers.json` — Stage 352 B1
+- `docs/MIGRATION_GATE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/migration-gate-pack-rg-pointers.json` — Stage 352 P1
 - `docs/STAGE_351_EXIT_CRITERIA.md` / `docs/ADR_710_STAGE351_FREEZE.md` (`backend/tests/test_stage351_exit_h351x.py`) — Stage 351 H351x
 - `docs/STAGE_351_FIDELITY.md` (`backend/tests/test_stage351_fidelity_d1.py`) — Stage 351 D1
 - `docs/STAGE_351_PLAN.md` (`backend/tests/test_stage351_open.py`) — Stage 351 open (ADR-709)
@@ -5389,6 +5395,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 352 exit
+
+H352x met — `docs/STAGE_352_EXIT_CRITERIA.md`, ADR-712. Stages 1–352 frozen for Stage 352 feature scope.
+
+## Stage 352 D1 — Tenant MVP Migration Gate Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_352_FIDELITY.md` (`test_stage352_fidelity_d1.py`). `MIGRATION_GATE_PACK_*` remaining-gate index; live migration / production migrate / CI deploy / attestation / go-live still MISSING.
+
+## Stage 352 open
+
+ADR-711 / `docs/STAGE_352_PLAN.md`.
 
 ## Stage 351 exit
 

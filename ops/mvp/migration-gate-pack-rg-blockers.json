@@ -1,0 +1,63 @@
+{
+  "id": "migration-gate-pack-rg-blockers",
+  "stage": 352,
+  "pack": "B1",
+  "doc": "docs/MIGRATION_GATE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MIGRATION_GATE_PACK_REMAINING_GATE_MVP.md",
+    "migration_gate": "docs/MIGRATION_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "live_migration_claimed": "REMAINING",
+    "production_migrate_claimed": "REMAINING",
+    "ci_deploy_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage169_as_live_migration": "NON_CLAIM",
+    "stage193_as_live_migration": "NON_CLAIM",
+    "live_migration_claimed_flag": "false",
+    "production_migrate_claimed_flag": "false",
+    "ci_deploy_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "mgprb-live-migration",
+      "title": "Mark live migration Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprb-prod-migrate",
+      "title": "Mark production migrate Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprb-ci-deploy",
+      "title": "Mark CI deploy Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprb-stage169-nonclaim",
+      "title": "Mark Stage 169 / Stage 193 as non-claim for live migration Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprb-checklist-remaining",
+      "title": "Live migration Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 352 B1 migration gate pack RG blocker matrix packaging only. Live migration Completes remain MISSING."
+}

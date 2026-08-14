@@ -31,3 +31,10 @@ Stage 352 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for quarterly POS ops gates, Offline Complete, support SLA, attestation, live migration, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 352 opened under **ADR-711** after CONTINUE/NEXT (Tenant MVP Migration Gate Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-712**. Stage 351 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 352 runner-up outline was approved and opened (ADR-711); freeze ADR-712. Do not reopen Stage 351 scope.
+
