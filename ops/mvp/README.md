@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_318_EXIT_CRITERIA.md` / `docs/ADR_644_STAGE318_FREEZE.md` (`backend/tests/test_stage318_exit_h318x.py`) — Stage 318 H318x
+- `docs/STAGE_318_FIDELITY.md` (`backend/tests/test_stage318_fidelity_d1.py`) — Stage 318 D1
+- `docs/STAGE_318_PLAN.md` (`backend/tests/test_stage318_open.py`) — Stage 318 open (ADR-643)
+- `docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/k8s-deploy-pack-remaining-gate.json` — Stage 318 I1
+- `docs/K8S_DEPLOY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/k8s-deploy-pack-rg-blockers.json` — Stage 318 B1
+- `docs/K8S_DEPLOY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/k8s-deploy-pack-rg-pointers.json` — Stage 318 P1
 - `docs/STAGE_317_EXIT_CRITERIA.md` / `docs/ADR_642_STAGE317_FREEZE.md` (`backend/tests/test_stage317_exit_h317x.py`) — Stage 317 H317x
 - `docs/STAGE_317_FIDELITY.md` (`backend/tests/test_stage317_fidelity_d1.py`) — Stage 317 D1
 - `docs/STAGE_317_PLAN.md` (`backend/tests/test_stage317_open.py`) — Stage 317 open (ADR-641)
@@ -5185,6 +5191,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 318 exit
+
+H318x met — `docs/STAGE_318_EXIT_CRITERIA.md`, ADR-644. Stages 1–318 frozen for Stage 318 feature scope.
+
+## Stage 318 D1 — Tenant MVP K8s Deploy Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_318_FIDELITY.md` (`test_stage318_fidelity_d1.py`). `K8S_DEPLOY_PACK_*` remaining-gate index; live cluster deploy / CI deploy / go-live still MISSING.
+
+## Stage 318 open
+
+ADR-643 / `docs/STAGE_318_PLAN.md`.
 
 ## Stage 317 exit
 

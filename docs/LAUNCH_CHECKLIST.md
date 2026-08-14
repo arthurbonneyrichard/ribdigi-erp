@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 318 track opened (ADR-643: `test_stage318_open.py`, `docs/STAGE_318_PLAN.md`) — K8s Deploy Pack Remaining-Gate Index; closed under ADR-644
+- [x] K8s deploy pack remaining-gate hub (Stage 318 I1: `test_stage318_index_i1.py`, `docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md`)
+- [x] K8s deploy pack blocker matrix (Stage 318 B1: `test_stage318_blockers_b1.py`, `docs/K8S_DEPLOY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 26 K1 / Stage 317 / Stage 316 / Stage 206 pointers (Stage 318 P1: `test_stage318_pointers_p1.py`, `docs/K8S_DEPLOY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 318 fidelity sync (D1: `test_stage318_fidelity_d1.py`, `docs/STAGE_318_FIDELITY.md`)
+- [x] Stage 318 exit + freeze (H318x: `test_stage318_exit_h318x.py`, `docs/STAGE_318_EXIT_CRITERIA.md`, ADR-644)
 - [x] Stage 317 track opened (ADR-641: `test_stage317_open.py`, `docs/STAGE_317_PLAN.md`) — PgBouncer Soak Pack Remaining-Gate Index; closed under ADR-642
 - [x] PgBouncer soak pack remaining-gate hub (Stage 317 I1: `test_stage317_index_i1.py`, `docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md`)
 - [x] PgBouncer soak pack blocker matrix (Stage 317 B1: `test_stage317_blockers_b1.py`, `docs/PGBOUNCER_SOAK_PACK_RG_BLOCKERS_MVP.md`)

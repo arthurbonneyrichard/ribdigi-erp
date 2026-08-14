@@ -31,3 +31,10 @@ Stage 318 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live soak executed, Helm pooler default, managed cloud pooler, live TLS ingress, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 318 opened under **ADR-643** after CONTINUE/NEXT (Tenant MVP K8s Deploy Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-644**. Stage 317 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 318 runner-up outline was approved and opened (ADR-643); freeze ADR-644. Do not reopen Stage 317 scope.
+
