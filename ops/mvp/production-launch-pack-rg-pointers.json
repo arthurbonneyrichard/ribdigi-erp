@@ -1,0 +1,60 @@
+{
+  "id": "production-launch-pack-rg-pointers",
+  "stage": 262,
+  "pack": "P1",
+  "doc": "docs/PRODUCTION_LAUNCH_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md",
+    "production_launch": "docs/PRODUCTION_LAUNCH_MVP.md",
+    "preflight_verification_pack_remaining_gate": "docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout_pack_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md",
+    "production_launch_remaining_gate": "docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md",
+    "production_launch_register": "ops/mvp/production-launch.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "production_launch_live_claimed": false,
+  "production_cutover_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "topics": [
+    "production_launch_stage66_l1",
+    "preflight_verification_pack_remaining_gate_stage261",
+    "commercial_golive_closeout_pack_remaining_gate_stage260",
+    "production_launch_remaining_gate_stage202",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "plprp-stage66",
+      "title": "Point to Stage 66 L1 production launch",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprp-stage261",
+      "title": "Point to Stage 261 preflight verification pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprp-stage260",
+      "title": "Point to Stage 260 commercial go-live closeout pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprp-stage202",
+      "title": "Point to Stage 202 production launch remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprp-launch-remaining",
+      "title": "Live production launch Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 262 P1 production launch pack RG pointers packaging only. Do not claim live production launch Complete."
+}

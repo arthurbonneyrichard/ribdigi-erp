@@ -1,0 +1,62 @@
+{
+  "id": "production-launch-pack-rg-blockers",
+  "stage": 262,
+  "pack": "B1",
+  "doc": "docs/PRODUCTION_LAUNCH_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md",
+    "production_launch": "docs/PRODUCTION_LAUNCH_MVP.md",
+    "production_launch_remaining_gate": "docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md",
+    "production_launch_register": "ops/mvp/production-launch.json"
+  },
+  "packaging_complete": true,
+  "production_launch_live_claimed": false,
+  "production_cutover_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "blockers": {
+    "production_launch_live_complete": "REMAINING",
+    "production_cutover_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "section_7_signed_complete": "REMAINING",
+    "stage66_l1_as_launch_live": "NON_CLAIM",
+    "stage202_as_launch_live": "NON_CLAIM",
+    "production_launch_live_claimed": "false",
+    "production_cutover_claimed": "false",
+    "go_live_claimed": "false",
+    "section_7_signed": "false"
+  },
+  "steps": [
+    {
+      "id": "plprb-launch",
+      "title": "Mark live production launch Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprb-cutover",
+      "title": "Mark production cutover Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprb-go-live",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprb-stage66-nonclaim",
+      "title": "Mark Stage 66 L1 as non-claim for live production launch Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plprb-launch-remaining",
+      "title": "Live production launch Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 262 B1 production launch pack RG blocker matrix packaging only. Live production launch Completes remain MISSING."
+}

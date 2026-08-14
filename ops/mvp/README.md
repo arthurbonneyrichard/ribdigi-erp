@@ -1000,6 +1000,12 @@ Authoritative MVP docs:
 - `docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/preflight-verification-pack-remaining-gate.json` — Stage 261 I1
 - `docs/PREFLIGHT_VERIFICATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/preflight-verification-pack-rg-blockers.json` — Stage 261 B1
 - `docs/PREFLIGHT_VERIFICATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/preflight-verification-pack-rg-pointers.json` — Stage 261 P1
+- `docs/STAGE_262_EXIT_CRITERIA.md` / `docs/ADR_532_STAGE262_FREEZE.md` (`backend/tests/test_stage262_exit_h262x.py`) — Stage 262 H262x
+- `docs/STAGE_262_FIDELITY.md` (`backend/tests/test_stage262_fidelity_d1.py`) — Stage 262 D1
+- `docs/STAGE_262_PLAN.md` (`backend/tests/test_stage262_open.py`) — Stage 262 open (ADR-531)
+- `docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/production-launch-pack-remaining-gate.json` — Stage 262 I1
+- `docs/PRODUCTION_LAUNCH_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/production-launch-pack-rg-blockers.json` — Stage 262 B1
+- `docs/PRODUCTION_LAUNCH_PACK_RG_POINTERS_MVP.md` / `ops/mvp/production-launch-pack-rg-pointers.json` — Stage 262 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4597,4 +4603,16 @@ H261x met — `docs/STAGE_261_EXIT_CRITERIA.md`, ADR-530. Stages 1–261 frozen 
 ## Stage 261 open
 
 `docs/ADR_529_STAGE261_OPEN.md` + `docs/STAGE_261_PLAN.md` (`test_stage261_open.py`).
+
+## Stage 262 exit
+
+H262x met — `docs/STAGE_262_EXIT_CRITERIA.md`, ADR-532. Stages 1–262 frozen for Stage 262 feature scope.
+
+## Stage 262 D1 — Tenant MVP Production Launch Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_262_FIDELITY.md` (`test_stage262_fidelity_d1.py`). `PRODUCTION_LAUNCH_PACK_*` remaining-gate index; live production launch / go-live still MISSING.
+
+## Stage 262 open
+
+`docs/ADR_531_STAGE262_OPEN.md` + `docs/STAGE_262_PLAN.md` (`test_stage262_open.py`).
 
