@@ -53,6 +53,7 @@ const REPORT_TYPES = [
   'inventory_low_stock',
   'inventory_expiry',
   'inventory_transfers',
+  'inventory_stock_counts',
   'purchases_summary',
   'purchases_pending_orders',
   'purchases_returns',
@@ -170,13 +171,15 @@ export default function Page() {
           returns: returns.data,
         });
       } else if (nextTab === 'inventory') {
-        const [balance, valuation, movements, suggestions, transfers, expiry] = await Promise.all([
+        const [balance, valuation, movements, suggestions, transfers, expiry, stockCounts] =
+          await Promise.all([
           api(`/reports/inventory/balance${qs()}`),
           api(`/reports/inventory/valuation${qs({ method: 'standard' })}`),
           api(`/reports/inventory/movements${qs()}`),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs()}`),
           api(`/reports/inventory/expiry${qs({ days: expiryDays || '30' })}`),
+          api(`/reports/inventory/stock-counts${qs({ variance_only: 'true' })}`),
         ]);
         setData({
           lowStock: r.data,
@@ -186,6 +189,7 @@ export default function Page() {
           suggestions: suggestions.data,
           transfers: transfers.data,
           expiry: expiry.data,
+          stockCounts: stockCounts.data,
         });
         setSuggestSelected({});
       } else if (nextTab === 'purchases') {
@@ -1291,6 +1295,62 @@ export default function Page() {
               </ul>
             </>
           )}
+          <div className="card" style={{ marginTop: 16 }}>
+            <h3>Stock count variances</h3>
+            <p className="muted">
+              {data.stockCounts?.count_sessions ?? 0} completed count
+              {(data.stockCounts?.count_sessions ?? 0) === 1 ? '' : 's'} ·{' '}
+              {data.stockCounts?.lines_with_variance ?? 0} variance line
+              {(data.stockCounts?.lines_with_variance ?? 0) === 1 ? '' : 's'} · net qty{' '}
+              {data.stockCounts?.total_variance_qty ?? 0}
+              {data.stockCounts?.store_name
+                ? ` · ${data.stockCounts.store_name}`
+                : data.stockCounts?.warehouse_name
+                  ? ` · ${data.stockCounts.warehouse_name}`
+                  : ''}
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => download('xlsx', 'inventory_stock_counts')}>
+                Count variances Excel
+              </button>
+              <button type="button" onClick={() => download('csv', 'inventory_stock_counts')}>
+                Count variances CSV
+              </button>
+            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Count</th>
+                  <th>Warehouse</th>
+                  <th>SKU</th>
+                  <th>Name</th>
+                  <th>Expected</th>
+                  <th>Counted</th>
+                  <th>Variance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.stockCounts?.lines || []).slice(0, 40).map((line: any, idx: number) => (
+                  <tr key={`${line.count_id}-${line.product_id}-${idx}`}>
+                    <td>{line.count_number}</td>
+                    <td>{line.warehouse_name || '—'}</td>
+                    <td>{line.sku || '—'}</td>
+                    <td>{line.name || '—'}</td>
+                    <td>{line.expected_qty}</td>
+                    <td>{line.counted_qty}</td>
+                    <td>{line.variance}</td>
+                  </tr>
+                ))}
+                {!data.stockCounts?.lines?.length && (
+                  <tr>
+                    <td colSpan={7} className="muted">
+                      No stock count variances for this filter
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 

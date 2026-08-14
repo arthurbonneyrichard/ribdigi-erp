@@ -34,6 +34,7 @@ EXPORTABLE = frozenset(
         "inventory_low_stock",
         "inventory_expiry",
         "inventory_transfers",
+        "inventory_stock_counts",
         "purchases_summary",
         "purchases_suppliers",
         "purchases_pending_orders",
@@ -332,6 +333,16 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             for r in rows[:60]
         ]
         return rows or [{"note": "no rows"}], lines, "Inter-Store Transfers"
+
+    if report_type == "inventory_stock_counts":
+        items = payload.get("lines") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('count_number')} {r.get('sku')}: expected {r.get('expected_qty')} "
+            f"counted {r.get('counted_qty')} var {r.get('variance')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Stock Count Variances"
 
     if report_type == "purchases_summary":
         return [dict(payload)], _kv_lines(payload), "Purchases Summary"
@@ -651,6 +662,17 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             store_id=store_id or None,
+        )
+    if report_type == "inventory_stock_counts":
+        return await reports_svc.inventory_stock_counts(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+            variance_only=True,
+            status="completed",
         )
     if report_type == "purchases_summary":
         return await reports_svc.purchases_summary(

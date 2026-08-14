@@ -8407,6 +8407,32 @@ async def report_inventory_transfers(
     )
 
 
+@api.get("/reports/inventory/stock-counts")
+async def report_inventory_stock_counts(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
+    variance_only: bool = True,
+    status: str | None = "completed",
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-5.2 — physical stock count variance report."""
+    return env(
+        await reports_svc.inventory_stock_counts(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+            variance_only=variance_only,
+            status=status or None,
+        )
+    )
+
+
 @api.get("/reports/purchases/summary")
 async def report_purchases_summary(
     from_date: str | None = None,

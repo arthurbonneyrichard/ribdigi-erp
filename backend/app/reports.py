@@ -1762,6 +1762,185 @@ async def inventory_transfers(
     }
 
 
+async def inventory_stock_counts(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
+    variance_only: bool = True,
+    status: str | None = "completed",
+    limit: int = 50,
+) -> dict:
+    """Physical stock count variance report (BR-5.2 / BR-14.2).
+
+    Defaults to completed counts. ``variance_only`` (default True) omits zero-
+    variance lines from each count's item list and from flat export lines.
+    """
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
+    if status:
+        status = status.strip().lower() or None
+
+    stmt = select(m.StockCount).where(m.StockCount.tenant_id == tenant_id)
+    if status:
+        stmt = stmt.where(m.StockCount.status == status)
+    if from_date:
+        stmt = stmt.where(
+            (m.StockCount.completed_at >= from_date)
+            | (
+                (m.StockCount.completed_at == None)  # noqa: E711
+                & (m.StockCount.created_at >= from_date)
+            )
+        )
+    if to_date:
+        stmt = stmt.where(
+            (m.StockCount.completed_at <= to_date)
+            | (
+                (m.StockCount.completed_at == None)  # noqa: E711
+                & (m.StockCount.created_at <= to_date)
+            )
+        )
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            stmt = stmt.where(m.StockCount.id == None)  # noqa: E711
+        else:
+            stmt = stmt.where(m.StockCount.warehouse_id.in_(warehouse_ids))
+    stmt = stmt.order_by(
+        m.StockCount.completed_at.desc().nullslast(),
+        m.StockCount.created_at.desc(),
+    ).limit(max(1, min(int(limit), 200)))
+    counts = (await db.execute(stmt)).scalars().all()
+
+    wh_ids = {c.warehouse_id for c in counts if c.warehouse_id}
+    warehouses: dict[str, m.Warehouse] = {}
+    if wh_ids:
+        warehouses = {
+            w.id: w
+            for w in (
+                await db.execute(
+                    select(m.Warehouse).where(
+                        m.Warehouse.tenant_id == tenant_id,
+                        m.Warehouse.id.in_(wh_ids),
+                    )
+                )
+            ).scalars().all()
+        }
+
+    from app.stock_counts import list_count_items, serialize_item
+
+    count_rows: list[dict] = []
+    flat_lines: list[dict] = []
+    total_lines = 0
+    total_variance_lines = 0
+    total_variance_qty = 0.0
+
+    for count in counts:
+        items = await list_count_items(db, tenant_id, count.id)
+        product_ids = [i.product_id for i in items]
+        products: dict[str, m.Product] = {}
+        if product_ids:
+            products = {
+                p.id: p
+                for p in (
+                    await db.execute(
+                        select(m.Product).where(
+                            m.Product.tenant_id == tenant_id,
+                            m.Product.id.in_(product_ids),
+                        )
+                    )
+                ).scalars().all()
+            }
+        serialized_items = []
+        lines_counted = 0
+        lines_with_variance = 0
+        variance_qty = 0.0
+        for item in items:
+            product = products.get(item.product_id)
+            row = serialize_item(item, product=product)
+            if row["counted_qty"] is not None:
+                lines_counted += 1
+            variance = row["variance"]
+            if variance is not None and abs(float(variance)) > 1e-9:
+                lines_with_variance += 1
+                variance_qty += float(variance)
+            if variance_only and (variance is None or abs(float(variance)) < 1e-9):
+                continue
+            serialized_items.append(row)
+            flat_lines.append(
+                {
+                    "count_id": count.id,
+                    "count_number": count.count_number,
+                    "warehouse_id": count.warehouse_id,
+                    "warehouse_name": (
+                        warehouses[count.warehouse_id].name
+                        if count.warehouse_id in warehouses
+                        else None
+                    ),
+                    "status": count.status,
+                    "completed_at": count.completed_at,
+                    "product_id": row["product_id"],
+                    "sku": row["product_sku"],
+                    "name": row["product_name"],
+                    "expected_qty": row["expected_qty"],
+                    "counted_qty": row["counted_qty"],
+                    "variance": row["variance"],
+                    "notes": row["notes"],
+                }
+            )
+
+        total_lines += len(items)
+        total_variance_lines += lines_with_variance
+        total_variance_qty += variance_qty
+        wh = warehouses.get(count.warehouse_id)
+        count_rows.append(
+            {
+                "id": count.id,
+                "count_number": count.count_number,
+                "warehouse_id": count.warehouse_id,
+                "warehouse_name": wh.name if wh else None,
+                "warehouse_code": wh.code if wh else None,
+                "status": count.status,
+                "notes": count.notes,
+                "created_by": count.created_by,
+                "completed_by": count.completed_by,
+                "completed_at": count.completed_at,
+                "created_at": count.created_at,
+                "item_count": len(items),
+                "lines_counted": lines_counted,
+                "lines_with_variance": lines_with_variance,
+                "total_variance_qty": round(variance_qty, 3),
+                "items": serialized_items,
+            }
+        )
+
+    return {
+        "from_date": from_date,
+        "to_date": to_date,
+        "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
+        "status": status,
+        "variance_only": variance_only,
+        "count_sessions": len(count_rows),
+        "total_lines": total_lines,
+        "lines_with_variance": total_variance_lines,
+        "total_variance_qty": round(total_variance_qty, 3),
+        "counts": count_rows,
+        "lines": flat_lines,
+    }
+
+
 async def _resolve_purchase_location_filters(
     db: AsyncSession,
     tenant_id: str,
