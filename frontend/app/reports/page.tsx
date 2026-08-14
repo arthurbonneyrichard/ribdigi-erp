@@ -1219,7 +1219,9 @@ export default function Page() {
           </table>
           <h3 style={{ marginTop: 16 }}>Inter-store transfers</h3>
           <p className="muted">
-            {data.transfers?.transfer_count ?? 0} transfers · qty {data.transfers?.total_quantity ?? 0}
+            {data.transfers?.transfer_count ?? 0}{' '}
+            {(data.transfers?.transfer_count ?? 0) === 1 ? 'transfer' : 'transfers'} · qty{' '}
+            {data.transfers?.total_quantity ?? 0}
             {data.transfers?.store_name ? ` · ${data.transfers.store_name}` : ''}
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
