@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 406 track opened (ADR-819: `test_stage406_open.py`, `docs/STAGE_406_PLAN.md`) — ADR-001 Shared-Schema Honesty Pack Remaining-Gate Index; closed under ADR-820
+- [x] ADR-001 shared-schema honesty pack remaining-gate hub (Stage 406 I1: `test_stage406_index_i1.py`, `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] ADR-001 shared-schema honesty pack blocker matrix (Stage 406 B1: `test_stage406_blockers_b1.py`, `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 405 / Stage 404 / Stage 392 / CHANGE_IMPACT pointers (Stage 406 P1: `test_stage406_pointers_p1.py`, `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 406 fidelity sync (D1: `test_stage406_fidelity_d1.py`, `docs/STAGE_406_FIDELITY.md`)
+- [x] Stage 406 exit + freeze (H406x: `test_stage406_exit_h406x.py`, `docs/STAGE_406_EXIT_CRITERIA.md`, ADR-820)
 - [x] Stage 405 track opened (ADR-817: `test_stage405_open.py`, `docs/STAGE_405_PLAN.md`) — Attestation Workflow Pack Remaining-Gate Index; closed under ADR-818
 - [x] Attestation workflow pack remaining-gate hub (Stage 405 I1: `test_stage405_index_i1.py`, `docs/ATTESTATION_WORKFLOW_PACK_REMAINING_GATE_MVP.md`)
 - [x] Attestation workflow pack blocker matrix (Stage 405 B1: `test_stage405_blockers_b1.py`, `docs/ATTESTATION_WORKFLOW_PACK_RG_BLOCKERS_MVP.md`)

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_406_EXIT_CRITERIA.md` / `docs/ADR_820_STAGE406_FREEZE.md` (`backend/tests/test_stage406_exit_h406x.py`) — Stage 406 H406x
+- `docs/STAGE_406_FIDELITY.md` (`backend/tests/test_stage406_fidelity_d1.py`) — Stage 406 D1
+- `docs/STAGE_406_PLAN.md` (`backend/tests/test_stage406_open.py`) — Stage 406 open (ADR-819)
+- `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/adr001-shared-schema-honesty-pack-remaining-gate.json` — Stage 406 I1
+- `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/adr001-shared-schema-honesty-pack-rg-blockers.json` — Stage 406 B1
+- `docs/ADR001_SHARED_SCHEMA_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/adr001-shared-schema-honesty-pack-rg-pointers.json` — Stage 406 P1
 - `docs/STAGE_405_EXIT_CRITERIA.md` / `docs/ADR_818_STAGE405_FREEZE.md` (`backend/tests/test_stage405_exit_h405x.py`) — Stage 405 H405x
 - `docs/STAGE_405_FIDELITY.md` (`backend/tests/test_stage405_fidelity_d1.py`) — Stage 405 D1
 - `docs/STAGE_405_PLAN.md` (`backend/tests/test_stage405_open.py`) — Stage 405 open (ADR-817)
@@ -5713,6 +5719,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 406 exit
+
+H406x met — `docs/STAGE_406_EXIT_CRITERIA.md`, ADR-820. Stages 1–406 frozen for Stage 406 feature scope.
+
+## Stage 406 D1 — Tenant MVP ADR-001 Shared-Schema Honesty Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_406_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 406 open
+
+Opened under ADR-819; plan `docs/STAGE_406_PLAN.md`.
 
 ## Stage 405 exit
 

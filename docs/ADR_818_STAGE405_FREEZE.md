@@ -31,3 +31,9 @@ Stage 406 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, attestation, attestation-workflow, go-live, or attestation Complete.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 406 opened under **ADR-819** after CONTINUE/NEXT (Tenant MVP ADR-001 Shared-Schema Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-820**. Stage 405 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 405 runner-up outline was approved and opened (ADR-819); freeze ADR-820. Do not reopen Stage 405 scope.

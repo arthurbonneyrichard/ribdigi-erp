@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 406 D1 ADR-001 Shared-Schema Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_406_FIDELITY.md` (`test_stage406_fidelity_d1.py`); Offline Complete / ADR-001 still MISSING.
 Stage 405 D1 Attestation Workflow Pack Remaining-Gate Index Fidelity — `docs/STAGE_405_FIDELITY.md` (`test_stage405_fidelity_d1.py`); Offline Complete / attestation still MISSING.
 Stage 404 D1 ADR-002 Paid Billing Pack Remaining-Gate Index Fidelity — `docs/STAGE_404_FIDELITY.md` (`test_stage404_fidelity_d1.py`); Offline Complete / ADR-002 still MISSING.
 Stage 403 D1 ADR-005 Store Membership Pack Remaining-Gate Index Fidelity — `docs/STAGE_403_FIDELITY.md` (`test_stage403_fidelity_d1.py`); Offline Complete / ADR-005 still MISSING.
