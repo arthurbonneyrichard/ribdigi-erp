@@ -31,3 +31,10 @@ Stage 312 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live service credits, warranty, uptime credit, remedy schedule live, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 312 opened under **ADR-631** after CONTINUE/NEXT (Tenant MVP Status Uptime Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-632**. Stage 311 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 312 runner-up outline was approved and opened (ADR-631); freeze ADR-632. Do not reopen Stage 311 scope.
+

@@ -1,0 +1,57 @@
+{
+  "id": "status-uptime-pack-remaining-gate",
+  "stage": 312,
+  "pack": "I1",
+  "doc": "docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STATUS_UPTIME_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STATUS_UPTIME_PACK_RG_POINTERS_MVP.md",
+    "status_uptime": "docs/STATUS_UPTIME_MVP.md",
+    "service_credit_warranty_pack_remaining_gate": "docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md",
+    "liability_indemnity_pack_remaining_gate": "docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "status_page_live": false,
+  "uptime_sla_claimed": false,
+  "measured_uptime_claimed": false,
+  "public_dashboard_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage40_status_uptime": true,
+  "distinct_from_stage311_service_credit_warranty_pack_remaining_gate": true,
+  "distinct_from_stage310_liability_indemnity_pack_remaining_gate": true,
+  "distinct_from_stage36_support_sla_boundary_remaining_gate": true,
+  "steps": [
+    {
+      "id": "supr-read-blockers",
+      "title": "Read B1 status uptime pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "supr-follow-pointers",
+      "title": "Follow P1 Stage 40 U1 / Stage 311 / Stage 310 / Stage 36 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "supr-page-missing",
+      "title": "Reaffirm live status page / measured uptime MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "supr-no-packaging-as-live",
+      "title": "Do not treat Stage 40 U1 / Stage 311 / Stage 310 as live status page Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "supr-page-remaining",
+      "title": "Live status page / uptime SLA / measured uptime / public dashboard / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 312 I1 status uptime pack remaining-gate index packaging only. Do not claim live status page Complete."
+}

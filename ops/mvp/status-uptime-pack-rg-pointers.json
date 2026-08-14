@@ -1,0 +1,60 @@
+{
+  "id": "status-uptime-pack-rg-pointers",
+  "stage": 312,
+  "pack": "P1",
+  "doc": "docs/STATUS_UPTIME_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md",
+    "status_uptime": "docs/STATUS_UPTIME_MVP.md",
+    "service_credit_warranty_pack_remaining_gate": "docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md",
+    "liability_indemnity_pack_remaining_gate": "docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "status_page_live": false,
+  "uptime_sla_claimed": false,
+  "measured_uptime_claimed": false,
+  "public_dashboard_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "status_uptime_stage40",
+    "service_credit_warranty_pack_remaining_gate_stage311",
+    "liability_indemnity_pack_remaining_gate_stage310",
+    "support_sla_boundary_remaining_gate_stage36",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "suprp-stage40",
+      "title": "Point to Stage 40 U1 status uptime",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprp-stage311",
+      "title": "Point to Stage 311 service credit warranty pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprp-stage310",
+      "title": "Point to Stage 310 liability indemnity pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprp-stage36",
+      "title": "Point to Stage 36 support SLA boundary remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprp-page-remaining",
+      "title": "Live status page Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 312 P1 status uptime pack RG pointers packaging only. Do not claim live status page Complete."
+}

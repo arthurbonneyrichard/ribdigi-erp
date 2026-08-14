@@ -1659,6 +1659,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 46 W1 / Stage 310 / Stage 309 / Stage 40 U1 pointers (Stage 311 P1: `test_stage311_pointers_p1.py`, `docs/SERVICE_CREDIT_WARRANTY_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 311 fidelity sync (D1: `test_stage311_fidelity_d1.py`, `docs/STAGE_311_FIDELITY.md`)
 - [x] Stage 311 exit + freeze (H311x: `test_stage311_exit_h311x.py`, `docs/STAGE_311_EXIT_CRITERIA.md`, ADR-630)
+- [x] Stage 312 track opened (ADR-631: `test_stage312_open.py`, `docs/STAGE_312_PLAN.md`) — Status Uptime Pack Remaining-Gate Index; closed under ADR-632
+- [x] Status uptime pack remaining-gate hub (Stage 312 I1: `test_stage312_index_i1.py`, `docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md`)
+- [x] Status uptime pack blocker matrix (Stage 312 B1: `test_stage312_blockers_b1.py`, `docs/STATUS_UPTIME_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 40 U1 / Stage 311 / Stage 310 / Stage 36 pointers (Stage 312 P1: `test_stage312_pointers_p1.py`, `docs/STATUS_UPTIME_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 312 fidelity sync (D1: `test_stage312_fidelity_d1.py`, `docs/STAGE_312_FIDELITY.md`)
+- [x] Stage 312 exit + freeze (H312x: `test_stage312_exit_h312x.py`, `docs/STAGE_312_EXIT_CRITERIA.md`, ADR-632)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
