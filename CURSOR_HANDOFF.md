@@ -2,35 +2,7 @@
 
 Start by reading `README.md`, then `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md` (latest product-update audit), then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
-Do **not** restart the project. Preserve working engines. Stage 359 froze Tenant MVP Shift Handover Snapshot Pack Remaining-Gate Index Fidelity (ADR-726) — `SHIFT_HANDOVER_SNAPSHOT_PACK_*` remaining-gate hub (`_REMAINING_GATE` / `_RG_*`), blocker matrix, Stage 175/358/342/329 pointers, explicit Offline-Complete / support-SLA / attestation / zero-conflict / go-live non-claim (≠ Stage 175 `SHIFT_HANDOVER_SNAPSHOT_MVP.md`; ≠ Stage 358 `CASHIER_POS_DAYONE_PACK_*`; ≠ Stage 342 `SHIFT_HANDOVER_CHECKLIST_PACK_*`; ≠ Stage 329 `OFFLINE_COMPLETE_PACK_*`). Live shift handover snapshot Complete remains MISSING. Next recommended distinct outline: Tenant MVP Shift Handover Pointers Pack Remaining-Gate Index Fidelity (packaged `SHIFT_HANDOVER_POINTERS_MVP.md` materials non-claim as live shift handover pointers Completes — use prefixed `SHIFT_HANDOVER_POINTERS_PACK_*` if needed; ≠ Stage 359 shift handover snapshot pack / `SHIFT_HANDOVER_POINTERS_MVP.md` / Stage 342 `SHIFT_HANDOVER_CHECKLIST_PACK_*` / Stage 329 `OFFLINE_COMPLETE_PACK_*`; do not reopen `RESIDUAL_RISK_PACK_*` or `GOLIVE_PACK_*`) — Stage 360+ after CONTINUE/NEXT. Prior Stage 358 froze Cashier POS Dayone Pack Remaining-Gate Index Fidelity (ADR-724). Prior Stage 357 froze Cashier Bind Catalog Pack Remaining-Gate Index Fidelity (ADR-722).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Do **not** restart the project. Preserve working engines. Stage 360 froze Tenant MVP Shift Handover Pointers Pack Remaining-Gate Index Fidelity (ADR-728) — `SHIFT_HANDOVER_POINTERS_PACK_*` remaining-gate hub (`_REMAINING_GATE` / `_RG_*`), blocker matrix, Stage 175/359/342/329 pointers, explicit Offline-Complete / support-SLA / attestation / zero-conflict / go-live non-claim (≠ Stage 175 `SHIFT_HANDOVER_POINTERS_MVP.md`; ≠ Stage 359 `SHIFT_HANDOVER_SNAPSHOT_PACK_*`; ≠ Stage 342 `SHIFT_HANDOVER_CHECKLIST_PACK_*`; ≠ Stage 329 `OFFLINE_COMPLETE_PACK_*`). Live shift handover pointers Complete remains MISSING. Next recommended distinct outline: Tenant MVP E2E Sale Payment Pack Remaining-Gate Index Fidelity (packaged `E2E_SALE_PAYMENT_MVP.md` materials non-claim as live E2E sale-payment Completes — use prefixed `E2E_SALE_PAYMENT_PACK_*` if needed; ≠ Stage 360 shift handover pointers pack / `E2E_SALE_PAYMENT_MVP.md` / Stage 35 E2E sale-payment / Stage 329 `OFFLINE_COMPLETE_PACK_*`; do not reopen `RESIDUAL_RISK_PACK_*` or `GOLIVE_PACK_*`) — Stage 361+ after CONTINUE/NEXT. Prior Stage 359 froze Shift Handover Snapshot Pack Remaining-Gate Index Fidelity (ADR-726). Prior Stage 358 froze Cashier POS Dayone Pack Remaining-Gate Index Fidelity (ADR-724).
 
 ## COMMERCIAL PRODUCT / NO-DEMO RULE
 

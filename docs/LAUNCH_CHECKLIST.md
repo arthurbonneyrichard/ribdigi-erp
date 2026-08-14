@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 360 track opened (ADR-727: `test_stage360_open.py`, `docs/STAGE_360_PLAN.md`) — Shift Handover Pointers Pack Remaining-Gate Index; closed under ADR-728
+- [x] Shift handover pointers pack remaining-gate hub (Stage 360 I1: `test_stage360_index_i1.py`, `docs/SHIFT_HANDOVER_POINTERS_PACK_REMAINING_GATE_MVP.md`)
+- [x] Shift handover pointers pack blocker matrix (Stage 360 B1: `test_stage360_blockers_b1.py`, `docs/SHIFT_HANDOVER_POINTERS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 175 / Stage 359 / Stage 342 / Stage 329 pointers (Stage 360 P1: `test_stage360_pointers_p1.py`, `docs/SHIFT_HANDOVER_POINTERS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 360 fidelity sync (D1: `test_stage360_fidelity_d1.py`, `docs/STAGE_360_FIDELITY.md`)
+- [x] Stage 360 exit + freeze (H360x: `test_stage360_exit_h360x.py`, `docs/STAGE_360_EXIT_CRITERIA.md`, ADR-728)
 - [x] Stage 359 track opened (ADR-725: `test_stage359_open.py`, `docs/STAGE_359_PLAN.md`) — Shift Handover Snapshot Pack Remaining-Gate Index; closed under ADR-726
 - [x] Shift handover snapshot pack remaining-gate hub (Stage 359 I1: `test_stage359_index_i1.py`, `docs/SHIFT_HANDOVER_SNAPSHOT_PACK_REMAINING_GATE_MVP.md`)
 - [x] Shift handover snapshot pack blocker matrix (Stage 359 B1: `test_stage359_blockers_b1.py`, `docs/SHIFT_HANDOVER_SNAPSHOT_PACK_RG_BLOCKERS_MVP.md`)
