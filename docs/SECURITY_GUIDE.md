@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 384 open** | Offline Stock Authority Pack Remaining-Gate Index — `docs/STAGE_384_PLAN.md`, ADR-775 (`test_stage384_open.py`) |
+| **Stage 384 I1** | Offline stock authority pack remaining-gate index hub (`test_stage384_index_i1.py`) |
+| **Stage 384 B1** | Offline stock authority pack blocker matrix (`test_stage384_blockers_b1.py`) |
+| **Stage 384 P1** | Stage 383 / Stage 166 / Stage 329 / CHANGE_IMPACT pointers (`test_stage384_pointers_p1.py`) |
+| **Stage 384 D1** | Offline stock authority pack remaining-gate fidelity — `docs/STAGE_384_FIDELITY.md` (`test_stage384_fidelity_d1.py`) |
+| **Stage 384 H384x** | Exit + freeze — `docs/STAGE_384_EXIT_CRITERIA.md`, ADR-776 (`test_stage384_exit_h384x.py`); Stages 1–384 frozen |
 | **Stage 383 open** | Offline PWA Install Pack Remaining-Gate Index — `docs/STAGE_383_PLAN.md`, ADR-773 (`test_stage383_open.py`) |
 | **Stage 383 I1** | Offline PWA install pack remaining-gate index hub (`test_stage383_index_i1.py`) |
 | **Stage 383 B1** | Offline PWA install pack blocker matrix (`test_stage383_blockers_b1.py`) |

@@ -31,3 +31,10 @@ Stage 384 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline PWA-install, PWA-manifest as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 384 opened under **ADR-775** after CONTINUE/NEXT (Tenant MVP Offline Stock Authority Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-776**. Stage 383 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 383 runner-up outline was approved and opened (ADR-775); freeze ADR-776. Do not reopen Stage 383 scope.
+

@@ -1,0 +1,70 @@
+{
+  "id": "offline-stock-authority-pack-rg-blockers",
+  "stage": 384,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_STOCK_AUTHORITY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_STOCK_AUTHORITY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage166_fidelity": "docs/STAGE_166_FIDELITY.md",
+    "stage357_fidelity": "docs/STAGE_357_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_stock_authority_complete_claimed": false,
+  "authoritative_offline_stock_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_stock_authority_complete_claimed": "REMAINING",
+    "authoritative_offline_stock_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage166_357_as_offline_stock_authority": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_stock_authority_complete_claimed_flag": "false",
+    "authoritative_offline_stock_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "osaprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osaprb-stock-authority",
+      "title": "Mark offline stock-authority Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osaprb-authoritative",
+      "title": "Mark authoritative offline stock Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osaprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osaprb-stage166-357-nonclaim",
+      "title": "Mark Stage 166/357 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osaprb-checklist-remaining",
+      "title": "Offline Complete / offline stock-authority Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 384 B1 offline stock authority pack RG blocker matrix packaging only."
+}
