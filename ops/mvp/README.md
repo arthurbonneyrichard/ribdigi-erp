@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_353_EXIT_CRITERIA.md` / `docs/ADR_714_STAGE353_FREEZE.md` (`backend/tests/test_stage353_exit_h353x.py`) — Stage 353 H353x
+- `docs/STAGE_353_FIDELITY.md` (`backend/tests/test_stage353_fidelity_d1.py`) — Stage 353 D1
+- `docs/STAGE_353_PLAN.md` (`backend/tests/test_stage353_open.py`) — Stage 353 open (ADR-713)
+- `docs/STORE_CLOSE_DRAIN_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-close-drain-pack-remaining-gate.json` — Stage 353 I1
+- `docs/STORE_CLOSE_DRAIN_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-close-drain-pack-rg-blockers.json` — Stage 353 B1
+- `docs/STORE_CLOSE_DRAIN_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-close-drain-pack-rg-pointers.json` — Stage 353 P1
 - `docs/STAGE_352_EXIT_CRITERIA.md` / `docs/ADR_712_STAGE352_FREEZE.md` (`backend/tests/test_stage352_exit_h352x.py`) — Stage 352 H352x
 - `docs/STAGE_352_FIDELITY.md` (`backend/tests/test_stage352_fidelity_d1.py`) — Stage 352 D1
 - `docs/STAGE_352_PLAN.md` (`backend/tests/test_stage352_open.py`) — Stage 352 open (ADR-711)
@@ -5395,6 +5401,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 353 exit
+
+H353x met — `docs/STAGE_353_EXIT_CRITERIA.md`, ADR-714. Stages 1–353 frozen for Stage 353 feature scope.
+
+## Stage 353 D1 — Tenant MVP Store Close Drain Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_353_FIDELITY.md` (`test_stage353_fidelity_d1.py`). `STORE_CLOSE_DRAIN_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / empty queue / go-live still MISSING.
+
+## Stage 353 open
+
+ADR-713 / `docs/STAGE_353_PLAN.md`.
 
 ## Stage 352 exit
 

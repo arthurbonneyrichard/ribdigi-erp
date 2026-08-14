@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 353 track opened (ADR-713: `test_stage353_open.py`, `docs/STAGE_353_PLAN.md`) — Store Close Drain Pack Remaining-Gate Index; closed under ADR-714
+- [x] Store close drain pack remaining-gate hub (Stage 353 I1: `test_stage353_index_i1.py`, `docs/STORE_CLOSE_DRAIN_PACK_REMAINING_GATE_MVP.md`)
+- [x] Store close drain pack blocker matrix (Stage 353 B1: `test_stage353_blockers_b1.py`, `docs/STORE_CLOSE_DRAIN_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 174 / Stage 352 / Stage 341 / Stage 329 pointers (Stage 353 P1: `test_stage353_pointers_p1.py`, `docs/STORE_CLOSE_DRAIN_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 353 fidelity sync (D1: `test_stage353_fidelity_d1.py`, `docs/STAGE_353_FIDELITY.md`)
+- [x] Stage 353 exit + freeze (H353x: `test_stage353_exit_h353x.py`, `docs/STAGE_353_EXIT_CRITERIA.md`, ADR-714)
 - [x] Stage 352 track opened (ADR-711: `test_stage352_open.py`, `docs/STAGE_352_PLAN.md`) — Migration Gate Pack Remaining-Gate Index; closed under ADR-712
 - [x] Migration gate pack remaining-gate hub (Stage 352 I1: `test_stage352_index_i1.py`, `docs/MIGRATION_GATE_PACK_REMAINING_GATE_MVP.md`)
 - [x] Migration gate pack blocker matrix (Stage 352 B1: `test_stage352_blockers_b1.py`, `docs/MIGRATION_GATE_PACK_RG_BLOCKERS_MVP.md`)

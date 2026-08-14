@@ -31,3 +31,10 @@ Stage 353 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live migration, production migrate, CI deploy, attestation, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 353 opened under **ADR-713** after CONTINUE/NEXT (Tenant MVP Store Close Drain Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-714**. Stage 352 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 353 runner-up outline was approved and opened (ADR-713); freeze ADR-714. Do not reopen Stage 352 scope.
+
