@@ -446,8 +446,8 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 ### 5.1 Product Categories
 **List:** `GET /catalog/categories` — tree order with `depth` and `path` (e.g. `Food › Soft Drinks › Colas`) (BR-5.1)  
 **Create:** `POST /catalog/categories` (`code`, `name`, optional `parent_id`, `tax_rate_id`)  
-**Update:** `PATCH /catalog/categories/{category_id}` — reparent via `parent_id` (null clears to root); rejects self-parent and cycles  
-**Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate)
+**Update:** `PATCH /catalog/categories/{category_id}` — reparent via `parent_id` (null clears to root); rejects self-parent and cycles; soft-reactivate via `is_active: true` (Inventory Catalog **Activate**)  
+**Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate `is_active=false`; Inventory **Deactivate**; inactive blocked on product create/PATCH; product create category picker hides inactive)
 
 Inventory Catalog **Category tree** UI shows indented hierarchy + reparent picker; product create category select uses `path`.
 
@@ -503,7 +503,7 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
 
 `sku` is optional on create: omit or blank to auto-allocate `SKU-YYYY-NNNN` unique per tenant (products + variants). Explicit SKU is uppercased and must be unique (409 on clash). Same auto/manual rules apply to `POST /products/{id}/variants`.
 
-Variant attributes (BR-5.1): `size`, `color`, `flavor`, `dosage` on `POST|PATCH /products/{id}/variants` (set to `null` on PATCH to clear).
+Variant attributes (BR-5.1): `size`, `color`, `flavor`, `dosage` on `POST|PATCH /products/{id}/variants` (set to `null` on PATCH to clear). Soft-deactivate via `DELETE /products/{id}/variants/{vid}`; reactivate via `PATCH …/variants/{vid}` `{ is_active: true }` (Inventory Variants **Activate** / **Deactivate**; inactive variants excluded from sale/stock pickers).
 
 Optional physical fields: `weight` (kg), `length` / `width` / `height` (cm). Also accepted on `PATCH /products/{id}` and CSV import columns.
 

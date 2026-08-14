@@ -997,6 +997,21 @@ export default function Page() {
     }
   }
 
+  async function activateVariant(variantId: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/variants/${variantId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: true }),
+      });
+      setMessage('Variant activated');
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function saveVariantPrice(variantId: string, price: string) {
     if (!selectedId) return;
     setError('');
@@ -1782,7 +1797,26 @@ export default function Page() {
                           ? ' · tax set'
                           : ' · tax inherit/default'}
                     </span>
-                    {c.is_active && (
+                    {c.is_active === false ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setError('');
+                          try {
+                            await api(`/catalog/categories/${c.id}`, {
+                              method: 'PATCH',
+                              body: JSON.stringify({ is_active: true }),
+                            });
+                            setMessage(`Category ${c.code} activated`);
+                            await refresh();
+                          } catch (err: any) {
+                            setError(err.message);
+                          }
+                        }}
+                      >
+                        Activate
+                      </button>
+                    ) : (
                       <>
                         <select
                           aria-label={`Parent for ${c.code}`}
@@ -2172,7 +2206,11 @@ export default function Page() {
                     <button type="button" onClick={() => printVariantBarcodeLabel(v.id)}>
                       Label
                     </button>
-                    {v.is_active && (
+                    {v.is_active === false ? (
+                      <button type="button" onClick={() => activateVariant(v.id)}>
+                        Activate
+                      </button>
+                    ) : (
                       <button type="button" onClick={() => deactivateVariant(v.id)}>
                         Deactivate
                       </button>
