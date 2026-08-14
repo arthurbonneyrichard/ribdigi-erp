@@ -74,7 +74,11 @@ async def build_invoice_print_payload(
                 "quantity": float(item.quantity),
                 "unit_price": float(item.unit_price),
                 "tax_rate": float(item.tax_rate or 0),
+                "line_tax": float(getattr(item, "line_tax", None) or 0),
+                "is_reverse_charge": bool(getattr(item, "is_reverse_charge", False)),
+                "tax_components": getattr(item, "tax_components", None),
                 "discount": float(item.discount or 0),
+                "line_subtotal": float(getattr(item, "line_subtotal", None) or 0),
                 "line_total": float(item.line_total),
                 "product_id": item.product_id,
                 "variant_id": item.variant_id,
@@ -122,6 +126,7 @@ async def build_invoice_print_payload(
         "subtotal": float(invoice.subtotal or 0),
         "tax": float(invoice.tax_amount or 0),
         "tax_amount": float(invoice.tax_amount or 0),
+        "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
         "discount_amount": float(invoice.discount_amount or 0),
         "total": total,
         "total_amount": total,
@@ -273,22 +278,26 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     if payload.get("customer_phone"):
         add(str(payload["customer_phone"]), 9)
     add("", 10)
-    add("Qty  Description                          Unit      Tax%      Line", 9)
+    add("Qty  Description                     Unit   Tax%  Tax amt     Line", 9)
     add("-" * 72, 9)
     for item in payload.get("items") or []:
-        name = str(item.get("name") or "Item")[:34]
+        name = str(item.get("name") or "Item")[:30]
         qty = float(item.get("quantity") or 0)
         unit = float(item.get("unit_price") or 0)
         tax = float(item.get("tax_rate") or 0)
+        line_tax = float(item.get("line_tax") or 0)
         line_total = float(item.get("line_total") or 0)
         add(
-            f"{qty:>4g}  {name:<34} {_money(unit):>8} {_money(tax):>7} {_money(line_total):>9}",
+            f"{qty:>4g}  {name:<30} {_money(unit):>7} {_money(tax):>5} {_money(line_tax):>8} {_money(line_total):>8}",
             9,
         )
     add("-" * 72, 9)
     currency = payload.get("currency") or ""
     add(f"Subtotal: {currency} {_money(payload.get('subtotal') or 0)}", 10)
     add(f"Tax: {currency} {_money(payload.get('tax') or 0)}", 10)
+    rc = float(payload.get("reverse_charge_tax") or 0)
+    if rc > 0:
+        add(f"Reverse-charge tax (memo): {currency} {_money(rc)}", 9)
     disc = float(payload.get("discount_amount") or 0)
     if disc > 0:
         add(f"Discount: -{currency} {_money(disc)}", 10)

@@ -179,6 +179,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "days_overdue": overdue_days if status == "overdue" else 0,
         "can_print": status in SALES_INVOICE_BILLED,
         "can_email": status in SALES_INVOICE_BILLED,
+        "tax_breakdown": _invoice_tax_breakdown(items, invoice),
         "items": [
             {
                 "id": i.id,
@@ -191,10 +192,77 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
                 "tax_supply_class": getattr(i, "tax_supply_class", None) or "standard",
                 "discount": float(i.discount),
                 "line_subtotal": float(getattr(i, "line_subtotal", None) or 0),
+                "line_tax": _line_tax_value(i),
+                "is_reverse_charge": bool(getattr(i, "is_reverse_charge", False)),
+                "tax_components": getattr(i, "tax_components", None) or None,
                 "line_total": float(i.line_total),
             }
             for i in items
         ],
+    }
+
+
+def _line_tax_value(item: m.SalesInvoiceItem) -> float:
+    """Persisted line_tax, with legacy backfill when column is still 0 but rate > 0."""
+    stored = float(getattr(item, "line_tax", None) or 0)
+    if stored > 0 or bool(getattr(item, "is_reverse_charge", False)):
+        return stored
+    if getattr(item, "tax_components", None) is not None:
+        return stored
+    rate = float(item.tax_rate or 0)
+    if rate <= 0:
+        return 0.0
+    sub = float(getattr(item, "line_subtotal", None) or 0)
+    total = float(item.line_total or 0)
+    discount = float(item.discount or 0)
+    derived = round(total - sub + discount, 2)
+    if derived < 0:
+        return round(sub * rate / 100.0, 2)
+    return derived
+
+
+def _invoice_tax_breakdown(items: list[m.SalesInvoiceItem], invoice: m.SalesInvoice) -> dict:
+    by_rate: dict[str, dict] = {}
+    component_totals: dict[str, dict] = {}
+    line_rows: list[dict] = []
+    for i in items:
+        line_tax = _line_tax_value(i)
+        is_rc = bool(getattr(i, "is_reverse_charge", False))
+        rate = float(i.tax_rate or 0)
+        key = f"{rate:.4f}|{'rc' if is_rc else 'std'}"
+        bucket = by_rate.setdefault(
+            key,
+            {
+                "tax_rate": rate,
+                "is_reverse_charge": is_rc,
+                "taxable": 0.0,
+                "tax": 0.0,
+            },
+        )
+        bucket["taxable"] = round(bucket["taxable"] + float(getattr(i, "line_subtotal", None) or 0), 2)
+        bucket["tax"] = round(bucket["tax"] + line_tax, 2)
+        comps = getattr(i, "tax_components", None) or []
+        for c in comps:
+            cname = str(c.get("name") or c.get("code") or "component")
+            cb = component_totals.setdefault(cname, {"name": cname, "tax": 0.0})
+            cb["tax"] = round(cb["tax"] + float(c.get("amount") or 0), 2)
+        line_rows.append(
+            {
+                "item_id": i.id,
+                "product_id": i.product_id,
+                "tax_rate": rate,
+                "line_subtotal": float(getattr(i, "line_subtotal", None) or 0),
+                "line_tax": line_tax,
+                "is_reverse_charge": is_rc,
+                "tax_components": comps or None,
+            }
+        )
+    return {
+        "lines": line_rows,
+        "by_rate": sorted(by_rate.values(), key=lambda r: (-r["tax_rate"], r["is_reverse_charge"])),
+        "by_component": sorted(component_totals.values(), key=lambda r: r["name"]),
+        "tax_amount": float(invoice.tax_amount or 0),
+        "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
     }
 
 
@@ -251,7 +319,10 @@ async def create_sales_invoice(
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
         line_amount = qty * float(unit_price)
-        line_sub, line_tax, line_total = spec.compute_amounts(line_amount)
+        breakdown = spec.compute_breakdown(line_amount)
+        line_sub = float(breakdown["net"])
+        line_tax = float(breakdown["tax"])
+        line_total = float(breakdown["gross"])
         discount = float(item.get("discount") or 0)
         line_total = max(line_total - discount, 0)
         subtotal += line_sub
@@ -271,6 +342,9 @@ async def create_sales_invoice(
                     "tax_rate": spec.rate_pct,
                     "tax_supply_class": spec.supply_class,
                     "line_subtotal": line_sub,
+                    "line_tax": line_tax,
+                    "is_reverse_charge": bool(spec.is_reverse_charge),
+                    "tax_components": list(breakdown.get("components") or []) or None,
                 },
                 line_total,
             )
@@ -313,6 +387,9 @@ async def create_sales_invoice(
                 tax_supply_class=item.get("tax_supply_class") or "standard",
                 discount=item.get("discount", 0),
                 line_subtotal=item.get("line_subtotal") or 0,
+                line_tax=item.get("line_tax") or 0,
+                is_reverse_charge=bool(item.get("is_reverse_charge")),
+                tax_components=item.get("tax_components"),
                 line_total=line_total,
             )
         )
