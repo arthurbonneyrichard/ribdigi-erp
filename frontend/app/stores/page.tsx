@@ -900,7 +900,9 @@ export default function Page() {
               ))}
             </select>
             <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-              {products.map((p) => (
+              {products
+                .filter((p) => p.is_active !== false)
+                .map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} ({p.stock_qty})
                 </option>

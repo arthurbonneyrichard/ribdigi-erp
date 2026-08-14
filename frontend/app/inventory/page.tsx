@@ -600,6 +600,21 @@ export default function Page() {
     }
   }
 
+  async function setProductActive(is_active: boolean) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active }),
+      });
+      setMessage(is_active ? 'Product activated' : 'Product deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function generateBarcode() {
     if (!selectedId) return;
     setError('');
@@ -1344,9 +1359,13 @@ export default function Page() {
           {products.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name} ({p.sku}) — {p.stock_qty}
+              {p.is_active === false ? ' [inactive]' : ''}
             </option>
           ))}
         </select>
+        {selected?.is_active === false && (
+          <p className="muted">Inactive — hidden from sales/purchasing/POS pickers; stock ops still allowed</p>
+        )}
         {selected?.has_image && <p className="muted">Has primary image</p>}
         <label className="muted">Add gallery image (max 5)</label>
         <input
@@ -1456,9 +1475,20 @@ export default function Page() {
               <option value="zero_rated">Zero-rated</option>
               <option value="exempt">Exempt</option>
             </select>
-            <button type="button" onClick={saveProductEdits}>
-              Save product
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={saveProductEdits}>
+                Save product
+              </button>
+              {selected?.is_active === false ? (
+                <button type="button" onClick={() => setProductActive(true)}>
+                  Activate
+                </button>
+              ) : (
+                <button type="button" onClick={() => setProductActive(false)}>
+                  Deactivate
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -1629,6 +1659,7 @@ export default function Page() {
                 <th>Stock</th>
                 <th>Batches?</th>
                 <th>Price</th>
+                <th>Active</th>
                 <th>Image</th>
               </tr>
             </thead>
@@ -1641,6 +1672,7 @@ export default function Page() {
                       style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
                     >
                       {p.name}
+                      {p.is_active === false ? ' [inactive]' : ''}
                     </button>
                   </td>
                   <td>{p.sku}</td>
@@ -1651,6 +1683,7 @@ export default function Page() {
                   </td>
                   <td>{p.tracks_batches ? 'yes' : 'no'}</td>
                   <td>{p.selling_price}</td>
+                  <td>{p.is_active === false ? 'no' : 'yes'}</td>
                   <td>{p.has_image ? 'yes' : '—'}</td>
                 </tr>
               ))}

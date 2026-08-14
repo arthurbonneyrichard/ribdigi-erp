@@ -348,6 +348,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes (`POST /products/{id}/barcode/generate?symbology=code128|ean13|upca`; PNG/label; Inventory picker; variant generate/label + uniqueness across products/variants; internal GTIN prefixes `200` / `2`)
   - [x] **Images:** Multiple product images with primary image designation (`product_images` max 5; `GET|POST /products/{id}/images` + `PATCH|DELETE .../images/{id}` set primary; Inventory gallery)
   - [x] **Product Details:** Name, description, cost price, selling price, tax rate, category, brand, unit, weight, dimensions (`products.description` / `weight` / `length`/`width`/`height`; create/PATCH + CSV import; Inventory UI)
+  - [x] **Soft-deactivate:** Hide from sales/purchasing/POS without data loss (`PATCH /products/{id}` `{ is_active }`; Inventory **Deactivate** / **Activate**; inactive blocked on new sale/PR/PO/PI lines; POS search already active-only)
   - [x] **Batch/Expiry:** Batch number, manufacturing date, expiry date (critical for pharmacy and food) — `POST /inventory/stock-in` + opening-stock lines; Inventory Batches/Opening UI; FEFO stock-out
 
 #### BR-5.2 Stock Operations
