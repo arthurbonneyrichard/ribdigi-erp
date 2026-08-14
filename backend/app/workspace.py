@@ -306,6 +306,23 @@ def company_scope_filter(model, claims: dict):
     return clauses
 
 
+def assert_record_company(claims: dict, row) -> None:
+    """IDOR guard: row must belong to the active company workspace when set."""
+    company_id = claims.get("company_id")
+    if not company_id or row is None:
+        return
+    row_cid = getattr(row, "company_id", None)
+    if row_cid and row_cid != company_id:
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+def stamp_company_id(claims: dict) -> str | None:
+    """Company id to persist on new operational rows (None outside company workspace)."""
+    if (claims.get("workspace_kind") or "") != "company":
+        return claims.get("company_id")
+    return claims.get("company_id")
+
+
 async def count_active_companies(db: AsyncSession, tenant_id: str) -> int:
     return int(
         (

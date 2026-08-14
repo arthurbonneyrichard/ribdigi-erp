@@ -138,6 +138,7 @@ async def create_supplier(
     early_pay_discount_days: int | None = None,
     credit_limit: float = 0,
     contacts: list[dict] | None = None,
+    company_id: str | None = None,
 ) -> m.Party:
     name = (name or "").strip()
     if not name:
@@ -147,6 +148,7 @@ async def create_supplier(
     now = datetime.utcnow()
     row = m.Party(
         tenant_id=tenant_id,
+        company_id=company_id,
         kind="supplier",
         name=name,
         code=code,

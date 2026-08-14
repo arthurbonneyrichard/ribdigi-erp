@@ -612,6 +612,7 @@ async def create_sales_invoice(
     store_id: str | None = None,
     currency: str | None = None,
     exchange_rate: float | None = None,
+    company_id: str | None = None,
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
@@ -682,6 +683,7 @@ async def create_sales_invoice(
     )
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=company_id,
         invoice_number=invoice_number,
         customer_id=customer_id,
         status="draft",
@@ -704,6 +706,7 @@ async def create_sales_invoice(
         db.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 sales_invoice_id=invoice.id,
                 product_id=item["product_id"],
                 variant_id=item.get("variant_id"),

@@ -176,3 +176,113 @@ async def test_context_switch_changes_effective_access(client):
     }
     allowed = await ac.get("/api/v1/products", headers=company_h)
     assert allowed.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_customers_and_expenses_are_company_scoped(client, db_session):
+    """Same-tenant second company customers/expenses must not leak into company A."""
+    ac, seed = client
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="REST",
+        name="Alpha Restaurant",
+        industry="restaurant",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    supplier_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="supplier",
+        name="Restaurant Supplier",
+        status="active",
+        credit_limit=0,
+    )
+    customer_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="Restaurant Only Customer",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add_all([supplier_b, customer_b])
+    await db_session.flush()
+    db_session.add_all(
+        [
+            m.Expense(
+                tenant_id=seed["t1"].id,
+                company_id=c_b.id,
+                category="Ops",
+                description="Restaurant kitchen expense",
+                amount=42,
+                status="approved",
+                created_by=seed["super"].id,
+            ),
+            m.SalesInvoice(
+                tenant_id=seed["t1"].id,
+                company_id=c_b.id,
+                invoice_number="INV-REST-1",
+                customer_id=customer_b.id,
+                status="draft",
+                subtotal=10,
+                tax_amount=0,
+                total_amount=10,
+            ),
+            m.PurchaseOrder(
+                tenant_id=seed["t1"].id,
+                company_id=c_b.id,
+                po_number="PO-REST-1",
+                supplier_id=supplier_b.id,
+                status="draft",
+                subtotal=5,
+                tax_amount=0,
+                total_amount=5,
+                created_by=seed["super"].id,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    customers = await ac.get("/api/v1/customers", headers=headers)
+    assert customers.status_code == 200, customers.text
+    names = {r["name"] for r in customers.json()["data"]}
+    assert "Restaurant Only Customer" not in names
+
+    expenses = await ac.get("/api/v1/expenses", headers=headers)
+    assert expenses.status_code == 200, expenses.text
+    descs = {r.get("description") for r in expenses.json()["data"]}
+    assert "Restaurant kitchen expense" not in descs
+
+    invoices = await ac.get("/api/v1/sales/invoices", headers=headers)
+    assert invoices.status_code == 200, invoices.text
+    inv_nums = {r.get("invoice_number") for r in invoices.json()["data"]}
+    assert "INV-REST-1" not in inv_nums
+
+    pos = await ac.get("/api/v1/purchasing/orders", headers=headers)
+    assert pos.status_code == 200, pos.text
+    po_nums = {r.get("po_number") for r in pos.json()["data"]}
+    assert "PO-REST-1" not in po_nums
+
+
+@pytest.mark.asyncio
+async def test_finance_list_blocked_in_tenant_workspace(client):
+    ac, seed = client
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
+    for path in (
+        "/api/v1/expenses",
+        "/api/v1/accounting/accounts",
+        "/api/v1/accounting/journal-entries",
+        "/api/v1/customers",
+        "/api/v1/purchasing/orders",
+    ):
+        r = await ac.get(path, headers=headers)
+        assert r.status_code == 403, path
+        assert r.json()["detail"]["code"] == "COMPANY_WORKSPACE_REQUIRED"

@@ -1085,6 +1085,7 @@ async def create_purchase_order(
     delivery_address: str | None = None,
     notes: str | None = None,
     purchase_request_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.PurchaseOrder:
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
@@ -1099,6 +1100,7 @@ async def create_purchase_order(
 
     po = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=company_id,
         po_number=await allocate_document_number(db, tenant_id=tenant_id, doc_key="purchase_order"),
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,

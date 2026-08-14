@@ -73,6 +73,7 @@ async def create_store(
     manager_id: str | None = None,
     branch_id: str | None = None,
     operating_hours: dict | None = None,
+    company_id: str | None = None,
 ) -> m.Store:
     if manager_id:
         manager = (
@@ -84,6 +85,7 @@ async def create_store(
             raise HTTPException(status_code=404, detail="Manager user not found")
     store = m.Store(
         tenant_id=tenant_id,
+        company_id=company_id,
         name=name,
         code=code.strip().upper(),
         address=address,
@@ -98,6 +100,7 @@ async def create_store(
     db.add(
         m.Warehouse(
             tenant_id=tenant_id,
+            company_id=company_id,
             store_id=store.id,
             name=f"{store.name} Warehouse",
             code=f"WH-{store.code}",

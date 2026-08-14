@@ -157,11 +157,12 @@ async def get_account_by_code(db: AsyncSession, tenant_id: str, code: str) -> m.
 async def ensure_default_accounts(
     db: AsyncSession, tenant_id: str, company_id: str | None = None
 ) -> None:
+    q = select(m.Account).where(m.Account.tenant_id == tenant_id)
+    if company_id:
+        q = q.where(m.Account.company_id == company_id)
     existing = {
         a.code: a
-        for a in (
-            await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
-        ).scalars().all()
+        for a in (await db.execute(q)).scalars().all()
     }
     for code, name, account_type, is_cash, is_bank in DEFAULT_ACCOUNTS:
         if code not in existing:

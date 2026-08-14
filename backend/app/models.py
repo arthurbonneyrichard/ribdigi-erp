@@ -301,7 +301,7 @@ class Store(Base):
 
 class Warehouse(Base):
     __tablename__ = "warehouses"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -336,7 +336,7 @@ class WarehouseStock(Base):
 
 class ProductCategory(Base):
     __tablename__ = "product_categories"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -353,7 +353,7 @@ class ProductCategory(Base):
 
 class Brand(Base):
     __tablename__ = "brands"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -368,7 +368,7 @@ class Brand(Base):
 
 class UnitOfMeasure(Base):
     __tablename__ = "units_of_measure"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -384,7 +384,7 @@ class UnitOfMeasure(Base):
 
 class Product(Base):
     __tablename__ = "products"
-    __table_args__ = (UniqueConstraint("tenant_id", "sku"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "sku"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -513,7 +513,7 @@ class StockReservation(Base):
 
 class CustomerGroup(Base):
     __tablename__ = "customer_groups"
-    __table_args__ = (UniqueConstraint("tenant_id", "name"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "name"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -595,7 +595,7 @@ class Transaction(Base):
 
 class ExpenseCategory(Base):
     __tablename__ = "expense_categories"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -689,7 +689,7 @@ class RecurringExpense(Base):
 
 class Account(Base):
     __tablename__ = "accounts"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

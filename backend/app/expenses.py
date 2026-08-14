@@ -221,11 +221,12 @@ def next_run_date(from_dt: datetime, frequency: str) -> datetime:
 async def ensure_default_categories(
     db: AsyncSession, tenant_id: str, company_id: str | None = None
 ) -> None:
+    q = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+    if company_id:
+        q = q.where(m.ExpenseCategory.company_id == company_id)
     existing = {
         c.code
-        for c in (
-            await db.execute(select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id))
-        ).scalars().all()
+        for c in (await db.execute(q)).scalars().all()
     }
     for code, name in DEFAULT_CATEGORIES:
         if code not in existing:
@@ -699,8 +700,9 @@ async def create_expense(
     store_id: str | None = None,
     department_id: str | None = None,
     expense_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> m.Expense:
-    await ensure_default_categories(db, tenant_id)
+    await ensure_default_categories(db, tenant_id, company_id=company_id)
     cat_id, cat_name = await resolve_category(
         db, tenant_id, category_id=category_id, category=category
     )
@@ -727,6 +729,7 @@ async def create_expense(
 
     expense = m.Expense(
         tenant_id=tenant_id,
+        company_id=company_id,
         category_id=cat_id,
         category=cat_name,
         description=description or "",

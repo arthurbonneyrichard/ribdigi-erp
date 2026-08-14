@@ -173,9 +173,12 @@ def product_audit_diff(before: dict, after: dict) -> tuple[dict, dict]:
 async def ensure_default_catalog(
     db: AsyncSession, tenant_id: str, company_id: str | None = None
 ) -> None:
-    existing_units = (
-        await db.execute(select(m.UnitOfMeasure.id).where(m.UnitOfMeasure.tenant_id == tenant_id).limit(1))
-    ).scalar_one_or_none()
+    units_q = select(m.UnitOfMeasure.id).where(m.UnitOfMeasure.tenant_id == tenant_id)
+    cats_q = select(m.ProductCategory.id).where(m.ProductCategory.tenant_id == tenant_id)
+    if company_id:
+        units_q = units_q.where(m.UnitOfMeasure.company_id == company_id)
+        cats_q = cats_q.where(m.ProductCategory.company_id == company_id)
+    existing_units = (await db.execute(units_q.limit(1))).scalar_one_or_none()
     if not existing_units:
         for code, name in DEFAULT_UNITS:
             db.add(
@@ -184,11 +187,7 @@ async def ensure_default_catalog(
                 )
             )
 
-    existing_cats = (
-        await db.execute(
-            select(m.ProductCategory.id).where(m.ProductCategory.tenant_id == tenant_id).limit(1)
-        )
-    ).scalar_one_or_none()
+    existing_cats = (await db.execute(cats_q.limit(1))).scalar_one_or_none()
     if not existing_cats:
         for code, name, _parent in DEFAULT_CATEGORIES:
             db.add(

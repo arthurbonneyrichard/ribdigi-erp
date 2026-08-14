@@ -287,27 +287,12 @@ async def seed_tenant_defaults(
     if company_id:
         wh_q = wh_q.where(m.Warehouse.company_id == company_id)
     if not (await db.execute(wh_q.limit(1))).scalar_one_or_none():
-        wh_code = "WH-MAIN"
-        if company_id:
-            co = await db.get(m.Company, company_id)
-            suffix = (co.code if co else "MAIN").strip().upper()[:20] or "MAIN"
-            wh_code = f"WH-{suffix}"
-            # Avoid colliding with an existing tenant-level code from another company.
-            clash = (
-                await db.execute(
-                    select(m.Warehouse).where(
-                        m.Warehouse.tenant_id == tenant_id, m.Warehouse.code == wh_code
-                    )
-                )
-            ).scalar_one_or_none()
-            if clash:
-                wh_code = f"WH-{suffix}-{company_id[:8].upper()}"
         db.add(
             m.Warehouse(
                 tenant_id=tenant_id,
                 company_id=company_id,
                 name="Main Warehouse",
-                code=wh_code,
+                code="WH-MAIN",
             )
         )
     await db.flush()
@@ -4698,6 +4683,7 @@ async def low_stock_reorder_po(
         warehouse_id=payload.warehouse_id,
         notes=payload.notes or f"Reorder from low stock: {product.sku}",
         items=[{"product_id": product.id, "quantity": qty, "unit_price": unit_price}],
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -5653,10 +5639,15 @@ async def customers(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 118 C1 — status=active|inactive for honest inactive-only lists; active_only=true remains active-only."""
-    await customers_svc.ensure_default_customer_groups(db, claims["tenant_id"])
+    await customers_svc.ensure_default_customer_groups(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     stmt = (
         select(m.Party)
-        .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer")
+        .where(
+            *workspace_svc.company_scope_filter(m.Party, claims),
+            m.Party.kind == "customer",
+        )
         .order_by(m.Party.name)
     )
     status_filter = (status or "").strip().lower()
@@ -5722,6 +5713,7 @@ async def add_customer(
         payment_terms_days=int(data.get("payment_terms_days") or 0),
         credit_limit=float(data.get("credit_limit") or 0),
         contacts=contacts,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -5737,6 +5729,7 @@ async def get_customer(
     db: AsyncSession = Depends(get_db),
 ):
     party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, party)
     return env(await _serialize_customer_response(db, claims["tenant_id"], party))
 
 
@@ -5852,7 +5845,10 @@ async def suppliers(
     """Stage 119 S1 — status=active|inactive for honest inactive-only lists; active_only=true remains active-only."""
     stmt = (
         select(m.Party)
-        .where(m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier")
+        .where(
+            *workspace_svc.company_scope_filter(m.Party, claims),
+            m.Party.kind == "supplier",
+        )
         .order_by(m.Party.name)
     )
     status_filter = (status or "").strip().lower()
@@ -5908,6 +5904,7 @@ async def add_supplier(
         early_pay_discount_days=data.get("early_pay_discount_days"),
         credit_limit=float(data.get("credit_limit") or 0),
         contacts=contacts,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     contacts_rows = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
@@ -5921,6 +5918,7 @@ async def get_supplier(
     db: AsyncSession = Depends(get_db),
 ):
     party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, party)
     contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
     return env(suppliers_svc.serialize_supplier(party, contacts))
 
@@ -6172,6 +6170,7 @@ async def create_sales_invoice(
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await sales_svc.serialize_invoice(db, invoice), "Sales invoice created as draft")
@@ -6184,6 +6183,7 @@ async def get_sales_invoice(
     db: AsyncSession = Depends(get_db),
 ):
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
+    workspace_svc.assert_record_company(claims, invoice)
     assert_record_access(claims, invoice.created_by)
     data = await sales_svc.serialize_invoice(db, invoice)
     await db.commit()
@@ -6362,7 +6362,7 @@ async def list_quotations(
     """Stage 99 T1 — optional status filter for quote pipeline honesty."""
     stmt = (
         select(m.SalesQuotation)
-        .where(m.SalesQuotation.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.SalesQuotation, claims))
         .order_by(m.SalesQuotation.created_at.desc())
     )
     if status:
@@ -6623,7 +6623,7 @@ async def list_sales_orders(
     """Stage 99 T1 — optional status filter (server-side delivery status)."""
     stmt = (
         select(m.SalesOrder)
-        .where(m.SalesOrder.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.SalesOrder, claims))
         .order_by(m.SalesOrder.created_at.desc())
     )
     if status:
@@ -6833,7 +6833,7 @@ async def list_sales_returns(
     """Stage 98 R1 — optional status filter (draft/posted)."""
     stmt = (
         select(m.SalesReturn)
-        .where(m.SalesReturn.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.SalesReturn, claims))
         .order_by(m.SalesReturn.created_at.desc())
     )
     if status:
@@ -7085,7 +7085,7 @@ async def list_purchase_requests(
     """Stage 99 C1 — optional status filter for PR pipeline."""
     stmt = (
         select(m.PurchaseRequest)
-        .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.PurchaseRequest, claims))
         .order_by(m.PurchaseRequest.created_at.desc())
     )
     if status:
@@ -7310,7 +7310,7 @@ async def list_purchase_orders(
     """Stage 99 C1 — optional status filter (`open` → sent∪partially_received)."""
     stmt = (
         select(m.PurchaseOrder)
-        .where(m.PurchaseOrder.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.PurchaseOrder, claims))
         .order_by(m.PurchaseOrder.created_at.desc())
     )
     if status:
@@ -7371,6 +7371,7 @@ async def create_purchase_order(
         delivery_address=payload.delivery_address,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await purchasing_svc.serialize_po(db, po), "Purchase order created")
@@ -7383,6 +7384,7 @@ async def get_purchase_order(
     db: AsyncSession = Depends(get_db),
 ):
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    workspace_svc.assert_record_company(claims, po)
     assert_record_access(claims, po.created_by)
     return env(await purchasing_svc.serialize_po(db, po))
 
@@ -7550,7 +7552,7 @@ async def list_grns(
     """Stage 99 C1 — optional status filter for GRN discoverability."""
     stmt = (
         select(m.GoodsReceipt)
-        .where(m.GoodsReceipt.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.GoodsReceipt, claims))
         .order_by(m.GoodsReceipt.created_at.desc())
     )
     if status:
@@ -7620,7 +7622,7 @@ async def list_purchase_returns(
     """Stage 98 R1 — optional status filter (draft/posted)."""
     stmt = (
         select(m.PurchaseReturn)
-        .where(m.PurchaseReturn.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.PurchaseReturn, claims))
         .order_by(m.PurchaseReturn.created_at.desc())
     )
     if status:
@@ -7748,7 +7750,7 @@ async def list_purchase_invoices(
     """Stage 97 P1 — optional status filter (`outstanding` → unpaid∪partial∪overdue)."""
     stmt = (
         select(m.PurchaseInvoice)
-        .where(m.PurchaseInvoice.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.PurchaseInvoice, claims))
         .order_by(m.PurchaseInvoice.created_at.desc())
     )
     if status:
@@ -8867,7 +8869,7 @@ async def expenses(
     """Stage 98 Q1 — optional status filter for approval queue honesty."""
     stmt = (
         select(m.Expense)
-        .where(m.Expense.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.Expense, claims))
         .order_by(m.Expense.created_at.desc())
     )
     if store_id:
@@ -8933,6 +8935,7 @@ async def add_expense(
         department_id=payload.department_id,
         liquid_account_id=payload.liquid_account_id,
         expense_date=payload.expense_date,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(await expenses_svc.serialize_expense_full(db, expense), "Expense recorded")
@@ -8945,6 +8948,7 @@ async def get_expense(
     db: AsyncSession = Depends(get_db),
 ):
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
     return env(await expenses_svc.serialize_expense_full(db, expense))
 
@@ -9229,9 +9233,11 @@ async def accounts(
     """Stage 123 F1 — is_active / active_only for honest inactive-only COA lists."""
     from app import accounting as accounting_svc
 
-    await accounting_svc.ensure_default_accounts(db, claims["tenant_id"])
+    await accounting_svc.ensure_default_accounts(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     await db.commit()
-    q = select(m.Account).where(m.Account.tenant_id == claims["tenant_id"])
+    q = select(m.Account).where(*workspace_svc.company_scope_filter(m.Account, claims))
     if is_active is not None:
         q = q.where(m.Account.is_active.is_(bool(is_active)))
     elif active_only:
@@ -10177,7 +10183,7 @@ async def list_journals(
 
     stmt = (
         select(m.JournalEntry)
-        .where(m.JournalEntry.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.JournalEntry, claims))
         .order_by(m.JournalEntry.created_at.desc())
         .limit(100)
     )
@@ -12067,7 +12073,7 @@ async def stores(
     """Stage 121 S1 — active_only / is_active for honest inactive-only store lists."""
     from app import cash_drawer as cash_drawer_svc
 
-    stmt = select(m.Store).where(m.Store.tenant_id == claims["tenant_id"])
+    stmt = select(m.Store).where(*workspace_svc.company_scope_filter(m.Store, claims))
     if is_active is not None:
         stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
     elif active_only:
@@ -12151,6 +12157,7 @@ async def add_store(
         manager_id=payload.manager_id,
         branch_id=branch_id,
         operating_hours=payload.operating_hours,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -12545,7 +12552,7 @@ async def warehouses(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 121 W1 — active_only / is_active for honest inactive-only warehouse lists."""
-    stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"])
+    stmt = select(m.Warehouse).where(*workspace_svc.company_scope_filter(m.Warehouse, claims))
     if is_active is not None:
         stmt = stmt.where(m.Warehouse.is_active.is_(bool(is_active)))
     elif active_only:
@@ -12614,7 +12621,12 @@ async def add_warehouse(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="Warehouse code already exists")
-    warehouse = m.Warehouse(tenant_id=claims["tenant_id"], is_active=True, **data)
+    warehouse = m.Warehouse(
+        tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        is_active=True,
+        **data,
+    )
     db.add(warehouse)
     await db.flush()
     await audit_svc.record_event(

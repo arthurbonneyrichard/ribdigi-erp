@@ -125,11 +125,10 @@ def serialize_customer(
 async def ensure_default_customer_groups(
     db: AsyncSession, tenant_id: str, company_id: str | None = None
 ) -> None:
-    existing = (
-        await db.execute(
-            select(m.CustomerGroup.id).where(m.CustomerGroup.tenant_id == tenant_id).limit(1)
-        )
-    ).scalar_one_or_none()
+    q = select(m.CustomerGroup.id).where(m.CustomerGroup.tenant_id == tenant_id)
+    if company_id:
+        q = q.where(m.CustomerGroup.company_id == company_id)
+    existing = (await db.execute(q.limit(1))).scalar_one_or_none()
     if existing:
         return
     now = datetime.utcnow()
@@ -418,11 +417,12 @@ async def create_customer(
     payment_terms_days: int = 0,
     credit_limit: float = 0,
     contacts: list[dict] | None = None,
+    company_id: str | None = None,
 ) -> m.Party:
     name = (name or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name is required")
-    await ensure_default_customer_groups(db, tenant_id)
+    await ensure_default_customer_groups(db, tenant_id, company_id=company_id)
     code = await assert_customer_code_available(db, tenant_id=tenant_id, code=code)
     ctype = normalize_customer_type(party_type) or "registered"
     group_id = await resolve_group_ref(
@@ -435,6 +435,7 @@ async def create_customer(
     now = datetime.utcnow()
     row = m.Party(
         tenant_id=tenant_id,
+        company_id=company_id,
         kind="customer",
         name=name,
         code=code,
