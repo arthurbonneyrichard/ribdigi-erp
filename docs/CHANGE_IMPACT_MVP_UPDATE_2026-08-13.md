@@ -349,3 +349,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP WAL Offsite Remaining-Gate Index Fidelity** — WAL offsite remaining-gate hub (I1), blocker matrix (B1), Stage 26 / Stage 27 / Stage 231 pointers with explicit non-claim (P1). Prefixed `WAL_OFFSITE_*`. Live offsite backup Completes remain deferred (Stage 234+). Distinct from Stage 231 PITR drill pack remaining-gate and Stage 232 AR/AP accounting surface.
 
+## Stage 234 decision (opened after Stage 233 freeze)
+
+**Tenant MVP Load Capacity Pack Remaining-Gate Index Fidelity** — load capacity pack remaining-gate hub (I1), blocker matrix (B1), Stage 26 / Stage 28 / Stage 224 / Stage 223 pointers with explicit non-claim (P1). Prefixed `LOAD_CAPACITY_PACK_*` (≠ Stage 224 `LOAD_CAPACITY_*`, ≠ Stage 223 `LOAD_CERT_PACK_*`). Certified 1000-VU Completes remain deferred (Stage 235+). Distinct from Stage 224/223/225 load remaining-gates and Stage 233 WAL offsite remaining-gate.
+

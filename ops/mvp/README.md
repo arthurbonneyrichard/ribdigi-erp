@@ -828,6 +828,12 @@ Authoritative MVP docs:
 - `docs/WAL_OFFSITE_REMAINING_GATE_MVP.md` / `ops/mvp/wal-offsite-remaining-gate.json` — Stage 233 I1
 - `docs/WAL_OFFSITE_RG_BLOCKERS_MVP.md` / `ops/mvp/wal-offsite-rg-blockers.json` — Stage 233 B1
 - `docs/WAL_OFFSITE_RG_POINTERS_MVP.md` / `ops/mvp/wal-offsite-rg-pointers.json` — Stage 233 P1
+- `docs/STAGE_234_EXIT_CRITERIA.md` / `docs/ADR_475_STAGE234_FREEZE.md` (`backend/tests/test_stage234_exit_h234x.py`) — Stage 234 H234x
+- `docs/STAGE_234_FIDELITY.md` (`backend/tests/test_stage234_fidelity_d1.py`) — Stage 234 D1
+- `docs/STAGE_234_PLAN.md` (`backend/tests/test_stage234_open.py`) — Stage 234 open (ADR-474)
+- `docs/LOAD_CAPACITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/load-capacity-pack-remaining-gate.json` — Stage 234 I1
+- `docs/LOAD_CAPACITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/load-capacity-pack-rg-blockers.json` — Stage 234 B1
+- `docs/LOAD_CAPACITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/load-capacity-pack-rg-pointers.json` — Stage 234 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4089,4 +4095,16 @@ H233x met — `docs/STAGE_233_EXIT_CRITERIA.md`, ADR-473. Stages 1–233 frozen 
 ## Stage 233 open
 
 `docs/ADR_472_STAGE233_OPEN.md` + `docs/STAGE_233_PLAN.md` (`test_stage233_open.py`).
+
+## Stage 234 exit
+
+H234x met — `docs/STAGE_234_EXIT_CRITERIA.md`, ADR-475. Stages 1–234 frozen for Stage 234 feature scope.
+
+## Stage 234 D1 — Tenant MVP Load Capacity Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_234_FIDELITY.md` (`test_stage234_fidelity_d1.py`). `LOAD_CAPACITY_PACK_*` remaining-gate index; certified 1000-VU still MISSING.
+
+## Stage 234 open
+
+`docs/ADR_474_STAGE234_OPEN.md` + `docs/STAGE_234_PLAN.md` (`test_stage234_open.py`).
 

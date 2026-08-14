@@ -24,6 +24,6 @@ Stage 233 Tenant MVP WAL Offsite Remaining-Gate Index Fidelity delivered WAL off
 
 ## Next stage
 
-Stage 234 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 233 feature scope remains frozen.
+Stage 234 opened under **ADR-474** after CONTINUE/NEXT (Load Capacity Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-475**. Stage 233 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Load Capacity Pack Remaining-Gate Index Fidelity — single index of load-capacity blockers (packaged Stage 26 C1 / Stage 28 C1 1000-VU materials non-claim as certified 1000-VU Complete) with explicit non-claim. Distinct from Stage 224 `LOAD_CAPACITY_*` / Stage 225 `LOADTEST_BASELINE_*` remaining-gates and Stage 233 WAL offsite remaining-gate. Prefer a prefixed name (e.g. `LOAD_CAPACITY_PACK_*`) if Stage 224 naming collides.
+**Amendment (2026-08-14):** Stage 234 runner-up outline was approved and opened (ADR-474); freeze ADR-475. Do not reopen Stage 233 scope.
