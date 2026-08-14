@@ -70,6 +70,18 @@ If you're setting up RIBDIGI for the first time:
    - Review the pre-loaded accounts based on your industry
    - Adjust opening balances if migrating mid-year
 
+#### Getting started checklist
+
+New tenants see a **Getting started** banner at the top of the main workspace (not on the platform owner console). It tracks five steps with a progress bar:
+
+1. Setup company profile → Company
+2. Add products → Inventory
+3. Create a supplier → Purchasing
+4. Stock on hand → Inventory
+5. Make first sale → Sales
+
+Steps auto-complete when the system detects matching data. Company admins can **Skip** / **Undo skip** individual steps. The banner is **Dismiss**ible at ≥80% progress (skips count). After dismiss, admins can **Restore checklist** until progress reaches 100%.
+
 ### 1.3 Understanding the Interface
 
 #### Main Navigation Sidebar

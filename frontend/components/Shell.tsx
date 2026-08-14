@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
+import OnboardingChecklist from './OnboardingChecklist';
 
 type NavItem = [label: string, href: string, module: string];
 
@@ -516,6 +517,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+        {!isPlatformOwner && (
+          <OnboardingChecklist
+            canManage={role === 'company_admin' || role === 'super_admin'}
+          />
+        )}
         {children}
       </main>
     </div>
