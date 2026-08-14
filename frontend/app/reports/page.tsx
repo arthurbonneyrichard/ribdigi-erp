@@ -465,13 +465,39 @@ export default function Page() {
         )}
         {tab === 'inventory' && (
           <>
-            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
-              <option value="">All warehouses (company stock)</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.code} — {w.name}
+            <select
+              value={storeId}
+              onChange={(e) => {
+                setStoreId(e.target.value);
+                setWarehouseId('');
+              }}
+            >
+              <option value="">All stores</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
                 </option>
               ))}
+            </select>
+            <select
+              value={warehouseId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setWarehouseId(next);
+                if (next) {
+                  const wh = warehouses.find((w) => w.id === next);
+                  if (wh?.store_id) setStoreId(wh.store_id);
+                }
+              }}
+            >
+              <option value="">All warehouses (company stock)</option>
+              {warehouses
+                .filter((w) => !storeId || w.store_id === storeId)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.code} — {w.name}
+                  </option>
+                ))}
             </select>
             <input
               type="number"
