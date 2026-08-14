@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api, authHeaders } from '../../lib/api';
 import { formatDate } from '../../lib/format';
+import { getCompanyId, getWorkspaceKind } from '../../lib/workspaceContext';
 
 export default function Page() {
   // Stage 95 C1 — Settings alias (MVP Navigation); route remains /company.
   const [tenant, setTenant] = useState<any>(null);
+  const [activeCompany, setActiveCompany] = useState<any>(null);
+  const [brandingScope, setBrandingScope] = useState<'tenant' | 'company'>('tenant');
   const [emailStatus, setEmailStatus] = useState<any>(null);
   const [smtpForm, setSmtpForm] = useState({
     smtp_enabled: false,
@@ -96,15 +99,17 @@ export default function Page() {
     }
   }
 
-  async function loadLogoPreview(hasLogo: boolean) {
+  async function loadLogoPreview(hasLogo: boolean, scope?: 'tenant' | 'company', companyId?: string) {
     if (!hasLogo) {
       setLogoPreview(null);
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const tenantId = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/tenants/me/logo`, {
+      const path =
+        scope === 'company' && companyId
+          ? `/companies/${companyId}/logo`
+          : '/tenants/me/logo';
+      const res = await fetch(`${apiBase}${path}`, {
         headers: authHeaders(),
       });
       if (!res.ok) {
@@ -165,7 +170,18 @@ export default function Page() {
     setBranches(br.data || []);
     setDepartments(dep.data || []);
     setOrgUsers(users.data || []);
-    await loadLogoPreview(!!r.data?.has_logo);
+    const kind = getWorkspaceKind();
+    const cid = getCompanyId() || me.data?.company_id || '';
+    if (kind === 'company' && (me.data?.company || cid)) {
+      setBrandingScope('company');
+      const co = me.data?.company || (await api(`/companies/${cid}`).then((x) => x.data).catch(() => null));
+      setActiveCompany(co);
+      await loadLogoPreview(!!co?.has_logo, 'company', co?.id || cid);
+    } else {
+      setBrandingScope('tenant');
+      setActiveCompany(null);
+      await loadLogoPreview(!!r.data?.has_logo, 'tenant');
+    }
     try {
       const fp = await api('/accounting/fiscal-period');
       setFiscalPeriod(fp.data);
@@ -337,13 +353,25 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }} id="logo">
-        <h3>Company logo</h3>
+        <h3>{brandingScope === 'company' ? 'Company logo' : 'Tenant logo'}</h3>
         <p className="muted" style={{ margin: 0 }}>
-          Shown on invoices, receipts, quotations, and credit notes when printing.
+          {brandingScope === 'company'
+            ? 'Shown in the sidebar and on company invoices, receipts, and other printable documents.'
+            : 'Shown in the tenant workspace sidebar and on documents when no company logo is set.'}
         </p>
-        {tenant.has_logo && logoPreview && (
-          <img src={logoPreview} alt="Company logo" style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }} />
-        )}
+        {((brandingScope === 'company' && activeCompany?.has_logo) ||
+          (brandingScope === 'tenant' && tenant.has_logo)) &&
+          logoPreview && (
+            <img
+              src={logoPreview}
+              alt={
+                brandingScope === 'company'
+                  ? `${activeCompany?.name || 'Company'} logo`
+                  : `${tenant.company_name || 'Tenant'} logo`
+              }
+              style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }}
+            />
+          )}
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
@@ -353,20 +381,28 @@ export default function Page() {
             if (!file) return;
             setError('');
             try {
-              const token = localStorage.getItem('token');
-              const tenantId = localStorage.getItem('tenant');
               const form = new FormData();
               form.append('file', file);
-              const res = await fetch(`${apiBase}/tenants/me/logo`, {
+              const path =
+                brandingScope === 'company' && activeCompany?.id
+                  ? `/companies/${activeCompany.id}/logo`
+                  : '/tenants/me/logo';
+              const res = await fetch(`${apiBase}${path}`, {
                 method: 'POST',
                 headers: authHeaders(),
                 body: form,
               });
               const body = await res.json().catch(() => ({}));
               if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
-              setTenant(body.data);
+              if (brandingScope === 'company') {
+                setActiveCompany(body.data);
+                await loadLogoPreview(!!body.data?.has_logo, 'company', body.data?.id);
+              } else {
+                setTenant(body.data);
+                await loadLogoPreview(!!body.data?.has_logo, 'tenant');
+              }
               setMessage('Logo uploaded');
-              await loadLogoPreview(true);
+              window.dispatchEvent(new Event('ribdigi-branding-changed'));
             } catch (err: any) {
               setError(typeof err.message === 'string' ? err.message : 'Upload failed');
             } finally {
@@ -374,16 +410,26 @@ export default function Page() {
             }
           }}
         />
-        {tenant.has_logo && (
+        {((brandingScope === 'company' && activeCompany?.has_logo) ||
+          (brandingScope === 'tenant' && tenant.has_logo)) && (
           <button
             disabled={!!tenant.read_only}
             onClick={async () => {
               setError('');
               try {
-                const r = await api('/tenants/me/logo', { method: 'DELETE' });
-                setTenant(r.data);
+                const path =
+                  brandingScope === 'company' && activeCompany?.id
+                    ? `/companies/${activeCompany.id}/logo`
+                    : '/tenants/me/logo';
+                const r = await api(path, { method: 'DELETE' });
+                if (brandingScope === 'company') {
+                  setActiveCompany(r.data);
+                } else {
+                  setTenant(r.data);
+                }
                 setLogoPreview(null);
                 setMessage('Logo removed');
+                window.dispatchEvent(new Event('ribdigi-branding-changed'));
               } catch (err: any) {
                 setError(err.message);
               }
@@ -394,14 +440,51 @@ export default function Page() {
         )}
       </div>
 
+      </div>
+
       <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }} id="profile">
         <p className="muted" style={{ margin: 0 }}>
-          Profile CSV via <code>GET /tenants/me/export</code> (Stage 143 P1).
+          {brandingScope === 'company'
+            ? 'Company profile drives sidebar branding and printable documents.'
+            : (
+              <>
+                Profile CSV via <code>GET /tenants/me/export</code> (Stage 143 P1).
+              </>
+            )}
         </p>
+        {brandingScope === 'company' && activeCompany ? (
+          <>
+            <input
+              value={activeCompany.name || ''}
+              onChange={(e) => setActiveCompany({ ...activeCompany, name: e.target.value })}
+              placeholder="Company name"
+            />
+            <button
+              type="button"
+              disabled={!!tenant.read_only}
+              onClick={async () => {
+                setError('');
+                try {
+                  const r = await api(`/companies/${activeCompany.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: activeCompany.name }),
+                  });
+                  setActiveCompany(r.data);
+                  setMessage('Company name saved');
+                  window.dispatchEvent(new Event('ribdigi-branding-changed'));
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Save company name
+            </button>
+          </>
+        ) : null}
         <input
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
-          placeholder="Company name"
+          placeholder={brandingScope === 'company' ? 'Tenant display name (reference)' : 'Company name'}
         />
         <input
           value={tenant.legal_name || ''}

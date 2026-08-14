@@ -12,14 +12,43 @@ from app import models as m
 from app import workspace as workspace_svc
 from app.rbac import permissions_for_role
 
+# Fallback labels when business_types catalog row is missing (tests / legacy industry codes).
+INDUSTRY_LABELS: dict[str, str] = {
+    "supermarket": "Supermarket",
+    "mini_mart": "Mini Mart",
+    "pharmacy": "Pharmacy",
+    "restaurant": "Restaurant",
+    "wholesale": "Wholesale",
+    "distribution": "Distribution",
+    "retail": "Retail",
+    "bakery": "Bakery",
+    "hardware": "Hardware",
+    "electronics": "Electronics",
+    "fashion": "Fashion",
+    "general_trading": "General Trading",
+    "other": "Other",
+}
 
-def serialize_company(co: m.Company) -> dict:
+
+def business_type_label_for(co: m.Company, business_type: m.BusinessType | None = None) -> str | None:
+    if business_type is not None:
+        return (business_type.label or "").strip() or None
+    industry = (getattr(co, "industry", None) or "").strip().lower()
+    if not industry:
+        return None
+    return INDUSTRY_LABELS.get(industry) or industry.replace("_", " ").title()
+
+
+def serialize_company(
+    co: m.Company, *, business_type: m.BusinessType | None = None
+) -> dict:
     return {
         "id": co.id,
         "tenant_id": co.tenant_id,
         "code": co.code,
         "name": co.name,
         "business_type_id": co.business_type_id,
+        "business_type_label": business_type_label_for(co, business_type),
         "industry": co.industry,
         "legal_name": co.legal_name,
         "registration_number": co.registration_number,
@@ -32,10 +61,43 @@ def serialize_company(co: m.Company) -> dict:
         "timezone": co.timezone,
         "fiscal_year_start": co.fiscal_year_start,
         "logo_url": co.logo_url,
+        "has_logo": bool(co.logo_url),
         "is_active": co.is_active,
         "is_default": co.is_default,
         "created_at": co.created_at.isoformat() if co.created_at else None,
     }
+
+
+async def get_company(db: AsyncSession, *, tenant_id: str, company_id: str) -> m.Company:
+    co = await db.get(m.Company, company_id)
+    if not co or co.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return co
+
+
+async def serialize_company_async(db: AsyncSession, co: m.Company) -> dict:
+    bt = None
+    if co.business_type_id:
+        bt = await db.get(m.BusinessType, co.business_type_id)
+    return serialize_company(co, business_type=bt)
+
+
+def assert_can_manage_company_branding(claims: dict, company_id: str) -> None:
+    """Company branding is not a cashier action — admin-like roles only."""
+    if claims.get("company_id") and claims.get("company_id") != company_id:
+        # Cross-company mutate blocked even for tenant admins acting in another company workspace.
+        if claims.get("workspace_kind") == "company":
+            raise HTTPException(status_code=404, detail="Company not found")
+    role = (claims.get("membership_role") or claims.get("role") or "").strip().lower()
+    if role in {"company_admin", "super_admin", "tenant_owner", "tenant_admin"}:
+        return
+    if claims.get("tenant_admin"):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail="Company branding requires a company or tenant administrator role",
+    )
+
 
 
 async def list_business_types(db: AsyncSession) -> list[dict]:
@@ -121,22 +183,33 @@ async def create_company(
     if existing:
         raise HTTPException(status_code=409, detail="Company code already exists")
 
+    industry = (payload.get("industry") or "retail").strip().lower()
+    business_type_id = payload.get("business_type_id")
+    if not business_type_id and industry:
+        bt = (
+            await db.execute(select(m.BusinessType).where(m.BusinessType.code == industry))
+        ).scalar_one_or_none()
+        if bt:
+            business_type_id = bt.id
+
     co = m.Company(
         tenant_id=tenant.id,
         code=code,
         name=name,
-        business_type_id=payload.get("business_type_id"),
-        industry=payload.get("industry") or "retail",
-        legal_name=payload.get("legal_name"),
-        registration_number=payload.get("registration_number"),
-        tax_registration_number=payload.get("tax_registration_number"),
-        phone=payload.get("phone"),
-        email=payload.get("email"),
-        website=payload.get("website"),
-        address=payload.get("address"),
-        currency=payload.get("currency") or tenant.currency or "GHS",
-        timezone=payload.get("timezone") or tenant.timezone or "Africa/Accra",
-        fiscal_year_start=payload.get("fiscal_year_start") or tenant.fiscal_year_start or "01-01",
+        business_type_id=business_type_id,
+        industry=industry or "retail",
+        legal_name=(payload.get("legal_name") or "").strip() or None,
+        registration_number=(payload.get("registration_number") or "").strip() or None,
+        tax_registration_number=(payload.get("tax_registration_number") or "").strip() or None,
+        phone=(payload.get("phone") or "").strip() or None,
+        email=(payload.get("email") or "").strip() or None,
+        website=(payload.get("website") or "").strip() or None,
+        address=(payload.get("address") or "").strip() or None,
+        currency=(payload.get("currency") or tenant.currency or "GHS").strip().upper()[:10],
+        timezone=(payload.get("timezone") or tenant.timezone or "Africa/Accra").strip(),
+        fiscal_year_start=(
+            payload.get("fiscal_year_start") or tenant.fiscal_year_start or "01-01"
+        ).strip(),
         document_numbering=getattr(tenant, "document_numbering", None),
         invoice_print_template=getattr(tenant, "invoice_print_template", None) or "a4",
         receipt_print_template=getattr(tenant, "receipt_print_template", None) or "thermal_80",
@@ -162,6 +235,73 @@ async def create_company(
     )
     await db.flush()
     return co
+
+
+async def update_company(
+    db: AsyncSession,
+    *,
+    company: m.Company,
+    payload: dict,
+) -> m.Company:
+    if "name" in payload and payload["name"] is not None:
+        name = str(payload["name"]).strip()
+        if len(name) < 2:
+            raise HTTPException(status_code=400, detail="Company name is required")
+        company.name = name
+    if "legal_name" in payload:
+        company.legal_name = (str(payload["legal_name"] or "").strip() or None)
+    if "phone" in payload:
+        company.phone = (str(payload["phone"] or "").strip() or None)
+    if "email" in payload:
+        company.email = (str(payload["email"] or "").strip() or None)
+    if "website" in payload:
+        company.website = (str(payload["website"] or "").strip() or None)
+    if "address" in payload:
+        company.address = (str(payload["address"] or "").strip() or None)
+    if "tax_registration_number" in payload:
+        company.tax_registration_number = (
+            str(payload["tax_registration_number"] or "").strip() or None
+        )
+    if "registration_number" in payload:
+        company.registration_number = (
+            str(payload["registration_number"] or "").strip() or None
+        )
+    if "currency" in payload and payload["currency"] is not None:
+        cur = str(payload["currency"]).strip().upper()
+        if len(cur) < 3 or len(cur) > 10:
+            raise HTTPException(status_code=400, detail="Invalid currency")
+        company.currency = cur
+    if "timezone" in payload and payload["timezone"] is not None:
+        tz = str(payload["timezone"]).strip()
+        if not tz:
+            raise HTTPException(status_code=400, detail="timezone is required")
+        company.timezone = tz
+    if "fiscal_year_start" in payload and payload["fiscal_year_start"] is not None:
+        fys = str(payload["fiscal_year_start"]).strip()
+        if len(fys) != 5 or fys[2] != "-":
+            raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
+        company.fiscal_year_start = fys
+    if "industry" in payload and payload["industry"] is not None:
+        industry = str(payload["industry"]).strip().lower()
+        company.industry = industry or company.industry
+        bt = (
+            await db.execute(select(m.BusinessType).where(m.BusinessType.code == industry))
+        ).scalar_one_or_none()
+        if bt:
+            company.business_type_id = bt.id
+    if "business_type_id" in payload:
+        bt_id = payload["business_type_id"]
+        if bt_id:
+            bt = await db.get(m.BusinessType, bt_id)
+            if not bt:
+                raise HTTPException(status_code=400, detail="Unknown business_type_id")
+            company.business_type_id = bt.id
+            company.industry = bt.code
+        else:
+            company.business_type_id = None
+    company.updated_at = datetime.utcnow()
+    await db.flush()
+    return company
 
 
 async def tenant_dashboard_payload(

@@ -2037,13 +2037,16 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
                         "company_name": co.name,
                         "role": mem.role,
                         "is_default": co.is_default,
+                        "has_logo": bool(co.logo_url),
+                        "business_type_label": companies_svc.business_type_label_for(co),
+                        "industry": co.industry,
                     }
                 )
     company_payload = None
     if claims.get("company_id"):
         co = await db.get(m.Company, claims["company_id"])
         if co and co.tenant_id == claims["tenant_id"]:
-            company_payload = companies_svc.serialize_company(co)
+            company_payload = await companies_svc.serialize_company_async(db, co)
     return env(
         {
             "id": user.id,
@@ -2052,6 +2055,8 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "phone": user.phone,
             "role": user.role,
             "tenant_id": user.tenant_id,
+            "tenant_name": tenant.company_name if tenant else None,
+            "tenant_has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
             "email_verified": user.email_verified,
             "principal": principal,
             "redirect_path": home_path_for_principal(principal),
@@ -2097,8 +2102,13 @@ async def get_workspace(claims=Depends(current_claims), db: AsyncSession = Depen
             "company_id": claims.get("company_id"),
             "tenant_id": claims["tenant_id"],
             "tenant_name": tenant.company_name if tenant else None,
+            "tenant_has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
             "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
-            "companies": [companies_svc.serialize_company(c) for c in companies if c.is_active],
+            "companies": [
+                await companies_svc.serialize_company_async(db, c)
+                for c in companies
+                if c.is_active
+            ],
         }
     )
 
@@ -2122,7 +2132,7 @@ async def list_companies(
         user=user,
         tenant_admin=workspace_svc.is_tenant_admin_role(user.role),
     )
-    return env([companies_svc.serialize_company(c) for c in rows])
+    return env([await companies_svc.serialize_company_async(db, c) for c in rows])
 
 
 @api.post("/companies")
@@ -2160,8 +2170,157 @@ async def create_company(
 
     return JSONResponse(
         status_code=201,
-        content=env(companies_svc.serialize_company(co), "Company created"),
+        content=env(await companies_svc.serialize_company_async(db, co), "Company created"),
     )
+
+
+@api.get("/companies/{company_id}")
+async def get_company(
+    company_id: str,
+    claims=Depends(require_permission("companies", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    co = await companies_svc.get_company(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    user = await db.get(m.User, claims["sub"])
+    if not workspace_svc.is_tenant_admin_role(user.role):
+        mems = await workspace_svc.list_user_memberships(
+            db, tenant_id=claims["tenant_id"], user_id=user.id
+        )
+        if not any(mrow.company_id == company_id for mrow in mems):
+            raise HTTPException(status_code=404, detail="Company not found")
+    return env(await companies_svc.serialize_company_async(db, co))
+
+
+@api.patch("/companies/{company_id}")
+async def patch_company(
+    company_id: str,
+    payload: dict,
+    claims=Depends(require_permission("companies", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    companies_svc.assert_can_manage_company_branding(claims, company_id)
+    tenants_svc.assert_writable(claims)
+    co = await companies_svc.get_company(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    co = await companies_svc.update_company(db, company=co, payload=payload or {})
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="companies",
+        action="update",
+        entity="company",
+        entity_id=co.id,
+        details={"name": co.name},
+        company_id=co.id,
+    )
+    await db.commit()
+    return env(await companies_svc.serialize_company_async(db, co), "Company updated")
+
+
+@api.post("/companies/{company_id}/logo")
+async def company_logo_upload(
+    company_id: str,
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("companies", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    companies_svc.assert_can_manage_company_branding(claims, company_id)
+    tenants_svc.assert_writable(claims)
+    co = await companies_svc.get_company(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="logos",
+        upload=file,
+        allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
+    )
+    if co.logo_url:
+        storage_svc.delete_key(co.logo_url, tenant_id=claims["tenant_id"])
+    co.logo_url = stored.key
+    co.updated_at = datetime.utcnow()
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="companies",
+        action="logo_upload",
+        entity="company",
+        entity_id=co.id,
+        details={"key": stored.key, "size": stored.size, "content_type": stored.content_type},
+        company_id=co.id,
+    )
+    await db.commit()
+    return env(
+        {
+            **(await companies_svc.serialize_company_async(db, co)),
+            "uploaded": {
+                "key": stored.key,
+                "size": stored.size,
+                "content_type": stored.content_type,
+                "filename": stored.original_filename,
+            },
+        },
+        "Company logo uploaded",
+    )
+
+
+@api.get("/companies/{company_id}/logo")
+async def company_logo_get(
+    company_id: str,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    co = await companies_svc.get_company(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    # Members or tenant admins may view; block cross-tenant via get_company.
+    if claims.get("workspace_kind") == "company" and claims.get("company_id") != company_id:
+        user = await db.get(m.User, claims["sub"])
+        if not workspace_svc.is_tenant_admin_role(user.role):
+            mems = await workspace_svc.list_user_memberships(
+                db, tenant_id=claims["tenant_id"], user_id=user.id
+            )
+            if not any(mrow.company_id == company_id for mrow in mems):
+                raise HTTPException(status_code=404, detail="Company not found")
+    if not co.logo_url:
+        raise HTTPException(status_code=404, detail="No logo uploaded")
+    return storage_svc.media_response(co.logo_url, tenant_id=claims["tenant_id"])
+
+
+@api.delete("/companies/{company_id}/logo")
+async def company_logo_delete(
+    company_id: str,
+    claims=Depends(require_permission("companies", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    companies_svc.assert_can_manage_company_branding(claims, company_id)
+    tenants_svc.assert_writable(claims)
+    co = await companies_svc.get_company(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    if not co.logo_url:
+        raise HTTPException(status_code=404, detail="No logo uploaded")
+    storage_svc.delete_key(co.logo_url, tenant_id=claims["tenant_id"])
+    co.logo_url = None
+    co.updated_at = datetime.utcnow()
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="companies",
+        action="logo_delete",
+        entity="company",
+        entity_id=co.id,
+        company_id=co.id,
+    )
+    await db.commit()
+    return env(await companies_svc.serialize_company_async(db, co), "Company logo removed")
 
 
 @api.get("/companies/{company_id}/memberships")

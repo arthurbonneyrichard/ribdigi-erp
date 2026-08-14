@@ -162,3 +162,12 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Product/stock CSV import stamps and filters by workspace `company_id`.
 - Frontend `authHeaders()` sends workspace headers on raw download/fetch paths across sales, purchasing, inventory, expenses, accounting, credit, POS, stores, reports, tax, and company settings.
 - Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design; barcode uniqueness and some child-row stamps remain secondary.
+
+## Phase 19 — Dynamic workspace branding (2026-08-14)
+
+- Sidebar branding is driven by workspace context (platform / tenant / company), not static copy.
+- Company serialize + `/me` / `/workspace` expose `has_logo`, `business_type_label`, and tenant branding fields; `GET/POST/DELETE /companies/{id}/logo` and `PATCH /companies/{id}` (name/profile) use existing media storage (`logos` category) with MIME/size validation.
+- Branding mutations require `companies` write **and** an admin-like role (`assert_can_manage_company_branding`); cashiers cannot change logos/names. Cross-tenant and cross-company IDOR covered by tests.
+- Frontend `WorkspaceBrand` shows logo or initials, business type + branch/store subtitle when expanded; tenant/platform contexts do not keep stale company logos. Create-company and company settings support optional logo upload/replace/remove.
+- Print/receipt branding already prefers company logo via `print_branding.tenant_document_brand` when a company logo exists.
+- Remaining PARTIAL: SVG logos remain unsupported by storage allow-list (security); desktop sidebar collapse chrome is optional (component supports `collapsed`); ADR-002/005 and FX tenant-shared remain deferred.

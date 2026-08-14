@@ -17,6 +17,7 @@ import {
   subscribeWorkspace,
   type WorkspaceKind,
 } from '../lib/workspaceContext';
+import WorkspaceBrand from './WorkspaceBrand';
 
 const tenantNavSpec: NavEntry[] = [
   {
@@ -2005,10 +2006,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [workspaceKind, setWorkspaceKind] = useState<WorkspaceKind>('company');
   const [companyId, setCompanyIdState] = useState('');
   const [companies, setCompanies] = useState<
-    { id: string; name: string; is_default?: boolean }[]
+    {
+      id: string;
+      name: string;
+      is_default?: boolean;
+      has_logo?: boolean;
+      business_type_label?: string | null;
+      industry?: string | null;
+    }[]
   >([]);
   const [tenantAdmin, setTenantAdmin] = useState(false);
   const [tenantName, setTenantName] = useState('');
+  const [tenantHasLogo, setTenantHasLogo] = useState(false);
   const [onboarding, setOnboarding] = useState<OnboardingChecklist | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -2041,6 +2050,44 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       setWorkspaceKind(getWorkspaceKind());
       setCompanyIdState(getCompanyId() || '');
     });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const refreshBranding = () => {
+      (async () => {
+        try {
+          const ws = await api('/workspace');
+          if (ws.data?.tenant_name) setTenantName(ws.data.tenant_name);
+          setTenantHasLogo(Boolean(ws.data?.tenant_has_logo));
+          if (Array.isArray(ws.data?.companies)) {
+            setCompanies(
+              ws.data.companies.map(
+                (c: {
+                  id: string;
+                  name: string;
+                  is_default?: boolean;
+                  has_logo?: boolean;
+                  business_type_label?: string | null;
+                  industry?: string | null;
+                }) => ({
+                  id: c.id,
+                  name: c.name,
+                  is_default: c.is_default,
+                  has_logo: c.has_logo,
+                  business_type_label: c.business_type_label,
+                  industry: c.industry,
+                })
+              )
+            );
+          }
+        } catch {
+          /* ignore — WorkspaceBrand also refetches logo blob */
+        }
+      })();
+    };
+    window.addEventListener('ribdigi-branding-changed', refreshBranding);
+    return () => window.removeEventListener('ribdigi-branding-changed', refreshBranding);
   }, []);
 
   useEffect(() => {
@@ -2082,12 +2129,43 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         setTenantAdmin(Boolean(meRes.data?.tenant_admin));
         const memberships = meRes.data?.company_memberships || [];
         setCompanies(
-          memberships.map((m: { company_id: string; company_name: string; is_default?: boolean }) => ({
-            id: m.company_id,
-            name: m.company_name,
-            is_default: m.is_default,
-          }))
+          memberships.map(
+            (m: {
+              company_id: string;
+              company_name: string;
+              is_default?: boolean;
+              has_logo?: boolean;
+              business_type_label?: string | null;
+              industry?: string | null;
+            }) => ({
+              id: m.company_id,
+              name: m.company_name,
+              is_default: m.is_default,
+              has_logo: m.has_logo,
+              business_type_label: m.business_type_label,
+              industry: m.industry,
+            })
+          )
         );
+        if (meRes.data?.tenant_name) setTenantName(meRes.data.tenant_name);
+        setTenantHasLogo(Boolean(meRes.data?.tenant_has_logo));
+        if (meRes.data?.company) {
+          const co = meRes.data.company;
+          setCompanies((prev) => {
+            const others = prev.filter((c) => c.id !== co.id);
+            return [
+              {
+                id: co.id,
+                name: co.name,
+                is_default: co.is_default,
+                has_logo: co.has_logo,
+                business_type_label: co.business_type_label,
+                industry: co.industry,
+              },
+              ...others,
+            ];
+          });
+        }
         // ADR-490 — tenant admins default into tenant workspace (no automatic ops access).
         const storedKind = getWorkspaceKind();
         if (meRes.data?.tenant_admin && !localStorage.getItem('workspace_kind')) {
@@ -2109,13 +2187,26 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           const ws = await api('/workspace');
           if (active && ws.data) {
             setTenantName(ws.data.tenant_name || '');
+            setTenantHasLogo(Boolean(ws.data.tenant_has_logo));
             if (Array.isArray(ws.data.companies) && ws.data.companies.length) {
               setCompanies(
-                ws.data.companies.map((c: { id: string; name: string; is_default?: boolean }) => ({
-                  id: c.id,
-                  name: c.name,
-                  is_default: c.is_default,
-                }))
+                ws.data.companies.map(
+                  (c: {
+                    id: string;
+                    name: string;
+                    is_default?: boolean;
+                    has_logo?: boolean;
+                    business_type_label?: string | null;
+                    industry?: string | null;
+                  }) => ({
+                    id: c.id,
+                    name: c.name,
+                    is_default: c.is_default,
+                    has_logo: c.has_logo,
+                    business_type_label: c.business_type_label,
+                    industry: c.industry,
+                  })
+                )
               );
             }
           }
@@ -2346,7 +2437,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className={`shell${navOpen ? ' nav-open' : ''}`}>
       <aside className="side" id="tenant-side-nav">
-        <div className="brand">{principal === 'platform' ? 'Ribdigi House' : 'RIBDIGI ERP'}</div>
+        <WorkspaceBrand
+          principal={principal}
+          tenantName={tenantName}
+          tenantHasLogo={tenantHasLogo}
+          companies={companies}
+          stores={stores}
+        />
         <nav className="nav" aria-label="Main">
           {principal === 'platform' && (
             <Link href="/platform/dashboard" onClick={() => setNavOpen(false)}>
