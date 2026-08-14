@@ -213,9 +213,9 @@ def serialize_po_amendment(row: m.PurchaseOrderAmendment) -> dict:
 async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     items = await list_po_items(db, po.tenant_id, po.id)
     amendments = await list_po_amendments(db, po.tenant_id, po.id)
-    can_amend = po.status in PO_AMENDABLE and not any(
-        float(i.received_qty or 0) > 0 for i in items
-    )
+    has_receipts = any(float(i.received_qty or 0) > 0 for i in items)
+    can_amend = po.status in PO_AMENDABLE and not has_receipts
+    can_cancel = po.status not in {"received", "cancelled"} and not has_receipts
     return {
         "id": po.id,
         "po_number": po.po_number,
@@ -234,6 +234,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "emailed_to": po.emailed_to,
         "revision_no": int(getattr(po, "revision_no", 0) or 0),
         "can_amend": can_amend,
+        "can_cancel": can_cancel,
         "amendments": [serialize_po_amendment(a) for a in amendments],
         "created_at": po.created_at,
         "items": [

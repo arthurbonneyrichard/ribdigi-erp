@@ -346,7 +346,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs (`product_variants` attrs + auto/manual SKU; Inventory Variants UI; `POST|PATCH /products/{id}/variants`)
   - [x] **SKU:** Auto-generated or manual SKU assignment (omit/blank `sku` on product/variant create → `SKU-YYYY-NNNN`; explicit SKU still wins; unique across products+variants)
   - [x] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes (`POST /products/{id}/barcode/generate?symbology=code128|ean13|upca`; PNG/label; Inventory picker; variant generate/label + uniqueness across products/variants; internal GTIN prefixes `200` / `2`)
-  - [ ] **Images:** Multiple product images with primary image designation
+  - [x] **Images:** Multiple product images with primary image designation (`product_images` max 5; `GET|POST /products/{id}/images` + `PATCH|DELETE .../images/{id}` set primary; Inventory gallery)
   - [x] **Product Details:** Name, description, cost price, selling price, tax rate, category, brand, unit, weight, dimensions (`products.description` / `weight` / `length`/`width`/`height`; create/PATCH + CSV import; Inventory UI)
   - [x] **Batch/Expiry:** Batch number, manufacturing date, expiry date (critical for pharmacy and food) — `POST /inventory/stock-in` + opening-stock lines; Inventory Batches/Opening UI; FEFO stock-out
 
@@ -420,7 +420,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] PO number auto-generation with configurable prefix (`GET|PATCH /purchasing/settings`)
   - [ ] Product lines with quantity, unit price, tax, discount, total
   - [x] Supplier selection and delivery address (`purchase_orders.delivery_address` on create/amend/serialize + supplier email; Purchasing UI)
-  - [ ] PO status: Draft, Sent, Partially Received, Fully Received, Cancelled
+  - [x] PO status: Draft, Sent, Partially Received, Fully Received (`received`), Cancelled (`POST /purchasing/orders/{id}/cancel`; `can_cancel`; Purchasing Cancel UI; blocked after any receipt)
   - [x] Print/email PO to supplier
   - [x] PO amendment tracking
 
