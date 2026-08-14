@@ -310,6 +310,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Compliance questionnaire pack remaining-gate index (Stage 279):** Status index is `docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMPLIANCE_QUESTIONNAIRE_PACK_RG_BLOCKERS_MVP.md` → Stage 34/278/277/33 pointers `docs/COMPLIANCE_QUESTIONNAIRE_PACK_RG_POINTERS_MVP.md`. SOC 2 Complete and certification Complete remain MISSING (not claimed). Prefixed `COMPLIANCE_QUESTIONNAIRE_PACK_*` remaining-gate docs (≠ Stage 34 C1 `COMPLIANCE_QUESTIONNAIRE_MVP.md`).
 
+**Compliance readiness pack remaining-gate index (Stage 280):** Status index is `docs/COMPLIANCE_READINESS_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMPLIANCE_READINESS_PACK_RG_BLOCKERS_MVP.md` → Stage 33/279/278/34 pointers `docs/COMPLIANCE_READINESS_PACK_RG_POINTERS_MVP.md`. SOC 2 Complete and certification Complete remain MISSING (not claimed). Prefixed `COMPLIANCE_READINESS_PACK_*` remaining-gate docs (≠ Stage 33 C1 `COMPLIANCE_READINESS_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

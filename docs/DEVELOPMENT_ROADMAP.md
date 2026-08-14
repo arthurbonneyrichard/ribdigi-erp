@@ -3972,6 +3972,18 @@ Every feature in every phase must meet:
 
 **Stage 279 exit (2026-08-14):** I1, B1, P1, D1, H279x met — `docs/STAGE_279_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_566_STAGE279_FREEZE.md`. Fidelity: `docs/STAGE_279_FIDELITY.md`.
 
+**Stage 280 open (2026-08-14):** Tenant MVP Compliance Readiness Pack Remaining-Gate Index Fidelity — `docs/ADR_567_STAGE280_OPEN.md` + `docs/STAGE_280_PLAN.md` (I1 next).
+
+**Stage 280 I1 (2026-08-14):** Compliance readiness pack remaining-gate index hub (`test_stage280_index_i1.py`).
+
+**Stage 280 B1 (2026-08-14):** Compliance readiness pack blocker matrix (`test_stage280_blockers_b1.py`).
+
+**Stage 280 P1 (2026-08-14):** Stage 33 C1 / Stage 279 / Stage 278 / Stage 34 C1 pointers (`test_stage280_pointers_p1.py`).
+
+**Stage 280 D1 (2026-08-14):** Compliance Readiness Pack Remaining-Gate Index fidelity sync — `docs/STAGE_280_FIDELITY.md` (`test_stage280_fidelity_d1.py`).
+
+**Stage 280 exit (2026-08-14):** I1, B1, P1, D1, H280x met — `docs/STAGE_280_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_568_STAGE280_FREEZE.md`. Fidelity: `docs/STAGE_280_FIDELITY.md`.
+
 
 
 

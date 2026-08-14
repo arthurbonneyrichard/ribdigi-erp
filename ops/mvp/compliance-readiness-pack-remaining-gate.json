@@ -1,0 +1,56 @@
+{
+  "id": "compliance-readiness-pack-remaining-gate",
+  "stage": 280,
+  "pack": "I1",
+  "doc": "docs/COMPLIANCE_READINESS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMPLIANCE_READINESS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMPLIANCE_READINESS_PACK_RG_POINTERS_MVP.md",
+    "compliance_readiness": "docs/COMPLIANCE_READINESS_MVP.md",
+    "compliance_questionnaire_pack_remaining_gate": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md",
+    "data_portability_pack_remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+    "compliance_questionnaire": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+  },
+  "packaging_complete": true,
+  "soc2_complete_claimed": false,
+  "certification_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage33_compliance_readiness": true,
+  "distinct_from_stage279_compliance_questionnaire_pack_remaining_gate": true,
+  "distinct_from_stage278_data_portability_pack_remaining_gate": true,
+  "distinct_from_stage34_compliance_questionnaire": true,
+  "steps": [
+    {
+      "id": "crpr-read-blockers",
+      "title": "Read B1 compliance readiness pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crpr-follow-pointers",
+      "title": "Follow P1 Stage 33 C1 / Stage 279 / Stage 278 / Stage 34 C1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crpr-soc2-missing",
+      "title": "Reaffirm SOC 2 / certification MISSING until real audit Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crpr-no-packaging-as-live",
+      "title": "Do not treat Stage 33 C1 / Stage 279 / Stage 278 as SOC 2 Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crpr-soc2-remaining",
+      "title": "SOC 2 / certification / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 280 I1 compliance readiness pack remaining-gate index packaging only. Do not claim SOC 2 Complete."
+}

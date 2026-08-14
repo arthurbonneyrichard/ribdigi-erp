@@ -547,3 +547,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 279 decision (opened after Stage 278 freeze)
 
 **Tenant MVP Compliance Questionnaire Pack Remaining-Gate Index Fidelity** — compliance questionnaire pack remaining-gate hub (I1), blocker matrix (B1), Stage 34 C1 / Stage 278 / Stage 277 / Stage 33 C1 pointers with explicit non-claim (P1). Prefixed `COMPLIANCE_QUESTIONNAIRE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 34 C1 `COMPLIANCE_QUESTIONNAIRE_MVP.md`). SOC 2 / certification / paid billing / go-live Completes remain deferred (Stage 280+; ADR-002 in force). Distinct from Stage 278 data portability pack remaining-gate, Stage 277 soft-delete erasure pack remaining-gate, and Stage 34 C1 compliance questionnaire packaging. Open ADR-565 / freeze ADR-566.
+
+
+## Stage 280 decision (opened after Stage 279 freeze)
+
+**Tenant MVP Compliance Readiness Pack Remaining-Gate Index Fidelity** — compliance readiness pack remaining-gate hub (I1), blocker matrix (B1), Stage 33 C1 / Stage 279 / Stage 278 / Stage 34 C1 pointers with explicit non-claim (P1). Prefixed `COMPLIANCE_READINESS_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 33 C1 `COMPLIANCE_READINESS_MVP.md`). SOC 2 / certification / paid billing / go-live Completes remain deferred (Stage 281+; ADR-002 in force). Distinct from Stage 279 compliance questionnaire pack remaining-gate, Stage 278 data portability pack remaining-gate, and Stage 33 C1 compliance readiness packaging. Open ADR-567 / freeze ADR-568.

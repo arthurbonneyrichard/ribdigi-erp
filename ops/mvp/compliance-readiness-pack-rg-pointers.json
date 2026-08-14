@@ -1,0 +1,59 @@
+{
+  "id": "compliance-readiness-pack-rg-pointers",
+  "stage": 280,
+  "pack": "P1",
+  "doc": "docs/COMPLIANCE_READINESS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMPLIANCE_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "compliance_readiness": "docs/COMPLIANCE_READINESS_MVP.md",
+    "compliance_questionnaire_pack_remaining_gate": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md",
+    "data_portability_pack_remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+    "compliance_questionnaire": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "soc2_complete_claimed": false,
+  "certification_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "compliance_readiness_stage33",
+    "compliance_questionnaire_pack_remaining_gate_stage279",
+    "data_portability_pack_remaining_gate_stage278",
+    "compliance_questionnaire_stage34",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "crprp-stage33",
+      "title": "Point to Stage 33 C1 compliance readiness",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprp-stage279",
+      "title": "Point to Stage 279 compliance questionnaire pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprp-stage278",
+      "title": "Point to Stage 278 data portability pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprp-stage34",
+      "title": "Point to Stage 34 C1 compliance questionnaire adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crprp-soc2-remaining",
+      "title": "SOC 2 Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 280 P1 compliance readiness pack RG pointers packaging only. Do not claim SOC 2 Complete."
+}

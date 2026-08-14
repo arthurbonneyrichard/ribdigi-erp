@@ -31,3 +31,10 @@ Stage 280 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for SOC 2, certification, paid billing, or go-live.
+
+
+## Amendment — Stage 280 opened
+
+Stage 280 opened under **ADR-567** after CONTINUE/NEXT (Tenant MVP Compliance Readiness Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-568**. Stage 279 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 280 runner-up outline was approved and opened (ADR-567); freeze ADR-568. Do not reopen Stage 279 scope.
