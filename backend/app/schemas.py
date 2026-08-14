@@ -625,6 +625,13 @@ class StoreReorderPolicyUpdate(BaseModel):
     reorder_qty: float = Field(default=0, ge=0)
 
 
+class WarehouseReorderPolicyUpdate(BaseModel):
+    warehouse_id: str
+    product_id: str
+    reorder_level: float = Field(ge=0)
+    reorder_qty: float = Field(default=0, ge=0)
+
+
 class InventoryFefoSettingsUpdate(BaseModel):
     fefo_strict_warehouse: bool
 

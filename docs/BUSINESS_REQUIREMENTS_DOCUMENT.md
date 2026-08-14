@@ -374,8 +374,8 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Warehouse-specific inventory visibility.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] View stock levels per warehouse
-  - [ ] Warehouse-specific reorder levels
+  - [x] **View stock levels per warehouse** (`GET /inventory/warehouse-stock?warehouse_id=`; Inventory Warehouse stock tab; `inventory:read`)
+  - [x] **Warehouse-specific reorder levels** (`PUT /inventory/warehouse-stock/reorder`; Inventory Warehouse stock tab; also `PUT /stores/{id}/reorder-policy`)
   - [ ] Transfer stock between warehouses
   - [x] Warehouse-wise stock valuation (`/reports/inventory/valuation?warehouse_id=`)
 
