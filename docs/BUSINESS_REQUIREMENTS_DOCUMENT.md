@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 399 D1 Offline Conflict UX Pack Remaining-Gate Index Fidelity — `docs/STAGE_399_FIDELITY.md` (`test_stage399_fidelity_d1.py`); Offline Complete still MISSING.
 Stage 398 D1 Offline Offline Status Pack Remaining-Gate Index Fidelity — `docs/STAGE_398_FIDELITY.md` (`test_stage398_fidelity_d1.py`); Offline Complete still MISSING.
 Stage 397 D1 Offline Online Status Pack Remaining-Gate Index Fidelity — `docs/STAGE_397_FIDELITY.md` (`test_stage397_fidelity_d1.py`); Offline Complete still MISSING.
 Stage 396 D1 Offline Synchronizing Status Pack Remaining-Gate Index Fidelity — `docs/STAGE_396_FIDELITY.md` (`test_stage396_fidelity_d1.py`); Offline Complete still MISSING.

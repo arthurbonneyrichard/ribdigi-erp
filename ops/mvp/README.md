@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_399_EXIT_CRITERIA.md` / `docs/ADR_806_STAGE399_FREEZE.md` (`backend/tests/test_stage399_exit_h399x.py`) — Stage 399 H399x
+- `docs/STAGE_399_FIDELITY.md` (`backend/tests/test_stage399_fidelity_d1.py`) — Stage 399 D1
+- `docs/STAGE_399_PLAN.md` (`backend/tests/test_stage399_open.py`) — Stage 399 open (ADR-805)
+- `docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-conflict-ux-pack-remaining-gate.json` — Stage 399 I1
+- `docs/OFFLINE_CONFLICT_UX_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-conflict-ux-pack-rg-blockers.json` — Stage 399 B1
+- `docs/OFFLINE_CONFLICT_UX_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-conflict-ux-pack-rg-pointers.json` — Stage 399 P1
 - `docs/STAGE_398_EXIT_CRITERIA.md` / `docs/ADR_804_STAGE398_FREEZE.md` (`backend/tests/test_stage398_exit_h398x.py`) — Stage 398 H398x
 - `docs/STAGE_398_FIDELITY.md` (`backend/tests/test_stage398_fidelity_d1.py`) — Stage 398 D1
 - `docs/STAGE_398_PLAN.md` (`backend/tests/test_stage398_open.py`) — Stage 398 open (ADR-803)
@@ -5671,6 +5677,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 399 exit
+
+H399x met — `docs/STAGE_399_EXIT_CRITERIA.md`, ADR-806. Stages 1–399 frozen for Stage 399 feature scope.
+
+## Stage 399 D1 — Tenant MVP Offline Conflict UX Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_399_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 399 open
+
+Opened under ADR-805; plan `docs/STAGE_399_PLAN.md`.
 
 ## Stage 398 exit
 

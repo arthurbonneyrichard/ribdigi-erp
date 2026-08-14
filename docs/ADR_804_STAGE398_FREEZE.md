@@ -31,3 +31,9 @@ Stage 399 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline offline-status, OFFLINE status as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 399 opened under **ADR-805** after CONTINUE/NEXT (Tenant MVP Offline Conflict UX Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-806**. Stage 398 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 398 runner-up outline was approved and opened (ADR-805); freeze ADR-806. Do not reopen Stage 398 scope.
