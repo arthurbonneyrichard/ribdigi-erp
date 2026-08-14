@@ -3575,3 +3575,15 @@ Every feature in every phase must meet:
 **Stage 246 D1 (2026-08-14):** Business Pilot Pack Remaining-Gate Index fidelity sync — `docs/STAGE_246_FIDELITY.md` (`test_stage246_fidelity_d1.py`).
 
 **Stage 246 exit (2026-08-14):** I1, B1, P1, D1, H246x met — `docs/STAGE_246_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_500_STAGE246_FREEZE.md`. Fidelity: `docs/STAGE_246_FIDELITY.md`.
+
+**Stage 247 open (2026-08-14):** Tenant MVP Implementation Onboarding Pack Remaining-Gate Index Fidelity — `docs/ADR_501_STAGE247_OPEN.md` + `docs/STAGE_247_PLAN.md` (I1 next).
+
+**Stage 247 I1 (2026-08-14):** Implementation onboarding pack remaining-gate index hub (`test_stage247_index_i1.py`).
+
+**Stage 247 B1 (2026-08-14):** Implementation onboarding pack blocker matrix (`test_stage247_blockers_b1.py`).
+
+**Stage 247 P1 (2026-08-14):** Stage 56 / Stage 246 / Stage 243 / Stage 48 pointers (`test_stage247_pointers_p1.py`).
+
+**Stage 247 D1 (2026-08-14):** Implementation Onboarding Pack Remaining-Gate Index fidelity sync — `docs/STAGE_247_FIDELITY.md` (`test_stage247_fidelity_d1.py`).
+
+**Stage 247 exit (2026-08-14):** I1, B1, P1, D1, H247x met — `docs/STAGE_247_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_502_STAGE247_FREEZE.md`. Fidelity: `docs/STAGE_247_FIDELITY.md`.

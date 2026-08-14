@@ -400,3 +400,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 246 decision (opened after Stage 245 freeze)
 
 **Tenant MVP Business Pilot Pack Remaining-Gate Index Fidelity** — business pilot pack remaining-gate hub (I1), blocker matrix (B1), Stage 65 / Stage 245 / Stage 244 / Stage 56 pointers with explicit non-claim (P1). Prefixed `BUSINESS_PILOT_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 65 P1 `BUSINESS_PILOT_*`). Live controlled business pilot Completes remain deferred (Stage 247+). Distinct from Stage 245 first-tenant go-live pack remaining-gate, Stage 244 first-tenant onboarding pack remaining-gate, and Stage 65 P1 business pilot packaging. Open ADR-499 / freeze ADR-500.
+
+## Stage 247 decision (opened after Stage 246 freeze)
+
+**Tenant MVP Implementation Onboarding Pack Remaining-Gate Index Fidelity** — implementation onboarding pack remaining-gate hub (I1), blocker matrix (B1), Stage 56 / Stage 246 / Stage 243 / Stage 48 pointers with explicit non-claim (P1). Prefixed `IMPLEMENTATION_ONBOARDING_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 56 O1 `IMPLEMENTATION_ONBOARDING_*`). Live implementation onboarding Completes remain deferred (Stage 248+). Distinct from Stage 246 business pilot pack remaining-gate, Stage 243 professional services SOW pack remaining-gate, and Stage 56 O1 implementation onboarding packaging. Open ADR-501 / freeze ADR-502.

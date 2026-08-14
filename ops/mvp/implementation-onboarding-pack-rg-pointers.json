@@ -1,0 +1,61 @@
+{
+  "id": "implementation-onboarding-pack-rg-pointers",
+  "stage": 247,
+  "pack": "P1",
+  "doc": "docs/IMPLEMENTATION_ONBOARDING_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/IMPLEMENTATION_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "implementation_onboarding": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+    "business_pilot_pack_remaining_gate": "docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md",
+    "professional_services_sow_pack_remaining_gate": "docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md",
+    "professional_services_sow": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+    "implementation_onboarding_register": "ops/mvp/implementation-onboarding.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "data_migration_fee_billing_live": false,
+  "onsite_training_delivery_claimed": false,
+  "custom_workflow_sold_claimed": false,
+  "implementation_onboarding_program_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "implementation_onboarding_stage56_o1",
+    "business_pilot_pack_remaining_gate_stage246",
+    "professional_services_sow_pack_remaining_gate_stage243",
+    "professional_services_sow_stage48",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ioprp-stage56",
+      "title": "Point to Stage 56 O1 implementation onboarding",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ioprp-stage246",
+      "title": "Point to Stage 246 business pilot pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ioprp-stage243",
+      "title": "Point to Stage 243 professional services SOW pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ioprp-stage48",
+      "title": "Point to Stage 48 professional services SOW adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ioprp-impl-remaining",
+      "title": "Live implementation onboarding Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 247 P1 implementation onboarding pack RG pointers packaging only. Do not claim live implementation onboarding Complete."
+}

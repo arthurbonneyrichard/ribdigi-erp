@@ -27,3 +27,9 @@ Stage 246 Tenant MVP Business Pilot Pack Remaining-Gate Index Fidelity delivered
 Stage 247 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 246 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP Implementation Onboarding Pack Remaining-Gate Index Fidelity — single index of implementation-onboarding-pack blockers (packaged Stage 56 implementation-onboarding materials non-claim as live implementation onboarding Complete) with explicit non-claim. Prefixed `IMPLEMENTATION_ONBOARDING_PACK_*` if a prior remaining-gate exists. Distinct from Stage 246 business pilot pack remaining-gate and Stage 243 professional services SOW pack remaining-gate.
+
+## Amendment — Stage 247 opened
+
+Stage 247 opened under **ADR-501** after CONTINUE/NEXT (Implementation Onboarding Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-502**. Stage 246 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 247 runner-up outline was approved and opened (ADR-501); freeze ADR-502. Do not reopen Stage 246 scope.

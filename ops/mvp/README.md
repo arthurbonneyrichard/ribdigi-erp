@@ -910,6 +910,12 @@ Authoritative MVP docs:
 - `docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/business-pilot-pack-remaining-gate.json` — Stage 246 I1
 - `docs/BUSINESS_PILOT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/business-pilot-pack-rg-blockers.json` — Stage 246 B1
 - `docs/BUSINESS_PILOT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/business-pilot-pack-rg-pointers.json` — Stage 246 P1
+- `docs/STAGE_247_EXIT_CRITERIA.md` / `docs/ADR_502_STAGE247_FREEZE.md` (`backend/tests/test_stage247_exit_h247x.py`) — Stage 247 H247x
+- `docs/STAGE_247_FIDELITY.md` (`backend/tests/test_stage247_fidelity_d1.py`) — Stage 247 D1
+- `docs/STAGE_247_PLAN.md` (`backend/tests/test_stage247_open.py`) — Stage 247 open (ADR-501)
+- `docs/IMPLEMENTATION_ONBOARDING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/implementation-onboarding-pack-remaining-gate.json` — Stage 247 I1
+- `docs/IMPLEMENTATION_ONBOARDING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/implementation-onboarding-pack-rg-blockers.json` — Stage 247 B1
+- `docs/IMPLEMENTATION_ONBOARDING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/implementation-onboarding-pack-rg-pointers.json` — Stage 247 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4327,4 +4333,16 @@ H246x met — `docs/STAGE_246_EXIT_CRITERIA.md`, ADR-500. Stages 1–246 frozen 
 ## Stage 246 open
 
 `docs/ADR_499_STAGE246_OPEN.md` + `docs/STAGE_246_PLAN.md` (`test_stage246_open.py`).
+
+## Stage 247 exit
+
+H247x met — `docs/STAGE_247_EXIT_CRITERIA.md`, ADR-502. Stages 1–247 frozen for Stage 247 feature scope.
+
+## Stage 247 D1 — Tenant MVP Implementation Onboarding Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_247_FIDELITY.md` (`test_stage247_fidelity_d1.py`). `IMPLEMENTATION_ONBOARDING_PACK_*` remaining-gate index; live implementation onboarding still MISSING.
+
+## Stage 247 open
+
+`docs/ADR_501_STAGE247_OPEN.md` + `docs/STAGE_247_PLAN.md` (`test_stage247_open.py`).
 
