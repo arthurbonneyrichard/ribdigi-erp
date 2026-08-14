@@ -1,0 +1,62 @@
+{
+  "id": "post-launch-continuity-pack-rg-blockers",
+  "stage": 265,
+  "pack": "B1",
+  "doc": "docs/POST_LAUNCH_CONTINUITY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md",
+    "post_launch_continuity": "docs/POST_LAUNCH_CONTINUITY_MVP.md",
+    "post_launch_continuity_remaining_gate": "docs/POST_LAUNCH_CONTINUITY_REMAINING_GATE_MVP.md",
+    "post_launch_continuity_register": "ops/mvp/post-launch-continuity.json"
+  },
+  "packaging_complete": true,
+  "post_launch_continuity_live_claimed": false,
+  "customer_success_stabilization_claimed": false,
+  "go_live_claimed": false,
+  "handoff_complete_claimed": false,
+  "blockers": {
+    "post_launch_continuity_live_complete": "REMAINING",
+    "customer_success_stabilization_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "handoff_complete": "REMAINING",
+    "stage67_c1_as_continuity_live": "NON_CLAIM",
+    "stage218_as_continuity_live": "NON_CLAIM",
+    "post_launch_continuity_live_claimed": "false",
+    "customer_success_stabilization_claimed": "false",
+    "go_live_claimed": "false",
+    "handoff_complete_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "plcprb-continuity",
+      "title": "Mark live post-launch continuity Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprb-stabilization",
+      "title": "Mark customer-success stabilization Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprb-go-live",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprb-stage67-nonclaim",
+      "title": "Mark Stage 67 C1 as non-claim for live post-launch continuity Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprb-continuity-remaining",
+      "title": "Live post-launch continuity Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 265 B1 post-launch continuity pack RG blocker matrix packaging only. Live post-launch continuity Completes remain MISSING."
+}

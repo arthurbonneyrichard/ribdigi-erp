@@ -1377,6 +1377,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 67 / Stage 263 / Stage 262 / Stage 219 pointers (Stage 264 P1: `test_stage264_pointers_p1.py`, `docs/PRODUCTION_HYPERCARE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 264 fidelity sync (D1: `test_stage264_fidelity_d1.py`, `docs/STAGE_264_FIDELITY.md`)
 - [x] Stage 264 exit + freeze (H264x: `test_stage264_exit_h264x.py`, `docs/STAGE_264_EXIT_CRITERIA.md`, ADR-536)
+- [x] Stage 265 track opened (ADR-537: `test_stage265_open.py`, `docs/STAGE_265_PLAN.md`) — Post-Launch Continuity Pack Remaining-Gate Index; closed under ADR-538
+- [x] Post-launch continuity pack remaining-gate hub (Stage 265 I1: `test_stage265_index_i1.py`, `docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Post-launch continuity pack blocker matrix (Stage 265 B1: `test_stage265_blockers_b1.py`, `docs/POST_LAUNCH_CONTINUITY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 67 / Stage 264 / Stage 263 / Stage 218 pointers (Stage 265 P1: `test_stage265_pointers_p1.py`, `docs/POST_LAUNCH_CONTINUITY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 265 fidelity sync (D1: `test_stage265_fidelity_d1.py`, `docs/STAGE_265_FIDELITY.md`)
+- [x] Stage 265 exit + freeze (H265x: `test_stage265_exit_h265x.py`, `docs/STAGE_265_EXIT_CRITERIA.md`, ADR-538)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

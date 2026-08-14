@@ -1018,6 +1018,12 @@ Authoritative MVP docs:
 - `docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/production-hypercare-pack-remaining-gate.json` — Stage 264 I1
 - `docs/PRODUCTION_HYPERCARE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/production-hypercare-pack-rg-blockers.json` — Stage 264 B1
 - `docs/PRODUCTION_HYPERCARE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/production-hypercare-pack-rg-pointers.json` — Stage 264 P1
+- `docs/STAGE_265_EXIT_CRITERIA.md` / `docs/ADR_538_STAGE265_FREEZE.md` (`backend/tests/test_stage265_exit_h265x.py`) — Stage 265 H265x
+- `docs/STAGE_265_FIDELITY.md` (`backend/tests/test_stage265_fidelity_d1.py`) — Stage 265 D1
+- `docs/STAGE_265_PLAN.md` (`backend/tests/test_stage265_open.py`) — Stage 265 open (ADR-537)
+- `docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-launch-continuity-pack-remaining-gate.json` — Stage 265 I1
+- `docs/POST_LAUNCH_CONTINUITY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-launch-continuity-pack-rg-blockers.json` — Stage 265 B1
+- `docs/POST_LAUNCH_CONTINUITY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-launch-continuity-pack-rg-pointers.json` — Stage 265 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4651,4 +4657,16 @@ H264x met — `docs/STAGE_264_EXIT_CRITERIA.md`, ADR-536. Stages 1–264 frozen 
 ## Stage 264 open
 
 `docs/ADR_535_STAGE264_OPEN.md` + `docs/STAGE_264_PLAN.md` (`test_stage264_open.py`).
+
+## Stage 265 exit
+
+H265x met — `docs/STAGE_265_EXIT_CRITERIA.md`, ADR-538. Stages 1–265 frozen for Stage 265 feature scope.
+
+## Stage 265 D1 — Tenant MVP Post-Launch Continuity Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_265_FIDELITY.md` (`test_stage265_fidelity_d1.py`). `POST_LAUNCH_CONTINUITY_PACK_*` remaining-gate index; live post-launch continuity / go-live still MISSING.
+
+## Stage 265 open
+
+`docs/ADR_537_STAGE265_OPEN.md` + `docs/STAGE_265_PLAN.md` (`test_stage265_open.py`).
 

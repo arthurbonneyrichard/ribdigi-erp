@@ -1,0 +1,60 @@
+{
+  "id": "post-launch-continuity-pack-rg-pointers",
+  "stage": 265,
+  "pack": "P1",
+  "doc": "docs/POST_LAUNCH_CONTINUITY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md",
+    "post_launch_continuity": "docs/POST_LAUNCH_CONTINUITY_MVP.md",
+    "production_hypercare_pack_remaining_gate": "docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md",
+    "golive_attestation_pack_remaining_gate": "docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "post_launch_continuity_remaining_gate": "docs/POST_LAUNCH_CONTINUITY_REMAINING_GATE_MVP.md",
+    "post_launch_continuity_register": "ops/mvp/post-launch-continuity.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "post_launch_continuity_live_claimed": false,
+  "customer_success_stabilization_claimed": false,
+  "go_live_claimed": false,
+  "handoff_complete_claimed": false,
+  "topics": [
+    "post_launch_continuity_stage67_c1",
+    "production_hypercare_pack_remaining_gate_stage264",
+    "golive_attestation_pack_remaining_gate_stage263",
+    "post_launch_continuity_remaining_gate_stage218",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "plcprp-stage67",
+      "title": "Point to Stage 67 C1 post-launch continuity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprp-stage264",
+      "title": "Point to Stage 264 production hypercare pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprp-stage263",
+      "title": "Point to Stage 263 go-live attestation pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprp-stage218",
+      "title": "Point to Stage 218 post-launch continuity remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcprp-continuity-remaining",
+      "title": "Live post-launch continuity Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 265 P1 post-launch continuity pack RG pointers packaging only. Do not claim live post-launch continuity Complete."
+}

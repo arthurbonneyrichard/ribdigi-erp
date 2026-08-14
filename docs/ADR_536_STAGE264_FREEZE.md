@@ -31,3 +31,9 @@ Stage 265 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for production hypercare, on-call rota, support SLA, or go-live.
+
+## Amendment — Stage 265 opened
+
+Stage 265 opened under **ADR-537** after CONTINUE/NEXT (Tenant MVP Post-Launch Continuity Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-538**. Stage 264 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 265 runner-up outline was approved and opened (ADR-537); freeze ADR-538. Do not reopen Stage 264 scope.
