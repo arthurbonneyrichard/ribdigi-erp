@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.doc_numbers import next_journal_entry_number
 
 DEFAULT_ACCOUNTS = [
     ("1000", "Cash", "asset", True, False),
@@ -433,7 +434,7 @@ async def post_journal_entry(
 
     entry = m.JournalEntry(
         tenant_id=tenant_id,
-        entry_number=f"JE-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        entry_number=await next_journal_entry_number(db, tenant_id),
         entry_date=when_dt,
         reference=reference,
         description=description,
