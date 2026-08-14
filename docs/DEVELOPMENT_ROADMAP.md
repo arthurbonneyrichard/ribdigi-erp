@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 319 open (2026-08-14):** Tenant MVP Backup Restore Drill Honesty Pack Remaining-Gate Index Fidelity — `docs/ADR_645_STAGE319_OPEN.md` + `docs/STAGE_319_PLAN.md` (I1 next).
+
+**Stage 319 I1 (2026-08-14):** Backup restore drill honesty pack remaining-gate index hub (`test_stage319_index_i1.py`).
+
+**Stage 319 B1 (2026-08-14):** Backup restore drill honesty pack blocker matrix (`test_stage319_blockers_b1.py`).
+
+**Stage 319 P1 (2026-08-14):** Stage 169 B1 / Stage 318 / Stage 317 / Stage PITR pointers (`test_stage319_pointers_p1.py`).
+
+**Stage 319 D1 (2026-08-14):** Backup Restore Drill Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_319_FIDELITY.md` (`test_stage319_fidelity_d1.py`).
+
+**Stage 319 exit (2026-08-14):** I1, B1, P1, D1, H319x met — `docs/STAGE_319_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_646_STAGE319_FREEZE.md`. Fidelity: `docs/STAGE_319_FIDELITY.md`.
+
 **Stage 318 open (2026-08-14):** Tenant MVP K8s Deploy Pack Remaining-Gate Index Fidelity — `docs/ADR_643_STAGE318_OPEN.md` + `docs/STAGE_318_PLAN.md` (I1 next).
 
 **Stage 318 I1 (2026-08-14):** K8s deploy pack remaining-gate index hub (`test_stage318_index_i1.py`).

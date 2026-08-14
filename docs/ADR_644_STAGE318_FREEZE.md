@@ -31,3 +31,10 @@ Stage 319 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live cluster deploy, CI deploy, live staging apply, managed data-plane, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 319 opened under **ADR-645** after CONTINUE/NEXT (Tenant MVP Backup Restore Drill Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-646**. Stage 318 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 319 runner-up outline was approved and opened (ADR-645); freeze ADR-646. Do not reopen Stage 318 scope.
+

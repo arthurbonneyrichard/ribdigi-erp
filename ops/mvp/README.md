@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_319_EXIT_CRITERIA.md` / `docs/ADR_646_STAGE319_FREEZE.md` (`backend/tests/test_stage319_exit_h319x.py`) — Stage 319 H319x
+- `docs/STAGE_319_FIDELITY.md` (`backend/tests/test_stage319_fidelity_d1.py`) — Stage 319 D1
+- `docs/STAGE_319_PLAN.md` (`backend/tests/test_stage319_open.py`) — Stage 319 open (ADR-645)
+- `docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/backup-restore-drill-honesty-pack-remaining-gate.json` — Stage 319 I1
+- `docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/backup-restore-drill-honesty-pack-rg-blockers.json` — Stage 319 B1
+- `docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/backup-restore-drill-honesty-pack-rg-pointers.json` — Stage 319 P1
 - `docs/STAGE_318_EXIT_CRITERIA.md` / `docs/ADR_644_STAGE318_FREEZE.md` (`backend/tests/test_stage318_exit_h318x.py`) — Stage 318 H318x
 - `docs/STAGE_318_FIDELITY.md` (`backend/tests/test_stage318_fidelity_d1.py`) — Stage 318 D1
 - `docs/STAGE_318_PLAN.md` (`backend/tests/test_stage318_open.py`) — Stage 318 open (ADR-643)
@@ -5191,6 +5197,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 319 exit
+
+H319x met — `docs/STAGE_319_EXIT_CRITERIA.md`, ADR-646. Stages 1–319 frozen for Stage 319 feature scope.
+
+## Stage 319 D1 — Tenant MVP Backup Restore Drill Honesty Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_319_FIDELITY.md` (`test_stage319_fidelity_d1.py`). `BACKUP_RESTORE_DRILL_HONESTY_PACK_*` remaining-gate index; live backup restore / live PITR / go-live still MISSING.
+
+## Stage 319 open
+
+ADR-645 / `docs/STAGE_319_PLAN.md`.
 
 ## Stage 318 exit
 

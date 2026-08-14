@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 319 open** | Backup Restore Drill Honesty Pack Remaining-Gate Index — `docs/STAGE_319_PLAN.md`, ADR-645 (`test_stage319_open.py`) |
+| **Stage 319 I1** | Backup restore drill honesty pack remaining-gate index hub (`test_stage319_index_i1.py`) |
+| **Stage 319 B1** | Backup restore drill honesty pack blocker matrix (`test_stage319_blockers_b1.py`) |
+| **Stage 319 P1** | Stage 169 B1 / Stage 318 / Stage 317 / Stage PITR pointers (`test_stage319_pointers_p1.py`) |
+| **Stage 319 D1** | Backup restore drill honesty pack remaining-gate fidelity — `docs/STAGE_319_FIDELITY.md` (`test_stage319_fidelity_d1.py`) |
+| **Stage 319 H319x** | Exit + freeze — `docs/STAGE_319_EXIT_CRITERIA.md`, ADR-646 (`test_stage319_exit_h319x.py`); Stages 1–319 frozen |
 | **Stage 318 open** | K8s Deploy Pack Remaining-Gate Index — `docs/STAGE_318_PLAN.md`, ADR-643 (`test_stage318_open.py`) |
 | **Stage 318 I1** | K8s deploy pack remaining-gate index hub (`test_stage318_index_i1.py`) |
 | **Stage 318 B1** | K8s deploy pack blocker matrix (`test_stage318_blockers_b1.py`) |
