@@ -927,7 +927,15 @@ RIBDIGI ensures tamper-evident logging:
 - **Immutable Storage:** Write-once storage backend for audit data
 - **Access Control:** Only Company Admin and Super Admin can view audit logs
 
-> **⚠️ Legal Hold:** In case of legal proceedings, contact RIBDIGI Support to place a legal hold on audit data, preventing automated archival deletion.
+### 8.6 Retention & cold archive
+
+1. Open **Audit** in the Shell (`/audit`)
+2. Review the **Retention & cold archive** card (minimum 7 years; purge never)
+3. Company Admin / Super Admin can **Archive cold now** — aged hot rows are copied to checksummed JSONL object storage and marked `archived_at` (never deleted)
+4. The archives table lists manifests (event count, date range, size, SHA-256)
+5. Celery job `archive_cold_audit_logs` (also on **Jobs**) runs the same archive on a schedule
+
+> **⚠️ Legal Hold:** In case of legal proceedings, contact RIBDIGI Support to place a legal hold on audit data before changing archive settings.
 
 ---
 
