@@ -159,10 +159,25 @@ def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
             "unit_id": i.unit_id,
             "unit_price": float(i.unit_price),
             "tax_rate": float(i.tax_rate),
+            "discount": float(getattr(i, "discount", 0) or 0),
             "line_total": float(i.line_total),
         }
         for i in items
     ]
+
+
+def _po_line_discount(qty: float, unit_price: float, line_total: float, discount: float) -> tuple[float, float]:
+    """Tax-before-discount (match PI). Returns (discount, discounted line_total)."""
+    disc = float(discount or 0)
+    if disc < 0:
+        raise HTTPException(status_code=400, detail="discount must be >= 0")
+    merch = float(qty) * float(unit_price)
+    if disc > merch + 1e-9:
+        raise HTTPException(
+            status_code=400,
+            detail="discount cannot exceed quantity × unit_price",
+        )
+    return disc, max(float(line_total) - disc, 0)
 
 
 def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
@@ -246,6 +261,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
                 "unit_id": i.unit_id,
                 "unit_price": float(i.unit_price),
                 "tax_rate": float(i.tax_rate),
+                "discount": float(getattr(i, "discount", 0) or 0),
                 "line_total": float(i.line_total),
                 "outstanding_qty": max(float(i.quantity) - float(i.received_qty or 0), 0),
             }
@@ -273,6 +289,7 @@ async def create_purchase_order(
 
     subtotal = 0.0
     tax_total = 0.0
+    discount_total = 0.0
     prepared: list[tuple[dict, float]] = []
     for item in items:
         product = (
@@ -292,12 +309,15 @@ async def create_purchase_order(
             unit_id=item.get("unit_id"),
             quantity=float(item["quantity"]),
         )
-        line_item = {**item, "quantity": qty, "unit_price": item.get("unit_price", 0)}
+        unit_price = float(item.get("unit_price") or 0)
+        line_item = {**item, "quantity": qty, "unit_price": unit_price}
         line_sub, line_tax, line_total, rate_pct, _comps = await _purchase_line_tax(
             db, tenant_id, product, line_item
         )
+        disc, line_total = _po_line_discount(qty, unit_price, line_total, item.get("discount") or 0)
         subtotal += line_sub
         tax_total += line_tax
+        discount_total += disc
         prepared.append(
             (
                 {
@@ -305,7 +325,9 @@ async def create_purchase_order(
                     "product_id": product.id,
                     "quantity": qty,
                     "unit_id": unit_id,
+                    "unit_price": unit_price,
                     "tax_rate": rate_pct,
+                    "discount": disc,
                 },
                 line_total,
             )
@@ -317,9 +339,9 @@ async def create_purchase_order(
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,
         status="draft",
-        subtotal=subtotal,
-        tax_amount=tax_total,
-        total_amount=subtotal + tax_total,
+        subtotal=round(subtotal, 2),
+        tax_amount=round(tax_total, 2),
+        total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
         notes=notes,
         delivery_address=(delivery_address or "").strip() or None,
         created_by=user_id,
@@ -338,6 +360,7 @@ async def create_purchase_order(
                 unit_id=item.get("unit_id"),
                 unit_price=item.get("unit_price", 0),
                 tax_rate=item.get("tax_rate", 0),
+                discount=item.get("discount", 0),
                 line_total=line_total,
             )
         )
@@ -490,6 +513,7 @@ async def amend_purchase_order(
 
         subtotal = 0.0
         tax_total = 0.0
+        discount_total = 0.0
         prepared: list[tuple[dict, float]] = []
         for item in items:
             product = (
@@ -509,24 +533,28 @@ async def amend_purchase_order(
                 unit_id=item.get("unit_id"),
                 quantity=float(item["quantity"]),
             )
+            unit_price = float(item.get("unit_price") or 0)
             line_item = {
                 **item,
                 "quantity": qty,
-                "unit_price": float(item.get("unit_price") or 0),
+                "unit_price": unit_price,
             }
             line_sub, line_tax, line_total, rate_pct, _comps = await _purchase_line_tax(
                 db, tenant_id, product, line_item
             )
+            disc, line_total = _po_line_discount(qty, unit_price, line_total, item.get("discount") or 0)
             subtotal += line_sub
             tax_total += line_tax
+            discount_total += disc
             prepared.append(
                 (
                     {
                         "product_id": product.id,
                         "quantity": qty,
                         "unit_id": unit_id,
-                        "unit_price": float(item.get("unit_price") or 0),
+                        "unit_price": unit_price,
                         "tax_rate": rate_pct,
+                        "discount": disc,
                     },
                     line_total,
                 )
@@ -545,12 +573,13 @@ async def amend_purchase_order(
                     received_qty=0,
                     unit_price=item["unit_price"],
                     tax_rate=item["tax_rate"],
+                    discount=item.get("discount", 0),
                     line_total=line_total,
                 )
             )
         po.subtotal = round(subtotal, 2)
         po.tax_amount = round(tax_total, 2)
-        po.total_amount = round(subtotal + tax_total, 2)
+        po.total_amount = round(max(subtotal + tax_total - discount_total, 0), 2)
 
     if notes is not None:
         po.notes = notes
@@ -764,7 +793,15 @@ async def create_grn(
                 reference_type="grn",
                 reference_id=grn.id,
             )
-            accepted_value += accepted_qty * float(po_item.unit_price) * (1 + float(po_item.tax_rate or 0) / 100.0)
+            line_gross = accepted_qty * float(po_item.unit_price) * (
+                1 + float(po_item.tax_rate or 0) / 100.0
+            )
+            # Proportional share of PO line discount for partial receipts (BR-6.3)
+            ordered = float(po_item.quantity or 0)
+            line_disc = float(getattr(po_item, "discount", 0) or 0)
+            if ordered > 1e-9 and line_disc > 0:
+                line_gross -= line_disc * (accepted_qty / ordered)
+            accepted_value += max(line_gross, 0)
 
         # Count full physical receipt (accepted + rejected) against PO outstanding;
         # only accepted qty is stocked above.

@@ -418,7 +418,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] Create PO from PR or directly
   - [x] PO number auto-generation with configurable prefix (`GET|PATCH /purchasing/settings`)
-  - [ ] Product lines with quantity, unit price, tax, discount, total
+  - [x] Product lines with quantity, unit price, tax, discount, total (`items[].discount` on create/amend; tax before discount; Purchasing create/amend/detail; Alembic `20260814_0096`)
   - [x] Supplier selection and delivery address (`purchase_orders.delivery_address` on create/amend/serialize + supplier email; Purchasing UI)
   - [x] PO status: Draft, Sent, Partially Received, Fully Received (`received`), Cancelled (`POST /purchasing/orders/{id}/cancel`; `can_cancel`; Purchasing Cancel UI; blocked after any receipt)
   - [x] Print/email PO to supplier

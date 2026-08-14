@@ -38,6 +38,8 @@ type PoItem = {
   unit_id?: string | null;
   unit_price: number;
   tax_rate?: number;
+  discount?: number;
+  line_total?: number;
   outstanding_qty: number;
 };
 type Unit = { id: string; code: string; name: string; is_active?: boolean };
@@ -174,9 +176,11 @@ export default function Page() {
   const [unitId, setUnitId] = useState('');
   const [qty, setQty] = useState('10');
   const [unitPrice, setUnitPrice] = useState('0');
+  const [lineDiscount, setLineDiscount] = useState('0');
   const [poDeliveryAddress, setPoDeliveryAddress] = useState('');
   const [amendQty, setAmendQty] = useState('');
   const [amendPrice, setAmendPrice] = useState('');
+  const [amendDiscount, setAmendDiscount] = useState('0');
   const [amendUnitId, setAmendUnitId] = useState('');
   const [amendNotes, setAmendNotes] = useState('');
   const [amendDeliveryAddress, setAmendDeliveryAddress] = useState('');
@@ -337,6 +341,7 @@ export default function Page() {
               quantity: Number(qty),
               unit_id: unitId || null,
               unit_price: Number(unitPrice),
+              discount: Math.max(0, Number(lineDiscount) || 0),
               // omit tax_rate → backend resolves product/category/default (BR-12.2)
             },
           ],
@@ -344,6 +349,7 @@ export default function Page() {
       });
       setMessage(`Created ${r.data.po_number}`);
       setPoDeliveryAddress('');
+      setLineDiscount('0');
       await refresh();
       setSelected(r.data);
       setTab('orders');
@@ -413,6 +419,7 @@ export default function Page() {
     const line = po.items?.[0];
     setAmendQty(String(line?.quantity ?? ''));
     setAmendPrice(String(line?.unit_price ?? ''));
+    setAmendDiscount(String(line?.discount ?? 0));
     setAmendUnitId(line?.unit_id || '');
     setAmendNotes(po.notes || '');
     setAmendDeliveryAddress(po.delivery_address || '');
@@ -439,6 +446,7 @@ export default function Page() {
               quantity: Number(amendQty) || line.quantity,
               unit_id: amendUnitId || line.unit_id || null,
               unit_price: Number(amendPrice) || line.unit_price,
+              discount: Math.max(0, Number(amendDiscount) || 0),
               ...(line.tax_rate != null ? { tax_rate: Number(line.tax_rate) } : {}),
             },
           ],
@@ -1270,6 +1278,14 @@ export default function Page() {
           <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
           <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
           <input
+            value={lineDiscount}
+            onChange={(e) => setLineDiscount(e.target.value)}
+            placeholder="Line discount"
+            type="number"
+            min={0}
+            step="0.01"
+          />
+          <input
             value={poDeliveryAddress}
             onChange={(e) => setPoDeliveryAddress(e.target.value)}
             placeholder="Delivery address (optional)"
@@ -1480,6 +1496,8 @@ export default function Page() {
                     <th>Received</th>
                     <th>Outstanding</th>
                     <th>Unit price</th>
+                    <th>Discount</th>
+                    <th>Line total</th>
                     {(selected.status === 'sent' || selected.status === 'partially_received') && (
                       <>
                         <th>Receive</th>
@@ -1515,6 +1533,8 @@ export default function Page() {
                         <td>{i.received_qty}</td>
                         <td>{i.outstanding_qty}</td>
                         <td>{i.unit_price}</td>
+                        <td>{i.discount ?? 0}</td>
+                        <td>{i.line_total ?? '—'}</td>
                         {(selected.status === 'sent' || selected.status === 'partially_received') && (
                           <>
                             <td>
@@ -1675,6 +1695,14 @@ export default function Page() {
                     value={amendPrice}
                     onChange={(e) => setAmendPrice(e.target.value)}
                     placeholder="Unit price"
+                  />
+                  <input
+                    value={amendDiscount}
+                    onChange={(e) => setAmendDiscount(e.target.value)}
+                    placeholder="Line discount"
+                    type="number"
+                    min={0}
+                    step="0.01"
                   />
                   <input
                     value={amendNotes}

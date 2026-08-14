@@ -370,12 +370,15 @@ def render_purchase_order_bodies(
         price = _fmt_money(item.get("unit_price"))
         total = _fmt_money(item.get("line_total"))
         tax = _fmt_money(item.get("tax_rate"))
+        disc = float(item.get("discount") or 0)
+        disc_s = f" discount {currency} {_fmt_money(disc)}" if disc else ""
         lines.append(
-            f"  - {desc}: qty {qty} × {currency} {price} (tax {tax}%) = {currency} {total}"
+            f"  - {desc}: qty {qty} × {currency} {price} (tax {tax}%{disc_s}) = {currency} {total}"
         )
+        disc_cell = _fmt_money(disc) if disc else "—"
         html_rows.append(
             f"<tr><td>{desc}</td><td>{qty}</td><td>{currency} {price}</td>"
-            f"<td>{tax}%</td><td>{currency} {total}</td></tr>"
+            f"<td>{tax}%</td><td>{currency} {disc_cell}</td><td>{currency} {total}</td></tr>"
         )
     lines.extend(
         [
@@ -397,7 +400,7 @@ def render_purchase_order_bodies(
         f"<p>From <strong>{company_name}</strong><br/>To {supplier_name}<br/>Due {due_s}"
         f"{delivery_html}</p>"
         "<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\">"
-        "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Tax</th><th>Line</th></tr></thead>"
+        "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Tax</th><th>Discount</th><th>Line</th></tr></thead>"
         f"<tbody>{''.join(html_rows)}</tbody></table>"
         f"<p>Subtotal: {currency} {_fmt_money(purchase_order.get('subtotal'))}<br/>"
         f"Tax: {currency} {_fmt_money(purchase_order.get('tax_amount'))}<br/>"

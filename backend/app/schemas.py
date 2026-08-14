@@ -728,6 +728,7 @@ class PurchaseOrderItemCreate(BaseModel):
     unit_price: float = Field(ge=0)
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
     tax_rate: float | None = Field(default=None, ge=0)
+    discount: float = Field(default=0, ge=0)
 
 
 class PurchaseOrderCreate(BaseModel):

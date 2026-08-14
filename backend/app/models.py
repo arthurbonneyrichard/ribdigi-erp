@@ -855,6 +855,7 @@ class PurchaseOrderItem(Base):
     unit_id: Mapped[str | None] = mapped_column(ForeignKey("units_of_measure.id"), nullable=True, index=True)
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 
