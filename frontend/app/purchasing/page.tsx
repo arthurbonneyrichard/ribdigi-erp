@@ -107,6 +107,7 @@ type PurchaseInvoice = {
   has_attachment?: boolean;
   attachment_url?: string | null;
   subtotal?: number;
+  can_cancel?: boolean;
   items?: {
     id: string;
     product_id: string;
@@ -578,6 +579,20 @@ export default function Page() {
       const r = await api(`/purchasing/invoices/${id}/approve`, { method: 'POST', body: '{}' });
       setMessage(`Approved ${r.data.invoice_number}`);
       await refresh();
+      if (selectedInvoice?.id === id) setSelectedInvoice(r.data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function cancelInvoice(inv: PurchaseInvoice) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/purchasing/invoices/${inv.id}/cancel`, { method: 'POST' });
+      setMessage(r.message || `Cancelled ${r.data?.invoice_number || inv.invoice_number}`);
+      await refresh();
+      setSelectedInvoice(r.data);
     } catch (err: any) {
       setError(err.message);
     }
@@ -1667,6 +1682,11 @@ export default function Page() {
                   {inv.status === 'draft' && (
                     <button onClick={() => approveInvoice(inv.id)}>Approve</button>
                   )}
+                  {inv.can_cancel && (
+                    <button type="button" onClick={() => cancelInvoice(inv)}>
+                      Cancel
+                    </button>
+                  )}
                   <label style={{ cursor: 'pointer' }}>
                     <span className="muted" style={{ textDecoration: 'underline' }}>
                       Upload
@@ -1700,6 +1720,16 @@ export default function Page() {
             <h3>
               {selectedInvoice.invoice_number} — {selectedInvoice.status}
             </h3>
+            {selectedInvoice.can_cancel && (
+              <p style={{ marginTop: 0 }}>
+                <button type="button" onClick={() => cancelInvoice(selectedInvoice)}>
+                  Cancel invoice
+                </button>
+                <span className="muted" style={{ marginLeft: 8 }}>
+                  Allowed for draft/unpaid/overdue with no payments (BR-6.5). Reverses AP if posted.
+                </span>
+              </p>
+            )}
             <table className="table">
               <thead>
                 <tr>

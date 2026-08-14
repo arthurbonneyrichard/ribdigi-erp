@@ -788,7 +788,8 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 **List:** `GET /purchases/invoices`  
 **Create:** `POST /purchases/invoices`  
 **Get:** `GET /purchases/invoices/{invoice_id}`  
-**Pay:** `POST /purchases/invoices/{invoice_id}/payments`
+**Pay:** `POST /purchases/invoices/{invoice_id}/payments`  
+**Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` — allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted; idempotent when already cancelled. Serialize includes `can_cancel`. Purchasing Invoices UI Cancel (BR-6.5).
 
 Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced invoices copy the PO line snapshot.
 

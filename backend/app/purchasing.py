@@ -1521,6 +1521,8 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         status = purchase_invoice_status(float(inv.total_amount), float(inv.paid_amount or 0), inv.due_date)
         if status != inv.status:
             inv.status = status
+    paid = float(inv.paid_amount or 0)
+    can_cancel = status in {"draft", "unpaid", "overdue"} and paid <= 0
     return {
         "id": inv.id,
         "invoice_number": inv.invoice_number,
@@ -1539,19 +1541,20 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "currency": getattr(inv, "currency", None) or "",
         "exchange_rate": float(getattr(inv, "exchange_rate", None) or 1),
         "balance_due_base": round(
-            max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+            max(float(inv.total_amount) - paid, 0)
             * float(getattr(inv, "exchange_rate", None) or 1),
             2,
         ),
         "total_amount": float(inv.total_amount),
-        "paid_amount": float(inv.paid_amount or 0),
-        "balance_due": max(float(inv.total_amount) - float(inv.paid_amount or 0), 0),
+        "paid_amount": paid,
+        "balance_due": max(float(inv.total_amount) - paid, 0),
         "ap_posted": bool(inv.ap_posted),
         "attachment_url": inv.attachment_url,
         "has_attachment": bool(inv.attachment_url),
         "notes": inv.notes,
         "approved_at": inv.approved_at,
         "created_at": inv.created_at,
+        "can_cancel": can_cancel,
         "tax_breakdown": _purchase_invoice_tax_breakdown(items, inv),
         "items": [
             {
