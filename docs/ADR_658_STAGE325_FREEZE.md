@@ -31,3 +31,10 @@ Stage 326 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for go-live, LAUNCH §§1–3 verified, §7 signed, attestation, or Offline Complete.
+
+## CONTINUE/NEXT
+
+Stage 326 opened under **ADR-659** after CONTINUE/NEXT (Tenant MVP Hosted FAQ SaaS Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-660**. Stage 325 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 326 runner-up outline was approved and opened (ADR-659); freeze ADR-660. Do not reopen Stage 325 scope.
+

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_326_EXIT_CRITERIA.md` / `docs/ADR_660_STAGE326_FREEZE.md` (`backend/tests/test_stage326_exit_h326x.py`) — Stage 326 H326x
+- `docs/STAGE_326_FIDELITY.md` (`backend/tests/test_stage326_fidelity_d1.py`) — Stage 326 D1
+- `docs/STAGE_326_PLAN.md` (`backend/tests/test_stage326_open.py`) — Stage 326 open (ADR-659)
+- `docs/HOSTED_FAQ_SAAS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/hosted-faq-saas-pack-remaining-gate.json` — Stage 326 I1
+- `docs/HOSTED_FAQ_SAAS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/hosted-faq-saas-pack-rg-blockers.json` — Stage 326 B1
+- `docs/HOSTED_FAQ_SAAS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/hosted-faq-saas-pack-rg-pointers.json` — Stage 326 P1
 - `docs/STAGE_325_EXIT_CRITERIA.md` / `docs/ADR_658_STAGE325_FREEZE.md` (`backend/tests/test_stage325_exit_h325x.py`) — Stage 325 H325x
 - `docs/STAGE_325_FIDELITY.md` (`backend/tests/test_stage325_fidelity_d1.py`) — Stage 325 D1
 - `docs/STAGE_325_PLAN.md` (`backend/tests/test_stage325_open.py`) — Stage 325 open (ADR-657)
@@ -5233,6 +5239,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 326 exit
+
+H326x met — `docs/STAGE_326_EXIT_CRITERIA.md`, ADR-660. Stages 1–326 frozen for Stage 326 feature scope.
+
+## Stage 326 D1 — Tenant MVP Hosted FAQ SaaS Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_326_FIDELITY.md` (`test_stage326_fidelity_d1.py`). `HOSTED_FAQ_SAAS_PACK_*` remaining-gate index; hosted FAQ SaaS / helpdesk SaaS / live training / Offline / go-live still MISSING.
+
+## Stage 326 open
+
+ADR-659 / `docs/STAGE_326_PLAN.md`.
 
 ## Stage 325 exit
 

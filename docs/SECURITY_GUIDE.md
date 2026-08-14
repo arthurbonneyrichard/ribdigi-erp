@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 326 open** | Hosted FAQ SaaS Pack Remaining-Gate Index — `docs/STAGE_326_PLAN.md`, ADR-659 (`test_stage326_open.py`) |
+| **Stage 326 I1** | Hosted FAQ SaaS pack remaining-gate index hub (`test_stage326_index_i1.py`) |
+| **Stage 326 B1** | Hosted FAQ SaaS pack blocker matrix (`test_stage326_blockers_b1.py`) |
+| **Stage 326 P1** | Stage 191 / Stage 325 / Stage 324 / Stage 171 pointers (`test_stage326_pointers_p1.py`) |
+| **Stage 326 D1** | Hosted FAQ SaaS pack remaining-gate fidelity — `docs/STAGE_326_FIDELITY.md` (`test_stage326_fidelity_d1.py`) |
+| **Stage 326 H326x** | Exit + freeze — `docs/STAGE_326_EXIT_CRITERIA.md`, ADR-660 (`test_stage326_exit_h326x.py`); Stages 1–326 frozen |
 | **Stage 325 open** | GoLive Pack Remaining-Gate Index — `docs/STAGE_325_PLAN.md`, ADR-657 (`test_stage325_open.py`) |
 | **Stage 325 I1** | GoLive pack remaining-gate index hub (`test_stage325_index_i1.py`) |
 | **Stage 325 B1** | GoLive pack blocker matrix (`test_stage325_blockers_b1.py`) |

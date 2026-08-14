@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 326 track opened (ADR-659: `test_stage326_open.py`, `docs/STAGE_326_PLAN.md`) — Hosted FAQ SaaS Pack Remaining-Gate Index; closed under ADR-660
+- [x] Hosted FAQ SaaS pack remaining-gate hub (Stage 326 I1: `test_stage326_index_i1.py`, `docs/HOSTED_FAQ_SAAS_PACK_REMAINING_GATE_MVP.md`)
+- [x] Hosted FAQ SaaS pack blocker matrix (Stage 326 B1: `test_stage326_blockers_b1.py`, `docs/HOSTED_FAQ_SAAS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 191 / Stage 325 / Stage 324 / Stage 171 pointers (Stage 326 P1: `test_stage326_pointers_p1.py`, `docs/HOSTED_FAQ_SAAS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 326 fidelity sync (D1: `test_stage326_fidelity_d1.py`, `docs/STAGE_326_FIDELITY.md`)
+- [x] Stage 326 exit + freeze (H326x: `test_stage326_exit_h326x.py`, `docs/STAGE_326_EXIT_CRITERIA.md`, ADR-660)
 - [x] Stage 325 track opened (ADR-657: `test_stage325_open.py`, `docs/STAGE_325_PLAN.md`) — GoLive Pack Remaining-Gate Index; closed under ADR-658
 - [x] GoLive pack remaining-gate hub (Stage 325 I1: `test_stage325_index_i1.py`, `docs/GOLIVE_PACK_REMAINING_GATE_MVP.md`)
 - [x] GoLive pack blocker matrix (Stage 325 B1: `test_stage325_blockers_b1.py`, `docs/GOLIVE_PACK_RG_BLOCKERS_MVP.md`)
