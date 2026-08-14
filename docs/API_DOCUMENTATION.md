@@ -764,6 +764,8 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 **Create:** `POST /purchases/grn`  
 **Get:** `GET /purchases/grn/{grn_id}`
 
+Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`, `manufacturing_date`, `expiry_date` (required when the product `tracks_batches`). Serialize echoes batch fields from the GRN’s stock movements / `product_batches` (not stored on `goods_receipt_items`). Purchasing Orders receive UI (BR-6.4).
+
 **Create GRN:**
 ```json
 {
@@ -775,7 +777,10 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
       "received_qty": 100,
       "accepted_qty": 98,
       "rejected_qty": 2,
-      "rejection_reason": "Damaged packaging"
+      "rejection_reason": "Damaged packaging",
+      "batch_number": "LOT-2026-01",
+      "manufacturing_date": "2026-01-15",
+      "expiry_date": "2027-01-15"
     }
   ],
   "notes": "Delivery received in good condition"

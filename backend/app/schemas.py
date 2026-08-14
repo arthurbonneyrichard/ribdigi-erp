@@ -804,6 +804,10 @@ class GrnItemCreate(BaseModel):
     accepted_qty: float | None = None
     rejected_qty: float = Field(default=0, ge=0)
     rejection_reason: str | None = None
+    # Optional lot for accepted stock (BR-6.4); required when product.tracks_batches
+    batch_number: str | None = None
+    manufacturing_date: datetime | None = None
+    expiry_date: datetime | None = None
 
 
 class GrnCreate(BaseModel):

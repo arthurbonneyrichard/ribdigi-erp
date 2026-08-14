@@ -430,7 +430,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] Create GRN referencing PO
   - [ ] Record received quantity (may differ from ordered)
-  - [ ] Record batch numbers and expiry dates
+  - [x] Record batch numbers and expiry dates (`batch_number` / `manufacturing_date` / `expiry_date` on `POST /purchasing/grn` lines → `stock_in_with_batch`; required when `tracks_batches`; Purchasing receive UI; serialize echoes from stock movements)
   - [ ] Handle partial receipts (multiple GRNs per PO)
   - [ ] Auto-update inventory on GRN approval
   - [x] Handle rejected/damaged goods with reason (`rejected_qty` + required `rejection_reason` on GRN lines; only accepted stocked; Purchasing receive UI)
