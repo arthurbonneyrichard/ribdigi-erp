@@ -483,9 +483,9 @@ export default function Page() {
             />
           </>
         )}
-        {(tab === 'pnl' || tab === 'stores' || tab === 'sales') && (
+        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'expenses') && (
           <>
-            {(tab === 'pnl' || tab === 'stores') && (
+            {(tab === 'pnl' || tab === 'stores' || tab === 'expenses') && (
               <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                 <option value="">All branches</option>
                 {branches.map((b) => (
@@ -495,26 +495,36 @@ export default function Page() {
                 ))}
               </select>
             )}
-            <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-              <option value="">All stores</option>
-              {stores
-                .filter((s) => !branchId || s.branch_id === branchId)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} — {s.name}
-                  </option>
-                ))}
-            </select>
+            {tab !== 'expenses' && (
+              <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+                <option value="">All stores</option>
+                {stores
+                  .filter((s) => !branchId || s.branch_id === branchId)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.code} — {s.name}
+                    </option>
+                  ))}
+              </select>
+            )}
           </>
         )}
-        {(tab === 'salesperson' || tab === 'stores' || tab === 'departments') && (
-          <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+        {(tab === 'salesperson' ||
+          tab === 'stores' ||
+          tab === 'departments' ||
+          tab === 'expenses') && (
+          <select
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+          >
             <option value="">All departments</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.code} — {d.name}
-              </option>
-            ))}
+            {departments
+              .filter((d) => !branchId || !d.branch_id || d.branch_id === branchId)
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.code} — {d.name}
+                </option>
+              ))}
           </select>
         )}
         {tab === 'sales' && (
@@ -1287,6 +1297,8 @@ export default function Page() {
         <>
           <p className="muted">
             Period {data.period_days ?? '—'} days · scaled budgets vs approved spend
+            {data.branch_name ? ` · branch ${data.branch_name}` : ''}
+            {data.department_name ? ` · dept ${data.department_name}` : ''}
           </p>
           <div className="grid">
             <div className="card">
