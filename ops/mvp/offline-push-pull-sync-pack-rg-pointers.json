@@ -1,0 +1,67 @@
+{
+  "id": "offline-push-pull-sync-pack-rg-pointers",
+  "stage": 388,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_PUSH_PULL_SYNC_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_PUSH_PULL_SYNC_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_indexeddb_queue_pack": "docs/OFFLINE_INDEXEDDB_QUEUE_PACK_REMAINING_GATE_MVP.md",
+    "offline_hold_expiry_pack": "docs/OFFLINE_HOLD_EXPIRY_PACK_REMAINING_GATE_MVP.md",
+    "stage164_fidelity": "docs/STAGE_164_FIDELITY.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_push_pull_sync_complete_claimed": false,
+  "push_pull_sync_engine_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section11_offline_push_pull_sync": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_indexeddb_queue_pack_remaining_gate_stage387": "docs/OFFLINE_INDEXEDDB_QUEUE_PACK_REMAINING_GATE_MVP.md",
+    "offline_hold_expiry_pack_remaining_gate_stage386": "docs/OFFLINE_HOLD_EXPIRY_PACK_REMAINING_GATE_MVP.md",
+    "stage164_sync_fidelity": "docs/STAGE_164_FIDELITY.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_push_pull_sync / push_pull_sync_engine / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "oppsprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a711 offline push/pull sync",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oppsprp-stage387",
+      "title": "Point to Stage 387 offline IndexedDB queue pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oppsprp-stage386",
+      "title": "Point to Stage 386 offline hold expiry pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oppsprp-stage164",
+      "title": "Point to Stage 164 sync fidelity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oppsprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oppsprp-checklist-remaining",
+      "title": "Offline Complete / offline push/pull-sync Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 388 P1 offline push/pull sync pack RG pointers packaging only."
+}

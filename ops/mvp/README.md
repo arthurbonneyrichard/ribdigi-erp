@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_388_EXIT_CRITERIA.md` / `docs/ADR_784_STAGE388_FREEZE.md` (`backend/tests/test_stage388_exit_h388x.py`) — Stage 388 H388x
+- `docs/STAGE_388_FIDELITY.md` (`backend/tests/test_stage388_fidelity_d1.py`) — Stage 388 D1
+- `docs/STAGE_388_PLAN.md` (`backend/tests/test_stage388_open.py`) — Stage 388 open (ADR-783)
+- `docs/OFFLINE_PUSH_PULL_SYNC_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-push-pull-sync-pack-remaining-gate.json` — Stage 388 I1
+- `docs/OFFLINE_PUSH_PULL_SYNC_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-push-pull-sync-pack-rg-blockers.json` — Stage 388 B1
+- `docs/OFFLINE_PUSH_PULL_SYNC_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-push-pull-sync-pack-rg-pointers.json` — Stage 388 P1
 - `docs/STAGE_387_EXIT_CRITERIA.md` / `docs/ADR_782_STAGE387_FREEZE.md` (`backend/tests/test_stage387_exit_h387x.py`) — Stage 387 H387x
 - `docs/STAGE_387_FIDELITY.md` (`backend/tests/test_stage387_fidelity_d1.py`) — Stage 387 D1
 - `docs/STAGE_387_PLAN.md` (`backend/tests/test_stage387_open.py`) — Stage 387 open (ADR-781)
@@ -5605,6 +5611,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 388 exit
+
+H388x met — `docs/STAGE_388_EXIT_CRITERIA.md`, ADR-784. Stages 1–388 frozen for Stage 388 feature scope.
+
+## Stage 388 D1 — Tenant MVP Offline Push/Pull Sync Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_388_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 388 open
+
+Opened under ADR-783; plan `docs/STAGE_388_PLAN.md`.
 
 ## Stage 387 exit
 

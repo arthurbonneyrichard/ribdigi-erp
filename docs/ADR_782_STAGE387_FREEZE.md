@@ -31,3 +31,10 @@ Stage 388 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline IndexedDB-queue, IndexedDB queue engine as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 388 opened under **ADR-783** after CONTINUE/NEXT (Tenant MVP Offline Push/Pull Sync Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-784**. Stage 387 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 387 runner-up outline was approved and opened (ADR-783); freeze ADR-784. Do not reopen Stage 387 scope.
+
