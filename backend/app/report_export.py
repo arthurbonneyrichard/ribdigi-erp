@@ -519,8 +519,12 @@ async def build_report_payload(
     now = datetime.utcnow()
 
     if report_type == "summary":
-        daily = await reports_svc.sales_daily(db, tenant_id, now)
-        monthly = await reports_svc.sales_monthly(db, tenant_id, now.year, now.month)
+        daily = await reports_svc.sales_daily(
+            db, tenant_id, now, store_id=store_id or None
+        )
+        monthly = await reports_svc.sales_monthly(
+            db, tenant_id, now.year, now.month, store_id=store_id or None
+        )
         low = await reports_svc.inventory_low_stock(db, tenant_id)
         expenses = await reports_svc.expenses_summary(db, tenant_id)
         return {
@@ -530,10 +534,19 @@ async def build_report_payload(
             "expenses": expenses,
         }
     if report_type == "sales_daily":
-        return await reports_svc.sales_daily(db, tenant_id, reports_svc.parse_date(date) or now)
+        return await reports_svc.sales_daily(
+            db,
+            tenant_id,
+            reports_svc.parse_date(date) or now,
+            store_id=store_id or None,
+        )
     if report_type == "sales_monthly":
         return await reports_svc.sales_monthly(
-            db, tenant_id, year or now.year, month or now.month
+            db,
+            tenant_id,
+            year or now.year,
+            month or now.month,
+            store_id=store_id or None,
         )
     if report_type == "sales_products":
         return await reports_svc.sales_by_product(
@@ -563,7 +576,11 @@ async def build_report_payload(
         )
     if report_type == "sales_returns":
         return await reports_svc.sales_returns_summary(
-            db, tenant_id, from_date=fd, to_date=td
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
         )
     if report_type == "sales_by_store":
         return await reports_svc.sales_by_store(

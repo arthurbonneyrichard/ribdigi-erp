@@ -744,11 +744,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Comprehensive sales analysis.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] **Daily Sales:** Date, invoice count, total revenue, tax, discounts, net sales (`GET /reports/sales/daily`)
-  - [x] **Monthly Sales:** Monthly aggregation with trend comparison (`GET /reports/sales/monthly`)
+  - [x] **Daily Sales:** Date, invoice count, total revenue, tax, discounts, net sales (`GET /reports/sales/daily`; optional `store_id`; Reports Sales tab)
+  - [x] **Monthly Sales:** Monthly aggregation with trend comparison (`GET /reports/sales/monthly`; optional `store_id`; Reports Sales tab)
   - [x] **Product Sales:** Product-wise quantity and revenue; filter by date, store, category (`GET /reports/sales/products?store_id=&category_id=`; Reports Sales tab + export `sales_products`)
   - [x] **Customer Sales:** Top customers by revenue and frequency (`GET /reports/sales/customers`; invoices + POS; optional `store_id`; Reports Customers tab + export `sales_customers`)
-  - [x] **Sales Return Summary:** Returns by reason/customer (`GET /reports/sales/returns`; Reports Sales tab + export `sales_returns`)
+  - [x] **Sales Return Summary:** Returns by reason/customer (`GET /reports/sales/returns`; optional `store_id` via original invoice store; Reports Sales tab + export `sales_returns`)
   - [x] **Salesperson Performance:** Sales by user/role (`GET /reports/sales/salesperson`; optional `store_id` + `department_id`; Reports Salespeople tab + export `sales_salesperson`)
 
 #### BR-14.2 Inventory Reports
@@ -786,7 +786,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [x] Cash Flow Statement (O/I/F + internal transfers; date range; liquid GL direct method; optional `store_id`/`branch_id` for attributable operating cash)
   - [x] Balance Sheet (Assets = Liabilities + Equity; `as_of` reconstructs from posted journals; computed retained earnings)
-  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; customer/product/salesperson sales support `store_id`; purchase summary/suppliers/pending support `store_id`/`warehouse_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
+  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; daily/monthly/product/customer/salesperson/returns sales support `store_id`; purchase summary/suppliers/pending support `store_id`/`warehouse_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
   - [x] Comparative reports (current period vs previous period) — BS `compare=prior_period|prior_year`
 
 ---

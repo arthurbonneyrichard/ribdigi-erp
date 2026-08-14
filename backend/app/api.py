@@ -8089,23 +8089,36 @@ async def report_schedules_run_due(
 @api.get("/reports/sales/daily")
 async def report_sales_daily(
     date: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.sales_daily(db, claims["tenant_id"], reports_svc.parse_date(date)))
+    return env(
+        await reports_svc.sales_daily(
+            db,
+            claims["tenant_id"],
+            reports_svc.parse_date(date),
+            store_id=store_id or None,
+        )
+    )
 
 
 @api.get("/reports/sales/monthly")
 async def report_sales_monthly(
     year: int | None = None,
     month: int | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     now = datetime.utcnow()
     return env(
         await reports_svc.sales_monthly(
-            db, claims["tenant_id"], year or now.year, month or now.month
+            db,
+            claims["tenant_id"],
+            year or now.year,
+            month or now.month,
+            store_id=store_id or None,
         )
     )
 
@@ -8161,6 +8174,7 @@ async def report_sales_returns(
     customer_id: str | None = None,
     reason: str | None = None,
     status: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8174,6 +8188,7 @@ async def report_sales_returns(
             customer_id=customer_id or None,
             reason=reason or None,
             status=status or None,
+            store_id=store_id or None,
         )
     )
 

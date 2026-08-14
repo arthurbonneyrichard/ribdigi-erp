@@ -1220,11 +1220,11 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ## 14. Reports
 
 ### 14.1 Sales Reports
-**Daily Sales:** `GET /reports/sales/daily?date=`  
-**Monthly Sales:** `GET /reports/sales/monthly?month=&year=`  
+**Daily Sales:** `GET /reports/sales/daily?date=&store_id=` — day totals (invoices + POS); optional `store_id` (invoice store / POS session store). Response echoes `store_id`/`store_name`. Export `sales_daily` (passes `store_id`).  
+**Monthly Sales:** `GET /reports/sales/monthly?month=&year=&store_id=` — month totals (invoices + POS); optional `store_id`. Response echoes `store_id`/`store_name`. Export `sales_monthly` (passes `store_id`).  
 **Product Sales:** `GET /reports/sales/products?from_date=&to_date=&store_id=&category_id=` — product qty/revenue (invoices + POS); optional store (invoice `store_id` / POS session store) and category filters; rows include `category_id`/`category_name`. Export `sales_products` (passes `store_id`/`category_id`).  
 **Customer Sales:** `GET /reports/sales/customers?from_date=&to_date=&store_id=&limit=` — top customers by revenue (posted invoices + POS); includes walk-in bucket; optional `store_id` (invoice store / POS session store) and `limit` for top-N. Response echoes `store_id`. Export `sales_customers` (passes `store_id`).  
-**Sales Returns:** `GET /reports/sales/returns?from_date=&to_date=&customer_id=&reason=&status=` — return summary with `by_reason` / `by_customer` / line list; reasons `damaged|wrong_item|defective|customer_change|other`. Export `sales_returns`.  
+**Sales Returns:** `GET /reports/sales/returns?from_date=&to_date=&customer_id=&reason=&status=&store_id=` — return summary with `by_reason` / `by_customer` / line list; optional `store_id` filters via original invoice store; reasons `damaged|wrong_item|defective|customer_change|other`. Response echoes `store_id`/`store_name`. Export `sales_returns` (passes `store_id`).  
 **Salesperson:** `GET /reports/sales/salesperson?from_date=&to_date=&department_id=&store_id=` — sales by user (invoices + POS); optional `department_id` and `store_id` (invoice store / POS session store). Response echoes `store_id`/`store_name`. Export `sales_salesperson` accepts the same filters.  
 **By store:** `GET /reports/sales/by-store?from_date=&to_date=&department_id=`  
 **By department (BR-2.5):** `GET /reports/sales/by-department?from_date=&to_date=&department_id=` — buckets by seller `users.department_id` (invoice `created_by` / POS session user); optional filter; export type `sales_by_department`.
