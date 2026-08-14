@@ -3,12 +3,53 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { canReadAnyModule, canReadModule } from '../lib/rbac';
+import { canReadModule } from '../lib/rbac';
 import {
   getSelectedStoreId,
   setSelectedStoreId,
   subscribeStoreContext,
 } from '../lib/storeContext';
+import {
+  getCompanyId,
+  getWorkspaceKind,
+  setWorkspaceContext,
+  clearWorkspaceContext,
+  subscribeWorkspace,
+  type WorkspaceKind,
+} from '../lib/workspaceContext';
+
+const tenantNavSpec: NavEntry[] = [
+  {
+    kind: 'link',
+    label: 'Tenant Dashboard',
+    href: '/tenant',
+    modules: ['tenant_dashboard', 'companies', 'dashboard'],
+  },
+  {
+    kind: 'link',
+    label: 'Companies',
+    href: '/companies',
+    modules: ['companies', 'dashboard'],
+  },
+  {
+    kind: 'link',
+    label: 'Account Settings',
+    href: '/company',
+    modules: ['company', 'companies'],
+  },
+  {
+    kind: 'link',
+    label: 'Users',
+    href: '/users',
+    modules: ['users'],
+  },
+  {
+    kind: 'link',
+    label: 'Security',
+    href: '/security',
+    modules: ['security'],
+  },
+];
 
 /** Stage 95 N1/P1 — leaf discoverability; Stage 162 N1 — approved expandable parents (§37). */
 type NavLink = {
@@ -1961,6 +2002,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [stores, setStores] = useState<StoreOption[]>([]);
   const [storeId, setStoreId] = useState('');
+  const [workspaceKind, setWorkspaceKind] = useState<WorkspaceKind>('company');
+  const [companyId, setCompanyIdState] = useState('');
+  const [companies, setCompanies] = useState<
+    { id: string; name: string; is_default?: boolean }[]
+  >([]);
+  const [tenantAdmin, setTenantAdmin] = useState(false);
+  const [tenantName, setTenantName] = useState('');
   const [onboarding, setOnboarding] = useState<OnboardingChecklist | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -1975,11 +2023,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   /** Stage 163 C1 — browser connectivity chrome (not sync queue health). */
   const [online, setOnline] = useState(true);
-  const canManageOnboarding = role === 'company_admin' || role === 'super_admin';
+  const canManageOnboarding =
+    role === 'company_admin' ||
+    role === 'super_admin' ||
+    role === 'tenant_owner' ||
+    role === 'tenant_admin';
 
   useEffect(() => {
     setStoreId(getSelectedStoreId());
     return subscribeStoreContext((id) => setStoreId(id));
+  }, []);
+
+  useEffect(() => {
+    setWorkspaceKind(getWorkspaceKind());
+    setCompanyIdState(getCompanyId() || '');
+    return subscribeWorkspace(() => {
+      setWorkspaceKind(getWorkspaceKind());
+      setCompanyIdState(getCompanyId() || '');
+    });
   }, []);
 
   useEffect(() => {
@@ -2018,6 +2079,49 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           return;
         }
         setPrincipal(meRes.data?.principal || 'tenant');
+        setTenantAdmin(Boolean(meRes.data?.tenant_admin));
+        const memberships = meRes.data?.company_memberships || [];
+        setCompanies(
+          memberships.map((m: { company_id: string; company_name: string; is_default?: boolean }) => ({
+            id: m.company_id,
+            name: m.company_name,
+            is_default: m.is_default,
+          }))
+        );
+        // ADR-490 — tenant admins default into tenant workspace (no automatic ops access).
+        const storedKind = getWorkspaceKind();
+        if (meRes.data?.tenant_admin && !localStorage.getItem('workspace_kind')) {
+          setWorkspaceContext('tenant');
+          setWorkspaceKind('tenant');
+        } else if (meRes.data?.workspace_kind) {
+          const kind = meRes.data.workspace_kind as WorkspaceKind;
+          if (kind === 'company' && meRes.data.company_id) {
+            setWorkspaceContext('company', meRes.data.company_id);
+          } else if (kind === 'tenant') {
+            setWorkspaceContext('tenant');
+          }
+          setWorkspaceKind(getWorkspaceKind());
+          setCompanyIdState(getCompanyId() || '');
+        } else if (storedKind === 'company' && !getCompanyId() && memberships[0]) {
+          setWorkspaceContext('company', memberships[0].company_id);
+        }
+        try {
+          const ws = await api('/workspace');
+          if (active && ws.data) {
+            setTenantName(ws.data.tenant_name || '');
+            if (Array.isArray(ws.data.companies) && ws.data.companies.length) {
+              setCompanies(
+                ws.data.companies.map((c: { id: string; name: string; is_default?: boolean }) => ({
+                  id: c.id,
+                  name: c.name,
+                  is_default: c.is_default,
+                }))
+              );
+            }
+          }
+        } catch {
+          /* workspace endpoint optional during rollout */
+        }
         const countRes = await api('/notifications/unread-count').catch(() => ({
           data: { count: 0 },
         }));
@@ -2121,6 +2225,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       }
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
+      clearWorkspaceContext();
       window.location.href = '/';
     }
 
@@ -2147,6 +2252,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     }
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
+    clearWorkspaceContext();
     window.location.href = '/';
   }
 
@@ -2174,17 +2280,25 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const linkVisible = (link: NavLink) =>
     principal === 'platform'
       ? link.href === '/security' || link.href.startsWith('/security')
-      : canReadAnyModule(permissions, link.modules);
+      : link.modules.some((module) => canReadModule(permissions, module)) ||
+        // Tenant workspace links: allow tenant admins even if module map lacks tenant_* keys.
+        (workspaceKind === 'tenant' &&
+          tenantAdmin &&
+          (link.modules.includes('companies') ||
+            link.modules.includes('tenant_dashboard') ||
+            link.modules.includes('company') ||
+            link.modules.includes('users') ||
+            link.modules.includes('security')));
 
   const dashboardLink =
-    principal !== 'platform'
+    principal !== 'platform' && workspaceKind !== 'tenant'
       ? primaryNavSpec.find(
           (e): e is NavLink => e.kind === 'link' && e.href === '/dashboard' && linkVisible(e),
         )
       : undefined;
 
   const groupedNav: { id: NavGroupId; label: string; links: NavLink[] }[] = [];
-  if (principal !== 'platform') {
+  if (principal !== 'platform' && workspaceKind !== 'tenant') {
     const buckets = new Map<NavGroupId, NavLink[]>();
     for (const g of APPROVED_NAV_GROUPS) buckets.set(g.id, []);
     for (const entry of primaryNavSpec) {
@@ -2200,13 +2314,25 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const tenantLinks =
+    principal !== 'platform' && workspaceKind === 'tenant'
+      ? tenantNavSpec.filter((e): e is NavLink => e.kind === 'link' && linkVisible(e))
+      : [];
+
   const visibleUserMgmt =
     principal === 'platform'
       ? userMgmtLinks.filter((l) => l.href === '/security')
-      : userMgmtLinks.filter(linkVisible);
+      : workspaceKind === 'tenant'
+        ? []
+        : userMgmtLinks.filter(linkVisible);
 
   const showStoreSwitcher =
-    principal !== 'platform' && canReadModule(permissions, 'stores') && stores.length > 0;
+    principal !== 'platform' &&
+    workspaceKind === 'company' &&
+    canReadModule(permissions, 'stores') &&
+    stores.length > 0;
+
+  const showWorkspaceSwitcher = principal !== 'platform' && (tenantAdmin || companies.length > 0);
 
   function groupIsOpen(id: string): boolean {
     return Boolean(openNavGroups[id]);
@@ -2231,6 +2357,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               {dashboardLink.label}
             </Link>
           )}
+          {tenantLinks.map((l) => (
+            <Link key={l.href + l.label} href={l.href} onClick={() => setNavOpen(false)}>
+              {l.label}
+            </Link>
+          ))}
           {groupedNav.map((group) => {
             const open = groupIsOpen(group.id);
             return (
@@ -2345,6 +2476,40 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 </div>
               )}
             </form>
+          )}
+          {showWorkspaceSwitcher && (
+            <label className="store-switcher" data-workspace-switcher="1">
+              <span className="muted">Workspace</span>
+              <select
+                value={
+                  workspaceKind === 'tenant'
+                    ? 'tenant'
+                    : companyId || companies[0]?.id || ''
+                }
+                aria-label="Workspace context"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === 'tenant') {
+                    setWorkspaceContext('tenant');
+                    window.location.assign('/tenant');
+                    return;
+                  }
+                  setWorkspaceContext('company', v);
+                  window.location.assign('/dashboard');
+                }}
+              >
+                {tenantAdmin && (
+                  <option value="tenant">
+                    Tenant · {tenantName || 'Account'}
+                  </option>
+                )}
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    Company · {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
           {showStoreSwitcher && (
             <label className="store-switcher">

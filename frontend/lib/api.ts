@@ -15,12 +15,17 @@ export class ApiError extends Error {
 export async function api(path: string, opts: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
+  const workspaceKind =
+    typeof window !== 'undefined' ? localStorage.getItem('workspace_kind') : null;
+  const companyId = typeof window !== 'undefined' ? localStorage.getItem('company_id') : null;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(opts.headers as Record<string, string> | undefined),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (tenant) headers['X-Tenant-ID'] = tenant;
+  if (workspaceKind) headers['X-Workspace-Kind'] = workspaceKind;
+  if (companyId && workspaceKind === 'company') headers['X-Company-ID'] = companyId;
 
   const response = await fetch(base + path, { ...opts, headers, cache: 'no-store' });
   const body = await response.json().catch(() => ({}));

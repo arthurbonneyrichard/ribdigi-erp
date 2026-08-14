@@ -218,7 +218,9 @@ def next_run_date(from_dt: datetime, frequency: str) -> datetime:
     return from_dt + timedelta(days=30)
 
 
-async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
+async def ensure_default_categories(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> None:
     existing = {
         c.code
         for c in (
@@ -227,7 +229,15 @@ async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
     }
     for code, name in DEFAULT_CATEGORIES:
         if code not in existing:
-            db.add(m.ExpenseCategory(tenant_id=tenant_id, code=code, name=name, budget_amount=0))
+            db.add(
+                m.ExpenseCategory(
+                    tenant_id=tenant_id,
+                    company_id=company_id,
+                    code=code,
+                    name=name,
+                    budget_amount=0,
+                )
+            )
     await db.flush()
 
 

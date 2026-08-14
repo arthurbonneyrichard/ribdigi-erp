@@ -154,7 +154,9 @@ async def get_account_by_code(db: AsyncSession, tenant_id: str, code: str) -> m.
     return account
 
 
-async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
+async def ensure_default_accounts(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> None:
     existing = {
         a.code: a
         for a in (
@@ -166,6 +168,7 @@ async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
             db.add(
                 m.Account(
                     tenant_id=tenant_id,
+                    company_id=company_id,
                     code=code,
                     name=name,
                     account_type=account_type,

@@ -8,6 +8,25 @@ from copy import deepcopy
 ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     "super_admin": {"*": ["*"]},
     "company_admin": {"*": ["*"]},
+    # ADR-490 — tenant workspace administrators (no automatic company ops without membership+context)
+    "tenant_owner": {
+        "tenant_dashboard": ["read"],
+        "companies": ["read", "write"],
+        "subscription": ["read", "write"],
+        "users": ["read", "write"],
+        "security": ["read", "write"],
+        "audit": ["read"],
+        "notifications": ["read", "write"],
+    },
+    "tenant_admin": {
+        "tenant_dashboard": ["read"],
+        "companies": ["read", "write"],
+        "subscription": ["read"],
+        "users": ["read", "write"],
+        "security": ["read", "write"],
+        "audit": ["read"],
+        "notifications": ["read", "write"],
+    },
     # ADR-137 — Ribdigi House platform staff (platform tenant only)
     "platform_super_admin": {
         "platform_dashboard": ["*"],
@@ -99,6 +118,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
 ROLE_LABELS: dict[str, str] = {
     "super_admin": "Super Admin",
     "company_admin": "Tenant Admin",
+    "tenant_owner": "Tenant Owner",
+    "tenant_admin": "Tenant Administrator",
     "platform_super_admin": "Platform Super Admin",
     "platform_admin": "Platform Admin",
     "store_manager": "Store Manager",
@@ -269,6 +290,8 @@ RECORD_SCOPE_KEY = "_record_scope"
 ROLE_RECORD_SCOPE: dict[str, str] = {
     "super_admin": "all",
     "company_admin": "all",
+    "tenant_owner": "all",
+    "tenant_admin": "all",
     "platform_super_admin": "all",
     "platform_admin": "all",
     "store_manager": "all",

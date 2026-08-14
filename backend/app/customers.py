@@ -122,7 +122,9 @@ def serialize_customer(
     }
 
 
-async def ensure_default_customer_groups(db: AsyncSession, tenant_id: str) -> None:
+async def ensure_default_customer_groups(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> None:
     existing = (
         await db.execute(
             select(m.CustomerGroup.id).where(m.CustomerGroup.tenant_id == tenant_id).limit(1)
@@ -135,6 +137,7 @@ async def ensure_default_customer_groups(db: AsyncSession, tenant_id: str) -> No
         db.add(
             m.CustomerGroup(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 name=name,
                 discount_percent=discount,
                 is_active=True,

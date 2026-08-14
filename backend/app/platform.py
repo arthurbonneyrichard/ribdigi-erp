@@ -302,7 +302,16 @@ async def provision_customer_tenant(
     )
     db.add(admin)
     await db.flush()
-    await seed_tenant_defaults(db, tenant.id)
+
+    # ADR-490 — default operating company + admin membership
+    from app import workspace as workspace_svc
+
+    company = await workspace_svc.ensure_default_company(db, tenant)
+    await workspace_svc.ensure_membership_for_user(
+        db, tenant=tenant, user=admin, company=company
+    )
+
+    await seed_tenant_defaults(db, tenant.id, company_id=company.id)
 
     raw, token_hash, expires = issue_one_time_token()
     db.add(

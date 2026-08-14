@@ -170,13 +170,19 @@ def product_audit_diff(before: dict, after: dict) -> tuple[dict, dict]:
     return changed_before, changed_after
 
 
-async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
+async def ensure_default_catalog(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> None:
     existing_units = (
         await db.execute(select(m.UnitOfMeasure.id).where(m.UnitOfMeasure.tenant_id == tenant_id).limit(1))
     ).scalar_one_or_none()
     if not existing_units:
         for code, name in DEFAULT_UNITS:
-            db.add(m.UnitOfMeasure(tenant_id=tenant_id, code=code, name=name, is_active=True))
+            db.add(
+                m.UnitOfMeasure(
+                    tenant_id=tenant_id, company_id=company_id, code=code, name=name, is_active=True
+                )
+            )
 
     existing_cats = (
         await db.execute(
@@ -188,6 +194,7 @@ async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
             db.add(
                 m.ProductCategory(
                     tenant_id=tenant_id,
+                    company_id=company_id,
                     code=code,
                     name=name,
                     parent_id=None,
@@ -241,6 +248,7 @@ async def create_category(
     name: str,
     parent_id: str | None = None,
     tax_rate_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.ProductCategory:
     code = code.strip().upper()
     name = name.strip()
@@ -265,6 +273,7 @@ async def create_category(
         raise HTTPException(status_code=409, detail="Category code exists")
     row = m.ProductCategory(
         tenant_id=tenant_id,
+        company_id=company_id,
         code=code,
         name=name,
         parent_id=parent_id,
@@ -377,6 +386,7 @@ async def create_brand(
     code: str,
     name: str,
     description: str | None = None,
+    company_id: str | None = None,
 ) -> m.Brand:
     code = code.strip().upper()
     name = name.strip()
@@ -391,6 +401,7 @@ async def create_brand(
         raise HTTPException(status_code=409, detail="Brand code exists")
     row = m.Brand(
         tenant_id=tenant_id,
+        company_id=company_id,
         code=code,
         name=name,
         description=(description or "").strip() or None,
@@ -553,6 +564,7 @@ async def create_unit(
     name: str,
     base_unit_id: str | None = None,
     conversion_factor: float = 1,
+    company_id: str | None = None,
 ) -> m.UnitOfMeasure:
     code = code.strip().upper()
     name = name.strip()
@@ -578,6 +590,7 @@ async def create_unit(
         factor = 1.0
     row = m.UnitOfMeasure(
         tenant_id=tenant_id,
+        company_id=company_id,
         code=code,
         name=name,
         base_unit_id=base_id,

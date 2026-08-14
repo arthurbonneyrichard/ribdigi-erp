@@ -42,6 +42,8 @@ from app import notifications as notifications_svc
 from app import audit as audit_svc
 from app import backup as backup_svc
 from app import tenants as tenants_svc
+from app import companies as companies_svc
+from app import workspace as workspace_svc
 from app import storage as storage_svc
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
@@ -243,14 +245,16 @@ async def tenant_pk(db: AsyncSession, tenant_ref: str) -> str:
     return tenant.id
 
 
-async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
+async def seed_tenant_defaults(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> None:
     from app.accounting import ensure_default_accounts
     from app import catalog_meta as catalog_meta_svc
 
-    await ensure_default_accounts(db, tenant_id)
-    await expenses_svc.ensure_default_categories(db, tenant_id)
-    await catalog_meta_svc.ensure_default_catalog(db, tenant_id)
-    await customers_svc.ensure_default_customer_groups(db, tenant_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
+    await expenses_svc.ensure_default_categories(db, tenant_id, company_id=company_id)
+    await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
+    await customers_svc.ensure_default_customer_groups(db, tenant_id, company_id=company_id)
     from app.notifications import create_notification
 
     await create_notification(
@@ -260,20 +264,53 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
         title="Welcome to RIBDIGI ERP",
         message="Your tenant was provisioned. Complete company setup and add products to begin.",
     )
-    db.add_all(
-        [
+
+    # Tax + warehouse seeds must be idempotent and unique per company (tenant-level code uniques).
+    tax_q = select(m.TaxRate).where(m.TaxRate.tenant_id == tenant_id, m.TaxRate.name == "VAT")
+    if company_id:
+        tax_q = tax_q.where(m.TaxRate.company_id == company_id)
+    if not (await db.execute(tax_q.limit(1))).scalar_one_or_none():
+        db.add(
             m.TaxRate(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 name="VAT",
                 rate=15,
                 tax_type="vat",
                 pricing_mode="exclusive",
                 is_default=True,
                 is_active=True,
-            ),
-            m.Warehouse(tenant_id=tenant_id, name="Main Warehouse", code="WH-MAIN"),
-        ]
-    )
+            )
+        )
+
+    wh_q = select(m.Warehouse).where(m.Warehouse.tenant_id == tenant_id)
+    if company_id:
+        wh_q = wh_q.where(m.Warehouse.company_id == company_id)
+    if not (await db.execute(wh_q.limit(1))).scalar_one_or_none():
+        wh_code = "WH-MAIN"
+        if company_id:
+            co = await db.get(m.Company, company_id)
+            suffix = (co.code if co else "MAIN").strip().upper()[:20] or "MAIN"
+            wh_code = f"WH-{suffix}"
+            # Avoid colliding with an existing tenant-level code from another company.
+            clash = (
+                await db.execute(
+                    select(m.Warehouse).where(
+                        m.Warehouse.tenant_id == tenant_id, m.Warehouse.code == wh_code
+                    )
+                )
+            ).scalar_one_or_none()
+            if clash:
+                wh_code = f"WH-{suffix}-{company_id[:8].upper()}"
+        db.add(
+            m.Warehouse(
+                tenant_id=tenant_id,
+                company_id=company_id,
+                name="Main Warehouse",
+                code=wh_code,
+            )
+        )
+    await db.flush()
 
 
 async def create_session(
@@ -1966,6 +2003,27 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
     principal = claims.get("principal") or principal_for(
         tenant_id=user.tenant_id, role=user.role
     )
+    memberships = []
+    if principal != "platform":
+        mems = await workspace_svc.list_user_memberships(
+            db, tenant_id=user.tenant_id, user_id=user.id
+        )
+        for mem in mems:
+            co = await db.get(m.Company, mem.company_id)
+            if co:
+                memberships.append(
+                    {
+                        "company_id": co.id,
+                        "company_name": co.name,
+                        "role": mem.role,
+                        "is_default": co.is_default,
+                    }
+                )
+    company_payload = None
+    if claims.get("company_id"):
+        co = await db.get(m.Company, claims["company_id"])
+        if co and co.tenant_id == claims["tenant_id"]:
+            company_payload = companies_svc.serialize_company(co)
     return env(
         {
             "id": user.id,
@@ -1977,6 +2035,11 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "email_verified": user.email_verified,
             "principal": principal,
             "redirect_path": home_path_for_principal(principal),
+            "workspace_kind": claims.get("workspace_kind") or "tenant",
+            "company_id": claims.get("company_id"),
+            "company": company_payload,
+            "company_memberships": memberships,
+            "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
             "permissions": perms,
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
             "inactivity_timeout_minutes": int(
@@ -1995,6 +2058,111 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             **totp_svc.status_payload(user),
         }
     )
+
+
+@api.get("/workspace")
+async def get_workspace(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+    """Current workspace + switchable companies (ADR-490)."""
+    user = await db.get(m.User, claims["sub"])
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    companies = await companies_svc.list_companies_for_user(
+        db,
+        tenant_id=claims["tenant_id"],
+        user=user,
+        tenant_admin=workspace_svc.is_tenant_admin_role(user.role),
+    )
+    return env(
+        {
+            "workspace_kind": claims.get("workspace_kind"),
+            "company_id": claims.get("company_id"),
+            "tenant_id": claims["tenant_id"],
+            "tenant_name": tenant.company_name if tenant else None,
+            "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
+            "companies": [companies_svc.serialize_company(c) for c in companies if c.is_active],
+        }
+    )
+
+
+@api.get("/business-types")
+async def list_business_types(
+    claims=Depends(current_claims), db: AsyncSession = Depends(get_db)
+):
+    return env(await companies_svc.list_business_types(db))
+
+
+@api.get("/companies")
+async def list_companies(
+    claims=Depends(require_permission("companies", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await db.get(m.User, claims["sub"])
+    rows = await companies_svc.list_companies_for_user(
+        db,
+        tenant_id=claims["tenant_id"],
+        user=user,
+        tenant_admin=workspace_svc.is_tenant_admin_role(user.role),
+    )
+    return env([companies_svc.serialize_company(c) for c in rows])
+
+
+@api.post("/companies")
+async def create_company(
+    payload: dict,
+    claims=Depends(require_permission("companies", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    if claims.get("workspace_kind") != "tenant":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TENANT_WORKSPACE_REQUIRED",
+                "message": "Create companies from the tenant workspace.",
+            },
+        )
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    user = await db.get(m.User, claims["sub"])
+    if not workspace_svc.is_tenant_admin_role(user.role):
+        raise HTTPException(status_code=403, detail="Tenant administrator required")
+    co = await companies_svc.create_company(db, tenant=tenant, actor=user, payload=payload or {})
+    await seed_tenant_defaults(db, tenant.id, company_id=co.id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant.id,
+        user_id=user.id,
+        module="companies",
+        action="create",
+        entity="company",
+        entity_id=co.id,
+        details={"name": co.name, "code": co.code, "company_id": co.id},
+    )
+    await db.commit()
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(
+        status_code=201,
+        content=env(companies_svc.serialize_company(co), "Company created"),
+    )
+
+
+@api.get("/tenant/dashboard")
+async def tenant_dashboard(
+    claims=Depends(require_permission("tenant_dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    if claims.get("workspace_kind") != "tenant":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TENANT_WORKSPACE_REQUIRED",
+                "message": "Tenant dashboard requires the tenant workspace.",
+            },
+        )
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    user = await db.get(m.User, claims["sub"])
+    if not workspace_svc.is_tenant_admin_role(user.role):
+        raise HTTPException(status_code=403, detail="Tenant administrator required")
+    payload = await companies_svc.tenant_dashboard_payload(db, tenant=tenant, user=user)
+    return env(payload)
 
 
 @api.patch("/me")
@@ -2856,6 +3024,7 @@ async def deactivate_user(
 @api.get("/dashboard")
 async def dashboard(claims=Depends(require_permission("dashboard", "read")), db: AsyncSession = Depends(get_db)):
     tid = claims["tenant_id"]
+    cid = claims.get("company_id")
     role = claims.get("role") or "cashier"
     from app import dashboard_scope as dashboard_scope_svc
 
@@ -2865,6 +3034,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         role=role,
         user_id=claims.get("sub") if managed_ids is not None else None,
     )
+    if cid:
+        dash_key = f"{dash_key}:co:{cid}"
     cached = await cache_svc.app_cache.get_json(dash_key)
     if cached is not None:
         return env(cached)
@@ -2877,6 +3048,16 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         prior_month_start = month_start.replace(year=month_start.year - 1, month=12)
     else:
         prior_month_start = month_start.replace(month=month_start.month - 1)
+
+    def _co(model):
+        """Tenant + company scope clauses (ADR-490)."""
+        clauses = [model.tenant_id == tid]
+        if cid is not None and hasattr(model, "company_id"):
+            clauses.append(model.company_id == cid)
+        return clauses
+
+    # NOTE: remaining dashboard body still uses tenant_id == tid in places;
+    # company filter applied to primary sales/product aggregates below via _co where patched.
     expiry_horizon = now + timedelta(days=30)
 
     async def scalar(stmt):
@@ -3525,15 +3706,20 @@ async def products(
 ):
     """Stage 120 P1 — active_only / is_active for honest inactive-only product lists."""
     tid = claims["tenant_id"]
+    cid = claims.get("company_id")
     use_cache = not active_only and is_active is None
     if use_cache:
         products_key = cache_svc.app_cache.products_key(tid)
+        if cid:
+            products_key = f"{products_key}:co:{cid}"
         cached = await cache_svc.app_cache.get_json(products_key)
         if cached is not None:
             return env(cached)
 
-    await catalog_meta_svc.ensure_default_catalog(db, tid)
+    await catalog_meta_svc.ensure_default_catalog(db, tid, company_id=cid)
     stmt = select(m.Product).where(m.Product.tenant_id == tid).order_by(m.Product.name)
+    if cid:
+        stmt = stmt.where(m.Product.company_id == cid)
     if is_active is not None:
         stmt = stmt.where(m.Product.is_active.is_(bool(is_active)))
     elif active_only:
@@ -3713,7 +3899,11 @@ async def add_product(
     data["barcode"] = await barcode_svc.assert_barcode_available(
         db, tenant_id=claims["tenant_id"], barcode=data.get("barcode")
     )
-    product = m.Product(tenant_id=claims["tenant_id"], **data)
+    product = m.Product(
+        tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        **data,
+    )
     db.add(product)
     await db.flush()
     if float(product.stock_qty or 0) > 0:
@@ -3950,6 +4140,7 @@ async def catalog_create_category(
         name=payload.name,
         parent_id=payload.parent_id,
         tax_rate_id=payload.tax_rate_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     await cache_svc.app_cache.invalidate_catalog(claims["tenant_id"])
@@ -4044,6 +4235,7 @@ async def catalog_create_brand(
         code=payload.code,
         name=payload.name,
         description=payload.description,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_brand(row), "Brand created")
@@ -4220,6 +4412,7 @@ async def catalog_create_unit(
         name=payload.name,
         base_unit_id=payload.base_unit_id,
         conversion_factor=payload.conversion_factor,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_unit(row), "Unit created")
@@ -5920,7 +6113,7 @@ async def list_sales_invoices(
     """Stage 97 S1 — optional status filter (`unpaid` → posted∪sent)."""
     stmt = (
         select(m.SalesInvoice)
-        .where(m.SalesInvoice.tenant_id == claims["tenant_id"])
+        .where(*workspace_svc.company_scope_filter(m.SalesInvoice, claims))
         .order_by(m.SalesInvoice.created_at.desc())
     )
     if status:
@@ -7892,7 +8085,10 @@ async def pos_list_sessions(
     if status_n and status_n not in {"open", "closed"}:
         raise HTTPException(status_code=400, detail="status must be open or closed")
     rows = await ops_lifecycle_export_svc.list_pos_sessions(
-        db, tenant_id=claims["tenant_id"], status=status_n
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        company_id=claims.get("company_id"),
     )
     return env([await pos_svc.serialize_session(s) for s in rows])
 
@@ -7908,7 +8104,10 @@ async def pos_sessions_export(
     if status_n and status_n not in {"open", "closed"}:
         raise HTTPException(status_code=400, detail="status must be open or closed")
     text = await ops_lifecycle_export_svc.export_pos_sessions_csv(
-        db, tenant_id=claims["tenant_id"], status=status_n
+        db,
+        tenant_id=claims["tenant_id"],
+        status=status_n,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,

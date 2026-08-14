@@ -23,6 +23,7 @@ async def test_pos_sessions_status_filter_and_export(client, db_session):
         [
             m.PosSession(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 user_id=seed["u1"].id,
                 session_number="POS-130-OPEN",
                 status="open",
@@ -30,6 +31,7 @@ async def test_pos_sessions_status_filter_and_export(client, db_session):
             ),
             m.PosSession(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 user_id=seed["u1"].id,
                 session_number="POS-130-CLOSED",
                 status="closed",

@@ -86,9 +86,12 @@ async def list_pos_sessions(
     *,
     tenant_id: str,
     status: str | None = None,
+    company_id: str | None = None,
     limit: int = 50,
 ) -> list[m.PosSession]:
     q = select(m.PosSession).where(m.PosSession.tenant_id == tenant_id)
+    if company_id:
+        q = q.where(m.PosSession.company_id == company_id)
     status_n = (status or "").strip().lower() or None
     if status_n:
         q = q.where(m.PosSession.status == status_n)
@@ -101,8 +104,11 @@ async def export_pos_sessions_csv(
     *,
     tenant_id: str,
     status: str | None = None,
+    company_id: str | None = None,
 ) -> str:
-    rows = await list_pos_sessions(db, tenant_id=tenant_id, status=status, limit=200)
+    rows = await list_pos_sessions(
+        db, tenant_id=tenant_id, status=status, company_id=company_id, limit=200
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=POS_SESSION_EXPORT_COLUMNS)
     writer.writeheader()

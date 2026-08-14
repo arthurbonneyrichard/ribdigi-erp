@@ -171,13 +171,29 @@ async def current_claims(
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
     x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    x_workspace_kind: str | None = Header(default=None, alias="X-Workspace-Kind"),
+    x_company_id: str | None = Header(default=None, alias="X-Company-ID"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     raw_api_key = (x_api_key or "").strip()
     if not raw_api_key and creds and str(creds.credentials or "").startswith("rdk_"):
         raw_api_key = str(creds.credentials).strip()
     if raw_api_key:
-        return await _claims_from_api_key(request, db, raw_api_key, x_tenant_id)
+        claims = await _claims_from_api_key(request, db, raw_api_key, x_tenant_id)
+        # API keys operate in company workspace on the tenant default company (ADR-490).
+        from app import workspace as workspace_svc
+
+        tenant = await db.get(m.Tenant, claims["tenant_id"])
+        if tenant:
+            co = await workspace_svc.ensure_default_company(db, tenant)
+            claims["workspace_kind"] = "company"
+            claims["company_id"] = co.id
+        else:
+            claims["workspace_kind"] = "company"
+            claims["company_id"] = None
+        request.state.workspace_kind = claims.get("workspace_kind")
+        request.state.company_id = claims.get("company_id")
+        return claims
 
     if not creds:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -280,10 +296,50 @@ async def current_claims(
             status_code=403,
             detail="2FA enrollment required for this role. Complete setup at /security",
         )
+    # ADR-490 — workspace context (tenant vs company). Never trust client company_id alone.
+    if live_principal != "platform":
+        from app import workspace as workspace_svc
+
+        ws = await workspace_svc.resolve_workspace(
+            db,
+            tenant=tenant,
+            user=user,
+            requested_kind=x_workspace_kind,
+            requested_company_id=x_company_id,
+        )
+        data["workspace_kind"] = ws["workspace_kind"]
+        data["company_id"] = ws.get("company_id")
+        # When in company workspace, membership role/permissions may refine effective RBAC.
+        if ws["workspace_kind"] == "company" and ws.get("membership_permissions"):
+            data["permissions"] = ws["membership_permissions"]
+        elif ws["workspace_kind"] == "company" and ws.get("membership_role"):
+            mem_role = ws["membership_role"]
+            # Prefer explicit membership role map when user.permissions empty.
+            if not data.get("permissions"):
+                from app.rbac import permissions_for_role
+
+                data["permissions"] = permissions_for_role(mem_role)
+            data["membership_role"] = mem_role
+        if ws["workspace_kind"] == "tenant" and is_tenant_admin_like(user.role):
+            # Tenant workspace: strip operational wildcards for non-platform tenant admins
+            # by keeping permissions but gating modules in require_permission via workspace.
+            data["tenant_admin"] = True
+    else:
+        data["workspace_kind"] = "platform"
+        data["company_id"] = None
+
     request.state.user_id = user_id
     request.state.tenant_id = tenant_id
     request.state.principal = data["principal"]
+    request.state.workspace_kind = data.get("workspace_kind")
+    request.state.company_id = data.get("company_id")
     return data
+
+
+def is_tenant_admin_like(role: str | None) -> bool:
+    from app.workspace import is_tenant_admin_role
+
+    return is_tenant_admin_role(role)
 
 
 def require_roles(*roles: str):
@@ -340,8 +396,24 @@ def require_permission(module: str, action: str = "read"):
                     "message": "Trial expired; account is read-only during the grace period. Activate to restore write access.",
                 },
             )
+        # ADR-490 — operational modules require company workspace + membership.
+        from app import workspace as workspace_svc
+
+        workspace_svc.assert_module_workspace(claims, module)
+
         role = claims.get("role", "")
         overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+        # Tenant workspace: tenant admins may manage companies/subscription without ops wildcards.
+        if claims.get("workspace_kind") == "tenant" and module in {
+            "tenant_dashboard",
+            "companies",
+            "subscription",
+            "tenant",
+            "security",
+            "users",
+        }:
+            if is_tenant_admin_like(role) or has_permission(role, module, action, overrides=overrides):
+                return claims
         if overrides and (overrides.get("*") == ["*"] or "*" in (overrides.get("*") or [])):
             return claims
         # user.permissions is the authoritative map (system copy or custom role snapshot).
