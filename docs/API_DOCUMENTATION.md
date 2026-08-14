@@ -812,6 +812,8 @@ Response lines include `line_subtotal`, `line_tax`, and optional `tax_components
 
 **Create** requires `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (no silent default to `other`). Omit/blank → 422/400. Purchasing UI uses Select reason (BR-6.6).
 
+Line credits inherit proportional PO line discount (`return_qty / ordered_qty × PO line discount`, tax before discount). Serialize exposes `items[].discount` and header `discount_amount`; `total_amount` (and post AP/journal) uses the discounted credit. Purchasing Returns shows Discount (BR-6.6 / BR-6.3).
+
 ---
 
 ## 7. Sales & Customers
