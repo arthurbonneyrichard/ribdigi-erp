@@ -8256,16 +8256,25 @@ async def report_sales_by_department(
 @api.get("/reports/inventory/balance")
 async def report_inventory_balance(
     warehouse_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await reports_svc.inventory_balance(db, claims["tenant_id"], warehouse_id))
+    return env(
+        await reports_svc.inventory_balance(
+            db,
+            claims["tenant_id"],
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    )
 
 
 @api.get("/reports/inventory/valuation")
 async def report_inventory_valuation(
     method: str = "standard",
     warehouse_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8275,6 +8284,7 @@ async def report_inventory_valuation(
             claims["tenant_id"],
             method=method,
             warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     )
 
@@ -8322,6 +8332,7 @@ async def report_low_stock(
 async def report_inventory_expiry(
     days: int = 30,
     warehouse_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8332,6 +8343,7 @@ async def report_inventory_expiry(
             claims["tenant_id"],
             within_days=days,
             warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     )
 

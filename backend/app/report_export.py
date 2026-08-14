@@ -599,10 +599,19 @@ async def build_report_payload(
             department_id=department_id or None,
         )
     if report_type == "inventory_balance":
-        return await reports_svc.inventory_balance(db, tenant_id, warehouse_id)
+        return await reports_svc.inventory_balance(
+            db,
+            tenant_id,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
     if report_type == "inventory_valuation":
         return await reports_svc.inventory_valuation(
-            db, tenant_id, method="standard", warehouse_id=warehouse_id
+            db,
+            tenant_id,
+            method="standard",
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     if report_type == "inventory_movements":
         return await reports_svc.inventory_movements(
@@ -614,13 +623,19 @@ async def build_report_payload(
             store_id=store_id or None,
         )
     if report_type == "inventory_low_stock":
-        return await reports_svc.inventory_low_stock(db, tenant_id)
+        return await reports_svc.inventory_low_stock(
+            db,
+            tenant_id,
+            store_id=store_id or None,
+            warehouse_id=warehouse_id or None,
+        )
     if report_type == "inventory_expiry":
         return await reports_svc.inventory_expiry(
             db,
             tenant_id,
             within_days=int(days) if days is not None else 30,
-            warehouse_id=warehouse_id,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     if report_type == "inventory_transfers":
         return await reports_svc.inventory_transfers(

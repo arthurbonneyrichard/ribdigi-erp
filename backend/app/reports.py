@@ -1159,31 +1159,67 @@ async def sales_by_department(
     }
 
 
-async def inventory_balance(db: AsyncSession, tenant_id: str, warehouse_id: str | None = None) -> dict:
-    if warehouse_id:
-        rows = (
-            await db.execute(
-                select(m.WarehouseStock, m.Product)
-                .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-                .where(
-                    m.WarehouseStock.tenant_id == tenant_id,
-                    m.WarehouseStock.warehouse_id == warehouse_id,
+async def inventory_balance(
+    db: AsyncSession,
+    tenant_id: str,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
+) -> dict:
+    """Current stock per product (BR-14.2).
+
+    Optional ``warehouse_id`` / ``store_id`` scopes to warehouse stock rows
+    (store expands to linked warehouses). Unfiltered uses company ``product.stock_qty``.
+    """
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
+
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            items: list[dict] = []
+        else:
+            rows = (
+                await db.execute(
+                    select(m.WarehouseStock, m.Product)
+                    .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+                    .where(
+                        m.WarehouseStock.tenant_id == tenant_id,
+                        m.WarehouseStock.warehouse_id.in_(warehouse_ids),
+                    )
+                    .order_by(m.Product.name)
                 )
-                .order_by(m.Product.name)
-            )
-        ).all()
-        items = [
-            {
-                "product_id": p.id,
-                "sku": p.sku,
-                "name": p.name,
-                "warehouse_id": warehouse_id,
-                "quantity": float(s.quantity or 0),
-                "cost_price": float(p.cost_price or 0),
-                "value": round(float(s.quantity or 0) * float(p.cost_price or 0), 2),
-            }
-            for s, p in rows
-        ]
+            ).all()
+            agg: dict[str, dict] = {}
+            for stock, product in rows:
+                row = agg.get(product.id)
+                qty = float(stock.quantity or 0)
+                if not row:
+                    agg[product.id] = {
+                        "product_id": product.id,
+                        "sku": product.sku,
+                        "name": product.name,
+                        "warehouse_id": warehouse_id
+                        if warehouse_id
+                        else (stock.warehouse_id if len(warehouse_ids) == 1 else None),
+                        "quantity": qty,
+                        "cost_price": float(product.cost_price or 0),
+                        "value": 0.0,
+                    }
+                else:
+                    row["quantity"] = round(float(row["quantity"]) + qty, 3)
+            items = []
+            for row in agg.values():
+                row["value"] = round(
+                    float(row["quantity"]) * float(row["cost_price"] or 0), 2
+                )
+                items.append(row)
+            items.sort(key=lambda x: x["name"] or "")
     else:
         products = (
             await db.execute(
@@ -1206,6 +1242,9 @@ async def inventory_balance(db: AsyncSession, tenant_id: str, warehouse_id: str 
         ]
     return {
         "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
         "items": items,
         "total_quantity": round(sum(i["quantity"] for i in items), 3),
         "total_value": round(sum(i["value"] for i in items), 2),
@@ -1221,6 +1260,7 @@ async def inventory_valuation(
     *,
     method: str | None = "standard",
     warehouse_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
     """Stock valuation at standard (product) cost — BR-14.2 / BR-5.4.
 
@@ -1237,19 +1277,10 @@ async def inventory_valuation(
                 "Use method=standard (FIFO/LIFO/weighted average deferred)."
             ),
         )
-    if warehouse_id:
-        wh = (
-            await db.execute(
-                select(m.Warehouse).where(
-                    m.Warehouse.id == warehouse_id,
-                    m.Warehouse.tenant_id == tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-        if not wh:
-            raise HTTPException(status_code=404, detail="Warehouse not found")
 
-    balance = await inventory_balance(db, tenant_id, warehouse_id)
+    balance = await inventory_balance(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
     items = [
         {
             "product_id": i["product_id"],
@@ -1266,7 +1297,10 @@ async def inventory_valuation(
     ]
     return {
         "method": method_key,
-        "warehouse_id": warehouse_id,
+        "warehouse_id": balance.get("warehouse_id"),
+        "warehouse_name": balance.get("warehouse_name"),
+        "store_id": balance.get("store_id"),
+        "store_name": balance.get("store_name"),
         "items": items,
         "total_quantity": round(sum(float(i["quantity"]) for i in items), 3),
         "total_value": round(sum(float(i["value"]) for i in items), 2),
@@ -1438,30 +1472,28 @@ async def inventory_expiry(
     *,
     within_days: int = 30,
     warehouse_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    """Batches nearing expiry (BR-14.2); optional warehouse filter."""
+    """Batches nearing expiry (BR-14.2); optional warehouse/store filter."""
     from app import catalog as catalog_svc
 
     within_days = max(0, min(int(within_days), 3650))
-    if warehouse_id:
-        wh = (
-            await db.execute(
-                select(m.Warehouse).where(
-                    m.Warehouse.id == warehouse_id,
-                    m.Warehouse.tenant_id == tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-        if not wh:
-            from fastapi import HTTPException
-
-            raise HTTPException(status_code=404, detail="Warehouse not found")
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
 
     batches = await catalog_svc.list_expiring_batches(
         db, tenant_id, within_days=within_days
     )
-    if warehouse_id:
-        batches = [b for b in batches if b.warehouse_id == warehouse_id]
+    if warehouse_ids is not None:
+        allowed = set(warehouse_ids)
+        batches = [b for b in batches if b.warehouse_id in allowed]
 
     product_ids = {b.product_id for b in batches}
     products: dict[str, m.Product] = {}
@@ -1502,6 +1534,9 @@ async def inventory_expiry(
     return {
         "within_days": within_days,
         "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
         "count": len(rows),
         "expired_count": expired_count,
         "total_quantity": round(total_qty, 3),
