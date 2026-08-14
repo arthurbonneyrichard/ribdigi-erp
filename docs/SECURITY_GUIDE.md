@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 392 open** | Offline Connectivity Badge Pack Remaining-Gate Index — `docs/STAGE_392_PLAN.md`, ADR-791 (`test_stage392_open.py`) |
+| **Stage 392 I1** | Offline connectivity badge pack remaining-gate index hub (`test_stage392_index_i1.py`) |
+| **Stage 392 B1** | Offline connectivity badge pack blocker matrix (`test_stage392_blockers_b1.py`) |
+| **Stage 392 P1** | Stage 391 / Stage 390 / Stage 367 / CHANGE_IMPACT pointers (`test_stage392_pointers_p1.py`) |
+| **Stage 392 D1** | Offline connectivity badge pack remaining-gate fidelity — `docs/STAGE_392_FIDELITY.md` (`test_stage392_fidelity_d1.py`) |
+| **Stage 392 H392x** | Exit + freeze — `docs/STAGE_392_EXIT_CRITERIA.md`, ADR-792 (`test_stage392_exit_h392x.py`); Stages 1–392 frozen |
 | **Stage 391 open** | Offline Device Auth Token Pack Remaining-Gate Index — `docs/STAGE_391_PLAN.md`, ADR-789 (`test_stage391_open.py`) |
 | **Stage 391 I1** | Offline device auth token pack remaining-gate index hub (`test_stage391_index_i1.py`) |
 | **Stage 391 B1** | Offline device auth token pack blocker matrix (`test_stage391_blockers_b1.py`) |

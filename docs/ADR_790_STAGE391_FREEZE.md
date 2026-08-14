@@ -31,3 +31,10 @@ Stage 392 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline device-auth-token, device auth token as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 392 opened under **ADR-791** after CONTINUE/NEXT (Tenant MVP Offline Connectivity Badge Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-792**. Stage 391 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 391 runner-up outline was approved and opened (ADR-791); freeze ADR-792. Do not reopen Stage 391 scope.
+
