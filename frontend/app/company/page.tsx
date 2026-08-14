@@ -18,6 +18,14 @@ export default function Page() {
   const [printFooter, setPrintFooter] = useState('');
   const [invTemplate, setInvTemplate] = useState('a4');
   const [receiptPaper, setReceiptPaper] = useState('80mm');
+  const [emailHost, setEmailHost] = useState('');
+  const [emailPort, setEmailPort] = useState('587');
+  const [emailUser, setEmailUser] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailFromEmail, setEmailFromEmail] = useState('');
+  const [emailFromName, setEmailFromName] = useState('');
+  const [emailUseTls, setEmailUseTls] = useState(true);
+  const [emailUseSsl, setEmailUseSsl] = useState(false);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -57,6 +65,16 @@ export default function Page() {
     ]);
     setTenant(r.data);
     setEmailStatus(e.data);
+    if (e.data) {
+      setEmailHost(e.data.host || '');
+      setEmailPort(String(e.data.port ?? 587));
+      setEmailUser(e.data.username || '');
+      setEmailPassword('');
+      setEmailFromEmail(e.data.from_email || '');
+      setEmailFromName(e.data.from_name || '');
+      setEmailUseTls(e.data.use_tls !== false);
+      setEmailUseSsl(!!e.data.use_ssl);
+    }
     setSmsStatus(s.data);
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
@@ -504,26 +522,119 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
           <h2>Email / SMTP</h2>
           <p className="muted">
-            Mode: {emailStatus.mode} · Configured: {String(emailStatus.configured)} · Enabled:{' '}
-            {String(emailStatus.enabled)}
+            Mode: {emailStatus.mode} · Source: {emailStatus.source || '—'} · Configured:{' '}
+            {String(emailStatus.configured)} · Enabled: {String(emailStatus.enabled)}
+            {emailStatus.tenant_override ? ' · Tenant override' : ''}
           </p>
-          <p className="muted">
-            From: {emailStatus.from_name} &lt;{emailStatus.from_email || '—'}&gt; · Host:{' '}
-            {emailStatus.host || 'console fallback'}
-          </p>
-          <button
-            onClick={async () => {
-              setError('');
-              try {
-                const r = await api('/settings/email/test', { method: 'POST', body: '{}' });
-                setMessage(r.message || `Test email via ${r.data?.mode}`);
-              } catch (err: any) {
-                setError(err.message);
-              }
-            }}
-          >
-            Send test email to me
-          </button>
+          <label className="muted">SMTP host</label>
+          <input
+            value={emailHost}
+            onChange={(e) => setEmailHost(e.target.value)}
+            placeholder="smtp.example.com"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">Port</label>
+          <input
+            value={emailPort}
+            onChange={(e) => setEmailPort(e.target.value)}
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">Username</label>
+          <input
+            value={emailUser}
+            onChange={(e) => setEmailUser(e.target.value)}
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">
+            Password{emailStatus.has_password ? ' (saved — leave blank to keep)' : ''}
+          </label>
+          <input
+            type="password"
+            value={emailPassword}
+            onChange={(e) => setEmailPassword(e.target.value)}
+            placeholder={emailStatus.has_password ? '••••••••' : ''}
+            autoComplete="new-password"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">From email</label>
+          <input
+            value={emailFromEmail}
+            onChange={(e) => setEmailFromEmail(e.target.value)}
+            placeholder="noreply@example.com"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">From name</label>
+          <input
+            value={emailFromName}
+            onChange={(e) => setEmailFromName(e.target.value)}
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+            <input
+              type="checkbox"
+              checked={emailUseTls}
+              onChange={(e) => {
+                setEmailUseTls(e.target.checked);
+                if (e.target.checked) setEmailUseSsl(false);
+              }}
+            />
+            Use STARTTLS
+          </label>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            <input
+              type="checkbox"
+              checked={emailUseSsl}
+              onChange={(e) => {
+                setEmailUseSsl(e.target.checked);
+                if (e.target.checked) setEmailUseTls(false);
+              }}
+            />
+            Use SSL
+          </label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              onClick={async () => {
+                setError('');
+                try {
+                  const body: Record<string, unknown> = {
+                    host: emailHost,
+                    port: Number(emailPort) || 587,
+                    username: emailUser,
+                    from_email: emailFromEmail,
+                    from_name: emailFromName,
+                    use_tls: emailUseTls,
+                    use_ssl: emailUseSsl,
+                  };
+                  if (emailPassword) body.password = emailPassword;
+                  const r = await api('/settings/email', {
+                    method: 'PATCH',
+                    body: JSON.stringify(body),
+                  });
+                  setEmailStatus(r.data);
+                  setEmailPassword('');
+                  setMessage('Email settings saved');
+                  await refresh();
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Save email settings
+            </button>
+            <button
+              onClick={async () => {
+                setError('');
+                try {
+                  const r = await api('/settings/email/test', { method: 'POST', body: '{}' });
+                  setMessage(r.message || `Test email via ${r.data?.mode}`);
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Send test email to me
+            </button>
+          </div>
         </div>
       )}
 

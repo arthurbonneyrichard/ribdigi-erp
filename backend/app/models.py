@@ -74,6 +74,8 @@ class Tenant(Base):
     document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # Print templates: {header_text, footer_text, default_invoice_template, default_receipt_paper}
     print_branding: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # SMTP overrides: {host, port, username, password_enc, from_email, from_name, use_tls, use_ssl}
+    email_settings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # When true, scheduled FX job refreshes this tenant's exchange rates from the live feed.
     fx_auto_refresh: Mapped[bool] = mapped_column(Boolean, default=True)
     # When true, store/warehouse stock-outs only consume batches tagged to that warehouse (no NULL fallback).

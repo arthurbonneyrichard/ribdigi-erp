@@ -13,6 +13,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from app.config import settings
+from app.email_settings import SmtpConfig, resolve_smtp_config
 
 logger = logging.getLogger(__name__)
 
@@ -37,31 +38,21 @@ def get_dev_outbox() -> list[dict[str, Any]]:
     return list(_DEV_OUTBOX)
 
 
-def smtp_configured() -> bool:
-    return bool((settings.SMTP_HOST or "").strip() and (settings.SMTP_FROM_EMAIL or "").strip())
+def smtp_configured(tenant: Any | None = None) -> bool:
+    return resolve_smtp_config(tenant).configured
 
 
-def email_status() -> dict:
-    return {
-        "enabled": bool(settings.EMAIL_ENABLED),
-        "configured": smtp_configured(),
-        "mode": _delivery_mode(),
-        "host": settings.SMTP_HOST or None,
-        "port": settings.SMTP_PORT,
-        "from_email": settings.SMTP_FROM_EMAIL or None,
-        "from_name": settings.SMTP_FROM_NAME,
-        "use_tls": bool(settings.SMTP_USE_TLS),
-        "use_ssl": bool(settings.SMTP_USE_SSL),
-        "frontend_url": settings.FRONTEND_URL,
-        # Never expose SMTP_PASSWORD — only a boolean for admin UI.
-        "has_password": bool(settings.SMTP_PASSWORD),
-    }
+def email_status(tenant: Any | None = None) -> dict:
+    from app.email_settings import email_status as _email_status
+
+    return _email_status(tenant)
 
 
-def _delivery_mode() -> str:
-    if not settings.EMAIL_ENABLED:
+def _delivery_mode(cfg: SmtpConfig | None = None) -> str:
+    c = cfg or resolve_smtp_config(None)
+    if not c.enabled:
         return "disabled"
-    if smtp_configured():
+    if c.configured:
         return "smtp"
     return "console"
 
@@ -105,14 +96,16 @@ def build_message(
     text_body: str,
     html_body: str | None = None,
     attachments: list[dict[str, Any]] | None = None,
+    cfg: SmtpConfig | None = None,
 ) -> EmailMessage:
     recipients = [to] if isinstance(to, str) else list(to)
     if not recipients:
         raise HTTPException(status_code=400, detail="At least one recipient is required")
+    c = cfg or resolve_smtp_config(None)
     msg = EmailMessage()
     msg["Subject"] = subject
-    from_name = (settings.SMTP_FROM_NAME or "RIBDIGI ERP").strip()
-    from_email = (settings.SMTP_FROM_EMAIL or "noreply@localhost").strip()
+    from_name = (c.from_name or "RIBDIGI ERP").strip()
+    from_email = (c.from_email or "noreply@localhost").strip()
     msg["From"] = f"{from_name} <{from_email}>"
     msg["To"] = ", ".join(recipients)
     msg.set_content(text_body)
@@ -122,14 +115,14 @@ def build_message(
     return msg
 
 
-def _smtp_send_sync(msg: EmailMessage) -> None:
-    host = settings.SMTP_HOST
-    port = int(settings.SMTP_PORT)
+def _smtp_send_sync(msg: EmailMessage, cfg: SmtpConfig) -> None:
+    host = cfg.host
+    port = int(cfg.port)
     timeout = float(settings.SMTP_TIMEOUT_SECONDS)
-    user = (settings.SMTP_USER or "").strip() or None
-    password = settings.SMTP_PASSWORD or None
+    user = (cfg.username or "").strip() or None
+    password = cfg.password or None
 
-    if settings.SMTP_USE_SSL:
+    if cfg.use_ssl:
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(host, port, timeout=timeout, context=context) as server:
             if user and password:
@@ -139,7 +132,7 @@ def _smtp_send_sync(msg: EmailMessage) -> None:
 
     with smtplib.SMTP(host, port, timeout=timeout) as server:
         server.ehlo()
-        if settings.SMTP_USE_TLS:
+        if cfg.use_tls:
             context = ssl.create_default_context()
             server.starttls(context=context)
             server.ehlo()
@@ -155,9 +148,12 @@ async def send_email(
     text_body: str,
     html_body: str | None = None,
     attachments: list[dict[str, Any]] | None = None,
+    tenant: Any | None = None,
+    cfg: SmtpConfig | None = None,
 ) -> EmailResult:
     recipients = [to] if isinstance(to, str) else [r for r in to if r]
-    mode = _delivery_mode()
+    c = cfg or resolve_smtp_config(tenant)
+    mode = _delivery_mode(c)
     if mode == "disabled":
         return EmailResult(sent=False, mode="disabled", recipients=recipients)
 
@@ -167,6 +163,7 @@ async def send_email(
         text_body=text_body,
         html_body=html_body,
         attachments=attachments,
+        cfg=c,
     )
     attachment_meta = [
         {
@@ -194,7 +191,7 @@ async def send_email(
         return EmailResult(sent=True, mode="console", recipients=recipients)
 
     try:
-        await asyncio.to_thread(_smtp_send_sync, msg)
+        await asyncio.to_thread(_smtp_send_sync, msg, c)
         _DEV_OUTBOX.append({**record, "delivered": True})
         return EmailResult(sent=True, mode="smtp", recipients=recipients)
     except Exception as exc:
@@ -246,11 +243,13 @@ async def send_password_reset_email(*, to: str, token: str) -> EmailResult:
     return await send_email(to=to, subject=subject, text_body=text, html_body=html)
 
 
-async def send_notification_email(*, to: str, title: str, message: str, category: str) -> EmailResult:
+async def send_notification_email(
+    *, to: str, title: str, message: str, category: str, tenant: Any | None = None
+) -> EmailResult:
     subject = f"[RIBDIGI] {title}"
     text = f"{title}\n\n{message}\n\nCategory: {category}\n"
     html = f"<h3>{title}</h3><p>{message}</p><p><em>{category}</em></p>"
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html, tenant=tenant)
 
 
 def _fmt_money(value: Any) -> str:
@@ -326,6 +325,7 @@ async def send_quotation_email(
     currency: str,
     customer_name: str,
     quotation: dict[str, Any],
+    tenant: Any | None = None,
 ) -> EmailResult:
     number = quotation.get("quotation_number") or ""
     subject = f"Quotation {number} from {company_name}"
@@ -335,7 +335,7 @@ async def send_quotation_email(
         customer_name=customer_name,
         quotation=quotation,
     )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html, tenant=tenant)
 
 
 def render_purchase_order_bodies(
@@ -419,6 +419,7 @@ async def send_purchase_order_email(
     supplier_name: str,
     purchase_order: dict[str, Any],
     amended: bool = False,
+    tenant: Any | None = None,
 ) -> EmailResult:
     number = purchase_order.get("po_number") or ""
     rev = purchase_order.get("revision_no")
@@ -432,7 +433,7 @@ async def send_purchase_order_email(
         supplier_name=supplier_name,
         purchase_order=purchase_order,
     )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html, tenant=tenant)
 
 
 def render_sales_invoice_bodies(
@@ -509,6 +510,7 @@ async def send_sales_invoice_email(
     currency: str,
     customer_name: str,
     invoice: dict[str, Any],
+    tenant: Any | None = None,
 ) -> EmailResult:
     number = invoice.get("invoice_number") or ""
     subject = f"Invoice {number} from {company_name}"
@@ -518,17 +520,21 @@ async def send_sales_invoice_email(
         customer_name=customer_name,
         invoice=invoice,
     )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html, tenant=tenant)
 
 
-async def send_test_email(*, to: str) -> EmailResult:
-    if not settings.EMAIL_ENABLED:
+async def send_test_email(*, to: str, tenant: Any | None = None) -> EmailResult:
+    c = resolve_smtp_config(tenant)
+    if not c.enabled:
         raise HTTPException(status_code=400, detail="EMAIL_ENABLED is false")
-    if not smtp_configured() and _delivery_mode() != "console":
+    mode = _delivery_mode(c)
+    if not c.configured and mode != "console":
         raise HTTPException(status_code=400, detail="SMTP is not configured")
     return await send_email(
         to=to,
         subject="RIBDIGI ERP test email",
         text_body="This is a test email from RIBDIGI ERP. SMTP delivery is working.",
         html_body="<p>This is a test email from <strong>RIBDIGI ERP</strong>. SMTP delivery is working.</p>",
+        cfg=c,
+        tenant=tenant,
     )

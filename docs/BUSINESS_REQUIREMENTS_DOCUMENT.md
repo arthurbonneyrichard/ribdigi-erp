@@ -996,10 +996,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** SMTP configuration for outbound emails.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] SMTP host, port, username, password
-  - [ ] TLS/SSL encryption
-  - [ ] Test email functionality
-  - [ ] Default sender name and email
+  - [x] SMTP host, port, username, password (`tenants.email_settings` JSON; `GET|PATCH /settings/email`; password encrypted as `password_enc`, never returned — `has_password` only; Company UI)
+  - [x] TLS/SSL encryption (`use_tls` / `use_ssl` mutually exclusive; tenant override → env `SMTP_*` → console)
+  - [x] Test email functionality (`POST /settings/email/test` uses resolved tenant/env config)
+  - [x] Default sender name and email (`from_name` / `from_email` on tenant settings + env fallback)
 
 #### BR-20.4 Numbering & Templates
 - **Description:** Document customization.

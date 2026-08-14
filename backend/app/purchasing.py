@@ -437,6 +437,7 @@ async def send_purchase_order(
         currency=currency,
         supplier_name=supplier.name,
         purchase_order=payload,
+        tenant=tenant,
     )
     if not result.sent:
         if result.mode == "disabled":
@@ -657,6 +658,7 @@ async def amend_purchase_order(
             supplier_name=supplier.name,
             purchase_order=payload,
             amended=True,
+            tenant=tenant,
         )
         if not result.sent:
             if result.mode == "disabled":

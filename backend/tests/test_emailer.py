@@ -55,23 +55,28 @@ async def test_verification_email_content():
     assert "verify-email" in body
 
 
-def test_email_status_shape():
-    status = emailer.email_status()
-    assert "mode" in status
-    assert "configured" in status
-
-
 @pytest.mark.asyncio
 async def test_smtp_send_uses_thread(monkeypatch):
     calls = []
 
-    def fake_send(msg):
-        calls.append(msg["To"])
+    def fake_send(msg, cfg):
+        calls.append((msg["To"], cfg.host))
 
     monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "smtp.example.com")
     monkeypatch.setattr("app.emailer.settings.SMTP_FROM_EMAIL", "from@example.com")
+    monkeypatch.setattr("app.email_settings.settings.SMTP_HOST", "smtp.example.com")
+    monkeypatch.setattr("app.email_settings.settings.SMTP_FROM_EMAIL", "from@example.com")
     monkeypatch.setattr("app.emailer._smtp_send_sync", fake_send)
     result = await emailer.send_email(to="to@example.com", subject="S", text_body="B")
     assert result.sent is True
     assert result.mode == "smtp"
-    assert calls == ["to@example.com"]
+    assert calls == [("to@example.com", "smtp.example.com")]
+
+
+def test_email_status_shape():
+    status = emailer.email_status()
+    assert "mode" in status
+    assert "configured" in status
+    assert "has_password" in status
+    assert "source" in status
+    assert "password" not in status or status.get("password") in (None, "")

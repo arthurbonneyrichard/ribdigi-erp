@@ -319,6 +319,24 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 }
 ```
 
+### 3.5z Email / SMTP settings (BR-20.3)
+**Get:** `GET /settings/email` (`company_admin` / `super_admin`) — resolved status (`source`: `tenant` | `env` | `none`); never returns password (only `has_password`).  
+**Patch:** `PATCH /settings/email` — tenant SMTP override stored on `tenants.email_settings` (password encrypted as `password_enc`). Omit `password` to keep existing; `clear_password: true` removes it. Requires host + from_email for tenant override to take precedence over env.  
+**Test:** `POST /settings/email/test` — optional `{ "to": "..." }`; uses resolved tenant/env config (console when unset).
+
+```json
+{
+  "host": "smtp.example.com",
+  "port": 587,
+  "username": "noreply@example.com",
+  "password": "secret",
+  "from_email": "noreply@example.com",
+  "from_name": "Acme ERP",
+  "use_tls": true,
+  "use_ssl": false
+}
+```
+
 ### 3.5a Branches (BR-2.2)
 **List:** `GET /branches` (`active_only=true` optional)  
 **Create:** `POST /branches`  

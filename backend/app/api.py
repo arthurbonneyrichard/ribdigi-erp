@@ -165,6 +165,7 @@ from app.schemas import (
     TenantModulesUpdate,
     TransactionCreate,
     EmailTestRequest,
+    EmailSettingsUpdate,
     TwoFactorConfirm,
     TwoFactorDisable,
     TwoFactorVerify,
@@ -995,10 +996,40 @@ async def platform_reports_trials(
 @api.get("/settings/email")
 async def settings_email_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
 ):
     from app import emailer
 
-    return env(emailer.email_status())
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env(emailer.email_status(tenant))
+
+
+@api.patch("/settings/email")
+async def settings_email_patch(
+    payload: EmailSettingsUpdate,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.email_settings import apply_email_settings_update
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = apply_email_settings_update(tenant, payload.model_dump(exclude_unset=True))
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="settings",
+        action="email_settings_update",
+        entity="email",
+        details={
+            "host": data.get("host"),
+            "from_email": data.get("from_email"),
+            "tenant_override": data.get("tenant_override"),
+            "has_password": data.get("has_password"),
+        },
+    )
+    await db.commit()
+    return env(data, "Email settings updated")
 
 
 @api.post("/settings/email/test")
@@ -1009,11 +1040,12 @@ async def settings_email_test(
 ):
     from app import emailer
 
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     user = await db.get(m.User, claims["sub"])
     to = str(payload.to) if payload and payload.to else (user.email if user else None)
     if not to:
         raise HTTPException(status_code=400, detail="No recipient email available")
-    result = await emailer.send_test_email(to=to)
+    result = await emailer.send_test_email(to=to, tenant=tenant)
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],

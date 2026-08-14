@@ -48,6 +48,18 @@ class EmailTestRequest(BaseModel):
     to: EmailStr | None = None
 
 
+class EmailSettingsUpdate(BaseModel):
+    host: str | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
+    username: str | None = None
+    password: str | None = None
+    clear_password: bool = False
+    from_email: str | None = None
+    from_name: str | None = None
+    use_tls: bool | None = None
+    use_ssl: bool | None = None
+
+
 class SmsTestRequest(BaseModel):
     to: str | None = None
 
