@@ -1006,6 +1006,12 @@ Authoritative MVP docs:
 - `docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/production-launch-pack-remaining-gate.json` — Stage 262 I1
 - `docs/PRODUCTION_LAUNCH_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/production-launch-pack-rg-blockers.json` — Stage 262 B1
 - `docs/PRODUCTION_LAUNCH_PACK_RG_POINTERS_MVP.md` / `ops/mvp/production-launch-pack-rg-pointers.json` — Stage 262 P1
+- `docs/STAGE_263_EXIT_CRITERIA.md` / `docs/ADR_534_STAGE263_FREEZE.md` (`backend/tests/test_stage263_exit_h263x.py`) — Stage 263 H263x
+- `docs/STAGE_263_FIDELITY.md` (`backend/tests/test_stage263_fidelity_d1.py`) — Stage 263 D1
+- `docs/STAGE_263_PLAN.md` (`backend/tests/test_stage263_open.py`) — Stage 263 open (ADR-533)
+- `docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/golive-attestation-pack-remaining-gate.json` — Stage 263 I1
+- `docs/GOLIVE_ATTESTATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/golive-attestation-pack-rg-blockers.json` — Stage 263 B1
+- `docs/GOLIVE_ATTESTATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/golive-attestation-pack-rg-pointers.json` — Stage 263 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4615,4 +4621,16 @@ H262x met — `docs/STAGE_262_EXIT_CRITERIA.md`, ADR-532. Stages 1–262 frozen 
 ## Stage 262 open
 
 `docs/ADR_531_STAGE262_OPEN.md` + `docs/STAGE_262_PLAN.md` (`test_stage262_open.py`).
+
+## Stage 263 exit
+
+H263x met — `docs/STAGE_263_EXIT_CRITERIA.md`, ADR-534. Stages 1–263 frozen for Stage 263 feature scope.
+
+## Stage 263 D1 — Tenant MVP Go-Live Attestation Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_263_FIDELITY.md` (`test_stage263_fidelity_d1.py`). `GOLIVE_ATTESTATION_PACK_*` remaining-gate index; §7 signed / attestation still MISSING.
+
+## Stage 263 open
+
+`docs/ADR_533_STAGE263_OPEN.md` + `docs/STAGE_263_PLAN.md` (`test_stage263_open.py`).
 

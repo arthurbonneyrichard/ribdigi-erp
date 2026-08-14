@@ -1,0 +1,59 @@
+{
+  "id": "golive-attestation-pack-remaining-gate",
+  "stage": 263,
+  "pack": "I1",
+  "doc": "docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/GOLIVE_ATTESTATION_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/GOLIVE_ATTESTATION_PACK_RG_POINTERS_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "production_launch_pack_remaining_gate": "docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md",
+    "preflight_verification_pack_remaining_gate": "docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "attestation_remaining_gate": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "golive_attestation_register": "ops/mvp/golive-attestation.json"
+  },
+  "packaging_complete": true,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "golive_attestation_walk_claimed": false,
+  "distinct_from_stage69_a1_golive_attestation": true,
+  "distinct_from_stage262_production_launch_pack_remaining_gate": true,
+  "distinct_from_stage261_preflight_verification_pack_remaining_gate": true,
+  "distinct_from_stage187_attestation_remaining_gate": true,
+  "distinct_from_stage213_attestation_pack_remaining_gate": true,
+  "distinct_from_stage227_cutover_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "gappr-read-blockers",
+      "title": "Read B1 go-live attestation pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gappr-follow-pointers",
+      "title": "Follow P1 Stage 69 / Stage 262 / Stage 261 / Stage 187 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gappr-section7-missing",
+      "title": "Reaffirm \u00a77 signed MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gappr-no-packaging-as-live",
+      "title": "Do not treat Stage 69 A1 / Stage 262 / Stage 187 / Stage 213 as \u00a77 signed Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gappr-section7-remaining",
+      "title": "\u00a77 signed / attestation / go-live / go-live attestation walk Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 263 I1 go-live attestation pack remaining-gate index packaging only. Do not claim \u00a77 signed Complete."
+}
