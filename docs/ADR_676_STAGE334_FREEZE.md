@@ -31,3 +31,10 @@ Stage 335 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for incident severity, PagerDuty hosted, on-call rota live, incident drill, attestation, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 335 opened under **ADR-677** after CONTINUE/NEXT (Tenant MVP Offline Sync Escalation Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-678**. Stage 334 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 335 runner-up outline was approved and opened (ADR-677); freeze ADR-678. Do not reopen Stage 334 scope.
+

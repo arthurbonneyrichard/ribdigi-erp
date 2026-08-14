@@ -1,0 +1,57 @@
+{
+  "id": "offline-sync-escalation-pack-remaining-gate",
+  "stage": 335,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_SYNC_ESCALATION_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_SYNC_ESCALATION_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_SYNC_ESCALATION_PACK_RG_POINTERS_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "incident_severity_pack_remaining_gate": "docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md",
+    "support_readiness_pack_remaining_gate": "docs/SUPPORT_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "oncall_rota_live": false,
+  "pagerduty_hosted_claimed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage170_offline_sync_escalation": true,
+  "distinct_from_stage334_incident_severity_pack_remaining_gate": true,
+  "distinct_from_stage333_support_readiness_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "osepr-read-blockers",
+      "title": "Read B1 offline sync escalation pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osepr-follow-pointers",
+      "title": "Follow P1 Stage 170 / Stage 334 / Stage 333 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osepr-escalation-missing",
+      "title": "Reaffirm live offline sync escalation / Offline Complete / on-call / PagerDuty MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osepr-no-packaging-as-live",
+      "title": "Do not treat Stage 170 / Stage 163-169 / Stage 334 / Stage 333 / Stage 329 as live offline sync escalation Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osepr-escalation-remaining",
+      "title": "Offline Complete / on-call rota live / PagerDuty hosted / attestation / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 335 I1 offline sync escalation pack remaining-gate index packaging only. Do not claim live offline sync escalation Complete."
+}

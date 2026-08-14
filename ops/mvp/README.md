@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_335_EXIT_CRITERIA.md` / `docs/ADR_678_STAGE335_FREEZE.md` (`backend/tests/test_stage335_exit_h335x.py`) — Stage 335 H335x
+- `docs/STAGE_335_FIDELITY.md` (`backend/tests/test_stage335_fidelity_d1.py`) — Stage 335 D1
+- `docs/STAGE_335_PLAN.md` (`backend/tests/test_stage335_open.py`) — Stage 335 open (ADR-677)
+- `docs/OFFLINE_SYNC_ESCALATION_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sync-escalation-pack-remaining-gate.json` — Stage 335 I1
+- `docs/OFFLINE_SYNC_ESCALATION_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sync-escalation-pack-rg-blockers.json` — Stage 335 B1
+- `docs/OFFLINE_SYNC_ESCALATION_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sync-escalation-pack-rg-pointers.json` — Stage 335 P1
 - `docs/STAGE_334_EXIT_CRITERIA.md` / `docs/ADR_676_STAGE334_FREEZE.md` (`backend/tests/test_stage334_exit_h334x.py`) — Stage 334 H334x
 - `docs/STAGE_334_FIDELITY.md` (`backend/tests/test_stage334_fidelity_d1.py`) — Stage 334 D1
 - `docs/STAGE_334_PLAN.md` (`backend/tests/test_stage334_open.py`) — Stage 334 open (ADR-675)
@@ -5287,6 +5293,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 335 exit
+
+H335x met — `docs/STAGE_335_EXIT_CRITERIA.md`, ADR-678. Stages 1–335 frozen for Stage 335 feature scope.
+
+## Stage 335 D1 — Tenant MVP Offline Sync Escalation Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_335_FIDELITY.md` (`test_stage335_fidelity_d1.py`). `OFFLINE_SYNC_ESCALATION_PACK_*` remaining-gate index; Offline Complete / on-call rota live / PagerDuty hosted / attestation / go-live still MISSING.
+
+## Stage 335 open
+
+ADR-677 / `docs/STAGE_335_PLAN.md`.
 
 ## Stage 334 exit
 

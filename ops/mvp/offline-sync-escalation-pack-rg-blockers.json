@@ -1,0 +1,63 @@
+{
+  "id": "offline-sync-escalation-pack-rg-blockers",
+  "stage": 335,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_SYNC_ESCALATION_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_ESCALATION_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "oncall_rota_live": false,
+  "pagerduty_hosted_claimed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "oncall_rota_live": "REMAINING",
+    "pagerduty_hosted_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage170_as_live_offline_sync_escalation": "NON_CLAIM",
+    "stage163_169_as_live_offline_sync_escalation": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "oncall_rota_live_flag": "false",
+    "pagerduty_hosted_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "oseprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprb-oncall",
+      "title": "Mark on-call rota live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprb-pagerduty",
+      "title": "Mark PagerDuty hosted Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprb-stage170-nonclaim",
+      "title": "Mark Stage 170 / Stage 163-169 as non-claim for live offline sync escalation Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprb-escalation-remaining",
+      "title": "Live offline sync escalation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 335 B1 offline sync escalation pack RG blocker matrix packaging only. Live offline sync escalation Completes remain MISSING."
+}
