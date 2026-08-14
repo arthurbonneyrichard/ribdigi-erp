@@ -988,6 +988,12 @@ Authoritative MVP docs:
 - `docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/first-commercial-day-pack-remaining-gate.json` — Stage 259 I1
 - `docs/FIRST_COMMERCIAL_DAY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/first-commercial-day-pack-rg-blockers.json` — Stage 259 B1
 - `docs/FIRST_COMMERCIAL_DAY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/first-commercial-day-pack-rg-pointers.json` — Stage 259 P1
+- `docs/STAGE_260_EXIT_CRITERIA.md` / `docs/ADR_528_STAGE260_FREEZE.md` (`backend/tests/test_stage260_exit_h260x.py`) — Stage 260 H260x
+- `docs/STAGE_260_FIDELITY.md` (`backend/tests/test_stage260_fidelity_d1.py`) — Stage 260 D1
+- `docs/STAGE_260_PLAN.md` (`backend/tests/test_stage260_open.py`) — Stage 260 open (ADR-527)
+- `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-golive-closeout-pack-remaining-gate.json` — Stage 260 I1
+- `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-golive-closeout-pack-rg-blockers.json` — Stage 260 B1
+- `docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-golive-closeout-pack-rg-pointers.json` — Stage 260 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4561,4 +4567,16 @@ H259x met — `docs/STAGE_259_EXIT_CRITERIA.md`, ADR-526. Stages 1–259 frozen 
 ## Stage 259 open
 
 `docs/ADR_525_STAGE259_OPEN.md` + `docs/STAGE_259_PLAN.md` (`test_stage259_open.py`).
+
+## Stage 260 exit
+
+H260x met — `docs/STAGE_260_EXIT_CRITERIA.md`, ADR-528. Stages 1–260 frozen for Stage 260 feature scope.
+
+## Stage 260 D1 — Tenant MVP Commercial Go-Live Closeout Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_260_FIDELITY.md` (`test_stage260_fidelity_d1.py`). `COMMERCIAL_GOLIVE_CLOSEOUT_PACK_*` remaining-gate index; commercial go-live closeout / go-live still MISSING.
+
+## Stage 260 open
+
+`docs/ADR_527_STAGE260_OPEN.md` + `docs/STAGE_260_PLAN.md` (`test_stage260_open.py`).
 

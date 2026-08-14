@@ -31,3 +31,9 @@ Stage 260 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for first commercial day, steady-state ops, commercial acceptance, or go-live.
+
+## Amendment — Stage 260 opened
+
+Stage 260 opened under **ADR-527** after CONTINUE/NEXT (Tenant MVP Commercial Go-Live Closeout Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-528**. Stage 259 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 260 runner-up outline was approved and opened (ADR-527); freeze ADR-528. Do not reopen Stage 259 scope.
