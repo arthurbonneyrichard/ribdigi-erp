@@ -1,0 +1,57 @@
+{
+  "id": "commercial-packaging-archive-pack-remaining-gate",
+  "stage": 256,
+  "pack": "I1",
+  "doc": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_RG_POINTERS_MVP.md",
+    "commercial_packaging_archive": "docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md",
+    "commercial_residual_pack_remaining_gate": "docs/COMMERCIAL_RESIDUAL_PACK_REMAINING_GATE_MVP.md",
+    "commercial_evidence_chain_pack_remaining_gate": "docs/COMMERCIAL_EVIDENCE_CHAIN_PACK_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "commercial_packaging_archive_register": "ops/mvp/commercial-packaging-archive.json"
+  },
+  "packaging_complete": true,
+  "packaging_archive_live_claimed": false,
+  "residual_closed_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage72_p1_commercial_packaging_archive": true,
+  "distinct_from_stage255_commercial_residual_pack_remaining_gate": true,
+  "distinct_from_stage254_commercial_evidence_chain_pack_remaining_gate": true,
+  "distinct_from_stage197_commercial_acceptance_remaining_gate": true,
+  "steps": [
+    {
+      "id": "cpapr-read-blockers",
+      "title": "Read B1 commercial packaging archive pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpapr-follow-pointers",
+      "title": "Follow P1 Stage 72 / Stage 255 / Stage 254 / Stage 197 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpapr-archive-missing",
+      "title": "Reaffirm packaging archive live MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpapr-no-packaging-as-live",
+      "title": "Do not treat Stage 72 P1 / Stage 255 / Stage 197 as packaging archive live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpapr-archive-remaining",
+      "title": "Packaging archive live / residual closed / commercial acceptance / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 256 I1 commercial packaging archive pack remaining-gate index packaging only. Do not claim packaging archive live Complete."
+}

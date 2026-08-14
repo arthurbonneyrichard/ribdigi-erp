@@ -964,6 +964,12 @@ Authoritative MVP docs:
 - `docs/COMMERCIAL_RESIDUAL_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-residual-pack-remaining-gate.json` — Stage 255 I1
 - `docs/COMMERCIAL_RESIDUAL_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-residual-pack-rg-blockers.json` — Stage 255 B1
 - `docs/COMMERCIAL_RESIDUAL_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-residual-pack-rg-pointers.json` — Stage 255 P1
+- `docs/STAGE_256_EXIT_CRITERIA.md` / `docs/ADR_520_STAGE256_FREEZE.md` (`backend/tests/test_stage256_exit_h256x.py`) — Stage 256 H256x
+- `docs/STAGE_256_FIDELITY.md` (`backend/tests/test_stage256_fidelity_d1.py`) — Stage 256 D1
+- `docs/STAGE_256_PLAN.md` (`backend/tests/test_stage256_open.py`) — Stage 256 open (ADR-519)
+- `docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-packaging-archive-pack-remaining-gate.json` — Stage 256 I1
+- `docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-packaging-archive-pack-rg-blockers.json` — Stage 256 B1
+- `docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-packaging-archive-pack-rg-pointers.json` — Stage 256 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4489,4 +4495,16 @@ H255x met — `docs/STAGE_255_EXIT_CRITERIA.md`, ADR-518. Stages 1–255 frozen 
 ## Stage 255 open
 
 `docs/ADR_517_STAGE255_OPEN.md` + `docs/STAGE_255_PLAN.md` (`test_stage255_open.py`).
+
+## Stage 256 exit
+
+H256x met — `docs/STAGE_256_EXIT_CRITERIA.md`, ADR-520. Stages 1–256 frozen for Stage 256 feature scope.
+
+## Stage 256 D1 — Tenant MVP Commercial Packaging Archive Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_256_FIDELITY.md` (`test_stage256_fidelity_d1.py`). `COMMERCIAL_PACKAGING_ARCHIVE_PACK_*` remaining-gate index; packaging archive live / residual closed still MISSING.
+
+## Stage 256 open
+
+`docs/ADR_519_STAGE256_OPEN.md` + `docs/STAGE_256_PLAN.md` (`test_stage256_open.py`).
 

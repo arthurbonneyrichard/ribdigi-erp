@@ -31,3 +31,9 @@ Stage 256 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for residual closed, packaging archive live, commercial acceptance, or go-live.
+
+## Amendment — Stage 256 opened
+
+Stage 256 opened under **ADR-519** after CONTINUE/NEXT (Commercial Packaging Archive Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-520**. Stage 255 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 256 runner-up outline was approved and opened (ADR-519); freeze ADR-520. Do not reopen Stage 255 scope.
