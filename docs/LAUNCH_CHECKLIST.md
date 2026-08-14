@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 397 track opened (ADR-801: `test_stage397_open.py`, `docs/STAGE_397_PLAN.md`) — Offline Online Status Pack Remaining-Gate Index; closed under ADR-802
+- [x] Offline ONLINE status pack remaining-gate hub (Stage 397 I1: `test_stage397_index_i1.py`, `docs/OFFLINE_ONLINE_STATUS_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline ONLINE status pack blocker matrix (Stage 397 B1: `test_stage397_blockers_b1.py`, `docs/OFFLINE_ONLINE_STATUS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 396 / Stage 395 / Stage 392 / CHANGE_IMPACT pointers (Stage 397 P1: `test_stage397_pointers_p1.py`, `docs/OFFLINE_ONLINE_STATUS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 397 fidelity sync (D1: `test_stage397_fidelity_d1.py`, `docs/STAGE_397_FIDELITY.md`)
+- [x] Stage 397 exit + freeze (H397x: `test_stage397_exit_h397x.py`, `docs/STAGE_397_EXIT_CRITERIA.md`, ADR-802)
 - [x] Stage 396 track opened (ADR-799: `test_stage396_open.py`, `docs/STAGE_396_PLAN.md`) — Offline Synchronizing Status Pack Remaining-Gate Index; closed under ADR-800
 - [x] Offline SYNCHRONIZING status pack remaining-gate hub (Stage 396 I1: `test_stage396_index_i1.py`, `docs/OFFLINE_SYNCHRONIZING_STATUS_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline SYNCHRONIZING status pack blocker matrix (Stage 396 B1: `test_stage396_blockers_b1.py`, `docs/OFFLINE_SYNCHRONIZING_STATUS_PACK_RG_BLOCKERS_MVP.md`)

@@ -31,3 +31,9 @@ Stage 397 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline synchronizing-status, SYNCHRONIZING status as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 397 opened under **ADR-801** after CONTINUE/NEXT (Tenant MVP Offline Online Status Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-802**. Stage 396 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 396 runner-up outline was approved and opened (ADR-801); freeze ADR-802. Do not reopen Stage 396 scope.

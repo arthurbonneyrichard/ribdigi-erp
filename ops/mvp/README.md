@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_397_EXIT_CRITERIA.md` / `docs/ADR_802_STAGE397_FREEZE.md` (`backend/tests/test_stage397_exit_h397x.py`) — Stage 397 H397x
+- `docs/STAGE_397_FIDELITY.md` (`backend/tests/test_stage397_fidelity_d1.py`) — Stage 397 D1
+- `docs/STAGE_397_PLAN.md` (`backend/tests/test_stage397_open.py`) — Stage 397 open (ADR-801)
+- `docs/OFFLINE_ONLINE_STATUS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-online-status-pack-remaining-gate.json` — Stage 397 I1
+- `docs/OFFLINE_ONLINE_STATUS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-online-status-pack-rg-blockers.json` — Stage 397 B1
+- `docs/OFFLINE_ONLINE_STATUS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-online-status-pack-rg-pointers.json` — Stage 397 P1
 - `docs/STAGE_396_EXIT_CRITERIA.md` / `docs/ADR_800_STAGE396_FREEZE.md` (`backend/tests/test_stage396_exit_h396x.py`) — Stage 396 H396x
 - `docs/STAGE_396_FIDELITY.md` (`backend/tests/test_stage396_fidelity_d1.py`) — Stage 396 D1
 - `docs/STAGE_396_PLAN.md` (`backend/tests/test_stage396_open.py`) — Stage 396 open (ADR-799)
@@ -5659,6 +5665,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 397 exit
+
+H397x met — `docs/STAGE_397_EXIT_CRITERIA.md`, ADR-802. Stages 1–397 frozen for Stage 397 feature scope.
+
+## Stage 397 D1 — Tenant MVP Offline Online Status Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_397_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 397 open
+
+Opened under ADR-801; plan `docs/STAGE_397_PLAN.md`.
 
 ## Stage 396 exit
 
