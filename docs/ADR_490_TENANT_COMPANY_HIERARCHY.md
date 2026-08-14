@@ -243,3 +243,10 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Expense-category GL account resolve and COA parent validate assert company; expense OCR category suggestions scoped by company.
 - UoM base-unit validate and unit convert reject sibling-company units.
 - Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design.
+
+## Phase 29 — Order warehouse + report FK scope (2026-08-14)
+
+- Sales order update resolves store/warehouse with order `company_id`; create asserts quotation company; stock reserve passes company into warehouse stock helpers.
+- `warehouse_for_store` / `get_or_create_warehouse_stock` accept `company_id`; inventory valuation/low-stock and sales-by-product reject sibling store/category IDs (no lazy create/oracle).
+- Bank clearing multi-line asserts journal-line company; catalog category parent and product refs use company-scoped getters.
+- Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design. After Phase 29, ADR-490 interactive IDOR hardening is largely complete.

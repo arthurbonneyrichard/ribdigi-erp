@@ -845,6 +845,8 @@ async def create_clearing_group(
             raise HTTPException(status_code=409, detail=f"Statement line {lid} is not unmatched")
         bank_lines.append(row)
 
+    from app.workspace import assert_fk_company
+
     book_lines: list[m.JournalEntryLine] = []
     for jid in book_ids:
         jl = (
@@ -857,6 +859,11 @@ async def create_clearing_group(
         ).scalar_one_or_none()
         if not jl:
             raise HTTPException(status_code=404, detail=f"Journal line not found: {jid}")
+        assert_fk_company(
+            jl,
+            company_id or getattr(stmt, "company_id", None),
+            detail=f"Journal line not found: {jid}",
+        )
         if jl.account_id != stmt.account_id:
             raise HTTPException(status_code=400, detail="Journal line is not on this bank/cash account")
         already = (

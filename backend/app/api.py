@@ -7243,6 +7243,7 @@ async def create_sales_order(
     if payload.quotation_id:
         quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], payload.quotation_id)
         assert_record_access(claims, quote.created_by)
+        workspace_svc.assert_record_company(claims, quote)
     order = await sales_docs_svc.create_order(
         db,
         tenant_id=claims["tenant_id"],

@@ -264,11 +264,7 @@ async def create_category(
     if not code or not name:
         raise HTTPException(status_code=400, detail="code and name are required")
     if parent_id:
-        parent = await db.get(m.ProductCategory, parent_id)
-        if not parent or parent.tenant_id != tenant_id:
-            raise HTTPException(status_code=404, detail="Parent category not found")
-        if company_id and getattr(parent, "company_id", None) and parent.company_id != company_id:
-            raise HTTPException(status_code=404, detail="Parent category not found")
+        await get_category(db, tenant_id, parent_id, company_id=company_id)
     validated_tax = await _validate_category_tax_rate(
         db, tenant_id=tenant_id, tax_rate_id=tax_rate_id, company_id=company_id
     )
@@ -783,23 +779,11 @@ async def resolve_product_refs(
     label = (category_name or "General").strip() or "General"
     resolved_category_id = category_id
     if category_id:
-        cat = await db.get(m.ProductCategory, category_id)
-        if not cat or cat.tenant_id != tenant_id:
-            raise HTTPException(status_code=404, detail="Category not found")
-        if company_id and getattr(cat, "company_id", None) and cat.company_id != company_id:
-            raise HTTPException(status_code=404, detail="Category not found")
+        cat = await get_category(db, tenant_id, category_id, company_id=company_id)
         label = cat.name
         resolved_category_id = cat.id
     if brand_id:
-        brand = await db.get(m.Brand, brand_id)
-        if not brand or brand.tenant_id != tenant_id:
-            raise HTTPException(status_code=404, detail="Brand not found")
-        if company_id and getattr(brand, "company_id", None) and brand.company_id != company_id:
-            raise HTTPException(status_code=404, detail="Brand not found")
+        await get_brand(db, tenant_id, brand_id, company_id=company_id)
     if unit_id:
-        unit = await db.get(m.UnitOfMeasure, unit_id)
-        if not unit or unit.tenant_id != tenant_id:
-            raise HTTPException(status_code=404, detail="Unit not found")
-        if company_id and getattr(unit, "company_id", None) and unit.company_id != company_id:
-            raise HTTPException(status_code=404, detail="Unit not found")
+        await get_unit(db, tenant_id, unit_id, company_id=company_id)
     return resolved_category_id, brand_id, unit_id, label

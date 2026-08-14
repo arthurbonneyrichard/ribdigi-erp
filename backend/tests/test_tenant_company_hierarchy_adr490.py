@@ -4359,3 +4359,159 @@ async def test_phase28_scan_warehouse_coa_uom_scope(client, db_session):
     assert inv_a.id in entity_ids or any(
         "INV-P28-A" in (n.get("message") or "") for n in notes.json()["data"]
     )
+
+
+@pytest.mark.asyncio
+async def test_phase29_order_warehouse_report_fk_scope(client, db_session):
+    """Phase 29: order warehouse update FK + report store/category 404."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P29B",
+        name="Alpha Phase29 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P29 Customer B",
+        status="active",
+        credit_limit=50,
+    )
+    store_b = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P29SB",
+        name="P29 Store B",
+        is_active=True,
+    )
+    wh_b = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P29WB",
+        name="P29 WH B",
+        is_active=True,
+    )
+    cat_b = m.ProductCategory(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P29C",
+        name="P29 Category B",
+        is_active=True,
+    )
+    db_session.add_all([cust_b, store_b, wh_b, cat_b])
+    await db_session.flush()
+    wh_b.store_id = store_b.id
+    quote_b = m.SalesQuotation(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        quotation_number="QT-P29-B",
+        customer_id=cust_b.id,
+        status="accepted",
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        created_by=seed["super"].id,
+    )
+    db_session.add(quote_b)
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # Create draft order in company A
+    order = await ac.post(
+        "/api/v1/sales/orders",
+        headers=headers_a,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert order.status_code == 200, order.text
+    order_id = order.json()["data"]["id"]
+
+    # Patch draft order to sibling warehouse/store
+    patch_wh = await ac.patch(
+        f"/api/v1/sales/orders/{order_id}",
+        headers=headers_a,
+        json={"warehouse_id": wh_b.id},
+    )
+    assert patch_wh.status_code == 404, patch_wh.text
+
+    patch_store = await ac.patch(
+        f"/api/v1/sales/orders/{order_id}",
+        headers=headers_a,
+        json={"store_id": store_b.id},
+    )
+    assert patch_store.status_code == 404, patch_store.text
+
+    # Create order from sibling quotation
+    create_q = await ac.post(
+        "/api/v1/sales/orders",
+        headers=headers_a,
+        json={
+            "customer_id": seed["party1"].id,
+            "quotation_id": quote_b.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_q.status_code == 404, create_q.text
+
+    # Reports must 404 on sibling store/category (not empty 200)
+    val = await ac.get(
+        "/api/v1/reports/inventory/valuation",
+        headers=headers_a,
+        params={"store_id": store_b.id},
+    )
+    assert val.status_code == 404, val.text
+
+    low = await ac.get(
+        "/api/v1/reports/inventory/low-stock",
+        headers=headers_a,
+        params={"store_id": store_b.id},
+    )
+    assert low.status_code == 404, low.text
+
+    by_prod = await ac.get(
+        "/api/v1/reports/sales/by-product",
+        headers=headers_a,
+        params={"store_id": store_b.id},
+    )
+    assert by_prod.status_code == 404, by_prod.text
+
+    by_cat = await ac.get(
+        "/api/v1/reports/sales/by-product",
+        headers=headers_a,
+        params={"category_id": cat_b.id},
+    )
+    assert by_cat.status_code == 404, by_cat.text
+
+    # No warehouse auto-created under B from A report attempt
+    wh_count = (
+        await db_session.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == seed["t1"].id,
+                m.Warehouse.store_id == store_b.id,
+            )
+        )
+    ).scalars().all()
+    assert len(wh_count) == 1
+    assert wh_count[0].id == wh_b.id

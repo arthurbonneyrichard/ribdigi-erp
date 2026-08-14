@@ -45,18 +45,24 @@ async def get_store(
     return store
 
 
-async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Warehouse:
+async def warehouse_for_store(
+    db: AsyncSession,
+    tenant_id: str,
+    store_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Warehouse:
+    store = await get_store(db, tenant_id, store_id, company_id=company_id)
     wh = (
         await db.execute(
             select(m.Warehouse).where(
                 m.Warehouse.tenant_id == tenant_id,
-                m.Warehouse.store_id == store_id,
+                m.Warehouse.store_id == store.id,
             )
         )
     ).scalar_one_or_none()
     if wh:
         return wh
-    store = await get_store(db, tenant_id, store_id)
     wh = m.Warehouse(
         tenant_id=tenant_id,
         company_id=getattr(store, "company_id", None),

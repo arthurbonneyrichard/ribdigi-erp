@@ -280,7 +280,12 @@ async def record_pos_sale(
 
     warehouse_id = None
     if session.store_id:
-        wh = await stores_svc.warehouse_for_store(db, claims["tenant_id"], session.store_id)
+        wh = await stores_svc.warehouse_for_store(
+            db,
+            claims["tenant_id"],
+            session.store_id,
+            company_id=claims.get("company_id") or getattr(session, "company_id", None),
+        )
         warehouse_id = wh.id
 
     await apply_line_items_stock(

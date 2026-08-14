@@ -646,7 +646,9 @@ async def _resolve_order_warehouse(
 
         store = await get_store(db, tenant_id, store_id, company_id=company_id)
         resolved_store = store.id
-        wh = await warehouse_for_store(db, tenant_id, store.id)
+        wh = await warehouse_for_store(
+            db, tenant_id, store.id, company_id=company_id
+        )
         resolved_wh = wh.id
     if warehouse_id:
         from app.inventory import get_warehouse
@@ -695,6 +697,7 @@ async def reserve_order_stock(
             warehouse_id=order.warehouse_id,
             variant_id=item.variant_id,
             user_id=user_id,
+            company_id=getattr(order, "company_id", None),
         )
 
 
@@ -716,7 +719,10 @@ async def create_order(
 ) -> m.SalesOrder:
     customer = await get_customer(db, tenant_id, customer_id, company_id=company_id)
     if quotation_id:
+        from app.workspace import assert_fk_company
+
         quote = await get_quotation(db, tenant_id, quotation_id)
+        assert_fk_company(quote, company_id, detail="Quotation not found")
         if quote.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Quotation customer mismatch")
         if company_id is None:
@@ -816,6 +822,7 @@ async def update_order(
             tenant_id=tenant_id,
             store_id=store_id if store_id is not None else order.store_id,
             warehouse_id=warehouse_id if warehouse_id is not None else order.warehouse_id,
+            company_id=getattr(order, "company_id", None),
         )
         order.store_id = resolved_store
         order.warehouse_id = resolved_wh
@@ -1202,7 +1209,9 @@ async def post_return(
     if invoice.store_id:
         from app.stores import warehouse_for_store
 
-        wh = await warehouse_for_store(db, tenant_id, invoice.store_id)
+        wh = await warehouse_for_store(
+            db, tenant_id, invoice.store_id, company_id=getattr(invoice, "company_id", None)
+        )
         warehouse_id = wh.id
 
     for item in items:

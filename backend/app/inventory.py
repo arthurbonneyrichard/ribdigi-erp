@@ -40,8 +40,9 @@ async def get_or_create_warehouse_stock(
     tenant_id: str,
     warehouse_id: str,
     product_id: str,
+    company_id: str | None = None,
 ) -> m.WarehouseStock:
-    warehouse = await get_warehouse(db, tenant_id, warehouse_id)
+    warehouse = await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
     row = (
         await db.execute(
             select(m.WarehouseStock)
@@ -83,9 +84,14 @@ async def apply_warehouse_stock_change(
     product_id: str,
     quantity_delta: float,
     allow_negative: bool = False,
+    company_id: str | None = None,
 ) -> m.WarehouseStock:
     row = await get_or_create_warehouse_stock(
-        db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
+        db,
+        tenant_id=tenant_id,
+        warehouse_id=warehouse_id,
+        product_id=product_id,
+        company_id=company_id,
     )
     before = float(row.quantity or 0)
     reserved = float(row.reserved_qty or 0)
@@ -134,6 +140,7 @@ async def reserve_product_stock(
     warehouse_id: str | None = None,
     variant_id: str | None = None,
     user_id: str | None = None,
+    company_id: str | None = None,
 ) -> m.StockReservation:
     """Soft-allocate on-hand stock for a sales order line (does not reduce stock_qty)."""
     qty = float(quantity)
@@ -152,11 +159,20 @@ async def reserve_product_stock(
 
     wh_row = None
     if warehouse_id:
+        scope_cid = company_id or getattr(product, "company_id", None)
         await allocate_unlocated_stock(
-            db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
+            db,
+            tenant_id=tenant_id,
+            warehouse_id=warehouse_id,
+            product_id=product_id,
+            company_id=scope_cid,
         )
         wh_row = await get_or_create_warehouse_stock(
-            db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
+            db,
+            tenant_id=tenant_id,
+            warehouse_id=warehouse_id,
+            product_id=product_id,
+            company_id=scope_cid,
         )
         # re-lock warehouse row
         wh_row = (
@@ -341,6 +357,7 @@ async def allocate_unlocated_stock(
     tenant_id: str,
     warehouse_id: str,
     product_id: str,
+    company_id: str | None = None,
 ) -> None:
     """If product has consolidated stock but no warehouse rows, park it at warehouse_id."""
     located = float(
@@ -369,6 +386,7 @@ async def allocate_unlocated_stock(
             warehouse_id=warehouse_id,
             product_id=product_id,
             quantity_delta=unlocated,
+            company_id=company_id or getattr(product, "company_id", None),
         )
 
 
@@ -679,6 +697,7 @@ async def apply_stock_change(
             product_id=product.id,
             quantity_delta=float(quantity_delta),
             allow_negative=allow_negative,
+            company_id=company_id,
         )
         # Warehouse-level reorder alert after stock-out
         if float(quantity_delta) < 0:

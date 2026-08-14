@@ -535,28 +535,13 @@ async def sales_by_product(
     company_id: str | None = None,
 ) -> dict:
     if store_id:
-        store = (
-            await db.execute(
-                select(m.Store).where(m.Store.id == store_id, m.Store.tenant_id == tenant_id)
-            )
-        ).scalar_one_or_none()
-        if not store:
-            from fastapi import HTTPException
+        from app.stores import get_store
 
-            raise HTTPException(status_code=404, detail="Store not found")
+        await get_store(db, tenant_id, store_id, company_id=company_id)
     if category_id:
-        cat = (
-            await db.execute(
-                select(m.ProductCategory).where(
-                    m.ProductCategory.id == category_id,
-                    m.ProductCategory.tenant_id == tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-        if not cat:
-            from fastapi import HTTPException
+        from app.catalog_meta import get_category
 
-            raise HTTPException(status_code=404, detail="Category not found")
+        await get_category(db, tenant_id, category_id, company_id=company_id)
 
     stmt = select(m.SalesInvoiceItem, m.SalesInvoice, m.Product).join(
         m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id
@@ -1056,8 +1041,14 @@ async def inventory_valuation(
 
     resolved_warehouse_id = warehouse_id
     if store_id and not warehouse_id:
-        wh = await stores_svc.warehouse_for_store(db, tenant_id, store_id)
+        wh = await stores_svc.warehouse_for_store(
+            db, tenant_id, store_id, company_id=company_id
+        )
         resolved_warehouse_id = wh.id
+    elif warehouse_id and company_id:
+        from app.inventory import get_warehouse
+
+        await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
 
     stmt = (
         select(m.WarehouseStock, m.Product, m.Warehouse)
@@ -1234,9 +1225,15 @@ async def inventory_low_stock(
     if store_id and not wh_filter:
         from app import stores as stores_svc
 
-        store = await stores_svc.get_store(db, tenant_id, store_id)
-        wh = await stores_svc.warehouse_for_store(db, tenant_id, store_id)
+        store = await stores_svc.get_store(db, tenant_id, store_id, company_id=company_id)
+        wh = await stores_svc.warehouse_for_store(
+            db, tenant_id, store_id, company_id=company_id
+        )
         wh_filter = wh.id
+    elif warehouse_id and company_id:
+        from app.inventory import get_warehouse
+
+        await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
 
     warehouse_rows: list[dict] = []
     stmt = (

@@ -798,7 +798,9 @@ async def post_sales_invoice(
         from app.stores import warehouse_for_store
         from app.inventory import allocate_unlocated_stock
 
-        wh = await warehouse_for_store(db, tenant_id, invoice.store_id)
+        wh = await warehouse_for_store(
+            db, tenant_id, invoice.store_id, company_id=getattr(invoice, "company_id", None)
+        )
         warehouse_id = wh.id
 
     # Soft allocations from the source sales order must be consumed before stock-out
