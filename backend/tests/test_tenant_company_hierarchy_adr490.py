@@ -2972,3 +2972,185 @@ async def test_phase23_notification_serialize_and_mutate_idor(client, db_session
     )
     assert pr.status_code == 200, pr.text
     assert pr.json()["data"].get("company_id") == seed["c1"].id
+
+
+@pytest.mark.asyncio
+async def test_phase24_payment_export_serialize_and_idor(client, db_session):
+    """Phase 24: payment mutate IDOR, nested exports, budgets, serialize peers."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P24B",
+        name="Alpha Phase24 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P24 Customer B",
+        status="active",
+        credit_limit=500,
+    )
+    supp_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="supplier",
+        name="P24 Supplier B",
+        status="active",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P24 Product B",
+        sku="P24-SKU-B",
+        selling_price=8,
+        cost_price=3,
+        stock_qty=5,
+        is_active=True,
+    )
+    store_b = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P24SB",
+        name="P24 Store B",
+        is_active=True,
+    )
+    exp_cat_b = m.ExpenseCategory(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P24ONLY",
+        name="P24 Only Budget Cat",
+        budget_amount=9999,
+        is_active=True,
+    )
+    db_session.add_all([cust_b, supp_b, prod_b, store_b, exp_cat_b])
+    await db_session.flush()
+    db_session.add(
+        m.ProductVariant(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            product_id=prod_b.id,
+            name="Size L",
+            sku="P24-SKU-B-L",
+            selling_price=8,
+            cost_price=3,
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # --- Payment mutate IDOR ---
+    for path, body in (
+        (
+            "/api/v1/sales/payments",
+            {"customer_id": cust_b.id, "amount": 1, "payment_method": "cash"},
+        ),
+        (
+            f"/api/v1/customers/{cust_b.id}/payments",
+            {"customer_id": cust_b.id, "amount": 1, "payment_method": "cash"},
+        ),
+        (
+            f"/api/v1/suppliers/{supp_b.id}/payments",
+            {
+                "supplier_id": supp_b.id,
+                "amount": 1,
+                "payment_method": "bank_transfer",
+            },
+        ),
+    ):
+        r = await ac.post(path, headers=headers_a, json=body)
+        assert r.status_code == 404, (path, r.status_code, r.text)
+
+    # --- Nested product read/export IDOR ---
+    for path in (
+        f"/api/v1/products/{prod_b.id}/variants",
+        f"/api/v1/products/{prod_b.id}/variants/export",
+        f"/api/v1/products/{prod_b.id}/batches/export",
+        f"/api/v1/products/{prod_b.id}/warehouse-stock/export",
+        f"/api/v1/customers/{cust_b.id}/history",
+        f"/api/v1/suppliers/{supp_b.id}/history",
+        f"/api/v1/stores/{store_b.id}/inventory",
+        f"/api/v1/stores/{store_b.id}/inventory/export",
+        f"/api/v1/stores/{store_b.id}/sales",
+        f"/api/v1/stores/{store_b.id}/sales/export",
+    ):
+        r = await ac.get(path, headers=headers_a)
+        assert r.status_code == 404, (path, r.status_code, r.text)
+
+    # --- Budgets scoped to company A (B-only category must not appear) ---
+    budgets = await ac.get("/api/v1/expenses/budgets", headers=headers_a)
+    assert budgets.status_code == 200, budgets.text
+    codes = {c.get("code") for c in budgets.json()["data"].get("categories") or []}
+    assert "P24ONLY" not in codes
+
+    # --- Serialize peers: contact + payment in company A ---
+    contact = await ac.post(
+        f"/api/v1/customers/{seed['party1'].id}/contacts",
+        headers=headers_a,
+        json={"name": "P24 Contact", "email": "p24@example.com"},
+    )
+    assert contact.status_code == 200, contact.text
+    assert contact.json()["data"].get("company_id") == seed["c1"].id
+
+    seed["p1"].selling_price = 10
+    seed["p1"].stock_qty = 20
+    seed["p1"].tax_exempt = True
+    await db_session.commit()
+    inv = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers_a,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [
+                {
+                    "product_id": seed["p1"].id,
+                    "quantity": 1,
+                    "unit_price": 10,
+                    "tax_rate": 0,
+                }
+            ],
+        },
+    )
+    assert inv.status_code == 200, inv.text
+    invoice_id = inv.json()["data"]["id"]
+    total = float(inv.json()["data"]["total_amount"])
+    posted = await ac.post(f"/api/v1/sales/invoices/{invoice_id}/post", headers=headers_a)
+    assert posted.status_code == 200, posted.text
+    pay = await ac.post(
+        "/api/v1/sales/payments",
+        headers=headers_a,
+        json={
+            "customer_id": seed["party1"].id,
+            "amount": total,
+            "sales_invoice_id": invoice_id,
+            "payment_method": "cash",
+        },
+    )
+    assert pay.status_code == 200, pay.text
+    pay_row = (
+        await db_session.execute(
+            select(m.CustomerPayment).where(m.CustomerPayment.id == pay.json()["data"]["id"])
+        )
+    ).scalar_one()
+    assert pay_row.company_id == seed["c1"].id

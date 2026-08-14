@@ -4915,7 +4915,8 @@ async def product_images_upload(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="product_images",
@@ -5216,6 +5217,8 @@ async def export_product_warehouse_stock(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 155 W1 — per-product warehouse-stock CSV (distinct from Stage 137 movements)."""
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     text = await inventory_ops_export_svc.export_product_warehouse_stock_csv(
         db, tenant_id=claims["tenant_id"], product_id=product_id
     )
@@ -5572,6 +5575,8 @@ async def list_product_variants(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 124 V1 — active_only / is_active for honest inactive-only variant lists."""
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     rows = await catalog_svc.list_variants(
         db,
         claims["tenant_id"],
@@ -5591,6 +5596,8 @@ async def export_product_variants(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 156 V1 — path-scoped per-product variants CSV (distinct from Stage 124 roster)."""
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     text = await variant_role_export_svc.export_product_variants_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -5897,6 +5904,8 @@ async def export_product_batches(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 154 K1 — per-product batches CSV (distinct from Stage 137 expiring export)."""
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     text = await inventory_ops_export_svc.export_product_batches_csv(
         db, tenant_id=claims["tenant_id"], product_id=product_id
     )
@@ -6265,6 +6274,8 @@ async def customer_history(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, party)
     data = await customers_svc.customer_history(
         db,
         tenant_id=claims["tenant_id"],
@@ -6281,6 +6292,8 @@ async def customer_history_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 153 C1 — customer sales history CSV (distinct from Stage 119 roster export)."""
+    party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, party)
     data = await customers_svc.customer_history(
         db,
         tenant_id=claims["tenant_id"],
@@ -6467,6 +6480,8 @@ async def supplier_history(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, party)
     data = await suppliers_svc.supplier_history(
         db,
         tenant_id=claims["tenant_id"],
@@ -6483,6 +6498,8 @@ async def supplier_history_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 153 S1 — supplier purchase history CSV (distinct from Stage 119 roster export)."""
+    party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, party)
     data = await suppliers_svc.supplier_history(
         db,
         tenant_id=claims["tenant_id"],
@@ -7558,6 +7575,8 @@ async def record_sales_payment(
     )
     if not allowed:
         raise HTTPException(status_code=403, detail="Missing permission: sales:write or credit:write")
+    party = await customers_svc.get_customer(db, claims["tenant_id"], payload.customer_id)
+    workspace_svc.assert_record_company(claims, party)
     payment = await sales_svc.record_customer_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -9307,6 +9326,7 @@ async def expense_category_budgets(
         claims["tenant_id"],
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(data)
@@ -9327,6 +9347,7 @@ async def export_expense_budgets(
         tenant_id=claims["tenant_id"],
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12482,6 +12503,8 @@ async def customer_payment_alias(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, party)
     payment = await sales_svc.record_customer_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -12616,6 +12639,8 @@ async def supplier_payment(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, party)
     payment = await purchasing_svc.record_supplier_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -13177,7 +13202,11 @@ async def store_inventory(
 ):
     return env(
         await stores_svc.store_inventory(
-            db, claims["tenant_id"], store_id, include_zero=include_zero
+            db,
+            claims["tenant_id"],
+            store_id,
+            include_zero=include_zero,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -13195,6 +13224,7 @@ async def store_inventory_export(
         tenant_id=claims["tenant_id"],
         store_id=store_id,
         include_zero=include_zero,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -13224,6 +13254,7 @@ async def store_sales(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             recent_limit=recent_limit,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -13245,6 +13276,7 @@ async def store_sales_export(
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         recent_limit=recent_limit,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,

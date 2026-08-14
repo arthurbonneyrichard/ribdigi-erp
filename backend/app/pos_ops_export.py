@@ -153,6 +153,7 @@ def serialize_pos_sale(tx: m.Transaction, session: m.PosSession | None) -> dict:
             amounts["other_amount"] = total
     return {
         "id": tx.id,
+        "company_id": getattr(tx, "company_id", None),
         "reference": tx.reference,
         "session_id": tx.session_id,
         "session_number": session.session_number if session else "",

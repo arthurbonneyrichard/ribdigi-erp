@@ -995,6 +995,8 @@ async def record_customer_payment(
         )
 
     customer = await get_customer(db, tenant_id, customer_id)
+    if company_id and getattr(customer, "company_id", None) and customer.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Customer not found")
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
     ).scalar_one()
@@ -1012,6 +1014,8 @@ async def record_customer_payment(
 
     if sales_invoice_id:
         invoice = await get_invoice(db, tenant_id, sales_invoice_id)
+        if company_id and getattr(invoice, "company_id", None) and invoice.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Sales invoice not found")
         if invoice.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Invoice does not belong to this customer")
         if invoice.status not in {"posted", "partial"}:
@@ -1042,15 +1046,16 @@ async def record_customer_payment(
                 raise HTTPException(status_code=409, detail="Payment exceeds invoice balance due")
             allocations.append((invoice, amount, 0.0))
     else:
+        open_q = select(m.SalesInvoice).where(
+            m.SalesInvoice.tenant_id == tenant_id,
+            m.SalesInvoice.customer_id == customer_id,
+            m.SalesInvoice.status.in_(["posted", "partial"]),
+        )
+        if company_id:
+            open_q = open_q.where(m.SalesInvoice.company_id == company_id)
         open_invoices = (
             await db.execute(
-                select(m.SalesInvoice)
-                .where(
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.customer_id == customer_id,
-                    m.SalesInvoice.status.in_(["posted", "partial"]),
-                )
-                .order_by(m.SalesInvoice.due_date.asc(), m.SalesInvoice.posted_at.asc())
+                open_q.order_by(m.SalesInvoice.due_date.asc(), m.SalesInvoice.posted_at.asc())
             )
         ).scalars().all()
         remaining = amount

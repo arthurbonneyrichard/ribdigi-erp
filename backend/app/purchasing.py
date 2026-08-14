@@ -1586,6 +1586,8 @@ async def record_supplier_payment(
     ).scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
+    if company_id and getattr(supplier, "company_id", None) and supplier.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Supplier not found")
 
     tenant = (await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))).scalar_one()
     from app.credit import resolve_early_pay_settings, purchase_invoice_early_discount
@@ -1602,6 +1604,8 @@ async def record_supplier_payment(
 
     if purchase_invoice_id:
         inv = await get_purchase_invoice(db, tenant_id, purchase_invoice_id)
+        if company_id and getattr(inv, "company_id", None) and inv.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Purchase invoice not found")
         if inv.supplier_id != supplier_id:
             raise HTTPException(status_code=400, detail="Invoice does not belong to this supplier")
         if inv.status not in PURCHASE_INVOICE_OPEN and inv.status != "draft":
@@ -1639,6 +1643,8 @@ async def record_supplier_payment(
             po_allocations.append((po, settlement))
     elif purchase_order_id:
         po = await get_po(db, tenant_id, purchase_order_id)
+        if company_id and getattr(po, "company_id", None) and po.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Purchase order not found")
         if po.supplier_id != supplier_id:
             raise HTTPException(status_code=400, detail="PO does not belong to this supplier")
         open_invs = (

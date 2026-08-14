@@ -34,6 +34,7 @@ def serialize_variant(v: m.ProductVariant) -> dict:
 def serialize_batch(b: m.ProductBatch) -> dict:
     return {
         "id": b.id,
+        "company_id": getattr(b, "company_id", None),
         "product_id": b.product_id,
         "variant_id": b.variant_id,
         "warehouse_id": b.warehouse_id,

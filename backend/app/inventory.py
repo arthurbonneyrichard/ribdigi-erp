@@ -465,6 +465,7 @@ def serialize_movement(
 ) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "product_id": row.product_id,
         "product_sku": product.sku if product else None,
         "product_name": product.name if product else None,

@@ -201,3 +201,13 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Serialize helpers expose `company_id` for PR/PO/GRN/purchase return/invoice/amendment, POS holds, products, quotations/orders/returns, customers/suppliers, and stock counts.
 - Mutate IDOR: PR approve/reject; PI OCR/attachment; customer/supplier patch/delete/contacts/credit-limit; journal unpost/attachment; COA patch (company-scoped uniqueness); inventory adjust; variant delete; store reorder-policy assert product/store company.
 - Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design; optional P2 serialize of payment registers/connectors and child-row contact serializers.
+
+## Phase 24 — Payment IDOR, nested exports, budgets, P2 serialize (2026-08-14)
+
+- Customer/supplier payment services and API routes assert party (and invoice/PO) company ownership; open-invoice allocation queries filter by `company_id`.
+- Nested product variants list/export and batches/warehouse-stock export assert product company before read.
+- Store inventory/sales (and CSV exports) pass `company_id` into `get_store`; party history/export assert company ownership before returning empty-or-scoped payloads.
+- Expense category budgets list/export pass workspace `company_id` into `category_budget_variance`.
+- Gallery image upload asserts product company before `save_upload`.
+- Serialize helpers expose `company_id` for customer/supplier payments, contacts, stock movements, batches, product images, POS sales export rows, and bank connections.
+- Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design; optional child-row serializers (approval actions, stock-count items, POS payment lines).

@@ -14,6 +14,7 @@ from app import models as m
 def serialize_contact(row: m.PartyContact) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "party_id": row.party_id,
         "name": row.name,
         "email": row.email,

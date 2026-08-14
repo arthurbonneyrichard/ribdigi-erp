@@ -256,10 +256,11 @@ async def export_store_inventory_csv(
     tenant_id: str,
     store_id: str,
     include_zero: bool = False,
+    company_id: str | None = None,
 ) -> str:
     """Stage 155 I1 — store warehouse inventory / reorder CSV."""
     rows = await stores_svc.store_inventory(
-        db, tenant_id, store_id, include_zero=include_zero
+        db, tenant_id, store_id, include_zero=include_zero, company_id=company_id
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=STORE_INVENTORY_EXPORT_COLUMNS)
@@ -291,6 +292,7 @@ async def export_store_sales_csv(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     recent_limit: int = 50,
+    company_id: str | None = None,
 ) -> str:
     """Stage 155 S1 — store sales summary + recent invoice/POS lines CSV."""
     payload = await stores_svc.store_sales(
@@ -300,6 +302,7 @@ async def export_store_sales_csv(
         from_date=from_date,
         to_date=to_date,
         recent_limit=recent_limit,
+        company_id=company_id,
     )
     store = payload.get("store") or {}
     summary = payload.get("summary") or {}

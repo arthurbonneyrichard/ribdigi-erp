@@ -40,6 +40,7 @@ def _cell(value) -> str:
 def serialize_image(row: m.ProductImage) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "product_id": row.product_id,
         "storage_key": row.storage_key,
         "content_type": row.content_type,

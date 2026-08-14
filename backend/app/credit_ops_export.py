@@ -113,6 +113,7 @@ SCHEDULE_BUCKETS = {"overdue", "due_today", "upcoming", "unscheduled"}
 def serialize_customer_payment(row: m.CustomerPayment) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "payment_number": row.payment_number,
         "customer_id": row.customer_id,
         "sales_invoice_id": row.sales_invoice_id,
@@ -133,6 +134,7 @@ def serialize_customer_payment(row: m.CustomerPayment) -> dict:
 def serialize_supplier_payment(row: m.SupplierPayment) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "payment_number": row.payment_number,
         "supplier_id": row.supplier_id,
         "purchase_order_id": row.purchase_order_id,

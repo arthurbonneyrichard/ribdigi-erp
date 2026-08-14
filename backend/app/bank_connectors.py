@@ -31,6 +31,7 @@ def _decrypt(token: str) -> str:
 def serialize_connection(row: m.BankAccountConnection, *, include_secrets: bool = False) -> dict:
     data = {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "account_id": row.account_id,
         "provider": row.provider,
         "display_name": row.display_name or "Bank connection",

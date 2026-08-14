@@ -113,10 +113,11 @@ async def export_expense_budgets_csv(
     tenant_id: str,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 139 B1 — category budget variance CSV for a period."""
     data = await expenses_svc.category_budget_variance(
-        db, tenant_id, from_date=from_date, to_date=to_date
+        db, tenant_id, from_date=from_date, to_date=to_date, company_id=company_id
     )
     period_from = data.get("from_date")
     period_to = data.get("to_date")

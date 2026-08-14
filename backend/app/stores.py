@@ -296,8 +296,9 @@ async def store_inventory(
     store_id: str,
     *,
     include_zero: bool = False,
+    company_id: str | None = None,
 ) -> list[dict]:
-    await get_store(db, tenant_id, store_id)
+    await get_store(db, tenant_id, store_id, company_id=company_id)
     wh = await warehouse_for_store(db, tenant_id, store_id)
     stmt = (
         select(m.WarehouseStock, m.Product)
@@ -346,9 +347,10 @@ async def store_sales(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     recent_limit: int = 50,
+    company_id: str | None = None,
 ) -> dict:
     """Store-specific sales summary + recent invoice/POS lines (BR-13.1)."""
-    store = await get_store(db, tenant_id, store_id)
+    store = await get_store(db, tenant_id, store_id, company_id=company_id)
     limit = max(1, min(int(recent_limit or 50), 200))
 
     inv_stmt = select(m.SalesInvoice).where(
