@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_381_EXIT_CRITERIA.md` / `docs/ADR_770_STAGE381_FREEZE.md` (`backend/tests/test_stage381_exit_h381x.py`) — Stage 381 H381x
+- `docs/STAGE_381_FIDELITY.md` (`backend/tests/test_stage381_fidelity_d1.py`) — Stage 381 D1
+- `docs/STAGE_381_PLAN.md` (`backend/tests/test_stage381_open.py`) — Stage 381 open (ADR-769)
+- `docs/OFFLINE_DEVICE_REVOKE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-device-revoke-pack-remaining-gate.json` — Stage 381 I1
+- `docs/OFFLINE_DEVICE_REVOKE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-device-revoke-pack-rg-blockers.json` — Stage 381 B1
+- `docs/OFFLINE_DEVICE_REVOKE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-device-revoke-pack-rg-pointers.json` — Stage 381 P1
 - `docs/STAGE_380_EXIT_CRITERIA.md` / `docs/ADR_768_STAGE380_FREEZE.md` (`backend/tests/test_stage380_exit_h380x.py`) — Stage 380 H380x
 - `docs/STAGE_380_FIDELITY.md` (`backend/tests/test_stage380_fidelity_d1.py`) — Stage 380 D1
 - `docs/STAGE_380_PLAN.md` (`backend/tests/test_stage380_open.py`) — Stage 380 open (ADR-767)
@@ -5563,6 +5569,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 381 exit
+
+H381x met — `docs/STAGE_381_EXIT_CRITERIA.md`, ADR-770. Stages 1–381 frozen for Stage 381 feature scope.
+
+## Stage 381 D1 — Tenant MVP Offline Device Revoke Mid-Queue Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `OFFLINE_DEVICE_REVOKE_PACK_REMAINING_GATE_MVP.md` / `OFFLINE_DEVICE_REVOKE_PACK_RG_BLOCKERS_MVP.md` / `OFFLINE_DEVICE_REVOKE_PACK_RG_POINTERS_MVP.md` / ops JSON twins. Honesty: Offline Complete / offline device-revoke / mid-queue revoke honesty / go-live / attestation remain **false**. Packaging only.
+
+## Stage 381 open
+
+ADR-769 / `docs/STAGE_381_PLAN.md`.
 
 ## Stage 380 exit
 

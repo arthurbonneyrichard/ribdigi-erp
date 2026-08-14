@@ -31,3 +31,10 @@ Stage 381 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline SW-cache, SW static-cache contract as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 381 opened under **ADR-769** after CONTINUE/NEXT (Tenant MVP Offline Device Revoke Mid-Queue Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-770**. Stage 380 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 380 runner-up outline was approved and opened (ADR-769); freeze ADR-770. Do not reopen Stage 380 scope.
+
