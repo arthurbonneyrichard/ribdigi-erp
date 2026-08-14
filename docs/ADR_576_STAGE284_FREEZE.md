@@ -28,6 +28,12 @@ Stage 285 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Accessibility Statement Pack Remaining-Gate Index Fidelity — single index of accessibility-statement-pack blockers (packaged Stage 41 A1 accessibility statement materials non-claim as WCAG AA / accessibility-audit Completes) with explicit non-claim. Prefixed `ACCESSIBILITY_STATEMENT_PACK_*` if a prior remaining-gate exists. Distinct from Stage 284 acceptance archive pack remaining-gate, Stage 274 language i18n pack remaining-gate, and `ACCESSIBILITY_STATEMENT_MVP.md` packaging. Source: `ACCESSIBILITY_STATEMENT_MVP.md`.
 
+## Amendment — Stage 285 opened
+
+Stage 285 opened under **ADR-577** after CONTINUE/NEXT (Tenant MVP Accessibility Statement Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-578**. Stage 284 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 285 runner-up outline was approved and opened (ADR-577); freeze ADR-578. Do not reopen Stage 284 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for archive live, §7 signed, attestation, live runs certified, paid billing, or go-live.

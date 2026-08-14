@@ -320,6 +320,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Acceptance archive pack remaining-gate index (Stage 284):** Status index is `docs/ACCEPTANCE_ARCHIVE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ACCEPTANCE_ARCHIVE_PACK_RG_BLOCKERS_MVP.md` → Stage 32/283/282/31 pointers `docs/ACCEPTANCE_ARCHIVE_PACK_RG_POINTERS_MVP.md`. Archive live Complete and §7 signed Complete remain MISSING (not claimed). Prefixed `ACCEPTANCE_ARCHIVE_PACK_*` remaining-gate docs (≠ Stage 32 A1 `ACCEPTANCE_ARCHIVE_MVP.md`).
 
+**Accessibility statement pack remaining-gate index (Stage 285):** Status index is `docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ACCESSIBILITY_STATEMENT_PACK_RG_BLOCKERS_MVP.md` → Stage 41/284/274/ADR-006 pointers `docs/ACCESSIBILITY_STATEMENT_PACK_RG_POINTERS_MVP.md`. WCAG AA Complete and accessibility audit Complete remain MISSING (not claimed). Prefixed `ACCESSIBILITY_STATEMENT_PACK_*` remaining-gate docs (≠ Stage 41 A1 `ACCESSIBILITY_STATEMENT_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

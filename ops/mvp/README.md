@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_285_EXIT_CRITERIA.md` / `docs/ADR_578_STAGE285_FREEZE.md` (`backend/tests/test_stage285_exit_h285x.py`) — Stage 285 H285x
+- `docs/STAGE_285_FIDELITY.md` (`backend/tests/test_stage285_fidelity_d1.py`) — Stage 285 D1
+- `docs/STAGE_285_PLAN.md` (`backend/tests/test_stage285_open.py`) — Stage 285 open (ADR-577)
+- `docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/accessibility-statement-pack-remaining-gate.json` — Stage 285 I1
+- `docs/ACCESSIBILITY_STATEMENT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/accessibility-statement-pack-rg-blockers.json` — Stage 285 B1
+- `docs/ACCESSIBILITY_STATEMENT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/accessibility-statement-pack-rg-pointers.json` — Stage 285 P1
 - `docs/STAGE_284_EXIT_CRITERIA.md` / `docs/ADR_576_STAGE284_FREEZE.md` (`backend/tests/test_stage284_exit_h284x.py`) — Stage 284 H284x
 - `docs/STAGE_284_FIDELITY.md` (`backend/tests/test_stage284_fidelity_d1.py`) — Stage 284 D1
 - `docs/STAGE_284_PLAN.md` (`backend/tests/test_stage284_open.py`) — Stage 284 open (ADR-575)
@@ -4987,6 +4993,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 285 exit
+
+H285x met — `docs/STAGE_285_EXIT_CRITERIA.md`, ADR-578. Stages 1–285 frozen for Stage 285 feature scope.
+
+## Stage 285 D1 — Tenant MVP Accessibility Statement Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_285_FIDELITY.md` (`test_stage285_fidelity_d1.py`). `ACCESSIBILITY_STATEMENT_PACK_*` remaining-gate index; WCAG AA / accessibility audit / go-live still MISSING.
+
+## Stage 285 open
+
+`docs/ADR_577_STAGE285_OPEN.md` + `docs/STAGE_285_PLAN.md` (`test_stage285_open.py`).
 
 ## Stage 284 exit
 

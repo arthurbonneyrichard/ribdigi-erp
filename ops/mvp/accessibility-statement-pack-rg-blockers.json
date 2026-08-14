@@ -1,0 +1,66 @@
+{
+  "id": "accessibility-statement-pack-rg-blockers",
+  "stage": 285,
+  "pack": "B1",
+  "doc": "docs/ACCESSIBILITY_STATEMENT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+    "accessibility_statement": "docs/ACCESSIBILITY_STATEMENT_MVP.md"
+  },
+  "packaging_complete": true,
+  "wcag_aa_claimed": false,
+  "accessibility_audit_claimed": false,
+  "conformance_program_live": false,
+  "remediation_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "wcag_aa": "REMAINING",
+    "accessibility_audit": "REMAINING",
+    "conformance_program_live": "REMAINING",
+    "remediation_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage41_as_wcag_aa": "NON_CLAIM",
+    "stage274_as_i18n_complete": "NON_CLAIM",
+    "wcag_aa_claimed": "false",
+    "accessibility_audit_claimed": "false",
+    "conformance_program_live_claimed": "false",
+    "remediation_complete_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "asprb-wcag",
+      "title": "Mark WCAG AA Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprb-audit",
+      "title": "Mark accessibility audit Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprb-conformance",
+      "title": "Mark conformance program live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprb-stage41-nonclaim",
+      "title": "Mark Stage 41 A1 as non-claim for WCAG AA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprb-wcag-remaining",
+      "title": "WCAG AA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 285 B1 accessibility statement pack RG blocker matrix packaging only. WCAG AA Completes remain MISSING."
+}
