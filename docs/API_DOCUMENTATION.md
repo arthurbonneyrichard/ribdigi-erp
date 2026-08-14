@@ -1234,8 +1234,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Purchase Returns:** `GET /reports/purchases/returns?from_date=&to_date=&supplier_id=&reason=&status=` — return summary with `by_reason` / `by_supplier` / line list; reasons `damaged|wrong_item|expiry|quality|other`. Export `purchases_returns`.
 
 ### 14.4 Expense Reports
-**Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=`  
-**Budget vs Actual:** `GET /reports/expenses/budget-vs-actual?from_date=&to_date=&category_id=` — scales each category's monthly `budget_amount` by `period_days/30` against approved spend; returns `rows`, `top_categories`, totals, and status `over_budget|under_budget|on_budget|no_budget`. Export type `expenses_budget_vs_actual`.
+**Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=&branch_id=&department_id=`  
+**Budget vs Actual:** `GET /reports/expenses/budget-vs-actual?from_date=&to_date=&category_id=&branch_id=&department_id=` — scales each category's monthly `budget_amount` by `period_days/30` against approved spend (org filters apply to actuals); returns `rows`, `top_categories`, totals, echo `branch_name`/`department_name`, and status `over_budget|under_budget|on_budget|no_budget`. Export types `expenses_summary` / `expenses_budget_vs_actual` accept the same org params.
 
 ---
 

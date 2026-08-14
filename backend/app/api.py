@@ -8397,6 +8397,8 @@ async def report_expenses_summary(
     from_date: str | None = None,
     to_date: str | None = None,
     category_id: str | None = None,
+    branch_id: str | None = None,
+    department_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8406,7 +8408,9 @@ async def report_expenses_summary(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            category_id=category_id,
+            category_id=category_id or None,
+            branch_id=branch_id or None,
+            department_id=department_id or None,
         )
     )
 
@@ -8416,6 +8420,8 @@ async def report_expenses_budget_vs_actual(
     from_date: str | None = None,
     to_date: str | None = None,
     category_id: str | None = None,
+    branch_id: str | None = None,
+    department_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8425,7 +8431,9 @@ async def report_expenses_budget_vs_actual(
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            category_id=category_id,
+            category_id=category_id or None,
+            branch_id=branch_id or None,
+            department_id=department_id or None,
         )
     )
 

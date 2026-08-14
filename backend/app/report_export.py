@@ -608,14 +608,23 @@ async def build_report_payload(
             db, tenant_id, from_date=fd, to_date=td
         )
     if report_type == "expenses_summary":
-        return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.expenses_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            branch_id=branch_id or None,
+            department_id=department_id or None,
+        )
     if report_type == "expenses_budget_vs_actual":
         return await reports_svc.budget_vs_actual(
             db,
             tenant_id,
             from_date=fd,
             to_date=td,
-            category_id=None,
+            category_id=category_id or None,
+            branch_id=branch_id or None,
+            department_id=department_id or None,
         )
     if report_type == "cash_flow":
         return await reports_svc.cash_flow(db, tenant_id, from_date=fd, to_date=td)
