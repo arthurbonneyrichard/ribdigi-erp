@@ -31,3 +31,10 @@ Stage 375 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, device-registry product Completes as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 375 opened under **ADR-757** after CONTINUE/NEXT (Tenant MVP Offline Payment Rules Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-758**. Stage 374 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 374 runner-up outline was approved and opened (ADR-757); freeze ADR-758. Do not reopen Stage 374 scope.
+

@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 375 D1 (2026-08-14):** Offline Payment Rules Pack Remaining-Gate Index fidelity sync — `docs/STAGE_375_FIDELITY.md` (`test_stage375_fidelity_d1.py`). Open ADR: `docs/ADR_757_STAGE375_OPEN.md`; plan `docs/STAGE_375_PLAN.md`.
+
+**Stage 375 exit (2026-08-14):** I1, B1, P1, D1, H375x met — `docs/STAGE_375_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_758_STAGE375_FREEZE.md`. Fidelity: `docs/STAGE_375_FIDELITY.md`.
+
 **Stage 374 D1 (2026-08-14):** Device Offline Registry Pack Remaining-Gate Index fidelity sync — `docs/STAGE_374_FIDELITY.md` (`test_stage374_fidelity_d1.py`). Open ADR: `docs/ADR_755_STAGE374_OPEN.md`; plan `docs/STAGE_374_PLAN.md`.
 
 **Stage 374 exit (2026-08-14):** I1, B1, P1, D1, H374x met — `docs/STAGE_374_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_756_STAGE374_FREEZE.md`. Fidelity: `docs/STAGE_374_FIDELITY.md`.
