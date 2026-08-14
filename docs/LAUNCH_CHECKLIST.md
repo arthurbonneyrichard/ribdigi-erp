@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 365 track opened (ADR-737: `test_stage365_open.py`, `docs/STAGE_365_PLAN.md`) — E2E Verify Financials Pack Remaining-Gate Index; closed under ADR-738
+- [x] E2E verify financials pack remaining-gate hub (Stage 365 I1: `test_stage365_index_i1.py`, `docs/E2E_VERIFY_FINANCIALS_PACK_REMAINING_GATE_MVP.md`)
+- [x] E2E verify financials pack blocker matrix (Stage 365 B1: `test_stage365_blockers_b1.py`, `docs/E2E_VERIFY_FINANCIALS_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 35 / Stage 364 / Stage 320 / Stage 329 pointers (Stage 365 P1: `test_stage365_pointers_p1.py`, `docs/E2E_VERIFY_FINANCIALS_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 365 fidelity sync (D1: `test_stage365_fidelity_d1.py`, `docs/STAGE_365_FIDELITY.md`)
+- [x] Stage 365 exit + freeze (H365x: `test_stage365_exit_h365x.py`, `docs/STAGE_365_EXIT_CRITERIA.md`, ADR-738)
 - [x] Stage 364 track opened (ADR-735: `test_stage364_open.py`, `docs/STAGE_364_PLAN.md`) — E2E Org Bootstrap Pack Remaining-Gate Index; closed under ADR-736
 - [x] E2E org bootstrap pack remaining-gate hub (Stage 364 I1: `test_stage364_index_i1.py`, `docs/E2E_ORG_BOOTSTRAP_PACK_REMAINING_GATE_MVP.md`)
 - [x] E2E org bootstrap pack blocker matrix (Stage 364 B1: `test_stage364_blockers_b1.py`, `docs/E2E_ORG_BOOTSTRAP_PACK_RG_BLOCKERS_MVP.md`)

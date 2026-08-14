@@ -1,0 +1,57 @@
+{
+  "id": "e2e-verify-financials-pack-remaining-gate",
+  "stage": 365,
+  "pack": "I1",
+  "doc": "docs/E2E_VERIFY_FINANCIALS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/E2E_VERIFY_FINANCIALS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/E2E_VERIFY_FINANCIALS_PACK_RG_POINTERS_MVP.md",
+    "e2e_verify_financials": "docs/E2E_VERIFY_FINANCIALS_MVP.md",
+    "e2e_org_bootstrap_pack_remaining_gate": "docs/E2E_ORG_BOOTSTRAP_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_verify_financials_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "tax_efile_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage35_e2e_verify_financials": true,
+  "distinct_from_stage364_e2e_org_bootstrap_pack_remaining_gate": true,
+  "distinct_from_stage320_e2e_backup_restore_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "evfpr-read-blockers",
+      "title": "Read B1 E2E verify financials pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfpr-follow-pointers",
+      "title": "Follow P1 Stage 35 / Stage 364 / Stage 320 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfpr-checklist-missing",
+      "title": "Reaffirm live verify-financials / E2E smoke / demo tenant / tax e-file MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfpr-no-packaging-as-live",
+      "title": "Do not treat Stage 35 / Stage 364 / Stage 320 / Stage 329 as live E2E verify-financials Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfpr-checklist-remaining",
+      "title": "Live verify-financials / E2E smoke / demo tenant / tax e-file / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 365 I1 E2E verify financials pack remaining-gate index packaging only. Do not claim live E2E verify-financials Complete."
+}

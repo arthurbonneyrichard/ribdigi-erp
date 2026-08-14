@@ -1,0 +1,62 @@
+{
+  "id": "e2e-verify-financials-pack-rg-blockers",
+  "stage": 365,
+  "pack": "B1",
+  "doc": "docs/E2E_VERIFY_FINANCIALS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_VERIFY_FINANCIALS_PACK_REMAINING_GATE_MVP.md",
+    "e2e_verify_financials": "docs/E2E_VERIFY_FINANCIALS_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_verify_financials_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "tax_efile_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_verify_financials_claimed": "REMAINING",
+    "e2e_smoke_executed_claimed": "REMAINING",
+    "demo_tenant_claimed": "REMAINING",
+    "tax_efile_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage35_as_live_e2e_verify_financials": "NON_CLAIM",
+    "live_verify_financials_claimed_flag": "false",
+    "e2e_smoke_executed_claimed_flag": "false",
+    "demo_tenant_claimed_flag": "false",
+    "tax_efile_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "evfprb-live-verify",
+      "title": "Mark live verify-financials Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprb-e2e-smoke",
+      "title": "Mark E2E smoke Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprb-tax-efile",
+      "title": "Mark tax e-file Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprb-stage35-nonclaim",
+      "title": "Mark Stage 35 as non-claim for live E2E verify-financials Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprb-checklist-remaining",
+      "title": "Live E2E verify-financials Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 365 B1 E2E verify financials pack RG blocker matrix packaging only. Live E2E verify-financials Completes remain MISSING."
+}

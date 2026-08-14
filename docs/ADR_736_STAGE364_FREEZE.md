@@ -31,3 +31,9 @@ Stage 365 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live bootstrap, E2E smoke, demo tenant, go-live, or attestation.
+
+## CONTINUE/NEXT
+
+Stage 365 opened under **ADR-737** after CONTINUE/NEXT (Tenant MVP E2E Verify Financials Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-738**. Stage 364 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 365 runner-up outline was approved and opened (ADR-737); freeze ADR-738. Do not reopen Stage 364 scope.

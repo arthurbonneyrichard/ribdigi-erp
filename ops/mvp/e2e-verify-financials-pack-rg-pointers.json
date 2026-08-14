@@ -1,0 +1,60 @@
+{
+  "id": "e2e-verify-financials-pack-rg-pointers",
+  "stage": 365,
+  "pack": "P1",
+  "doc": "docs/E2E_VERIFY_FINANCIALS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_VERIFY_FINANCIALS_PACK_REMAINING_GATE_MVP.md",
+    "e2e_verify_financials": "docs/E2E_VERIFY_FINANCIALS_MVP.md",
+    "e2e_org_bootstrap_pack_remaining_gate": "docs/E2E_ORG_BOOTSTRAP_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_verify_financials_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "tax_efile_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "e2e_verify_financials_stage35",
+    "e2e_org_bootstrap_pack_remaining_gate_stage364",
+    "e2e_backup_restore_pack_remaining_gate_stage320",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "evfprp-stage35",
+      "title": "Point to Stage 35 E2E verify-financials packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprp-stage364",
+      "title": "Point to Stage 364 E2E org bootstrap pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprp-stage320",
+      "title": "Point to Stage 320 E2E backup restore pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "evfprp-checklist-remaining",
+      "title": "Live E2E verify-financials Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 365 P1 E2E verify financials pack RG pointers packaging only. Do not claim live E2E verify-financials Complete."
+}

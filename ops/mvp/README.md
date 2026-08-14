@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_365_EXIT_CRITERIA.md` / `docs/ADR_738_STAGE365_FREEZE.md` (`backend/tests/test_stage365_exit_h365x.py`) — Stage 365 H365x
+- `docs/STAGE_365_FIDELITY.md` (`backend/tests/test_stage365_fidelity_d1.py`) — Stage 365 D1
+- `docs/STAGE_365_PLAN.md` (`backend/tests/test_stage365_open.py`) — Stage 365 open (ADR-737)
+- `docs/E2E_VERIFY_FINANCIALS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/e2e-verify-financials-pack-remaining-gate.json` — Stage 365 I1
+- `docs/E2E_VERIFY_FINANCIALS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/e2e-verify-financials-pack-rg-blockers.json` — Stage 365 B1
+- `docs/E2E_VERIFY_FINANCIALS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/e2e-verify-financials-pack-rg-pointers.json` — Stage 365 P1
 - `docs/STAGE_364_EXIT_CRITERIA.md` / `docs/ADR_736_STAGE364_FREEZE.md` (`backend/tests/test_stage364_exit_h364x.py`) — Stage 364 H364x
 - `docs/STAGE_364_FIDELITY.md` (`backend/tests/test_stage364_fidelity_d1.py`) — Stage 364 D1
 - `docs/STAGE_364_PLAN.md` (`backend/tests/test_stage364_open.py`) — Stage 364 open (ADR-735)
@@ -5467,6 +5473,16 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 365 exit
+
+H365x met — `docs/STAGE_365_EXIT_CRITERIA.md`, ADR-738. Stages 1–365 frozen for Stage 365 feature scope.
+
+## Stage 365 D1 — Tenant MVP E2E Verify Financials Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_365_FIDELITY.md` (`test_stage365_fidelity_d1.py`). `E2E_VERIFY_FINANCIALS_PACK_*` remaining-gate index; live verify-financials / E2E smoke / demo tenant / tax e-file / go-live still MISSING.
+
+## Stage 365 open
 
 ## Stage 364 exit
 
