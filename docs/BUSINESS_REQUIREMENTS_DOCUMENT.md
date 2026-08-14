@@ -257,6 +257,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Add multiple tax rates (VAT, GST, etc.)
   - [x] Set default tax rate
+  - [x] Soft-deactivate tax rates without data loss (`PATCH /tax/rates/{id}` `{ is_active }`; Tax UI **Activate** / **Deactivate**; inactive blocked on category assign; cannot set inactive as default)
   - [x] Tax applicability by product category
   - [x] Compound tax support
 
@@ -695,6 +696,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Add tax types (VAT, GST, Sales Tax, etc.)
   - [x] Configure tax rates (percentage)
+  - [x] Soft-deactivate obsolete rates (`PATCH /tax/rates/{id}` `{ is_active=false }` clears default flag; Tax UI **Deactivate** / **Activate**; category tax pickers stay active-only)
   - [x] Set tax applicability (inclusive/exclusive pricing)
   - [x] Product-category-specific tax rules
   - [x] Compound tax (tax on tax) support

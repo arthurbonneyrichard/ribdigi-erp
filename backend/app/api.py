@@ -155,6 +155,7 @@ from app.schemas import (
     SupplierPaymentCreate,
     TaxCalculateRequest,
     TaxCreate,
+    TaxUpdate,
     TenantCreate,
     TenantProfileUpdate,
     TenantSuspendRequest,
@@ -9531,6 +9532,36 @@ async def get_tax_rate(
     return env(tax_svc.serialize_tax_rate(rate))
 
 
+@api.patch("/tax/rates/{rate_id}")
+async def patch_tax_rate(
+    rate_id: str,
+    payload: TaxUpdate,
+    claims=Depends(require_permission("tax", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    if not data:
+        rate = await tax_svc.get_tax_rate(db, claims["tenant_id"], rate_id)
+        return env(tax_svc.serialize_tax_rate(rate), "No changes")
+    clear_components = "components" in data and data.get("components") is None
+    rate = await tax_svc.update_tax_rate(
+        db,
+        tenant_id=claims["tenant_id"],
+        rate_id=rate_id,
+        name=data.get("name"),
+        rate=data.get("rate"),
+        tax_type=data.get("tax_type"),
+        pricing_mode=data.get("pricing_mode"),
+        components=data.get("components") if "components" in data else None,
+        clear_components=clear_components,
+        is_reverse_charge=data.get("is_reverse_charge"),
+        is_active=data.get("is_active"),
+    )
+    await db.commit()
+    await db.refresh(rate)
+    return env(tax_svc.serialize_tax_rate(rate), "Tax rate updated")
+
+
 @api.post("/tax/rates/{rate_id}/default")
 async def set_default_tax(
     rate_id: str,
@@ -9538,6 +9569,8 @@ async def set_default_tax(
     db: AsyncSession = Depends(get_db),
 ):
     rate = await tax_svc.get_tax_rate(db, claims["tenant_id"], rate_id)
+    if not rate.is_active:
+        raise HTTPException(status_code=400, detail="Cannot set inactive tax rate as default")
     await tax_svc.clear_default_flags(db, claims["tenant_id"])
     rate.is_default = True
     rate.is_active = True
