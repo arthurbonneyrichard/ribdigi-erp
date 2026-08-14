@@ -31,3 +31,9 @@ Stage 325 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for customer assurance, assurance, evidence chain live, residual risks closed, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 325 opened under **ADR-657** after CONTINUE/NEXT (Tenant MVP GoLive Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-658**. Stage 324 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 325 runner-up outline was approved and opened (ADR-657); freeze ADR-658. Do not reopen Stage 324 scope.

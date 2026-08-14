@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 325 open (2026-08-14):** Tenant MVP GoLive Pack Remaining-Gate Index Fidelity — `docs/ADR_657_STAGE325_OPEN.md` + `docs/STAGE_325_PLAN.md` (I1 next).
+
+**Stage 325 I1 (2026-08-14):** GoLive pack remaining-gate index hub (`test_stage325_index_i1.py`).
+
+**Stage 325 B1 (2026-08-14):** GoLive pack blocker matrix (`test_stage325_blockers_b1.py`).
+
+**Stage 325 P1 (2026-08-14):** Stage 180 / Stage 324 / Stage 323 / Stage 245 pointers (`test_stage325_pointers_p1.py`).
+
+**Stage 325 D1 (2026-08-14):** GoLive Pack Remaining-Gate Index fidelity sync — `docs/STAGE_325_FIDELITY.md` (`test_stage325_fidelity_d1.py`).
+
+**Stage 325 exit (2026-08-14):** I1, B1, P1, D1, H325x met — `docs/STAGE_325_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_658_STAGE325_FREEZE.md`. Fidelity: `docs/STAGE_325_FIDELITY.md`.
+
 **Stage 324 open (2026-08-14):** Tenant MVP Customer Assurance Pack Remaining-Gate Index Fidelity — `docs/ADR_655_STAGE324_OPEN.md` + `docs/STAGE_324_PLAN.md` (I1 next).
 
 **Stage 324 I1 (2026-08-14):** Customer assurance pack remaining-gate index hub (`test_stage324_index_i1.py`).

@@ -1,0 +1,57 @@
+{
+  "id": "golive-pack-remaining-gate",
+  "stage": 325,
+  "pack": "I1",
+  "doc": "docs/GOLIVE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/GOLIVE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/GOLIVE_PACK_RG_POINTERS_MVP.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "customer_assurance_pack_remaining_gate": "docs/CUSTOMER_ASSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_pack_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_golive_pack_remaining_gate": "docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "sections_1_3_verified_claimed": false,
+  "section_7_signed_claimed": false,
+  "attestation_claimed": false,
+  "offline_complete_claimed": false,
+  "distinct_from_stage180_golive_remaining_gate": true,
+  "distinct_from_commercial_golive_closeout_pack": true,
+  "distinct_from_first_tenant_golive_pack": true,
+  "distinct_from_stage324_customer_assurance_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "glpr-read-blockers",
+      "title": "Read B1 golive pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glpr-follow-pointers",
+      "title": "Follow P1 Stage 180 / Stage 324 / Stage 323 / Stage 245 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glpr-golive-missing",
+      "title": "Reaffirm go-live / attestation / Offline Complete MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glpr-no-packaging-as-live",
+      "title": "Do not treat Stage 180 / Stage 66 / Stage 69 / Stage 324 as live go-live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glpr-golive-remaining",
+      "title": "Go-live / LAUNCH \u00a7\u00a71\u20133 verified / \u00a77 signed / attestation / Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 325 I1 golive pack remaining-gate index packaging only. Do not claim live go-live Complete."
+}

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_325_EXIT_CRITERIA.md` / `docs/ADR_658_STAGE325_FREEZE.md` (`backend/tests/test_stage325_exit_h325x.py`) — Stage 325 H325x
+- `docs/STAGE_325_FIDELITY.md` (`backend/tests/test_stage325_fidelity_d1.py`) — Stage 325 D1
+- `docs/STAGE_325_PLAN.md` (`backend/tests/test_stage325_open.py`) — Stage 325 open (ADR-657)
+- `docs/GOLIVE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/golive-pack-remaining-gate.json` — Stage 325 I1
+- `docs/GOLIVE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/golive-pack-rg-blockers.json` — Stage 325 B1
+- `docs/GOLIVE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/golive-pack-rg-pointers.json` — Stage 325 P1
 - `docs/STAGE_324_EXIT_CRITERIA.md` / `docs/ADR_656_STAGE324_FREEZE.md` (`backend/tests/test_stage324_exit_h324x.py`) — Stage 324 H324x
 - `docs/STAGE_324_FIDELITY.md` (`backend/tests/test_stage324_fidelity_d1.py`) — Stage 324 D1
 - `docs/STAGE_324_PLAN.md` (`backend/tests/test_stage324_open.py`) — Stage 324 open (ADR-655)
@@ -5227,6 +5233,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 325 exit
+
+H325x met — `docs/STAGE_325_EXIT_CRITERIA.md`, ADR-658. Stages 1–325 frozen for Stage 325 feature scope.
+
+## Stage 325 D1 — Tenant MVP GoLive Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_325_FIDELITY.md` (`test_stage325_fidelity_d1.py`). `GOLIVE_PACK_*` remaining-gate index; go-live / LAUNCH §§1–3 / §7 / attestation / Offline Complete still MISSING.
+
+## Stage 325 open
+
+ADR-657 / `docs/STAGE_325_PLAN.md`.
 
 ## Stage 324 exit
 

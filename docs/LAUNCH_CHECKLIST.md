@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 325 track opened (ADR-657: `test_stage325_open.py`, `docs/STAGE_325_PLAN.md`) — GoLive Pack Remaining-Gate Index; closed under ADR-658
+- [x] GoLive pack remaining-gate hub (Stage 325 I1: `test_stage325_index_i1.py`, `docs/GOLIVE_PACK_REMAINING_GATE_MVP.md`)
+- [x] GoLive pack blocker matrix (Stage 325 B1: `test_stage325_blockers_b1.py`, `docs/GOLIVE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 180 / Stage 324 / Stage 323 / Stage 245 pointers (Stage 325 P1: `test_stage325_pointers_p1.py`, `docs/GOLIVE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 325 fidelity sync (D1: `test_stage325_fidelity_d1.py`, `docs/STAGE_325_FIDELITY.md`)
+- [x] Stage 325 exit + freeze (H325x: `test_stage325_exit_h325x.py`, `docs/STAGE_325_EXIT_CRITERIA.md`, ADR-658)
 - [x] Stage 324 track opened (ADR-655: `test_stage324_open.py`, `docs/STAGE_324_PLAN.md`) — Customer Assurance Pack Remaining-Gate Index; closed under ADR-656
 - [x] Customer assurance pack remaining-gate hub (Stage 324 I1: `test_stage324_index_i1.py`, `docs/CUSTOMER_ASSURANCE_PACK_REMAINING_GATE_MVP.md`)
 - [x] Customer assurance pack blocker matrix (Stage 324 B1: `test_stage324_blockers_b1.py`, `docs/CUSTOMER_ASSURANCE_PACK_RG_BLOCKERS_MVP.md`)
