@@ -1,0 +1,68 @@
+{
+  "id": "offline-sync-dashboard-widget-pack-rg-blockers",
+  "stage": 373,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "sync_dashboard_widget_complete_claimed": false,
+  "live_device_sync_widget_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "sync_dashboard_widget_complete_claimed": "REMAINING",
+    "live_device_sync_widget_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage367_chrome_as_offline_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "sync_dashboard_widget_complete_claimed_flag": "false",
+    "live_device_sync_widget_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "osdwprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprb-widget",
+      "title": "Mark sync-dashboard-widget Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprb-device-widget",
+      "title": "Mark live device-sync-widget Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprb-stage367-nonclaim",
+      "title": "Mark Stage 367 chrome as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprb-checklist-remaining",
+      "title": "Offline Complete / sync-dashboard-widget Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 373 B1 offline sync dashboard widget pack RG blocker matrix packaging only."
+}

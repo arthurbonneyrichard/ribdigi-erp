@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_373_EXIT_CRITERIA.md` / `docs/ADR_754_STAGE373_FREEZE.md` (`backend/tests/test_stage373_exit_h373x.py`) — Stage 373 H373x
+- `docs/STAGE_373_FIDELITY.md` (`backend/tests/test_stage373_fidelity_d1.py`) — Stage 373 D1
+- `docs/STAGE_373_PLAN.md` (`backend/tests/test_stage373_open.py`) — Stage 373 open (ADR-753)
+- `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sync-dashboard-widget-pack-remaining-gate.json` — Stage 373 I1
+- `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sync-dashboard-widget-pack-rg-blockers.json` — Stage 373 B1
+- `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sync-dashboard-widget-pack-rg-pointers.json` — Stage 373 P1
 - `docs/STAGE_372_EXIT_CRITERIA.md` / `docs/ADR_752_STAGE372_FREEZE.md` (`backend/tests/test_stage372_exit_h372x.py`) — Stage 372 H372x
 - `docs/STAGE_372_FIDELITY.md` (`backend/tests/test_stage372_fidelity_d1.py`) — Stage 372 D1
 - `docs/STAGE_372_PLAN.md` (`backend/tests/test_stage372_open.py`) — Stage 372 open (ADR-751)
@@ -5515,6 +5521,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 373 exit
+
+H373x met — `docs/STAGE_373_EXIT_CRITERIA.md`, ADR-754. Stages 1–373 frozen for Stage 373 feature scope.
+
+## Stage 373 D1 — Tenant MVP Offline Sync Dashboard Widget Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md` / `OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_BLOCKERS_MVP.md` / `OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_POINTERS_MVP.md` ≠ Offline Complete. Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` §28.
+
+## Stage 373 open
+
+ADR-753 / `docs/STAGE_373_PLAN.md`.
 
 ## Stage 372 exit
 

@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 373 track opened (ADR-753: `test_stage373_open.py`, `docs/STAGE_373_PLAN.md`) — Offline Sync Dashboard Widget Pack Remaining-Gate Index; closed under ADR-754
+- [x] Offline sync dashboard widget pack remaining-gate hub (Stage 373 I1: `test_stage373_index_i1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline sync dashboard widget pack blocker matrix (Stage 373 B1: `test_stage373_blockers_b1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 372 / Stage 367 / Stage 329 / CHANGE_IMPACT pointers (Stage 373 P1: `test_stage373_pointers_p1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 373 fidelity sync (D1: `test_stage373_fidelity_d1.py`, `docs/STAGE_373_FIDELITY.md`)
+- [x] Stage 373 exit + freeze (H373x: `test_stage373_exit_h373x.py`, `docs/STAGE_373_EXIT_CRITERIA.md`, ADR-754)
 - [x] Stage 372 track opened (ADR-751: `test_stage372_open.py`, `docs/STAGE_372_PLAN.md`) — AI Metrics Pack Remaining-Gate Index; closed under ADR-752
 - [x] AI metrics pack remaining-gate hub (Stage 372 I1: `test_stage372_index_i1.py`, `docs/AI_METRICS_PACK_REMAINING_GATE_MVP.md`)
 - [x] AI metrics pack blocker matrix (Stage 372 B1: `test_stage372_blockers_b1.py`, `docs/AI_METRICS_PACK_RG_BLOCKERS_MVP.md`)

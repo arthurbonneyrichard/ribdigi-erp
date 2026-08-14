@@ -31,3 +31,10 @@ Stage 373 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for measured AI adoption, prediction accuracy, chat resolution, AI-metrics program live, or go-live.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 373 opened under **ADR-753** after CONTINUE/NEXT (Tenant MVP Offline Sync Dashboard Widget Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-754**. Stage 372 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 373 runner-up outline was approved and opened (ADR-753); freeze ADR-754. Do not reopen Stage 372 scope.
+

@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 373 open** | Offline Sync Dashboard Widget Pack Remaining-Gate Index — `docs/STAGE_373_PLAN.md`, ADR-753 (`test_stage373_open.py`) |
+| **Stage 373 I1** | Offline sync dashboard widget pack remaining-gate index hub (`test_stage373_index_i1.py`) |
+| **Stage 373 B1** | Offline sync dashboard widget pack blocker matrix (`test_stage373_blockers_b1.py`) |
+| **Stage 373 P1** | Stage 372 / Stage 367 / Stage 329 / CHANGE_IMPACT pointers (`test_stage373_pointers_p1.py`) |
+| **Stage 373 D1** | Offline sync dashboard widget pack remaining-gate fidelity — `docs/STAGE_373_FIDELITY.md` (`test_stage373_fidelity_d1.py`) |
+| **Stage 373 H373x** | Exit + freeze — `docs/STAGE_373_EXIT_CRITERIA.md`, ADR-754 (`test_stage373_exit_h373x.py`); Stages 1–373 frozen |
 | **Stage 372 open** | AI Metrics Pack Remaining-Gate Index — `docs/STAGE_372_PLAN.md`, ADR-751 (`test_stage372_open.py`) |
 | **Stage 372 I1** | AI metrics pack remaining-gate index hub (`test_stage372_index_i1.py`) |
 | **Stage 372 B1** | AI metrics pack blocker matrix (`test_stage372_blockers_b1.py`) |
