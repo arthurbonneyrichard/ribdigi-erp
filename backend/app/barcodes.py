@@ -1,7 +1,8 @@
-"""Product barcode generation and label rendering (Code 128)."""
+"""Product barcode generation and label rendering (Code 128, EAN-13, UPC-A)."""
 
 from __future__ import annotations
 
+import hashlib
 import html
 import io
 import re
@@ -17,20 +18,103 @@ from app import models as m
 
 # Scanners / labels: Code128 accepts alphanumeric SKUs and retail codes.
 BARCODE_PATTERN = re.compile(r"^[A-Za-z0-9\-._]{4,48}$")
+SYMBOLOGIES = frozenset({"code128", "ean13", "upca"})
+# In-store / internal GTIN prefixes (not a GS1 company prefix).
+EAN13_INTERNAL_PREFIX = "200"
+UPCA_INTERNAL_PREFIX = "2"
 
 
-def normalize_barcode(value: str | None) -> str | None:
+def normalize_symbology(value: str | None) -> str:
+    key = (value or "code128").strip().lower()
+    if key not in SYMBOLOGIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"symbology must be one of {sorted(SYMBOLOGIES)}",
+        )
+    return key
+
+
+def ean13_check_digit(body12: str) -> str:
+    if not body12.isdigit() or len(body12) != 12:
+        raise ValueError("EAN-13 body must be 12 digits")
+    total = 0
+    for i, ch in enumerate(body12):
+        total += int(ch) * (1 if i % 2 == 0 else 3)
+    return str((10 - (total % 10)) % 10)
+
+
+def upca_check_digit(body11: str) -> str:
+    if not body11.isdigit() or len(body11) != 11:
+        raise ValueError("UPC-A body must be 11 digits")
+    total = 0
+    for i, ch in enumerate(body11):
+        total += int(ch) * (3 if i % 2 == 0 else 1)
+    return str((10 - (total % 10)) % 10)
+
+
+def validate_ean13(code: str) -> str:
+    digits = str(code).strip()
+    if not digits.isdigit() or len(digits) != 13:
+        raise HTTPException(status_code=400, detail="EAN-13 must be exactly 13 digits")
+    expected = ean13_check_digit(digits[:12])
+    if digits[12] != expected:
+        raise HTTPException(status_code=400, detail="EAN-13 check digit is invalid")
+    return digits
+
+
+def validate_upca(code: str) -> str:
+    digits = str(code).strip()
+    if not digits.isdigit() or len(digits) != 12:
+        raise HTTPException(status_code=400, detail="UPC-A must be exactly 12 digits")
+    expected = upca_check_digit(digits[:11])
+    if digits[11] != expected:
+        raise HTTPException(status_code=400, detail="UPC-A check digit is invalid")
+    return digits
+
+
+def normalize_barcode(value: str | None, *, symbology: str | None = None) -> str | None:
     if value is None:
         return None
-    code = str(value).strip().upper()
-    if not code:
+    raw = str(value).strip()
+    if not raw:
         return None
+    sym = normalize_symbology(symbology) if symbology else None
+    if sym == "ean13":
+        return validate_ean13(raw)
+    if sym == "upca":
+        return validate_upca(raw)
+
+    code = raw.upper()
     if not BARCODE_PATTERN.match(code):
         raise HTTPException(
             status_code=400,
             detail="Barcode must be 4–48 characters (letters, numbers, - . _)",
         )
+    # Auto-validate retail GTINs when pasted as digits.
+    if code.isdigit() and len(code) == 13:
+        return validate_ean13(code)
+    if code.isdigit() and len(code) == 12:
+        return validate_upca(code)
     return code
+
+
+def detect_symbology(code: str | None) -> str:
+    if not code:
+        return "code128"
+    text = str(code).strip()
+    if text.isdigit() and len(text) == 13:
+        try:
+            validate_ean13(text)
+            return "ean13"
+        except HTTPException:
+            return "code128"
+    if text.isdigit() and len(text) == 12:
+        try:
+            validate_upca(text)
+            return "upca"
+        except HTTPException:
+            return "code128"
+    return "code128"
 
 
 def looks_like_barcode(value: str | None) -> bool:
@@ -42,22 +126,44 @@ def looks_like_barcode(value: str | None) -> bool:
     return bool(BARCODE_PATTERN.match(text))
 
 
-def render_code128_png(code: str, *, module_height: float = 14.0) -> bytes:
+def render_barcode_png(code: str, *, symbology: str | None = None, module_height: float = 14.0) -> bytes:
+    sym = normalize_symbology(symbology) if symbology else detect_symbology(code)
+    if sym == "ean13":
+        code = validate_ean13(code)
+        # python-barcode EAN13 expects 12 digits (adds check) or valid 13.
+        payload = code[:12]
+        barcode_name = "ean13"
+    elif sym == "upca":
+        code = validate_upca(code)
+        payload = code[:11]
+        barcode_name = "upca"
+    else:
+        payload = str(code)
+        barcode_name = "code128"
+
     buf = io.BytesIO()
     writer = ImageWriter()
-    barcode.get("code128", code, writer=writer).write(
-        buf,
-        options={
-            "write_text": True,
-            "module_height": module_height,
-            "module_width": 0.35,
-            "quiet_zone": 2.5,
-            "font_size": 10,
-            "text_distance": 4.0,
-            "dpi": 200,
-        },
-    )
+    try:
+        barcode.get(barcode_name, payload, writer=writer).write(
+            buf,
+            options={
+                "write_text": True,
+                "module_height": module_height,
+                "module_width": 0.35 if sym == "code128" else 0.4,
+                "quiet_zone": 2.5,
+                "font_size": 10,
+                "text_distance": 4.0,
+                "dpi": 200,
+            },
+        )
+    except Exception as exc:  # noqa: BLE001 — surface as 400 for bad GTIN/render
+        raise HTTPException(status_code=400, detail=f"Could not render {sym} barcode: {exc}") from exc
     return buf.getvalue()
+
+
+def render_code128_png(code: str, *, module_height: float = 14.0) -> bytes:
+    """Back-compat wrapper."""
+    return render_barcode_png(code, symbology="code128", module_height=module_height)
 
 
 def suggest_barcode_from_sku(sku: str) -> str:
@@ -65,6 +171,44 @@ def suggest_barcode_from_sku(sku: str) -> str:
     if len(raw) < 4:
         raw = f"SKU-{raw or 'ITEM'}"
     return raw[:48]
+
+
+def _digit_run(seed: str, *, length: int, attempt: int) -> str:
+    digest = hashlib.sha256(f"{seed}:{attempt}".encode()).hexdigest()
+    digits = "".join(ch for ch in digest if ch.isdigit())
+    # Mix hex letters as 0-9 via ord for enough digits.
+    if len(digits) < length:
+        extra = "".join(str(ord(ch) % 10) for ch in digest)
+        digits += extra
+    return (digits + "0" * length)[:length]
+
+
+def suggest_ean13(*, seed: str, attempt: int = 0) -> str:
+    body = f"{EAN13_INTERNAL_PREFIX}{_digit_run(seed, length=9, attempt=attempt)}"
+    return body + ean13_check_digit(body)
+
+
+def suggest_upca(*, seed: str, attempt: int = 0) -> str:
+    body = f"{UPCA_INTERNAL_PREFIX}{_digit_run(seed, length=10, attempt=attempt)}"
+    return body + upca_check_digit(body)
+
+
+def suggest_barcode(
+    sku: str,
+    *,
+    symbology: str = "code128",
+    seed: str | None = None,
+    attempt: int = 0,
+) -> str:
+    sym = normalize_symbology(symbology)
+    if sym == "ean13":
+        return suggest_ean13(seed=seed or sku, attempt=attempt)
+    if sym == "upca":
+        return suggest_upca(seed=seed or sku, attempt=attempt)
+    base = suggest_barcode_from_sku(sku)
+    if attempt == 0:
+        return base
+    return f"{base[:40]}-{attempt}"
 
 
 async def assert_barcode_unique(
@@ -95,9 +239,11 @@ def label_html(
     currency: str,
     png_data_uri: str,
     copies: int = 1,
+    symbology: str | None = None,
 ) -> str:
     copies = max(1, min(int(copies or 1), 40))
     price_txt = f"{currency} {price:,.2f}"
+    sym = normalize_symbology(symbology) if symbology else detect_symbology(barcode_value)
     cards = []
     for _ in range(copies):
         cards.append(
@@ -107,7 +253,7 @@ def label_html(
               <div class="name">{html.escape(product_name)}</div>
               <div class="price">{html.escape(price_txt)}</div>
               <img src="{png_data_uri}" alt="barcode"/>
-              <div class="meta">SKU {html.escape(sku)} · {html.escape(barcode_value)}</div>
+              <div class="meta">{html.escape(sym.upper())} · SKU {html.escape(sku)} · {html.escape(barcode_value)}</div>
             </div>
             """
         )

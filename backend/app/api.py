@@ -3191,10 +3191,12 @@ async def product_images_delete(
 async def product_barcode_generate(
     product_id: str,
     force: bool = False,
+    symbology: str = "code128",
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Assign a Code128 barcode from the SKU when missing (or when force=true)."""
+    """Assign a barcode (Code128 from SKU, or EAN-13 / UPC-A GTIN)."""
+    sym = barcodes_svc.normalize_symbology(symbology)
     product = (
         await db.execute(
             select(m.Product).where(
@@ -3208,12 +3210,12 @@ async def product_barcode_generate(
     if product.barcode and not force:
         return env(catalog_meta_svc.serialize_product(product), "Barcode already set")
 
-    candidate = barcodes_svc.suggest_barcode_from_sku(product.sku)
-    # Ensure uniqueness within tenant by suffixing if needed.
-    base = candidate
+    candidate = None
     for i in range(0, 50):
-        try_code = base if i == 0 else f"{base[:40]}-{i}"
-        try_code = barcodes_svc.normalize_barcode(try_code)
+        try_code = barcodes_svc.suggest_barcode(
+            product.sku, symbology=sym, seed=f"{product.id}:{product.sku}", attempt=i
+        )
+        try_code = barcodes_svc.normalize_barcode(try_code, symbology=sym)
         assert try_code
         clash = (
             await db.execute(
@@ -3239,16 +3241,19 @@ async def product_barcode_generate(
         action="barcode_generate",
         entity="product",
         entity_id=product.id,
-        details={"barcode": product.barcode, "sku": product.sku},
+        details={"barcode": product.barcode, "sku": product.sku, "symbology": sym},
     )
     await db.commit()
     await db.refresh(product)
-    return env(catalog_meta_svc.serialize_product(product), "Barcode generated")
+    out = catalog_meta_svc.serialize_product(product)
+    out["symbology"] = sym
+    return env(out, "Barcode generated")
 
 
 @api.get("/products/{product_id}/barcode.png")
 async def product_barcode_png(
     product_id: str,
+    symbology: str | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3265,7 +3270,12 @@ async def product_barcode_png(
     code = product.barcode or product.sku
     if not code:
         raise HTTPException(status_code=404, detail="No barcode or SKU available")
-    png = barcodes_svc.render_code128_png(str(code))
+    sym = (
+        barcodes_svc.normalize_symbology(symbology)
+        if symbology
+        else barcodes_svc.detect_symbology(str(code))
+    )
+    png = barcodes_svc.render_barcode_png(str(code), symbology=sym)
     return Response(
         content=png,
         media_type="image/png",
@@ -3277,10 +3287,11 @@ async def product_barcode_png(
 async def product_barcode_label(
     product_id: str,
     copies: int = 1,
+    symbology: str | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Printable HTML label sheet (Code128) for shelf / price tags."""
+    """Printable HTML label sheet (Code128 / EAN-13 / UPC-A) for shelf / price tags."""
     import base64
 
     product = (
@@ -3297,7 +3308,12 @@ async def product_barcode_label(
     code = product.barcode or product.sku
     if not code:
         raise HTTPException(status_code=404, detail="No barcode or SKU available")
-    png = barcodes_svc.render_code128_png(str(code))
+    sym = (
+        barcodes_svc.normalize_symbology(symbology)
+        if symbology
+        else barcodes_svc.detect_symbology(str(code))
+    )
+    png = barcodes_svc.render_barcode_png(str(code), symbology=sym)
     data_uri = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
     page = barcodes_svc.label_html(
         company_name=(tenant.company_name if tenant else "RIBDIGI ERP"),
@@ -3308,6 +3324,7 @@ async def product_barcode_label(
         currency=(tenant.currency if tenant else "GHS"),
         png_data_uri=data_uri,
         copies=copies,
+        symbology=sym,
     )
     return Response(content=page, media_type="text/html; charset=utf-8")
 

@@ -345,7 +345,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
   - [x] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs (`product_variants` attrs + auto/manual SKU; Inventory Variants UI; `POST|PATCH /products/{id}/variants`)
   - [x] **SKU:** Auto-generated or manual SKU assignment (omit/blank `sku` on product/variant create → `SKU-YYYY-NNNN`; explicit SKU still wins; unique across products+variants)
-  - [ ] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes
+  - [x] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes (`POST /products/{id}/barcode/generate?symbology=code128|ean13|upca`; PNG/label render by symbology; Inventory symbology picker; internal GTIN prefixes `200` / `2`)
   - [ ] **Images:** Multiple product images with primary image designation
   - [x] **Product Details:** Name, description, cost price, selling price, tax rate, category, brand, unit, weight, dimensions (`products.description` / `weight` / `length`/`width`/`height`; create/PATCH + CSV import; Inventory UI)
   - [x] **Batch/Expiry:** Batch number, manufacturing date, expiry date (critical for pharmacy and food) — `POST /inventory/stock-in` + opening-stock lines; Inventory Batches/Opening UI; FEFO stock-out

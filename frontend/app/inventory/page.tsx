@@ -131,6 +131,7 @@ export default function Page() {
   const [productSupplyClass, setProductSupplyClass] = useState('standard');
   const [editSupplyClass, setEditSupplyClass] = useState('standard');
   const [labelCopies, setLabelCopies] = useState('1');
+  const [barcodeSymbology, setBarcodeSymbology] = useState('code128');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importReport, setImportReport] = useState<ImportReport | null>(null);
   const [importBusy, setImportBusy] = useState(false);
@@ -334,9 +335,12 @@ export default function Page() {
     if (!selectedId) return;
     setError('');
     try {
-      const r = await api(`/products/${selectedId}/barcode/generate`, { method: 'POST', body: '{}' });
+      const r = await api(
+        `/products/${selectedId}/barcode/generate?force=true&symbology=${encodeURIComponent(barcodeSymbology)}`,
+        { method: 'POST', body: '{}' }
+      );
       setEditBarcode(r.data?.barcode || '');
-      setMessage(`Barcode set to ${r.data?.barcode}`);
+      setMessage(`Barcode set to ${r.data?.barcode} (${r.data?.symbology || barcodeSymbology})`);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -351,7 +355,7 @@ export default function Page() {
       const tenant = localStorage.getItem('tenant');
       const copies = Math.max(1, Math.min(40, Number(labelCopies) || 1));
       const res = await fetch(
-        `${apiBase}/products/${selectedId}/barcode/label?copies=${copies}`,
+        `${apiBase}/products/${selectedId}/barcode/label?copies=${copies}&symbology=${encodeURIComponent(barcodeSymbology)}`,
         {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -945,6 +949,16 @@ export default function Page() {
               placeholder="Scan or type barcode"
             />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                value={barcodeSymbology}
+                onChange={(e) => setBarcodeSymbology(e.target.value)}
+                title="Symbology"
+                aria-label="Barcode symbology"
+              >
+                <option value="code128">Code 128</option>
+                <option value="ean13">EAN-13</option>
+                <option value="upca">UPC-A</option>
+              </select>
               <button type="button" onClick={generateBarcode}>
                 Generate barcode
               </button>
