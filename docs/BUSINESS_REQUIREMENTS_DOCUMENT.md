@@ -530,7 +530,8 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **Discounts:** Percentage or fixed amount; per-item or cart-level
   - [ ] **Customer Selection:** Quick customer lookup or walk-in default
   - [ ] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers)
-  - [ ] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
+  - [x] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
+  - [x] Sale reference auto-generation (`Transaction.reference` via tenant series `GET|PATCH /pos/settings` → `pos_sale_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `POS`; POS Document numbering UI)
   - [ ] **Cash Drawer:** Auto-open on cash payment; manual open with reason
 
 #### BR-8.2 Shift Management
@@ -994,7 +995,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE)
+  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal, POS sale numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE; `GET|PATCH /pos/settings` for POS)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

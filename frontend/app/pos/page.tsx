@@ -253,6 +253,9 @@ export default function Page() {
   const [receiptBusy, setReceiptBusy] = useState('');
   const [shiftReport, setShiftReport] = useState<any>(null);
   const [reportBusy, setReportBusy] = useState(false);
+  const [posPrefix, setPosPrefix] = useState('POS');
+  const [posNext, setPosNext] = useState('1');
+  const [posPreview, setPosPreview] = useState('');
 
   const groupDiscountPct = useMemo(() => {
     const match = customers.find((c) => c.id === customerId);
@@ -315,6 +318,16 @@ export default function Page() {
     api('/me')
       .then((r) => setCashierName(r.data?.full_name || r.data?.email || ''))
       .catch(() => setCashierName(''));
+    api('/pos/settings')
+      .then((r) => {
+        const num = r.data?.pos_sale_numbering;
+        if (num) {
+          setPosPrefix(num.prefix || 'POS');
+          setPosNext(String(num.next_number ?? 1));
+          setPosPreview(num.preview || '');
+        }
+      })
+      .catch(() => {});
     api('/pos/stores')
       .then((r) => {
         const list: Store[] = r.data || [];
@@ -365,6 +378,31 @@ export default function Page() {
       setSession(r.data);
       setMessage('Shift opened');
       await browse(q);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function savePosNumbering() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/pos/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          pos_sale_numbering: {
+            prefix: posPrefix.trim(),
+            next_number: Math.max(1, Number(posNext) || 1),
+          },
+        }),
+      });
+      const num = r.data?.pos_sale_numbering;
+      if (num) {
+        setPosPrefix(num.prefix || 'POS');
+        setPosNext(String(num.next_number ?? 1));
+        setPosPreview(num.preview || '');
+      }
+      setMessage(`Numbering saved — ${num?.preview || ''}`.trim());
     } catch (err: any) {
       setError(err.message);
     }
@@ -778,6 +816,34 @@ export default function Page() {
             )}
           </div>
         </header>
+
+        <div className="card" style={{ margin: '12px 0', display: 'grid', gap: 8 }}>
+          <strong>Document numbering</strong>
+          <p className="muted" style={{ margin: 0 }}>
+            Sale receipt references use PREFIX-YYYY-NNNN (default POS).
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span className="muted">Sale</span>
+            <input
+              className="tpos-input"
+              value={posPrefix}
+              onChange={(e) => setPosPrefix(e.target.value.toUpperCase())}
+              placeholder="Prefix"
+              style={{ width: 100 }}
+            />
+            <input
+              className="tpos-input"
+              value={posNext}
+              onChange={(e) => setPosNext(e.target.value)}
+              placeholder="Next #"
+              style={{ width: 90 }}
+            />
+            <span className="muted">{posPreview || '—'}</span>
+            <button type="button" className="tpos-btn" onClick={savePosNumbering}>
+              Save numbering
+            </button>
+          </div>
+        </div>
 
         {shiftReport && session && (
           <section className="tpos-report" aria-label="Shift report">

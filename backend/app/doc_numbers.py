@@ -102,6 +102,12 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.JournalEntry,
         "field": "entry_number",
     },
+    "pos_sale": {
+        "default_prefix": "POS",
+        "storage": "json",
+        "model": m.Transaction,
+        "field": "reference",
+    },
 }
 
 # Back-compat aliases
@@ -242,18 +248,8 @@ async def next_daily_number(
 
 
 async def next_pos_sale_number(db: AsyncSession, tenant_id: str) -> str:
-    day = datetime.utcnow().strftime("%y%m%d")
-    prefix = f"S{day}-"
-    rows = (
-        await db.execute(
-            select(m.Transaction.reference).where(
-                m.Transaction.tenant_id == tenant_id,
-                m.Transaction.tx_type == "pos_sale",
-                m.Transaction.reference.like(f"{prefix}%"),
-            )
-        )
-    ).scalars().all()
-    return format_daily_number("S", day, _max_seq(list(rows), prefix) + 1)
+    """Allocate next POS sale reference from tenant year series (default POS-YYYY-NNNN)."""
+    return await next_series_document_number(db, tenant_id, "pos_sale")
 
 
 async def next_series_document_number(db: AsyncSession, tenant_id: str, kind: str) -> str:
