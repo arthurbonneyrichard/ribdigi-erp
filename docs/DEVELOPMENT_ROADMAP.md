@@ -3912,6 +3912,18 @@ Every feature in every phase must meet:
 
 **Stage 274 exit (2026-08-14):** I1, B1, P1, D1, H274x met — `docs/STAGE_274_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_556_STAGE274_FREEZE.md`. Fidelity: `docs/STAGE_274_FIDELITY.md`.
 
+**Stage 275 open (2026-08-14):** Tenant MVP Menu Permissions Pack Remaining-Gate Index Fidelity — `docs/ADR_557_STAGE275_OPEN.md` + `docs/STAGE_275_PLAN.md` (I1 next).
+
+**Stage 275 I1 (2026-08-14):** Menu permissions pack remaining-gate index hub (`test_stage275_index_i1.py`).
+
+**Stage 275 B1 (2026-08-14):** Menu permissions pack blocker matrix (`test_stage275_blockers_b1.py`).
+
+**Stage 275 P1 (2026-08-14):** ADR-004 / Stage 274 / Stage 273 / Stage 31 pointers (`test_stage275_pointers_p1.py`).
+
+**Stage 275 D1 (2026-08-14):** Menu Permissions Pack Remaining-Gate Index fidelity sync — `docs/STAGE_275_FIDELITY.md` (`test_stage275_fidelity_d1.py`).
+
+**Stage 275 exit (2026-08-14):** I1, B1, P1, D1, H275x met — `docs/STAGE_275_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_558_STAGE275_FREEZE.md`. Fidelity: `docs/STAGE_275_FIDELITY.md`.
+
 
 
 

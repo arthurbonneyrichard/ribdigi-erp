@@ -1078,6 +1078,12 @@ Authoritative MVP docs:
 - `docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/language-i18n-pack-remaining-gate.json` — Stage 274 I1
 - `docs/LANGUAGE_I18N_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/language-i18n-pack-rg-blockers.json` — Stage 274 B1
 - `docs/LANGUAGE_I18N_PACK_RG_POINTERS_MVP.md` / `ops/mvp/language-i18n-pack-rg-pointers.json` — Stage 274 P1
+- `docs/STAGE_275_EXIT_CRITERIA.md` / `docs/ADR_558_STAGE275_FREEZE.md` (`backend/tests/test_stage275_exit_h275x.py`) — Stage 275 H275x
+- `docs/STAGE_275_FIDELITY.md` (`backend/tests/test_stage275_fidelity_d1.py`) — Stage 275 D1
+- `docs/STAGE_275_PLAN.md` (`backend/tests/test_stage275_open.py`) — Stage 275 open (ADR-557)
+- `docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/menu-permissions-pack-remaining-gate.json` — Stage 275 I1
+- `docs/MENU_PERMISSIONS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/menu-permissions-pack-rg-blockers.json` — Stage 275 B1
+- `docs/MENU_PERMISSIONS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/menu-permissions-pack-rg-pointers.json` — Stage 275 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4831,4 +4837,16 @@ H274x met — `docs/STAGE_274_EXIT_CRITERIA.md`, ADR-556. Stages 1–274 frozen 
 ## Stage 274 open
 
 `docs/ADR_555_STAGE274_OPEN.md` + `docs/STAGE_274_PLAN.md` (`test_stage274_open.py`).
+
+## Stage 275 exit
+
+H275x met — `docs/STAGE_275_EXIT_CRITERIA.md`, ADR-558. Stages 1–275 frozen for Stage 275 feature scope.
+
+## Stage 275 D1 — Tenant MVP Menu Permissions Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_275_FIDELITY.md` (`test_stage275_fidelity_d1.py`). `MENU_PERMISSIONS_PACK_*` remaining-gate index; dynamic menu / submenu flags / go-live still MISSING (ADR-004).
+
+## Stage 275 open
+
+`docs/ADR_557_STAGE275_OPEN.md` + `docs/STAGE_275_PLAN.md` (`test_stage275_open.py`).
 

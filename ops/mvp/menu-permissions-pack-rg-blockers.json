@@ -1,0 +1,61 @@
+{
+  "id": "menu-permissions-pack-rg-blockers",
+  "stage": 275,
+  "pack": "B1",
+  "doc": "docs/MENU_PERMISSIONS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "menu_permissions_adr": "docs/ADR_004_MENU_PERMISSIONS.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+  },
+  "packaging_complete": true,
+  "dynamic_menu_complete_claimed": false,
+  "submenu_flags_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "dynamic_menu_complete": "REMAINING",
+    "submenu_flags_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "adr004_as_dynamic_menu_complete": "NON_CLAIM",
+    "stage31_as_menu_complete": "NON_CLAIM",
+    "dynamic_menu_complete_claimed": "false",
+    "submenu_flags_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "mpprb-dynamic-menu",
+      "title": "Mark dynamic menu Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprb-submenu-flags",
+      "title": "Mark fine-grained submenu flags Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprb-adr004-nonclaim",
+      "title": "Mark ADR-004 as non-claim for dynamic menu Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprb-dynamic-menu-remaining",
+      "title": "Dynamic menu Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 275 B1 menu permissions pack RG blocker matrix packaging only. Dynamic menu Completes remain MISSING."
+}

@@ -31,3 +31,10 @@ Stage 275 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for multi-language, non-English locale packs, paid billing, or go-live.
+
+
+## Amendment — Stage 275 opened
+
+Stage 275 opened under **ADR-557** after CONTINUE/NEXT (Tenant MVP Menu Permissions Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-558**. Stage 274 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 275 runner-up outline was approved and opened (ADR-557); freeze ADR-558. Do not reopen Stage 274 scope.

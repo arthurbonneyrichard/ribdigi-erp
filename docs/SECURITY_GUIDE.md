@@ -1600,6 +1600,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 274 P1** | ADR-006 / Stage 273 / Stage 272 / Stage 184 pointers (`test_stage274_pointers_p1.py`) |
 | **Stage 274 D1** | Language i18n pack remaining-gate fidelity — `docs/STAGE_274_FIDELITY.md` (`test_stage274_fidelity_d1.py`) |
 | **Stage 274 H274x** | Exit + freeze — `docs/STAGE_274_EXIT_CRITERIA.md`, ADR-556 (`test_stage274_exit_h274x.py`); Stages 1–274 frozen |
+| **Stage 275 open** | Menu Permissions Pack Remaining-Gate Index — `docs/STAGE_275_PLAN.md`, ADR-557 (`test_stage275_open.py`) |
+| **Stage 275 I1** | Menu permissions pack remaining-gate index hub (`test_stage275_index_i1.py`) |
+| **Stage 275 B1** | Menu permissions pack blocker matrix (`test_stage275_blockers_b1.py`) |
+| **Stage 275 P1** | ADR-004 / Stage 274 / Stage 273 / Stage 31 pointers (`test_stage275_pointers_p1.py`) |
+| **Stage 275 D1** | Menu permissions pack remaining-gate fidelity — `docs/STAGE_275_FIDELITY.md` (`test_stage275_fidelity_d1.py`) |
+| **Stage 275 H275x** | Exit + freeze — `docs/STAGE_275_EXIT_CRITERIA.md`, ADR-558 (`test_stage275_exit_h275x.py`); Stages 1–275 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

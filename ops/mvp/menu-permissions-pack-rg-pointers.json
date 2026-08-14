@@ -1,0 +1,59 @@
+{
+  "id": "menu-permissions-pack-rg-pointers",
+  "stage": 275,
+  "pack": "P1",
+  "doc": "docs/MENU_PERMISSIONS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "menu_permissions_adr": "docs/ADR_004_MENU_PERMISSIONS.md",
+    "language_i18n_pack_remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "store_membership_pack_remaining_gate": "docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "dynamic_menu_complete_claimed": false,
+  "submenu_flags_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "menu_permissions_adr004",
+    "language_i18n_pack_remaining_gate_stage274",
+    "store_membership_pack_remaining_gate_stage273",
+    "deferred_adr_register_stage31",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "mpprp-adr004",
+      "title": "Point to ADR-004 menu permissions",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprp-stage274",
+      "title": "Point to Stage 274 language i18n pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprp-stage273",
+      "title": "Point to Stage 273 store membership pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprp-stage31",
+      "title": "Point to Stage 31 deferred ADR register adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpprp-dynamic-menu-remaining",
+      "title": "Dynamic menu Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 275 P1 menu permissions pack RG pointers packaging only. Do not claim dynamic menu Complete."
+}
