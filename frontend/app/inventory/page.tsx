@@ -34,6 +34,59 @@ type ImportReport = {
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+const STOCK_STATUS_YELLOW_FACTOR = 1.5;
+
+function stockStatusOf(p: { stock_qty?: number; reorder_level?: number; stock_status?: string }) {
+  if (p.stock_status === 'red' || p.stock_status === 'yellow' || p.stock_status === 'green') {
+    return p.stock_status;
+  }
+  const qty = Number(p.stock_qty ?? 0);
+  const reorder = Number(p.reorder_level ?? 0);
+  if (qty <= 0 || (reorder > 0 && qty <= reorder)) return 'red';
+  if (reorder > 0 && qty <= reorder * STOCK_STATUS_YELLOW_FACTOR) return 'yellow';
+  return 'green';
+}
+
+function StockStatusBadge({ product }: { product: any }) {
+  const status = stockStatusOf(product);
+  const colors: Record<string, { bg: string; fg: string; text: string }> = {
+    red: { bg: '#fee2e2', fg: '#b91c1c', text: 'Low / out' },
+    yellow: { bg: '#fef9c3', fg: '#a16207', text: 'Near reorder' },
+    green: { bg: '#dcfce7', fg: '#15803d', text: 'OK' },
+  };
+  const c = colors[status] || colors.green;
+  return (
+    <span
+      title={`Stock ${product.stock_qty ?? 0} · reorder ${product.reorder_level ?? 0}`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '2px 8px',
+        borderRadius: 999,
+        background: c.bg,
+        color: c.fg,
+        fontSize: 12,
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: c.fg,
+          display: 'inline-block',
+        }}
+      />
+      {product.stock_qty ?? 0}
+      <span style={{ fontWeight: 500, opacity: 0.85 }}>({c.text})</span>
+    </span>
+  );
+}
+
 export default function Page() {
   const [tab, setTab] = useState<Tab>('products');
   const [products, setProducts] = useState<any[]>([]);
@@ -1030,7 +1083,9 @@ export default function Page() {
                   <td>{p.sku}</td>
                   <td>{p.barcode || '—'}</td>
                   <td>{p.category}</td>
-                  <td>{p.stock_qty}</td>
+                  <td>
+                    <StockStatusBadge product={p} />
+                  </td>
                   <td>{p.tracks_batches ? 'yes' : 'no'}</td>
                   <td>{p.selling_price}</td>
                   <td>{p.has_image ? 'yes' : '—'}</td>
