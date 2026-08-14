@@ -27,3 +27,9 @@ Stage 242 Tenant MVP Customer Training Cert Pack Remaining-Gate Index Fidelity d
 Stage 243 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 242 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Continue product-update audit for next remaining-gate / commercial MVP honesty packaging surface after Customer Training Cert Pack Remaining-Gate Index — do not invent live training / certification / go-live Completes.
+
+## Amendment — Stage 243 opened
+
+Stage 243 opened under **ADR-493** after CONTINUE/NEXT (Professional Services SOW Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-494**. Stage 242 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 243 outline was approved and opened (ADR-493); freeze ADR-494. Do not reopen Stage 242 scope.

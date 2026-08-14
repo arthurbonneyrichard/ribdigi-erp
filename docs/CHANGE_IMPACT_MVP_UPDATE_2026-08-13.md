@@ -384,3 +384,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 242 decision (opened after Stage 241 freeze)
 
 **Tenant MVP Customer Training Cert Pack Remaining-Gate Index Fidelity** — customer training cert pack remaining-gate hub (I1), blocker matrix (B1), Stage 48 / Stage 241 / Stage 189 / Stage 240 pointers with explicit non-claim (P1). Prefixed `CUSTOMER_TRAINING_CERT_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 48 T1 `CUSTOMER_TRAINING_CERT_*`). Live training / training certification Completes remain deferred (Stage 243+). Distinct from Stage 241 live training pack remaining-gate, Stage 189 live-training remaining-gate, and Stage 48 T1 customer training cert packaging. Open ADR-491 / freeze ADR-492 (ADR-490 reserved for Tenant–Company Hierarchy).
+
+## Stage 243 decision (opened after Stage 242 freeze)
+
+**Tenant MVP Professional Services SOW Pack Remaining-Gate Index Fidelity** — professional services SOW pack remaining-gate hub (I1), blocker matrix (B1), Stage 48 / Stage 242 / Stage 33 / Stage 78 pointers with explicit non-claim (P1). Prefixed `PROFESSIONAL_SERVICES_SOW_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 48 P1 `PROFESSIONAL_SERVICES_SOW_*`). Signed SOW / live implementation delivery Completes remain deferred (Stage 244+). Distinct from Stage 242 customer training cert pack remaining-gate, Stage 48 P1 professional services SOW packaging, and Stage 78 commercial professional services. Open ADR-493 / freeze ADR-494.

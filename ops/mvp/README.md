@@ -886,6 +886,12 @@ Authoritative MVP docs:
 - `docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/customer-training-cert-pack-remaining-gate.json` — Stage 242 I1
 - `docs/CUSTOMER_TRAINING_CERT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/customer-training-cert-pack-rg-blockers.json` — Stage 242 B1
 - `docs/CUSTOMER_TRAINING_CERT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/customer-training-cert-pack-rg-pointers.json` — Stage 242 P1
+- `docs/STAGE_243_EXIT_CRITERIA.md` / `docs/ADR_494_STAGE243_FREEZE.md` (`backend/tests/test_stage243_exit_h243x.py`) — Stage 243 H243x
+- `docs/STAGE_243_FIDELITY.md` (`backend/tests/test_stage243_fidelity_d1.py`) — Stage 243 D1
+- `docs/STAGE_243_PLAN.md` (`backend/tests/test_stage243_open.py`) — Stage 243 open (ADR-493)
+- `docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/professional-services-sow-pack-remaining-gate.json` — Stage 243 I1
+- `docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/professional-services-sow-pack-rg-blockers.json` — Stage 243 B1
+- `docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_POINTERS_MVP.md` / `ops/mvp/professional-services-sow-pack-rg-pointers.json` — Stage 243 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4255,4 +4261,16 @@ H242x met — `docs/STAGE_242_EXIT_CRITERIA.md`, ADR-492. Stages 1–242 frozen 
 ## Stage 242 open
 
 `docs/ADR_491_STAGE242_OPEN.md` + `docs/STAGE_242_PLAN.md` (`test_stage242_open.py`).
+
+## Stage 243 exit
+
+H243x met — `docs/STAGE_243_EXIT_CRITERIA.md`, ADR-494. Stages 1–243 frozen for Stage 243 feature scope.
+
+## Stage 243 D1 — Tenant MVP Professional Services SOW Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_243_FIDELITY.md` (`test_stage243_fidelity_d1.py`). `PROFESSIONAL_SERVICES_SOW_PACK_*` remaining-gate index; signed SOW / live implementation delivery still MISSING.
+
+## Stage 243 open
+
+`docs/ADR_493_STAGE243_OPEN.md` + `docs/STAGE_243_PLAN.md` (`test_stage243_open.py`).
 

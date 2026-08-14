@@ -1,0 +1,57 @@
+{
+  "id": "professional-services-sow-pack-remaining-gate",
+  "stage": 243,
+  "pack": "I1",
+  "doc": "docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_POINTERS_MVP.md",
+    "professional_services_sow": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+    "customer_training_cert_pack_remaining_gate": "docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+    "commercial_professional_services": "docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md",
+    "professional_services_sow_register": "ops/mvp/professional-services-sow.json"
+  },
+  "packaging_complete": true,
+  "signed_sow_claimed": false,
+  "implementation_delivery_claimed": false,
+  "professional_services_live_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage48_p1_professional_services_sow": true,
+  "distinct_from_stage242_customer_training_cert_pack_remaining_gate": true,
+  "distinct_from_stage33_first_tenant_onboarding": true,
+  "distinct_from_stage78_commercial_professional_services": true,
+  "steps": [
+    {
+      "id": "psspr-read-blockers",
+      "title": "Read B1 professional services SOW pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psspr-follow-pointers",
+      "title": "Follow P1 Stage 48 / Stage 242 / Stage 33 / Stage 78 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psspr-sow-missing",
+      "title": "Reaffirm signed SOW / implementation delivery MISSING until real customer SOW / delivery ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psspr-no-packaging-as-live",
+      "title": "Do not treat Stage 48 P1 / Stage 242 as signed SOW or live services Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "psspr-sow-remaining",
+      "title": "Signed SOW / implementation delivery / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 243 I1 professional services SOW pack remaining-gate index packaging only. Do not claim signed SOW or live implementation delivery Complete."
+}

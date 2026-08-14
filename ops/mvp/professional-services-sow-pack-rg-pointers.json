@@ -1,0 +1,60 @@
+{
+  "id": "professional-services-sow-pack-rg-pointers",
+  "stage": 243,
+  "pack": "P1",
+  "doc": "docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md",
+    "professional_services_sow": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+    "customer_training_cert_pack_remaining_gate": "docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+    "commercial_professional_services": "docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md",
+    "professional_services_sow_register": "ops/mvp/professional-services-sow.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "signed_sow_claimed": false,
+  "implementation_delivery_claimed": false,
+  "professional_services_live_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "professional_services_sow_stage48_p1",
+    "customer_training_cert_pack_remaining_gate_stage242",
+    "first_tenant_onboarding_stage33",
+    "commercial_professional_services_stage78",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "pssprp-stage48",
+      "title": "Point to Stage 48 P1 professional services SOW",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pssprp-stage242",
+      "title": "Point to Stage 242 customer training cert pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pssprp-stage33",
+      "title": "Point to Stage 33 first-tenant onboarding adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pssprp-stage78",
+      "title": "Point to Stage 78 commercial professional services adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pssprp-sow-remaining",
+      "title": "Signed SOW / implementation delivery Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 243 P1 professional services SOW pack RG pointers packaging only. Do not claim signed SOW or live implementation delivery Complete."
+}
