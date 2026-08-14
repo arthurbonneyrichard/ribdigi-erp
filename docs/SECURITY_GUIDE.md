@@ -1690,6 +1690,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 289 P1** | Stage 41 C1 / Stage 288 / Stage 285 / Stage 29 pointers (`test_stage289_pointers_p1.py`) |
 | **Stage 289 D1** | Change governance pack remaining-gate fidelity — `docs/STAGE_289_FIDELITY.md` (`test_stage289_fidelity_d1.py`) |
 | **Stage 289 H289x** | Exit + freeze — `docs/STAGE_289_EXIT_CRITERIA.md`, ADR-586 (`test_stage289_exit_h289x.py`); Stages 1–289 frozen |
+| **Stage 290 open** | Cookie Privacy Notice Pack Remaining-Gate Index — `docs/STAGE_290_PLAN.md`, ADR-587 (`test_stage290_open.py`) |
+| **Stage 290 I1** | Cookie privacy notice pack remaining-gate index hub (`test_stage290_index_i1.py`) |
+| **Stage 290 B1** | Cookie privacy notice pack blocker matrix (`test_stage290_blockers_b1.py`) |
+| **Stage 290 P1** | Stage 43 C1 / Stage 289 / Stage 285 / Stage 278 pointers (`test_stage290_pointers_p1.py`) |
+| **Stage 290 D1** | Cookie privacy notice pack remaining-gate fidelity — `docs/STAGE_290_FIDELITY.md` (`test_stage290_fidelity_d1.py`) |
+| **Stage 290 H290x** | Exit + freeze — `docs/STAGE_290_EXIT_CRITERIA.md`, ADR-588 (`test_stage290_exit_h290x.py`); Stages 1–290 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

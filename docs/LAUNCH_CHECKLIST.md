@@ -1527,6 +1527,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 41 C1 / Stage 288 / Stage 285 / Stage 29 pointers (Stage 289 P1: `test_stage289_pointers_p1.py`, `docs/CHANGE_GOVERNANCE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 289 fidelity sync (D1: `test_stage289_fidelity_d1.py`, `docs/STAGE_289_FIDELITY.md`)
 - [x] Stage 289 exit + freeze (H289x: `test_stage289_exit_h289x.py`, `docs/STAGE_289_EXIT_CRITERIA.md`, ADR-586)
+- [x] Stage 290 track opened (ADR-587: `test_stage290_open.py`, `docs/STAGE_290_PLAN.md`) — Cookie Privacy Notice Pack Remaining-Gate Index; closed under ADR-588
+- [x] Cookie privacy notice pack remaining-gate hub (Stage 290 I1: `test_stage290_index_i1.py`, `docs/COOKIE_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md`)
+- [x] Cookie privacy notice pack blocker matrix (Stage 290 B1: `test_stage290_blockers_b1.py`, `docs/COOKIE_PRIVACY_NOTICE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 43 C1 / Stage 289 / Stage 285 / Stage 278 pointers (Stage 290 P1: `test_stage290_pointers_p1.py`, `docs/COOKIE_PRIVACY_NOTICE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 290 fidelity sync (D1: `test_stage290_fidelity_d1.py`, `docs/STAGE_290_FIDELITY.md`)
+- [x] Stage 290 exit + freeze (H290x: `test_stage290_exit_h290x.py`, `docs/STAGE_290_EXIT_CRITERIA.md`, ADR-588)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

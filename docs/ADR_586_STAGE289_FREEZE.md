@@ -28,6 +28,12 @@ Stage 290 requires CONTINUE/NEXT with a distinct product outline after this free
 
 **Runner-up outline (not opened):** Tenant MVP Cookie Privacy Notice Pack Remaining-Gate Index Fidelity — single index of cookie-privacy-notice-pack blockers (packaged Stage 43 C1 cookie / privacy notice materials non-claim as cookie-banner / privacy-portal Completes) with explicit non-claim. Prefixed `COOKIE_PRIVACY_NOTICE_PACK_*` if a prior remaining-gate exists. Distinct from Stage 289 change governance pack remaining-gate, Stage 285 accessibility statement pack remaining-gate, and `COOKIE_PRIVACY_NOTICE_MVP.md` packaging. Source: `COOKIE_PRIVACY_NOTICE_MVP.md`.
 
+## Amendment — Stage 290 opened
+
+Stage 290 opened under **ADR-587** after CONTINUE/NEXT (Tenant MVP Cookie Privacy Notice Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-588**. Stage 289 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 290 runner-up outline was approved and opened (ADR-587); freeze ADR-588. Do not reopen Stage 289 scope.
+
 ## Non-claims
 
 Packaging ≠ live Completes for public change calendar, live maintenance portal, customer change notices, ops changelog SaaS, paid billing, or go-live.

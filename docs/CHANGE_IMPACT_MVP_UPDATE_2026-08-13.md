@@ -597,3 +597,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 289 decision (opened after Stage 288 freeze)
 
 **Tenant MVP Change Governance Pack Remaining-Gate Index Fidelity** — change governance pack remaining-gate hub (I1), blocker matrix (B1), Stage 41 C1 / Stage 288 / Stage 285 / Stage 29 pointers with explicit non-claim (P1). Prefixed `CHANGE_GOVERNANCE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 41 C1 `CHANGE_GOVERNANCE_MVP.md`). Public change calendar / maintenance portal / customer change notices / ops changelog SaaS / paid billing / go-live Completes remain deferred (Stage 290+; ADR-002 in force). Distinct from Stage 288 cyber insurance pack remaining-gate, Stage 285 accessibility statement pack remaining-gate, and Stage 41 C1 change governance packaging. Open ADR-585 / freeze ADR-586.
+
+
+## Stage 290 decision (opened after Stage 289 freeze)
+
+**Tenant MVP Cookie Privacy Notice Pack Remaining-Gate Index Fidelity** — cookie privacy notice pack remaining-gate hub (I1), blocker matrix (B1), Stage 43 C1 / Stage 289 / Stage 285 / Stage 278 pointers with explicit non-claim (P1). Prefixed `COOKIE_PRIVACY_NOTICE_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 43 C1 `COOKIE_PRIVACY_NOTICE_MVP.md`). Live cookie consent / CMP SaaS / published privacy notice / legal counsel / paid billing / go-live Completes remain deferred (Stage 291+; ADR-002 in force). Distinct from Stage 289 change governance pack remaining-gate, Stage 285 accessibility statement pack remaining-gate, and Stage 43 C1 cookie privacy notice packaging. Open ADR-587 / freeze ADR-588.

@@ -1,0 +1,66 @@
+{
+  "id": "cookie-privacy-notice-pack-rg-blockers",
+  "stage": 290,
+  "pack": "B1",
+  "doc": "docs/COOKIE_PRIVACY_NOTICE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COOKIE_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "cookie_privacy_notice": "docs/COOKIE_PRIVACY_NOTICE_MVP.md"
+  },
+  "packaging_complete": true,
+  "cookie_consent_live": false,
+  "cmp_saas_claimed": false,
+  "privacy_notice_live": false,
+  "legal_counsel_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "cookie_consent_live": "REMAINING",
+    "cmp_saas": "REMAINING",
+    "privacy_notice_live": "REMAINING",
+    "legal_counsel": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage43_as_cookie_consent": "NON_CLAIM",
+    "stage289_as_change_calendar": "NON_CLAIM",
+    "cookie_consent_live_claimed": "false",
+    "cmp_saas_claimed": "false",
+    "privacy_notice_live_claimed": "false",
+    "legal_counsel_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cpnprb-consent",
+      "title": "Mark live cookie consent Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-cmp",
+      "title": "Mark CMP SaaS Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-notice",
+      "title": "Mark published privacy notice Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-stage43-nonclaim",
+      "title": "Mark Stage 43 C1 as non-claim for live cookie consent Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprb-consent-remaining",
+      "title": "Live cookie consent Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 290 B1 cookie privacy notice pack RG blocker matrix packaging only. Live cookie consent Completes remain MISSING."
+}
