@@ -31,3 +31,9 @@ Stage 344 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for weekly POS ops adherence, Offline Complete, support SLA, attestation, fabricated 100% adherence, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 344 opened under **ADR-695** after CONTINUE/NEXT (Tenant MVP Weekly POS Ops Review Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-696**. Stage 343 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 344 runner-up outline was approved and opened (ADR-695); freeze ADR-696. Do not reopen Stage 343 scope.

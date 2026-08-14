@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 344 track opened (ADR-695: `test_stage344_open.py`, `docs/STAGE_344_PLAN.md`) — Weekly POS Ops Review Pack Remaining-Gate Index; closed under ADR-696
+- [x] Weekly POS ops review pack remaining-gate hub (Stage 344 I1: `test_stage344_index_i1.py`, `docs/WEEKLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md`)
+- [x] Weekly POS ops review pack blocker matrix (Stage 344 B1: `test_stage344_blockers_b1.py`, `docs/WEEKLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 176 / Stage 343 / Stage 342 / Stage 329 pointers (Stage 344 P1: `test_stage344_pointers_p1.py`, `docs/WEEKLY_POS_OPS_REVIEW_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 344 fidelity sync (D1: `test_stage344_fidelity_d1.py`, `docs/STAGE_344_FIDELITY.md`)
+- [x] Stage 344 exit + freeze (H344x: `test_stage344_exit_h344x.py`, `docs/STAGE_344_EXIT_CRITERIA.md`, ADR-696)
 - [x] Stage 343 track opened (ADR-693: `test_stage343_open.py`, `docs/STAGE_343_PLAN.md`) — Weekly POS Ops Adherence Pack Remaining-Gate Index; closed under ADR-694
 - [x] Weekly POS ops adherence pack remaining-gate hub (Stage 343 I1: `test_stage343_index_i1.py`, `docs/WEEKLY_POS_OPS_ADHERENCE_PACK_REMAINING_GATE_MVP.md`)
 - [x] Weekly POS ops adherence pack blocker matrix (Stage 343 B1: `test_stage343_blockers_b1.py`, `docs/WEEKLY_POS_OPS_ADHERENCE_PACK_RG_BLOCKERS_MVP.md`)

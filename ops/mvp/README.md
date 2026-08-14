@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_344_EXIT_CRITERIA.md` / `docs/ADR_696_STAGE344_FREEZE.md` (`backend/tests/test_stage344_exit_h344x.py`) — Stage 344 H344x
+- `docs/STAGE_344_FIDELITY.md` (`backend/tests/test_stage344_fidelity_d1.py`) — Stage 344 D1
+- `docs/STAGE_344_PLAN.md` (`backend/tests/test_stage344_open.py`) — Stage 344 open (ADR-695)
+- `docs/WEEKLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/weekly-pos-ops-review-pack-remaining-gate.json` — Stage 344 I1
+- `docs/WEEKLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/weekly-pos-ops-review-pack-rg-blockers.json` — Stage 344 B1
+- `docs/WEEKLY_POS_OPS_REVIEW_PACK_RG_POINTERS_MVP.md` / `ops/mvp/weekly-pos-ops-review-pack-rg-pointers.json` — Stage 344 P1
 - `docs/STAGE_343_EXIT_CRITERIA.md` / `docs/ADR_694_STAGE343_FREEZE.md` (`backend/tests/test_stage343_exit_h343x.py`) — Stage 343 H343x
 - `docs/STAGE_343_FIDELITY.md` (`backend/tests/test_stage343_fidelity_d1.py`) — Stage 343 D1
 - `docs/STAGE_343_PLAN.md` (`backend/tests/test_stage343_open.py`) — Stage 343 open (ADR-693)
@@ -5341,6 +5347,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 344 exit
+
+H344x met — `docs/STAGE_344_EXIT_CRITERIA.md`, ADR-696. Stages 1–344 frozen for Stage 344 feature scope.
+
+## Stage 344 D1 — Tenant MVP Weekly POS Ops Review Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_344_FIDELITY.md` (`test_stage344_fidelity_d1.py`). `WEEKLY_POS_OPS_REVIEW_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / fabricated weekly green / go-live still MISSING.
+
+## Stage 344 open
+
+ADR-695 / `docs/STAGE_344_PLAN.md`.
 
 ## Stage 343 exit
 
