@@ -1,0 +1,59 @@
+{
+  "id": "adr002-paid-billing-pack-remaining-gate",
+  "stage": 404,
+  "pack": "I1",
+  "doc": "docs/ADR002_PAID_BILLING_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ADR002_PAID_BILLING_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ADR002_PAID_BILLING_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "adr005_store_membership_pack_remaining_gate": "docs/ADR005_STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "connectivity_sync_status_pack_remaining_gate": "docs/CONNECTIVITY_SYNC_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "adr002_paid_billing_complete_claimed": false,
+  "paid_billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage403_adr005_store_membership_pack_remaining_gate": true,
+  "distinct_from_stage402_connectivity_sync_status_pack_remaining_gate": true,
+  "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "a2pbpr-read-blockers",
+      "title": "Read B1 ADR-002 paid billing pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a2pbpr-follow-pointers",
+      "title": "Follow P1 Stage 403 / Stage 402 / Stage 392 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a2pbpr-checklist-missing",
+      "title": "Reaffirm Offline Complete / ADR-002 / ADR-002 paid-billing / paid billing/MRR / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a2pbpr-no-packaging-as-live",
+      "title": "Do not treat Stage 392 / Stage 403 / Stage 402 as Offline Complete or ADR-002 Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a2pbpr-checklist-remaining",
+      "title": "Offline Complete / ADR-002 / ADR-002 paid-billing / paid billing/MRR / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 404 I1 ADR-002 paid billing pack remaining-gate index packaging only. Do not claim Offline Complete or ADR-002 Completes."
+}
