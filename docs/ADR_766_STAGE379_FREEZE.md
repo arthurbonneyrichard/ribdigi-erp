@@ -31,3 +31,10 @@ Stage 380 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline accept_client, accept_client re-apply as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 380 opened under **ADR-767** after CONTINUE/NEXT (Tenant MVP Offline SW Cache Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-768**. Stage 379 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 379 runner-up outline was approved and opened (ADR-767); freeze ADR-768. Do not reopen Stage 379 scope.
+

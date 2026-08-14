@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_380_EXIT_CRITERIA.md` / `docs/ADR_768_STAGE380_FREEZE.md` (`backend/tests/test_stage380_exit_h380x.py`) — Stage 380 H380x
+- `docs/STAGE_380_FIDELITY.md` (`backend/tests/test_stage380_fidelity_d1.py`) — Stage 380 D1
+- `docs/STAGE_380_PLAN.md` (`backend/tests/test_stage380_open.py`) — Stage 380 open (ADR-767)
+- `docs/OFFLINE_SW_CACHE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sw-cache-pack-remaining-gate.json` — Stage 380 I1
+- `docs/OFFLINE_SW_CACHE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sw-cache-pack-rg-blockers.json` — Stage 380 B1
+- `docs/OFFLINE_SW_CACHE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sw-cache-pack-rg-pointers.json` — Stage 380 P1
 - `docs/STAGE_379_EXIT_CRITERIA.md` / `docs/ADR_766_STAGE379_FREEZE.md` (`backend/tests/test_stage379_exit_h379x.py`) — Stage 379 H379x
 - `docs/STAGE_379_FIDELITY.md` (`backend/tests/test_stage379_fidelity_d1.py`) — Stage 379 D1
 - `docs/STAGE_379_PLAN.md` (`backend/tests/test_stage379_open.py`) — Stage 379 open (ADR-765)
@@ -5557,6 +5563,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 380 exit
+
+H380x met — `docs/STAGE_380_EXIT_CRITERIA.md`, ADR-768. Stages 1–380 frozen for Stage 380 feature scope.
+
+## Stage 380 D1 — Tenant MVP Offline SW Cache Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `OFFLINE_SW_CACHE_PACK_REMAINING_GATE_MVP.md` / `OFFLINE_SW_CACHE_PACK_RG_BLOCKERS_MVP.md` / `OFFLINE_SW_CACHE_PACK_RG_POINTERS_MVP.md` / ops JSON twins. Honesty: Offline Complete / offline SW-cache / SW static-cache contract / go-live / attestation remain **false**. Packaging only.
+
+## Stage 380 open
+
+ADR-767 / `docs/STAGE_380_PLAN.md`.
 
 ## Stage 379 exit
 

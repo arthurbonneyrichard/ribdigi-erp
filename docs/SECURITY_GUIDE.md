@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 380 open** | Offline SW Cache Pack Remaining-Gate Index — `docs/STAGE_380_PLAN.md`, ADR-767 (`test_stage380_open.py`) |
+| **Stage 380 I1** | Offline SW cache pack remaining-gate index hub (`test_stage380_index_i1.py`) |
+| **Stage 380 B1** | Offline SW cache pack blocker matrix (`test_stage380_blockers_b1.py`) |
+| **Stage 380 P1** | Stage 379 / Stage 168 / Stage 329 / CHANGE_IMPACT pointers (`test_stage380_pointers_p1.py`) |
+| **Stage 380 D1** | Offline SW cache pack remaining-gate fidelity — `docs/STAGE_380_FIDELITY.md` (`test_stage380_fidelity_d1.py`) |
+| **Stage 380 H380x** | Exit + freeze — `docs/STAGE_380_EXIT_CRITERIA.md`, ADR-768 (`test_stage380_exit_h380x.py`); Stages 1–380 frozen |
 | **Stage 379 open** | Offline Accept Client Pack Remaining-Gate Index — `docs/STAGE_379_PLAN.md`, ADR-765 (`test_stage379_open.py`) |
 | **Stage 379 I1** | Offline accept client pack remaining-gate index hub (`test_stage379_index_i1.py`) |
 | **Stage 379 B1** | Offline accept client pack blocker matrix (`test_stage379_blockers_b1.py`) |
