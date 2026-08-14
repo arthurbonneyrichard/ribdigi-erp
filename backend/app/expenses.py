@@ -162,6 +162,30 @@ def next_run_date(from_dt: datetime, frequency: str) -> datetime:
     return from_dt + timedelta(days=30)
 
 
+RECURRING_FREQUENCIES = frozenset({"daily", "weekly", "monthly", "yearly"})
+
+
+def serialize_recurring(row: m.RecurringExpense) -> dict:
+    return {
+        "id": row.id,
+        "category": row.category,
+        "category_id": row.category_id,
+        "description": row.description,
+        "amount": float(row.amount),
+        "frequency": row.frequency,
+        "payment_method": row.payment_method,
+        "payee": row.payee,
+        "branch_id": getattr(row, "branch_id", None),
+        "department_id": getattr(row, "department_id", None),
+        "start_date": row.start_date,
+        "end_date": row.end_date,
+        "next_run_at": row.next_run_at,
+        "is_active": row.is_active,
+        "created_by": row.created_by,
+        "created_at": row.created_at,
+    }
+
+
 async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
     existing = {
         c.code
@@ -936,6 +960,12 @@ async def create_recurring(
     cat_id, cat_name = await resolve_category(
         db, tenant_id, category_id=category_id, category=category
     )
+    freq = (frequency or "monthly").strip().lower()
+    if freq not in RECURRING_FREQUENCIES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"frequency must be one of: {', '.join(sorted(RECURRING_FREQUENCIES))}",
+        )
     from app import org_units as org_units_svc
 
     resolved_branch, resolved_dept = await org_units_svc.assert_user_org_assignment(
@@ -951,7 +981,7 @@ async def create_recurring(
         category=cat_name,
         description=description or "",
         amount=round(float(amount), 2),
-        frequency=(frequency or "monthly").lower(),
+        frequency=freq,
         payment_method=payment_method or "bank_transfer",
         payee=payee,
         branch_id=resolved_branch,
@@ -963,6 +993,28 @@ async def create_recurring(
         created_by=user_id,
     )
     db.add(row)
+    await db.flush()
+    return row
+
+
+async def set_recurring_active(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    recurring_id: str,
+    is_active: bool,
+) -> m.RecurringExpense:
+    row = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.id == recurring_id,
+                m.RecurringExpense.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+    row.is_active = bool(is_active)
     await db.flush()
     return row
 
@@ -988,17 +1040,21 @@ async def generate_due_recurring(
         if row.end_date and row.end_date < now:
             row.is_active = False
             continue
+        # Omit reference so create_expense allocates EXP-YYYY-NNNN (BR-9.2 / BR-20.4).
+        desc = (row.description or f"Recurring {row.category}").strip()
+        if "recurring" not in desc.lower():
+            desc = f"{desc} (recurring)" if desc else f"Recurring {row.category}"
         expense = await create_expense(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
             amount=float(row.amount),
-            description=row.description or f"Recurring {row.category}",
+            description=desc,
             category_id=row.category_id,
             category=row.category,
             payment_method=row.payment_method,
             payee=row.payee,
-            reference=f"REC-{row.id[:8]}",
+            reference=None,
             expense_date=now,
             branch_id=getattr(row, "branch_id", None),
             department_id=getattr(row, "department_id", None),

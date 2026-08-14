@@ -79,9 +79,18 @@ export default function Page() {
   const [expPrefix, setExpPrefix] = useState('EXP');
   const [expNext, setExpNext] = useState('1');
   const [expPreview, setExpPreview] = useState('');
+  const [recurring, setRecurring] = useState<any[]>([]);
+  const [recAmount, setRecAmount] = useState('100');
+  const [recDescription, setRecDescription] = useState('');
+  const [recPayee, setRecPayee] = useState('');
+  const [recFrequency, setRecFrequency] = useState('monthly');
+  const [recPaymentMethod, setRecPaymentMethod] = useState('bank_transfer');
+  const [recCategoryId, setRecCategoryId] = useState('');
+  const [recBranchId, setRecBranchId] = useState('');
+  const [recDepartmentId, setRecDepartmentId] = useState('');
 
   async function refresh() {
-    const [exp, cats, settings, liquid, st, br, dep, accounts] = await Promise.all([
+    const [exp, cats, settings, liquid, st, br, dep, accounts, rec] = await Promise.all([
       api('/expenses'),
       api('/expenses/categories'),
       api('/expenses/settings'),
@@ -90,6 +99,7 @@ export default function Page() {
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
       api('/accounting/accounts').catch(() => ({ data: [] })),
+      api('/expenses/recurring').catch(() => ({ data: [] })),
     ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
@@ -97,6 +107,7 @@ export default function Page() {
     setStores(st.data || []);
     setBranches(br.data || []);
     setDepartments(dep.data || []);
+    setRecurring(rec.data || []);
     const glExpense = (accounts.data || []).filter(
       (a: any) => String(a.account_type || '').toLowerCase() === 'expense'
     );
@@ -109,6 +120,9 @@ export default function Page() {
       setExpPrefix(num.prefix || 'EXP');
       setExpNext(String(num.next_number ?? 1));
       setExpPreview(num.preview || '');
+    }
+    if (!recCategoryId && (cats.data || []).length) {
+      setRecCategoryId(cats.data[0].id);
     }
     const drafts: Record<string, string> = {};
     const acctDrafts: Record<string, string> = {};
@@ -204,6 +218,67 @@ export default function Page() {
       setStoreId('');
       setBranchId('');
       setDepartmentId('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createRecurring() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/expenses/recurring', {
+        method: 'POST',
+        body: JSON.stringify({
+          category_id: recCategoryId || undefined,
+          amount: Number(recAmount),
+          description: recDescription,
+          payee: recPayee || undefined,
+          frequency: recFrequency,
+          payment_method: recPaymentMethod,
+          branch_id: recBranchId || null,
+          department_id: recDepartmentId || null,
+        }),
+      });
+      setMessage(
+        `Recurring ${r.data.frequency} schedule created — next run ${r.data.next_run_at || 'soon'}`,
+      );
+      setRecDescription('');
+      setRecPayee('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function generateDueRecurring() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/expenses/recurring/generate', { method: 'POST', body: '{}' });
+      const created = r.data || [];
+      const refs = created.map((e: any) => e.reference).filter(Boolean).join(', ');
+      setMessage(
+        created.length
+          ? `Generated ${created.length} expense(s)${refs ? `: ${refs}` : ''}`
+          : 'No due recurring expenses',
+      );
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setRecurringActive(id: string, is_active: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/expenses/recurring/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active }),
+      });
+      setMessage(r.message || (is_active ? 'Recurring activated' : 'Recurring deactivated'));
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -434,8 +509,8 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
         <strong>Document numbering</strong>
         <p className="muted" style={{ margin: 0 }}>
-          When reference is left blank on create, the next EXP-YYYY-NNNN is assigned automatically.
-          Explicit vendor references are kept as entered.
+          When reference is left blank on create (including recurring generate), the next
+          EXP-YYYY-NNNN is assigned automatically. Explicit vendor references are kept as entered.
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <span className="muted">Expense</span>
@@ -598,6 +673,133 @@ export default function Page() {
                 <td>
                   <button type="button" onClick={() => saveCategoryBudget(c)}>
                     Save
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Recurring expenses</h3>
+        <p className="muted">
+          Schedules auto-generate due expenses (Celery + manual Generate). Generated entries use the
+          EXP-YYYY-NNNN series when reference is blank. Advance notify and per-occurrence skip remain
+          out of scope for MVP.
+        </p>
+        <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+          <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <input
+            value={recAmount}
+            onChange={(e) => setRecAmount(e.target.value)}
+            placeholder="Amount"
+          />
+          <input
+            value={recPayee}
+            onChange={(e) => setRecPayee(e.target.value)}
+            placeholder="Payee (optional)"
+          />
+          <input
+            value={recDescription}
+            onChange={(e) => setRecDescription(e.target.value)}
+            placeholder="Description"
+          />
+          <select value={recFrequency} onChange={(e) => setRecFrequency(e.target.value)}>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <select value={recPaymentMethod} onChange={(e) => setRecPaymentMethod(e.target.value)}>
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank transfer</option>
+            <option value="card">Card</option>
+            <option value="cheque">Cheque</option>
+          </select>
+          <select
+            value={recBranchId}
+            onChange={(e) => {
+              setRecBranchId(e.target.value);
+              setRecDepartmentId('');
+            }}
+          >
+            <option value="">No branch</option>
+            {branches
+              .filter((b) => b.is_active !== false)
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
+                </option>
+              ))}
+          </select>
+          <select value={recDepartmentId} onChange={(e) => setRecDepartmentId(e.target.value)}>
+            <option value="">No department</option>
+            {departments
+              .filter((d) => d.is_active !== false)
+              .filter((d) => !recBranchId || !d.branch_id || d.branch_id === recBranchId)
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.code} — {d.name}
+                </option>
+              ))}
+          </select>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={createRecurring} disabled={!recCategoryId}>
+              Create schedule
+            </button>
+            <button type="button" onClick={generateDueRecurring}>
+              Generate due now
+            </button>
+          </div>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Freq</th>
+              <th>Next run</th>
+              <th>Active</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {recurring.length === 0 && (
+              <tr>
+                <td colSpan={6} className="muted">
+                  No recurring schedules yet
+                </td>
+              </tr>
+            )}
+            {recurring.map((r) => (
+              <tr key={r.id}>
+                <td>
+                  {r.category}
+                  {r.description ? (
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {r.description}
+                    </div>
+                  ) : null}
+                </td>
+                <td>{r.amount}</td>
+                <td>{r.frequency}</td>
+                <td className="muted" style={{ fontSize: 12 }}>
+                  {r.next_run_at ? String(r.next_run_at).replace('T', ' ').slice(0, 19) : '—'}
+                </td>
+                <td>{r.is_active ? 'yes' : 'no'}</td>
+                <td>
+                  <button
+                    type="button"
+                    onClick={() => setRecurringActive(r.id, !r.is_active)}
+                  >
+                    {r.is_active ? 'Deactivate' : 'Activate'}
                   </button>
                 </td>
               </tr>
