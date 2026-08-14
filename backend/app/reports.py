@@ -1318,13 +1318,14 @@ async def inventory_movements(
     store_id: str | None = None,
     movement_type: str | None = None,
     created_by: str | None = None,
+    reason: str | None = None,
     limit: int = 200,
 ) -> dict:
     """Stock movement history (BR-14.2 / BR-5.3).
 
     Optional ``warehouse_id`` / ``store_id`` (via warehouse store link),
-    ``movement_type``, and ``created_by`` filters. Each row includes product
-    sku/name and acting user attribution (immutable audit trail).
+    ``movement_type``, ``created_by``, and ``reason`` filters. Each row includes
+    product sku/name and acting user attribution (immutable audit trail).
     """
     (
         warehouse_id,
@@ -1339,6 +1340,8 @@ async def inventory_movements(
         movement_type = movement_type.strip().lower()
     if created_by:
         created_by = created_by.strip() or None
+    if reason:
+        reason = reason.strip().lower() or None
 
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
     if product_id:
@@ -1351,6 +1354,8 @@ async def inventory_movements(
         stmt = stmt.where(m.StockMovement.movement_type == movement_type)
     if created_by:
         stmt = stmt.where(m.StockMovement.created_by == created_by)
+    if reason:
+        stmt = stmt.where(m.StockMovement.reason == reason)
     if warehouse_ids is not None:
         if not warehouse_ids:
             stmt = stmt.where(m.StockMovement.id == None)  # noqa: E711
@@ -1406,6 +1411,7 @@ async def inventory_movements(
                 "reference_type": r.reference_type,
                 "reference_id": r.reference_id,
                 "notes": r.notes,
+                "reason": r.reason,
                 "created_by": r.created_by,
                 "created_by_name": user.full_name if user else None,
                 "created_by_email": user.email if user else None,
@@ -1421,6 +1427,7 @@ async def inventory_movements(
         "store_name": store_name,
         "movement_type": movement_type,
         "created_by": created_by,
+        "reason": reason,
         "movements": movements,
     }
 

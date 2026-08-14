@@ -536,18 +536,18 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 }
 ```
 
-**Stock Adjustment:** `POST /inventory/stock-adjustments`
+**Stock Adjustment:** `POST /inventory/adjust/{product_id}` (BR-5.2)
 
 ```json
 {
-  "product_id": "prod_001",
+  "quantity": -2,
+  "reason": "damage",
   "warehouse_id": "wh_001",
-  "adjustment_qty": -2,
-  "reason": "damaged",
   "notes": "Water damage during storage"
 }
 ```
 
+`reason` required ∈ `{damage, theft, expiry, found, lost}`. Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements`.
 **Stock Transfer:** `POST /inventory/stock-transfers`
 
 ```json
@@ -584,9 +584,9 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 ```
 
 ### 5.7 Stock Movement History
-**Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&store_id=&movement_type=&created_by=&from_date=&to_date=`
+**Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&store_id=&movement_type=&created_by=&reason=&from_date=&to_date=`
 
-Immutable audit trail (BR-5.3). No DELETE. Same payload shape as `GET /reports/inventory/movements` (`inventory:read`): each movement includes `product_sku` / `product_name`, `quantity_before` / `quantity_after`, and `created_by` / `created_by_name` / `created_by_email`. Inventory UI **Movements** tab.
+Immutable audit trail (BR-5.3). No DELETE. Same payload shape as `GET /reports/inventory/movements` (`inventory:read`): each movement includes `product_sku` / `product_name`, `quantity_before` / `quantity_after`, `reason` (coded adjustment), and `created_by` / `created_by_name` / `created_by_email`. Inventory UI **Movements** tab.
 
 ### 5.8 Low Stock Alerts
 **Endpoint:** `GET /inventory/low-stock` (also `GET /reports/inventory/low-stock` with optional `store_id` / `warehouse_id`)
@@ -1233,7 +1233,7 @@ Tax UI (`/tax`) period controls include store picker.
 
 ### 14.2 Inventory Reports
 **Stock Balance:** `GET /reports/inventory/balance?warehouse_id=&store_id=` — current stock; optional warehouse/store (store expands to linked warehouses). Response echoes location fields. Export `inventory_balance`.  
-**Stock Movement:** `GET /reports/inventory/movements?product_id=&from_date=&to_date=&warehouse_id=&store_id=&movement_type=&created_by=` — recent stock movements with product sku/name and acting user; optional warehouse/store (via warehouse store link), movement type, and `created_by`. Response echoes location fields. Export `inventory_movements` (passes location filters; rows include user attribution).
+**Stock Movement:** `GET /reports/inventory/movements?product_id=&from_date=&to_date=&warehouse_id=&store_id=&movement_type=&created_by=&reason=` — recent stock movements with product sku/name, optional coded `reason`, and acting user; optional warehouse/store (via warehouse store link), movement type, and `created_by`. Response echoes location fields. Export `inventory_movements` (passes location filters; rows include user attribution + reason).
 **Low Stock:** `GET /reports/inventory/low-stock?store_id=&warehouse_id=` — product + warehouse reorder breaches; optional location filters. Export `inventory_low_stock`.  
 **Stock Valuation:** `GET /reports/inventory/valuation?method=standard&warehouse_id=&store_id=` — standard-cost valuation (qty × `products.cost_price`). Only `method=standard` is supported in MVP; `fifo` / `lifo` / `average` / `weighted_average` return **400**. Optional `warehouse_id` / `store_id` (same location resolver as balance). Response: `method`, location fields, `items[]` (`product_id`, `sku`, `name`, `warehouse_id`, `quantity`, `unit_cost`, `cost_price`, `value`), `total_quantity`, `total_value`. Export: `POST /reports/export` with `report_type: "inventory_valuation"`.  
 **Expiry Report:** `GET /reports/inventory/expiry?days=30&warehouse_id=&store_id=` — batches with quantity > 0 and `expiry_date` within horizon (includes already expired); rows include `sku`/`name`/`days_until_expiry`/`is_expired`; optional warehouse/store filter. Export `inventory_expiry` (optional `days`, location filters).  

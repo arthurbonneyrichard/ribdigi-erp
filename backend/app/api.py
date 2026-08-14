@@ -3332,6 +3332,7 @@ async def movements(
     store_id: str | None = None,
     movement_type: str | None = None,
     created_by: str | None = None,
+    reason: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
     claims=Depends(require_permission("inventory", "read")),
@@ -3349,6 +3350,7 @@ async def movements(
             store_id=store_id or None,
             movement_type=movement_type or None,
             created_by=created_by or None,
+            reason=reason or None,
         )
     )
 
@@ -3468,6 +3470,15 @@ async def adjust(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Coded stock adjustment (BR-5.2): damage | theft | expiry | found | lost."""
+    from app.inventory import STOCK_ADJUSTMENT_REASONS
+
+    reason = (payload.reason or "").strip().lower()
+    if reason not in STOCK_ADJUSTMENT_REASONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"reason must be one of {sorted(STOCK_ADJUSTMENT_REASONS)}",
+        )
     product = await apply_stock_change(
         db,
         tenant_id=claims["tenant_id"],
@@ -3475,11 +3486,22 @@ async def adjust(
         quantity_delta=float(payload.quantity),
         movement_type="adjustment",
         user_id=claims["sub"],
-        notes=payload.notes or payload.reason,
+        notes=payload.notes,
+        reason=reason,
+        warehouse_id=payload.warehouse_id or None,
         allow_negative=True,
+        reference_type="stock_adjustment",
     )
     await db.commit()
-    return env({"product_id": product.id, "stock_qty": float(product.stock_qty)})
+    return env(
+        {
+            "product_id": product.id,
+            "stock_qty": float(product.stock_qty),
+            "reason": reason,
+            "warehouse_id": payload.warehouse_id or None,
+        },
+        "Stock adjusted",
+    )
 
 
 @api.post("/inventory/stock-in")
@@ -8305,6 +8327,7 @@ async def report_inventory_movements(
     store_id: str | None = None,
     movement_type: str | None = None,
     created_by: str | None = None,
+    reason: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8319,6 +8342,7 @@ async def report_inventory_movements(
             store_id=store_id or None,
             movement_type=movement_type or None,
             created_by=created_by or None,
+            reason=reason or None,
         )
     )
 

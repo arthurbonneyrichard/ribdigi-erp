@@ -468,8 +468,9 @@ class CreditLimitOverrideBody(BaseModel):
 
 class StockAdjust(BaseModel):
     quantity: float
+    reason: str  # damage | theft | expiry | found | lost
     notes: str | None = None
-    reason: str = "adjustment"
+    warehouse_id: str | None = None
 
 
 class StockMove(BaseModel):

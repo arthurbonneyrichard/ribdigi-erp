@@ -13,7 +13,8 @@ type Tab =
   | 'opening'
   | 'expiry'
   | 'counts'
-  | 'movements';
+  | 'movements'
+  | 'adjust';
 
 type ImportReportRow = {
   line: number;
@@ -177,6 +178,11 @@ export default function Page() {
   const [mvTo, setMvTo] = useState('');
   const [mvProductOnly, setMvProductOnly] = useState(false);
   const [mvMeta, setMvMeta] = useState<{ count?: number; warehouse_name?: string | null }>({});
+  const [mvReason, setMvReason] = useState('');
+  const [adjQty, setAdjQty] = useState('-1');
+  const [adjReason, setAdjReason] = useState('damage');
+  const [adjWarehouseId, setAdjWarehouseId] = useState('');
+  const [adjNotes, setAdjNotes] = useState('');
 
   async function refresh() {
     const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
@@ -220,15 +226,38 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
-  async function loadMovements() {
+  async function loadMovements(overrides: {
+    warehouse_id?: string;
+    movement_type?: string;
+    reason?: string;
+    from_date?: string;
+    to_date?: string;
+    product_id?: string | null;
+  } = {}) {
     setError('');
     try {
       const params = new URLSearchParams();
-      if (mvWarehouseId) params.set('warehouse_id', mvWarehouseId);
-      if (mvType) params.set('movement_type', mvType);
-      if (mvFrom) params.set('from_date', mvFrom);
-      if (mvTo) params.set('to_date', mvTo);
-      if (mvProductOnly && selectedId) params.set('product_id', selectedId);
+      const warehouse = overrides.warehouse_id ?? mvWarehouseId;
+      const type = overrides.movement_type ?? mvType;
+      const reason = overrides.reason ?? mvReason;
+      const from = overrides.from_date ?? mvFrom;
+      const to = overrides.to_date ?? mvTo;
+      const productOnly =
+        overrides.product_id !== undefined
+          ? Boolean(overrides.product_id)
+          : mvProductOnly && selectedId;
+      const productId =
+        overrides.product_id !== undefined
+          ? overrides.product_id
+          : mvProductOnly
+            ? selectedId
+            : null;
+      if (warehouse) params.set('warehouse_id', warehouse);
+      if (type) params.set('movement_type', type);
+      if (reason) params.set('reason', reason);
+      if (from) params.set('from_date', from);
+      if (to) params.set('to_date', to);
+      if (productOnly && productId) params.set('product_id', productId);
       const q = params.toString();
       const r = await api(`/inventory/movements${q ? `?${q}` : ''}`);
       const data = r.data || {};
@@ -796,12 +825,51 @@ export default function Page() {
     }
   }
 
+  async function postStockAdjust() {
+    setError('');
+    setMessage('');
+    if (!selectedId) {
+      setError('Select a product');
+      return;
+    }
+    const qty = Number(adjQty);
+    if (!Number.isFinite(qty) || qty === 0) {
+      setError('Quantity delta must be a non-zero number');
+      return;
+    }
+    try {
+      const r = await api(`/inventory/adjust/${selectedId}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          quantity: qty,
+          reason: adjReason,
+          notes: adjNotes.trim() || null,
+          warehouse_id: adjWarehouseId || null,
+        }),
+      });
+      setMessage(
+        `Adjusted (${r.data.reason}) — on-hand ${r.data.stock_qty}` +
+          (r.data.warehouse_id ? ` · warehouse ${String(r.data.warehouse_id).slice(0, 8)}…` : '')
+      );
+      setAdjNotes('');
+      await refresh();
+      setMvType('adjustment');
+      setMvReason(adjReason);
+      setTab('movements');
+      await loadMovements({ movement_type: 'adjustment', reason: adjReason });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   const selected = products.find((p) => p.id === selectedId);
 
   return (
     <Shell>
       <h1>Inventory</h1>
-      <p className="muted">Products, catalog, variants, batches, expiry, stock counts &amp; movements</p>
+      <p className="muted">
+        Products, catalog, variants, batches, expiry, stock counts, movements &amp; adjustments
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -817,6 +885,7 @@ export default function Page() {
             ['expiry', 'Expiring'],
             ['counts', 'Stock counts'],
             ['movements', 'Movements'],
+            ['adjust', 'Adjust'],
           ] as const
         ).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
@@ -1833,6 +1902,14 @@ export default function Page() {
                 <option value="transfer_out">transfer_out</option>
                 <option value="transfer_in">transfer_in</option>
               </select>
+              <select value={mvReason} onChange={(e) => setMvReason(e.target.value)}>
+                <option value="">All reasons</option>
+                <option value="damage">damage</option>
+                <option value="theft">theft</option>
+                <option value="expiry">expiry</option>
+                <option value="found">found</option>
+                <option value="lost">lost</option>
+              </select>
               <label className="muted">From</label>
               <input type="date" value={mvFrom} onChange={(e) => setMvFrom(e.target.value)} />
               <label className="muted">To</label>
@@ -1861,6 +1938,7 @@ export default function Page() {
                 <th>When</th>
                 <th>Product</th>
                 <th>Type</th>
+                <th>Reason</th>
                 <th>Qty</th>
                 <th>Before → after</th>
                 <th>User</th>
@@ -1879,6 +1957,7 @@ export default function Page() {
                         : '—'}
                   </td>
                   <td>{mv.movement_type}</td>
+                  <td>{mv.reason || '—'}</td>
                   <td>{mv.quantity}</td>
                   <td>
                     {mv.quantity_before} → {mv.quantity_after}
@@ -1892,7 +1971,7 @@ export default function Page() {
               ))}
               {!movements.length && (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={8} className="muted">
                     No stock movements
                   </td>
                 </tr>
@@ -1900,6 +1979,53 @@ export default function Page() {
             </tbody>
           </table>
         </>
+      )}
+
+      {tab === 'adjust' && (
+        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+          <h3>Stock adjustment</h3>
+          <p className="muted">
+            Correct on-hand discrepancies with a coded reason (BR-5.2): damage, theft, expiry, found,
+            or lost. Negative qty reduces stock; positive increases (e.g. found). Uses the product
+            selected above.
+          </p>
+          <p className="muted">
+            Selected:{' '}
+            {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
+          </p>
+          <label className="muted">Quantity delta</label>
+          <input
+            value={adjQty}
+            onChange={(e) => setAdjQty(e.target.value)}
+            placeholder="-1"
+          />
+          <label className="muted">Reason</label>
+          <select value={adjReason} onChange={(e) => setAdjReason(e.target.value)}>
+            <option value="damage">damage</option>
+            <option value="theft">theft</option>
+            <option value="expiry">expiry</option>
+            <option value="found">found</option>
+            <option value="lost">lost</option>
+          </select>
+          <label className="muted">Warehouse (optional)</label>
+          <select value={adjWarehouseId} onChange={(e) => setAdjWarehouseId(e.target.value)}>
+            <option value="">Company / product stock only</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name || w.code || w.id.slice(0, 8)}
+              </option>
+            ))}
+          </select>
+          <label className="muted">Notes (optional)</label>
+          <input
+            value={adjNotes}
+            onChange={(e) => setAdjNotes(e.target.value)}
+            placeholder="Details"
+          />
+          <button type="button" onClick={postStockAdjust} disabled={!selectedId}>
+            Post adjustment
+          </button>
+        </div>
       )}
     </Shell>
   );

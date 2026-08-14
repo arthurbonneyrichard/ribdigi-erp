@@ -90,7 +90,8 @@ async def test_stock_count_variance_adjusts_warehouse_and_product(client, db_ses
         headers=headers,
     )
     assert moves.status_code == 200
-    assert any(float(row["quantity"]) == -3 for row in moves.json()["data"])
+    rows = moves.json()["data"]["movements"]
+    assert any(float(row["quantity"]) == -3 for row in rows)
 
 
 @pytest.mark.asyncio
