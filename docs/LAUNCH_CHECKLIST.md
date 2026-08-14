@@ -1623,6 +1623,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 37 E1 / Stage 304 / prior soft-delete-erasure-pack / Stage 37 P1 pointers (Stage 305 P1: `test_stage305_pointers_p1.py`, `docs/ERASURE_HONESTY_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 305 fidelity sync (D1: `test_stage305_fidelity_d1.py`, `docs/STAGE_305_FIDELITY.md`)
 - [x] Stage 305 exit + freeze (H305x: `test_stage305_exit_h305x.py`, `docs/STAGE_305_EXIT_CRITERIA.md`, ADR-618)
+- [x] Stage 306 track opened (ADR-619: `test_stage306_open.py`, `docs/STAGE_306_PLAN.md`) — Data Residency Pack Remaining-Gate Index; closed under ADR-620
+- [x] Data residency pack remaining-gate hub (Stage 306 I1: `test_stage306_index_i1.py`, `docs/DATA_RESIDENCY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Data residency pack blocker matrix (Stage 306 B1: `test_stage306_blockers_b1.py`, `docs/DATA_RESIDENCY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 44 R1 / Stage 305 / Stage 44 E1 / Stage 37 P1 pointers (Stage 306 P1: `test_stage306_pointers_p1.py`, `docs/DATA_RESIDENCY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 306 fidelity sync (D1: `test_stage306_fidelity_d1.py`, `docs/STAGE_306_FIDELITY.md`)
+- [x] Stage 306 exit + freeze (H306x: `test_stage306_exit_h306x.py`, `docs/STAGE_306_EXIT_CRITERIA.md`, ADR-620)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)

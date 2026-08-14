@@ -1,0 +1,63 @@
+{
+  "id": "data-residency-pack-rg-blockers",
+  "stage": 306,
+  "pack": "B1",
+  "doc": "docs/DATA_RESIDENCY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DATA_RESIDENCY_PACK_REMAINING_GATE_MVP.md",
+    "data_residency": "docs/DATA_RESIDENCY_MVP.md"
+  },
+  "packaging_complete": true,
+  "multi_region_residency_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "gdpr_residency_cert_claimed": false,
+  "customer_region_pinning_live": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "multi_region_residency_claimed": "REMAINING",
+    "schema_per_tenant_claimed": "REMAINING",
+    "gdpr_residency_cert_claimed": "REMAINING",
+    "customer_region_pinning_live": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage44_as_multi_region": "NON_CLAIM",
+    "stage305_as_hard_delete": "NON_CLAIM",
+    "multi_region_residency_claimed_flag": "false",
+    "schema_per_tenant_claimed_flag": "false",
+    "gdpr_residency_cert_claimed_flag": "false",
+    "customer_region_pinning_live_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "drprb-multi-region",
+      "title": "Mark multi-region residency Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprb-schema",
+      "title": "Mark schema-per-tenant Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprb-gdpr",
+      "title": "Mark GDPR residency cert Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprb-stage44-nonclaim",
+      "title": "Mark Stage 44 R1 as non-claim for multi-region residency Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprb-residency-remaining",
+      "title": "Multi-region residency Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 306 B1 data residency pack RG blocker matrix packaging only. Multi-region residency Completes remain MISSING."
+}

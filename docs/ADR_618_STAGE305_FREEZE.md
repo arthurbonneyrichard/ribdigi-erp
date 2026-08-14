@@ -31,3 +31,9 @@ Stage 306 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for hard delete, erasure, anonymize workflow, deferred ADR implemented, or go-live.
+
+## Amendment — Stage 306 opened
+
+Stage 306 opened under **ADR-619** after CONTINUE/NEXT (Tenant MVP Data Residency Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-620**. Stage 305 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 306 runner-up outline was approved and opened (ADR-619); freeze ADR-620. Do not reopen Stage 305 scope.

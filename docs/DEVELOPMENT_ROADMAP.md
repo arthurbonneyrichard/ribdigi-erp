@@ -4284,6 +4284,18 @@ Every feature in every phase must meet:
 
 **Stage 305 exit (2026-08-14):** I1, B1, P1, D1, H305x met — `docs/STAGE_305_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_618_STAGE305_FREEZE.md`. Fidelity: `docs/STAGE_305_FIDELITY.md`.
 
+**Stage 306 open (2026-08-14):** Tenant MVP Data Residency Pack Remaining-Gate Index Fidelity — `docs/ADR_619_STAGE306_OPEN.md` + `docs/STAGE_306_PLAN.md` (I1 next).
+
+**Stage 306 I1 (2026-08-14):** Data residency pack remaining-gate index hub (`test_stage306_index_i1.py`).
+
+**Stage 306 B1 (2026-08-14):** Data residency pack blocker matrix (`test_stage306_blockers_b1.py`).
+
+**Stage 306 P1 (2026-08-14):** Stage 44 R1 / Stage 305 / Stage 44 E1 / Stage 37 P1 pointers (`test_stage306_pointers_p1.py`).
+
+**Stage 306 D1 (2026-08-14):** Data Residency Pack Remaining-Gate Index fidelity sync — `docs/STAGE_306_FIDELITY.md` (`test_stage306_fidelity_d1.py`).
+
+**Stage 306 exit (2026-08-14):** I1, B1, P1, D1, H306x met — `docs/STAGE_306_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_620_STAGE306_FREEZE.md`. Fidelity: `docs/STAGE_306_FIDELITY.md`.
+
 
 
 

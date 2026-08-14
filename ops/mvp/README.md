@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_306_EXIT_CRITERIA.md` / `docs/ADR_620_STAGE306_FREEZE.md` (`backend/tests/test_stage306_exit_h306x.py`) — Stage 306 H306x
+- `docs/STAGE_306_FIDELITY.md` (`backend/tests/test_stage306_fidelity_d1.py`) — Stage 306 D1
+- `docs/STAGE_306_PLAN.md` (`backend/tests/test_stage306_open.py`) — Stage 306 open (ADR-619)
+- `docs/DATA_RESIDENCY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/data-residency-pack-remaining-gate.json` — Stage 306 I1
+- `docs/DATA_RESIDENCY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/data-residency-pack-rg-blockers.json` — Stage 306 B1
+- `docs/DATA_RESIDENCY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/data-residency-pack-rg-pointers.json` — Stage 306 P1
 - `docs/STAGE_305_EXIT_CRITERIA.md` / `docs/ADR_618_STAGE305_FREEZE.md` (`backend/tests/test_stage305_exit_h305x.py`) — Stage 305 H305x
 - `docs/STAGE_305_FIDELITY.md` (`backend/tests/test_stage305_fidelity_d1.py`) — Stage 305 D1
 - `docs/STAGE_305_PLAN.md` (`backend/tests/test_stage305_open.py`) — Stage 305 open (ADR-617)
@@ -5113,6 +5119,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 306 exit
+
+H306x met — `docs/STAGE_306_EXIT_CRITERIA.md`, ADR-620. Stages 1–306 frozen for Stage 306 feature scope.
+
+## Stage 306 D1 — Tenant MVP Data Residency Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_306_FIDELITY.md` (`test_stage306_fidelity_d1.py`). `DATA_RESIDENCY_PACK_*` remaining-gate index; multi-region residency / schema-per-tenant / go-live still MISSING.
+
+## Stage 306 open
+
+ADR-619 / `docs/STAGE_306_PLAN.md`.
 
 ## Stage 305 exit
 
