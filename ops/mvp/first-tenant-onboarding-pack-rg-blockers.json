@@ -1,0 +1,53 @@
+{
+  "id": "first-tenant-onboarding-pack-rg-blockers",
+  "stage": 244,
+  "pack": "B1",
+  "doc": "docs/FIRST_TENANT_ONBOARDING_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding_register": "ops/mvp/first-tenant-onboarding.json"
+  },
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "first_paying_tenant_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_onboarding_delivery_execution": "REMAINING",
+    "first_paying_tenant_complete": "REMAINING",
+    "stage33_f1_as_live_onboarding": "NON_CLAIM",
+    "stage194_i1_as_live_onboarding": "NON_CLAIM",
+    "stage66_t1_as_live_onboarding": "NON_CLAIM",
+    "first_tenant_onboarded_claimed": "false",
+    "live_onboarding_success_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ftoprb-delivery",
+      "title": "Mark live onboarding delivery execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftoprb-paying",
+      "title": "Mark first paying tenant Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftoprb-stage33-nonclaim",
+      "title": "Mark Stage 33 F1 as non-claim for live onboarding",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftoprb-onboarding-remaining",
+      "title": "Live onboarding Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 244 B1 first-tenant onboarding pack RG blocker matrix packaging only. Live onboarding Complete remains MISSING."
+}

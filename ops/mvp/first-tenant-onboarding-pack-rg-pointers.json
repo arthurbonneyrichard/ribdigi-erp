@@ -1,0 +1,60 @@
+{
+  "id": "first-tenant-onboarding-pack-rg-pointers",
+  "stage": 244,
+  "pack": "P1",
+  "doc": "docs/FIRST_TENANT_ONBOARDING_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+    "professional_services_sow_pack_remaining_gate": "docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "first_tenant_golive": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+    "first_tenant_onboarding_register": "ops/mvp/first-tenant-onboarding.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "first_paying_tenant_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "first_tenant_onboarding_stage33_f1",
+    "professional_services_sow_pack_remaining_gate_stage243",
+    "first_tenant_live_onboarding_remaining_gate_stage194",
+    "first_tenant_golive_stage66",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ftoprp-stage33",
+      "title": "Point to Stage 33 F1 first-tenant onboarding",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftoprp-stage243",
+      "title": "Point to Stage 243 professional services SOW pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftoprp-stage194",
+      "title": "Point to Stage 194 first-tenant live onboarding remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftoprp-stage66",
+      "title": "Point to Stage 66 first-tenant go-live adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftoprp-onboarding-remaining",
+      "title": "Live onboarding Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 244 P1 first-tenant onboarding pack RG pointers packaging only. Do not claim live onboarding Complete."
+}

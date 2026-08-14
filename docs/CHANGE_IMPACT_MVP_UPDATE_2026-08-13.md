@@ -388,3 +388,7 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 243 decision (opened after Stage 242 freeze)
 
 **Tenant MVP Professional Services SOW Pack Remaining-Gate Index Fidelity** — professional services SOW pack remaining-gate hub (I1), blocker matrix (B1), Stage 48 / Stage 242 / Stage 33 / Stage 78 pointers with explicit non-claim (P1). Prefixed `PROFESSIONAL_SERVICES_SOW_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 48 P1 `PROFESSIONAL_SERVICES_SOW_*`). Signed SOW / live implementation delivery Completes remain deferred (Stage 244+). Distinct from Stage 242 customer training cert pack remaining-gate, Stage 48 P1 professional services SOW packaging, and Stage 78 commercial professional services. Open ADR-493 / freeze ADR-494.
+
+## Stage 244 decision (opened after Stage 243 freeze)
+
+**Tenant MVP First-Tenant Onboarding Pack Remaining-Gate Index Fidelity** — first-tenant onboarding pack remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 243 / Stage 194 / Stage 66 pointers with explicit non-claim (P1). Prefixed `FIRST_TENANT_ONBOARDING_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 33 F1 `FIRST_TENANT_ONBOARDING_*` / Stage 194 `FIRST_TENANT_LIVE_ONBOARDING_*`). Live onboarding Completes remain deferred (Stage 245+). Distinct from Stage 243 professional services SOW pack remaining-gate, Stage 194 first-tenant live onboarding remaining-gate, and Stage 33 F1 first-tenant onboarding packaging. Open ADR-495 / freeze ADR-496.

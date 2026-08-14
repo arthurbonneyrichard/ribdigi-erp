@@ -27,3 +27,9 @@ Stage 243 Tenant MVP Professional Services SOW Pack Remaining-Gate Index Fidelit
 Stage 244 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 243 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP First-Tenant Onboarding Pack Remaining-Gate Index Fidelity — single index of first-tenant-onboarding-pack blockers (packaged Stage 33 first-tenant materials non-claim as live onboarding Complete) with explicit non-claim. Prefixed `FIRST_TENANT_ONBOARDING_PACK_*` if a prior remaining-gate exists. Distinct from Stage 243 professional services SOW pack remaining-gate and Stage 194 first-tenant live onboarding remaining-gate.
+
+## Amendment — Stage 244 opened
+
+Stage 244 opened under **ADR-495** after CONTINUE/NEXT (First-Tenant Onboarding Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-496**. Stage 243 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 244 runner-up outline was approved and opened (ADR-495); freeze ADR-496. Do not reopen Stage 243 scope.

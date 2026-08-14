@@ -892,6 +892,12 @@ Authoritative MVP docs:
 - `docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/professional-services-sow-pack-remaining-gate.json` — Stage 243 I1
 - `docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/professional-services-sow-pack-rg-blockers.json` — Stage 243 B1
 - `docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_POINTERS_MVP.md` / `ops/mvp/professional-services-sow-pack-rg-pointers.json` — Stage 243 P1
+- `docs/STAGE_244_EXIT_CRITERIA.md` / `docs/ADR_496_STAGE244_FREEZE.md` (`backend/tests/test_stage244_exit_h244x.py`) — Stage 244 H244x
+- `docs/STAGE_244_FIDELITY.md` (`backend/tests/test_stage244_fidelity_d1.py`) — Stage 244 D1
+- `docs/STAGE_244_PLAN.md` (`backend/tests/test_stage244_open.py`) — Stage 244 open (ADR-495)
+- `docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/first-tenant-onboarding-pack-remaining-gate.json` — Stage 244 I1
+- `docs/FIRST_TENANT_ONBOARDING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/first-tenant-onboarding-pack-rg-blockers.json` — Stage 244 B1
+- `docs/FIRST_TENANT_ONBOARDING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/first-tenant-onboarding-pack-rg-pointers.json` — Stage 244 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4273,4 +4279,16 @@ H243x met — `docs/STAGE_243_EXIT_CRITERIA.md`, ADR-494. Stages 1–243 frozen 
 ## Stage 243 open
 
 `docs/ADR_493_STAGE243_OPEN.md` + `docs/STAGE_243_PLAN.md` (`test_stage243_open.py`).
+
+## Stage 244 exit
+
+H244x met — `docs/STAGE_244_EXIT_CRITERIA.md`, ADR-496. Stages 1–244 frozen for Stage 244 feature scope.
+
+## Stage 244 D1 — Tenant MVP First-Tenant Onboarding Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_244_FIDELITY.md` (`test_stage244_fidelity_d1.py`). `FIRST_TENANT_ONBOARDING_PACK_*` remaining-gate index; live onboarding still MISSING.
+
+## Stage 244 open
+
+`docs/ADR_495_STAGE244_OPEN.md` + `docs/STAGE_244_PLAN.md` (`test_stage244_open.py`).
 
