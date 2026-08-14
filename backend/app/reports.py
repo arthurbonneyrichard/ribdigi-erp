@@ -1630,7 +1630,11 @@ async def cash_flow(
 
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
     resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
-        db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        branch_id=branch_id,
+        company_id=company_id,
     )
     liq_q = select(m.Account).where(
         m.Account.tenant_id == tenant_id,
@@ -1795,7 +1799,11 @@ async def balance_sheet(
     from app.accounting import account_balances_through, resolve_journal_dimension_ids
 
     resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
-        db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        branch_id=branch_id,
+        company_id=company_id,
     )
     accounts, bal_by_id = await account_balances_through(
         db, tenant_id, as_of=as_of, store_ids=store_ids, company_id=company_id

@@ -165,8 +165,15 @@ async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.
 
 
 async def get_customer_group(
-    db: AsyncSession, tenant_id: str, group_id: str, *, active_only: bool = False
+    db: AsyncSession,
+    tenant_id: str,
+    group_id: str,
+    *,
+    active_only: bool = False,
+    company_id: str | None = None,
 ) -> m.CustomerGroup:
+    from app.workspace import assert_fk_company
+
     row = (
         await db.execute(
             select(m.CustomerGroup).where(
@@ -177,6 +184,7 @@ async def get_customer_group(
     ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail="Customer group not found")
+    assert_fk_company(row, company_id, detail="Customer group not found")
     if active_only and not row.is_active:
         raise HTTPException(status_code=409, detail="Customer group is inactive")
     return row
@@ -206,6 +214,7 @@ async def resolve_group_ref(
     customer_group_id: str | None = None,
     customer_group: str | None = None,
     required_active: bool = True,
+    company_id: str | None = None,
 ) -> str | None:
     """Resolve group id from id or name; None clears/unsets."""
     if customer_group_id is not None:
@@ -213,22 +222,25 @@ async def resolve_group_ref(
         if not gid:
             return None
         group = await get_customer_group(
-            db, tenant_id, gid, active_only=required_active
+            db,
+            tenant_id,
+            gid,
+            active_only=required_active,
+            company_id=company_id,
         )
         return group.id
     if customer_group is not None:
         name = str(customer_group).strip()
         if not name:
             return None
-        await ensure_default_customer_groups(db, tenant_id)
-        row = (
-            await db.execute(
-                select(m.CustomerGroup).where(
-                    m.CustomerGroup.tenant_id == tenant_id,
-                    func.lower(m.CustomerGroup.name) == name.lower(),
-                )
-            )
-        ).scalar_one_or_none()
+        await ensure_default_customer_groups(db, tenant_id, company_id=company_id)
+        q = select(m.CustomerGroup).where(
+            m.CustomerGroup.tenant_id == tenant_id,
+            func.lower(m.CustomerGroup.name) == name.lower(),
+        )
+        if company_id:
+            q = q.where(m.CustomerGroup.company_id == company_id)
+        row = (await db.execute(q)).scalar_one_or_none()
         if row is None:
             raise HTTPException(status_code=404, detail="Customer group not found")
         if required_active and not row.is_active:
@@ -441,6 +453,7 @@ async def create_customer(
         tenant_id,
         customer_group_id=customer_group_id,
         customer_group=customer_group,
+        company_id=company_id,
     )
     lat, lon = normalize_gps(latitude, longitude)
     now = datetime.utcnow()
@@ -527,6 +540,7 @@ async def update_customer(
                 tenant_id,
                 customer_group_id=fields.get("customer_group_id"),
                 customer_group=fields.get("customer_group"),
+                company_id=getattr(row, "company_id", None),
             )
     if "latitude" in fields or "longitude" in fields:
         lat = fields["latitude"] if "latitude" in fields else row.latitude

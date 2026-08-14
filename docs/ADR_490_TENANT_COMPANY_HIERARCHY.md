@@ -228,3 +228,10 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Document-line serialize exposes `company_id` on sales invoice/quotation/order/return items, PR/PO/GRN/return/PI items, journal lines, and stock-transfer items.
 - Product warehouse-stock GET (and CSV export) scopes stock rows by company; recurring expense PATCH asserts company before mutate.
 - Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design.
+
+## Phase 27 — Remaining create FK + scan mutate scope (2026-08-14)
+
+- Settlement liquid-account resolve (`resolve_settlement_gl`) asserts company on override accounts; journal store/branch dimension resolve accepts `company_id`.
+- Customer-group resolve, expense department resolve, product `tax_rate_id`, PO/PR warehouse FK, and POS hold product soft-reserve assert company.
+- Quotation-expiry notification scan scopes mutate/notify by workspace `company_id` when set; bank recon match asserts journal-line company vs statement.
+- Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design.

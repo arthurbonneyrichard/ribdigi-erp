@@ -1005,6 +1005,7 @@ async def record_customer_payment(
             payment_method or "cash",
             liquid_account_id=liquid_account_id,
             outflow=False,
+            company_id=company_id,
         )
 
     customer = await get_customer(db, tenant_id, customer_id)

@@ -118,9 +118,12 @@ async def resolve_settlement_gl(
     *,
     liquid_account_id: str | None = None,
     outflow: bool = False,
+    company_id: str | None = None,
 ) -> tuple[str, str]:
     """Resolve (account_code, label), honoring optional per-payment liquid account override."""
-    await ensure_default_accounts(db, tenant_id)
+    from app.workspace import assert_fk_company
+
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     if liquid_account_id:
         account = (
             await db.execute(
@@ -132,6 +135,7 @@ async def resolve_settlement_gl(
         ).scalar_one_or_none()
         if not account:
             raise HTTPException(status_code=404, detail="Settlement account not found")
+        assert_fk_company(account, company_id, detail="Settlement account not found")
         if not _account_is_settlement_eligible(account, outflow=outflow):
             raise HTTPException(
                 status_code=400,
@@ -1122,14 +1126,18 @@ async def unpost_journal_entry(
 
 
 async def resolve_journal_store_id(
-    db: AsyncSession, *, tenant_id: str, store_id: str | None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str | None,
+    company_id: str | None = None,
 ) -> str | None:
-    """Validate optional store dimension (tenant-scoped 404)."""
+    """Validate optional store dimension (tenant/company-scoped 404)."""
     if not store_id:
         return None
     from app.stores import get_store
 
-    store = await get_store(db, tenant_id, store_id)
+    store = await get_store(db, tenant_id, store_id, company_id=company_id)
     return store.id
 
 
@@ -1139,6 +1147,7 @@ async def resolve_journal_dimension_ids(
     tenant_id: str,
     store_id: str | None = None,
     branch_id: str | None = None,
+    company_id: str | None = None,
 ) -> tuple[str | None, str | None, list[str] | None]:
     """Resolve optional store/branch journal filters.
 
@@ -1152,10 +1161,10 @@ async def resolve_journal_dimension_ids(
     resolved_branch: str | None = None
     resolved_store: str | None = None
     if branch_id:
-        branch = await get_branch(db, tenant_id, branch_id)
+        branch = await get_branch(db, tenant_id, branch_id, company_id=company_id)
         resolved_branch = branch.id
     if store_id:
-        store = await get_store(db, tenant_id, store_id)
+        store = await get_store(db, tenant_id, store_id, company_id=company_id)
         resolved_store = store.id
         if resolved_branch and store.branch_id != resolved_branch:
             raise HTTPException(
@@ -1164,14 +1173,13 @@ async def resolve_journal_dimension_ids(
             )
         return resolved_store, resolved_branch, [resolved_store]
     if resolved_branch:
-        stores = (
-            await db.execute(
-                select(m.Store).where(
-                    m.Store.tenant_id == tenant_id,
-                    m.Store.branch_id == resolved_branch,
-                )
-            )
-        ).scalars().all()
+        store_q = select(m.Store).where(
+            m.Store.tenant_id == tenant_id,
+            m.Store.branch_id == resolved_branch,
+        )
+        if company_id:
+            store_q = store_q.where(m.Store.company_id == company_id)
+        stores = (await db.execute(store_q)).scalars().all()
         return None, resolved_branch, [s.id for s in stores]
     return None, None, None
 
@@ -1219,7 +1227,9 @@ async def post_journal_entry(
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)
-    resolved_store = await resolve_journal_store_id(db, tenant_id=tenant_id, store_id=store_id)
+    resolved_store = await resolve_journal_store_id(
+        db, tenant_id=tenant_id, store_id=store_id, company_id=company_id
+    )
 
     entry = m.JournalEntry(
         tenant_id=tenant_id,
@@ -1545,6 +1555,7 @@ async def post_customer_payment_journal(
         payment.payment_method,
         liquid_account_id=getattr(payment, "liquid_account_id", None),
         outflow=False,
+        company_id=getattr(payment, "company_id", None),
     )
 
     cash_base = to_base(amount, pay_rate)
@@ -1628,6 +1639,7 @@ async def post_supplier_payment_journal(
         payment.payment_method,
         liquid_account_id=getattr(payment, "liquid_account_id", None),
         outflow=True,
+        company_id=getattr(payment, "company_id", None),
     )
     cash_base = to_base(amount, pay_rate)
     if allocations:
@@ -1882,6 +1894,7 @@ async def post_expense_journal(
         expense.payment_method,
         liquid_account_id=getattr(expense, "liquid_account_id", None),
         outflow=True,
+        company_id=getattr(expense, "company_id", None),
     )
     # Stage 14 E1 — debit mapped category COA when set; else Operating Expenses 6000
     debit_line: dict = {
@@ -1973,7 +1986,12 @@ async def post_pos_sale_journal(
         liquid_id = tender.get("liquid_account_id")
         if liquid_id and method != "credit":
             code, label = await resolve_settlement_gl(
-                db, tenant_id, method, liquid_account_id=liquid_id, outflow=False
+                db,
+                tenant_id,
+                method,
+                liquid_account_id=liquid_id,
+                outflow=False,
+                company_id=getattr(tx, "company_id", None),
             )
         else:
             code, label = pos_debit_account_for_payment_method(method)
@@ -2136,7 +2154,11 @@ async def profit_and_loss(
     """Period P&L from posted journal lines (optional date range / store / branch)."""
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
     resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
-        db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        branch_id=branch_id,
+        company_id=company_id,
     )
 
     stmt = (

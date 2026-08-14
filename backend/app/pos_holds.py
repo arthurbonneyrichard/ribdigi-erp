@@ -50,9 +50,15 @@ def serialize_hold(row: m.PosHeldCart) -> dict[str, Any]:
 
 
 async def _soft_reserve_lines(
-    db: AsyncSession, *, tenant_id: str, items: list
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    items: list,
+    company_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """Increment product.reserved_qty for hold lines (no SO StockReservation rows)."""
+    from app.workspace import assert_fk_company
+
     lines: list[dict[str, Any]] = []
     by_product: dict[str, float] = {}
     for raw in items:
@@ -74,6 +80,7 @@ async def _soft_reserve_lines(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+        assert_fk_company(product, company_id, detail=f"Product not found: {product_id}")
         avail = available_qty(product.stock_qty, product.reserved_qty)
         if qty > avail + 1e-9:
             raise HTTPException(
@@ -92,6 +99,34 @@ async def _soft_reserve_lines(
         lines.append({"product_id": product_id, "quantity": qty, "sku": product.sku})
     await db.flush()
     return lines
+
+
+async def _assert_hold_products(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    items: list,
+    company_id: str | None = None,
+) -> None:
+    """Reject hold carts that reference sibling-company products."""
+    from app.workspace import assert_fk_company
+
+    seen: set[str] = set()
+    for raw in items:
+        if not isinstance(raw, dict):
+            continue
+        pid = str(raw.get("product_id") or "").strip()
+        if not pid or pid in seen:
+            continue
+        seen.add(pid)
+        product = (
+            await db.execute(
+                select(m.Product).where(m.Product.id == pid, m.Product.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product not found: {pid}")
+        assert_fk_company(product, company_id, detail=f"Product not found: {pid}")
 
 
 async def _release_soft_reserve(
@@ -209,8 +244,13 @@ async def create_hold(
     stock_reserved = False
     expires_at: datetime | None = None
     now = datetime.utcnow()
+    await _assert_hold_products(
+        db, tenant_id=tenant_id, items=items, company_id=company_id
+    )
     if reserve_stock:
-        reservation_lines = await _soft_reserve_lines(db, tenant_id=tenant_id, items=items)
+        reservation_lines = await _soft_reserve_lines(
+            db, tenant_id=tenant_id, items=items, company_id=company_id
+        )
         stock_reserved = True
         expires_at = now + timedelta(hours=HOLD_SOFT_RESERVE_TTL_HOURS)
 

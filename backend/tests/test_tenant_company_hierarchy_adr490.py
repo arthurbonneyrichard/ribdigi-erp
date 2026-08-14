@@ -3894,3 +3894,244 @@ async def test_phase26_create_fk_serialize_and_scope(client, db_session):
     assert wh_rows
     assert all(r.get("company_id") == seed["c1"].id for r in wh_rows)
     assert all(r.get("warehouse_id") != wh_b.id for r in wh_rows)
+
+
+@pytest.mark.asyncio
+async def test_phase27_create_fk_and_scan_scope(client, db_session):
+    """Phase 27: settlement/group/dept/tax/hold/warehouse FK + quotation scan scope."""
+    from datetime import datetime, timedelta
+
+    from app import accounting as accounting_svc
+
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P27B",
+        name="Alpha Phase27 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P27 Customer B",
+        status="active",
+        credit_limit=50,
+    )
+    supp_a = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        kind="supplier",
+        name="P27 Supplier A",
+        status="active",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P27 Product B",
+        sku="P27-SKU-B",
+        selling_price=7,
+        cost_price=2,
+        stock_qty=20,
+        reserved_qty=0,
+        is_active=True,
+    )
+    group_b = m.CustomerGroup(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P27 Group B",
+        discount_percent=5,
+        is_active=True,
+    )
+    dept_b = m.Department(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P27D",
+        name="P27 Dept B",
+        is_active=True,
+    )
+    tax_b = m.TaxRate(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P27 Tax B",
+        rate=12.5,
+        tax_type="vat",
+        is_active=True,
+    )
+    store_b = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P27SB",
+        name="P27 Store B",
+        is_active=True,
+    )
+    wh_b = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P27WB",
+        name="P27 WH B",
+        is_active=True,
+    )
+    db_session.add_all(
+        [cust_b, supp_a, prod_b, group_b, dept_b, tax_b, store_b, wh_b]
+    )
+    await db_session.flush()
+    wh_b.store_id = store_b.id
+
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=c_b.id
+    )
+    cash_b = await accounting_svc.get_account_by_code(
+        db_session, seed["t1"].id, "1000", company_id=c_b.id
+    )
+    assert cash_b is not None
+
+    quote_b = m.SalesQuotation(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        quotation_number="QT-P27-B",
+        customer_id=cust_b.id,
+        status="sent",
+        subtotal=7,
+        tax_amount=0,
+        total_amount=7,
+        valid_until=datetime.utcnow() - timedelta(days=1),
+        created_by=seed["super"].id,
+    )
+    quote_a = m.SalesQuotation(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        quotation_number="QT-P27-A",
+        customer_id=seed["party1"].id,
+        status="sent",
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        valid_until=datetime.utcnow() - timedelta(days=1),
+        created_by=seed["super"].id,
+    )
+    db_session.add_all([quote_b, quote_a])
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # Settlement liquid account from B
+    exp = await ac.post(
+        "/api/v1/expenses",
+        headers=headers_a,
+        json={
+            "category": "ops",
+            "description": "cross liquid",
+            "amount": 3,
+            "liquid_account_id": cash_b.id,
+        },
+    )
+    assert exp.status_code == 404, exp.text
+
+    # Journal store from B
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=seed["c1"].id
+    )
+    je = await ac.post(
+        "/api/v1/accounting/journal-entries",
+        headers=headers_a,
+        json={
+            "description": "P27 cross store",
+            "store_id": store_b.id,
+            "lines": [
+                {"account_code": "1000", "debit": 1, "credit": 0},
+                {"account_code": "4000", "debit": 0, "credit": 1},
+            ],
+        },
+    )
+    assert je.status_code == 404, je.text
+
+    # Customer group from B
+    cust = await ac.post(
+        "/api/v1/customers",
+        headers=headers_a,
+        json={"name": "P27 Cust A", "customer_group_id": group_b.id},
+    )
+    assert cust.status_code == 404, cust.text
+
+    # Department from B
+    exp_dept = await ac.post(
+        "/api/v1/expenses",
+        headers=headers_a,
+        json={
+            "category": "ops",
+            "description": "cross dept",
+            "amount": 2,
+            "department_id": dept_b.id,
+        },
+    )
+    assert exp_dept.status_code == 404, exp_dept.text
+
+    # Product tax_rate from B
+    prod = await ac.post(
+        "/api/v1/products",
+        headers=headers_a,
+        json={
+            "name": "P27 Taxed",
+            "sku": "P27-TAX-A",
+            "selling_price": 1,
+            "cost_price": 0.5,
+            "tax_rate_id": tax_b.id,
+        },
+    )
+    assert prod.status_code == 404, prod.text
+
+    # POS hold soft-reserve sibling product
+    reserved_before = float(prod_b.reserved_qty or 0)
+    hold = await ac.post(
+        "/api/v1/pos/holds",
+        headers=headers_a,
+        json={
+            "label": "P27 cross",
+            "reserve_stock": True,
+            "cart_payload": {"items": [{"product_id": prod_b.id, "quantity": 1}]},
+        },
+    )
+    assert hold.status_code == 404, hold.text
+    await db_session.refresh(prod_b)
+    assert float(prod_b.reserved_qty or 0) == reserved_before
+
+    # PO warehouse from B
+    po = await ac.post(
+        "/api/v1/purchasing/orders",
+        headers=headers_a,
+        json={
+            "supplier_id": supp_a.id,
+            "warehouse_id": wh_b.id,
+            "items": [
+                {"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}
+            ],
+        },
+    )
+    assert po.status_code == 404, po.text
+
+    # Quotation scan must not expire company B quote when run from A
+    scan = await ac.post("/api/v1/notifications/scan-due", headers=headers_a)
+    assert scan.status_code == 200, scan.text
+    await db_session.refresh(quote_b)
+    await db_session.refresh(quote_a)
+    assert quote_b.status == "sent"
+    assert quote_a.status == "expired"

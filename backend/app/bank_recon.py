@@ -407,6 +407,11 @@ async def match_line(
     ).scalar_one_or_none()
     if not jl:
         raise HTTPException(status_code=404, detail="Journal line not found")
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(
+        jl, getattr(stmt, "company_id", None), detail="Journal line not found"
+    )
     if jl.account_id != stmt.account_id:
         raise HTTPException(status_code=400, detail="Journal line is not on this bank/cash account")
 

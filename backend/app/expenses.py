@@ -651,7 +651,7 @@ async def resolve_org_dimensions(
     if department_id:
         from app.org_units import get_department
 
-        dept = await get_department(db, tenant_id, department_id)
+        dept = await get_department(db, tenant_id, department_id, company_id=company_id)
         if not bool(dept.is_active):
             raise HTTPException(status_code=409, detail="Department is not active")
         resolved_dept = dept.id
@@ -737,6 +737,7 @@ async def create_expense(
             payment_method or "cash",
             liquid_account_id=liquid_account_id,
             outflow=True,
+            company_id=company_id,
         )
 
     resolved_store, resolved_dept = await resolve_org_dimensions(

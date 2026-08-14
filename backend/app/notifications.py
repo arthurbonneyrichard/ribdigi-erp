@@ -573,7 +573,11 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
 
 
 async def scan_quotation_expiry(
-    db: AsyncSession, tenant_id: str, within_days: int = 1
+    db: AsyncSession,
+    tenant_id: str,
+    within_days: int = 1,
+    *,
+    company_id: str | None = None,
 ) -> dict[str, int]:
     """Remind before quotation validity ends; mark past-due draft/sent quotes expired.
 
@@ -581,15 +585,14 @@ async def scan_quotation_expiry(
     """
     now = datetime.utcnow()
     horizon = now + timedelta(days=max(0, int(within_days)))
-    quotes = (
-        await db.execute(
-            select(m.SalesQuotation).where(
-                m.SalesQuotation.tenant_id == tenant_id,
-                m.SalesQuotation.status.in_(["draft", "sent"]),
-                m.SalesQuotation.valid_until.is_not(None),
-            )
-        )
-    ).scalars().all()
+    q = select(m.SalesQuotation).where(
+        m.SalesQuotation.tenant_id == tenant_id,
+        m.SalesQuotation.status.in_(["draft", "sent"]),
+        m.SalesQuotation.valid_until.is_not(None),
+    )
+    if company_id:
+        q = q.where(m.SalesQuotation.company_id == company_id)
+    quotes = (await db.execute(q)).scalars().all()
     reminded = 0
     expired = 0
     for quote in quotes:

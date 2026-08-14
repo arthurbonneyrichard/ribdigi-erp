@@ -4203,6 +4203,15 @@ async def add_product(
         barcode=data.get("barcode"),
         company_id=claims.get("company_id"),
     )
+    if data.get("tax_rate_id"):
+        from app import tax as tax_svc
+
+        await tax_svc.get_tax_rate(
+            db,
+            claims["tenant_id"],
+            data["tax_rate_id"],
+            company_id=claims.get("company_id"),
+        )
     product = m.Product(
         tenant_id=claims["tenant_id"],
         company_id=claims.get("company_id"),
@@ -4348,6 +4357,16 @@ async def patch_product(
                     raise HTTPException(status_code=400, detail=f"{key} cannot be negative")
                 setattr(product, key, num)
         elif key == "tax_rate_id":
+            if value is not None:
+                from app import tax as tax_svc
+
+                await tax_svc.get_tax_rate(
+                    db,
+                    claims["tenant_id"],
+                    value,
+                    company_id=claims.get("company_id")
+                    or getattr(product, "company_id", None),
+                )
             product.tax_rate_id = value
         elif key == "tax_exempt" and value is not None:
             product.tax_exempt = bool(value)
@@ -14011,7 +14030,9 @@ async def scan_due_notifications(
     db: AsyncSession = Depends(get_db),
 ):
     payment_created = await notifications_svc.scan_payment_due(db, claims["tenant_id"])
-    quote_scan = await notifications_svc.scan_quotation_expiry(db, claims["tenant_id"])
+    quote_scan = await notifications_svc.scan_quotation_expiry(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     recurring_scan = await notifications_svc.scan_recurring_expense_upcoming(
         db, claims["tenant_id"]
     )

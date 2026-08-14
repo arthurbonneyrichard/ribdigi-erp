@@ -501,6 +501,12 @@ async def update_purchase_order(
     before_items = [_po_line_snapshot(i) for i in existing]
 
     if warehouse_id is not None:
+        if warehouse_id:
+            from app.inventory import get_warehouse
+
+            await get_warehouse(
+                db, tenant_id, warehouse_id, company_id=getattr(po, "company_id", None)
+            )
         po.warehouse_id = warehouse_id or None
     if delivery_address is not _UNSET:
         po.delivery_address = (delivery_address or None)
@@ -749,6 +755,10 @@ async def create_purchase_request(
     if not items:
         raise HTTPException(status_code=400, detail="Purchase request requires at least one line item")
     await get_supplier(db, tenant_id, supplier_id, company_id=company_id)
+    if warehouse_id:
+        from app.inventory import get_warehouse
+
+        await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
     from app.workspace import assert_fk_company
 
     prepared: list[dict] = []
@@ -1125,6 +1135,10 @@ async def create_purchase_order(
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
     await get_supplier(db, tenant_id, supplier_id, company_id=company_id)
+    if warehouse_id:
+        from app.inventory import get_warehouse
+
+        await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
     if purchase_request_id and company_id is None:
         pr = await get_purchase_request(db, tenant_id, purchase_request_id)
         company_id = getattr(pr, "company_id", None)
@@ -1606,6 +1620,7 @@ async def record_supplier_payment(
             payment_method or "bank_transfer",
             liquid_account_id=liquid_account_id,
             outflow=True,
+            company_id=company_id,
         )
 
     supplier = (
