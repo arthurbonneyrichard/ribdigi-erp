@@ -31,3 +31,10 @@ Stage 383 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline sale/flush, sale/flush attestation as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 383 opened under **ADR-773** after CONTINUE/NEXT (Tenant MVP Offline PWA Install Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-774**. Stage 382 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 382 runner-up outline was approved and opened (ADR-773); freeze ADR-774. Do not reopen Stage 382 scope.
+

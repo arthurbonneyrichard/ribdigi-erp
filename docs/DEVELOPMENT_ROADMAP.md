@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 383 D1 (2026-08-14):** Offline PWA Install Pack Remaining-Gate Index fidelity sync — `docs/STAGE_383_FIDELITY.md` (`test_stage383_fidelity_d1.py`). Open ADR: `docs/ADR_773_STAGE383_OPEN.md`; plan `docs/STAGE_383_PLAN.md`.
+
+**Stage 383 exit (2026-08-14):** I1, B1, P1, D1, H383x met — `docs/STAGE_383_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_774_STAGE383_FREEZE.md`. Fidelity: `docs/STAGE_383_FIDELITY.md`.
+
 **Stage 382 D1 (2026-08-14):** Offline Sale Flush Attestation Pack Remaining-Gate Index fidelity sync — `docs/STAGE_382_FIDELITY.md` (`test_stage382_fidelity_d1.py`). Open ADR: `docs/ADR_771_STAGE382_OPEN.md`; plan `docs/STAGE_382_PLAN.md`.
 
 **Stage 382 exit (2026-08-14):** I1, B1, P1, D1, H382x met — `docs/STAGE_382_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_772_STAGE382_FREEZE.md`. Fidelity: `docs/STAGE_382_FIDELITY.md`.

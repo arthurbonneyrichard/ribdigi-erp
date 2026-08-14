@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 383 track opened (ADR-773: `test_stage383_open.py`, `docs/STAGE_383_PLAN.md`) — Offline PWA Install Pack Remaining-Gate Index; closed under ADR-774
+- [x] Offline PWA install pack remaining-gate hub (Stage 383 I1: `test_stage383_index_i1.py`, `docs/OFFLINE_PWA_INSTALL_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline PWA install pack blocker matrix (Stage 383 B1: `test_stage383_blockers_b1.py`, `docs/OFFLINE_PWA_INSTALL_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 382 / Stage 163 / Stage 329 / CHANGE_IMPACT pointers (Stage 383 P1: `test_stage383_pointers_p1.py`, `docs/OFFLINE_PWA_INSTALL_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 383 fidelity sync (D1: `test_stage383_fidelity_d1.py`, `docs/STAGE_383_FIDELITY.md`)
+- [x] Stage 383 exit + freeze (H383x: `test_stage383_exit_h383x.py`, `docs/STAGE_383_EXIT_CRITERIA.md`, ADR-774)
 - [x] Stage 382 track opened (ADR-771: `test_stage382_open.py`, `docs/STAGE_382_PLAN.md`) — Offline Sale Flush Attestation Pack Remaining-Gate Index; closed under ADR-772
 - [x] Offline sale flush attestation pack remaining-gate hub (Stage 382 I1: `test_stage382_index_i1.py`, `docs/OFFLINE_SALE_FLUSH_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline sale flush attestation pack blocker matrix (Stage 382 B1: `test_stage382_blockers_b1.py`, `docs/OFFLINE_SALE_FLUSH_PACK_RG_BLOCKERS_MVP.md`)
