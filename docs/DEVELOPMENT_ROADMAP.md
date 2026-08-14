@@ -692,7 +692,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - **Security Settings:** 2FA setup wizard (QR code display, verification code input). Active sessions list with "Revoke" buttons per device. Password policy configuration.
 - **API Keys:** Generate/revoke API keys for third-party integrations. Usage statistics (requests, last used).
 - **Performance Dashboard:** Admin-only page showing query slow log, cache hit rates, average response times, error rates.
-- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Make first sale) with skip/complete actions.
+- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Stock → Make first sale) with skip/complete/dismiss/restore; Shell banner Complete (MVP).
 
 ### 6.6 Testing Requirements
 
@@ -742,7 +742,7 @@ FRONTEND (Next.js):
 2. Audit log viewer: filter sidebar (date range, user dropdown, event type checkboxes). Table with expandable rows showing old/new value diff (green for added, red for removed).
 3. Security settings: 2FA setup modal with QR code and 6-digit input. Active sessions table showing device, IP, location, last active, revoke button.
 4. API Keys: generate button, copy-to-clipboard, revoke button. Usage chart (requests per day).
-5. Onboarding checklist: persistent banner for new tenants. 5 steps with progress bar. Each step links to relevant page. Dismissible after 80% complete.
+5. Onboarding checklist: persistent banner for new tenants. 5 steps with progress bar. Each step links to relevant page. Dismissible after 80% complete. **Done (MVP):** `OnboardingChecklist` in Shell + API skip/dismiss/restore.
 
 DEVOPS:
 1. Production Kubernetes deployment: Helm charts with values-production.yaml. Ingress with TLS 1.3. Cert-manager for Let's Encrypt. HPA for backend (5-20 pods), frontend (3-10 pods), Celery (3-15 pods).

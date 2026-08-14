@@ -28,6 +28,7 @@
 13. [Multi-Store Management](#13-multi-store-management)
 14. [Reports](#14-reports)
 15. [Notifications](#15-notifications)
+15A. [Onboarding Checklist](#15a-onboarding-checklist)
 16. [AI Business Assistant](#16-ai-business-assistant)
 17. [Webhooks](#17-webhooks)
 18. [Rate Limits](#18-rate-limits)
@@ -1351,6 +1352,29 @@ Categories include `low_stock` (BR-5.5 — default email **on**; emails `invento
   "credit_limit": { "dashboard": true, "email": true, "sms": true }
 }
 ```
+
+---
+
+## 15A. Onboarding Checklist
+
+First-run tenant checklist (Stage 6 N2). Auto-detects company profile, products, supplier, stock on hand, and first sale. Skip/dismiss/restore require `company_admin` or `super_admin`.
+
+### 15A.1 Get checklist
+**Endpoint:** `GET /onboarding/checklist`
+
+**Response `data`:** `steps[]` (`id`, `title`, `description`, `href`, `completed`, `auto_completed`, `skipped`), `completed_count`, `total_count`, `progress_pct`, `dismissed`, `dismissible`, `visible`, `dismiss_threshold_pct` (80).
+
+### 15A.2 Skip / unskip step
+**Endpoint:** `POST /onboarding/checklist/steps/{step_id}/skip`  
+**Endpoint:** `POST /onboarding/checklist/steps/{step_id}/unskip`
+
+Valid `step_id`: `setup_company` | `add_products` | `create_supplier` | `stock_ready` | `first_sale`.
+
+### 15A.3 Dismiss / restore
+**Endpoint:** `POST /onboarding/checklist/dismiss` — requires `progress_pct >= 80` (or all complete).  
+**Endpoint:** `POST /onboarding/checklist/restore` — clears dismiss so the Shell banner returns.
+
+UI: persistent **Getting started** banner in the tenant Shell (`OnboardingChecklist`).
 
 ---
 
