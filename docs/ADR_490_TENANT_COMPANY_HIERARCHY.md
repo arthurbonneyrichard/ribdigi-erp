@@ -194,3 +194,10 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Stock transfer ship/receive/cancel stamp `StockMovement.company_id`; lazy default warehouse and transfer-ship notifications stamp `company_id`.
 - Serialize helpers expose `company_id` for cheques, expenses, bank statements/lines/groups, warehouses/transfers, COA/journals, sales invoices, and POS sale results.
 - Remaining PARTIAL: broader notification scan company filters; remaining serialize peers (PR/PO/GRN/holds/products); ADR-002/005 and FX/API-keys deferred by design.
+
+## Phase 23 — Notification stamps, serialize peers, mutate IDOR (2026-08-14)
+
+- Notification scans (low stock, payment due, quotation expiry, recurring expense) and domain emits (expense approval, purchasing, sales invoice/docs, POS shift variance) stamp `company_id` from the source entity.
+- Serialize helpers expose `company_id` for PR/PO/GRN/purchase return/invoice/amendment, POS holds, products, quotations/orders/returns, customers/suppliers, and stock counts.
+- Mutate IDOR: PR approve/reject; PI OCR/attachment; customer/supplier patch/delete/contacts/credit-limit; journal unpost/attachment; COA patch (company-scoped uniqueness); inventory adjust; variant delete; store reorder-policy assert product/store company.
+- Remaining PARTIAL: ADR-002 billing and ADR-005 store membership remain deferred; FX stays tenant-shared; API keys/webhooks/offline devices remain tenant-integration by design; optional P2 serialize of payment registers/connectors and child-row contact serializers.

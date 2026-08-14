@@ -101,6 +101,7 @@ def serialize_product(row: m.Product) -> dict:
     reorder_level = float(row.reorder_level or 0)
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "name": row.name,
         "sku": row.sku,
         "barcode": row.barcode,

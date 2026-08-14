@@ -339,6 +339,7 @@ async def list_po_amendments(
 def serialize_po_amendment(row: m.PurchaseOrderAmendment) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "purchase_order_id": row.purchase_order_id,
         "revision": int(row.revision),
         "reason": row.reason,
@@ -353,6 +354,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     amendments = await list_po_amendments(db, po.tenant_id, po.id)
     return {
         "id": po.id,
+        "company_id": getattr(po, "company_id", None),
         "po_number": po.po_number,
         "supplier_id": po.supplier_id,
         "warehouse_id": po.warehouse_id,
@@ -672,6 +674,7 @@ async def serialize_pr(db: AsyncSession, pr: m.PurchaseRequest) -> dict:
     required = int(getattr(pr, "approval_steps_required", 1) or 1)
     data = {
         "id": pr.id,
+        "company_id": getattr(pr, "company_id", None),
         "request_number": pr.request_number,
         "supplier_id": pr.supplier_id,
         "warehouse_id": pr.warehouse_id,
@@ -925,6 +928,7 @@ async def approve_purchase_request(
             ),
             entity_type="purchase_request",
             entity_id=pr.id,
+            company_id=getattr(pr, "company_id", None),
         )
         from app import audit as audit_svc
         await audit_svc.record_event(
@@ -1473,6 +1477,7 @@ async def create_grn(
         message=f"GRN {grn.grn_number} posted against {po.po_number}. PO status: {po.status}.",
         entity_type="goods_receipt",
         entity_id=grn.id,
+        company_id=getattr(grn, "company_id", None),
     )
     from app import audit as audit_svc
     await audit_svc.record_event(
@@ -1507,6 +1512,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
     ).scalars().all()
     return {
         "id": grn.id,
+        "company_id": getattr(grn, "company_id", None),
         "grn_number": grn.grn_number,
         "purchase_order_id": grn.purchase_order_id,
         "supplier_id": grn.supplier_id,
@@ -1957,6 +1963,7 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
     items = await list_purchase_return_items(db, ret.tenant_id, ret.id)
     return {
         "id": ret.id,
+        "company_id": getattr(ret, "company_id", None),
         "return_number": ret.return_number,
         "debit_note_number": ret.debit_note_number,
         "supplier_id": ret.supplier_id,
@@ -2185,6 +2192,7 @@ async def post_purchase_return(
         message=f"Return {ret.return_number} / {ret.debit_note_number} for {credit:.2f}.",
         entity_type="purchase_return",
         entity_id=ret.id,
+        company_id=getattr(ret, "company_id", None),
     )
     from app import audit as audit_svc
     await audit_svc.record_event(
@@ -2296,6 +2304,7 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
             inv.status = status
     return {
         "id": inv.id,
+        "company_id": getattr(inv, "company_id", None),
         "invoice_number": inv.invoice_number,
         "supplier_id": inv.supplier_id,
         "purchase_order_id": inv.purchase_order_id,
@@ -2577,6 +2586,7 @@ async def approve_purchase_invoice(
         message=f"Invoice {inv.invoice_number} approved for {float(inv.total_amount):.2f}.",
         entity_type="purchase_invoice",
         entity_id=inv.id,
+        company_id=getattr(inv, "company_id", None),
     )
     from app import audit as audit_svc
     await audit_svc.record_event(

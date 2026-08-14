@@ -98,6 +98,7 @@ def serialize_customer(
     active_group = group if group is not None and bool(group.is_active) else None
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "kind": row.kind,
         "name": row.name,
         "code": row.code,

@@ -359,6 +359,7 @@ async def close_session(
             ),
             entity_type="pos_session",
             entity_id=session.id,
+            company_id=getattr(session, "company_id", None),
         )
     from app import audit as audit_svc
 

@@ -122,6 +122,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
     items = await list_quotation_items(db, quote.tenant_id, quote.id)
     return {
         "id": quote.id,
+        "company_id": getattr(quote, "company_id", None),
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
         "status": quote.status,
@@ -574,6 +575,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
     }
     return {
         "id": order.id,
+        "company_id": getattr(order, "company_id", None),
         "order_number": order.order_number,
         "customer_id": order.customer_id,
         "quotation_id": order.quotation_id,
@@ -761,6 +763,7 @@ async def create_order(
         ),
         entity_type="sales_order",
         entity_id=order.id,
+        company_id=getattr(order, "company_id", None),
     )
     return order
 
@@ -859,6 +862,7 @@ async def advance_order_status(
         message=f"Order {order.order_number} marked {target_status}.",
         entity_type="sales_order",
         entity_id=order.id,
+        company_id=getattr(order, "company_id", None),
     )
     await db.flush()
     return order
@@ -931,6 +935,7 @@ async def confirm_order(
         message=f"Order {order.order_number} confirmed; inventory reserved.",
         entity_type="sales_order",
         entity_id=order.id,
+        company_id=getattr(order, "company_id", None),
     )
     await db.flush()
     return order
@@ -1048,6 +1053,7 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
     items = await list_return_items(db, ret.tenant_id, ret.id)
     return {
         "id": ret.id,
+        "company_id": getattr(ret, "company_id", None),
         "return_number": ret.return_number,
         "credit_note_number": ret.credit_note_number,
         "customer_id": ret.customer_id,
@@ -1305,6 +1311,7 @@ async def post_return(
         ),
         entity_type="sales_return",
         entity_id=ret.id,
+        company_id=getattr(ret, "company_id", None),
     )
     await db.flush()
     return ret

@@ -455,16 +455,19 @@ async def set_store_reorder_policy(
     reorder_level: float,
     reorder_qty: float = 0,
     minimum_stock: float = 0,
+    company_id: str | None = None,
 ) -> dict:
     from app.inventory import compute_stock_status
 
-    await get_store(db, tenant_id, store_id)
+    await get_store(db, tenant_id, store_id, company_id=company_id)
     product = (
         await db.execute(
             select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
     if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if company_id and getattr(product, "company_id", None) and product.company_id != company_id:
         raise HTTPException(status_code=404, detail="Product not found")
     wh = await warehouse_for_store(db, tenant_id, store_id)
     row = await get_or_create_warehouse_stock(

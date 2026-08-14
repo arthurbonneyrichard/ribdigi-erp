@@ -98,6 +98,7 @@ async def serialize_count(db: AsyncSession, count: m.StockCount) -> dict:
     counted_lines = sum(1 for i in items if i.counted_qty is not None)
     return {
         "id": count.id,
+        "company_id": getattr(count, "company_id", None),
         "count_number": count.count_number,
         "warehouse_id": count.warehouse_id,
         "status": count.status,

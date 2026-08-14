@@ -5419,6 +5419,8 @@ async def adjust(
 ):
     from app.inventory import normalize_adjustment_reason
 
+    existing = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, existing)
     reason = normalize_adjustment_reason(payload.reason)
     product = await apply_stock_change(
         db,
@@ -5864,6 +5866,8 @@ async def delete_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    workspace_svc.assert_record_company(claims, product)
     variant = await catalog_svc.deactivate_variant(
         db,
         tenant_id=claims["tenant_id"],
@@ -6184,6 +6188,8 @@ async def patch_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, existing)
     party = await customers_svc.update_customer(
         db,
         tenant_id=claims["tenant_id"],
@@ -6203,6 +6209,8 @@ async def delete_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, existing)
     party = await customers_svc.deactivate_customer(
         db, tenant_id=claims["tenant_id"], customer_id=customer_id
     )
@@ -6220,6 +6228,8 @@ async def add_customer_contact(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, existing)
     contact = await customers_svc.add_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -6237,6 +6247,8 @@ async def delete_customer_contact(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, existing)
     await customers_svc.delete_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -6382,6 +6394,8 @@ async def patch_supplier(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, existing)
     party = await suppliers_svc.update_supplier(
         db,
         tenant_id=claims["tenant_id"],
@@ -6399,6 +6413,8 @@ async def delete_supplier(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, existing)
     party = await suppliers_svc.deactivate_supplier(
         db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
     )
@@ -6414,6 +6430,8 @@ async def add_supplier_contact(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, existing)
     contact = await suppliers_svc.add_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -6431,6 +6449,8 @@ async def delete_supplier_contact(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
+    workspace_svc.assert_record_company(claims, existing)
     await suppliers_svc.delete_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -7741,6 +7761,8 @@ async def approve_purchase_request(
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    workspace_svc.assert_record_company(claims, existing)
     pr = await purchasing_svc.approve_purchase_request(
         db,
         tenant_id=claims["tenant_id"],
@@ -7766,6 +7788,8 @@ async def reject_purchase_request(
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    workspace_svc.assert_record_company(claims, existing)
     pr = await purchasing_svc.reject_purchase_request(
         db,
         tenant_id=claims["tenant_id"],
@@ -8419,6 +8443,7 @@ async def purchase_invoice_ocr_suggest(
 
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     result = await purchase_ocr_svc.suggest_for_purchase_invoice(
         db, tenant_id=claims["tenant_id"], invoice_id=invoice_id
     )
@@ -8442,6 +8467,7 @@ async def purchase_invoice_ocr_apply(
         )
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
+    workspace_svc.assert_record_company(claims, existing)
     inv = await purchase_ocr_svc.update_purchase_invoice_draft(
         db,
         tenant_id=claims["tenant_id"],
@@ -8521,6 +8547,7 @@ async def upload_purchase_invoice_attachment(
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, inv.created_by)
+    workspace_svc.assert_record_company(claims, inv)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="purchase_invoices",
@@ -8560,6 +8587,7 @@ async def download_purchase_invoice_attachment(
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, inv.created_by)
+    workspace_svc.assert_record_company(claims, inv)
     if not inv.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     # External URLs (legacy client-supplied) are not served from local media
@@ -8581,6 +8609,7 @@ async def delete_purchase_invoice_attachment(
 ):
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, inv.created_by)
+    workspace_svc.assert_record_company(claims, inv)
     if not inv.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     storage_svc.delete_key(inv.attachment_url, tenant_id=claims["tenant_id"])
@@ -10000,6 +10029,10 @@ async def patch_coa_account(
 ):
     from app import accounting as accounting_svc
 
+    existing = await accounting_svc.get_tenant_account(
+        db, claims["tenant_id"], account_id, company_id=claims.get("company_id")
+    )
+    workspace_svc.assert_record_company(claims, existing)
     data = payload.model_dump(exclude_unset=True)
     clear_parent = "parent_id" in data and data["parent_id"] is None
     row = await accounting_svc.update_coa_account(
@@ -10012,6 +10045,7 @@ async def patch_coa_account(
         parent_id=data.get("parent_id"),
         is_active=data.get("is_active"),
         clear_parent=clear_parent,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(accounting_svc.serialize_coa_account(row), "Account updated")
@@ -11064,6 +11098,10 @@ async def unpost_journal(
 ):
     from app import accounting as accounting_svc
 
+    existing = await _get_journal_entry_or_404(
+        db, tenant_id=claims["tenant_id"], entry_id=entry_id
+    )
+    workspace_svc.assert_record_company(claims, existing)
     entry = await accounting_svc.unpost_journal_entry(
         db,
         tenant_id=claims["tenant_id"],
@@ -11103,6 +11141,7 @@ async def upload_journal_attachment(
         db, tenant_id=claims["tenant_id"], entry_id=entry_id
     )
     assert_record_access(claims, entry.created_by)
+    workspace_svc.assert_record_company(claims, entry)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="journals",
@@ -11144,6 +11183,7 @@ async def download_journal_attachment(
         db, tenant_id=claims["tenant_id"], entry_id=entry_id
     )
     assert_record_access(claims, entry.created_by)
+    workspace_svc.assert_record_company(claims, entry)
     if not entry.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" in entry.attachment_url:
@@ -11168,6 +11208,7 @@ async def delete_journal_attachment(
         db, tenant_id=claims["tenant_id"], entry_id=entry_id
     )
     assert_record_access(claims, entry.created_by)
+    workspace_svc.assert_record_company(claims, entry)
     if not entry.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" not in entry.attachment_url:
@@ -12374,6 +12415,8 @@ async def update_customer_credit_limit(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
+    workspace_svc.assert_record_company(claims, existing)
     customer = await customers_svc.update_customer(
         db,
         tenant_id=claims["tenant_id"],
@@ -13219,6 +13262,12 @@ async def set_store_reorder_policy(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    store = await stores_svc.get_store(
+        db, claims["tenant_id"], store_id, company_id=claims.get("company_id")
+    )
+    workspace_svc.assert_record_company(claims, store)
+    product = await catalog_svc.get_product(db, claims["tenant_id"], payload.product_id)
+    workspace_svc.assert_record_company(claims, product)
     row = await stores_svc.set_store_reorder_policy(
         db,
         tenant_id=claims["tenant_id"],
@@ -13227,6 +13276,7 @@ async def set_store_reorder_policy(
         minimum_stock=payload.minimum_stock,
         reorder_level=payload.reorder_level,
         reorder_qty=payload.reorder_qty,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(row, "Store reorder policy saved")

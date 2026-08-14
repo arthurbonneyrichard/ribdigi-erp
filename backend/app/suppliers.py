@@ -29,6 +29,7 @@ def serialize_supplier(row: m.Party, contacts: list[m.PartyContact] | None = Non
     days = getattr(row, "early_pay_discount_days", None)
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "kind": row.kind,
         "name": row.name,
         "code": row.code,

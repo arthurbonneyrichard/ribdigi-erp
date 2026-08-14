@@ -2772,3 +2772,203 @@ async def test_expense_bank_idor_and_transfer_stamps_company_scoped(client, db_s
     )
     assert created.status_code == 200, created.text
     assert created.json()["data"].get("company_id") == seed["c1"].id
+
+
+@pytest.mark.asyncio
+async def test_phase23_notification_serialize_and_mutate_idor(client, db_session):
+    """Phase 23: notification stamps, serialize peers, PR/party/journal IDOR."""
+    from datetime import datetime, timedelta
+
+    from app import notifications as notif_svc
+
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P23B",
+        name="Alpha Phase23 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P23 Customer B",
+        status="active",
+        credit_limit=100,
+    )
+    supp_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="supplier",
+        name="P23 Supplier B",
+        status="active",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P23 Product B",
+        sku="P23-SKU-B",
+        selling_price=5,
+        cost_price=2,
+        stock_qty=1,
+        minimum_stock=10,
+        reorder_level=10,
+        is_active=True,
+    )
+    db_session.add_all([cust_b, supp_b, prod_b])
+    await db_session.flush()
+    pr_b = m.PurchaseRequest(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        request_number="PR-P23-B",
+        supplier_id=supp_b.id,
+        status="pending",
+        estimated_total=10,
+        approval_step=1,
+        approval_steps_required=1,
+        created_by=seed["super"].id,
+    )
+    db_session.add(pr_b)
+    await db_session.flush()
+    db_session.add(
+        m.PurchaseRequestItem(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            purchase_request_id=pr_b.id,
+            product_id=prod_b.id,
+            quantity=1,
+            unit_price=10,
+        )
+    )
+
+    inv_b = m.SalesInvoice(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        invoice_number="SI-P23-B",
+        customer_id=cust_b.id,
+        status="posted",
+        total_amount=50,
+        paid_amount=0,
+        due_date=datetime.utcnow() + timedelta(days=1),
+        created_by=seed["super"].id,
+    )
+    db_session.add(inv_b)
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+    headers_b = await _super_headers(ac, seed)
+    headers_b["X-Workspace-Kind"] = "company"
+    headers_b["X-Company-ID"] = c_b.id
+
+    # --- Mutate IDOR from company A against company B records ---
+    for method, path, json_body in (
+        ("post", f"/api/v1/purchasing/requests/{pr_b.id}/approve", {}),
+        ("post", f"/api/v1/purchasing/requests/{pr_b.id}/reject", {"reason": "nope"}),
+        ("patch", f"/api/v1/customers/{cust_b.id}", {"name": "Hacked"}),
+        ("delete", f"/api/v1/customers/{cust_b.id}", None),
+        ("post", f"/api/v1/customers/{cust_b.id}/contacts", {"name": "x", "email": "x@ex.com"}),
+        ("patch", f"/api/v1/customers/{cust_b.id}/credit-limit", {"credit_limit": 1}),
+        ("patch", f"/api/v1/suppliers/{supp_b.id}", {"name": "Hacked"}),
+        ("delete", f"/api/v1/suppliers/{supp_b.id}", None),
+        ("post", f"/api/v1/inventory/adjust/{prod_b.id}", {"quantity": 1, "reason": "correction"}),
+    ):
+        if json_body is None:
+            r = await getattr(ac, method)(path, headers=headers_a)
+        else:
+            r = await getattr(ac, method)(path, headers=headers_a, json=json_body)
+        assert r.status_code == 404, (path, r.status_code, r.text)
+
+    # --- Notification scan stamps company_id ---
+    created_n = await notif_svc.scan_low_stock(db_session, seed["t1"].id)
+    assert created_n >= 1
+    note = (
+        await db_session.execute(
+            select(m.Notification).where(
+                m.Notification.tenant_id == seed["t1"].id,
+                m.Notification.category == "low_stock",
+                m.Notification.entity_id == prod_b.id,
+            )
+        )
+    ).scalar_one()
+    assert note.company_id == c_b.id
+
+    due_n = await notif_svc.scan_payment_due(db_session, seed["t1"].id, within_days=3)
+    assert due_n >= 1
+    pay_note = (
+        await db_session.execute(
+            select(m.Notification).where(
+                m.Notification.tenant_id == seed["t1"].id,
+                m.Notification.category == "payment_due",
+                m.Notification.entity_id == inv_b.id,
+            )
+        )
+    ).scalar_one()
+    assert pay_note.company_id == c_b.id
+    await db_session.commit()
+
+    # Company A notification list must not include company B stamped notes
+    listed = await ac.get("/api/v1/notifications", headers=headers_a)
+    assert listed.status_code == 200, listed.text
+    ids = {n["id"] for n in listed.json()["data"]}
+    assert note.id not in ids
+    assert pay_note.id not in ids
+
+    # --- Serialize company_id peers in company A ---
+    prod = await ac.post(
+        "/api/v1/products",
+        headers=headers_a,
+        json={"name": "P23 Product A", "sku": "P23-SKU-A", "selling_price": 3, "cost_price": 1},
+    )
+    assert prod.status_code == 200, prod.text
+    assert prod.json()["data"].get("company_id") == seed["c1"].id
+
+    cust = await ac.post(
+        "/api/v1/customers",
+        headers=headers_a,
+        json={"name": "P23 Customer A", "party_type": "registered"},
+    )
+    assert cust.status_code == 200, cust.text
+    assert cust.json()["data"].get("company_id") == seed["c1"].id
+
+    supp = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers_a,
+        json={"name": "P23 Supplier A"},
+    )
+    assert supp.status_code == 200, supp.text
+    assert supp.json()["data"].get("company_id") == seed["c1"].id
+
+    pr = await ac.post(
+        "/api/v1/purchasing/requests",
+        headers=headers_a,
+        json={
+            "supplier_id": supp.json()["data"]["id"],
+            "items": [
+                {
+                    "product_id": prod.json()["data"]["id"],
+                    "quantity": 1,
+                    "unit_price": 2,
+                }
+            ],
+        },
+    )
+    assert pr.status_code == 200, pr.text
+    assert pr.json()["data"].get("company_id") == seed["c1"].id

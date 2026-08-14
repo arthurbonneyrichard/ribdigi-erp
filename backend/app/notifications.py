@@ -393,6 +393,7 @@ async def notify_low_stock_if_needed(
         ),
         entity_type="product",
         entity_id=product.id,
+        company_id=getattr(product, "company_id", None),
     )
 
 
@@ -446,6 +447,7 @@ async def notify_warehouse_low_stock_if_needed(
         ),
         entity_type="warehouse_stock",
         entity_id=entity_id,
+        company_id=getattr(stock, "company_id", None) or getattr(product, "company_id", None),
     )
 
 
@@ -522,6 +524,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
             ),
             entity_type="sales_invoice",
             entity_id=inv.id,
+            company_id=getattr(inv, "company_id", None),
         )
         created += 1
 
@@ -562,6 +565,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
             ),
             entity_type="purchase_invoice",
             entity_id=bill.id,
+            company_id=getattr(bill, "company_id", None),
         )
         created += 1
 
@@ -618,6 +622,7 @@ async def scan_quotation_expiry(
                 ),
                 entity_type="sales_quotation",
                 entity_id=quote.id,
+                company_id=getattr(quote, "company_id", None),
             )
             reminded += 1
             continue
@@ -646,6 +651,7 @@ async def scan_quotation_expiry(
             ),
             entity_type="sales_quotation",
             entity_id=quote.id,
+            company_id=getattr(quote, "company_id", None),
         )
         reminded += 1
     await db.flush()
@@ -707,6 +713,7 @@ async def scan_recurring_expense_upcoming(
             ),
             entity_type="recurring_expense",
             entity_id=row.id,
+            company_id=getattr(row, "company_id", None),
         )
         row.last_notified_for = row.next_run_at
         reminded += 1

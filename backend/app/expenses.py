@@ -201,6 +201,7 @@ async def notify_expense_approvers(
             message=message,
             entity_type="expense",
             entity_id=expense.id,
+            company_id=getattr(expense, "company_id", None),
         )
         if note is not None:
             notified += 1

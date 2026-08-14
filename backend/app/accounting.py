@@ -463,8 +463,9 @@ async def update_coa_account(
     parent_id: str | None = None,
     is_active: bool | None = None,
     clear_parent: bool = False,
+    company_id: str | None = None,
 ) -> m.Account:
-    row = await get_tenant_account(db, tenant_id, account_id)
+    row = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
     if row.is_system and (code is not None or account_type is not None or name is not None):
         # System accounts: only parent/active structural fields may change via dedicated paths.
         # Name/code/type edits are reserved for non-system accounts (BR-10.1).
@@ -489,15 +490,15 @@ async def update_coa_account(
         code_norm = code.strip()
         if not code_norm:
             raise HTTPException(status_code=400, detail="code cannot be empty")
-        dup = (
-            await db.execute(
-                select(m.Account).where(
-                    m.Account.tenant_id == tenant_id,
-                    m.Account.code == code_norm,
-                    m.Account.id != row.id,
-                )
-            )
-        ).scalar_one_or_none()
+        dup_q = select(m.Account).where(
+            m.Account.tenant_id == tenant_id,
+            m.Account.code == code_norm,
+            m.Account.id != row.id,
+        )
+        scope_cid = company_id or getattr(row, "company_id", None)
+        if scope_cid:
+            dup_q = dup_q.where(m.Account.company_id == scope_cid)
+        dup = (await db.execute(dup_q)).scalar_one_or_none()
         if dup:
             raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
         row.code = code_norm

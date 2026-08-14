@@ -872,6 +872,7 @@ async def post_sales_invoice(
                 ),
                 entity_type="customer",
                 entity_id=customer.id,
+                company_id=getattr(customer, "company_id", None),
             )
 
     from app.notifications import create_notification
@@ -884,6 +885,7 @@ async def post_sales_invoice(
         message=f"Invoice {invoice.invoice_number} posted for {float(invoice.total_amount):.2f}.",
         entity_type="sales_invoice",
         entity_id=invoice.id,
+        company_id=getattr(invoice, "company_id", None),
     )
     from app import audit as audit_svc
     from app.fx import doc_rate, to_base

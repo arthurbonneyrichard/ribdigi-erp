@@ -23,6 +23,7 @@ def serialize_hold(row: m.PosHeldCart) -> dict[str, Any]:
     expires_at = getattr(row, "expires_at", None)
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "user_id": row.user_id,
         "session_id": row.session_id,
         "label": row.label,
