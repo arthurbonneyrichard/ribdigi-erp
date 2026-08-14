@@ -1327,6 +1327,7 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "lines": [
             {
                 "id": ln.id,
+                "company_id": getattr(ln, "company_id", None),
                 "account_id": ln.account_id,
                 "debit": float(ln.debit),
                 "credit": float(ln.credit),

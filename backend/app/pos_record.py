@@ -94,6 +94,7 @@ async def record_pos_sale(
     items = [i.model_dump() for i in payload.items]
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
+    from app.workspace import assert_fk_company
 
     group_discount = await customers_svc.customer_group_discount_percent(
         db, claims["tenant_id"], payload.party_id
@@ -109,6 +110,7 @@ async def record_pos_sale(
             item,
             group_discount_percent=group_discount,
         )
+        assert_fk_company(product, company_id, detail="Product not found")
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
         line_discount = round(float(item.get("discount") or 0), 2)
         if line_discount < 0:

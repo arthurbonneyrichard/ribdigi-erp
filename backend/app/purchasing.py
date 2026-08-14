@@ -387,6 +387,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "quantity": float(i.quantity),
                 "received_qty": float(i.received_qty),
@@ -513,7 +514,11 @@ async def update_purchase_order(
         if not items:
             raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
         prepared = await _prepare_po_lines(
-            db, tenant_id=tenant_id, items=items, existing_by_id=existing_by_id
+            db,
+            tenant_id=tenant_id,
+            items=items,
+            existing_by_id=existing_by_id,
+            company_id=getattr(po, "company_id", None),
         )
         keep_ids = {p["id"] for p in prepared if p["id"]}
         for old in existing:
@@ -711,6 +716,7 @@ async def serialize_pr(db: AsyncSession, pr: m.PurchaseRequest) -> dict:
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "quantity": float(i.quantity),
                 "unit_price": float(i.unit_price or 0),
@@ -1334,6 +1340,13 @@ async def create_grn(
         raise HTTPException(status_code=400, detail="GRN requires at least one line item")
 
     po = await get_po(db, tenant_id, purchase_order_id)
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(po, company_id, detail="Purchase order not found")
+    if warehouse_id:
+        from app.inventory import get_warehouse
+
+        await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
     if po.status not in PO_RECEIVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot receive against PO in status {po.status}")
 
@@ -1542,6 +1555,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "po_item_id": i.po_item_id,
                 "product_id": i.product_id,
                 "received_qty": float(i.received_qty),
@@ -1705,15 +1719,18 @@ async def record_supplier_payment(
         po_allocations.append((po, min(settlement_on_po, due_po) if invoice_allocations else amount))
     else:
         remaining = amount
+        open_q = select(m.PurchaseInvoice).where(
+            m.PurchaseInvoice.tenant_id == tenant_id,
+            m.PurchaseInvoice.supplier_id == supplier_id,
+            m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
+        )
+        if company_id:
+            open_q = open_q.where(m.PurchaseInvoice.company_id == company_id)
         open_invs = (
             await db.execute(
-                select(m.PurchaseInvoice)
-                .where(
-                    m.PurchaseInvoice.tenant_id == tenant_id,
-                    m.PurchaseInvoice.supplier_id == supplier_id,
-                    m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
+                open_q.order_by(
+                    m.PurchaseInvoice.due_date.asc(), m.PurchaseInvoice.created_at.asc()
                 )
-                .order_by(m.PurchaseInvoice.due_date.asc(), m.PurchaseInvoice.created_at.asc())
             )
         ).scalars().all()
         for inv in open_invs:
@@ -2006,6 +2023,7 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "goods_receipt_item_id": i.goods_receipt_item_id,
                 "product_id": i.product_id,
                 "quantity": float(i.quantity),
@@ -2038,6 +2056,9 @@ async def create_purchase_return(
         raise HTTPException(status_code=400, detail="Return requires line items")
 
     grn = await get_grn(db, tenant_id, goods_receipt_id)
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(grn, company_id, detail="Goods receipt not found")
     if grn.status != "posted":
         raise HTTPException(status_code=409, detail="Returns require a posted GRN")
 
@@ -2362,6 +2383,7 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "quantity": float(i.quantity),
                 "unit_price": float(i.unit_price),
@@ -2375,8 +2397,14 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
 
 
 async def _prepare_invoice_lines(
-    db: AsyncSession, tenant_id: str, items: list[dict]
+    db: AsyncSession,
+    tenant_id: str,
+    items: list[dict],
+    *,
+    company_id: str | None = None,
 ) -> tuple[float, float, float, list[dict]]:
+    from app.workspace import assert_fk_company
+
     subtotal = 0.0
     tax_total = 0.0
     prepared: list[dict] = []
@@ -2391,6 +2419,7 @@ async def _prepare_invoice_lines(
         ).scalar_one_or_none()
         if not product:
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        assert_fk_company(product, company_id, detail=f"Product not found: {item['product_id']}")
         qty = float(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be positive")
@@ -2441,8 +2470,11 @@ async def create_purchase_invoice(
     from app.fx import resolve_rate
 
     cur, rate = await resolve_rate(db, tenant_id, currency, explicit_rate=exchange_rate)
+    from app.workspace import assert_fk_company
+
     if goods_receipt_id:
         grn = await get_grn(db, tenant_id, goods_receipt_id)
+        assert_fk_company(grn, company_id, detail="Goods receipt not found")
         existing = (
             await db.execute(
                 select(m.PurchaseInvoice).where(
@@ -2455,6 +2487,7 @@ async def create_purchase_invoice(
         if existing:
             raise HTTPException(status_code=409, detail="GRN already has a purchase invoice")
         po = await get_po(db, tenant_id, grn.purchase_order_id)
+        assert_fk_company(po, company_id, detail="Purchase order not found")
         supplier_id = grn.supplier_id
         purchase_order_id = po.id
         if not items:
@@ -2483,15 +2516,18 @@ async def create_purchase_invoice(
                 )
     elif purchase_order_id:
         po = await get_po(db, tenant_id, purchase_order_id)
+        assert_fk_company(po, company_id, detail="Purchase order not found")
         supplier_id = supplier_id or po.supplier_id
 
     if not supplier_id:
         raise HTTPException(status_code=400, detail="supplier_id is required")
-    await get_supplier(db, tenant_id, supplier_id)
+    await get_supplier(db, tenant_id, supplier_id, company_id=company_id)
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires line items")
 
-    subtotal, tax_total, gross, prepared = await _prepare_invoice_lines(db, tenant_id, items)
+    subtotal, tax_total, gross, prepared = await _prepare_invoice_lines(
+        db, tenant_id, items, company_id=company_id
+    )
     discount_amount = float(discount_amount or 0)
     is_rc = bool(is_reverse_charge)
     if is_rc:

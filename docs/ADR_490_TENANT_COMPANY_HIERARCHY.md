@@ -220,3 +220,11 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - Expense create/update/recurring resolve category and store/department with company scope; `/reports/transfers` filters by workspace `company_id`.
 - Child-row serialize exposes `company_id` for expense/PR approval actions, stock-count items, and POS payment lines.
 - Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design; deeper line helpers (GRN/return) and document-line serializers remain secondary.
+
+## Phase 26 — Deeper create FK + document-line serialize (2026-08-14)
+
+- GRN / purchase return / purchase invoice create paths `assert_fk_company` on PO/GRN; PI line prep and PO amend assert product company; supplier lookup and supplier-payment auto-allocate filter by workspace `company_id`.
+- Sales return create asserts invoice company (API + `sales_docs.create_return`); POS sale asserts product company after line resolve.
+- Document-line serialize exposes `company_id` on sales invoice/quotation/order/return items, PR/PO/GRN/return/PI items, journal lines, and stock-transfer items.
+- Product warehouse-stock GET (and CSV export) scopes stock rows by company; recurring expense PATCH asserts company before mutate.
+- Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design.

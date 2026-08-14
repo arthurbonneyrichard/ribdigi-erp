@@ -144,6 +144,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
@@ -603,6 +604,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
@@ -1079,6 +1081,7 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
@@ -1107,6 +1110,9 @@ async def create_return(
     if reason not in RETURN_REASONS:
         raise HTTPException(status_code=400, detail=f"reason must be one of {sorted(RETURN_REASONS)}")
     invoice = await get_invoice(db, tenant_id, sales_invoice_id)
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(invoice, company_id, detail="Sales invoice not found")
     if invoice.status not in {"posted", "partial", "paid"}:
         raise HTTPException(status_code=409, detail="Returns require a posted invoice")
     inv_items = {

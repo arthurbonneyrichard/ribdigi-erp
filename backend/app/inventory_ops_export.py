@@ -327,20 +327,24 @@ async def export_product_warehouse_stock_csv(
     *,
     tenant_id: str,
     product_id: str,
+    company_id: str | None = None,
 ) -> str:
     """Stage 155 W1 — per-product warehouse placement CSV (distinct from Stage 137 movements)."""
     product = await catalog_svc.get_product(db, tenant_id, product_id)
-    rows = (
-        await db.execute(
-            select(m.WarehouseStock, m.Warehouse)
-            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
-            .where(
-                m.WarehouseStock.tenant_id == tenant_id,
-                m.WarehouseStock.product_id == product_id,
-            )
-            .order_by(m.Warehouse.code)
+    stock_q = (
+        select(m.WarehouseStock, m.Warehouse)
+        .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+        .where(
+            m.WarehouseStock.tenant_id == tenant_id,
+            m.WarehouseStock.product_id == product_id,
         )
-    ).all()
+    )
+    if company_id:
+        stock_q = stock_q.where(
+            (m.WarehouseStock.company_id == company_id)
+            | (m.WarehouseStock.company_id.is_(None))
+        )
+    rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
     p_min = float(getattr(product, "minimum_stock", 0) or 0)
     p_ro = float(product.reorder_level or 0)
     p_qty = float(product.stock_qty or 0)

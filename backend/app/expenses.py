@@ -1297,6 +1297,22 @@ def _clear_occurrence_overrides(row: m.RecurringExpense) -> None:
     row.next_description = None
 
 
+async def get_recurring(
+    db: AsyncSession, tenant_id: str, recurring_id: str
+) -> m.RecurringExpense:
+    row = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.id == recurring_id,
+                m.RecurringExpense.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+    return row
+
+
 async def update_recurring(
     db: AsyncSession,
     *,

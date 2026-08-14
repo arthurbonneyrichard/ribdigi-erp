@@ -3406,3 +3406,491 @@ async def test_phase25_create_fk_serialize_and_reports(client, db_session):
     items = sc.json()["data"].get("items") or []
     assert items
     assert all(i.get("company_id") == seed["c1"].id for i in items)
+
+
+@pytest.mark.asyncio
+async def test_phase26_create_fk_serialize_and_scope(client, db_session):
+    """Phase 26: deeper create FK, document-line serialize, warehouse-stock scope."""
+    from datetime import datetime
+
+    from app import accounting as accounting_svc
+
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P26B",
+        name="Alpha Phase26 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P26 Customer B",
+        status="active",
+        credit_limit=100,
+    )
+    supp_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="supplier",
+        name="P26 Supplier B",
+        status="active",
+        credit_limit=0,
+    )
+    supp_a = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        kind="supplier",
+        name="P26 Supplier A",
+        status="active",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P26 Product B",
+        sku="P26-SKU-B",
+        selling_price=9,
+        cost_price=3,
+        stock_qty=8,
+        is_active=True,
+    )
+    db_session.add_all([cust_b, supp_b, supp_a, prod_b])
+    await db_session.flush()
+
+    po_b = m.PurchaseOrder(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        po_number="PO-P26-B",
+        supplier_id=supp_b.id,
+        status="sent",
+        subtotal=9,
+        tax_amount=0,
+        total_amount=9,
+        created_by=seed["super"].id,
+    )
+    db_session.add(po_b)
+    await db_session.flush()
+    po_item_b = m.PurchaseOrderItem(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        purchase_order_id=po_b.id,
+        product_id=prod_b.id,
+        quantity=1,
+        unit_price=9,
+        line_total=9,
+    )
+    db_session.add(po_item_b)
+    await db_session.flush()
+
+    grn_b = m.GoodsReceipt(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        grn_number="GRN-P26-B",
+        purchase_order_id=po_b.id,
+        supplier_id=supp_b.id,
+        status="posted",
+        created_by=seed["super"].id,
+    )
+    db_session.add(grn_b)
+    await db_session.flush()
+    grn_item_b = m.GoodsReceiptItem(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        goods_receipt_id=grn_b.id,
+        po_item_id=po_item_b.id,
+        product_id=prod_b.id,
+        received_qty=1,
+        accepted_qty=1,
+    )
+    db_session.add(grn_item_b)
+
+    inv_b = m.SalesInvoice(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        invoice_number="INV-P26-B",
+        customer_id=cust_b.id,
+        status="posted",
+        subtotal=9,
+        tax_amount=0,
+        total_amount=9,
+        posted_at=datetime.utcnow(),
+        created_by=seed["super"].id,
+    )
+    db_session.add(inv_b)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            sales_invoice_id=inv_b.id,
+            product_id=prod_b.id,
+            quantity=1,
+            unit_price=9,
+            line_total=9,
+        )
+    )
+
+    rec_b = m.RecurringExpense(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        category="ops",
+        description="P26 recurring B",
+        amount=15,
+        frequency="monthly",
+        created_by=seed["super"].id,
+    )
+    db_session.add(rec_b)
+
+    # Company A rows for serialize + warehouse-stock
+    po_a = m.PurchaseOrder(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        po_number="PO-P26-A",
+        supplier_id=supp_a.id,
+        status="draft",
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        created_by=seed["super"].id,
+    )
+    db_session.add(po_a)
+    await db_session.flush()
+    po_item_a = m.PurchaseOrderItem(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        purchase_order_id=po_a.id,
+        product_id=seed["p1"].id,
+        quantity=1,
+        unit_price=5,
+        line_total=5,
+    )
+    db_session.add(po_item_a)
+
+    inv_a = m.SalesInvoice(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        invoice_number="INV-P26-A",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        posted_at=datetime.utcnow(),
+        created_by=seed["super"].id,
+    )
+    db_session.add(inv_a)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            sales_invoice_id=inv_a.id,
+            product_id=seed["p1"].id,
+            quantity=1,
+            unit_price=5,
+            line_total=5,
+        )
+    )
+
+    store_a = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="P26SA",
+        name="P26 Store A",
+        is_active=True,
+    )
+    store_a2 = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="P26SA2",
+        name="P26 Store A2",
+        is_active=True,
+    )
+    db_session.add_all([store_a, store_a2])
+    await db_session.flush()
+    wh_a = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store_a.id,
+        code="P26WA",
+        name="P26 WH A",
+        is_active=True,
+    )
+    wh_a2 = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store_a2.id,
+        code="P26WA2",
+        name="P26 WH A2",
+        is_active=True,
+    )
+    db_session.add_all([wh_a, wh_a2])
+    await db_session.flush()
+
+    grn_a = m.GoodsReceipt(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        grn_number="GRN-P26-A",
+        purchase_order_id=po_a.id,
+        supplier_id=supp_a.id,
+        warehouse_id=wh_a.id,
+        status="posted",
+        created_by=seed["super"].id,
+    )
+    db_session.add(grn_a)
+    await db_session.flush()
+    db_session.add(
+        m.GoodsReceiptItem(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            goods_receipt_id=grn_a.id,
+            po_item_id=po_item_a.id,
+            product_id=seed["p1"].id,
+            received_qty=1,
+            accepted_qty=1,
+        )
+    )
+
+    xfer_a = m.StockTransfer(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        transfer_number="TR-P26-A",
+        from_store_id=store_a.id,
+        to_store_id=store_a2.id,
+        from_warehouse_id=wh_a.id,
+        to_warehouse_id=wh_a2.id,
+        status="draft",
+        created_by=seed["super"].id,
+    )
+    db_session.add(xfer_a)
+    await db_session.flush()
+    db_session.add(
+        m.StockTransferItem(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            transfer_id=xfer_a.id,
+            product_id=seed["p1"].id,
+            quantity=1,
+        )
+    )
+
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            warehouse_id=wh_a.id,
+            product_id=seed["p1"].id,
+            quantity=4,
+        )
+    )
+    # Sibling-company stock row on same product must not appear under company A
+    wh_b = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="P26WB",
+        name="P26 WH B",
+        is_active=True,
+    )
+    db_session.add(wh_b)
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            warehouse_id=wh_b.id,
+            product_id=seed["p1"].id,
+            quantity=99,
+        )
+    )
+
+    await accounting_svc.ensure_default_accounts(
+        db_session, seed["t1"].id, company_id=seed["c1"].id
+    )
+    cash = await accounting_svc.get_account_by_code(
+        db_session, seed["t1"].id, "1000", company_id=seed["c1"].id
+    )
+    rev = await accounting_svc.get_account_by_code(
+        db_session, seed["t1"].id, "4000", company_id=seed["c1"].id
+    )
+    je = m.JournalEntry(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        entry_number="JE-P26-A",
+        description="P26 journal",
+        total_debit=10,
+        total_credit=10,
+        status="posted",
+        created_by=seed["super"].id,
+    )
+    db_session.add(je)
+    await db_session.flush()
+    db_session.add_all(
+        [
+            m.JournalEntryLine(
+                tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
+                journal_entry_id=je.id,
+                account_id=cash.id,
+                debit=10,
+                credit=0,
+            ),
+            m.JournalEntryLine(
+                tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
+                journal_entry_id=je.id,
+                account_id=rev.id,
+                debit=0,
+                credit=10,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # --- Create FK IDOR ---
+    grn = await ac.post(
+        "/api/v1/purchasing/grn",
+        headers=headers_a,
+        json={
+            "purchase_order_id": po_b.id,
+            "items": [{"po_item_id": po_item_b.id, "received_qty": 1}],
+        },
+    )
+    assert grn.status_code == 404, grn.text
+
+    pret = await ac.post(
+        "/api/v1/purchasing/returns",
+        headers=headers_a,
+        json={
+            "goods_receipt_id": grn_b.id,
+            "items": [{"goods_receipt_item_id": grn_item_b.id, "quantity": 1}],
+        },
+    )
+    assert pret.status_code == 404, pret.text
+
+    pi = await ac.post(
+        "/api/v1/purchasing/invoices",
+        headers=headers_a,
+        json={"goods_receipt_id": grn_b.id},
+    )
+    assert pi.status_code == 404, pi.text
+
+    sret = await ac.post(
+        "/api/v1/sales/returns",
+        headers=headers_a,
+        json={
+            "sales_invoice_id": inv_b.id,
+            "items": [{"product_id": prod_b.id, "quantity": 1}],
+        },
+    )
+    assert sret.status_code == 404, sret.text
+
+    patch_rec = await ac.patch(
+        f"/api/v1/expenses/recurring/{rec_b.id}",
+        headers=headers_a,
+        json={"amount": 1},
+    )
+    assert patch_rec.status_code == 404, patch_rec.text
+
+    # PO amend with sibling-company product
+    amend = await ac.patch(
+        f"/api/v1/purchasing/orders/{po_a.id}",
+        headers=headers_a,
+        json={
+            "items": [
+                {
+                    "product_id": prod_b.id,
+                    "quantity": 1,
+                    "unit_price": 5,
+                }
+            ],
+        },
+    )
+    assert amend.status_code == 404, amend.text
+
+    # POS sale with sibling-company product
+    seed["p1"].selling_price = 10
+    seed["p1"].stock_qty = 20
+    seed["p1"].reserved_qty = 0
+    seed["p1"].tax_exempt = True
+    seed["p1"].tax_rate_id = None
+    prod_b.selling_price = 9
+    prod_b.stock_qty = 8
+    await db_session.commit()
+    open_a = await ac.post(
+        "/api/v1/pos/sessions/open", headers=headers_a, json={"opening_cash": 0}
+    )
+    assert open_a.status_code == 200, open_a.text
+    pos = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers_a,
+        json={
+            "session_id": open_a.json()["data"]["session_id"],
+            "items": [{"product_id": prod_b.id, "quantity": 1}],
+            "payments": [{"payment_method": "cash", "amount": 9}],
+        },
+    )
+    assert pos.status_code == 404, pos.text
+
+    # --- Serialize nested company_id ---
+    get_inv = await ac.get(f"/api/v1/sales/invoices/{inv_a.id}", headers=headers_a)
+    assert get_inv.status_code == 200, get_inv.text
+    inv_items = get_inv.json()["data"].get("items") or []
+    assert inv_items
+    assert all(i.get("company_id") == seed["c1"].id for i in inv_items)
+
+    get_po = await ac.get(f"/api/v1/purchasing/orders/{po_a.id}", headers=headers_a)
+    assert get_po.status_code == 200, get_po.text
+    po_items = get_po.json()["data"].get("items") or []
+    assert po_items
+    assert all(i.get("company_id") == seed["c1"].id for i in po_items)
+
+    get_grn = await ac.get(f"/api/v1/purchasing/grn/{grn_a.id}", headers=headers_a)
+    assert get_grn.status_code == 200, get_grn.text
+    grn_items = get_grn.json()["data"].get("items") or []
+    assert grn_items
+    assert all(i.get("company_id") == seed["c1"].id for i in grn_items)
+
+    get_xfer = await ac.get(f"/api/v1/stores/transfers/{xfer_a.id}", headers=headers_a)
+    assert get_xfer.status_code == 200, get_xfer.text
+    xfer_items = get_xfer.json()["data"].get("items") or []
+    assert xfer_items
+    assert all(i.get("company_id") == seed["c1"].id for i in xfer_items)
+
+    get_je = await ac.get(
+        f"/api/v1/accounting/journal-entries/{je.id}", headers=headers_a
+    )
+    assert get_je.status_code == 200, get_je.text
+    je_lines = get_je.json()["data"].get("lines") or []
+    assert je_lines
+    assert all(ln.get("company_id") == seed["c1"].id for ln in je_lines)
+
+    # --- Warehouse-stock scope ---
+    stock = await ac.get(
+        f"/api/v1/products/{seed['p1'].id}/warehouse-stock", headers=headers_a
+    )
+    assert stock.status_code == 200, stock.text
+    wh_rows = stock.json()["data"].get("warehouses") or []
+    assert wh_rows
+    assert all(r.get("company_id") == seed["c1"].id for r in wh_rows)
+    assert all(r.get("warehouse_id") != wh_b.id for r in wh_rows)

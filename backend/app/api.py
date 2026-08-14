@@ -5166,17 +5166,20 @@ async def product_warehouse_stock(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     workspace_svc.assert_record_company(claims, product)
-    rows = (
-        await db.execute(
-            select(m.WarehouseStock, m.Warehouse)
-            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
-            .where(
-                m.WarehouseStock.tenant_id == claims["tenant_id"],
-                m.WarehouseStock.product_id == product_id,
-            )
-            .order_by(m.Warehouse.code)
+    stock_q = (
+        select(m.WarehouseStock, m.Warehouse)
+        .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+        .where(
+            m.WarehouseStock.tenant_id == claims["tenant_id"],
+            m.WarehouseStock.product_id == product_id,
         )
-    ).all()
+    )
+    if claims.get("company_id"):
+        stock_q = stock_q.where(
+            (m.WarehouseStock.company_id == claims["company_id"])
+            | (m.WarehouseStock.company_id.is_(None))
+        )
+    rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
     from app.inventory import compute_stock_status, effective_warehouse_thresholds
 
     p_min = float(getattr(product, "minimum_stock", 0) or 0)
@@ -5188,6 +5191,8 @@ async def product_warehouse_stock(
         minimum, reorder = effective_warehouse_thresholds(stock, product)
         warehouses_out.append(
             {
+                "id": stock.id,
+                "company_id": getattr(stock, "company_id", None) or getattr(wh, "company_id", None),
                 "warehouse_id": wh.id,
                 "code": wh.code,
                 "name": wh.name,
@@ -5224,7 +5229,10 @@ async def export_product_warehouse_stock(
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     text = await inventory_ops_export_svc.export_product_warehouse_stock_csv(
-        db, tenant_id=claims["tenant_id"], product_id=product_id
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -7423,6 +7431,7 @@ async def create_sales_return(
 ):
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], payload.sales_invoice_id)
     assert_record_access(claims, invoice.created_by)
+    workspace_svc.assert_record_company(claims, invoice)
     ret = await sales_docs_svc.create_return(
         db,
         tenant_id=claims["tenant_id"],
@@ -9495,6 +9504,8 @@ async def update_recurring_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await expenses_svc.get_recurring(db, claims["tenant_id"], recurring_id)
+    workspace_svc.assert_record_company(claims, existing)
     row = await expenses_svc.update_recurring(
         db,
         tenant_id=claims["tenant_id"],
@@ -9510,7 +9521,6 @@ async def update_recurring_expense(
         payment_method=payload.payment_method,
         payee=payload.payee,
     )
-    workspace_svc.assert_record_company(claims, row)
     await db.commit()
     return env(expenses_svc.serialize_recurring(row), "Recurring expense updated")
 

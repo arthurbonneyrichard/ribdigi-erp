@@ -574,6 +574,7 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "quantity": float(i.quantity),
                 "shipped_qty": float(i.shipped_qty or 0),
