@@ -31,3 +31,9 @@ Stage 396 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline sync-error-surface, SYNC ERROR surface as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 396 opened under **ADR-799** after CONTINUE/NEXT (Tenant MVP Offline Synchronizing Status Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-800**. Stage 395 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 395 runner-up outline was approved and opened (ADR-799); freeze ADR-800. Do not reopen Stage 395 scope.
