@@ -1019,6 +1019,34 @@ async def set_recurring_active(
     return row
 
 
+async def skip_next_recurring(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    recurring_id: str,
+) -> m.RecurringExpense:
+    """Advance next_run_at by one frequency period without creating an expense (BR-9.5)."""
+    row = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.id == recurring_id,
+                m.RecurringExpense.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+    if not row.is_active:
+        raise HTTPException(status_code=400, detail="Cannot skip inactive recurring expense")
+    base = row.next_run_at or datetime.utcnow()
+    new_next = next_run_date(base, row.frequency)
+    row.next_run_at = new_next
+    if row.end_date and new_next > row.end_date:
+        row.is_active = False
+    await db.flush()
+    return row
+
+
 async def generate_due_recurring(
     db: AsyncSession,
     *,
