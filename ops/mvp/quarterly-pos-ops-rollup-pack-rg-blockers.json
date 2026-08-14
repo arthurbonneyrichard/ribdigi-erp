@@ -1,0 +1,63 @@
+{
+  "id": "quarterly-pos-ops-rollup-pack-rg-blockers",
+  "stage": 350,
+  "pack": "B1",
+  "doc": "docs/QUARTERLY_POS_OPS_ROLLUP_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/QUARTERLY_POS_OPS_ROLLUP_PACK_REMAINING_GATE_MVP.md",
+    "quarterly_pos_ops_rollup": "docs/QUARTERLY_POS_OPS_ROLLUP_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_quarterly_green_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "live_dr_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_quarterly_green_claimed": "REMAINING",
+    "stage178_as_live_quarterly_pos_ops_rollup": "NON_CLAIM",
+    "stage177_as_live_quarterly_pos_ops_rollup": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "live_dr_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_quarterly_green_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "qporlpb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporlpb-dr",
+      "title": "Mark live DR Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporlpb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporlpb-stage178-nonclaim",
+      "title": "Mark Stage 178 / Stage 177 as non-claim for live quarterly POS ops rollup Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporlpb-checklist-remaining",
+      "title": "Live quarterly POS ops rollup Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 350 B1 quarterly POS ops rollup pack RG blocker matrix packaging only. Live quarterly POS ops rollup Completes remain MISSING."
+}

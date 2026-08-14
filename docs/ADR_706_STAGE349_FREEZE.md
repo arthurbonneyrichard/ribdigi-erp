@@ -31,3 +31,9 @@ Stage 350 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for quarterly POS ops review, Offline Complete, support SLA, attestation, live migration, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 350 opened under **ADR-707** after CONTINUE/NEXT (Tenant MVP Quarterly POS Ops Rollup Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-708**. Stage 349 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 350 runner-up outline was approved and opened (ADR-707); freeze ADR-708. Do not reopen Stage 349 scope.

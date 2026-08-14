@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_350_EXIT_CRITERIA.md` / `docs/ADR_708_STAGE350_FREEZE.md` (`backend/tests/test_stage350_exit_h350x.py`) — Stage 350 H350x
+- `docs/STAGE_350_FIDELITY.md` (`backend/tests/test_stage350_fidelity_d1.py`) — Stage 350 D1
+- `docs/STAGE_350_PLAN.md` (`backend/tests/test_stage350_open.py`) — Stage 350 open (ADR-707)
+- `docs/QUARTERLY_POS_OPS_ROLLUP_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/quarterly-pos-ops-rollup-pack-remaining-gate.json` — Stage 350 I1
+- `docs/QUARTERLY_POS_OPS_ROLLUP_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/quarterly-pos-ops-rollup-pack-rg-blockers.json` — Stage 350 B1
+- `docs/QUARTERLY_POS_OPS_ROLLUP_PACK_RG_POINTERS_MVP.md` / `ops/mvp/quarterly-pos-ops-rollup-pack-rg-pointers.json` — Stage 350 P1
 - `docs/STAGE_349_EXIT_CRITERIA.md` / `docs/ADR_706_STAGE349_FREEZE.md` (`backend/tests/test_stage349_exit_h349x.py`) — Stage 349 H349x
 - `docs/STAGE_349_FIDELITY.md` (`backend/tests/test_stage349_fidelity_d1.py`) — Stage 349 D1
 - `docs/STAGE_349_PLAN.md` (`backend/tests/test_stage349_open.py`) — Stage 349 open (ADR-705)
@@ -5377,6 +5383,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 350 exit
+
+H350x met — `docs/STAGE_350_EXIT_CRITERIA.md`, ADR-708. Stages 1–350 frozen for Stage 350 feature scope.
+
+## Stage 350 D1 — Tenant MVP Quarterly POS Ops Rollup Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_350_FIDELITY.md` (`test_stage350_fidelity_d1.py`). `QUARTERLY_POS_OPS_ROLLUP_PACK_*` remaining-gate index; Offline Complete / live DR / attestation / fabricated quarterly green / go-live still MISSING.
+
+## Stage 350 open
+
+ADR-707 / `docs/STAGE_350_PLAN.md`.
 
 ## Stage 349 exit
 
