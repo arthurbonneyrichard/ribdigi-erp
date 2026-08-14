@@ -513,7 +513,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Create return referencing original invoice
   - [x] Record return reason and condition
   - [x] Restock or discard returned items
-  - [x] Generate credit note (`credit_note_number` on post, unique per tenant)
+  - [x] Generate credit note (`credit_note_number` on post via tenant series `GET|PATCH /sales/settings` → `credit_note_numbering`; return `return_number` series on create; unique per tenant; Sales Document numbering UI)
   - [x] Refund or adjust customer balance (`settlement_method=adjust|refund`; refund required/optional when return exceeds open invoice AR; cash/bank refund journal)
 
 ---
@@ -994,7 +994,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase return, debit note, quotation numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PR/DN; quotation via `/sales/settings`)
+  - [x] Configure PO, GRN, purchase invoice, purchase return, debit note, quotation, sales return, credit note numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PR/DN; `GET|PATCH /sales/settings` for INV/QT/SR/CN)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

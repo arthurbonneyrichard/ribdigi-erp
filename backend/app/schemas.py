@@ -964,6 +964,8 @@ class DocumentNumberingFields(BaseModel):
 class SalesSettingsUpdate(BaseModel):
     invoice_numbering: DocumentNumberingFields | None = None
     quotation_numbering: DocumentNumberingFields | None = None
+    sales_return_numbering: DocumentNumberingFields | None = None
+    credit_note_numbering: DocumentNumberingFields | None = None
     # Legacy flat fields (invoice only)
     prefix: str | None = Field(default=None, min_length=1, max_length=20)
     next_number: int | None = Field(default=None, ge=1, le=999999)

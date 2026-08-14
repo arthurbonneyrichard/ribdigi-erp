@@ -929,6 +929,8 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **Create:** `POST /sales/returns`  
 **Get:** `GET /sales/returns/{return_id}`
 
+**Numbering:** `GET|PATCH /sales/settings` exposes `sales_return_numbering` and `credit_note_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` for `return_number` (default `SR`); post allocates series `credit_note_number` (default `CN`, unique per tenant). Sales Document numbering UI (BR-7.5 / BR-20.4).
+
 **Create Return:**
 ```json
 {

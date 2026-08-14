@@ -4683,6 +4683,8 @@ async def sales_settings(
         {
             "invoice_numbering": numbering_settings(tenant, "sales_invoice"),
             "quotation_numbering": numbering_settings(tenant, "quotation"),
+            "sales_return_numbering": numbering_settings(tenant, "sales_return"),
+            "credit_note_numbering": numbering_settings(tenant, "credit_note"),
         }
     )
 
@@ -4712,13 +4714,34 @@ async def update_sales_settings(
             prefix=payload.quotation_numbering.prefix,
             next_number=payload.quotation_numbering.next_number,
         )
-    if inv is None and payload.quotation_numbering is None:
+    if payload.sales_return_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "sales_return",
+            prefix=payload.sales_return_numbering.prefix,
+            next_number=payload.sales_return_numbering.next_number,
+        )
+    if payload.credit_note_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "credit_note",
+            prefix=payload.credit_note_numbering.prefix,
+            next_number=payload.credit_note_numbering.next_number,
+        )
+    if (
+        inv is None
+        and payload.quotation_numbering is None
+        and payload.sales_return_numbering is None
+        and payload.credit_note_numbering is None
+    ):
         raise HTTPException(status_code=400, detail="No numbering fields to update")
     await db.commit()
     return env(
         {
             "invoice_numbering": numbering_settings(tenant, "sales_invoice"),
             "quotation_numbering": numbering_settings(tenant, "quotation"),
+            "sales_return_numbering": numbering_settings(tenant, "sales_return"),
+            "credit_note_numbering": numbering_settings(tenant, "credit_note"),
         },
         "Sales document numbering updated",
     )

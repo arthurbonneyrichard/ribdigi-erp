@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.inventory import apply_stock_change
-from app.doc_numbers import next_quotation_number
+from app.doc_numbers import next_credit_note_number, next_quotation_number, next_sales_return_number
 from app.sales import create_sales_invoice, get_customer, get_invoice, list_invoice_items
 from app.tax import resolve_product_tax
 from app.catalog import get_variant, resolve_sale_line
@@ -780,7 +780,7 @@ async def create_return(
 
     ret = m.SalesReturn(
         tenant_id=tenant_id,
-        return_number=_stamp("SR"),
+        return_number=await next_sales_return_number(db, tenant_id),
         customer_id=invoice.customer_id,
         sales_invoice_id=invoice.id,
         status="draft",
@@ -890,7 +890,7 @@ async def post_return(
     # Negative balance = customer store credit after return
     customer.balance = round(float(customer.balance or 0) - return_total, 2)
 
-    ret.credit_note_number = f"CN-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+    ret.credit_note_number = await next_credit_note_number(db, tenant_id)
     ret.settlement_method = method
     ret.refunded_amount = 0
     ret.status = "posted"
