@@ -31,3 +31,9 @@ Stage 426 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Security Scan, Security Scan honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 426 opened under **ADR-859** after CONTINUE/NEXT (Tenant MVP Launch Cert Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-860**. Stage 425 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 425 runner-up outline was approved and opened (ADR-859); freeze ADR-860. Do not reopen Stage 425 scope.
