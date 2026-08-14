@@ -1626,7 +1626,9 @@ export default function Page() {
             </select>
             <select value={productBrandId} onChange={(e) => setProductBrandId(e.target.value)}>
               <option value="">Brand</option>
-              {brands.map((b) => (
+              {brands
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
@@ -1634,7 +1636,9 @@ export default function Page() {
             </select>
             <select value={productUnitId} onChange={(e) => setProductUnitId(e.target.value)}>
               <option value="">Unit</option>
-              {units.map((u) => (
+              {units
+                .filter((u) => u.is_active !== false)
+                .map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.code} — {u.name}
                 </option>
@@ -1923,7 +1927,26 @@ export default function Page() {
                     {b.has_logo ? ' · logo' : ''}
                     {!b.is_active ? ' [inactive]' : ''}
                   </span>
-                  {b.is_active && (
+                  {b.is_active === false ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setError('');
+                        try {
+                          await api(`/catalog/brands/${b.id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ is_active: true }),
+                          });
+                          setMessage(`Brand ${b.name} activated`);
+                          await refresh();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      }}
+                    >
+                      Activate
+                    </button>
+                  ) : (
                     <>
                       <label className="muted" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                         Logo
@@ -2024,7 +2047,26 @@ export default function Page() {
                       : ' [root]'}
                     {!u.is_active ? ' [inactive]' : ''}
                   </span>
-                  {u.is_active && (
+                  {u.is_active === false ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setError('');
+                        try {
+                          await api(`/catalog/units/${u.id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ is_active: true }),
+                          });
+                          setMessage(`Unit ${u.code} activated`);
+                          await refresh();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      }}
+                    >
+                      Activate
+                    </button>
+                  ) : (
                     <button
                       type="button"
                       onClick={async () => {

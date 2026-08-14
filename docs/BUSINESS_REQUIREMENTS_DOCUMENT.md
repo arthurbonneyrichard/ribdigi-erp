@@ -343,8 +343,8 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [x] **Categories:** Hierarchical category tree (parent/child), category code (`GET /catalog/categories` returns tree order with `depth`/`path`; create/PATCH reparent; cycle guard; Inventory Catalog Category tree UI + product picker paths)
-  - [x] **Brands:** Brand name, logo, description (`brands.logo_url` + description; `POST|GET|DELETE /catalog/brands/{id}/logo`; Inventory Catalog UI)
-  - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios
+  - [x] **Brands:** Brand name, logo, description (`brands.logo_url` + description; `POST|GET|DELETE /catalog/brands/{id}/logo`; Inventory Catalog UI; soft-deactivate via `DELETE` / reactivate via `PATCH { is_active: true }`; inactive blocked on product create/assign)
+  - [x] **Units:** Unit of measure (piece, kg, liter, box, etc.) with conversion ratios; soft-deactivate via `DELETE` / reactivate via `PATCH { is_active: true }`; inactive blocked on product create/assign; product create pickers hide inactive brands/units
   - [x] **Product Variants:** Size, color, flavor, dosage (pharmacy) variants with unique SKUs (`product_variants` attrs + auto/manual SKU; Inventory Variants UI; `POST|PATCH /products/{id}/variants`)
   - [x] **SKU:** Auto-generated or manual SKU assignment (omit/blank `sku` on product/variant create → `SKU-YYYY-NNNN`; explicit SKU still wins; unique across products+variants)
   - [x] **Barcode:** Support for EAN, UPC, Code 128; barcode generation for products without barcodes (`POST /products/{id}/barcode/generate?symbology=code128|ean13|upca`; PNG/label; Inventory picker; variant generate/label + uniqueness across products/variants; internal GTIN prefixes `200` / `2`)

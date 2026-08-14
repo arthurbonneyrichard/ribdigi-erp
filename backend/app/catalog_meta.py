@@ -625,14 +625,20 @@ async def resolve_product_refs(
         cat = await db.get(m.ProductCategory, category_id)
         if not cat or cat.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Category not found")
+        if not bool(cat.is_active):
+            raise HTTPException(status_code=400, detail="Category is inactive")
         label = cat.name
         resolved_category_id = cat.id
     if brand_id:
         brand = await db.get(m.Brand, brand_id)
         if not brand or brand.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Brand not found")
+        if not bool(brand.is_active):
+            raise HTTPException(status_code=400, detail="Brand is inactive")
     if unit_id:
         unit = await db.get(m.UnitOfMeasure, unit_id)
         if not unit or unit.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Unit not found")
+        if not bool(unit.is_active):
+            raise HTTPException(status_code=400, detail="Unit is inactive")
     return resolved_category_id, brand_id, unit_id, label

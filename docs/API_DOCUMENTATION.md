@@ -456,8 +456,8 @@ Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rat
 ### 5.2 Brands
 **List:** `GET /catalog/brands`  
 **Create:** `POST /catalog/brands` `{ "code", "name", "description"? }`  
-**Update:** `PATCH /catalog/brands/{brand_id}`  
-**Deactivate:** `DELETE /catalog/brands/{brand_id}`  
+**Update:** `PATCH /catalog/brands/{brand_id}` — partial fields include `name`, `description`, `is_active` (Inventory Catalog **Activate** when inactive)  
+**Deactivate:** `DELETE /catalog/brands/{brand_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive brands cannot be assigned on product create/PATCH)  
 **Logo:** `POST|GET|DELETE /catalog/brands/{brand_id}/logo` (multipart `file` on POST; image types same as company logo)
 
 Responses include `description`, `logo_url`, and `has_logo` (BR-5.1).
@@ -465,7 +465,8 @@ Responses include `description`, `logo_url`, and `has_logo` (BR-5.1).
 ### 5.3 Units
 **List:** `GET /catalog/units`  
 **Create:** `POST /catalog/units`  
-**Update:** `PATCH /catalog/units/{unit_id}`  
+**Update:** `PATCH /catalog/units/{unit_id}` — partial fields include `name`, conversion fields, `is_active` (Inventory Catalog **Activate** when inactive)  
+**Deactivate:** `DELETE /catalog/units/{unit_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive units cannot be assigned on product create/PATCH)  
 **Convert preview:** `POST /catalog/units/convert` `{ "product_id", "quantity", "from_unit_id" }`
 
 Create with conversion (BR-5.1): `{ "code": "CASE12", "name": "Case of 12", "base_unit_id": "<PCS id>", "conversion_ratio": 12 }`  
