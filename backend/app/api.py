@@ -4683,6 +4683,7 @@ async def sales_settings(
         {
             "invoice_numbering": numbering_settings(tenant, "sales_invoice"),
             "quotation_numbering": numbering_settings(tenant, "quotation"),
+            "sales_order_numbering": numbering_settings(tenant, "sales_order"),
             "sales_return_numbering": numbering_settings(tenant, "sales_return"),
             "credit_note_numbering": numbering_settings(tenant, "credit_note"),
         }
@@ -4714,6 +4715,13 @@ async def update_sales_settings(
             prefix=payload.quotation_numbering.prefix,
             next_number=payload.quotation_numbering.next_number,
         )
+    if payload.sales_order_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "sales_order",
+            prefix=payload.sales_order_numbering.prefix,
+            next_number=payload.sales_order_numbering.next_number,
+        )
     if payload.sales_return_numbering is not None:
         apply_numbering_update(
             tenant,
@@ -4731,6 +4739,7 @@ async def update_sales_settings(
     if (
         inv is None
         and payload.quotation_numbering is None
+        and payload.sales_order_numbering is None
         and payload.sales_return_numbering is None
         and payload.credit_note_numbering is None
     ):
@@ -4740,6 +4749,7 @@ async def update_sales_settings(
         {
             "invoice_numbering": numbering_settings(tenant, "sales_invoice"),
             "quotation_numbering": numbering_settings(tenant, "quotation"),
+            "sales_order_numbering": numbering_settings(tenant, "sales_order"),
             "sales_return_numbering": numbering_settings(tenant, "sales_return"),
             "credit_note_numbering": numbering_settings(tenant, "credit_note"),
         },

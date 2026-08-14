@@ -227,6 +227,25 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
     assert sposted.status_code == 200, sposted.text
     assert sposted.json()["data"]["credit_note_number"] == f"CN-{year}-0011"
 
+    # Sales order numbering (BR-7.3 / BR-20.4)
+    so_settings = await ac.patch(
+        "/api/v1/sales/settings",
+        headers=admin,
+        json={"sales_order_numbering": {"prefix": "SO", "next_number": 12}},
+    )
+    assert so_settings.status_code == 200, so_settings.text
+    assert so_settings.json()["data"]["sales_order_numbering"]["preview"] == f"SO-{year}-0012"
+    so = await ac.post(
+        "/api/v1/sales/orders",
+        headers=admin,
+        json={
+            "customer_id": cust.json()["data"]["id"],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 15}],
+        },
+    )
+    assert so.status_code == 200, so.text
+    assert so.json()["data"]["order_number"] == f"SO-{year}-0012"
+
     # Counter advanced for next GRN
     assert await next_grn_number(db_session, seed["t1"].id) == f"GRN-{year}-0010"
     await db_session.commit()

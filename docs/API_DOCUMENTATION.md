@@ -892,6 +892,8 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 **Update Status:** `PATCH /sales/orders/{order_id}/status`  
 **Convert to Invoice:** `POST /sales/orders/{order_id}/convert-to-invoice`
 
+**Numbering:** `GET|PATCH /sales/settings` exposes `sales_order_numbering`. Create (and quotation convert) allocates `{PREFIX}-{YYYY}-{NNNN}` (default `SO`) — not a timestamp stamp (BR-7.3 / BR-20.4).
+
 **Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `cancelled`
 
 ### 7.5 Invoices

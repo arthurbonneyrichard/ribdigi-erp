@@ -96,6 +96,9 @@ export default function Page() {
   const [qtPrefix, setQtPrefix] = useState('QT');
   const [qtNext, setQtNext] = useState('1');
   const [qtPreview, setQtPreview] = useState('');
+  const [soPrefix, setSoPrefix] = useState('SO');
+  const [soNext, setSoNext] = useState('1');
+  const [soPreview, setSoPreview] = useState('');
   const [srPrefix, setSrPrefix] = useState('SR');
   const [srNext, setSrNext] = useState('1');
   const [srPreview, setSrPreview] = useState('');
@@ -140,6 +143,12 @@ export default function Page() {
       setQtPrefix(qt.prefix || 'QT');
       setQtNext(String(qt.next_number ?? 1));
       setQtPreview(qt.preview || '');
+    }
+    const so = settingsRes.data?.sales_order_numbering;
+    if (so) {
+      setSoPrefix(so.prefix || 'SO');
+      setSoNext(String(so.next_number ?? 1));
+      setSoPreview(so.preview || '');
     }
     const sr = settingsRes.data?.sales_return_numbering;
     if (sr) {
@@ -325,6 +334,10 @@ export default function Page() {
             prefix: qtPrefix.trim(),
             next_number: Math.max(1, Number(qtNext) || 1),
           },
+          sales_order_numbering: {
+            prefix: soPrefix.trim(),
+            next_number: Math.max(1, Number(soNext) || 1),
+          },
           sales_return_numbering: {
             prefix: srPrefix.trim(),
             next_number: Math.max(1, Number(srNext) || 1),
@@ -347,6 +360,12 @@ export default function Page() {
         setQtNext(String(qt.next_number));
         setQtPreview(qt.preview);
       }
+      const so = r.data?.sales_order_numbering;
+      if (so) {
+        setSoPrefix(so.prefix);
+        setSoNext(String(so.next_number));
+        setSoPreview(so.preview);
+      }
       const sr = r.data?.sales_return_numbering;
       if (sr) {
         setSrPrefix(sr.prefix);
@@ -360,7 +379,7 @@ export default function Page() {
         setCnPreview(cn.preview);
       }
       setMessage(
-        `Numbering saved — INV ${numbering?.preview || ''} / QT ${qt?.preview || ''} / SR ${sr?.preview || ''} / CN ${cn?.preview || ''}`.trim(),
+        `Numbering saved — INV ${numbering?.preview || ''} / QT ${qt?.preview || ''} / SO ${so?.preview || ''} / SR ${sr?.preview || ''} / CN ${cn?.preview || ''}`.trim(),
       );
     } catch (err: any) {
       setError(err.message);
@@ -557,6 +576,22 @@ export default function Page() {
             style={{ width: 90 }}
           />
           <span className="muted">{qtPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Order</span>
+          <input
+            value={soPrefix}
+            onChange={(e) => setSoPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={soNext}
+            onChange={(e) => setSoNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{soPreview || '—'}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <span className="muted">Return</span>
