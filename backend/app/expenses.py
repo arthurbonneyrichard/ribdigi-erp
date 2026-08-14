@@ -1004,6 +1004,34 @@ async def set_recurring_active(
     recurring_id: str,
     is_active: bool,
 ) -> m.RecurringExpense:
+    return await update_recurring(
+        db,
+        tenant_id=tenant_id,
+        recurring_id=recurring_id,
+        is_active=is_active,
+    )
+
+
+async def update_recurring(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    recurring_id: str,
+    is_active: bool | None = None,
+    amount: float | None = None,
+    payee: str | None = None,
+    clear_payee: bool = False,
+    description: str | None = None,
+    payment_method: str | None = None,
+    frequency: str | None = None,
+    category_id: str | None = None,
+    category: str | None = None,
+    branch_id: str | None = None,
+    department_id: str | None = None,
+    clear_branch: bool = False,
+    clear_department: bool = False,
+) -> m.RecurringExpense:
+    """Update recurring schedule template fields and/or active flag (BR-9.5)."""
     row = (
         await db.execute(
             select(m.RecurringExpense).where(
@@ -1014,7 +1042,76 @@ async def set_recurring_active(
     ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Recurring expense not found")
-    row.is_active = bool(is_active)
+
+    org_touch = (
+        clear_branch
+        or clear_department
+        or branch_id is not None
+        or department_id is not None
+    )
+    provided = any(
+        x is not None
+        for x in (
+            is_active,
+            amount,
+            payee,
+            description,
+            payment_method,
+            frequency,
+            category_id,
+            category,
+        )
+    ) or clear_payee or org_touch
+    if not provided:
+        raise HTTPException(status_code=400, detail="No recurring fields to update")
+
+    if category_id is not None or category is not None:
+        cat_id, cat_name = await resolve_category(
+            db, tenant_id, category_id=category_id, category=category
+        )
+        row.category_id = cat_id
+        row.category = cat_name
+
+    if amount is not None:
+        row.amount = round(float(amount), 2)
+    if clear_payee:
+        row.payee = None
+    elif payee is not None:
+        row.payee = payee.strip() or None
+    if description is not None:
+        row.description = description
+    if payment_method is not None:
+        row.payment_method = payment_method.strip() or row.payment_method
+    if frequency is not None:
+        freq = frequency.strip().lower()
+        if freq not in RECURRING_FREQUENCIES:
+            raise HTTPException(
+                status_code=422,
+                detail=f"frequency must be one of: {', '.join(sorted(RECURRING_FREQUENCIES))}",
+            )
+        row.frequency = freq
+
+    if org_touch:
+        from app import org_units as org_units_svc
+
+        desired_branch = None if clear_branch else (
+            branch_id if branch_id is not None else row.branch_id
+        )
+        desired_dept = None if clear_department else (
+            department_id if department_id is not None else row.department_id
+        )
+        resolved_branch, resolved_dept = await org_units_svc.assert_user_org_assignment(
+            db,
+            tenant_id,
+            branch_id=desired_branch,
+            department_id=desired_dept,
+        )
+        row.branch_id = resolved_branch
+        row.department_id = resolved_dept
+
+    if is_active is not None:
+        row.is_active = bool(is_active)
+
     await db.flush()
     return row
 

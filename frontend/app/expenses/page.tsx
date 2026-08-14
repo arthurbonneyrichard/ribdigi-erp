@@ -101,6 +101,8 @@ export default function Page() {
   const [recCategoryId, setRecCategoryId] = useState('');
   const [recBranchId, setRecBranchId] = useState('');
   const [recDepartmentId, setRecDepartmentId] = useState('');
+  const [recEditId, setRecEditId] = useState<string | null>(null);
+  const [recBusy, setRecBusy] = useState(false);
 
   async function refresh() {
     const [exp, cats, settings, liquid, st, br, dep, accounts, rec] = await Promise.all([
@@ -243,6 +245,7 @@ export default function Page() {
   async function createRecurring() {
     setError('');
     setMessage('');
+    setRecBusy(true);
     try {
       const r = await api('/expenses/recurring', {
         method: 'POST',
@@ -265,6 +268,72 @@ export default function Page() {
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setRecBusy(false);
+    }
+  }
+
+  function startRecurringEdit(r: any) {
+    setError('');
+    setMessage('');
+    setRecEditId(r.id);
+    setRecCategoryId(r.category_id || '');
+    setRecAmount(String(r.amount ?? ''));
+    setRecPayee(r.payee || '');
+    setRecDescription(r.description || '');
+    setRecFrequency(r.frequency || 'monthly');
+    setRecPaymentMethod(r.payment_method || 'bank_transfer');
+    setRecBranchId(r.branch_id || '');
+    setRecDepartmentId(r.department_id || '');
+  }
+
+  function cancelRecurringEdit() {
+    setRecEditId(null);
+    setRecPayee('');
+    setRecDescription('');
+    setRecAmount('100');
+    setRecFrequency('monthly');
+    setRecPaymentMethod('bank_transfer');
+    setRecBranchId('');
+    setRecDepartmentId('');
+  }
+
+  async function saveRecurringEdit() {
+    if (!recEditId) return;
+    setError('');
+    setMessage('');
+    setRecBusy(true);
+    try {
+      const amount = Number(recAmount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+      const r = await api(`/expenses/recurring/${recEditId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          category_id: recCategoryId || undefined,
+          amount,
+          description: recDescription,
+          payee: recPayee.trim() || null,
+          clear_payee: !recPayee.trim(),
+          frequency: recFrequency,
+          payment_method: recPaymentMethod,
+          branch_id: recBranchId || null,
+          department_id: recDepartmentId || null,
+          clear_branch: !recBranchId,
+          clear_department: !recDepartmentId,
+        }),
+      });
+      setMessage(
+        r.message ||
+          `Schedule updated — ${r.data?.payee || r.data?.category || 'recurring'} @ ${r.data?.amount}`,
+      );
+      cancelRecurringEdit();
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setRecBusy(false);
     }
   }
 
@@ -777,8 +846,14 @@ export default function Page() {
           Schedules auto-generate due expenses (Celery + manual Generate). Generated entries use the
           EXP-YYYY-NNNN series when reference is blank. Advance notify (T−1) uses category
           `recurring_expense_due` via Notifications scan-due / Celery. Use <strong>Skip next</strong>{' '}
-          to advance `next_run_at` by one period without creating an expense.
+          to advance `next_run_at` by one period without creating an expense. Use{' '}
+          <strong>Edit schedule</strong> to change template amount/payee for future generations.
         </p>
+        {recEditId ? (
+          <p style={{ color: '#166534', marginTop: 0 }}>
+            Editing schedule — change fields below, then Save schedule (or Cancel).
+          </p>
+        ) : null}
         <div className="erp-form-grid" style={{ marginBottom: 12 }}>
           <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
             {categories.map((c) => (
@@ -791,16 +866,19 @@ export default function Page() {
             value={recAmount}
             onChange={(e) => setRecAmount(e.target.value)}
             placeholder="Amount"
+            aria-label="Recurring amount"
           />
           <input
             value={recPayee}
             onChange={(e) => setRecPayee(e.target.value)}
             placeholder="Payee (optional)"
+            aria-label="Recurring payee"
           />
           <input
             value={recDescription}
             onChange={(e) => setRecDescription(e.target.value)}
             placeholder="Description"
+            aria-label="Recurring description"
           />
           <select value={recFrequency} onChange={(e) => setRecFrequency(e.target.value)}>
             <option value="daily">Daily</option>
@@ -842,9 +920,20 @@ export default function Page() {
               ))}
           </select>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={createRecurring} disabled={!recCategoryId}>
-              Create schedule
-            </button>
+            {recEditId ? (
+              <>
+                <button type="button" onClick={saveRecurringEdit} disabled={!recCategoryId || recBusy}>
+                  {recBusy ? 'Saving…' : 'Save schedule'}
+                </button>
+                <button type="button" onClick={cancelRecurringEdit} disabled={recBusy}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={createRecurring} disabled={!recCategoryId || recBusy}>
+                {recBusy ? 'Creating…' : 'Create schedule'}
+              </button>
+            )}
             <button type="button" onClick={generateDueRecurring}>
               Generate due now
             </button>
@@ -854,6 +943,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Category</th>
+              <th>Payee</th>
               <th>Amount</th>
               <th>Freq</th>
               <th>Next run</th>
@@ -864,7 +954,7 @@ export default function Page() {
           <tbody>
             {recurring.length === 0 && (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   No recurring schedules yet
                 </td>
               </tr>
@@ -879,6 +969,7 @@ export default function Page() {
                     </div>
                   ) : null}
                 </td>
+                <td>{r.payee || '—'}</td>
                 <td>{r.amount}</td>
                 <td>{r.frequency}</td>
                 <td className="muted" style={{ fontSize: 12 }}>
@@ -886,6 +977,9 @@ export default function Page() {
                 </td>
                 <td>{r.is_active ? 'yes' : 'no'}</td>
                 <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => startRecurringEdit(r)}>
+                    Edit schedule
+                  </button>
                   {r.is_active ? (
                     <button type="button" onClick={() => skipNextRecurring(r.id)}>
                       Skip next
