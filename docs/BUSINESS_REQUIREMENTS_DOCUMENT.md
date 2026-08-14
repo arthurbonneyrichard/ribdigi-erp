@@ -217,6 +217,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Assign store manager (`manager_id` on create/`PATCH /stores/{id}`; Multi-Store UI; dual-approval uses assigned manager)
   - [x] Configure store operating hours (`stores.operating_hours` weekly map; create/`PATCH /stores/{id}`; Multi-Store UI)
   - [x] Link store to branch and warehouse (`branch_id` on store; create auto-creates linked warehouse; warehouse `store_id` link in Multi-Store UI)
+  - [x] Deactivate store without data loss (`PATCH /stores/{id}` `{ is_active: false }`; Multi-Store **Activate** / **Deactivate**; inactive hidden from POS list, Shell switcher, and new sales/expense/tax/report store pickers; POS open + sales invoice + expense store assign reject inactive)
 
 #### BR-2.4 Warehouse Setup
 - **Description:** Configure storage locations for inventory.

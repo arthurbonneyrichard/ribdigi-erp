@@ -482,7 +482,9 @@ export default function Page() {
               }}
             >
               <option value="">All stores</option>
-              {stores.map((s) => (
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code} — {s.name}
                 </option>
@@ -534,7 +536,9 @@ export default function Page() {
               }}
             >
               <option value="">All stores</option>
-              {stores.map((s) => (
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code} — {s.name}
                 </option>
@@ -573,6 +577,7 @@ export default function Page() {
             >
               <option value="">All stores</option>
               {stores
+                .filter((s) => s.is_active !== false)
                 .filter((s) => !branchId || s.branch_id === branchId)
                 .map((s) => (
                   <option key={s.id} value={s.id}>

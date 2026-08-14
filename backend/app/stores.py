@@ -102,6 +102,14 @@ async def get_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Store:
     return store
 
 
+async def require_active_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Store:
+    """Resolve store for new POS/sales/expense assignment; inactive stores cannot be newly used."""
+    store = await get_store(db, tenant_id, store_id)
+    if not bool(store.is_active):
+        raise HTTPException(status_code=400, detail="Store is inactive")
+    return store
+
+
 async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Warehouse:
     wh = (
         await db.execute(

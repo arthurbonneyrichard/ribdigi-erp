@@ -1261,7 +1261,7 @@ Tax UI (`/tax`) period controls include store picker.
 
 `operating_hours` keys: `mon`…`sun`. Open days need `open`/`close` as `HH:MM` (24h, open before close); closed days `{ "closed": true }`. Returned on list/GET; update via `PATCH /stores/{store_id}` (BR-2.3). Creating a store still auto-creates a linked warehouse.
 
-**Update fields:** `name`, `address`, `phone`, `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours`. Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
+**Update fields:** `name`, `address`, `phone`, `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours`. Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
 
 ### 13.2 Store Inventory
 **Endpoint:** `GET /stores/{store_id}/inventory`
