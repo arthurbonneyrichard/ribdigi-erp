@@ -542,6 +542,17 @@ class AiDocumentExpenseCreate(BaseModel):
     department_id: str | None = None
 
 
+class AiDocumentPurchaseInvoiceCreate(BaseModel):
+    """Explicit Create draft purchase invoice from reviewed OCR + matched PO (BR-21.8)."""
+
+    purchase_order_id: str
+    supplier_id: str | None = None
+    supplier_invoice_number: str | None = None
+    notes: str | None = None
+    is_reverse_charge: bool = False
+    invoice_date: str | datetime | None = None
+
+
 class ExpenseUpdate(BaseModel):
     category: str | None = None
     category_id: str | None = None

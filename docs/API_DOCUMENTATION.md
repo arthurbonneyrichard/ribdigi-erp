@@ -1496,6 +1496,8 @@ Form fields: `file` (required), `document_type` (`receipt`|`invoice`|`purchase_o
 
 **Create draft expense:** `POST /ai/documents/create-expense` — JSON body `{ amount, payee?, description?, reference?, category_id?, category?, expense_date?, payment_method? }` (`expenses:write`). Creates a normal pending/auto-approved expense from reviewed OCR fields (defaults category to MISC when omitted); AI UI **Create draft expense**.
 
+**Create draft purchase invoice (PO-matched):** `POST /ai/documents/create-purchase-invoice` — JSON body `{ purchase_order_id, supplier_id?, supplier_invoice_number?, notes?, invoice_date?, is_reverse_charge? }` (`purchasing:write`). Copies active PO lines into a draft PI; AI UI **Create draft purchase invoice** when Analyze returns a PO match. See `docs/AI_DOCUMENT_MVP.md`.
+
 ### 16.9 AI Customer Assistant
 **Endpoint:** `POST /ai/customer/assist`
 

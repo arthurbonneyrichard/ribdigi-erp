@@ -84,6 +84,7 @@ from app.schemas import (
     ExpenseCategoryUpdate,
     ExpenseCreate,
     AiDocumentExpenseCreate,
+    AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseThresholdUpdate,
     ExpenseUpdate,
@@ -11392,6 +11393,28 @@ async def ai_documents_create_expense(
     )
     await db.commit()
     return env(data, "Draft expense created from document extract")
+
+
+@api.post("/ai/documents/create-purchase-invoice")
+async def ai_documents_create_purchase_invoice(
+    payload: AiDocumentPurchaseInvoiceCreate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a draft purchase invoice from reviewed OCR + matched PO (BR-21.8)."""
+    data = await ai_documents_svc.create_purchase_invoice_from_extract(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        purchase_order_id=payload.purchase_order_id,
+        supplier_id=payload.supplier_id,
+        supplier_invoice_number=payload.supplier_invoice_number,
+        notes=payload.notes,
+        is_reverse_charge=payload.is_reverse_charge,
+        invoice_date=payload.invoice_date,
+    )
+    await db.commit()
+    return env(data, "Draft purchase invoice created from document extract")
 
 
 @api.post("/ai/reports/generate")

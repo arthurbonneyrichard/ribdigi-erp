@@ -1,7 +1,8 @@
 """Rule-based AI Document Assistant (BR-21.8) — OCR extract, auto-match, discrepancies.
 
 Reuses expense_ocr (pypdf / Tesseract). No LLM. Analyze is suggest-only; optional
-``create-expense`` creates a pending expense only after an explicit user action.
+``create-expense`` / ``create-purchase-invoice`` create drafts only after an explicit
+user action.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from app import ai_expenses as ai_expenses_svc
 from app import expense_ocr as ocr_svc
 from app import expenses as expenses_svc
 from app import models as m
+from app import purchasing as purchasing_svc
 from app import storage as storage_svc
 
 VALID_DOC_TYPES = frozenset({"receipt", "invoice", "purchase_order", "auto"})
@@ -400,8 +402,9 @@ async def analyze_upload(
         "warnings": warnings,
         "raw_text_preview": raw[:2000],
         "apply_hint": (
-            "Review matches/discrepancies, then use Create draft expense (or apply fields "
-            "manually on Expenses / Purchasing). Analyze itself writes no business records."
+            "Review matches/discrepancies, then use Create draft expense or Create draft "
+            "purchase invoice (PO-matched), or apply fields manually on Expenses / Purchasing. "
+            "Analyze itself writes no business records."
         ),
     }
 
@@ -513,4 +516,105 @@ async def create_expense_from_extract(
     return {
         "expense": serialized,
         "method": "rule_based_ocr_apply",
+    }
+
+
+def _parse_invoice_date(value: Any) -> datetime | None:
+    """Reuse expense date parser for OCR invoice dates."""
+    return _parse_expense_date(value)
+
+
+async def create_purchase_invoice_from_extract(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    purchase_order_id: str,
+    supplier_id: str | None = None,
+    supplier_invoice_number: str | None = None,
+    notes: str | None = None,
+    is_reverse_charge: bool = False,
+    invoice_date: Any = None,
+) -> dict:
+    """Create a draft purchase invoice by copying lines from a matched PO (explicit action).
+
+    MVP scope: PO-matched path only — no line-item OCR. Analyze remains suggest-only.
+    """
+    po_id = (purchase_order_id or "").strip()
+    if not po_id:
+        raise HTTPException(status_code=400, detail="purchase_order_id is required")
+
+    po = await purchasing_svc.get_po(db, tenant_id, po_id)
+    status = (po.status or "").strip().lower()
+    if status == "cancelled":
+        raise HTTPException(status_code=400, detail="Purchase order is cancelled")
+
+    resolved_supplier_id = (supplier_id or "").strip() or po.supplier_id
+    if not resolved_supplier_id:
+        raise HTTPException(status_code=400, detail="supplier_id is required")
+    if resolved_supplier_id != po.supplier_id:
+        raise HTTPException(
+            status_code=400,
+            detail="supplier_id must match the purchase order supplier",
+        )
+
+    po_items = await purchasing_svc.list_po_items(db, tenant_id, po.id)
+    items: list[dict] = []
+    for poi in po_items:
+        qty = float(poi.quantity or 0)
+        if qty <= 0:
+            continue
+        items.append(
+            {
+                "product_id": poi.product_id,
+                "quantity": qty,
+                "unit_price": float(poi.unit_price or 0),
+                "tax_rate": float(poi.tax_rate or 0),
+                "discount": float(getattr(poi, "discount", 0) or 0),
+            }
+        )
+    if not items:
+        raise HTTPException(status_code=400, detail="Purchase order has no line items")
+
+    discount_amount = round(sum(float(i.get("discount") or 0) for i in items), 2)
+    parsed_date = _parse_invoice_date(invoice_date)
+    inv_notes = (notes or "").strip() or None
+    if not inv_notes:
+        inv_notes = f"OCR draft PI from {po.po_number}"
+
+    inv = await purchasing_svc.create_purchase_invoice(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        supplier_id=resolved_supplier_id,
+        purchase_order_id=po.id,
+        items=items,
+        supplier_invoice_number=(supplier_invoice_number or "").strip() or None,
+        invoice_date=parsed_date,
+        discount_amount=discount_amount,
+        notes=inv_notes,
+        is_reverse_charge=bool(is_reverse_charge),
+    )
+    await ai_svc.record_query(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        endpoint="documents_create_purchase_invoice",
+        status="ok",
+        message=f"purchase_invoice:{inv.id}",
+        details={
+            "purchase_invoice_id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "purchase_order_id": po.id,
+            "po_number": po.po_number,
+            "supplier_id": resolved_supplier_id,
+            "method": "rule_based_ocr_apply_po",
+        },
+    )
+    serialized = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    return {
+        "purchase_invoice": serialized,
+        "purchase_order_id": po.id,
+        "po_number": po.po_number,
+        "method": "rule_based_ocr_apply_po",
     }
