@@ -17,6 +17,7 @@ export default function Page() {
   const [printHeader, setPrintHeader] = useState('');
   const [printFooter, setPrintFooter] = useState('');
   const [invTemplate, setInvTemplate] = useState('a4');
+  const [receiptPaper, setReceiptPaper] = useState('80mm');
   const [emailHost, setEmailHost] = useState('');
   const [emailPort, setEmailPort] = useState('587');
   const [emailUser, setEmailUser] = useState('');
