@@ -1684,7 +1684,7 @@ async def test_company_scoped_uniques_and_product_idor(client, db_session):
         company_id=c_b.id,
         user_id=seed["super"].id,
         title="Company B Only Note",
-        body="secret",
+        message="secret",
         category="system",
         status="unread",
     )
