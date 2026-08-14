@@ -31,3 +31,9 @@ Stage 414 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, first-tenant, First Tenant honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 414 opened under **ADR-835** after CONTINUE/NEXT (Tenant MVP Business Pilot Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-836**. Stage 413 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 413 runner-up outline was approved and opened (ADR-835); freeze ADR-836. Do not reopen Stage 413 scope.
