@@ -34,3 +34,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Tenant admins default into **tenant** workspace and must switch to a company to operate ERP modules.
 - Multi-company tenants get real `company_id` isolation.
 - Does **not** Complete ADR-002 billing, ADR-005 store membership, or schema-per-tenant.
+
+## Phase 2 follow-up (2026-08-14)
+
+- Operational **list** endpoints for sales docs, purchasing, expenses, COA, journals, customers/suppliers, stores, and warehouses apply `company_scope_filter`.
+- Matching **creates** stamp `company_id` for invoices, expenses, parties, POs, stores/warehouses, and catalog rows.
+- Unique keys for accounts, expense/product categories, brands, units, warehouses, products, and customer groups are company-scoped (`20260814_0097`).
+- Remaining PARTIAL: some purchasing/sales document creates (quotations/returns/GRNs), stock movement helpers, and export CSVs still need full company stamping/filtering.
