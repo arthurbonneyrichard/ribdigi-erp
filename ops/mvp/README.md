@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_418_EXIT_CRITERIA.md` / `docs/ADR_844_STAGE418_FREEZE.md` (`backend/tests/test_stage418_exit_h418x.py`) — Stage 418 H418x
+- `docs/STAGE_418_FIDELITY.md` (`backend/tests/test_stage418_fidelity_d1.py`) — Stage 418 D1
+- `docs/STAGE_418_PLAN.md` (`backend/tests/test_stage418_open.py`) — Stage 418 open (ADR-843)
+- `docs/CUTOVER_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/cutover-honesty-pack-remaining-gate.json` — Stage 418 I1
+- `docs/CUTOVER_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/cutover-honesty-pack-rg-blockers.json` — Stage 418 B1
+- `docs/CUTOVER_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/cutover-honesty-pack-rg-pointers.json` — Stage 418 P1
 - `docs/STAGE_417_EXIT_CRITERIA.md` / `docs/ADR_842_STAGE417_FREEZE.md` (`backend/tests/test_stage417_exit_h417x.py`) — Stage 417 H417x
 - `docs/STAGE_417_FIDELITY.md` (`backend/tests/test_stage417_fidelity_d1.py`) — Stage 417 D1
 - `docs/STAGE_417_PLAN.md` (`backend/tests/test_stage417_open.py`) — Stage 417 open (ADR-841)
@@ -5785,6 +5791,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 418 exit
+
+H418x met — `docs/STAGE_418_EXIT_CRITERIA.md`, ADR-844. Stages 1–418 frozen for Stage 418 feature scope.
+
+## Stage 418 D1 — Tenant MVP Cutover Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Cutover honesty / go-live Completes remain MISSING. See `docs/STAGE_418_FIDELITY.md`.
+
+## Stage 418 open
+
+Opened under ADR-843; plan `docs/STAGE_418_PLAN.md`.
 
 ## Stage 417 exit
 
