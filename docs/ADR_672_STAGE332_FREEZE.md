@@ -31,3 +31,10 @@ Stage 333 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for support-SLA, PagerDuty hosted, on-call rota live, incident drill, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 333 opened under **ADR-673** after CONTINUE/NEXT (Tenant MVP Support Readiness Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-674**. Stage 332 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 333 runner-up outline was approved and opened (ADR-673); freeze ADR-674. Do not reopen Stage 332 scope.
+

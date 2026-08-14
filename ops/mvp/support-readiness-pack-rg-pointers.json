@@ -1,0 +1,60 @@
+{
+  "id": "support-readiness-pack-rg-pointers",
+  "stage": 333,
+  "pack": "P1",
+  "doc": "docs/SUPPORT_READINESS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "support_sla_pack_remaining_gate": "docs/SUPPORT_SLA_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary_pack_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_PACK_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "helpdesk_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "support_readiness_stage170",
+    "support_sla_pack_remaining_gate_stage332",
+    "support_sla_boundary_pack_remaining_gate_stage331",
+    "support_sla_boundary_stage36",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "srprp-stage170",
+      "title": "Point to Stage 170 support readiness packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-stage332",
+      "title": "Point to Stage 332 support SLA pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-stage331",
+      "title": "Point to Stage 331 support SLA boundary pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-stage36",
+      "title": "Point to Stage 36 S1 support SLA boundary packaging adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-readiness-remaining",
+      "title": "Live support readiness Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 333 P1 support readiness pack RG pointers packaging only. Do not claim live support readiness Complete."
+}
