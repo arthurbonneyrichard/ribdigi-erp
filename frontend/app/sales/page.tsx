@@ -84,8 +84,8 @@ export default function Page() {
   const [qty, setQty] = useState('1');
   const [unitPrice, setUnitPrice] = useState('0');
   const [taxRate, setTaxRate] = useState('');
-  const [lineDiscount, setLineDiscount] = useState('0');
-  const [headerDiscount, setHeaderDiscount] = useState('0');
+  const [lineDiscount, setLineDiscount] = useState('');
+  const [headerDiscount, setHeaderDiscount] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('other');
   const [restock, setRestock] = useState(true);
@@ -337,8 +337,8 @@ export default function Page() {
       const r = await api('/sales/invoices', { method: 'POST', body: JSON.stringify(invoicePayload) });
       setMessage(`Draft ${r.data.invoice_number} created`);
       setSelected(r.data);
-      setLineDiscount('0');
-      setHeaderDiscount('0');
+      setLineDiscount('');
+      setHeaderDiscount('');
       setTab('invoices');
       await refresh();
     } catch (err: any) {
@@ -429,8 +429,8 @@ export default function Page() {
       const r = await api('/sales/quotations', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Quotation ${r.data.quotation_number} created`);
       setSelected(r.data);
-      setLineDiscount('0');
-      setHeaderDiscount('0');
+      setLineDiscount('');
+      setHeaderDiscount('');
       setTab('quotations');
       await refresh();
     } catch (err: any) {
@@ -444,8 +444,8 @@ export default function Page() {
       const r = await api('/sales/orders', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Order ${r.data.order_number} created`);
       setSelected(r.data);
-      setLineDiscount('0');
-      setHeaderDiscount('0');
+      setLineDiscount('');
+      setHeaderDiscount('');
       setTab('orders');
       await refresh();
     } catch (err: any) {
@@ -900,6 +900,7 @@ export default function Page() {
             value={lineDiscount}
             onChange={(e) => setLineDiscount(e.target.value)}
             placeholder="Line discount"
+            aria-label="Line discount"
             style={{ width: 110 }}
             title="Line discount amount (tax before discount)"
           />
@@ -907,6 +908,7 @@ export default function Page() {
             value={headerDiscount}
             onChange={(e) => setHeaderDiscount(e.target.value)}
             placeholder="Header discount"
+            aria-label="Header discount"
             style={{ width: 120 }}
             title="Document-level discount amount"
           />
