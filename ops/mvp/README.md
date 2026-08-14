@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_305_EXIT_CRITERIA.md` / `docs/ADR_618_STAGE305_FREEZE.md` (`backend/tests/test_stage305_exit_h305x.py`) — Stage 305 H305x
+- `docs/STAGE_305_FIDELITY.md` (`backend/tests/test_stage305_fidelity_d1.py`) — Stage 305 D1
+- `docs/STAGE_305_PLAN.md` (`backend/tests/test_stage305_open.py`) — Stage 305 open (ADR-617)
+- `docs/ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/erasure-honesty-pack-remaining-gate.json` — Stage 305 I1
+- `docs/ERASURE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/erasure-honesty-pack-rg-blockers.json` — Stage 305 B1
+- `docs/ERASURE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/erasure-honesty-pack-rg-pointers.json` — Stage 305 P1
 - `docs/STAGE_304_EXIT_CRITERIA.md` / `docs/ADR_616_STAGE304_FREEZE.md` (`backend/tests/test_stage304_exit_h304x.py`) — Stage 304 H304x
 - `docs/STAGE_304_FIDELITY.md` (`backend/tests/test_stage304_fidelity_d1.py`) — Stage 304 D1
 - `docs/STAGE_304_PLAN.md` (`backend/tests/test_stage304_open.py`) — Stage 304 open (ADR-615)
@@ -5107,6 +5113,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 305 exit
+
+H305x met — `docs/STAGE_305_EXIT_CRITERIA.md`, ADR-618. Stages 1–305 frozen for Stage 305 feature scope.
+
+## Stage 305 D1 — Tenant MVP Erasure Honesty Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_305_FIDELITY.md` (`test_stage305_fidelity_d1.py`). `ERASURE_HONESTY_PACK_*` remaining-gate index; hard delete / erasure / go-live still MISSING.
+
+## Stage 305 open
+
+ADR-617 / `docs/STAGE_305_PLAN.md`.
 
 ## Stage 304 exit
 

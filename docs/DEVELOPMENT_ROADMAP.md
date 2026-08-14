@@ -4272,6 +4272,18 @@ Every feature in every phase must meet:
 
 **Stage 304 exit (2026-08-14):** I1, B1, P1, D1, H304x met — `docs/STAGE_304_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_616_STAGE304_FREEZE.md`. Fidelity: `docs/STAGE_304_FIDELITY.md`.
 
+**Stage 305 open (2026-08-14):** Tenant MVP Erasure Honesty Pack Remaining-Gate Index Fidelity — `docs/ADR_617_STAGE305_OPEN.md` + `docs/STAGE_305_PLAN.md` (I1 next).
+
+**Stage 305 I1 (2026-08-14):** Erasure honesty pack remaining-gate index hub (`test_stage305_index_i1.py`).
+
+**Stage 305 B1 (2026-08-14):** Erasure honesty pack blocker matrix (`test_stage305_blockers_b1.py`).
+
+**Stage 305 P1 (2026-08-14):** Stage 37 E1 / Stage 304 / prior soft-delete-erasure-pack / Stage 37 P1 pointers (`test_stage305_pointers_p1.py`).
+
+**Stage 305 D1 (2026-08-14):** Erasure Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_305_FIDELITY.md` (`test_stage305_fidelity_d1.py`).
+
+**Stage 305 exit (2026-08-14):** I1, B1, P1, D1, H305x met — `docs/STAGE_305_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_618_STAGE305_FREEZE.md`. Fidelity: `docs/STAGE_305_FIDELITY.md`.
+
 
 
 

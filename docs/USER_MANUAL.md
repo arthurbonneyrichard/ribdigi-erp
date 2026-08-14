@@ -360,6 +360,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Commercial billing deferred pack remaining-gate index (Stage 304):** Status index is `docs/COMMERCIAL_BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md` → blockers `docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md` → Stage 76/303/billing-deferred-pack/36 pointers `docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md`. Paid billing Complete and payment provider Complete remain MISSING (not claimed). Prefixed `COMMERCIAL_BILLING_DEFERRED_PACK_*` remaining-gate docs (≠ Stage 76 B1 `COMMERCIAL_BILLING_DEFERRED_MVP.md`; ≠ Stage 303 `BILLING_DEFERRED_HONESTY_PACK_*`).
 
+**Erasure honesty pack remaining-gate index (Stage 305):** Status index is `docs/ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ERASURE_HONESTY_PACK_RG_BLOCKERS_MVP.md` → Stage 37/304/soft-delete-erasure-pack/37P1 pointers `docs/ERASURE_HONESTY_PACK_RG_POINTERS_MVP.md`. Hard delete Complete and erasure Complete remain MISSING (not claimed). Prefixed `ERASURE_HONESTY_PACK_*` remaining-gate docs (≠ Stage 37 E1 `ERASURE_HONESTY_MVP.md`; ≠ prior `SOFT_DELETE_ERASURE_PACK_*`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
