@@ -1861,9 +1861,25 @@ async def purchases_returns_summary(
     supplier_id: str | None = None,
     reason: str | None = None,
     status: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    """Purchase return summary by period / reason / supplier (BR-14.3)."""
+    """Purchase return summary by period / reason / supplier (BR-14.3).
+
+    Optional ``warehouse_id`` / ``store_id`` scopes by ``PurchaseReturn.warehouse_id``
+    (same location resolver as other purchase reports).
+    """
     from app.purchasing import PURCHASE_RETURN_REASONS
+
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
 
     if reason:
         key = reason.strip().lower()
@@ -1901,6 +1917,11 @@ async def purchases_returns_summary(
         stmt = stmt.where(m.PurchaseReturn.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.PurchaseReturn.created_at <= to_date)
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            stmt = stmt.where(m.PurchaseReturn.id == None)  # noqa: E711
+        else:
+            stmt = stmt.where(m.PurchaseReturn.warehouse_id.in_(warehouse_ids))
 
     rows = (await db.execute(stmt)).all()
     by_reason: dict[str, dict] = {}
@@ -1978,6 +1999,10 @@ async def purchases_returns_summary(
         "supplier_id": supplier_id,
         "reason": reason,
         "status": status,
+        "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
         "return_count": len(returns),
         "total_amount": round(total_amount, 2),
         "posted_amount": round(posted_amount, 2),

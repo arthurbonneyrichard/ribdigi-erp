@@ -8431,6 +8431,8 @@ async def report_purchases_returns(
     supplier_id: str | None = None,
     reason: str | None = None,
     status: str | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8444,6 +8446,8 @@ async def report_purchases_returns(
             supplier_id=supplier_id or None,
             reason=reason or None,
             status=status or None,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
         )
     )
 

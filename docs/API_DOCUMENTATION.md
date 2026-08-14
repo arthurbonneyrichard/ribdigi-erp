@@ -1241,7 +1241,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=&warehouse_id=&store_id=` — PO totals by period; optional warehouse (PO `warehouse_id`) or store (warehouses linked to store). Echoes `warehouse_name`/`store_name`. Export `purchases_summary`.  
 **Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=&warehouse_id=&store_id=` — same location filters. Export `purchases_suppliers`.  
 **Pending Orders:** `GET /reports/purchases/pending-orders?from_date=&to_date=&supplier_id=&status=&warehouse_id=&store_id=` — POs not fully received (`draft` / `sent` / `partially_received`); optional `status` + location filters; returns outstanding qty + amount. Export `purchases_pending_orders`.  
-**Purchase Returns:** `GET /reports/purchases/returns?from_date=&to_date=&supplier_id=&reason=&status=` — return summary with `by_reason` / `by_supplier` / line list; reasons `damaged|wrong_item|expiry|quality|other`. Export `purchases_returns`.
+**Purchase Returns:** `GET /reports/purchases/returns?from_date=&to_date=&supplier_id=&reason=&status=&warehouse_id=&store_id=` — return summary with `by_reason` / `by_supplier` / line list; optional `warehouse_id` / `store_id` (return warehouse); reasons `damaged|wrong_item|expiry|quality|other`. Response echoes location fields. Export `purchases_returns` (passes location filters).
 
 ### 14.4 Expense Reports
 **Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=&branch_id=&department_id=&store_id=`  
