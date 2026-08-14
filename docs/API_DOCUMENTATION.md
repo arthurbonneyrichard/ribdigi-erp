@@ -681,9 +681,10 @@ Product + warehouse policy scans create `low_stock` notifications (`scan_low_sto
 **List:** `GET /suppliers`  
 **Create:** `POST /suppliers`  
 **Get:** `GET /suppliers/{supplier_id}`  
-**Update:** `PATCH /suppliers/{supplier_id}`  
+**Update:** `PATCH /suppliers/{supplier_id}` — partial fields include `name`, `status` (`active`|`inactive`), contacts profile; soft-deactivate via `status=inactive` (Purchasing **Activate** / **Deactivate**; inactive blocked on new PO / preferred-supplier PR / standalone PI; GRN/PO-linked invoices may still settle)  
 **Delete:** `DELETE /suppliers/{supplier_id}`
 
+List supports optional `?status=active|inactive`. Party `code` is unique per tenant when set.
 **Create Supplier:**
 ```json
 {

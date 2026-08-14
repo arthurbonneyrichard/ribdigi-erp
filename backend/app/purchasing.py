@@ -133,6 +133,15 @@ async def get_supplier(db: AsyncSession, tenant_id: str, supplier_id: str) -> m.
     return supplier
 
 
+async def require_active_supplier(db: AsyncSession, tenant_id: str, supplier_id: str) -> m.Party:
+    """Resolve supplier for new purchasing documents; inactive suppliers cannot be newly assigned."""
+    supplier = await get_supplier(db, tenant_id, supplier_id)
+    status = (getattr(supplier, "status", None) or "active").strip().lower()
+    if status != "active":
+        raise HTTPException(status_code=400, detail="Supplier is inactive")
+    return supplier
+
+
 async def get_po(db: AsyncSession, tenant_id: str, po_id: str) -> m.PurchaseOrder:
     po = (
         await db.execute(
@@ -290,7 +299,7 @@ async def create_purchase_order(
 ) -> m.PurchaseOrder:
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order requires at least one line item")
-    await get_supplier(db, tenant_id, supplier_id)
+    await require_active_supplier(db, tenant_id, supplier_id)
 
     from app.uom import resolve_line_unit
 
@@ -1888,7 +1897,11 @@ async def create_purchase_invoice(
 
     if not supplier_id:
         raise HTTPException(status_code=400, detail="supplier_id is required")
-    supplier = await get_supplier(db, tenant_id, supplier_id)
+    # New standalone invoices cannot use inactive suppliers; GRN/PO-linked may settle existing ones.
+    if not goods_receipt_id and not purchase_order_id:
+        supplier = await require_active_supplier(db, tenant_id, supplier_id)
+    else:
+        supplier = await get_supplier(db, tenant_id, supplier_id)
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires line items")
 
