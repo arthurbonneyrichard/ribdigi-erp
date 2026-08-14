@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_345_EXIT_CRITERIA.md` / `docs/ADR_698_STAGE345_FREEZE.md` (`backend/tests/test_stage345_exit_h345x.py`) — Stage 345 H345x
+- `docs/STAGE_345_FIDELITY.md` (`backend/tests/test_stage345_fidelity_d1.py`) — Stage 345 D1
+- `docs/STAGE_345_PLAN.md` (`backend/tests/test_stage345_open.py`) — Stage 345 open (ADR-697)
+- `docs/WEEKLY_POS_OPS_SIGNALS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/weekly-pos-ops-signals-pack-remaining-gate.json` — Stage 345 I1
+- `docs/WEEKLY_POS_OPS_SIGNALS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/weekly-pos-ops-signals-pack-rg-blockers.json` — Stage 345 B1
+- `docs/WEEKLY_POS_OPS_SIGNALS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/weekly-pos-ops-signals-pack-rg-pointers.json` — Stage 345 P1
 - `docs/STAGE_344_EXIT_CRITERIA.md` / `docs/ADR_696_STAGE344_FREEZE.md` (`backend/tests/test_stage344_exit_h344x.py`) — Stage 344 H344x
 - `docs/STAGE_344_FIDELITY.md` (`backend/tests/test_stage344_fidelity_d1.py`) — Stage 344 D1
 - `docs/STAGE_344_PLAN.md` (`backend/tests/test_stage344_open.py`) — Stage 344 open (ADR-695)
@@ -5347,6 +5353,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 345 exit
+
+H345x met — `docs/STAGE_345_EXIT_CRITERIA.md`, ADR-698. Stages 1–345 frozen for Stage 345 feature scope.
+
+## Stage 345 D1 — Tenant MVP Weekly POS Ops Signals Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_345_FIDELITY.md` (`test_stage345_fidelity_d1.py`). `WEEKLY_POS_OPS_SIGNALS_PACK_*` remaining-gate index; Offline Complete / support SLA / attestation / fabricated zero-conflict / go-live still MISSING.
+
+## Stage 345 open
+
+ADR-697 / `docs/STAGE_345_PLAN.md`.
 
 ## Stage 344 exit
 

@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 345 open (2026-08-14):** Tenant MVP Weekly POS Ops Signals Pack Remaining-Gate Index Fidelity — `docs/ADR_697_STAGE345_OPEN.md` + `docs/STAGE_345_PLAN.md` (I1 next).
+
+**Stage 345 I1 (2026-08-14):** Weekly POS ops signals pack remaining-gate index hub (`test_stage345_index_i1.py`).
+
+**Stage 345 B1 (2026-08-14):** Weekly POS ops signals pack blocker matrix (`test_stage345_blockers_b1.py`).
+
+**Stage 345 P1 (2026-08-14):** Stage 176 / Stage 344 / Stage 343 / Stage 329 pointers (`test_stage345_pointers_p1.py`).
+
+**Stage 345 D1 (2026-08-14):** Weekly POS Ops Signals Pack Remaining-Gate Index fidelity sync — `docs/STAGE_345_FIDELITY.md` (`test_stage345_fidelity_d1.py`).
+
+**Stage 345 exit (2026-08-14):** I1, B1, P1, D1, H345x met — `docs/STAGE_345_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_698_STAGE345_FREEZE.md`. Fidelity: `docs/STAGE_345_FIDELITY.md`.
+
 **Stage 344 open (2026-08-14):** Tenant MVP Weekly POS Ops Review Pack Remaining-Gate Index Fidelity — `docs/ADR_695_STAGE344_OPEN.md` + `docs/STAGE_344_PLAN.md` (I1 next).
 
 **Stage 344 I1 (2026-08-14):** Weekly POS ops review pack remaining-gate index hub (`test_stage344_index_i1.py`).

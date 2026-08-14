@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 345 open** | Weekly POS Ops Signals Pack Remaining-Gate Index — `docs/STAGE_345_PLAN.md`, ADR-697 (`test_stage345_open.py`) |
+| **Stage 345 I1** | Weekly POS ops signals pack remaining-gate index hub (`test_stage345_index_i1.py`) |
+| **Stage 345 B1** | Weekly POS ops signals pack blocker matrix (`test_stage345_blockers_b1.py`) |
+| **Stage 345 P1** | Stage 176 / Stage 344 / Stage 343 / Stage 329 pointers (`test_stage345_pointers_p1.py`) |
+| **Stage 345 D1** | Weekly POS ops signals pack remaining-gate fidelity — `docs/STAGE_345_FIDELITY.md` (`test_stage345_fidelity_d1.py`) |
+| **Stage 345 H345x** | Exit + freeze — `docs/STAGE_345_EXIT_CRITERIA.md`, ADR-698 (`test_stage345_exit_h345x.py`); Stages 1–345 frozen |
 | **Stage 344 open** | Weekly POS Ops Review Pack Remaining-Gate Index — `docs/STAGE_344_PLAN.md`, ADR-695 (`test_stage344_open.py`) |
 | **Stage 344 I1** | Weekly POS ops review pack remaining-gate index hub (`test_stage344_index_i1.py`) |
 | **Stage 344 B1** | Weekly POS ops review pack blocker matrix (`test_stage344_blockers_b1.py`) |
