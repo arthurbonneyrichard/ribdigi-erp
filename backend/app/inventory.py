@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 
+STOCK_ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost"})
+
 
 async def get_or_create_warehouse_stock(
     db: AsyncSession,
@@ -198,6 +200,7 @@ async def apply_stock_change(
     reference_type: str | None = None,
     reference_id: str | None = None,
     notes: str | None = None,
+    reason: str | None = None,
     warehouse_id: str | None = None,
     allow_negative: bool = False,
     variant_id: str | None = None,
@@ -261,6 +264,7 @@ async def apply_stock_change(
         reference_type=reference_type,
         reference_id=reference_id,
         notes=notes,
+        reason=reason,
         created_by=user_id,
     )
     db.add(movement)
@@ -279,6 +283,7 @@ async def apply_stock_change(
                 "reference_id": reference_id,
                 "variant_id": variant_id,
                 "batch_id": batch_id,
+                "reason": reason,
             },
         )
     )

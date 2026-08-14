@@ -1114,6 +1114,7 @@ export default function Page() {
                   <th>When</th>
                   <th>Product</th>
                   <th>Type</th>
+                  <th>Reason</th>
                   <th>Qty</th>
                   <th>Before → after</th>
                   <th>User</th>
@@ -1132,6 +1133,7 @@ export default function Page() {
                           : '—'}
                     </td>
                     <td>{mv.movement_type}</td>
+                    <td>{mv.reason || '—'}</td>
                     <td>{mv.quantity}</td>
                     <td>
                       {mv.quantity_before} → {mv.quantity_after}
@@ -1145,7 +1147,7 @@ export default function Page() {
                 ))}
                 {!data.movements?.movements?.length && (
                   <tr>
-                    <td colSpan={7} className="muted">
+                    <td colSpan={8} className="muted">
                       No stock movements
                     </td>
                   </tr>

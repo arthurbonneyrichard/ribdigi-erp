@@ -294,6 +294,7 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         lines = [
             f"{r.get('created_at')}: {r.get('movement_type')} {r.get('quantity')} "
             f"{r.get('product_sku') or r.get('product_id') or ''} "
+            f"reason={r.get('reason') or '—'} "
             f"by {r.get('created_by_name') or r.get('created_by_email') or r.get('created_by') or '—'}"
             for r in rows[:60]
         ]
