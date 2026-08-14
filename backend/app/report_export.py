@@ -605,7 +605,14 @@ async def build_report_payload(
             db, tenant_id, method="standard", warehouse_id=warehouse_id
         )
     if report_type == "inventory_movements":
-        return await reports_svc.inventory_movements(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.inventory_movements(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
     if report_type == "inventory_low_stock":
         return await reports_svc.inventory_low_stock(db, tenant_id)
     if report_type == "inventory_expiry":

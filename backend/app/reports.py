@@ -1280,8 +1280,28 @@ async def inventory_movements(
     product_id: str | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
+    movement_type: str | None = None,
     limit: int = 200,
 ) -> dict:
+    """Stock movement history (BR-14.2 / BR-5.3).
+
+    Optional ``warehouse_id`` / ``store_id`` (via warehouse store link) and
+    ``movement_type`` filters.
+    """
+    (
+        warehouse_id,
+        warehouse_name,
+        store_id,
+        store_name,
+        warehouse_ids,
+    ) = await _resolve_purchase_location_filters(
+        db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+    )
+    if movement_type:
+        movement_type = movement_type.strip().lower()
+
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
     if product_id:
         stmt = stmt.where(m.StockMovement.product_id == product_id)
@@ -1289,10 +1309,22 @@ async def inventory_movements(
         stmt = stmt.where(m.StockMovement.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.StockMovement.created_at <= to_date)
+    if movement_type:
+        stmt = stmt.where(m.StockMovement.movement_type == movement_type)
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            stmt = stmt.where(m.StockMovement.id == None)  # noqa: E711
+        else:
+            stmt = stmt.where(m.StockMovement.warehouse_id.in_(warehouse_ids))
     stmt = stmt.order_by(m.StockMovement.created_at.desc()).limit(limit)
     rows = (await db.execute(stmt)).scalars().all()
     return {
         "count": len(rows),
+        "warehouse_id": warehouse_id,
+        "warehouse_name": warehouse_name,
+        "store_id": store_id,
+        "store_name": store_name,
+        "movement_type": movement_type,
         "movements": [
             {
                 "id": r.id,
