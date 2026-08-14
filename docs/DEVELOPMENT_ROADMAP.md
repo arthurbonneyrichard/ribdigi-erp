@@ -553,7 +553,7 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 
 ### 5.5 UI Requirements
 
-- **Multi-Store Dashboard:** Store selector dropdown (global context switch). Per-store inventory and sales views. Transfer request form with source/destination store pickers.
+- **Multi-Store Dashboard:** Store selector dropdown (global context switch) — **Done (MVP):** Shell `StoreSwitcher` + `storeContext` persisted per tenant; seeds POS / Sales / Reports / Tax / Expenses. Per-store inventory and sales views. Transfer request form with source/destination store pickers.
 - **Reports Center:** Sidebar with report categories. Date range picker with presets (Today, This Week, This Month, Last Month, Custom). Tables with sortable columns, export to PDF/Excel. Charts (line for trends, pie for breakdowns).
 - **Notification Center:** Bell icon with unread badge. Dropdown panel with notification list, mark-all-read. Settings page with per-type channel toggles (Dashboard/Email/SMS).
 - **AI Chat Assistant:** Floating chat widget (bottom-right) or dedicated page. Natural language input, suggested prompts, response with data cards and "View Details" links. Conversation history.

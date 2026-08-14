@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 type TaxComponent = {
   code?: string;
@@ -236,6 +237,7 @@ export default function Page() {
   const [actualCash, setActualCash] = useState('');
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
+  const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
@@ -341,11 +343,15 @@ export default function Page() {
       .then((r) => {
         const list: Store[] = r.data || [];
         setStores(list);
-        if (list.length === 1) setStoreId(list[0].id);
+        if (ctxStoreId && list.some((s) => s.id === ctxStoreId)) {
+          setStoreId(ctxStoreId);
+        } else if (list.length === 1) {
+          setStoreId(list[0].id);
+          setCtxStoreId(list[0].id);
+        }
       })
       .catch(() => setStores([]));
-  }, [browse]);
-
+  }, [browse, ctxStoreId, setCtxStoreId]);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -763,7 +769,10 @@ export default function Page() {
                   <select
                     className="tpos-input"
                     value={storeId}
-                    onChange={(e) => setStoreId(e.target.value)}
+                    onChange={(e) => {
+                      setStoreId(e.target.value);
+                      setCtxStoreId(e.target.value);
+                    }}
                     aria-label="Store"
                   >
                     <option value="">Select store</option>

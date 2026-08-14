@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -72,6 +73,7 @@ export default function Page() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [storeId, setStoreId] = useState('');
+  const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [branchId, setBranchId] = useState('');
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -229,10 +231,16 @@ export default function Page() {
         setWarehouses(wh.data || []);
         setCategories(cats.data || []);
         setDepartments(deps.data || []);
+        if (ctxStoreId && (st.data || []).some((s: any) => s.id === ctxStoreId)) {
+          setStoreId(ctxStoreId);
+        }
       })
       .catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    if (ctxStoreId) setStoreId(ctxStoreId);
+  }, [ctxStoreId]);
   function switchTab(t: Tab) {
     setTab(t);
     load(t);
@@ -469,6 +477,7 @@ export default function Page() {
               value={storeId}
               onChange={(e) => {
                 setStoreId(e.target.value);
+                setCtxStoreId(e.target.value);
                 setWarehouseId('');
               }}
             >
@@ -486,7 +495,10 @@ export default function Page() {
                 setWarehouseId(next);
                 if (next) {
                   const wh = warehouses.find((w) => w.id === next);
-                  if (wh?.store_id) setStoreId(wh.store_id);
+                  if (wh?.store_id) {
+                    setStoreId(wh.store_id);
+                    setCtxStoreId(wh.store_id);
+                  }
                 }
               }}
             >
@@ -517,6 +529,7 @@ export default function Page() {
               value={storeId}
               onChange={(e) => {
                 setStoreId(e.target.value);
+                setCtxStoreId(e.target.value);
                 setWarehouseId('');
               }}
             >
@@ -551,7 +564,13 @@ export default function Page() {
                 ))}
               </select>
             )}
-            <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+            <select
+              value={storeId}
+              onChange={(e) => {
+                setStoreId(e.target.value);
+                setCtxStoreId(e.target.value);
+              }}
+            >
               <option value="">All stores</option>
               {stores
                 .filter((s) => !branchId || s.branch_id === branchId)

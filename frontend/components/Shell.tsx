@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
+import { StoreProvider } from '../lib/storeContext';
 import OnboardingChecklist from './OnboardingChecklist';
+import StoreSwitcher from './StoreSwitcher';
 
 type NavItem = [label: string, href: string, module: string];
 
@@ -452,7 +454,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const showAlerts = visible.some(([, href]) => href === '/notifications');
 
   return (
-    <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
+    <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
+      <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
         <div className="brand">
           <img
@@ -501,6 +504,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <span aria-hidden>{'\u2630'}</span> Menu
           </button>
           <div className="topbar-right">
+            <StoreSwitcher visible={!isPlatformOwner} />
             <button
               type="button"
               className="theme-btn"
@@ -536,5 +540,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
     </div>
+    </StoreProvider>
   );
 }

@@ -106,11 +106,10 @@ Steps auto-complete when the system detects matching data. Company admins can **
 ```
 
 #### Top Bar
-- **Search Bar:** Quickly find products, customers, invoices
-- **Store Selector:** Switch between stores (if you have access to multiple)
+- **Store Selector:** Switch the active store context in the header (persisted per tenant). Seeds POS, Sales, Reports, Tax, and Expenses store pickers; choose **All stores** for company-wide views when multiple stores exist.
 - **Notification Bell:** View alerts and messages
 - **Profile Menu:** Access your profile, change password, or log out
-
+- Theme toggle (light/dark)
 #### Common UI Patterns
 | Element | Action |
 |---------|--------|
