@@ -4491,14 +4491,14 @@ async def test_phase29_order_warehouse_report_fk_scope(client, db_session):
     assert low.status_code == 404, low.text
 
     by_prod = await ac.get(
-        "/api/v1/reports/sales/by-product",
+        "/api/v1/reports/sales/products",
         headers=headers_a,
         params={"store_id": store_b.id},
     )
     assert by_prod.status_code == 404, by_prod.text
 
     by_cat = await ac.get(
-        "/api/v1/reports/sales/by-product",
+        "/api/v1/reports/sales/products",
         headers=headers_a,
         params={"category_id": cat_b.id},
     )
@@ -4515,3 +4515,120 @@ async def test_phase29_order_warehouse_report_fk_scope(client, db_session):
     ).scalars().all()
     assert len(wh_count) == 1
     assert wh_count[0].id == wh_b.id
+
+
+@pytest.mark.asyncio
+async def test_phase30_legacy_tx_add_fk_scope(client, db_session):
+    """Phase 30: legacy POST /sales and /purchases reject sibling party/product."""
+    ac, seed = client
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="P30B",
+        name="Alpha Phase30 B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            company_id=c_b.id,
+            role="super_admin",
+            is_active=True,
+        )
+    )
+
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="P30 Customer B",
+        status="active",
+        credit_limit=500,
+        balance=10,
+    )
+    supp_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="supplier",
+        name="P30 Supplier B",
+        status="active",
+        credit_limit=0,
+        balance=5,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="P30 Product B",
+        sku="P30-SKU-B",
+        selling_price=8,
+        cost_price=3,
+        stock_qty=12,
+        is_active=True,
+    )
+    db_session.add_all([cust_b, supp_b, prod_b])
+    await db_session.commit()
+
+    bal_cust_before = float(cust_b.balance or 0)
+    bal_supp_before = float(supp_b.balance or 0)
+    stock_before = float(prod_b.stock_qty or 0)
+    p1_before = float(seed["p1"].stock_qty or 0)
+
+    headers_a = await _super_headers(ac, seed)
+    headers_a["X-Workspace-Kind"] = "company"
+    headers_a["X-Company-ID"] = seed["c1"].id
+
+    # Sibling customer
+    sale_party = await ac.post(
+        "/api/v1/sales",
+        headers=headers_a,
+        json={
+            "party_id": cust_b.id,
+            "subtotal": 8,
+            "tax": 0,
+            "total": 8,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert sale_party.status_code == 404, sale_party.text
+
+    # Sibling product on otherwise valid A customer
+    sale_prod = await ac.post(
+        "/api/v1/sales",
+        headers=headers_a,
+        json={
+            "party_id": seed["party1"].id,
+            "subtotal": 8,
+            "tax": 0,
+            "total": 8,
+            "items": [{"product_id": prod_b.id, "quantity": 1}],
+        },
+    )
+    assert sale_prod.status_code == 404, sale_prod.text
+
+    # Sibling supplier purchase
+    purch = await ac.post(
+        "/api/v1/purchases",
+        headers=headers_a,
+        json={
+            "party_id": supp_b.id,
+            "subtotal": 3,
+            "tax": 0,
+            "total": 3,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert purch.status_code == 404, purch.text
+
+    await db_session.refresh(cust_b)
+    await db_session.refresh(supp_b)
+    await db_session.refresh(prod_b)
+    await db_session.refresh(seed["p1"])
+    assert float(cust_b.balance or 0) == bal_cust_before
+    assert float(supp_b.balance or 0) == bal_supp_before
+    assert float(prod_b.stock_qty or 0) == stock_before
+    assert float(seed["p1"].stock_qty or 0) == p1_before

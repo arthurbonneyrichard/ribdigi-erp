@@ -849,11 +849,13 @@ async def apply_line_items_stock(
     reference_id: str,
     outbound: bool,
     warehouse_id: str | None = None,
+    company_id: str | None = None,
 ) -> None:
     """Apply stock for transaction payload items: [{product_id, quantity, variant_id?}]."""
     if not items:
         return
     from app.catalog import get_variant, stock_out_with_batch
+    from app.workspace import assert_fk_company
 
     for item in items:
         product_id = item.get("product_id")
@@ -861,6 +863,17 @@ async def apply_line_items_stock(
         variant_id = item.get("variant_id")
         if not product_id or qty <= 0:
             raise HTTPException(status_code=400, detail="Each line item needs product_id and positive quantity")
+        product = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.id == product_id,
+                    m.Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+        assert_fk_company(product, company_id, detail=f"Product not found: {product_id}")
         if outbound:
             if warehouse_id:
                 await allocate_unlocated_stock(
@@ -868,6 +881,7 @@ async def apply_line_items_stock(
                     tenant_id=tenant_id,
                     warehouse_id=warehouse_id,
                     product_id=product_id,
+                    company_id=company_id,
                 )
             await stock_out_with_batch(
                 db,
@@ -880,6 +894,7 @@ async def apply_line_items_stock(
                 notes=f"{reference_type} {reference_id}",
                 reference_type=reference_type,
                 reference_id=reference_id,
+                company_id=company_id,
             )
         else:
             await apply_stock_change(
@@ -893,7 +908,9 @@ async def apply_line_items_stock(
                 reference_id=reference_id,
                 variant_id=variant_id,
                 warehouse_id=warehouse_id,
+                company_id=company_id,
             )
             if variant_id:
                 variant = await get_variant(db, tenant_id, variant_id)
+                assert_fk_company(variant, company_id, detail=f"Variant not found: {variant_id}")
                 variant.stock_qty = float(variant.stock_qty or 0) + qty

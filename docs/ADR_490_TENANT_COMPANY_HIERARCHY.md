@@ -250,3 +250,9 @@ ADR-005 (user↔store membership) remains deferred. This ADR introduces **user�
 - `warehouse_for_store` / `get_or_create_warehouse_stock` accept `company_id`; inventory valuation/low-stock and sales-by-product reject sibling store/category IDs (no lazy create/oracle).
 - Bank clearing multi-line asserts journal-line company; catalog category parent and product refs use company-scoped getters.
 - Remaining PARTIAL: ADR-002/005, FX tenant-shared, API keys/webhooks/offline devices deferred by design. After Phase 29, ADR-490 interactive IDOR hardening is largely complete.
+
+## Phase 30 — Legacy tx_add FK + line stock company (2026-08-14)
+
+- Legacy `POST /sales` and `POST /purchases` (`tx_add`) assert party company and reject sibling products before stock/balance mutate.
+- `apply_line_items_stock` accepts `company_id`, asserts each product, and threads company into stock-in/out helpers (including POS).
+- **Stop:** ADR-490 interactive company IDOR hardening is complete for MVP. Deferred by design: ADR-002 billing, ADR-005 store membership, FX tenant-shared rates, API keys/webhooks/offline devices, Celery beat all-tenant walks.

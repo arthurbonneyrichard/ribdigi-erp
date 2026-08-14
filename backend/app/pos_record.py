@@ -298,6 +298,7 @@ async def record_pos_sale(
         reference_id=tx.id,
         outbound=True,
         warehouse_id=warehouse_id,
+        company_id=claims.get("company_id") or getattr(tx, "company_id", None),
     )
     await pos_svc.apply_sale_to_session(
         session, total=total, payment_method=payment_method, payments=payments

@@ -6585,20 +6585,43 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
             detail="items are required for sale/purchase/pos so stock can be updated correctly",
         )
 
-    if kind in {"sale", "pos_sale"} and payload.party_id:
-        party = (
-            await db.execute(
-                select(m.Party).where(
-                    m.Party.id == payload.party_id,
-                    m.Party.tenant_id == claims["tenant_id"],
-                    m.Party.kind == "customer",
+    company_id = claims.get("company_id")
+    party = None
+    if payload.party_id:
+        if kind in {"sale", "pos_sale"}:
+            party = (
+                await db.execute(
+                    select(m.Party).where(
+                        m.Party.id == payload.party_id,
+                        m.Party.tenant_id == claims["tenant_id"],
+                        m.Party.kind == "customer",
+                    )
                 )
-            )
-        ).scalar_one_or_none()
-        if party and float(party.credit_limit or 0) > 0:
-            projected = float(party.balance or 0) + float(payload.total or 0)
-            if projected > float(party.credit_limit):
-                raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
+            ).scalar_one_or_none()
+            if not party:
+                raise HTTPException(status_code=404, detail="Customer not found")
+        elif kind == "purchase":
+            party = (
+                await db.execute(
+                    select(m.Party).where(
+                        m.Party.id == payload.party_id,
+                        m.Party.tenant_id == claims["tenant_id"],
+                        m.Party.kind == "supplier",
+                    )
+                )
+            ).scalar_one_or_none()
+            if not party:
+                raise HTTPException(status_code=404, detail="Supplier not found")
+        else:
+            party = await db.get(m.Party, payload.party_id)
+            if not party or party.tenant_id != claims["tenant_id"]:
+                raise HTTPException(status_code=404, detail="Party not found")
+        workspace_svc.assert_fk_company(party, company_id, detail="Party not found")
+
+    if kind in {"sale", "pos_sale"} and party and float(party.credit_limit or 0) > 0:
+        projected = float(party.balance or 0) + float(payload.total or 0)
+        if projected > float(party.credit_limit):
+            raise HTTPException(status_code=409, detail="CREDIT_LIMIT_EXCEEDED")
 
     ref = f"{kind.upper()}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
     body = payload.model_dump()
@@ -6606,7 +6629,7 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
     body["payload"] = {**(body.get("payload") or {}), "items": items}
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
-        company_id=claims.get("company_id"),
+        company_id=company_id,
         tx_type=kind,
         reference=ref,
         **body,
@@ -6624,16 +6647,11 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
         reference_type=kind,
         reference_id=tx.id,
         outbound=outbound,
+        company_id=company_id,
     )
 
-    if payload.party_id and kind in {"sale", "pos_sale"}:
-        party = await db.get(m.Party, payload.party_id)
-        if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(payload.total or 0)
-    if payload.party_id and kind == "purchase":
-        party = await db.get(m.Party, payload.party_id)
-        if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(payload.total or 0)
+    if party and kind in {"sale", "pos_sale", "purchase"}:
+        party.balance = float(party.balance or 0) + float(payload.total or 0)
 
     await db.commit()
     return env({"id": tx.id, "reference": ref})
