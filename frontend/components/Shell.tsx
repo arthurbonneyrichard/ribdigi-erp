@@ -18,6 +18,11 @@ import {
   type WorkspaceKind,
 } from '../lib/workspaceContext';
 import WorkspaceBrand from './WorkspaceBrand';
+import {
+  getOfflineQueueSummary,
+  OFFLINE_QUEUE_CHANGED_EVENT,
+  type OfflineQueueSummary,
+} from '../lib/offlineQueue';
 
 const tenantNavSpec: NavEntry[] = [
   {
@@ -1632,7 +1637,37 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
-    label: 'Offline sync',
+    label: 'Offline & Sync',
+    href: '/company#offline-sync',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Devices',
+    href: '/company#offline-sync',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Offline Mode',
+    href: '/company#offline-sync',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Sync Status',
+    href: '/company#offline-sync',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Pending Transactions',
+    href: '/company#offline-sync',
+    modules: ['company'],
+  },
+  {
+    kind: 'link',
+    label: 'Conflicts',
     href: '/company#offline-sync',
     modules: ['company'],
   },
@@ -2030,8 +2065,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     { kind: string; id?: string; label: string; meta?: string; href: string }[]
   >([]);
   const [searchOpen, setSearchOpen] = useState(false);
-  /** Stage 163 C1 — browser connectivity chrome (not sync queue health). */
+  /** Stage 163 C1 + Stage 367 P0 — connectivity + sync-queue chrome (not Offline Complete). */
   const [online, setOnline] = useState(true);
+  const [queueSummary, setQueueSummary] = useState<OfflineQueueSummary>({
+    pending: 0,
+    failed: 0,
+    synchronizing: false,
+  });
   const canManageOnboarding =
     role === 'company_admin' ||
     role === 'super_admin' ||
@@ -2099,6 +2139,33 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener('online', sync);
       window.removeEventListener('offline', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let active = true;
+    const refresh = () => {
+      getOfflineQueueSummary()
+        .then((s) => {
+          if (active) setQueueSummary(s);
+        })
+        .catch(() => {
+          /* IndexedDB unavailable — keep last summary */
+        });
+    };
+    refresh();
+    const onChange = () => refresh();
+    window.addEventListener(OFFLINE_QUEUE_CHANGED_EVENT, onChange);
+    window.addEventListener('online', onChange);
+    window.addEventListener('offline', onChange);
+    const interval = window.setInterval(refresh, 15000);
+    return () => {
+      active = false;
+      window.removeEventListener(OFFLINE_QUEUE_CHANGED_EVENT, onChange);
+      window.removeEventListener('online', onChange);
+      window.removeEventListener('offline', onChange);
+      window.clearInterval(interval);
     };
   }, []);
 
@@ -2627,16 +2694,56 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </label>
           )}
           <div className="topbar-spacer" />
-          {principal !== 'platform' && (
-            <span
-              className={`connectivity-badge ${online ? 'online' : 'offline'}`}
-              data-stage163-connectivity="1"
-              title="Browser network status (Stage 163 C1). Sync engine remains deferred."
-              aria-live="polite"
-            >
-              {online ? 'ONLINE' : 'OFFLINE'}
-            </span>
-          )}
+          {principal !== 'platform' && (() => {
+            const waiting = queueSummary.pending + queueSummary.failed;
+            let tone: 'online' | 'offline' | 'synchronizing' | 'sync-error' = 'online';
+            let label = 'ONLINE';
+            let title = 'Online — All changes synchronized';
+            if (!online) {
+              tone = 'offline';
+              label = 'OFFLINE';
+              title =
+                waiting > 0
+                  ? `Offline — ${waiting} transaction${waiting === 1 ? '' : 's'} waiting`
+                  : 'Offline — local queue idle';
+            } else if (queueSummary.synchronizing) {
+              tone = 'synchronizing';
+              label = 'SYNCHRONIZING';
+              title =
+                waiting > 0
+                  ? `Synchronizing — ${waiting} remaining`
+                  : 'Synchronizing';
+            } else if (queueSummary.failed > 0) {
+              tone = 'sync-error';
+              label = 'SYNC ERROR';
+              title = `Sync Error — ${queueSummary.failed} failed; administrator attention required`;
+            } else if (queueSummary.pending > 0) {
+              tone = 'synchronizing';
+              label = 'SYNCHRONIZING';
+              title = `Synchronizing — ${queueSummary.pending} pending`;
+            }
+            return (
+              <span
+                className={`connectivity-badge ${tone}`}
+                data-stage163-connectivity="1"
+                data-stage367-sync-chrome="1"
+                data-pending={queueSummary.pending}
+                data-failed={queueSummary.failed}
+                title={`${title} (Stage 367 P0 chrome; Offline Complete still deferred).`}
+                aria-live="polite"
+              >
+                {label}
+                {!online && waiting > 0 ? ` · ${waiting}` : ''}
+                {online && queueSummary.failed > 0 ? ` · ${queueSummary.failed}` : ''}
+                {online &&
+                queueSummary.failed === 0 &&
+                (queueSummary.synchronizing || queueSummary.pending > 0) &&
+                waiting > 0
+                  ? ` · ${waiting}`
+                  : ''}
+              </span>
+            );
+          })()}
           {canReadModule(permissions, 'notifications') && (
             <Link href="/notifications" className="bell">
               Alerts{unread > 0 ? ` · ${unread}` : ''}

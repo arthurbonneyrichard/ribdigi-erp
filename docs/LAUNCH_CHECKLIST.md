@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 367 track opened (ADR-741: `test_stage367_open.py`, `docs/STAGE_367_PLAN.md`) — Commercial Continuity Change-Impact Index; closed under ADR-742
+- [x] MVP product-update pack remaining-gate hub (Stage 367 I1: `test_stage367_index_i1.py`, `docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md`)
+- [x] MVP product-update pack blocker matrix (Stage 367 B1: `test_stage367_blockers_b1.py`, `docs/MVP_PRODUCT_UPDATE_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 366 / Stage 329 / ADR-002 / ADR-005 pointers (Stage 367 P1: `test_stage367_pointers_p1.py`, `docs/MVP_PRODUCT_UPDATE_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 367 fidelity sync (D1: `test_stage367_fidelity_d1.py`, `docs/STAGE_367_FIDELITY.md`)
+- [x] Stage 367 exit + freeze (H367x: `test_stage367_exit_h367x.py`, `docs/STAGE_367_EXIT_CRITERIA.md`, ADR-742)
 - [x] Stage 366 track opened (ADR-739: `test_stage366_open.py`, `docs/STAGE_366_PLAN.md`) — AR AP Accounting Surface Pack Remaining-Gate Index; closed under ADR-740
 - [x] AR/AP accounting surface pack remaining-gate hub (Stage 366 I1: `test_stage366_index_i1.py`, `docs/AR_AP_ACCOUNTING_SURFACE_PACK_REMAINING_GATE_MVP.md`)
 - [x] AR/AP accounting surface pack blocker matrix (Stage 366 B1: `test_stage366_blockers_b1.py`, `docs/AR_AP_ACCOUNTING_SURFACE_PACK_RG_BLOCKERS_MVP.md`)

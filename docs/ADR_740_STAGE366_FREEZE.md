@@ -31,3 +31,10 @@ Stage 367 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for new AR/AP engine, Open Banking, go-live, attestation, or demo tenant.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 367 opened under **ADR-741** after CONTINUE/NEXT (Tenant MVP Commercial Continuity Change-Impact Index Fidelity) and is frozen under **ADR-742**. Stage 366 feature scope remains frozen.
+
+**Amendment (2026-08-14):** The ADR-740 Business Metrics Pack runner-up was **superseded for Stage 367** by the commercial MVP product-update continuity track (`docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md`). Stage 367 runner-up outline was approved and opened (ADR-741); freeze ADR-742. Do not reopen Stage 366 scope. Business Metrics Pack packaging may return later as Stage 368+ if still distinct.
+

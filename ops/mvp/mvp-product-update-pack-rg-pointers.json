@@ -1,0 +1,61 @@
+{
+  "id": "mvp-product-update-pack-rg-pointers",
+  "stage": 367,
+  "pack": "P1",
+  "doc": "docs/MVP_PRODUCT_UPDATE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "ar_ap_pack": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "adr_002": "docs/ADR_002_BILLING_DEFERRED.md",
+    "adr_005": "docs/ADR_005_USER_STORE_ASSIGNMENT.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "paid_billing_complete_claimed": false,
+  "store_membership_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_audit_2026_08_14": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "ar_ap_accounting_surface_pack_remaining_gate_stage366": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "adr_002_billing_deferred": "docs/ADR_002_BILLING_DEFERRED.md",
+    "adr_005_store_membership_deferred": "docs/ADR_005_USER_STORE_ASSIGNMENT.md",
+    "explicit_non_claim": "offline_complete / paid_billing / store_membership / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "mpucprp-change-impact",
+      "title": "Point to 2026-08-14 change-impact audit",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprp-stage366",
+      "title": "Point to Stage 366 AR/AP accounting surface pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprp-adr002-adr005",
+      "title": "Point to ADR-002 / ADR-005 deferred Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprp-checklist-remaining",
+      "title": "Offline Complete / paid billing / store membership Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 367 P1 MVP product-update pack RG pointers packaging only."
+}

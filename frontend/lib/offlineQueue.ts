@@ -66,6 +66,35 @@ export function setBoundOfflineDeviceId(deviceId: string): void {
   localStorage.setItem('offline_device_id', deviceId);
 }
 
+/** Stage 367 P0 — chrome event for Shell connectivity badge (not Offline Complete). */
+export const OFFLINE_QUEUE_CHANGED_EVENT = 'ribdigi-offline-queue-changed';
+
+let synchronizingDepth = 0;
+
+function emitQueueChanged(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(OFFLINE_QUEUE_CHANGED_EVENT));
+}
+
+export function isOfflineQueueSynchronizing(): boolean {
+  return synchronizingDepth > 0;
+}
+
+export type OfflineQueueSummary = {
+  pending: number;
+  failed: number;
+  synchronizing: boolean;
+};
+
+export async function getOfflineQueueSummary(): Promise<OfflineQueueSummary> {
+  const rows = await listPendingOfflineOps();
+  return {
+    pending: rows.filter((r) => r.status === 'pending').length,
+    failed: rows.filter((r) => r.status === 'failed').length,
+    synchronizing: synchronizingDepth > 0,
+  };
+}
+
 export async function enqueueOfflineOp(op: {
   client_op_id: string;
   op_type: string;
@@ -85,6 +114,7 @@ export async function enqueueOfflineOp(op: {
   tx.objectStore(STORE).add(row);
   await txDone(tx);
   db.close();
+  emitQueueChanged();
   return row;
 }
 
@@ -123,6 +153,7 @@ export async function markOfflineOp(
   }
   await txDone(tx);
   db.close();
+  emitQueueChanged();
 }
 
 export async function flushOfflineQueue(apiFn: typeof import('./api').api): Promise<{
@@ -138,33 +169,40 @@ export async function flushOfflineQueue(apiFn: typeof import('./api').api): Prom
   if (!pending.length) {
     return { flushed: 0, failed: 0, results: [] };
   }
-  const ops = pending.map((p) => ({
-    client_op_id: p.client_op_id,
-    op_type: p.op_type,
-    payload: p.payload,
-  }));
-  const res = await apiFn('/sync/push', {
-    method: 'POST',
-    body: JSON.stringify({ device_id: deviceId, ops }),
-  });
-  const results = (res.data?.results || []) as Array<{
-    client_op_id: string;
-    status: string;
-    error?: string;
-    replayed?: boolean;
-  }>;
-  let flushed = 0;
-  let failed = 0;
-  for (const r of results) {
-    if (r.status === 'applied' || r.status === 'acked' || r.replayed) {
-      await markOfflineOp(r.client_op_id, 'flushed');
-      flushed += 1;
-    } else if (r.status === 'failed' || r.status === 'conflict') {
-      await markOfflineOp(r.client_op_id, 'failed', r.error || r.status);
-      failed += 1;
+  synchronizingDepth += 1;
+  emitQueueChanged();
+  try {
+    const ops = pending.map((p) => ({
+      client_op_id: p.client_op_id,
+      op_type: p.op_type,
+      payload: p.payload,
+    }));
+    const res = await apiFn('/sync/push', {
+      method: 'POST',
+      body: JSON.stringify({ device_id: deviceId, ops }),
+    });
+    const results = (res.data?.results || []) as Array<{
+      client_op_id: string;
+      status: string;
+      error?: string;
+      replayed?: boolean;
+    }>;
+    let flushed = 0;
+    let failed = 0;
+    for (const r of results) {
+      if (r.status === 'applied' || r.status === 'acked' || r.replayed) {
+        await markOfflineOp(r.client_op_id, 'flushed');
+        flushed += 1;
+      } else if (r.status === 'failed' || r.status === 'conflict') {
+        await markOfflineOp(r.client_op_id, 'failed', r.error || r.status);
+        failed += 1;
+      }
     }
+    return { flushed, failed, results };
+  } finally {
+    synchronizingDepth = Math.max(0, synchronizingDepth - 1);
+    emitQueueChanged();
   }
-  return { flushed, failed, results };
 }
 
 export function newClientOpId(prefix = 'op'): string {

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_367_EXIT_CRITERIA.md` / `docs/ADR_742_STAGE367_FREEZE.md` (`backend/tests/test_stage367_exit_h367x.py`) — Stage 367 H367x
+- `docs/STAGE_367_FIDELITY.md` (`backend/tests/test_stage367_fidelity_d1.py`) — Stage 367 D1
+- `docs/STAGE_367_PLAN.md` (`backend/tests/test_stage367_open.py`) — Stage 367 open (ADR-741)
+- `docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/mvp-product-update-pack-remaining-gate.json` — Stage 367 I1
+- `docs/MVP_PRODUCT_UPDATE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/mvp-product-update-pack-rg-blockers.json` — Stage 367 B1
+- `docs/MVP_PRODUCT_UPDATE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/mvp-product-update-pack-rg-pointers.json` — Stage 367 P1
 - `docs/STAGE_366_EXIT_CRITERIA.md` / `docs/ADR_740_STAGE366_FREEZE.md` (`backend/tests/test_stage366_exit_h366x.py`) — Stage 366 H366x
 - `docs/STAGE_366_FIDELITY.md` (`backend/tests/test_stage366_fidelity_d1.py`) — Stage 366 D1
 - `docs/STAGE_366_PLAN.md` (`backend/tests/test_stage366_open.py`) — Stage 366 open (ADR-739)
@@ -5479,6 +5485,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 367 exit
+
+H367x met — `docs/STAGE_367_EXIT_CRITERIA.md`, ADR-742. Stages 1–367 frozen for Stage 367 feature scope.
+
+## Stage 367 D1 — Tenant MVP Commercial Continuity Change-Impact Index Fidelity
+
+Packaging Completes for `MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md` / `MVP_PRODUCT_UPDATE_PACK_RG_BLOCKERS_MVP.md` / `MVP_PRODUCT_UPDATE_PACK_RG_POINTERS_MVP.md` ≠ Offline Complete / paid billing Completes. Source audit: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md`.
+
+## Stage 367 open
+
+ADR-741 / `docs/STAGE_367_PLAN.md`.
 
 ## Stage 366 exit
 

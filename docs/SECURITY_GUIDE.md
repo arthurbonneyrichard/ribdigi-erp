@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 367 open** | Commercial Continuity Change-Impact Index — `docs/STAGE_367_PLAN.md`, ADR-741 (`test_stage367_open.py`) |
+| **Stage 367 I1** | MVP product-update pack remaining-gate index hub (`test_stage367_index_i1.py`) |
+| **Stage 367 B1** | MVP product-update pack blocker matrix (`test_stage367_blockers_b1.py`) |
+| **Stage 367 P1** | Stage 366 / Stage 329 / ADR-002 / ADR-005 pointers (`test_stage367_pointers_p1.py`) |
+| **Stage 367 D1** | MVP product-update pack remaining-gate fidelity — `docs/STAGE_367_FIDELITY.md` (`test_stage367_fidelity_d1.py`) |
+| **Stage 367 H367x** | Exit + freeze — `docs/STAGE_367_EXIT_CRITERIA.md`, ADR-742 (`test_stage367_exit_h367x.py`); Stages 1–367 frozen |
 | **Stage 366 open** | AR AP Accounting Surface Pack Remaining-Gate Index — `docs/STAGE_366_PLAN.md`, ADR-739 (`test_stage366_open.py`) |
 | **Stage 366 I1** | AR/AP accounting surface pack remaining-gate index hub (`test_stage366_index_i1.py`) |
 | **Stage 366 B1** | AR/AP accounting surface pack blocker matrix (`test_stage366_blockers_b1.py`) |

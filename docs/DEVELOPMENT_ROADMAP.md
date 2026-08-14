@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 367 D1 (2026-08-14):** Commercial Continuity Change-Impact Index fidelity sync — `docs/STAGE_367_FIDELITY.md` (`test_stage367_fidelity_d1.py`). Open ADR: `docs/ADR_741_STAGE367_OPEN.md`; plan `docs/STAGE_367_PLAN.md`.
+
+**Stage 367 exit (2026-08-14):** I1, B1, P1, D1, H367x met — `docs/STAGE_367_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_742_STAGE367_FREEZE.md`. Fidelity: `docs/STAGE_367_FIDELITY.md`.
+
 **Stage 366 D1 (2026-08-14):** AR AP Accounting Surface Pack Remaining-Gate Index fidelity sync — `docs/STAGE_366_FIDELITY.md` (`test_stage366_fidelity_d1.py`).
 
 **Stage 366 exit (2026-08-14):** I1, B1, P1, D1, H366x met — `docs/STAGE_366_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_740_STAGE366_FREEZE.md`. Fidelity: `docs/STAGE_366_FIDELITY.md`.

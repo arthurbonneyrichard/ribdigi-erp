@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 367 D1 — `docs/STAGE_367_FIDELITY.md` (`test_stage367_fidelity_d1.py`); Stage 367 I1 / B1 / P1.
 Stage 366 D1 — `docs/STAGE_366_FIDELITY.md` (`test_stage366_fidelity_d1.py`); Stage 366 I1 / B1 / P1.
 Stage 365 D1 — `docs/STAGE_365_FIDELITY.md` (`test_stage365_fidelity_d1.py`); Stage 365 I1 / B1 / P1.
 Stage 364 D1 — `docs/STAGE_364_FIDELITY.md` (`test_stage364_fidelity_d1.py`); Stage 364 I1 / B1 / P1.
@@ -1981,6 +1982,7 @@ Stage 311 D1 Service Credit Warranty Pack Remaining-Gate Index fidelity — `doc
 Stage 312 D1 Status Uptime Pack Remaining-Gate Index fidelity — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 status uptime pack remaining-gate hub; Stage 312 B1 blocker matrix; Stage 312 P1 Stage 40/311/310/36 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 313 D1 Commercial Liability Pack Remaining-Gate Index fidelity — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 commercial liability pack remaining-gate hub; Stage 313 B1 blocker matrix; Stage 313 P1 Stage 77/312/311/310 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 314 D1 SBOM Disclosure Pack Remaining-Gate Index fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 SBOM disclosure pack remaining-gate hub; Stage 314 B1 blocker matrix; Stage 314 P1 Stage 40/313/312/38 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
+Stage 367 D1 Tenant MVP Commercial Continuity Change-Impact Index fidelity — `docs/STAGE_367_FIDELITY.md` (`test_stage367_fidelity_d1.py`); Stage 367 I1 MVP product-update pack remaining-gate hub; Stage 367 B1 blocker matrix; Stage 367 P1 Stage 366/329/ADR-002/ADR-005 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md`.
 Stage 366 D1 AR AP Accounting Surface Pack Remaining-Gate Index fidelity — `docs/STAGE_366_FIDELITY.md` (`test_stage366_fidelity_d1.py`); Stage 366 I1 AR/AP accounting surface pack remaining-gate hub; Stage 366 B1 blocker matrix; Stage 366 P1 Stage 232/365/320/329 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 365 D1 E2E Verify Financials Pack Remaining-Gate Index fidelity — `docs/STAGE_365_FIDELITY.md` (`test_stage365_fidelity_d1.py`); Stage 365 I1 E2E verify financials pack remaining-gate hub; Stage 365 B1 blocker matrix; Stage 365 P1 Stage 35/364/320/329 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
 Stage 364 D1 E2E Org Bootstrap Pack Remaining-Gate Index fidelity — `docs/STAGE_364_FIDELITY.md` (`test_stage364_fidelity_d1.py`); Stage 364 I1 E2E org bootstrap pack remaining-gate hub; Stage 364 B1 blocker matrix; Stage 364 P1 Stage 35/363/320/329 pointers; impact `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-13.md`.
