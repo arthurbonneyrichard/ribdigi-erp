@@ -483,9 +483,9 @@ export default function Page() {
             />
           </>
         )}
-        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'expenses') && (
+        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'expenses' || tab === 'cashflow') && (
           <>
-            {(tab === 'pnl' || tab === 'stores' || tab === 'expenses') && (
+            {(tab === 'pnl' || tab === 'stores' || tab === 'expenses' || tab === 'cashflow') && (
               <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                 <option value="">All branches</option>
                 {branches.map((b) => (
@@ -1355,6 +1355,14 @@ export default function Page() {
 
       {tab === 'cashflow' && data && (
         <>
+          <p className="muted">
+            Liquid GL cash movements
+            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
+            {data.branch_id ? ` · branch ${String(data.branch_id).slice(0, 8)}…` : ''}
+            {data.store_id || data.branch_id
+              ? ' (attributable operating cash; HQ transfers/openings omitted)'
+              : ''}
+          </p>
           <div className="grid">
             <div className="card">
               <div className="muted">Inflows</div>
