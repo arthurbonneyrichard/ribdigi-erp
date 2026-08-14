@@ -1,0 +1,61 @@
+{
+  "id": "commercial-assurance-pack-rg-pointers",
+  "stage": 297,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_ASSURANCE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_ASSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_assurance": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+    "commercial_status_pack_remaining_gate": "docs/COMMERCIAL_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_support_pack_remaining_gate": "docs/COMMERCIAL_SUPPORT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_evidence_chain": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "assurance_claimed": false,
+  "evidence_chain_live_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_assurance_stage73",
+    "commercial_status_pack_remaining_gate_stage296",
+    "commercial_support_pack_remaining_gate_stage295",
+    "commercial_evidence_chain_stage73",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "casprp-stage73",
+      "title": "Point to Stage 73 A1 commercial assurance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-stage296",
+      "title": "Point to Stage 296 commercial status pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-stage295",
+      "title": "Point to Stage 295 commercial support pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-evidence",
+      "title": "Point to Stage 73 E1 commercial evidence chain adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "casprp-assurance-remaining",
+      "title": "Customer assurance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 297 P1 commercial assurance pack RG pointers packaging only. Do not claim customer assurance Complete."
+}

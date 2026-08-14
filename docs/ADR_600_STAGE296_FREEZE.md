@@ -31,3 +31,9 @@ Stage 297 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for status page live, uptime SLA, measured uptime, commercial support, paid billing, or go-live.
+
+## Amendment — Stage 297 opened
+
+Stage 297 opened under **ADR-601** after CONTINUE/NEXT (Tenant MVP Commercial Assurance Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-602**. Stage 296 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 297 runner-up outline was approved and opened (ADR-601); freeze ADR-602. Do not reopen Stage 296 scope.
