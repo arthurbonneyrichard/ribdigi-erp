@@ -229,6 +229,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 **Support runbook pack remaining-gate index (Stage 236):** Status index is `docs/SUPPORT_RUNBOOK_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SUPPORT_RUNBOOK_PACK_RG_BLOCKERS_MVP.md` → Stage 30/214/235 pointers `docs/SUPPORT_RUNBOOK_PACK_RG_POINTERS_MVP.md`. Live support SLA Complete remains MISSING (not claimed). Prefixed `SUPPORT_RUNBOOK_PACK_*` (≠ Stage 214 / Stage 188 / Stage 220 remaining-gates).
 
 **Incident pack remaining-gate index (Stage 237):** Status index is `docs/INCIDENT_PACK_REMAINING_GATE_MVP.md` → blockers `docs/INCIDENT_PACK_RG_BLOCKERS_MVP.md` → Stage 30/211/236 pointers `docs/INCIDENT_PACK_RG_POINTERS_MVP.md`. Live incident drill Complete remains MISSING (not claimed). Prefixed `INCIDENT_PACK_*` remaining-gate docs (≠ Stage 211 `INCIDENT_*`).
+**Knowledge base pack remaining-gate index (Stage 238):** Status index is `docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/KNOWLEDGE_BASE_PACK_RG_BLOCKERS_MVP.md` → Stage 33/171/215 pointers `docs/KNOWLEDGE_BASE_PACK_RG_POINTERS_MVP.md`. Live knowledge-base Complete remains MISSING (not claimed). Prefixed `KNOWLEDGE_BASE_PACK_*` remaining-gate docs (≠ Stage 215 `KNOWLEDGE_BASE_*`).
 
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 

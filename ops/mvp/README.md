@@ -852,6 +852,13 @@ Authoritative MVP docs:
 - `docs/INCIDENT_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/incident-pack-remaining-gate.json` — Stage 237 I1
 - `docs/INCIDENT_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/incident-pack-rg-blockers.json` — Stage 237 B1
 - `docs/INCIDENT_PACK_RG_POINTERS_MVP.md` / `ops/mvp/incident-pack-rg-pointers.json` — Stage 237 P1
+
+- `docs/STAGE_238_EXIT_CRITERIA.md` / `docs/ADR_483_STAGE238_FREEZE.md` (`backend/tests/test_stage238_exit_h238x.py`) — Stage 238 H238x
+- `docs/STAGE_238_FIDELITY.md` (`backend/tests/test_stage238_fidelity_d1.py`) — Stage 238 D1
+- `docs/STAGE_238_PLAN.md` (`backend/tests/test_stage238_open.py`) — Stage 238 open (ADR-482)
+- `docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/knowledge-base-pack-remaining-gate.json` — Stage 238 I1
+- `docs/KNOWLEDGE_BASE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/knowledge-base-pack-rg-blockers.json` — Stage 238 B1
+- `docs/KNOWLEDGE_BASE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/knowledge-base-pack-rg-pointers.json` — Stage 238 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4161,4 +4168,16 @@ H237x met — `docs/STAGE_237_EXIT_CRITERIA.md`, ADR-481. Stages 1–237 frozen 
 ## Stage 237 open
 
 `docs/ADR_480_STAGE237_OPEN.md` + `docs/STAGE_237_PLAN.md` (`test_stage237_open.py`).
+
+## Stage 238 exit
+
+H238x met — `docs/STAGE_238_EXIT_CRITERIA.md`, ADR-483. Stages 1–238 frozen for Stage 238 feature scope.
+
+## Stage 238 D1 — Tenant MVP Knowledge Base Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_238_FIDELITY.md` (`test_stage238_fidelity_d1.py`). `KNOWLEDGE_BASE_PACK_*` remaining-gate index; live knowledge-base still MISSING.
+
+## Stage 238 open
+
+`docs/ADR_482_STAGE238_OPEN.md` + `docs/STAGE_238_PLAN.md` (`test_stage238_open.py`).
 

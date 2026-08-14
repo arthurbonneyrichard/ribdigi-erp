@@ -365,3 +365,6 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 
 **Tenant MVP Incident Pack Remaining-Gate Index Fidelity** — incident pack remaining-gate hub (I1), blocker matrix (B1), Stage 30 / Stage 211 / Stage 236 pointers with explicit non-claim (P1). Prefixed `INCIDENT_PACK_*` remaining-gate docs (≠ Stage 211 `INCIDENT_*`). Live incident drill Completes remain deferred (Stage 238+). Distinct from Stage 211 incident remaining-gate and Stage 236 support runbook pack remaining-gate.
 
+## Stage 238 decision (opened after Stage 237 freeze)
+
+**Tenant MVP Knowledge Base Pack Remaining-Gate Index Fidelity** — knowledge base pack remaining-gate hub (I1), blocker matrix (B1), Stage 33 / Stage 171 / Stage 215 pointers with explicit non-claim (P1). Prefixed `KNOWLEDGE_BASE_PACK_*` (≠ Stage 215 `KNOWLEDGE_BASE_*`). Live knowledge-base Completes remain deferred (Stage 239+). Distinct from Stage 215 knowledge base remaining-gate and Stage 237 incident pack remaining-gate.

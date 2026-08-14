@@ -27,3 +27,9 @@ Stage 237 Tenant MVP Incident Pack Remaining-Gate Index Fidelity delivered incid
 Stage 238 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 237 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP Knowledge Base Pack Remaining-Gate Index Fidelity — single index of knowledge-base blockers (packaged Stage 33 T1 / related KB materials non-claim as live knowledge-base Complete) with explicit non-claim. Prefixed `KNOWLEDGE_BASE_PACK_*` if a prior `KNOWLEDGE_BASE_*` remaining-gate exists. Distinct from Stage 237 incident pack remaining-gate and Stage 236 support runbook pack remaining-gate.
+
+## Amendment — Stage 238 opened
+
+Stage 238 opened under **ADR-482** after CONTINUE/NEXT (Knowledge Base Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-483**. Stage 237 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 238 runner-up outline was approved and opened (ADR-482); freeze ADR-483. Do not reopen Stage 237 scope.
