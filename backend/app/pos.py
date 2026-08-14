@@ -405,6 +405,7 @@ async def serialize_session(session: m.PosSession) -> dict:
     drawer = await drawer_summary(session)
     return {
         **drawer,
+        "company_id": session.company_id,
         "store_id": session.store_id,
         "user_id": session.user_id,
         "notes": session.notes,

@@ -977,10 +977,9 @@ async def test_pos_sessions_sales_holds_and_lookup_company_scoped(client, db_ses
         json={"opening_cash": 20},
     )
     assert opened.status_code == 200, opened.text
-    assert opened.json()["data"]["company_id"] == seed["c1"].id or True
-    # serialize_session may omit company_id; verify via list filter instead.
+    assert opened.json()["data"]["company_id"] == seed["c1"].id
     sessions2 = await ac.get("/api/v1/pos/sessions?status=open", headers=headers)
     assert sessions2.status_code == 200
     open_nums = {r.get("session_number") for r in sessions2.json()["data"]}
     assert "POS-B-ONLY" not in open_nums
-    assert any(n and n != "POS-B-ONLY" for n in open_nums)
+    assert opened.json()["data"]["session_number"] in open_nums
