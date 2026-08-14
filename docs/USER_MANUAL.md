@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 431 Attestation Workflow Honesty Pack remaining-gate — `docs/ATTESTATION_WORKFLOW_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/ATTESTATION_WORKFLOW_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 405 `ATTESTATION_WORKFLOW_PACK_*` ≠ attestation / go-live Completes).
 Stage 430 Attestation Pack Honesty Pack remaining-gate — `docs/ATTESTATION_PACK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/ATTESTATION_PACK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 30 `ATTESTATION_PACK_*` ≠ attestation / go-live Completes).
 Stage 429 Support Runbook Honesty Pack remaining-gate — `docs/SUPPORT_RUNBOOK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/SUPPORT_RUNBOOK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 30 `SUPPORT_RUNBOOK_PACK_*` ≠ support / go-live Completes).
 Stage 428 Incident Pack Honesty Pack remaining-gate — `docs/INCIDENT_PACK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/INCIDENT_PACK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 30 `INCIDENT_PACK_*` ≠ incident / go-live Completes).

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_431_EXIT_CRITERIA.md` / `docs/ADR_870_STAGE431_FREEZE.md` (`backend/tests/test_stage431_exit_h431x.py`) — Stage 431 H431x
+- `docs/STAGE_431_FIDELITY.md` (`backend/tests/test_stage431_fidelity_d1.py`) — Stage 431 D1
+- `docs/STAGE_431_PLAN.md` (`backend/tests/test_stage431_open.py`) — Stage 431 open (ADR-869)
+- `docs/ATTESTATION_WORKFLOW_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/attestation-workflow-honesty-pack-remaining-gate.json` — Stage 431 I1
+- `docs/ATTESTATION_WORKFLOW_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/attestation-workflow-honesty-pack-rg-blockers.json` — Stage 431 B1
+- `docs/ATTESTATION_WORKFLOW_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/attestation-workflow-honesty-pack-rg-pointers.json` — Stage 431 P1
 - `docs/STAGE_430_EXIT_CRITERIA.md` / `docs/ADR_868_STAGE430_FREEZE.md` (`backend/tests/test_stage430_exit_h430x.py`) — Stage 430 H430x
 - `docs/STAGE_430_FIDELITY.md` (`backend/tests/test_stage430_fidelity_d1.py`) — Stage 430 D1
 - `docs/STAGE_430_PLAN.md` (`backend/tests/test_stage430_open.py`) — Stage 430 open (ADR-867)
@@ -5863,6 +5869,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 431 exit
+
+H431x met — `docs/STAGE_431_EXIT_CRITERIA.md`, ADR-870. Stages 1–431 frozen for Stage 431 feature scope.
+
+## Stage 431 D1 — Tenant MVP Attestation Workflow Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Attestation Workflow honesty / go-live Completes remain MISSING. See `docs/STAGE_431_FIDELITY.md`.
+
+## Stage 431 open
+
+Opened under ADR-869; plan `docs/STAGE_431_PLAN.md`.
 
 ## Stage 430 exit
 

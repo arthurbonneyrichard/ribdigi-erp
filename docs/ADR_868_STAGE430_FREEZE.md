@@ -31,3 +31,10 @@ Stage 431 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Attestation Pack, Attestation Pack honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 431 opened under **ADR-869** after CONTINUE/NEXT (Tenant MVP Attestation Workflow Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-870**. Stage 430 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 430 runner-up outline was approved and opened (ADR-869); freeze ADR-870. Do not reopen Stage 430 scope.
+
