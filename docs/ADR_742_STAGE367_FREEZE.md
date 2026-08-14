@@ -31,3 +31,10 @@ Stage 368 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, paid billing, store membership, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 368 opened under **ADR-743** after CONTINUE/NEXT (Tenant MVP Sync Idempotency Replay Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-744**. Stage 367 feature scope remains frozen.
+
+**Amendment (2026-08-14):** The ADR-742 Connectivity Sync Status Pack runner-up **collides** with Stage 367 P0 connectivity chrome (ONLINE/OFFLINE/SYNCHRONIZING/SYNC ERROR) already shipped — do **not** reopen it. Approved alternate outline opened (ADR-743); freeze ADR-744. Do not reopen Stage 367 scope.
+

@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_368_EXIT_CRITERIA.md` / `docs/ADR_744_STAGE368_FREEZE.md` (`backend/tests/test_stage368_exit_h368x.py`) — Stage 368 H368x
+- `docs/STAGE_368_FIDELITY.md` (`backend/tests/test_stage368_fidelity_d1.py`) — Stage 368 D1
+- `docs/STAGE_368_PLAN.md` (`backend/tests/test_stage368_open.py`) — Stage 368 open (ADR-743)
+- `docs/SYNC_IDEMPOTENCY_REPLAY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/sync-idempotency-replay-pack-remaining-gate.json` — Stage 368 I1
+- `docs/SYNC_IDEMPOTENCY_REPLAY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/sync-idempotency-replay-pack-rg-blockers.json` — Stage 368 B1
+- `docs/SYNC_IDEMPOTENCY_REPLAY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/sync-idempotency-replay-pack-rg-pointers.json` — Stage 368 P1
 - `docs/STAGE_367_EXIT_CRITERIA.md` / `docs/ADR_742_STAGE367_FREEZE.md` (`backend/tests/test_stage367_exit_h367x.py`) — Stage 367 H367x
 - `docs/STAGE_367_FIDELITY.md` (`backend/tests/test_stage367_fidelity_d1.py`) — Stage 367 D1
 - `docs/STAGE_367_PLAN.md` (`backend/tests/test_stage367_open.py`) — Stage 367 open (ADR-741)
@@ -5485,6 +5491,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 368 exit
+
+H368x met — `docs/STAGE_368_EXIT_CRITERIA.md`, ADR-744. Stages 1–368 frozen for Stage 368 feature scope.
+
+## Stage 368 D1 — Tenant MVP Sync Idempotency Replay Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `SYNC_IDEMPOTENCY_REPLAY_PACK_REMAINING_GATE_MVP.md` / `SYNC_IDEMPOTENCY_REPLAY_PACK_RG_BLOCKERS_MVP.md` / `SYNC_IDEMPOTENCY_REPLAY_PACK_RG_POINTERS_MVP.md` ≠ Offline Complete. Connectivity Sync Status Pack skipped (Stage 367 P0 collision). Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` P1.
+
+## Stage 368 open
+
+ADR-743 / `docs/STAGE_368_PLAN.md`.
 
 ## Stage 367 exit
 

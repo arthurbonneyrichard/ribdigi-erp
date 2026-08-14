@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 368 track opened (ADR-743: `test_stage368_open.py`, `docs/STAGE_368_PLAN.md`) — Sync Idempotency Replay Pack Remaining-Gate Index; closed under ADR-744
+- [x] Sync idempotency replay pack remaining-gate hub (Stage 368 I1: `test_stage368_index_i1.py`, `docs/SYNC_IDEMPOTENCY_REPLAY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Sync idempotency replay pack blocker matrix (Stage 368 B1: `test_stage368_blockers_b1.py`, `docs/SYNC_IDEMPOTENCY_REPLAY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 367 / Stage 164 / Stage 329 / CHANGE_IMPACT pointers (Stage 368 P1: `test_stage368_pointers_p1.py`, `docs/SYNC_IDEMPOTENCY_REPLAY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 368 fidelity sync (D1: `test_stage368_fidelity_d1.py`, `docs/STAGE_368_FIDELITY.md`)
+- [x] Stage 368 exit + freeze (H368x: `test_stage368_exit_h368x.py`, `docs/STAGE_368_EXIT_CRITERIA.md`, ADR-744)
 - [x] Stage 367 track opened (ADR-741: `test_stage367_open.py`, `docs/STAGE_367_PLAN.md`) — Commercial Continuity Change-Impact Index; closed under ADR-742
 - [x] MVP product-update pack remaining-gate hub (Stage 367 I1: `test_stage367_index_i1.py`, `docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md`)
 - [x] MVP product-update pack blocker matrix (Stage 367 B1: `test_stage367_blockers_b1.py`, `docs/MVP_PRODUCT_UPDATE_PACK_RG_BLOCKERS_MVP.md`)
