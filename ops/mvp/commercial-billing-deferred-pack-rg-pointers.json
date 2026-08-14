@@ -1,0 +1,61 @@
+{
+  "id": "commercial-billing-deferred-pack-rg-pointers",
+  "stage": 304,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "commercial_billing_deferred": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+    "billing_deferred_honesty_pack_remaining_gate": "docs/BILLING_DEFERRED_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_pack_remaining_gate": "docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "deferred_implemented_claimed": false,
+  "tos_signed_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_billing_deferred_stage76",
+    "billing_deferred_honesty_pack_remaining_gate_stage303",
+    "billing_deferred_pack_remaining_gate",
+    "billing_deferred_honesty_stage36",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cbdprp-stage76",
+      "title": "Point to Stage 76 B1 commercial billing deferred",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprp-stage303",
+      "title": "Point to Stage 303 billing deferred honesty pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprp-billing-deferred-pack",
+      "title": "Point to prior BILLING_DEFERRED_PACK remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprp-stage36",
+      "title": "Point to Stage 36 B1 billing deferred honesty adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprp-billing-remaining",
+      "title": "Paid billing Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 304 P1 commercial billing deferred pack RG pointers packaging only. Do not claim paid billing Complete."
+}

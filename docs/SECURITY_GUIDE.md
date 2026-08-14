@@ -1774,6 +1774,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 303 P1** | Stage 36 B1 / Stage 302 / prior billing-deferred-pack / Stage 76 pointers (`test_stage303_pointers_p1.py`) |
 | **Stage 303 D1** | Billing deferred honesty pack remaining-gate fidelity — `docs/STAGE_303_FIDELITY.md` (`test_stage303_fidelity_d1.py`) |
 | **Stage 303 H303x** | Exit + freeze — `docs/STAGE_303_EXIT_CRITERIA.md`, ADR-614 (`test_stage303_exit_h303x.py`); Stages 1–303 frozen |
+| **Stage 304 open** | Commercial Billing Deferred Pack Remaining-Gate Index — `docs/STAGE_304_PLAN.md`, ADR-615 (`test_stage304_open.py`) |
+| **Stage 304 I1** | Commercial billing deferred pack remaining-gate index hub (`test_stage304_index_i1.py`) |
+| **Stage 304 B1** | Commercial billing deferred pack blocker matrix (`test_stage304_blockers_b1.py`) |
+| **Stage 304 P1** | Stage 76 B1 / Stage 303 / prior billing-deferred-pack / Stage 36 B1 pointers (`test_stage304_pointers_p1.py`) |
+| **Stage 304 D1** | Commercial billing deferred pack remaining-gate fidelity — `docs/STAGE_304_FIDELITY.md` (`test_stage304_fidelity_d1.py`) |
+| **Stage 304 H304x** | Exit + freeze — `docs/STAGE_304_EXIT_CRITERIA.md`, ADR-616 (`test_stage304_exit_h304x.py`); Stages 1–304 frozen |
 | **Stage 213 open** | Attestation Pack Remaining-Gate Index — `docs/STAGE_213_PLAN.md`, ADR-432 (`test_stage213_open.py`) |
 | **Stage 213 I1** | Attestation pack remaining-gate index hub (`test_stage213_index_i1.py`) |
 | **Stage 213 B1** | Attestation pack blocker matrix (`test_stage213_blockers_b1.py`) |

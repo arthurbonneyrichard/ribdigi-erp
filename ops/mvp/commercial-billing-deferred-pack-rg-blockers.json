@@ -1,0 +1,66 @@
+{
+  "id": "commercial-billing-deferred-pack-rg-blockers",
+  "stage": 304,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "commercial_billing_deferred": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "deferred_implemented_claimed": false,
+  "tos_signed_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "billing_complete_claimed": "REMAINING",
+    "payment_provider_claimed": "REMAINING",
+    "checkout_success_claimed": "REMAINING",
+    "deferred_implemented_claimed": "REMAINING",
+    "tos_signed_claimed": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage76_as_paid_billing": "NON_CLAIM",
+    "stage303_as_paid_billing": "NON_CLAIM",
+    "billing_complete_claimed_flag": "false",
+    "payment_provider_claimed_flag": "false",
+    "checkout_success_claimed_flag": "false",
+    "deferred_implemented_claimed_flag": "false",
+    "tos_signed_claimed_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cbdprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprb-provider",
+      "title": "Mark payment provider Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprb-checkout",
+      "title": "Mark checkout success Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprb-stage76-nonclaim",
+      "title": "Mark Stage 76 B1 as non-claim for paid billing Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbdprb-billing-remaining",
+      "title": "Paid billing Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 304 B1 commercial billing deferred pack RG blocker matrix packaging only. Paid billing Completes remain MISSING."
+}

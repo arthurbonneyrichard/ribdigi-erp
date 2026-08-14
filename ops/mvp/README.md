@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_304_EXIT_CRITERIA.md` / `docs/ADR_616_STAGE304_FREEZE.md` (`backend/tests/test_stage304_exit_h304x.py`) — Stage 304 H304x
+- `docs/STAGE_304_FIDELITY.md` (`backend/tests/test_stage304_fidelity_d1.py`) — Stage 304 D1
+- `docs/STAGE_304_PLAN.md` (`backend/tests/test_stage304_open.py`) — Stage 304 open (ADR-615)
+- `docs/COMMERCIAL_BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-billing-deferred-pack-remaining-gate.json` — Stage 304 I1
+- `docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-billing-deferred-pack-rg-blockers.json` — Stage 304 B1
+- `docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-billing-deferred-pack-rg-pointers.json` — Stage 304 P1
 - `docs/STAGE_303_EXIT_CRITERIA.md` / `docs/ADR_614_STAGE303_FREEZE.md` (`backend/tests/test_stage303_exit_h303x.py`) — Stage 303 H303x
 - `docs/STAGE_303_FIDELITY.md` (`backend/tests/test_stage303_fidelity_d1.py`) — Stage 303 D1
 - `docs/STAGE_303_PLAN.md` (`backend/tests/test_stage303_open.py`) — Stage 303 open (ADR-613)
@@ -5101,6 +5107,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 304 exit
+
+H304x met — `docs/STAGE_304_EXIT_CRITERIA.md`, ADR-616. Stages 1–304 frozen for Stage 304 feature scope.
+
+## Stage 304 D1 — Tenant MVP Commercial Billing Deferred Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_304_FIDELITY.md` (`test_stage304_fidelity_d1.py`). `COMMERCIAL_BILLING_DEFERRED_PACK_*` remaining-gate index; paid billing / payment provider / go-live still MISSING.
+
+## Stage 304 open
+
+ADR-615 / `docs/STAGE_304_PLAN.md`.
 
 ## Stage 303 exit
 

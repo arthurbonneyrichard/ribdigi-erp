@@ -31,3 +31,9 @@ Stage 304 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for paid billing, payment provider, checkout success, deferred ADR implemented, or go-live.
+
+## Amendment — Stage 304 opened
+
+Stage 304 opened under **ADR-615** after CONTINUE/NEXT (Tenant MVP Commercial Billing Deferred Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-616**. Stage 303 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 304 runner-up outline was approved and opened (ADR-615); freeze ADR-616. Do not reopen Stage 303 scope.

@@ -1611,6 +1611,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 36 B1 / Stage 302 / prior billing-deferred-pack / Stage 76 pointers (Stage 303 P1: `test_stage303_pointers_p1.py`, `docs/BILLING_DEFERRED_HONESTY_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 303 fidelity sync (D1: `test_stage303_fidelity_d1.py`, `docs/STAGE_303_FIDELITY.md`)
 - [x] Stage 303 exit + freeze (H303x: `test_stage303_exit_h303x.py`, `docs/STAGE_303_EXIT_CRITERIA.md`, ADR-614)
+- [x] Stage 304 track opened (ADR-615: `test_stage304_open.py`, `docs/STAGE_304_PLAN.md`) — Commercial Billing Deferred Pack Remaining-Gate Index; closed under ADR-616
+- [x] Commercial billing deferred pack remaining-gate hub (Stage 304 I1: `test_stage304_index_i1.py`, `docs/COMMERCIAL_BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md`)
+- [x] Commercial billing deferred pack blocker matrix (Stage 304 B1: `test_stage304_blockers_b1.py`, `docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 76 B1 / Stage 303 / prior billing-deferred-pack / Stage 36 B1 pointers (Stage 304 P1: `test_stage304_pointers_p1.py`, `docs/COMMERCIAL_BILLING_DEFERRED_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 304 fidelity sync (D1: `test_stage304_fidelity_d1.py`, `docs/STAGE_304_FIDELITY.md`)
+- [x] Stage 304 exit + freeze (H304x: `test_stage304_exit_h304x.py`, `docs/STAGE_304_EXIT_CRITERIA.md`, ADR-616)
 - [x] Stage 64 track opened (ADR-133: `test_stage64_open.py`, `docs/STAGE_64_PLAN.md`) — Commercial Analytics & Franchise Fidelity; closed under ADR-134
 - [x] Advanced BI honesty (Stage 64 B1: `test_advanced_bi_b1.py` — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json`; evidence `stage64_b1_advanced_bi.json`; live Advanced BI / custom analytics Remaining)
 - [x] Franchise & chain enterprise honesty (Stage 64 F1: `test_franchise_chain_f1.py` — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json`; evidence `stage64_f1_franchise_chain.json`; live franchise / chain deals Remaining)
