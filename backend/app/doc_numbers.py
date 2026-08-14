@@ -138,6 +138,14 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.CashTransfer,
         "field": "reference",
     },
+    # No dedicated opening-stock table; uniqueness checked on journal reference
+    # when a GL entry is posted (audit/response still carry the allocated label).
+    "opening_stock": {
+        "default_prefix": "OS",
+        "storage": "json",
+        "model": m.JournalEntry,
+        "field": "reference",
+    },
 }
 
 # Back-compat aliases
@@ -301,6 +309,10 @@ async def next_expense_number(db: AsyncSession, tenant_id: str) -> str:
 
 async def next_cash_transfer_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_series_document_number(db, tenant_id, "cash_transfer")
+
+
+async def next_opening_stock_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "opening_stock")
 
 
 async def next_series_document_number(db: AsyncSession, tenant_id: str, kind: str) -> str:

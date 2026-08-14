@@ -232,6 +232,9 @@ export default function Page() {
   const [scPrefix, setScPrefix] = useState('SC');
   const [scNext, setScNext] = useState('1');
   const [scPreview, setScPreview] = useState('');
+  const [osPrefix, setOsPrefix] = useState('OS');
+  const [osNext, setOsNext] = useState('1');
+  const [osPreview, setOsPreview] = useState('');
 
   async function refresh() {
     const [p, e, c, b, u, w, sc, os, rates, settings] = await Promise.all([
@@ -267,6 +270,12 @@ export default function Page() {
       setScNext(String(scNum.next_number ?? 1));
       setScPreview(scNum.preview || '');
     }
+    const osNum = settings.data?.opening_stock_numbering;
+    if (osNum) {
+      setOsPrefix(osNum.prefix || 'OS');
+      setOsNext(String(osNum.next_number ?? 1));
+      setOsPreview(osNum.preview || '');
+    }
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
@@ -293,6 +302,10 @@ export default function Page() {
             prefix: scPrefix.trim(),
             next_number: Math.max(1, Number(scNext) || 1),
           },
+          opening_stock_numbering: {
+            prefix: osPrefix.trim(),
+            next_number: Math.max(1, Number(osNext) || 1),
+          },
         }),
       });
       const trNum = r.data?.stock_transfer_numbering;
@@ -307,8 +320,14 @@ export default function Page() {
         setScNext(String(scNum.next_number ?? 1));
         setScPreview(scNum.preview || '');
       }
+      const osNum = r.data?.opening_stock_numbering;
+      if (osNum) {
+        setOsPrefix(osNum.prefix || 'OS');
+        setOsNext(String(osNum.next_number ?? 1));
+        setOsPreview(osNum.preview || '');
+      }
       setMessage(
-        `Numbering saved — TR ${trNum?.preview || ''} / SC ${scNum?.preview || ''}`.trim()
+        `Numbering saved — TR ${trNum?.preview || ''} / SC ${scNum?.preview || ''} / OS ${osNum?.preview || ''}`.trim()
       );
     } catch (err: any) {
       setError(err.message);
@@ -1262,7 +1281,8 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
         <strong>Document numbering</strong>
         <p className="muted" style={{ margin: 0 }}>
-          Transfers and stock counts use PREFIX-YYYY-NNNN (defaults TR / SC).
+          Transfers, stock counts, and opening stock use PREFIX-YYYY-NNNN (defaults TR / SC / OS).
+          Blank opening-stock reference auto-allocates the next OS number.
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <span className="muted">Transfer</span>
@@ -1295,6 +1315,22 @@ export default function Page() {
             style={{ width: 90 }}
           />
           <span className="muted">{scPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Opening stock</span>
+          <input
+            value={osPrefix}
+            onChange={(e) => setOsPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={osNext}
+            onChange={(e) => setOsNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{osPreview || '—'}</span>
           <button type="button" onClick={saveInventoryNumbering}>
             Save numbering
           </button>
@@ -2225,7 +2261,7 @@ export default function Page() {
             <input
               value={openingReference}
               onChange={(e) => setOpeningReference(e.target.value)}
-              placeholder="Reference (e.g. FY2026-OPEN)"
+              placeholder="Reference (blank = next OS-YYYY-NNNN)"
             />
             <input
               value={openingNotes}
