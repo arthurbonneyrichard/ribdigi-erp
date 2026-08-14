@@ -114,6 +114,18 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.PosSession,
         "field": "session_number",
     },
+    "stock_transfer": {
+        "default_prefix": "TR",
+        "storage": "json",
+        "model": m.StockTransfer,
+        "field": "transfer_number",
+    },
+    "stock_count": {
+        "default_prefix": "SC",
+        "storage": "json",
+        "model": m.StockCount,
+        "field": "count_number",
+    },
 }
 
 # Back-compat aliases
@@ -261,6 +273,14 @@ async def next_pos_sale_number(db: AsyncSession, tenant_id: str) -> str:
 async def next_pos_session_number(db: AsyncSession, tenant_id: str) -> str:
     """Allocate next POS shift session number (default SHIFT-YYYY-NNNN)."""
     return await next_series_document_number(db, tenant_id, "pos_session")
+
+
+async def next_stock_transfer_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "stock_transfer")
+
+
+async def next_stock_count_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "stock_count")
 
 
 async def next_series_document_number(db: AsyncSession, tenant_id: str, kind: str) -> str:

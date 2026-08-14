@@ -9756,10 +9756,14 @@ async def inventory_settings(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.doc_numbers import numbering_settings
+
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     return env(
         {
             "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),
+            "stock_transfer_numbering": numbering_settings(tenant, "stock_transfer"),
+            "stock_count_numbering": numbering_settings(tenant, "stock_count"),
         }
     )
 
@@ -9770,12 +9774,39 @@ async def update_inventory_settings(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.doc_numbers import apply_numbering_update, numbering_settings
+
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    tenant.fefo_strict_warehouse = bool(payload.fefo_strict_warehouse)
+    if (
+        payload.fefo_strict_warehouse is None
+        and payload.stock_transfer_numbering is None
+        and payload.stock_count_numbering is None
+    ):
+        raise HTTPException(status_code=400, detail="No inventory settings to update")
+    if payload.fefo_strict_warehouse is not None:
+        tenant.fefo_strict_warehouse = bool(payload.fefo_strict_warehouse)
+    if payload.stock_transfer_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "stock_transfer",
+            prefix=payload.stock_transfer_numbering.prefix,
+            next_number=payload.stock_transfer_numbering.next_number,
+        )
+    if payload.stock_count_numbering is not None:
+        apply_numbering_update(
+            tenant,
+            "stock_count",
+            prefix=payload.stock_count_numbering.prefix,
+            next_number=payload.stock_count_numbering.next_number,
+        )
     await db.commit()
     return env(
-        {"fefo_strict_warehouse": tenant.fefo_strict_warehouse},
-        "Inventory FEFO settings updated",
+        {
+            "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),
+            "stock_transfer_numbering": numbering_settings(tenant, "stock_transfer"),
+            "stock_count_numbering": numbering_settings(tenant, "stock_count"),
+        },
+        "Inventory settings updated",
     )
 
 

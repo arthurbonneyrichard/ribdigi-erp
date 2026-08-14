@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.doc_numbers import next_stock_count_number
 from app.inventory import allocate_unlocated_stock, apply_stock_change, get_or_create_warehouse_stock
 
 
@@ -208,7 +209,7 @@ async def create_count(
     count = m.StockCount(
         tenant_id=tenant_id,
         warehouse_id=warehouse_id,
-        count_number=f"SC-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        count_number=await next_stock_count_number(db, tenant_id),
         status="draft",
         notes=(notes or "").strip() or None,
         created_by=user_id,
