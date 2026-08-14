@@ -31,3 +31,9 @@ Stage 427 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Launch Cert, Launch Cert honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 427 opened under **ADR-861** after CONTINUE/NEXT (Tenant MVP Evidence Ledger Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-862**. Stage 426 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 426 runner-up outline was approved and opened (ADR-861); freeze ADR-862. Do not reopen Stage 426 scope.

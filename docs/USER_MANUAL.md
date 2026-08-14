@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 427 Evidence Ledger Honesty Pack remaining-gate — `docs/EVIDENCE_LEDGER_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/EVIDENCE_LEDGER_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 30 `EVIDENCE_LEDGER_PACK_*` ≠ evidence-ledger / go-live Completes).
 Stage 426 Launch Cert Honesty Pack remaining-gate — `docs/LAUNCH_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/LAUNCH_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 27 `LAUNCH_CERT_PACK_*` ≠ launch-cert / go-live Completes).
 Stage 425 Security Scan Honesty Pack remaining-gate — `docs/SECURITY_SCAN_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/SECURITY_SCAN_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 27 `SECURITY_SCAN_PACK_*` ≠ security-scan / go-live Completes).
 Stage 424 PITR Drill Honesty Pack remaining-gate — `docs/PITR_DRILL_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/PITR_DRILL_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 28 `PITR_DRILL_PACK_*` ≠ pitr-drill / go-live Completes).

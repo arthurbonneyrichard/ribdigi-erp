@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_427_EXIT_CRITERIA.md` / `docs/ADR_862_STAGE427_FREEZE.md` (`backend/tests/test_stage427_exit_h427x.py`) — Stage 427 H427x
+- `docs/STAGE_427_FIDELITY.md` (`backend/tests/test_stage427_fidelity_d1.py`) — Stage 427 D1
+- `docs/STAGE_427_PLAN.md` (`backend/tests/test_stage427_open.py`) — Stage 427 open (ADR-861)
+- `docs/EVIDENCE_LEDGER_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/evidence-ledger-honesty-pack-remaining-gate.json` — Stage 427 I1
+- `docs/EVIDENCE_LEDGER_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/evidence-ledger-honesty-pack-rg-blockers.json` — Stage 427 B1
+- `docs/EVIDENCE_LEDGER_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/evidence-ledger-honesty-pack-rg-pointers.json` — Stage 427 P1
 - `docs/STAGE_426_EXIT_CRITERIA.md` / `docs/ADR_860_STAGE426_FREEZE.md` (`backend/tests/test_stage426_exit_h426x.py`) — Stage 426 H426x
 - `docs/STAGE_426_FIDELITY.md` (`backend/tests/test_stage426_fidelity_d1.py`) — Stage 426 D1
 - `docs/STAGE_426_PLAN.md` (`backend/tests/test_stage426_open.py`) — Stage 426 open (ADR-859)
@@ -5839,6 +5845,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 427 exit
+
+H427x met — `docs/STAGE_427_EXIT_CRITERIA.md`, ADR-862. Stages 1–427 frozen for Stage 427 feature scope.
+
+## Stage 427 D1 — Tenant MVP Evidence Ledger Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Evidence Ledger honesty / go-live Completes remain MISSING. See `docs/STAGE_427_FIDELITY.md`.
+
+## Stage 427 open
+
+Opened under ADR-861; plan `docs/STAGE_427_PLAN.md`.
 
 ## Stage 426 exit
 

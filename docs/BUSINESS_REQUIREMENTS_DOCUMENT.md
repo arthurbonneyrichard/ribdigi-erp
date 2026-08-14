@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 427 D1 Evidence Ledger Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_427_FIDELITY.md` (`test_stage427_fidelity_d1.py`); Offline Complete / Evidence Ledger honesty / go-live still MISSING.
 Stage 426 D1 Launch Cert Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_426_FIDELITY.md` (`test_stage426_fidelity_d1.py`); Offline Complete / Launch Cert honesty / go-live still MISSING.
 Stage 425 D1 Security Scan Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_425_FIDELITY.md` (`test_stage425_fidelity_d1.py`); Offline Complete / Security Scan honesty / go-live still MISSING.
 Stage 424 D1 PITR Drill Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_424_FIDELITY.md` (`test_stage424_fidelity_d1.py`); Offline Complete / PITR Drill honesty / go-live still MISSING.

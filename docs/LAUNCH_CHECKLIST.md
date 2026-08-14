@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 427 track opened (ADR-861: `test_stage427_open.py`, `docs/STAGE_427_PLAN.md`) — Evidence Ledger Honesty Pack Remaining-Gate Index; closed under ADR-862
+- [x] Evidence Ledger honesty pack remaining-gate hub (Stage 427 I1: `test_stage427_index_i1.py`, `docs/EVIDENCE_LEDGER_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Evidence Ledger honesty pack blocker matrix (Stage 427 B1: `test_stage427_blockers_b1.py`, `docs/EVIDENCE_LEDGER_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 426 / Stage 425 / Stage 392 / CHANGE_IMPACT pointers (Stage 427 P1: `test_stage427_pointers_p1.py`, `docs/EVIDENCE_LEDGER_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 427 fidelity sync (D1: `test_stage427_fidelity_d1.py`, `docs/STAGE_427_FIDELITY.md`)
+- [x] Stage 427 exit + freeze (H427x: `test_stage427_exit_h427x.py`, `docs/STAGE_427_EXIT_CRITERIA.md`, ADR-862)
 - [x] Stage 426 track opened (ADR-859: `test_stage426_open.py`, `docs/STAGE_426_PLAN.md`) — Launch Cert Honesty Pack Remaining-Gate Index; closed under ADR-860
 - [x] Launch Cert honesty pack remaining-gate hub (Stage 426 I1: `test_stage426_index_i1.py`, `docs/LAUNCH_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Launch Cert honesty pack blocker matrix (Stage 426 B1: `test_stage426_blockers_b1.py`, `docs/LAUNCH_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
