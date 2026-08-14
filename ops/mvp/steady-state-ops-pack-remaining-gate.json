@@ -1,0 +1,57 @@
+{
+  "id": "steady-state-ops-pack-remaining-gate",
+  "stage": 258,
+  "pack": "I1",
+  "doc": "docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STEADY_STATE_OPS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STEADY_STATE_OPS_PACK_RG_POINTERS_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "commercial_acceptance_pack_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_packaging_archive_pack_remaining_gate": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "steady_state_ops_remaining_gate": "docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md",
+    "steady_state_ops_register": "ops/mvp/steady-state-ops.json"
+  },
+  "packaging_complete": true,
+  "steady_state_ops_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage71_s1_steady_state_ops": true,
+  "distinct_from_stage257_commercial_acceptance_pack_remaining_gate": true,
+  "distinct_from_stage256_commercial_packaging_archive_pack_remaining_gate": true,
+  "distinct_from_stage198_steady_state_ops_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ssopr-read-blockers",
+      "title": "Read B1 steady-state ops pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssopr-follow-pointers",
+      "title": "Follow P1 Stage 71 / Stage 257 / Stage 256 / Stage 198 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssopr-steady-missing",
+      "title": "Reaffirm steady-state ops live MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssopr-no-packaging-as-live",
+      "title": "Do not treat Stage 71 S1 / Stage 257 / Stage 198 as steady-state ops live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssopr-steady-remaining",
+      "title": "Steady-state ops / commercial acceptance / first commercial day / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 258 I1 steady-state ops pack remaining-gate index packaging only. Do not claim steady-state ops live Complete."
+}

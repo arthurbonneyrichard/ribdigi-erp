@@ -31,3 +31,9 @@ Stage 258 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for commercial acceptance, steady-state ops, §7 signature, or go-live.
+
+## Amendment — Stage 258 opened
+
+Stage 258 opened under **ADR-523** after CONTINUE/NEXT (Tenant MVP Steady-State Ops Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-524**. Stage 257 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 258 runner-up outline was approved and opened (ADR-523); freeze ADR-524. Do not reopen Stage 257 scope.

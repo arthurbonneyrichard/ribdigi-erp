@@ -976,6 +976,12 @@ Authoritative MVP docs:
 - `docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-acceptance-pack-remaining-gate.json` — Stage 257 I1
 - `docs/COMMERCIAL_ACCEPTANCE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-acceptance-pack-rg-blockers.json` — Stage 257 B1
 - `docs/COMMERCIAL_ACCEPTANCE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-acceptance-pack-rg-pointers.json` — Stage 257 P1
+- `docs/STAGE_258_EXIT_CRITERIA.md` / `docs/ADR_524_STAGE258_FREEZE.md` (`backend/tests/test_stage258_exit_h258x.py`) — Stage 258 H258x
+- `docs/STAGE_258_FIDELITY.md` (`backend/tests/test_stage258_fidelity_d1.py`) — Stage 258 D1
+- `docs/STAGE_258_PLAN.md` (`backend/tests/test_stage258_open.py`) — Stage 258 open (ADR-523)
+- `docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/steady-state-ops-pack-remaining-gate.json` — Stage 258 I1
+- `docs/STEADY_STATE_OPS_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/steady-state-ops-pack-rg-blockers.json` — Stage 258 B1
+- `docs/STEADY_STATE_OPS_PACK_RG_POINTERS_MVP.md` / `ops/mvp/steady-state-ops-pack-rg-pointers.json` — Stage 258 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4525,4 +4531,16 @@ H257x met — `docs/STAGE_257_EXIT_CRITERIA.md`, ADR-522. Stages 1–257 frozen 
 ## Stage 257 open
 
 `docs/ADR_521_STAGE257_OPEN.md` + `docs/STAGE_257_PLAN.md` (`test_stage257_open.py`).
+
+## Stage 258 exit
+
+H258x met — `docs/STAGE_258_EXIT_CRITERIA.md`, ADR-524. Stages 1–258 frozen for Stage 258 feature scope.
+
+## Stage 258 D1 — Tenant MVP Steady-State Ops Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_258_FIDELITY.md` (`test_stage258_fidelity_d1.py`). `STEADY_STATE_OPS_PACK_*` remaining-gate index; steady-state ops / first commercial day still MISSING.
+
+## Stage 258 open
+
+`docs/ADR_523_STAGE258_OPEN.md` + `docs/STAGE_258_PLAN.md` (`test_stage258_open.py`).
 
