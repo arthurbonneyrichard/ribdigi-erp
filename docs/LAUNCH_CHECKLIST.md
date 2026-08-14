@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 405 track opened (ADR-817: `test_stage405_open.py`, `docs/STAGE_405_PLAN.md`) — Attestation Workflow Pack Remaining-Gate Index; closed under ADR-818
+- [x] Attestation workflow pack remaining-gate hub (Stage 405 I1: `test_stage405_index_i1.py`, `docs/ATTESTATION_WORKFLOW_PACK_REMAINING_GATE_MVP.md`)
+- [x] Attestation workflow pack blocker matrix (Stage 405 B1: `test_stage405_blockers_b1.py`, `docs/ATTESTATION_WORKFLOW_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 404 / Stage 403 / Stage 392 / CHANGE_IMPACT pointers (Stage 405 P1: `test_stage405_pointers_p1.py`, `docs/ATTESTATION_WORKFLOW_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 405 fidelity sync (D1: `test_stage405_fidelity_d1.py`, `docs/STAGE_405_FIDELITY.md`)
+- [x] Stage 405 exit + freeze (H405x: `test_stage405_exit_h405x.py`, `docs/STAGE_405_EXIT_CRITERIA.md`, ADR-818)
 - [x] Stage 404 track opened (ADR-815: `test_stage404_open.py`, `docs/STAGE_404_PLAN.md`) — ADR-002 Paid Billing Pack Remaining-Gate Index; closed under ADR-816
 - [x] ADR-002 paid billing pack remaining-gate hub (Stage 404 I1: `test_stage404_index_i1.py`, `docs/ADR002_PAID_BILLING_PACK_REMAINING_GATE_MVP.md`)
 - [x] ADR-002 paid billing pack blocker matrix (Stage 404 B1: `test_stage404_blockers_b1.py`, `docs/ADR002_PAID_BILLING_PACK_RG_BLOCKERS_MVP.md`)

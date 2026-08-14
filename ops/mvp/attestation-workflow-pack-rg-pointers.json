@@ -1,0 +1,67 @@
+{
+  "id": "attestation-workflow-pack-rg-pointers",
+  "stage": 405,
+  "pack": "P1",
+  "doc": "docs/ATTESTATION_WORKFLOW_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ATTESTATION_WORKFLOW_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "adr002_paid_billing_pack": "docs/ADR002_PAID_BILLING_PACK_REMAINING_GATE_MVP.md",
+    "adr005_store_membership_pack": "docs/ADR005_STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_workflow_complete_claimed": false,
+  "attestation_workflow_as_offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_attestation_workflow": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "adr002_paid_billing_pack_remaining_gate_stage404": "docs/ADR002_PAID_BILLING_PACK_REMAINING_GATE_MVP.md",
+    "adr005_store_membership_pack_remaining_gate_stage403": "docs/ADR005_STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / attestation_workflow / attestation / go_live remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "awfprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 attestation workflow",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprp-stage404",
+      "title": "Point to Stage 404 ADR-002 paid billing pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprp-stage403",
+      "title": "Point to Stage 403 ADR-005 store membership pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprp-checklist-remaining",
+      "title": "Offline Complete / attestation / attestation-workflow Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 405 P1 attestation workflow pack RG pointers packaging only."
+}

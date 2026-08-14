@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_405_EXIT_CRITERIA.md` / `docs/ADR_818_STAGE405_FREEZE.md` (`backend/tests/test_stage405_exit_h405x.py`) — Stage 405 H405x
+- `docs/STAGE_405_FIDELITY.md` (`backend/tests/test_stage405_fidelity_d1.py`) — Stage 405 D1
+- `docs/STAGE_405_PLAN.md` (`backend/tests/test_stage405_open.py`) — Stage 405 open (ADR-817)
+- `docs/ATTESTATION_WORKFLOW_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/attestation-workflow-pack-remaining-gate.json` — Stage 405 I1
+- `docs/ATTESTATION_WORKFLOW_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/attestation-workflow-pack-rg-blockers.json` — Stage 405 B1
+- `docs/ATTESTATION_WORKFLOW_PACK_RG_POINTERS_MVP.md` / `ops/mvp/attestation-workflow-pack-rg-pointers.json` — Stage 405 P1
 - `docs/STAGE_404_EXIT_CRITERIA.md` / `docs/ADR_816_STAGE404_FREEZE.md` (`backend/tests/test_stage404_exit_h404x.py`) — Stage 404 H404x
 - `docs/STAGE_404_FIDELITY.md` (`backend/tests/test_stage404_fidelity_d1.py`) — Stage 404 D1
 - `docs/STAGE_404_PLAN.md` (`backend/tests/test_stage404_open.py`) — Stage 404 open (ADR-815)
@@ -5707,6 +5713,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 405 exit
+
+H405x met — `docs/STAGE_405_EXIT_CRITERIA.md`, ADR-818. Stages 1–405 frozen for Stage 405 feature scope.
+
+## Stage 405 D1 — Tenant MVP Attestation Workflow Pack Remaining-Gate Index Fidelity
+
+Fidelity sync complete — `docs/STAGE_405_FIDELITY.md`. Honesty flags remain false.
+
+## Stage 405 open
+
+Opened under ADR-817; plan `docs/STAGE_405_PLAN.md`.
 
 ## Stage 404 exit
 

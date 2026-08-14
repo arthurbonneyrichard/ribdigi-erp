@@ -33,3 +33,9 @@ Stage 405 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, ADR-002, ADR-002 paid-billing, paid billing/MRR as go-live, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 405 opened under **ADR-817** after CONTINUE/NEXT (Tenant MVP Attestation Workflow Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-818**. Stage 404 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 404 runner-up outline was approved and opened (ADR-817); freeze ADR-818. Do not reopen Stage 404 scope.
