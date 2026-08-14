@@ -477,6 +477,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Create quotation with product, quantity, price, validity period (`valid_days` → `valid_until`; Sales UI)
+  - [x] Line + header discounts on create (`items[].discount` + `discount_amount`; tax before line discount; Sales Create sale UI + detail)
   - [x] Quotation number auto-generation (configurable series via `/sales/settings`)
   - [x] Print/email quotation to customer (`POST /sales/quotations/{id}/send`)
   - [x] Convert quotation to sales order (`POST /sales/quotations/{id}/convert`)
@@ -487,6 +488,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Create order from quotation or directly (order_number via tenant series `GET|PATCH /sales/settings` → `sales_order_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `SO`; Sales Document numbering UI)
+  - [x] Line + header discounts on create (`items[].discount` + `discount_amount`; Sales Create sale UI + detail)
   - [x] Reserve inventory (soft allocation) on confirm against store warehouse (`stock_reservations`); cancel releases; invoice post consumes then hard stock-out
   - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (plus `invoiced` after convert-to-invoice; cancel allowed through processing)
   - [x] Delivery date and address
@@ -498,7 +500,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Create invoice from sales order or directly
   - [x] Invoice number auto-generation with configurable prefix and series (`GET|PATCH /sales/settings`; `{PREFIX}-{YYYY}-{NNNN}`, year-scoped next counter)
-  - [x] Product lines with quantity, unit price, tax, discount, total
+  - [x] Product lines with quantity, unit price, tax, discount, total (`items[].discount` + header `discount_amount` on create; Sales Create sale + detail KPI; tax before line discount)
   - [x] Customer selection with auto-filled details
   - [x] Multiple print templates (A4, thermal receipt) via `GET /sales/invoices/{id}/print?template=a4|thermal`
   - [x] Status: Draft, Posted (approved), Sent (emailed), Partial, Paid, Overdue, Cancelled — overdue derived from due date; payment-due scan refreshes overdue

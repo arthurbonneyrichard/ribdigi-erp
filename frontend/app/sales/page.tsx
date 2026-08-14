@@ -84,6 +84,8 @@ export default function Page() {
   const [qty, setQty] = useState('1');
   const [unitPrice, setUnitPrice] = useState('0');
   const [taxRate, setTaxRate] = useState('');
+  const [lineDiscount, setLineDiscount] = useState('');
+  const [headerDiscount, setHeaderDiscount] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('other');
   const [restock, setRestock] = useState(true);
@@ -221,6 +223,8 @@ export default function Page() {
     };
   }, [productId, variantId, customerId, useGroupPrice]);
 
+  const lineDisc = Math.max(0, Number(lineDiscount) || 0);
+  const hdrDisc = Math.max(0, Number(headerDiscount) || 0);
   const lineItems = [
     {
       product_id: productId,
@@ -229,6 +233,7 @@ export default function Page() {
       quantity: Number(qty),
       ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
       tax_rate: taxRate === '' ? null : Number(taxRate),
+      discount: lineDisc,
     },
   ];
 
@@ -237,6 +242,7 @@ export default function Page() {
     store_id: storeId || null,
     delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
     delivery_address: deliveryAddress.trim() || null,
+    discount_amount: hdrDisc,
     items: lineItems,
   };
 
@@ -244,6 +250,7 @@ export default function Page() {
     customer_id: customerId,
     store_id: storeId || null,
     items: lineItems,
+    discount_amount: hdrDisc,
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
   };
@@ -330,6 +337,8 @@ export default function Page() {
       const r = await api('/sales/invoices', { method: 'POST', body: JSON.stringify(invoicePayload) });
       setMessage(`Draft ${r.data.invoice_number} created`);
       setSelected(r.data);
+      setLineDiscount('');
+      setHeaderDiscount('');
       setTab('invoices');
       await refresh();
     } catch (err: any) {
@@ -420,6 +429,8 @@ export default function Page() {
       const r = await api('/sales/quotations', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Quotation ${r.data.quotation_number} created`);
       setSelected(r.data);
+      setLineDiscount('');
+      setHeaderDiscount('');
       setTab('quotations');
       await refresh();
     } catch (err: any) {
@@ -433,6 +444,8 @@ export default function Page() {
       const r = await api('/sales/orders', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Order ${r.data.order_number} created`);
       setSelected(r.data);
+      setLineDiscount('');
+      setHeaderDiscount('');
       setTab('orders');
       await refresh();
     } catch (err: any) {
@@ -883,7 +896,27 @@ export default function Page() {
             Group price
           </label>
           <input value={taxRate} onChange={(e) => setTaxRate(e.target.value)} placeholder="Tax %" style={{ width: 80 }} />
+          <input
+            value={lineDiscount}
+            onChange={(e) => setLineDiscount(e.target.value)}
+            placeholder="Line discount"
+            aria-label="Line discount"
+            style={{ width: 110 }}
+            title="Line discount amount (tax before discount)"
+          />
+          <input
+            value={headerDiscount}
+            onChange={(e) => setHeaderDiscount(e.target.value)}
+            placeholder="Header discount"
+            aria-label="Header discount"
+            style={{ width: 120 }}
+            title="Document-level discount amount"
+          />
         </div>
+        <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
+          Line discount is stored on the line (tax before discount). Header discount reduces the
+          document total — same model as Purchasing invoices.
+        </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={createQuotation}>Create quotation</button>
           <button onClick={createOrder}>Create order</button>
@@ -1220,6 +1253,7 @@ export default function Page() {
                 <th>Qty</th>
                 <th>Unit</th>
                 <th>Tax %</th>
+                <th>Discount</th>
                 <th>Line tax</th>
                 <th>Line total</th>
               </tr>
@@ -1234,6 +1268,7 @@ export default function Page() {
                   <td>{it.quantity}</td>
                   <td>{it.unit_price}</td>
                   <td>{it.tax_rate}</td>
+                  <td>{it.discount ?? 0}</td>
                   <td>
                     {it.line_tax ?? 0}
                     {(it.tax_components || []).length
@@ -1255,6 +1290,10 @@ export default function Page() {
             <div className="card">
               <div className="muted">Tax</div>
               <div className="kpi">{selected.tax_amount ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Discount</div>
+              <div className="kpi">{selected.discount_amount ?? 0}</div>
             </div>
             <div className="card">
               <div className="muted">Total</div>

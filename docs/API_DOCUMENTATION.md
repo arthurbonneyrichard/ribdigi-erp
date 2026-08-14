@@ -898,6 +898,8 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 }
 ```
 
+Create accepts header `discount_amount` and per-line `items[].discount` (≥0). Line tax is computed on qty×unit_price before line discount; document `total_amount` subtracts header discount. Sales **Create sale** UI exposes Line discount + Header discount for quotations, orders, and invoices; detail shows Discount column + KPI (BR-7.2 / BR-7.3 / BR-7.4).
+
 ### 7.4 Sales Orders
 **List:** `GET /sales/orders`  
 **Create:** `POST /sales/orders`  
@@ -936,6 +938,8 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
   "notes": "Thank you for your business"
 }
 ```
+
+Create accepts header `discount_amount` and per-line `items[].discount` (≥0) with the same tax-before-line-discount order as quotations/orders. Sales UI Create sale + invoice detail show discounts (BR-7.4).
 
 Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, and `is_reverse_charge`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Print JSON/PDF includes per-line tax amounts.
 
