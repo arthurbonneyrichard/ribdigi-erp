@@ -31,3 +31,9 @@ Stage 419 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, cutover, Cutover honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 419 opened under **ADR-845** after CONTINUE/NEXT (Tenant MVP TLS Ingress Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-846**. Stage 418 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 418 runner-up outline was approved and opened (ADR-845); freeze ADR-846. Do not reopen Stage 418 scope.
