@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 429 track opened (ADR-865: `test_stage429_open.py`, `docs/STAGE_429_PLAN.md`) — Support Runbook Honesty Pack Remaining-Gate Index; closed under ADR-866
+- [x] Support Runbook honesty pack remaining-gate hub (Stage 429 I1: `test_stage429_index_i1.py`, `docs/SUPPORT_RUNBOOK_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Support Runbook honesty pack blocker matrix (Stage 429 B1: `test_stage429_blockers_b1.py`, `docs/SUPPORT_RUNBOOK_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 428 / Stage 427 / Stage 392 / CHANGE_IMPACT pointers (Stage 429 P1: `test_stage429_pointers_p1.py`, `docs/SUPPORT_RUNBOOK_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 429 fidelity sync (D1: `test_stage429_fidelity_d1.py`, `docs/STAGE_429_FIDELITY.md`)
+- [x] Stage 429 exit + freeze (H429x: `test_stage429_exit_h429x.py`, `docs/STAGE_429_EXIT_CRITERIA.md`, ADR-866)
 - [x] Stage 428 track opened (ADR-863: `test_stage428_open.py`, `docs/STAGE_428_PLAN.md`) — Incident Pack Honesty Pack Remaining-Gate Index; closed under ADR-864
 - [x] Incident Pack honesty pack remaining-gate hub (Stage 428 I1: `test_stage428_index_i1.py`, `docs/INCIDENT_PACK_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Incident Pack honesty pack blocker matrix (Stage 428 B1: `test_stage428_blockers_b1.py`, `docs/INCIDENT_PACK_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

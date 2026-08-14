@@ -31,3 +31,10 @@ Stage 429 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Incident Pack, Incident Pack honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 429 opened under **ADR-865** after CONTINUE/NEXT (Tenant MVP Support Runbook Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-866**. Stage 428 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 428 runner-up outline was approved and opened (ADR-865); freeze ADR-866. Do not reopen Stage 428 scope.
+

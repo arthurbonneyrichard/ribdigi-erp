@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_429_EXIT_CRITERIA.md` / `docs/ADR_866_STAGE429_FREEZE.md` (`backend/tests/test_stage429_exit_h429x.py`) — Stage 429 H429x
+- `docs/STAGE_429_FIDELITY.md` (`backend/tests/test_stage429_fidelity_d1.py`) — Stage 429 D1
+- `docs/STAGE_429_PLAN.md` (`backend/tests/test_stage429_open.py`) — Stage 429 open (ADR-865)
+- `docs/SUPPORT_RUNBOOK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/support-runbook-honesty-pack-remaining-gate.json` — Stage 429 I1
+- `docs/SUPPORT_RUNBOOK_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/support-runbook-honesty-pack-rg-blockers.json` — Stage 429 B1
+- `docs/SUPPORT_RUNBOOK_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/support-runbook-honesty-pack-rg-pointers.json` — Stage 429 P1
 - `docs/STAGE_428_EXIT_CRITERIA.md` / `docs/ADR_864_STAGE428_FREEZE.md` (`backend/tests/test_stage428_exit_h428x.py`) — Stage 428 H428x
 - `docs/STAGE_428_FIDELITY.md` (`backend/tests/test_stage428_fidelity_d1.py`) — Stage 428 D1
 - `docs/STAGE_428_PLAN.md` (`backend/tests/test_stage428_open.py`) — Stage 428 open (ADR-863)
@@ -5851,6 +5857,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 429 exit
+
+H429x met — `docs/STAGE_429_EXIT_CRITERIA.md`, ADR-866. Stages 1–429 frozen for Stage 429 feature scope.
+
+## Stage 429 D1 — Tenant MVP Support Runbook Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Support Runbook honesty / go-live Completes remain MISSING. See `docs/STAGE_429_FIDELITY.md`.
+
+## Stage 429 open
+
+Opened under ADR-865; plan `docs/STAGE_429_PLAN.md`.
 
 ## Stage 428 exit
 

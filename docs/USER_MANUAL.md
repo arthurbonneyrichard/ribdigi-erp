@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 429 Support Runbook Honesty Pack remaining-gate — `docs/SUPPORT_RUNBOOK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/SUPPORT_RUNBOOK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 30 `SUPPORT_RUNBOOK_PACK_*` ≠ support / go-live Completes).
 Stage 428 Incident Pack Honesty Pack remaining-gate — `docs/INCIDENT_PACK_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/INCIDENT_PACK_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 30 `INCIDENT_PACK_*` ≠ incident / go-live Completes).
 Stage 427 Evidence Ledger Honesty Pack remaining-gate — `docs/EVIDENCE_LEDGER_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/EVIDENCE_LEDGER_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 30 `EVIDENCE_LEDGER_PACK_*` ≠ evidence-ledger / go-live Completes).
 Stage 426 Launch Cert Honesty Pack remaining-gate — `docs/LAUNCH_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/LAUNCH_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Stage 27 `LAUNCH_CERT_PACK_*` ≠ launch-cert / go-live Completes).

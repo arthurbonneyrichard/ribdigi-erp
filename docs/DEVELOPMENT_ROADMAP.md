@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 429 D1 (2026-08-14):** Support Runbook Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_429_FIDELITY.md` (`test_stage429_fidelity_d1.py`). Open ADR: `docs/ADR_865_STAGE429_OPEN.md`; plan `docs/STAGE_429_PLAN.md`.
+
+**Stage 429 exit (2026-08-14):** I1, B1, P1, D1, H429x met — `docs/STAGE_429_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_866_STAGE429_FREEZE.md`. Fidelity: `docs/STAGE_429_FIDELITY.md`.
+
 **Stage 428 D1 (2026-08-14):** Incident Pack Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_428_FIDELITY.md` (`test_stage428_fidelity_d1.py`). Open ADR: `docs/ADR_863_STAGE428_OPEN.md`; plan `docs/STAGE_428_PLAN.md`.
 
 **Stage 428 exit (2026-08-14):** I1, B1, P1, D1, H428x met — `docs/STAGE_428_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_864_STAGE428_FREEZE.md`. Fidelity: `docs/STAGE_428_FIDELITY.md`.
