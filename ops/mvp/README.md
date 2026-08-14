@@ -859,6 +859,13 @@ Authoritative MVP docs:
 - `docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/knowledge-base-pack-remaining-gate.json` — Stage 238 I1
 - `docs/KNOWLEDGE_BASE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/knowledge-base-pack-rg-blockers.json` — Stage 238 B1
 - `docs/KNOWLEDGE_BASE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/knowledge-base-pack-rg-pointers.json` — Stage 238 P1
+
+- `docs/STAGE_239_EXIT_CRITERIA.md` / `docs/ADR_485_STAGE239_FREEZE.md` (`backend/tests/test_stage239_exit_h239x.py`) — Stage 239 H239x
+- `docs/STAGE_239_FIDELITY.md` (`backend/tests/test_stage239_fidelity_d1.py`) — Stage 239 D1
+- `docs/STAGE_239_PLAN.md` (`backend/tests/test_stage239_open.py`) — Stage 239 open (ADR-484)
+- `docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/operator-handoff-pack-remaining-gate.json` — Stage 239 I1
+- `docs/OPERATOR_HANDOFF_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/operator-handoff-pack-rg-blockers.json` — Stage 239 B1
+- `docs/OPERATOR_HANDOFF_PACK_RG_POINTERS_MVP.md` / `ops/mvp/operator-handoff-pack-rg-pointers.json` — Stage 239 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4180,4 +4187,16 @@ H238x met — `docs/STAGE_238_EXIT_CRITERIA.md`, ADR-483. Stages 1–238 frozen 
 ## Stage 238 open
 
 `docs/ADR_482_STAGE238_OPEN.md` + `docs/STAGE_238_PLAN.md` (`test_stage238_open.py`).
+
+## Stage 239 exit
+
+H239x met — `docs/STAGE_239_EXIT_CRITERIA.md`, ADR-485. Stages 1–239 frozen for Stage 239 feature scope.
+
+## Stage 239 D1 — Tenant MVP Operator Handoff Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_239_FIDELITY.md` (`test_stage239_fidelity_d1.py`). `OPERATOR_HANDOFF_PACK_*` remaining-gate index; live operator handoff still MISSING.
+
+## Stage 239 open
+
+`docs/ADR_484_STAGE239_OPEN.md` + `docs/STAGE_239_PLAN.md` (`test_stage239_open.py`).
 

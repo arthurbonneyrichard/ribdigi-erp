@@ -1,0 +1,57 @@
+{
+  "id": "operator-handoff-pack-remaining-gate",
+  "stage": 239,
+  "pack": "I1",
+  "doc": "docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OPERATOR_HANDOFF_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OPERATOR_HANDOFF_PACK_RG_POINTERS_MVP.md",
+    "operator_handoff": "docs/OPERATOR_HANDOFF_MVP.md",
+    "operator_handoff_remaining_gate": "docs/OPERATOR_HANDOFF_REMAINING_GATE_MVP.md",
+    "knowledge_base_pack_remaining_gate": "docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md",
+    "incident_pack_remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+    "operator_handoff_register": "ops/mvp/operator-handoff.json"
+  },
+  "packaging_complete": true,
+  "live_operator_handoff_claimed": false,
+  "handoff_complete_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage32_h1_operator_handoff": true,
+  "distinct_from_stage217_operator_handoff_remaining_gate": true,
+  "distinct_from_stage238_knowledge_base_pack_remaining_gate": true,
+  "distinct_from_stage237_incident_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ohpr-read-blockers",
+      "title": "Read B1 operator handoff pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohpr-follow-pointers",
+      "title": "Follow P1 Stage 32 / Stage 217 / Stage 238 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohpr-handoff-missing",
+      "title": "Reaffirm live operator handoff MISSING until ops take-over + section 7",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohpr-no-packaging-as-live",
+      "title": "Do not treat Stage 32 H1 as live operator handoff Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohpr-handoff-remaining",
+      "title": "Live operator handoff / section 7 / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 239 I1 operator handoff pack remaining-gate index packaging only. Do not claim live operator handoff Complete."
+}

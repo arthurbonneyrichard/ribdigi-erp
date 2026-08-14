@@ -27,3 +27,9 @@ Stage 238 Tenant MVP Knowledge Base Pack Remaining-Gate Index Fidelity delivered
 Stage 239 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 238 feature scope remains frozen.
 
 **Runner-up outline (not opened):** Tenant MVP Operator Handoff Pack Remaining-Gate Index Fidelity — single index of operator-handoff blockers (packaged operator-handoff materials non-claim as live operator handoff Complete) with explicit non-claim. Prefixed `OPERATOR_HANDOFF_PACK_*` if a prior `OPERATOR_HANDOFF_*` remaining-gate exists. Distinct from Stage 238 knowledge base pack remaining-gate and Stage 237 incident pack remaining-gate.
+
+## Amendment — Stage 239 opened
+
+Stage 239 opened under **ADR-484** after CONTINUE/NEXT (Operator Handoff Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-485**. Stage 238 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 239 runner-up outline was approved and opened (ADR-484); freeze ADR-485. Do not reopen Stage 238 scope.

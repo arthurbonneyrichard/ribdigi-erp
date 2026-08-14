@@ -1,0 +1,49 @@
+{
+  "id": "operator-handoff-pack-rg-blockers",
+  "stage": 239,
+  "pack": "B1",
+  "doc": "docs/OPERATOR_HANDOFF_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md",
+    "operator_handoff": "docs/OPERATOR_HANDOFF_MVP.md",
+    "operator_handoff_register": "ops/mvp/operator-handoff.json"
+  },
+  "packaging_complete": true,
+  "live_operator_handoff_claimed": false,
+  "handoff_complete_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_ops_takeover_handoff_execution": "REMAINING",
+    "section_7_name_date_signed": "REMAINING",
+    "stage32_h1_as_live_operator_handoff": "NON_CLAIM",
+    "live_operator_handoff_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ohprb-takeover",
+      "title": "Mark live ops take-over / operator handoff execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohprb-section7",
+      "title": "Mark section 7 Name/Date signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohprb-stage32-nonclaim",
+      "title": "Mark Stage 32 H1 as non-claim for live operator handoff",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohprb-handoff-remaining",
+      "title": "Live operator handoff Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 239 B1 operator handoff pack RG blocker matrix packaging only. Live operator handoff Complete remains MISSING."
+}

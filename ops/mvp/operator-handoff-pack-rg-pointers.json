@@ -1,0 +1,60 @@
+{
+  "id": "operator-handoff-pack-rg-pointers",
+  "stage": 239,
+  "pack": "P1",
+  "doc": "docs/OPERATOR_HANDOFF_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md",
+    "operator_handoff": "docs/OPERATOR_HANDOFF_MVP.md",
+    "operator_handoff_remaining_gate": "docs/OPERATOR_HANDOFF_REMAINING_GATE_MVP.md",
+    "knowledge_base_pack_remaining_gate": "docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md",
+    "incident_pack_remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+    "operator_handoff_register": "ops/mvp/operator-handoff.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_operator_handoff_claimed": false,
+  "handoff_complete_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "operator_handoff_stage32_h1",
+    "operator_handoff_remaining_gate_stage217",
+    "knowledge_base_pack_remaining_gate_stage238",
+    "incident_pack_remaining_gate_stage237",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ohprp-stage32",
+      "title": "Point to Stage 32 H1 operator handoff",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohprp-stage217",
+      "title": "Point to Stage 217 operator handoff remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohprp-stage238",
+      "title": "Point to Stage 238 knowledge base pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohprp-stage237",
+      "title": "Point to Stage 237 incident pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohprp-handoff-remaining",
+      "title": "Live operator handoff Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 239 P1 operator handoff pack RG pointers packaging only. Do not claim live operator handoff Complete."
+}
