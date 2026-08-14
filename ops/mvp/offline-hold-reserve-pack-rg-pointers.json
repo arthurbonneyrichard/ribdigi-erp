@@ -1,0 +1,59 @@
+{
+  "id": "offline-hold-reserve-pack-rg-pointers",
+  "stage": 378,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_HOLD_RESERVE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_HOLD_RESERVE_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_catalog_ttl_pack": "docs/OFFLINE_CATALOG_TTL_PACK_REMAINING_GATE_MVP.md",
+    "stage166_fidelity": "docs/STAGE_166_FIDELITY.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_hold_reserve_complete_claimed": false,
+  "reserved_qty_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section22_offline_hold_reserve": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_catalog_ttl_pack_remaining_gate_stage377": "docs/OFFLINE_CATALOG_TTL_PACK_REMAINING_GATE_MVP.md",
+    "stage166_hold_soft_reserve_fidelity": "docs/STAGE_166_FIDELITY.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_hold_reserve / reserved_qty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "ohsrprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a722 offline hold soft-reserve",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohsrprp-stage377",
+      "title": "Point to Stage 377 offline catalog TTL pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohsrprp-stage166",
+      "title": "Point to Stage 166 Hold soft-reserve fidelity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohsrprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ohsrprp-checklist-remaining",
+      "title": "Offline Complete / offline hold soft-reserve Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 378 P1 offline hold soft-reserve pack RG pointers packaging only."
+}

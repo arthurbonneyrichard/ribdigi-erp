@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_378_EXIT_CRITERIA.md` / `docs/ADR_764_STAGE378_FREEZE.md` (`backend/tests/test_stage378_exit_h378x.py`) — Stage 378 H378x
+- `docs/STAGE_378_FIDELITY.md` (`backend/tests/test_stage378_fidelity_d1.py`) — Stage 378 D1
+- `docs/STAGE_378_PLAN.md` (`backend/tests/test_stage378_open.py`) — Stage 378 open (ADR-763)
+- `docs/OFFLINE_HOLD_RESERVE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-hold-reserve-pack-remaining-gate.json` — Stage 378 I1
+- `docs/OFFLINE_HOLD_RESERVE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-hold-reserve-pack-rg-blockers.json` — Stage 378 B1
+- `docs/OFFLINE_HOLD_RESERVE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-hold-reserve-pack-rg-pointers.json` — Stage 378 P1
 - `docs/STAGE_377_EXIT_CRITERIA.md` / `docs/ADR_762_STAGE377_FREEZE.md` (`backend/tests/test_stage377_exit_h377x.py`) — Stage 377 H377x
 - `docs/STAGE_377_FIDELITY.md` (`backend/tests/test_stage377_fidelity_d1.py`) — Stage 377 D1
 - `docs/STAGE_377_PLAN.md` (`backend/tests/test_stage377_open.py`) — Stage 377 open (ADR-761)
@@ -5545,6 +5551,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 378 exit
+
+H378x met — `docs/STAGE_378_EXIT_CRITERIA.md`, ADR-764. Stages 1–378 frozen for Stage 378 feature scope.
+
+## Stage 378 D1 — Tenant MVP Offline Hold Soft-Reserve Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `OFFLINE_HOLD_RESERVE_PACK_REMAINING_GATE_MVP.md` / `OFFLINE_HOLD_RESERVE_PACK_RG_BLOCKERS_MVP.md` / `OFFLINE_HOLD_RESERVE_PACK_RG_POINTERS_MVP.md` / ops JSON twins. Honesty: Offline Complete / offline hold soft-reserve / reserved_qty / go-live / attestation remain **false**. Packaging only.
+
+## Stage 378 open
+
+ADR-763 / `docs/STAGE_378_PLAN.md`.
 
 ## Stage 377 exit
 
