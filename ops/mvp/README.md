@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_382_EXIT_CRITERIA.md` / `docs/ADR_772_STAGE382_FREEZE.md` (`backend/tests/test_stage382_exit_h382x.py`) — Stage 382 H382x
+- `docs/STAGE_382_FIDELITY.md` (`backend/tests/test_stage382_fidelity_d1.py`) — Stage 382 D1
+- `docs/STAGE_382_PLAN.md` (`backend/tests/test_stage382_open.py`) — Stage 382 open (ADR-771)
+- `docs/OFFLINE_SALE_FLUSH_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sale-flush-pack-remaining-gate.json` — Stage 382 I1
+- `docs/OFFLINE_SALE_FLUSH_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sale-flush-pack-rg-blockers.json` — Stage 382 B1
+- `docs/OFFLINE_SALE_FLUSH_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sale-flush-pack-rg-pointers.json` — Stage 382 P1
 - `docs/STAGE_381_EXIT_CRITERIA.md` / `docs/ADR_770_STAGE381_FREEZE.md` (`backend/tests/test_stage381_exit_h381x.py`) — Stage 381 H381x
 - `docs/STAGE_381_FIDELITY.md` (`backend/tests/test_stage381_fidelity_d1.py`) — Stage 381 D1
 - `docs/STAGE_381_PLAN.md` (`backend/tests/test_stage381_open.py`) — Stage 381 open (ADR-769)
@@ -5569,6 +5575,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 382 exit
+
+H382x met — `docs/STAGE_382_EXIT_CRITERIA.md`, ADR-772. Stages 1–382 frozen for Stage 382 feature scope.
+
+## Stage 382 D1 — Tenant MVP Offline Sale Flush Attestation Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `OFFLINE_SALE_FLUSH_PACK_REMAINING_GATE_MVP.md` / `OFFLINE_SALE_FLUSH_PACK_RG_BLOCKERS_MVP.md` / `OFFLINE_SALE_FLUSH_PACK_RG_POINTERS_MVP.md` / ops JSON twins. Honesty: Offline Complete / offline sale/flush / sale/flush attestation / go-live / attestation remain **false**. Packaging only.
+
+## Stage 382 open
+
+ADR-771 / `docs/STAGE_382_PLAN.md`.
 
 ## Stage 381 exit
 
