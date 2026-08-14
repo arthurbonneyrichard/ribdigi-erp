@@ -31,3 +31,10 @@ Stage 269 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for paid billing, live dual-console, cross-principal leak, or go-live.
+
+
+## Amendment — Stage 269 opened
+
+Stage 269 opened under **ADR-545** after CONTINUE/NEXT (Tenant MVP Platform Principal Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-546**. Stage 268 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 269 runner-up outline was approved and opened (ADR-545); freeze ADR-546. Do not reopen Stage 268 scope.

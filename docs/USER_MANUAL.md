@@ -288,6 +288,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Dual console pack remaining-gate index (Stage 268):** Status index is `docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/DUAL_CONSOLE_PACK_RG_BLOCKERS_MVP.md` → Stage 68/267/266/ADR-137 pointers `docs/DUAL_CONSOLE_PACK_RG_POINTERS_MVP.md`. Paid billing Complete and live dual-console Complete remain MISSING (not claimed; ADR-002). Prefixed `DUAL_CONSOLE_PACK_*` remaining-gate docs (≠ Stage 68 H1/T1).
 
+**Platform principal pack remaining-gate index (Stage 269):** Status index is `docs/PLATFORM_PRINCIPAL_PACK_REMAINING_GATE_MVP.md` → blockers `docs/PLATFORM_PRINCIPAL_PACK_RG_BLOCKERS_MVP.md` → ADR-137/268/267/266 pointers `docs/PLATFORM_PRINCIPAL_PACK_RG_POINTERS_MVP.md`. Paid billing Complete and live platform-ops Complete remain MISSING (not claimed; ADR-002). Prefixed `PLATFORM_PRINCIPAL_PACK_*` remaining-gate docs (≠ ADR-137 decision text).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).

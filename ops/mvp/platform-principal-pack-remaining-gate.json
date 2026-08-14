@@ -1,0 +1,56 @@
+{
+  "id": "platform-principal-pack-remaining-gate",
+  "stage": 269,
+  "pack": "I1",
+  "doc": "docs/PLATFORM_PRINCIPAL_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PLATFORM_PRINCIPAL_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PLATFORM_PRINCIPAL_PACK_RG_POINTERS_MVP.md",
+    "platform_principal": "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+    "dual_console_pack_remaining_gate": "docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "tenant_company_console_pack_remaining_gate": "docs/TENANT_COMPANY_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "ribdigi_house_console_pack_remaining_gate": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "platform_ops_live_claimed": false,
+  "cross_principal_leak_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_adr137_platform_principal": true,
+  "distinct_from_stage268_dual_console_pack_remaining_gate": true,
+  "distinct_from_stage267_tenant_company_console_pack_remaining_gate": true,
+  "distinct_from_stage266_ribdigi_house_console_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "pppr-read-blockers",
+      "title": "Read B1 platform principal pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pppr-follow-pointers",
+      "title": "Follow P1 ADR-137 / Stage 268 / Stage 267 / Stage 266 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pppr-billing-missing",
+      "title": "Reaffirm paid billing / live platform-ops MISSING until real commercial verification ships (ADR-002)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pppr-no-packaging-as-live",
+      "title": "Do not treat ADR-137 / Stage 268 / Stage 267 / Stage 266 as live platform-ops Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pppr-platform-ops-remaining",
+      "title": "Paid billing / live platform-ops / cross-principal leak / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 269 I1 platform principal pack remaining-gate index packaging only. Do not claim live platform-ops Complete."
+}
