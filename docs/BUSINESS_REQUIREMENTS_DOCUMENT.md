@@ -383,10 +383,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Proactive inventory replenishment alerts.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Set minimum stock level per product per warehouse
-  - [ ] Set reorder level (trigger point for purchase)
+  - [x] Set minimum stock level per product per warehouse (`warehouse_stocks.reorder_level` via `PUT /stores/{id}/reorder-policy`; Multi-Store inventory policy UI)
+  - [x] Set reorder level (trigger point for purchase) (product `reorder_level` + per-warehouse `reorder_level` / `reorder_qty`)
   - [x] Visual indicators on product list (green/yellow/red status) (`stock_status` / `stock_status_label` on product serialize; Inventory products Stock badge; red = ≤0 or ≤ reorder, yellow = ≤ reorder×1.5, green = OK)
-  - [ ] Automated low-stock notifications to Inventory Officer and Store Manager
+  - [x] Automated low-stock notifications to Inventory Officer and Store Manager (`scan_low_stock` / stock-out hooks; emails `inventory_officer` + `store_manager` (+ admins); default `low_stock.email=true`)
   - [x] Generate purchase suggestions based on reorder levels
 
 ---
@@ -797,7 +797,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Automated alerts for business events.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [x] **Low Stock:** When product reaches reorder level (`low_stock` scan / alerts)
+  - [x] **Low Stock:** When product reaches reorder level (`low_stock` scan / alerts; emails inventory_officer + store_manager + admins)
   - [x] **New Orders:** When sales order is created (`new_order` on create + confirm; preferences channel)
   - [x] **Purchase Received:** When GRN is approved (`purchase_received` on GRN post)
   - [x] **Payment Due:** When invoice/bill approaches due date (`payment_due` scan)

@@ -587,7 +587,9 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 **Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&from_date=&to_date=`
 
 ### 5.8 Low Stock Alerts
-**Endpoint:** `GET /inventory/low-stock`
+**Endpoint:** `GET /inventory/low-stock` (also `GET /reports/inventory/low-stock` with optional `store_id` / `warehouse_id`)
+
+Product + warehouse policy scans create `low_stock` notifications (`scan_low_stock` Celery job / stock-out hooks). Emails go to `inventory_officer`, `store_manager`, `company_admin`, and `super_admin` (default `low_stock.email=true`; opt out in notification settings). Per-store warehouse reorder: `PUT /stores/{store_id}/reorder-policy` (`reorder_level`, `reorder_qty`).
 
 **Response:**
 ```json
@@ -1259,7 +1261,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Endpoint:** `GET /notifications/settings`  
 **Update:** `PATCH /notifications/settings`
 
-Categories include `low_stock`, `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`), `purchase_received`, `expense_approval` (BR-9.3 — default email **on**; role-targeted when expense notify passes `roles`), `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
+Categories include `low_stock` (BR-5.5 — default email **on**; emails `inventory_officer` + `store_manager` + admins via `roles`), `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`), `purchase_received`, `expense_approval` (BR-9.3 — default email **on**; role-targeted when expense notify passes `roles`), `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
 
 ```json
 {
