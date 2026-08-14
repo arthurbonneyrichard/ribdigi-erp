@@ -70,6 +70,7 @@ from app.schemas import (
     SalesInvoiceNumberingUpdate,
     SalesSettingsUpdate,
     PurchasingNumberingUpdate,
+    AccountingSettingsUpdate,
     DocumentNumberingFields,
     PrintBrandingUpdate,
     EmailVerifyConfirm,
@@ -7914,6 +7915,41 @@ async def cancel_cheque_api(
     )
     await db.commit()
     return env(cheques_svc.serialize_cheque(row), "Cheque cancelled")
+
+
+@api.get("/accounting/settings")
+async def accounting_settings(
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import numbering_settings
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env({"journal_numbering": numbering_settings(tenant, "journal_entry")})
+
+
+@api.patch("/accounting/settings")
+async def update_accounting_settings(
+    payload: AccountingSettingsUpdate,
+    claims=Depends(require_permission("accounting", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.doc_numbers import apply_numbering_update, numbering_settings
+
+    if payload.journal_numbering is None:
+        raise HTTPException(status_code=400, detail="No numbering fields to update")
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    apply_numbering_update(
+        tenant,
+        "journal_entry",
+        prefix=payload.journal_numbering.prefix,
+        next_number=payload.journal_numbering.next_number,
+    )
+    await db.commit()
+    return env(
+        {"journal_numbering": numbering_settings(tenant, "journal_entry")},
+        "Accounting document numbering updated",
+    )
 
 
 @api.get("/accounting/journal-entries")

@@ -983,6 +983,10 @@ class PurchasingNumberingUpdate(BaseModel):
     supplier_payment_numbering: DocumentNumberingFields | None = None
 
 
+class AccountingSettingsUpdate(BaseModel):
+    journal_numbering: DocumentNumberingFields | None = None
+
+
 class PrintBrandingUpdate(BaseModel):
     header_text: str | None = Field(default=None, max_length=200)
     footer_text: str | None = Field(default=None, max_length=300)

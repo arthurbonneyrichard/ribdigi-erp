@@ -611,7 +611,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Double-entry journal with debit and credit lines
   - [x] Auto-balancing validation
-  - [x] Journal number auto-generation
+  - [x] Journal number auto-generation (`entry_number` via tenant series `GET|PATCH /accounting/settings` → `journal_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `JE`; Accounting Document numbering UI; shared by manual + auto-posted journals)
   - [x] Attach supporting documents
   - [x] Post/unpost capability (unpost only within same fiscal period)
   - [x] **Period close / books lock:** `tenants.books_closed_through`; `GET|POST /accounting/period` close/reopen; blocks post & unpost on/before closed date (Accounting UI)
@@ -994,7 +994,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP)
+  - [x] Configure PO, GRN, purchase invoice, purchase request, purchase return, debit note, supplier payment, quotation, sales order, sales return, credit note, payment receipt, journal numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PREQ/PR/DN/SPY; `GET|PATCH /sales/settings` for INV/QT/SO/SR/CN/RCP; `GET|PATCH /accounting/settings` for JE)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

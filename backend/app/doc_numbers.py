@@ -96,6 +96,12 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "model": m.SupplierPayment,
         "field": "payment_number",
     },
+    "journal_entry": {
+        "default_prefix": "JE",
+        "storage": "json",
+        "model": m.JournalEntry,
+        "field": "entry_number",
+    },
 }
 
 # Back-compat aliases
@@ -339,3 +345,7 @@ async def next_customer_payment_number(db: AsyncSession, tenant_id: str) -> str:
 
 async def next_supplier_payment_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_series_document_number(db, tenant_id, "supplier_payment")
+
+
+async def next_journal_entry_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "journal_entry")

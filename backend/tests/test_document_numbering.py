@@ -322,6 +322,32 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
     assert spy.status_code == 200, spy.text
     assert spy.json()["data"]["payment_number"] == f"SPY-{year}-0006"
 
+    # Journal entry numbering (BR-10.2 / BR-20.4)
+    # Use a high counter so earlier auto-journals in this test do not collide.
+    je_settings = await ac.patch(
+        "/api/v1/accounting/settings",
+        headers=admin,
+        json={"journal_numbering": {"prefix": "JE", "next_number": 701}},
+    )
+    assert je_settings.status_code == 200, je_settings.text
+    assert je_settings.json()["data"]["journal_numbering"]["preview"] == f"JE-{year}-0701"
+    je = await ac.post(
+        "/api/v1/accounting/journal-entries",
+        headers=admin,
+        json={
+            "description": "Numbering smoke",
+            "lines": [
+                {"account_code": "6000", "debit": 12, "credit": 0},
+                {"account_code": "1000", "debit": 0, "credit": 12},
+            ],
+        },
+    )
+    assert je.status_code == 200, je.text
+    assert je.json()["data"]["entry_number"] == f"JE-{year}-0701"
+    je_next = await ac.get("/api/v1/accounting/settings", headers=admin)
+    assert je_next.status_code == 200
+    assert je_next.json()["data"]["journal_numbering"]["preview"] == f"JE-{year}-0702"
+
     # Counter advanced for next GRN
     assert await next_grn_number(db_session, seed["t1"].id) == f"GRN-{year}-0010"
     await db_session.commit()
