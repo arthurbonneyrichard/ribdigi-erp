@@ -226,9 +226,15 @@ export default function Page() {
   const [xferToWh, setXferToWh] = useState('');
   const [xferQty, setXferQty] = useState('1');
   const [xferNotes, setXferNotes] = useState('');
+  const [trPrefix, setTrPrefix] = useState('TR');
+  const [trNext, setTrNext] = useState('1');
+  const [trPreview, setTrPreview] = useState('');
+  const [scPrefix, setScPrefix] = useState('SC');
+  const [scNext, setScNext] = useState('1');
+  const [scPreview, setScPreview] = useState('');
 
   async function refresh() {
-    const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
+    const [p, e, c, b, u, w, sc, os, rates, settings] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
@@ -238,6 +244,7 @@ export default function Page() {
       api('/inventory/stock-counts'),
       api('/inventory/opening-stock').catch(() => ({ data: [] })),
       api('/tax/rates').catch(() => ({ data: [] })),
+      api('/inventory/settings').catch(() => ({ data: null })),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
@@ -248,6 +255,18 @@ export default function Page() {
     setCounts(sc.data || []);
     setOpeningHistory(os.data || []);
     setTaxRates(rates.data || []);
+    const trNum = settings.data?.stock_transfer_numbering;
+    if (trNum) {
+      setTrPrefix(trNum.prefix || 'TR');
+      setTrNext(String(trNum.next_number ?? 1));
+      setTrPreview(trNum.preview || '');
+    }
+    const scNum = settings.data?.stock_count_numbering;
+    if (scNum) {
+      setScPrefix(scNum.prefix || 'SC');
+      setScNext(String(scNum.next_number ?? 1));
+      setScPreview(scNum.preview || '');
+    }
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
@@ -257,6 +276,43 @@ export default function Page() {
     if (!xferFromWh && linked[0]) setXferFromWh(linked[0].id);
     if (!xferToWh && linked[1]) setXferToWh(linked[1].id);
     else if (!xferToWh && linked[0]) setXferToWh(linked[0].id);
+  }
+
+  async function saveInventoryNumbering() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/inventory/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          stock_transfer_numbering: {
+            prefix: trPrefix.trim(),
+            next_number: Math.max(1, Number(trNext) || 1),
+          },
+          stock_count_numbering: {
+            prefix: scPrefix.trim(),
+            next_number: Math.max(1, Number(scNext) || 1),
+          },
+        }),
+      });
+      const trNum = r.data?.stock_transfer_numbering;
+      if (trNum) {
+        setTrPrefix(trNum.prefix || 'TR');
+        setTrNext(String(trNum.next_number ?? 1));
+        setTrPreview(trNum.preview || '');
+      }
+      const scNum = r.data?.stock_count_numbering;
+      if (scNum) {
+        setScPrefix(scNum.prefix || 'SC');
+        setScNext(String(scNum.next_number ?? 1));
+        setScPreview(scNum.preview || '');
+      }
+      setMessage(
+        `Numbering saved — TR ${trNum?.preview || ''} / SC ${scNum?.preview || ''}`.trim()
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
   }
 
   async function refreshSelected(id: string) {
@@ -1201,6 +1257,48 @@ export default function Page() {
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+        <strong>Document numbering</strong>
+        <p className="muted" style={{ margin: 0 }}>
+          Transfers and stock counts use PREFIX-YYYY-NNNN (defaults TR / SC).
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Transfer</span>
+          <input
+            value={trPrefix}
+            onChange={(e) => setTrPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={trNext}
+            onChange={(e) => setTrNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{trPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Stock count</span>
+          <input
+            value={scPrefix}
+            onChange={(e) => setScPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+          />
+          <input
+            value={scNext}
+            onChange={(e) => setScNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+          />
+          <span className="muted">{scPreview || '—'}</span>
+          <button type="button" onClick={saveInventoryNumbering}>
+            Save numbering
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

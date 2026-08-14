@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
@@ -633,7 +635,9 @@ class WarehouseReorderPolicyUpdate(BaseModel):
 
 
 class InventoryFefoSettingsUpdate(BaseModel):
-    fefo_strict_warehouse: bool
+    fefo_strict_warehouse: bool | None = None
+    stock_transfer_numbering: DocumentNumberingFields | None = None
+    stock_count_numbering: DocumentNumberingFields | None = None
 
 
 class WarehouseCreate(BaseModel):

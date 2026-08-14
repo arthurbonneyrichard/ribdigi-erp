@@ -86,12 +86,9 @@ def serialize_store(row: m.Store, *, drawer: dict | None = None) -> dict:
 
 
 async def next_transfer_number(db: AsyncSession, tenant_id: str) -> str:
-    count = len(
-        (
-            await db.execute(select(m.StockTransfer.id).where(m.StockTransfer.tenant_id == tenant_id))
-        ).scalars().all()
-    )
-    return f"TR-{datetime.utcnow():%Y%m%d}-{count + 1:04d}"
+    from app.doc_numbers import next_stock_transfer_number
+
+    return await next_stock_transfer_number(db, tenant_id)
 
 
 async def get_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Store:
