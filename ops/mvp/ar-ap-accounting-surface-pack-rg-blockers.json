@@ -1,0 +1,62 @@
+{
+  "id": "ar-ap-accounting-surface-pack-rg-blockers",
+  "stage": 366,
+  "pack": "B1",
+  "doc": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_REMAINING_GATE_MVP.md",
+    "ar_ap_accounting_surface": "docs/AR_AP_ACCOUNTING_SURFACE_MVP.md"
+  },
+  "packaging_complete": true,
+  "new_ar_ap_engine_claimed": false,
+  "open_banking_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "demo_tenant_claimed": false,
+  "blockers": {
+    "new_ar_ap_engine_claimed": "REMAINING",
+    "open_banking_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "demo_tenant_claimed": "REMAINING",
+    "stage232_as_live_ar_ap_accounting_surface": "NON_CLAIM",
+    "new_ar_ap_engine_claimed_flag": "false",
+    "open_banking_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "demo_tenant_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "aaasprb-new-engine",
+      "title": "Mark new AR/AP engine Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprb-open-banking",
+      "title": "Mark Open Banking Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprb-stage232-nonclaim",
+      "title": "Mark Stage 232 as non-claim for live AR/AP accounting-surface Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprb-checklist-remaining",
+      "title": "Live AR/AP accounting-surface Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 366 B1 AR/AP accounting surface pack RG blocker matrix packaging only. Live AR/AP accounting-surface Completes remain MISSING."
+}

@@ -1,0 +1,60 @@
+{
+  "id": "ar-ap-accounting-surface-pack-rg-pointers",
+  "stage": 366,
+  "pack": "P1",
+  "doc": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_REMAINING_GATE_MVP.md",
+    "ar_ap_accounting_surface": "docs/AR_AP_ACCOUNTING_SURFACE_MVP.md",
+    "e2e_verify_financials_pack_remaining_gate": "docs/E2E_VERIFY_FINANCIALS_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "new_ar_ap_engine_claimed": false,
+  "open_banking_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "demo_tenant_claimed": false,
+  "topics": [
+    "ar_ap_accounting_surface_stage232",
+    "e2e_verify_financials_pack_remaining_gate_stage365",
+    "e2e_backup_restore_pack_remaining_gate_stage320",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "aaasprp-stage232",
+      "title": "Point to Stage 232 AR/AP accounting-surface packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprp-stage365",
+      "title": "Point to Stage 365 E2E verify financials pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprp-stage320",
+      "title": "Point to Stage 320 E2E backup restore pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaasprp-checklist-remaining",
+      "title": "Live AR/AP accounting-surface Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 366 P1 AR/AP accounting surface pack RG pointers packaging only. Do not claim live AR/AP accounting-surface Complete."
+}

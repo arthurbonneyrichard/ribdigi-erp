@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_366_EXIT_CRITERIA.md` / `docs/ADR_740_STAGE366_FREEZE.md` (`backend/tests/test_stage366_exit_h366x.py`) — Stage 366 H366x
+- `docs/STAGE_366_FIDELITY.md` (`backend/tests/test_stage366_fidelity_d1.py`) — Stage 366 D1
+- `docs/STAGE_366_PLAN.md` (`backend/tests/test_stage366_open.py`) — Stage 366 open (ADR-739)
+- `docs/AR_AP_ACCOUNTING_SURFACE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ar-ap-accounting-surface-pack-remaining-gate.json` — Stage 366 I1
+- `docs/AR_AP_ACCOUNTING_SURFACE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ar-ap-accounting-surface-pack-rg-blockers.json` — Stage 366 B1
+- `docs/AR_AP_ACCOUNTING_SURFACE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ar-ap-accounting-surface-pack-rg-pointers.json` — Stage 366 P1
 - `docs/STAGE_365_EXIT_CRITERIA.md` / `docs/ADR_738_STAGE365_FREEZE.md` (`backend/tests/test_stage365_exit_h365x.py`) — Stage 365 H365x
 - `docs/STAGE_365_FIDELITY.md` (`backend/tests/test_stage365_fidelity_d1.py`) — Stage 365 D1
 - `docs/STAGE_365_PLAN.md` (`backend/tests/test_stage365_open.py`) — Stage 365 open (ADR-737)
@@ -5473,6 +5479,16 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 366 exit
+
+H366x met — `docs/STAGE_366_EXIT_CRITERIA.md`, ADR-740. Stages 1–366 frozen for Stage 366 feature scope.
+
+## Stage 366 D1 — Tenant MVP AR AP Accounting Surface Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_366_FIDELITY.md` (`test_stage366_fidelity_d1.py`). `AR_AP_ACCOUNTING_SURFACE_PACK_*` remaining-gate index; new AR/AP engine / Open Banking / go-live / attestation / demo tenant still MISSING.
+
+## Stage 366 open
 
 ## Stage 365 exit
 

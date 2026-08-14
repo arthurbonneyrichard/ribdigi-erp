@@ -4392,6 +4392,18 @@ Every feature in every phase must meet:
 
 **Stage 314 exit (2026-08-14):** I1, B1, P1, D1, H314x met — `docs/STAGE_314_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_636_STAGE314_FREEZE.md`. Fidelity: `docs/STAGE_314_FIDELITY.md`.
 
+**Stage 366 open (2026-08-14):** Tenant MVP AR AP Accounting Surface Pack Remaining-Gate Index Fidelity — `docs/ADR_739_STAGE366_OPEN.md` + `docs/STAGE_366_PLAN.md` (I1 next).
+
+**Stage 366 I1 (2026-08-14):** AR/AP accounting surface pack remaining-gate index hub (`test_stage366_index_i1.py`).
+
+**Stage 366 B1 (2026-08-14):** AR/AP accounting surface pack blocker matrix (`test_stage366_blockers_b1.py`).
+
+**Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
+
+**Stage 366 D1 (2026-08-14):** AR AP Accounting Surface Pack Remaining-Gate Index fidelity sync — `docs/STAGE_366_FIDELITY.md` (`test_stage366_fidelity_d1.py`).
+
+**Stage 366 exit (2026-08-14):** I1, B1, P1, D1, H366x met — `docs/STAGE_366_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_740_STAGE366_FREEZE.md`. Fidelity: `docs/STAGE_366_FIDELITY.md`.
+
 **Stage 365 open (2026-08-14):** Tenant MVP E2E Verify Financials Pack Remaining-Gate Index Fidelity — `docs/ADR_737_STAGE365_OPEN.md` + `docs/STAGE_365_PLAN.md` (I1 next).
 
 **Stage 365 I1 (2026-08-14):** E2E verify financials pack remaining-gate index hub (`test_stage365_index_i1.py`).

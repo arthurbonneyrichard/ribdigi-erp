@@ -31,3 +31,9 @@ Stage 366 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live verify-financials, E2E smoke, demo tenant, tax e-file, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 366 opened under **ADR-739** after CONTINUE/NEXT (Tenant MVP AR AP Accounting Surface Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-740**. Stage 365 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 366 runner-up outline was approved and opened (ADR-739); freeze ADR-740. Do not reopen Stage 365 scope.
