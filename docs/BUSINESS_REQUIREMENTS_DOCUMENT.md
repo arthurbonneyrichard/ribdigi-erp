@@ -443,7 +443,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Invoice number, date, due date
   - [ ] Line items with quantity, rate, tax, discount
   - [ ] Attach supplier invoice document (PDF/image)
-  - [ ] Status: Draft, Approved, Paid, Partially Paid, Overdue
+  - [x] Status: Draft, Approved (`unpaid`), Paid, Partially Paid, Overdue, Cancelled (`POST /purchasing/invoices/{id}/cancel`; `can_cancel` when unpaid with zero payments; Purchasing Cancel invoice UI)
   - [ ] Auto-update Accounts Payable
 
 #### BR-6.6 Purchase Return
