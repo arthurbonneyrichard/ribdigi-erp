@@ -76,12 +76,15 @@ async def export_variants_csv(
     product_id: str | None = None,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = (
         select(m.ProductVariant, m.Product)
         .join(m.Product, m.Product.id == m.ProductVariant.product_id)
         .where(m.ProductVariant.tenant_id == tenant_id, m.Product.tenant_id == tenant_id)
     )
+    if company_id:
+        stmt = stmt.where(m.Product.company_id == company_id)
     if product_id:
         stmt = stmt.where(m.ProductVariant.product_id == product_id)
     stmt = _apply_active_filter(

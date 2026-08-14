@@ -121,8 +121,11 @@ async def export_stores_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.Store).where(m.Store.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Store.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.Store.is_active, is_active=is_active, active_only=active_only
     )
@@ -151,8 +154,11 @@ async def export_warehouses_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Warehouse.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.Warehouse.is_active, is_active=is_active, active_only=active_only
     )
@@ -215,9 +221,12 @@ async def export_drawer_settings_csv(
     *,
     tenant_id: str,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 142 C1 — secret-free cash drawer settings (kick bytes never included)."""
     stmt = select(m.Store).where(m.Store.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Store.company_id == company_id)
     if is_active is not None:
         stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
     rows = (await db.execute(stmt.order_by(m.Store.code))).scalars().all()

@@ -28,12 +28,17 @@ async def next_transfer_number(db: AsyncSession, tenant_id: str) -> str:
     return f"TR-{datetime.utcnow():%Y%m%d}-{count + 1:04d}"
 
 
-async def get_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Store:
-    store = (
-        await db.execute(
-            select(m.Store).where(m.Store.id == store_id, m.Store.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
+async def get_store(
+    db: AsyncSession,
+    tenant_id: str,
+    store_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Store:
+    stmt = select(m.Store).where(m.Store.id == store_id, m.Store.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Store.company_id == company_id)
+    store = (await db.execute(stmt)).scalar_one_or_none()
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     return store
@@ -157,8 +162,9 @@ async def update_store(
     clear_branch: bool = False,
     operating_hours: dict | None = None,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> m.Store:
-    store = await get_store(db, tenant_id, store_id)
+    store = await get_store(db, tenant_id, store_id, company_id=company_id)
     if name is not None:
         clean = name.strip()
         if len(clean) < 2:
@@ -221,17 +227,11 @@ async def update_warehouse(
     address: str | None = None,
     capacity: float | None = None,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> m.Warehouse:
-    row = (
-        await db.execute(
-            select(m.Warehouse).where(
-                m.Warehouse.id == warehouse_id,
-                m.Warehouse.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if not row:
-        raise HTTPException(status_code=404, detail="Warehouse not found")
+    from app.inventory import get_warehouse
+
+    row = await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
     if name is not None:
         clean = name.strip()
         if len(clean) < 2:
@@ -240,7 +240,7 @@ async def update_warehouse(
     if clear_store:
         row.store_id = None
     elif store_id is not None:
-        await get_store(db, tenant_id, store_id)
+        await get_store(db, tenant_id, store_id, company_id=company_id)
         row.store_id = store_id
     if warehouse_type is not None:
         wtype = warehouse_type.strip().lower()

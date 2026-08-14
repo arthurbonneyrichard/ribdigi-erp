@@ -1372,3 +1372,159 @@ async def test_ai_chat_templates_customers_company_scoped(client, db_session):
         c.get("name") for c in (insights.json()["data"].get("best_customers") or [])
     }
     assert "AI12 B Only Customer" not in names_c
+
+
+@pytest.mark.asyncio
+async def test_dashboard_catalog_meta_alerts_company_scoped(client, db_session):
+    """Phase 13: dashboard slices, catalog/expense/group meta, and low-stock stay company-scoped."""
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="META13",
+        name="Alpha Meta B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    party_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Meta B Customer",
+        kind="customer",
+        status="active",
+        credit_limit=0,
+    )
+    prod_b = m.Product(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Meta B Low Stock Widget",
+        sku="META-B-LOW",
+        selling_price=10,
+        stock_qty=1,
+        reorder_level=20,
+        is_active=True,
+    )
+    cat_b = m.ProductCategory(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="METAB",
+        name="Company B Only Category",
+        is_active=True,
+    )
+    exp_cat_b = m.ExpenseCategory(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="BONLY",
+        name="Company B Only Expense Cat",
+        is_active=True,
+    )
+    group_b = m.CustomerGroup(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        name="Company B Only Group",
+        is_active=True,
+    )
+    store_b = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="STOREB13",
+        name="Company B Only Store",
+        is_active=True,
+    )
+    db_session.add_all([party_b, prod_b, cat_b, exp_cat_b, group_b, store_b])
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            customer_id=party_b.id,
+            invoice_number="INV-META13-B",
+            status="posted",
+            subtotal=500,
+            tax_amount=0,
+            total_amount=500,
+            posted_at=datetime.utcnow(),
+            created_at=datetime.utcnow(),
+        )
+    )
+    db_session.add(
+        m.Expense(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            category_id=exp_cat_b.id,
+            category="Company B Only Expense Cat",
+            description="Meta B expense",
+            amount=777.0,
+            status="approved",
+            expense_date=datetime.utcnow(),
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    summary = await ac.get("/api/v1/dashboard/summary", headers=headers)
+    assert summary.status_code == 200, summary.text
+    assert "META-B-LOW" not in summary.text
+    assert "Meta B Low Stock Widget" not in summary.text
+
+    top = await ac.get("/api/v1/dashboard/top-products", headers=headers)
+    assert top.status_code == 200, top.text
+    assert "META-B-LOW" not in top.text
+
+    stock = await ac.get("/api/v1/dashboard/stock-alerts", headers=headers)
+    assert stock.status_code == 200, stock.text
+    assert "META-B-LOW" not in stock.text
+
+    cats = await ac.get("/api/v1/catalog/categories", headers=headers)
+    assert cats.status_code == 200, cats.text
+    cat_names = {r.get("name") for r in cats.json()["data"]}
+    assert "Company B Only Category" not in cat_names
+
+    created_cat = await ac.post(
+        "/api/v1/catalog/categories",
+        headers=headers,
+        json={"code": "META13A", "name": "Company A Phase13 Category"},
+    )
+    assert created_cat.status_code == 200, created_cat.text
+    assert created_cat.json()["data"]["company_id"] == seed["c1"].id
+
+    exp_cats = await ac.get("/api/v1/expenses/categories", headers=headers)
+    assert exp_cats.status_code == 200, exp_cats.text
+    exp_names = {r.get("name") for r in exp_cats.json()["data"]}
+    assert "Company B Only Expense Cat" not in exp_names
+
+    groups = await ac.get("/api/v1/customers/groups", headers=headers)
+    assert groups.status_code == 200, groups.text
+    group_names = {r.get("name") for r in groups.json()["data"]}
+    assert "Company B Only Group" not in group_names
+
+    created_group = await ac.post(
+        "/api/v1/customers/groups",
+        headers=headers,
+        json={"name": "Company A Phase13 Group"},
+    )
+    assert created_group.status_code == 200, created_group.text
+    assert created_group.json()["data"]["company_id"] == seed["c1"].id
+
+    low = await ac.get("/api/v1/inventory/low-stock", headers=headers)
+    assert low.status_code == 200, low.text
+    assert "META-B-LOW" not in low.text
+
+    stores_export = await ac.get("/api/v1/stores/export", headers=headers)
+    assert stores_export.status_code == 200, stores_export.text
+    assert "Company B Only Store" not in stores_export.text
+    assert "STOREB13" not in stores_export.text
+
+    foreign_store = await ac.patch(
+        f"/api/v1/stores/{store_b.id}",
+        headers=headers,
+        json={"name": "Hijack Store B"},
+    )
+    assert foreign_store.status_code == 404

@@ -89,15 +89,19 @@ class AppCache:
         # Architecture: products:{tenant_id}:{category_id} — MVP full list = all
         return f"{self._prefix()}:products:{tenant_id}:all"
 
-    def categories_key(self, tenant_id: str, *, tree: bool) -> str:
+    def categories_key(
+        self, tenant_id: str, *, tree: bool, company_id: str | None = None
+    ) -> str:
         kind = "tree" if tree else "flat"
+        if company_id:
+            return f"{self._prefix()}:products:{tenant_id}:categories:{kind}:{company_id}"
         return f"{self._prefix()}:products:{tenant_id}:categories:{kind}"
 
-    def catalog_keys(self, tenant_id: str) -> list[str]:
+    def catalog_keys(self, tenant_id: str, *, company_id: str | None = None) -> list[str]:
         return [
             self.products_key(tenant_id),
-            self.categories_key(tenant_id, tree=False),
-            self.categories_key(tenant_id, tree=True),
+            self.categories_key(tenant_id, tree=False, company_id=company_id),
+            self.categories_key(tenant_id, tree=True, company_id=company_id),
         ]
 
     def permissions_key(self, tenant_id: str, user_id: str) -> str:
@@ -177,8 +181,13 @@ class AppCache:
         )
         await self.delete(*(self.dashboard_key(tenant_id, role=r) for r in roles))
 
-    async def invalidate_catalog(self, tenant_id: str) -> None:
-        await self.delete(*self.catalog_keys(tenant_id))
+    async def invalidate_catalog(
+        self, tenant_id: str, company_id: str | None = None
+    ) -> None:
+        keys = self.catalog_keys(tenant_id)
+        if company_id:
+            keys = list(dict.fromkeys(keys + self.catalog_keys(tenant_id, company_id=company_id)))
+        await self.delete(*keys)
 
     async def invalidate_tenant(self, tenant_id: str) -> None:
         """Invalidate dashboard + catalog read models for a tenant."""

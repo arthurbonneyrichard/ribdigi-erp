@@ -112,3 +112,13 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Customer intelligence/assist and document OCR matching filter parties/products/categories by company.
 - Security alert scan prefers company-scoped audit rows (null-company auth events remain visible); notify stamps company.
 - Remaining PARTIAL: FX may stay tenant-shared by design; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 13 follow-up (2026-08-14)
+
+- Dashboard summary / sales-trend / top-products / expenses / stock-alerts (+ exports) filter by workspace `company_id`.
+- Catalog categories/brands/units list/export/mutate and cache keys are company-scoped; creates stamp `company_id`.
+- Expense categories and customer groups list/create/export stamp and filter by company.
+- Inventory low-stock and expiring-batch alerts (+ exports) and product variants export are company-scoped.
+- Stores/warehouses CSV exports filter by company; store/warehouse GET/PATCH reject cross-company IDs.
+- **FX exchange-rate catalog remains tenant-shared by design** for MVP (shared base currency / rates); company-specific FX catalogs deferred.
+- Remaining PARTIAL: audit-log list stamping, branches/departments org units, backup gating to tenant workspace; ADR-002 billing and ADR-005 store membership remain deferred.

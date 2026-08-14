@@ -82,6 +82,7 @@ def serialize_contact(row: m.PartyContact) -> dict:
 def serialize_group(row: m.CustomerGroup) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "name": row.name,
         "discount_percent": float(row.discount_percent or 0),
         "is_active": bool(row.is_active),
@@ -262,10 +263,13 @@ async def list_groups(
     *,
     active_only: bool = False,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> list[m.CustomerGroup]:
     """Stage 123 G1 — is_active for honest inactive-only customer group lists."""
-    await ensure_default_customer_groups(db, tenant_id)
+    await ensure_default_customer_groups(db, tenant_id, company_id=company_id)
     stmt = select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.CustomerGroup.company_id == company_id)
     if is_active is not None:
         stmt = stmt.where(m.CustomerGroup.is_active.is_(bool(is_active)))
     elif active_only:
@@ -280,8 +284,9 @@ async def create_group(
     tenant_id: str,
     name: str,
     discount_percent: float = 0,
+    company_id: str | None = None,
 ) -> m.CustomerGroup:
-    await ensure_default_customer_groups(db, tenant_id)
+    await ensure_default_customer_groups(db, tenant_id, company_id=company_id)
     name = (name or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name is required")
@@ -290,18 +295,18 @@ async def create_group(
     pct = float(discount_percent or 0)
     if pct < 0 or pct > 100:
         raise HTTPException(status_code=400, detail="discount_percent must be between 0 and 100")
-    dup = (
-        await db.execute(
-            select(m.CustomerGroup).where(
-                m.CustomerGroup.tenant_id == tenant_id,
-                func.lower(m.CustomerGroup.name) == name.lower(),
-            )
-        )
-    ).scalar_one_or_none()
+    dup_stmt = select(m.CustomerGroup).where(
+        m.CustomerGroup.tenant_id == tenant_id,
+        func.lower(m.CustomerGroup.name) == name.lower(),
+    )
+    if company_id:
+        dup_stmt = dup_stmt.where(m.CustomerGroup.company_id == company_id)
+    dup = (await db.execute(dup_stmt)).scalar_one_or_none()
     if dup:
         raise HTTPException(status_code=409, detail="Customer group name already exists")
     row = m.CustomerGroup(
         tenant_id=tenant_id,
+        company_id=company_id,
         name=name,
         discount_percent=pct,
         is_active=True,
@@ -326,15 +331,14 @@ async def update_group(
             raise HTTPException(status_code=400, detail="name is required")
         if len(name) > 50:
             raise HTTPException(status_code=400, detail="name must be at most 50 characters")
-        dup = (
-            await db.execute(
-                select(m.CustomerGroup).where(
-                    m.CustomerGroup.tenant_id == tenant_id,
-                    func.lower(m.CustomerGroup.name) == name.lower(),
-                    m.CustomerGroup.id != row.id,
-                )
-            )
-        ).scalar_one_or_none()
+        dup_stmt = select(m.CustomerGroup).where(
+            m.CustomerGroup.tenant_id == tenant_id,
+            func.lower(m.CustomerGroup.name) == name.lower(),
+            m.CustomerGroup.id != row.id,
+        )
+        if getattr(row, "company_id", None):
+            dup_stmt = dup_stmt.where(m.CustomerGroup.company_id == row.company_id)
+        dup = (await db.execute(dup_stmt)).scalar_one_or_none()
         if dup:
             raise HTTPException(status_code=409, detail="Customer group name already exists")
         row.name = name

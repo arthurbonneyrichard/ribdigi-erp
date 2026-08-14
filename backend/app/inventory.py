@@ -15,15 +15,20 @@ def available_qty(on_hand: float, reserved: float) -> float:
     return max(float(on_hand or 0) - float(reserved or 0), 0.0)
 
 
-async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> m.Warehouse:
-    wh = (
-        await db.execute(
-            select(m.Warehouse).where(
-                m.Warehouse.id == warehouse_id,
-                m.Warehouse.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_warehouse(
+    db: AsyncSession,
+    tenant_id: str,
+    warehouse_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Warehouse:
+    stmt = select(m.Warehouse).where(
+        m.Warehouse.id == warehouse_id,
+        m.Warehouse.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.Warehouse.company_id == company_id)
+    wh = (await db.execute(stmt)).scalar_one_or_none()
     if not wh:
         raise HTTPException(status_code=404, detail="Warehouse not found")
     return wh

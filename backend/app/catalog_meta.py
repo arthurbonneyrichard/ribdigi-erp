@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.reports import apply_company_filter
 
 DEFAULT_UNITS = (
     ("PCS", "Pieces"),
@@ -26,6 +27,7 @@ DEFAULT_CATEGORIES = (
 def serialize_category(row: m.ProductCategory) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "parent_id": row.parent_id,
         "code": row.code,
         "name": row.name,
@@ -67,6 +69,7 @@ def flatten_category_tree(tree: list[dict], *, depth: int = 0) -> list[dict]:
 def serialize_brand(row: m.Brand) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "code": row.code,
         "name": row.name,
         "description": row.description,
@@ -80,6 +83,7 @@ def serialize_brand(row: m.Brand) -> dict:
 def serialize_unit(row: m.UnitOfMeasure) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "code": row.code,
         "name": row.name,
         "base_unit_id": getattr(row, "base_unit_id", None),
@@ -209,9 +213,11 @@ async def list_categories(
     *,
     active_only: bool = False,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> list[m.ProductCategory]:
     """Stage 122 M1 — is_active / active_only for honest inactive-only category lists."""
     stmt = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
+    stmt = apply_company_filter(stmt, m.ProductCategory.company_id, company_id)
     if is_active is not None:
         stmt = stmt.where(m.ProductCategory.is_active.is_(bool(is_active)))
     elif active_only:
@@ -260,17 +266,17 @@ async def create_category(
         parent = await db.get(m.ProductCategory, parent_id)
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
+        if company_id and getattr(parent, "company_id", None) and parent.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Parent category not found")
     validated_tax = await _validate_category_tax_rate(
         db, tenant_id=tenant_id, tax_rate_id=tax_rate_id, company_id=company_id
     )
-    dup = (
-        await db.execute(
-            select(m.ProductCategory).where(
-                m.ProductCategory.tenant_id == tenant_id,
-                m.ProductCategory.code == code,
-            )
-        )
-    ).scalar_one_or_none()
+    dup_stmt = select(m.ProductCategory).where(
+        m.ProductCategory.tenant_id == tenant_id,
+        m.ProductCategory.code == code,
+    )
+    dup_stmt = apply_company_filter(dup_stmt, m.ProductCategory.company_id, company_id)
+    dup = (await db.execute(dup_stmt)).scalar_one_or_none()
     if dup:
         raise HTTPException(status_code=409, detail="Category code exists")
     row = m.ProductCategory(
@@ -287,6 +293,24 @@ async def create_category(
     return row
 
 
+async def get_category(
+    db: AsyncSession,
+    tenant_id: str,
+    category_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.ProductCategory:
+    stmt = select(m.ProductCategory).where(
+        m.ProductCategory.id == category_id,
+        m.ProductCategory.tenant_id == tenant_id,
+    )
+    stmt = apply_company_filter(stmt, m.ProductCategory.company_id, company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return row
+
+
 async def update_category(
     db: AsyncSession,
     *,
@@ -299,23 +323,23 @@ async def update_category(
     tax_rate_id: str | None = None,
     clear_parent: bool = False,
     clear_tax_rate: bool = False,
+    company_id: str | None = None,
 ) -> m.ProductCategory:
-    row = await db.get(m.ProductCategory, category_id)
-    if row is None or row.tenant_id != tenant_id:
-        raise HTTPException(status_code=404, detail="Category not found")
+    row = await get_category(db, tenant_id, category_id, company_id=company_id)
+    scope_company = company_id if company_id is not None else getattr(row, "company_id", None)
     if code is not None:
         code = code.strip().upper()
         if not code:
             raise HTTPException(status_code=400, detail="code is required")
-        dup = (
-            await db.execute(
-                select(m.ProductCategory).where(
-                    m.ProductCategory.tenant_id == tenant_id,
-                    m.ProductCategory.code == code,
-                    m.ProductCategory.id != row.id,
-                )
-            )
-        ).scalar_one_or_none()
+        dup_stmt = select(m.ProductCategory).where(
+            m.ProductCategory.tenant_id == tenant_id,
+            m.ProductCategory.code == code,
+            m.ProductCategory.id != row.id,
+        )
+        dup_stmt = apply_company_filter(
+            dup_stmt, m.ProductCategory.company_id, scope_company
+        )
+        dup = (await db.execute(dup_stmt)).scalar_one_or_none()
         if dup:
             raise HTTPException(status_code=409, detail="Category code exists")
         row.code = code
@@ -329,9 +353,9 @@ async def update_category(
     elif parent_id is not None:
         if parent_id == row.id:
             raise HTTPException(status_code=400, detail="Category cannot be its own parent")
-        parent = await db.get(m.ProductCategory, parent_id)
-        if not parent or parent.tenant_id != tenant_id:
-            raise HTTPException(status_code=404, detail="Parent category not found")
+        parent = await get_category(
+            db, tenant_id, parent_id, company_id=scope_company
+        )
         # Prevent cycles: walk ancestors of the new parent
         cursor = parent
         seen = {row.id}
@@ -341,8 +365,11 @@ async def update_category(
             seen.add(cursor.id)
             if not cursor.parent_id:
                 break
-            cursor = await db.get(m.ProductCategory, cursor.parent_id)
-            if cursor is None or cursor.tenant_id != tenant_id:
+            try:
+                cursor = await get_category(
+                    db, tenant_id, cursor.parent_id, company_id=scope_company
+                )
+            except HTTPException:
                 break
         row.parent_id = parent_id
     if is_active is not None:
@@ -354,17 +381,25 @@ async def update_category(
             db,
             tenant_id=tenant_id,
             tax_rate_id=tax_rate_id,
-            company_id=getattr(row, "company_id", None),
+            company_id=scope_company,
         )
     await db.flush()
     return row
 
 
 async def deactivate_category(
-    db: AsyncSession, *, tenant_id: str, category_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str,
+    company_id: str | None = None,
 ) -> m.ProductCategory:
     return await update_category(
-        db, tenant_id=tenant_id, category_id=category_id, is_active=False
+        db,
+        tenant_id=tenant_id,
+        category_id=category_id,
+        is_active=False,
+        company_id=company_id,
     )
 
 
@@ -374,9 +409,11 @@ async def list_brands(
     *,
     active_only: bool = False,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> list[m.Brand]:
     """Stage 122 M1 — is_active / active_only for honest inactive-only brand lists."""
     stmt = select(m.Brand).where(m.Brand.tenant_id == tenant_id)
+    stmt = apply_company_filter(stmt, m.Brand.company_id, company_id)
     if is_active is not None:
         stmt = stmt.where(m.Brand.is_active.is_(bool(is_active)))
     elif active_only:
@@ -397,11 +434,9 @@ async def create_brand(
     name = name.strip()
     if not code or not name:
         raise HTTPException(status_code=400, detail="code and name are required")
-    dup = (
-        await db.execute(
-            select(m.Brand).where(m.Brand.tenant_id == tenant_id, m.Brand.code == code)
-        )
-    ).scalar_one_or_none()
+    dup_stmt = select(m.Brand).where(m.Brand.tenant_id == tenant_id, m.Brand.code == code)
+    dup_stmt = apply_company_filter(dup_stmt, m.Brand.company_id, company_id)
+    dup = (await db.execute(dup_stmt)).scalar_one_or_none()
     if dup:
         raise HTTPException(status_code=409, detail="Brand code exists")
     row = m.Brand(
@@ -427,23 +462,21 @@ async def update_brand(
     description: str | None = None,
     is_active: bool | None = None,
     clear_description: bool = False,
+    company_id: str | None = None,
 ) -> m.Brand:
-    row = await db.get(m.Brand, brand_id)
-    if row is None or row.tenant_id != tenant_id:
-        raise HTTPException(status_code=404, detail="Brand not found")
+    row = await get_brand(db, tenant_id, brand_id, company_id=company_id)
+    scope_company = company_id if company_id is not None else getattr(row, "company_id", None)
     if code is not None:
         code = code.strip().upper()
         if not code:
             raise HTTPException(status_code=400, detail="code is required")
-        dup = (
-            await db.execute(
-                select(m.Brand).where(
-                    m.Brand.tenant_id == tenant_id,
-                    m.Brand.code == code,
-                    m.Brand.id != row.id,
-                )
-            )
-        ).scalar_one_or_none()
+        dup_stmt = select(m.Brand).where(
+            m.Brand.tenant_id == tenant_id,
+            m.Brand.code == code,
+            m.Brand.id != row.id,
+        )
+        dup_stmt = apply_company_filter(dup_stmt, m.Brand.company_id, scope_company)
+        dup = (await db.execute(dup_stmt)).scalar_one_or_none()
         if dup:
             raise HTTPException(status_code=409, detail="Brand code exists")
         row.code = code
@@ -462,8 +495,16 @@ async def update_brand(
     return row
 
 
-async def deactivate_brand(db: AsyncSession, *, tenant_id: str, brand_id: str) -> m.Brand:
-    return await update_brand(db, tenant_id=tenant_id, brand_id=brand_id, is_active=False)
+async def deactivate_brand(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    brand_id: str,
+    company_id: str | None = None,
+) -> m.Brand:
+    return await update_brand(
+        db, tenant_id=tenant_id, brand_id=brand_id, is_active=False, company_id=company_id
+    )
 
 
 async def list_units(
@@ -472,9 +513,11 @@ async def list_units(
     *,
     active_only: bool = False,
     is_active: bool | None = None,
+    company_id: str | None = None,
 ) -> list[m.UnitOfMeasure]:
     """Stage 122 M1 — is_active / active_only for honest inactive-only unit lists."""
     stmt = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
+    stmt = apply_company_filter(stmt, m.UnitOfMeasure.company_id, company_id)
     if is_active is not None:
         stmt = stmt.where(m.UnitOfMeasure.is_active.is_(bool(is_active)))
     elif active_only:
@@ -482,9 +525,20 @@ async def list_units(
     return list((await db.execute(stmt.order_by(m.UnitOfMeasure.code))).scalars().all())
 
 
-async def get_unit(db: AsyncSession, tenant_id: str, unit_id: str) -> m.UnitOfMeasure:
-    row = await db.get(m.UnitOfMeasure, unit_id)
-    if row is None or row.tenant_id != tenant_id:
+async def get_unit(
+    db: AsyncSession,
+    tenant_id: str,
+    unit_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.UnitOfMeasure:
+    stmt = select(m.UnitOfMeasure).where(
+        m.UnitOfMeasure.id == unit_id,
+        m.UnitOfMeasure.tenant_id == tenant_id,
+    )
+    stmt = apply_company_filter(stmt, m.UnitOfMeasure.company_id, company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
         raise HTTPException(status_code=404, detail="Unit not found")
     return row
 
@@ -578,14 +632,12 @@ async def create_unit(
     factor = float(conversion_factor or 1)
     if factor <= 0:
         raise HTTPException(status_code=400, detail="conversion_factor must be positive")
-    dup = (
-        await db.execute(
-            select(m.UnitOfMeasure).where(
-                m.UnitOfMeasure.tenant_id == tenant_id,
-                m.UnitOfMeasure.code == code,
-            )
-        )
-    ).scalar_one_or_none()
+    dup_stmt = select(m.UnitOfMeasure).where(
+        m.UnitOfMeasure.tenant_id == tenant_id,
+        m.UnitOfMeasure.code == code,
+    )
+    dup_stmt = apply_company_filter(dup_stmt, m.UnitOfMeasure.company_id, company_id)
+    dup = (await db.execute(dup_stmt)).scalar_one_or_none()
     if dup:
         raise HTTPException(status_code=409, detail="Unit code exists")
     base_id = await _validate_base_unit(
@@ -618,21 +670,23 @@ async def update_unit(
     conversion_factor: float | None = None,
     is_active: bool | None = None,
     clear_base_unit: bool = False,
+    company_id: str | None = None,
 ) -> m.UnitOfMeasure:
-    row = await get_unit(db, tenant_id, unit_id)
+    row = await get_unit(db, tenant_id, unit_id, company_id=company_id)
+    scope_company = company_id if company_id is not None else getattr(row, "company_id", None)
     if code is not None:
         code = code.strip().upper()
         if not code:
             raise HTTPException(status_code=400, detail="code is required")
-        dup = (
-            await db.execute(
-                select(m.UnitOfMeasure).where(
-                    m.UnitOfMeasure.tenant_id == tenant_id,
-                    m.UnitOfMeasure.code == code,
-                    m.UnitOfMeasure.id != row.id,
-                )
-            )
-        ).scalar_one_or_none()
+        dup_stmt = select(m.UnitOfMeasure).where(
+            m.UnitOfMeasure.tenant_id == tenant_id,
+            m.UnitOfMeasure.code == code,
+            m.UnitOfMeasure.id != row.id,
+        )
+        dup_stmt = apply_company_filter(
+            dup_stmt, m.UnitOfMeasure.company_id, scope_company
+        )
+        dup = (await db.execute(dup_stmt)).scalar_one_or_none()
         if dup:
             raise HTTPException(status_code=409, detail="Unit code exists")
         row.code = code
@@ -657,14 +711,14 @@ async def update_unit(
         row.is_active = bool(is_active)
     # Prevent turning a base into a dependent if other units reference it
     if row.base_unit_id:
-        dependents = (
-            await db.execute(
-                select(m.UnitOfMeasure.id).where(
-                    m.UnitOfMeasure.tenant_id == tenant_id,
-                    m.UnitOfMeasure.base_unit_id == row.id,
-                ).limit(1)
-            )
-        ).scalar_one_or_none()
+        dep_stmt = select(m.UnitOfMeasure.id).where(
+            m.UnitOfMeasure.tenant_id == tenant_id,
+            m.UnitOfMeasure.base_unit_id == row.id,
+        ).limit(1)
+        dep_stmt = apply_company_filter(
+            dep_stmt, m.UnitOfMeasure.company_id, scope_company
+        )
+        dependents = (await db.execute(dep_stmt)).scalar_one_or_none()
         if dependents:
             raise HTTPException(
                 status_code=400,
@@ -675,14 +729,31 @@ async def update_unit(
 
 
 async def deactivate_unit(
-    db: AsyncSession, *, tenant_id: str, unit_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    unit_id: str,
+    company_id: str | None = None,
 ) -> m.UnitOfMeasure:
-    return await update_unit(db, tenant_id=tenant_id, unit_id=unit_id, is_active=False)
+    return await update_unit(
+        db, tenant_id=tenant_id, unit_id=unit_id, is_active=False, company_id=company_id
+    )
 
 
-async def get_brand(db: AsyncSession, tenant_id: str, brand_id: str) -> m.Brand:
-    row = await db.get(m.Brand, brand_id)
-    if row is None or row.tenant_id != tenant_id:
+async def get_brand(
+    db: AsyncSession,
+    tenant_id: str,
+    brand_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Brand:
+    stmt = select(m.Brand).where(
+        m.Brand.id == brand_id,
+        m.Brand.tenant_id == tenant_id,
+    )
+    stmt = apply_company_filter(stmt, m.Brand.company_id, company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
         raise HTTPException(status_code=404, detail="Brand not found")
     return row
 

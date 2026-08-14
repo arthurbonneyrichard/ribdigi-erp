@@ -3499,7 +3499,9 @@ async def dashboard_summary(
 ):
     from app import dashboard_slices as slices_svc
 
-    return env(await slices_svc.summary_slice(db, claims))
+    return env(
+        await slices_svc.summary_slice(db, claims, company_id=claims.get("company_id"))
+    )
 
 
 @api.get("/dashboard/sales-trend")
@@ -3509,7 +3511,9 @@ async def dashboard_sales_trend(
 ):
     from app import dashboard_slices as slices_svc
 
-    return env(await slices_svc.sales_trend(db, claims))
+    return env(
+        await slices_svc.sales_trend(db, claims, company_id=claims.get("company_id"))
+    )
 
 
 @api.get("/dashboard/sales-trend/export")
@@ -3520,7 +3524,9 @@ async def dashboard_sales_trend_export(
     """Stage 157 S1 — dashboard sales-trend series CSV (distinct from Stage 153 aggregates)."""
     from app import dashboard_slices as slices_svc
 
-    payload = await slices_svc.sales_trend(db, claims)
+    payload = await slices_svc.sales_trend(
+        db, claims, company_id=claims.get("company_id")
+    )
     text = tenant_ops_export_svc.export_dashboard_sales_trend_csv(payload=payload)
     return Response(
         content=text,
@@ -3538,7 +3544,9 @@ async def dashboard_top_products(
 ):
     from app import dashboard_slices as slices_svc
 
-    return env(await slices_svc.top_products(db, claims))
+    return env(
+        await slices_svc.top_products(db, claims, company_id=claims.get("company_id"))
+    )
 
 
 @api.get("/dashboard/top-products/export")
@@ -3549,7 +3557,9 @@ async def dashboard_top_products_export(
     """Stage 157 T1 — dashboard top-products ranking CSV (distinct from Stage 153 aggregates)."""
     from app import dashboard_slices as slices_svc
 
-    payload = await slices_svc.top_products(db, claims)
+    payload = await slices_svc.top_products(
+        db, claims, company_id=claims.get("company_id")
+    )
     text = tenant_ops_export_svc.export_dashboard_top_products_csv(payload=payload)
     return Response(
         content=text,
@@ -3566,7 +3576,9 @@ async def dashboard_expenses(
 ):
     from app import dashboard_slices as slices_svc
 
-    return env(await slices_svc.expenses_slice(db, claims))
+    return env(
+        await slices_svc.expenses_slice(db, claims, company_id=claims.get("company_id"))
+    )
 
 
 @api.get("/dashboard/expenses/export")
@@ -3577,7 +3589,9 @@ async def dashboard_expenses_export(
     """Stage 158 E1 — dashboard expenses-by-category CSV (distinct from Stage 153 aggregates)."""
     from app import dashboard_slices as slices_svc
 
-    payload = await slices_svc.expenses_slice(db, claims)
+    payload = await slices_svc.expenses_slice(
+        db, claims, company_id=claims.get("company_id")
+    )
     text = tenant_ops_export_svc.export_dashboard_expenses_csv(payload=payload)
     return Response(
         content=text,
@@ -3624,7 +3638,9 @@ async def dashboard_stock_alerts(
 ):
     from app import dashboard_slices as slices_svc
 
-    return env(await slices_svc.stock_alerts(db, claims))
+    return env(
+        await slices_svc.stock_alerts(db, claims, company_id=claims.get("company_id"))
+    )
 
 
 @api.get("/dashboard/stock-alerts/export")
@@ -3635,7 +3651,9 @@ async def dashboard_stock_alerts_export(
     """Stage 158 A1 — dashboard stock-alerts KPI CSV (distinct from Stage 153 aggregates)."""
     from app import dashboard_slices as slices_svc
 
-    payload = await slices_svc.stock_alerts(db, claims)
+    payload = await slices_svc.stock_alerts(
+        db, claims, company_id=claims.get("company_id")
+    )
     text = tenant_ops_export_svc.export_dashboard_stock_alerts_csv(payload=payload)
     return Response(
         content=text,
@@ -3683,7 +3701,9 @@ async def dashboard_summary_export(
     """Stage 159 M1 — dashboard compact summary KPI CSV (distinct from Stage 153 aggregates)."""
     from app import dashboard_slices as slices_svc
 
-    payload = await slices_svc.summary_slice(db, claims)
+    payload = await slices_svc.summary_slice(
+        db, claims, company_id=claims.get("company_id")
+    )
     text = tenant_ops_export_svc.export_dashboard_summary_csv(payload=payload)
     return Response(
         content=text,
@@ -4149,16 +4169,19 @@ async def catalog_categories(
 ):
     """Stage 122 M1 — active_only / is_active for honest inactive-only category lists."""
     tid = claims["tenant_id"]
+    company_id = claims.get("company_id")
     use_cache = not active_only and is_active is None
     if use_cache:
-        cat_key = cache_svc.app_cache.categories_key(tid, tree=tree)
+        cat_key = cache_svc.app_cache.categories_key(
+            tid, tree=tree, company_id=company_id
+        )
         cached = await cache_svc.app_cache.get_json(cat_key)
         if cached is not None:
             return env(cached)
 
-    await catalog_meta_svc.ensure_default_catalog(db, tid)
+    await catalog_meta_svc.ensure_default_catalog(db, tid, company_id=company_id)
     rows = await catalog_meta_svc.list_categories(
-        db, tid, active_only=active_only, is_active=is_active
+        db, tid, active_only=active_only, is_active=is_active, company_id=company_id
     )
     payload = (
         catalog_meta_svc.build_category_tree(rows)
@@ -4185,6 +4208,7 @@ async def catalog_categories_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -4209,7 +4233,9 @@ async def catalog_create_category(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    await cache_svc.app_cache.invalidate_catalog(claims["tenant_id"])
+    await cache_svc.app_cache.invalidate_catalog(
+        claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return env(catalog_meta_svc.serialize_category(row), "Category created")
 
 
@@ -4234,9 +4260,12 @@ async def catalog_patch_category(
         tax_rate_id=data.get("tax_rate_id"),
         clear_parent=clear_parent,
         clear_tax_rate=clear_tax_rate,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
-    await cache_svc.app_cache.invalidate_catalog(claims["tenant_id"])
+    await cache_svc.app_cache.invalidate_catalog(
+        claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return env(catalog_meta_svc.serialize_category(row), "Category updated")
 
 
@@ -4247,10 +4276,15 @@ async def catalog_delete_category(
     db: AsyncSession = Depends(get_db),
 ):
     row = await catalog_meta_svc.deactivate_category(
-        db, tenant_id=claims["tenant_id"], category_id=category_id
+        db,
+        tenant_id=claims["tenant_id"],
+        category_id=category_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
-    await cache_svc.app_cache.invalidate_catalog(claims["tenant_id"])
+    await cache_svc.app_cache.invalidate_catalog(
+        claims["tenant_id"], company_id=claims.get("company_id")
+    )
     return env(catalog_meta_svc.serialize_category(row), "Category deactivated")
 
 
@@ -4263,7 +4297,11 @@ async def catalog_brands(
 ):
     """Stage 122 M1 — active_only / is_active for honest inactive-only brand lists."""
     rows = await catalog_meta_svc.list_brands(
-        db, claims["tenant_id"], active_only=active_only, is_active=is_active
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     return env([catalog_meta_svc.serialize_brand(r) for r in rows])
 
@@ -4281,6 +4319,7 @@ async def catalog_brands_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -4325,6 +4364,7 @@ async def catalog_patch_brand(
         description=data.get("description"),
         is_active=data.get("is_active"),
         clear_description=clear_description,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_brand(row), "Brand updated")
@@ -4337,7 +4377,10 @@ async def catalog_delete_brand(
     db: AsyncSession = Depends(get_db),
 ):
     row = await catalog_meta_svc.deactivate_brand(
-        db, tenant_id=claims["tenant_id"], brand_id=brand_id
+        db,
+        tenant_id=claims["tenant_id"],
+        brand_id=brand_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_brand(row), "Brand deactivated")
@@ -4350,7 +4393,9 @@ async def catalog_brand_logo_upload(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    brand = await catalog_meta_svc.get_brand(
+        db, claims["tenant_id"], brand_id, company_id=claims.get("company_id")
+    )
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="brand_logos",
@@ -4381,7 +4426,9 @@ async def catalog_brand_logo_get(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    brand = await catalog_meta_svc.get_brand(
+        db, claims["tenant_id"], brand_id, company_id=claims.get("company_id")
+    )
     if not brand.logo_url:
         raise HTTPException(status_code=404, detail="No brand logo uploaded")
     return storage_svc.media_response(brand.logo_url, tenant_id=claims["tenant_id"])
@@ -4393,7 +4440,9 @@ async def catalog_brand_logo_delete(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    brand = await catalog_meta_svc.get_brand(db, claims["tenant_id"], brand_id)
+    brand = await catalog_meta_svc.get_brand(
+        db, claims["tenant_id"], brand_id, company_id=claims.get("company_id")
+    )
     if not brand.logo_url:
         raise HTTPException(status_code=404, detail="No brand logo uploaded")
     storage_svc.delete_key(brand.logo_url, tenant_id=claims["tenant_id"])
@@ -4419,9 +4468,16 @@ async def catalog_units(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 M1 — active_only / is_active for honest inactive-only unit lists."""
-    await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
+    company_id = claims.get("company_id")
+    await catalog_meta_svc.ensure_default_catalog(
+        db, claims["tenant_id"], company_id=company_id
+    )
     rows = await catalog_meta_svc.list_units(
-        db, claims["tenant_id"], active_only=active_only, is_active=is_active
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+        company_id=company_id,
     )
     return env([catalog_meta_svc.serialize_unit(r) for r in rows])
 
@@ -4439,6 +4495,7 @@ async def catalog_units_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -4502,6 +4559,7 @@ async def catalog_patch_unit(
         conversion_factor=data.get("conversion_factor"),
         is_active=data.get("is_active"),
         clear_base_unit=bool(data.get("clear_base_unit")),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_unit(row), "Unit updated")
@@ -4514,7 +4572,10 @@ async def catalog_delete_unit(
     db: AsyncSession = Depends(get_db),
 ):
     row = await catalog_meta_svc.deactivate_unit(
-        db, tenant_id=claims["tenant_id"], unit_id=unit_id
+        db,
+        tenant_id=claims["tenant_id"],
+        unit_id=unit_id,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(catalog_meta_svc.serialize_unit(row), "Unit deactivated")
@@ -4687,7 +4748,10 @@ async def lowstock(
 ):
     """Stage 137 L1 — optional stock_status=red|yellow filter."""
     out = await inventory_ops_export_svc.list_low_stock_alerts(
-        db, tenant_id=claims["tenant_id"], stock_status=stock_status
+        db,
+        tenant_id=claims["tenant_id"],
+        stock_status=stock_status,
+        company_id=claims.get("company_id"),
     )
     return env(out)
 
@@ -4700,7 +4764,10 @@ async def export_low_stock_csv(
 ):
     """Stage 137 L1 — low-stock alert CSV."""
     text = await inventory_ops_export_svc.export_low_stock_csv(
-        db, tenant_id=claims["tenant_id"], stock_status=stock_status
+        db,
+        tenant_id=claims["tenant_id"],
+        stock_status=stock_status,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -5244,6 +5311,7 @@ async def products_variants_export(
         product_id=product_id,
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -5577,7 +5645,10 @@ async def inventory_batches_expiring(
     db: AsyncSession = Depends(get_db),
 ):
     rows = await catalog_svc.list_expiring_batches(
-        db, claims["tenant_id"], within_days=days
+        db,
+        claims["tenant_id"],
+        within_days=days,
+        company_id=claims.get("company_id"),
     )
     return env(
         {
@@ -5596,7 +5667,10 @@ async def export_expiring_batches_csv(
 ):
     """Stage 137 E1 — expiring batches CSV."""
     text = await inventory_ops_export_svc.export_expiring_batches_csv(
-        db, tenant_id=claims["tenant_id"], days=days
+        db,
+        tenant_id=claims["tenant_id"],
+        days=days,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -5638,7 +5712,11 @@ async def list_customer_groups(
 ):
     """Stage 123 G1 — active_only / is_active for honest inactive-only customer group lists."""
     rows = await customers_svc.list_groups(
-        db, claims["tenant_id"], active_only=active_only, is_active=is_active
+        db,
+        claims["tenant_id"],
+        active_only=active_only,
+        is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env([customers_svc.serialize_group(r) for r in rows])
@@ -5657,6 +5735,7 @@ async def customer_groups_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -5676,6 +5755,7 @@ async def create_customer_group(
         tenant_id=claims["tenant_id"],
         name=payload.name,
         discount_percent=float(payload.discount_percent or 0),
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(customers_svc.serialize_group(row), "Customer group created")
@@ -5688,6 +5768,7 @@ async def get_customer_group(
     db: AsyncSession = Depends(get_db),
 ):
     row = await customers_svc.get_customer_group(db, claims["tenant_id"], group_id)
+    workspace_svc.assert_record_company(claims, row)
     return env(customers_svc.serialize_group(row))
 
 
@@ -5698,6 +5779,8 @@ async def patch_customer_group(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await customers_svc.get_customer_group(db, claims["tenant_id"], group_id)
+    workspace_svc.assert_record_company(claims, existing)
     row = await customers_svc.update_group(
         db,
         tenant_id=claims["tenant_id"],
@@ -5714,6 +5797,8 @@ async def delete_customer_group(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await customers_svc.get_customer_group(db, claims["tenant_id"], group_id)
+    workspace_svc.assert_record_company(claims, existing)
     row = await customers_svc.deactivate_group(
         db, tenant_id=claims["tenant_id"], group_id=group_id
     )
@@ -8702,13 +8787,18 @@ async def list_expense_categories(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 F1 — active_only / is_active for honest inactive-only expense category lists."""
-    await expenses_svc.ensure_default_categories(db, claims["tenant_id"])
+    company_id = claims.get("company_id")
+    await expenses_svc.ensure_default_categories(
+        db, claims["tenant_id"], company_id=company_id
+    )
     await db.commit()
     stmt = (
         select(m.ExpenseCategory)
         .where(m.ExpenseCategory.tenant_id == claims["tenant_id"])
         .order_by(m.ExpenseCategory.name)
     )
+    if company_id:
+        stmt = stmt.where(m.ExpenseCategory.company_id == company_id)
     if is_active is not None:
         stmt = stmt.where(m.ExpenseCategory.is_active.is_(bool(is_active)))
     elif active_only:
@@ -8755,6 +8845,7 @@ async def create_expense_category(
     )
     cat = m.ExpenseCategory(
         tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
         code=payload.code.strip().upper(),
         name=payload.name.strip(),
         budget_amount=payload.budget_amount,
@@ -8779,6 +8870,17 @@ async def update_expense_category(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = (
+        await db.execute(
+            select(m.ExpenseCategory).where(
+                m.ExpenseCategory.id == category_id,
+                m.ExpenseCategory.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Expense category not found")
+    workspace_svc.assert_record_company(claims, existing)
     cat = await expenses_svc.update_category(
         db,
         tenant_id=claims["tenant_id"],
@@ -12469,6 +12571,7 @@ async def stores_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12485,7 +12588,10 @@ async def stores_drawer_settings_export(
 ):
     """Stage 142 C1 — store cash drawer settings CSV (kick bytes never included)."""
     text = await location_export_svc.export_drawer_settings_csv(
-        db, tenant_id=claims["tenant_id"], is_active=is_active
+        db,
+        tenant_id=claims["tenant_id"],
+        is_active=is_active,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12558,6 +12664,7 @@ async def update_store(
         clear_branch=payload.clear_branch,
         operating_hours=payload.operating_hours,
         is_active=payload.is_active,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,
@@ -12582,7 +12689,9 @@ async def update_store_drawer(
 ):
     from app import cash_drawer as cash_drawer_svc
 
-    store = await stores_svc.get_store(db, claims["tenant_id"], store_id)
+    store = await stores_svc.get_store(
+        db, claims["tenant_id"], store_id, company_id=claims.get("company_id")
+    )
     data = payload.model_dump(exclude_unset=True)
     if "drawer_mode" in data and data["drawer_mode"] is not None:
         store.drawer_mode = cash_drawer_svc.normalize_mode(data["drawer_mode"])
@@ -12940,6 +13049,7 @@ async def warehouses_export(
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -12957,7 +13067,9 @@ async def add_warehouse(
     tenants_svc.assert_writable(claims)
     data = payload.model_dump()
     if data.get("store_id"):
-        await stores_svc.get_store(db, claims["tenant_id"], data["store_id"])
+        await stores_svc.get_store(
+            db, claims["tenant_id"], data["store_id"], company_id=claims.get("company_id")
+        )
     if data.get("manager_id"):
         manager = (
             await db.execute(
@@ -13030,6 +13142,7 @@ async def update_warehouse(
         address=payload.address,
         capacity=payload.capacity,
         is_active=payload.is_active,
+        company_id=claims.get("company_id"),
     )
     await audit_svc.record_event(
         db,

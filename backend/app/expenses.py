@@ -269,6 +269,7 @@ async def resolve_expense_gl_account(
 def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None) -> dict:
     out = {
         "id": cat.id,
+        "company_id": getattr(cat, "company_id", None),
         "code": cat.code,
         "name": cat.name,
         "budget_amount": float(cat.budget_amount or 0),

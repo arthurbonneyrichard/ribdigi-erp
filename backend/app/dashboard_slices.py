@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import dashboard_charts as dashboard_charts_svc
 from app import dashboard_views as dashboard_views_svc
+from app.reports import apply_company_filter
 from app.rbac import ROLE_LABELS, list_system_role_catalog
 
 
@@ -21,13 +22,19 @@ def _meta(claims: dict) -> dict:
     }
 
 
-async def sales_trend(db: AsyncSession, claims: dict) -> dict:
+async def sales_trend(
+    db: AsyncSession, claims: dict, *, company_id: str | None = None
+) -> dict:
     from app import dashboard_scope as dashboard_scope_svc
 
     tid = claims["tenant_id"]
     managed_ids = await dashboard_scope_svc.managed_store_ids(db, claims)
     series = await dashboard_charts_svc.load_revenue_chart_series(
-        db, tenant_id=tid, now=datetime.utcnow(), store_ids=managed_ids
+        db,
+        tenant_id=tid,
+        now=datetime.utcnow(),
+        store_ids=managed_ids,
+        company_id=company_id,
     )
     payload = {
         **_meta(claims),
@@ -38,7 +45,9 @@ async def sales_trend(db: AsyncSession, claims: dict) -> dict:
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 
-async def top_products(db: AsyncSession, claims: dict) -> dict:
+async def top_products(
+    db: AsyncSession, claims: dict, *, company_id: str | None = None
+) -> dict:
     from app import dashboard_scope as dashboard_scope_svc
 
     tid = claims["tenant_id"]
@@ -48,6 +57,9 @@ async def top_products(db: AsyncSession, claims: dict) -> dict:
         m.SalesInvoice.tenant_id == tid,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     ]
+    if company_id:
+        filters.append(m.Product.company_id == company_id)
+        filters.append(m.SalesInvoice.company_id == company_id)
     if managed_ids is not None:
         if not managed_ids:
             payload = {
@@ -93,7 +105,9 @@ async def top_products(db: AsyncSession, claims: dict) -> dict:
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 
-async def stock_alerts(db: AsyncSession, claims: dict) -> dict:
+async def stock_alerts(
+    db: AsyncSession, claims: dict, *, company_id: str | None = None
+) -> dict:
     tid = claims["tenant_id"]
     now = datetime.utcnow()
     from datetime import timedelta
@@ -103,28 +117,33 @@ async def stock_alerts(db: AsyncSession, claims: dict) -> dict:
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0
 
-    low = await scalar(
-        select(func.count(m.Product.id)).where(
-            m.Product.tenant_id == tid,
-            m.Product.stock_qty <= m.Product.reorder_level,
-        )
+    low_stmt = select(func.count(m.Product.id)).where(
+        m.Product.tenant_id == tid,
+        m.Product.stock_qty <= m.Product.reorder_level,
     )
-    out_of_stock = await scalar(
-        select(func.count(m.Product.id)).where(
-            m.Product.tenant_id == tid,
-            m.Product.stock_qty <= 0,
-        )
+    low_stmt = apply_company_filter(low_stmt, m.Product.company_id, company_id)
+    low = await scalar(low_stmt)
+
+    oos_stmt = select(func.count(m.Product.id)).where(
+        m.Product.tenant_id == tid,
+        m.Product.stock_qty <= 0,
     )
-    expiring_batches = await scalar(
-        select(func.count(m.ProductBatch.id)).where(
-            m.ProductBatch.tenant_id == tid,
-            m.ProductBatch.expiry_date.is_not(None),
-            m.ProductBatch.expiry_date >= now,
-            m.ProductBatch.expiry_date <= expiry_horizon,
-            m.ProductBatch.quantity > 0,
-        )
+    oos_stmt = apply_company_filter(oos_stmt, m.Product.company_id, company_id)
+    out_of_stock = await scalar(oos_stmt)
+
+    exp_stmt = select(func.count(m.ProductBatch.id)).where(
+        m.ProductBatch.tenant_id == tid,
+        m.ProductBatch.expiry_date.is_not(None),
+        m.ProductBatch.expiry_date >= now,
+        m.ProductBatch.expiry_date <= expiry_horizon,
+        m.ProductBatch.quantity > 0,
     )
-    products = await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tid))
+    exp_stmt = apply_company_filter(exp_stmt, m.ProductBatch.company_id, company_id)
+    expiring_batches = await scalar(exp_stmt)
+
+    products_stmt = select(func.count(m.Product.id)).where(m.Product.tenant_id == tid)
+    products_stmt = apply_company_filter(products_stmt, m.Product.company_id, company_id)
+    products = await scalar(products_stmt)
     payload = {
         **_meta(claims),
         "products": int(products),
@@ -135,17 +154,17 @@ async def stock_alerts(db: AsyncSession, claims: dict) -> dict:
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 
-async def expenses_slice(db: AsyncSession, claims: dict) -> dict:
+async def expenses_slice(
+    db: AsyncSession, claims: dict, *, company_id: str | None = None
+) -> dict:
     tid = claims["tenant_id"]
-    total = (
-        await db.execute(
-            select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
-                m.Expense.tenant_id == tid,
-                m.Expense.status == "approved",
-            )
-        )
-    ).scalar() or 0
-    by_cat = await expenses_by_category(db, tid)
+    total_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
+        m.Expense.tenant_id == tid,
+        m.Expense.status == "approved",
+    )
+    total_stmt = apply_company_filter(total_stmt, m.Expense.company_id, company_id)
+    total = (await db.execute(total_stmt)).scalar() or 0
+    by_cat = await expenses_by_category(db, tid, company_id=company_id)
     payload = {
         **_meta(claims),
         "total_expenses": float(total),
@@ -229,51 +248,52 @@ async def user_stats_slice(db: AsyncSession, claims: dict) -> dict:
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 
-async def summary_slice(db: AsyncSession, claims: dict) -> dict:
+async def summary_slice(
+    db: AsyncSession, claims: dict, *, company_id: str | None = None
+) -> dict:
     """Compact KPI card payload (permission-filtered)."""
     tid = claims["tenant_id"]
 
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0
 
-    sales = float(
-        await scalar(
-            select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
-                m.SalesInvoice.tenant_id == tid,
-                m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
-            )
-        )
+    sales_stmt = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+        m.SalesInvoice.tenant_id == tid,
+        m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
-    pos = float(
-        await scalar(
-            select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-                m.Transaction.tenant_id == tid,
-                m.Transaction.tx_type.in_(["sale", "pos_sale"]),
-            )
-        )
+    sales_stmt = apply_company_filter(sales_stmt, m.SalesInvoice.company_id, company_id)
+    sales = float(await scalar(sales_stmt))
+
+    pos_stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+        m.Transaction.tenant_id == tid,
+        m.Transaction.tx_type.in_(["sale", "pos_sale"]),
     )
-    expenses = float(
-        await scalar(
-            select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
-                m.Expense.tenant_id == tid,
-                m.Expense.status == "approved",
-            )
-        )
+    pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
+    pos = float(await scalar(pos_stmt))
+
+    expenses_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
+        m.Expense.tenant_id == tid,
+        m.Expense.status == "approved",
     )
-    products = int(await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tid)))
-    low = int(
-        await scalar(
-            select(func.count(m.Product.id)).where(
-                m.Product.tenant_id == tid,
-                m.Product.stock_qty <= m.Product.reorder_level,
-            )
-        )
+    expenses_stmt = apply_company_filter(expenses_stmt, m.Expense.company_id, company_id)
+    expenses = float(await scalar(expenses_stmt))
+
+    products_stmt = select(func.count(m.Product.id)).where(m.Product.tenant_id == tid)
+    products_stmt = apply_company_filter(products_stmt, m.Product.company_id, company_id)
+    products = int(await scalar(products_stmt))
+
+    low_stmt = select(func.count(m.Product.id)).where(
+        m.Product.tenant_id == tid,
+        m.Product.stock_qty <= m.Product.reorder_level,
     )
-    customers = int(
-        await scalar(
-            select(func.count(m.Party.id)).where(m.Party.tenant_id == tid, m.Party.kind == "customer")
-        )
+    low_stmt = apply_company_filter(low_stmt, m.Product.company_id, company_id)
+    low = int(await scalar(low_stmt))
+
+    customers_stmt = select(func.count(m.Party.id)).where(
+        m.Party.tenant_id == tid, m.Party.kind == "customer"
     )
+    customers_stmt = apply_company_filter(customers_stmt, m.Party.company_id, company_id)
+    customers = int(await scalar(customers_stmt))
     payload = {
         **_meta(claims),
         "total_sales": sales + pos,

@@ -140,8 +140,11 @@ async def export_categories_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.ProductCategory.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.ProductCategory.is_active, is_active=is_active, active_only=active_only
     )
@@ -168,8 +171,11 @@ async def export_brands_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.Brand).where(m.Brand.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Brand.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.Brand.is_active, is_active=is_active, active_only=active_only
     )
@@ -195,8 +201,11 @@ async def export_units_csv(
     tenant_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    company_id: str | None = None,
 ) -> str:
     stmt = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.UnitOfMeasure.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.UnitOfMeasure.is_active, is_active=is_active, active_only=active_only
     )
