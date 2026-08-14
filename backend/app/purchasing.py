@@ -12,7 +12,13 @@ from app import models as m
 from app.inventory import apply_stock_change
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
-from app.doc_numbers import next_grn_number, next_purchase_invoice_number, next_purchase_order_number
+from app.doc_numbers import (
+    next_debit_note_number,
+    next_grn_number,
+    next_purchase_invoice_number,
+    next_purchase_order_number,
+    next_purchase_return_number,
+)
 
 
 async def _purchase_line_tax(
@@ -1457,7 +1463,7 @@ async def create_purchase_return(
 
     ret = m.PurchaseReturn(
         tenant_id=tenant_id,
-        return_number=f"PR-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        return_number=await next_purchase_return_number(db, tenant_id),
         supplier_id=grn.supplier_id,
         purchase_order_id=grn.purchase_order_id,
         goods_receipt_id=grn.id,
@@ -1558,7 +1564,7 @@ async def post_purchase_return(
 
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
-    ret.debit_note_number = f"DN-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+    ret.debit_note_number = await next_debit_note_number(db, tenant_id)
 
     from app.accounting import post_purchase_return_journal
 

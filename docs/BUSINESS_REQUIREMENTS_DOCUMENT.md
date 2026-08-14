@@ -453,7 +453,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Create return referencing original PO/GRN
   - [x] Record return reason (damaged, wrong item, expiry, quality issue) (`reason` required on `POST /purchasing/returns` ∈ damaged|wrong_item|expiry|quality|other; no silent default; Purchasing Select reason UI)
   - [ ] Deduct returned quantity from inventory
-  - [ ] Generate debit note
+  - [x] Generate debit note (`debit_note_number` allocated on post via tenant series `GET|PATCH /purchasing/settings` → `debit_note_numbering`; return `return_number` series on create; unique per tenant; Purchasing Document numbering UI)
   - [x] Update supplier balance (post credits AP using return `total_amount`, which inherits proportional PO line discount: `accepted return_qty / ordered × PO discount`; tax before discount; Purchasing Returns Discount column)
 
 ---
@@ -994,7 +994,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Medium
 - **Acceptance Criteria:**
   - [x] Configure invoice numbering prefix and series (e.g., INV-2026-0001) via Sales settings
-  - [x] Configure PO, GRN, purchase invoice, quotation numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI; quotation via `/sales/settings`)
+  - [x] Configure PO, GRN, purchase invoice, purchase return, debit note, quotation numbering (`GET|PATCH /purchasing/settings` for PO/GRN/PI/PR/DN; quotation via `/sales/settings`)
   - [x] Receipt template selection and customization (default paper via `GET|PATCH /settings/print`; per-request `paper=`)
   - [x] Invoice template selection and customization (default a4|thermal via `/settings/print`; per-request `template=`)
   - [x] Header/footer customization with company branding (logo on PDFs + header/footer text)

@@ -232,6 +232,12 @@ export default function Page() {
   const [piPrefix, setPiPrefix] = useState('PINV');
   const [piNext, setPiNext] = useState('1');
   const [piPreview, setPiPreview] = useState('');
+  const [prPrefix, setPrPrefix] = useState('PR');
+  const [prNext, setPrNext] = useState('1');
+  const [prPreview, setPrPreview] = useState('');
+  const [dnPrefix, setDnPrefix] = useState('DN');
+  const [dnNext, setDnNext] = useState('1');
+  const [dnPreview, setDnPreview] = useState('');
 
   async function refresh() {
     const [poRes, prRes, settingsRes, numRes, supRes, prodRes, unitRes, grnRes, invRes, retRes] =
@@ -273,6 +279,18 @@ export default function Page() {
       setPiPrefix(piNum.prefix || 'PINV');
       setPiNext(String(piNum.next_number ?? 1));
       setPiPreview(piNum.preview || '');
+    }
+    const prNum = numRes.data?.purchase_return_numbering;
+    if (prNum) {
+      setPrPrefix(prNum.prefix || 'PR');
+      setPrNext(String(prNum.next_number ?? 1));
+      setPrPreview(prNum.preview || '');
+    }
+    const dnNum = numRes.data?.debit_note_numbering;
+    if (dnNum) {
+      setDnPrefix(dnNum.prefix || 'DN');
+      setDnNext(String(dnNum.next_number ?? 1));
+      setDnPreview(dnNum.preview || '');
     }
   }
 
@@ -888,6 +906,14 @@ export default function Page() {
             prefix: piPrefix.trim(),
             next_number: Math.max(1, Number(piNext) || 1),
           },
+          purchase_return_numbering: {
+            prefix: prPrefix.trim(),
+            next_number: Math.max(1, Number(prNext) || 1),
+          },
+          debit_note_numbering: {
+            prefix: dnPrefix.trim(),
+            next_number: Math.max(1, Number(dnNext) || 1),
+          },
         }),
       });
       const poNum = r.data?.purchase_order_numbering;
@@ -908,8 +934,20 @@ export default function Page() {
         setPiNext(String(piNum.next_number));
         setPiPreview(piNum.preview);
       }
+      const prNum = r.data?.purchase_return_numbering;
+      if (prNum) {
+        setPrPrefix(prNum.prefix);
+        setPrNext(String(prNum.next_number));
+        setPrPreview(prNum.preview);
+      }
+      const dnNum = r.data?.debit_note_numbering;
+      if (dnNum) {
+        setDnPrefix(dnNum.prefix);
+        setDnNext(String(dnNum.next_number));
+        setDnPreview(dnNum.preview);
+      }
       setMessage(
-        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''}`.trim()
+        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''} / PR ${prNum?.preview || ''} / DN ${dnNum?.preview || ''}`.trim()
       );
     } catch (err: any) {
       setError(err.message);
@@ -1031,6 +1069,38 @@ export default function Page() {
                 style={{ width: 90 }}
               />
               <span className="muted">{piPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+              <span className="muted">PR</span>
+              <input
+                value={prPrefix}
+                onChange={(e) => setPrPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+              />
+              <input
+                value={prNext}
+                onChange={(e) => setPrNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+              />
+              <span className="muted">{prPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
+              <span className="muted">DN</span>
+              <input
+                value={dnPrefix}
+                onChange={(e) => setDnPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+              />
+              <input
+                value={dnNext}
+                onChange={(e) => setDnNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+              />
+              <span className="muted">{dnPreview || '—'}</span>
               <button type="button" onClick={savePurchasingNumbering}>
                 Save numbering
               </button>

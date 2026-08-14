@@ -132,6 +132,44 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
     assert inv.status_code == 200, inv.text
     assert inv.json()["data"]["invoice_number"] == f"PINV-{year}-0007"
 
+    # Purchase return + debit note numbering (BR-6.6 / BR-20.4)
+    purch_ret = await ac.patch(
+        "/api/v1/purchasing/settings",
+        headers=admin,
+        json={
+            "purchase_return_numbering": {"prefix": "PR", "next_number": 4},
+            "debit_note_numbering": {"prefix": "DN", "next_number": 6},
+        },
+    )
+    assert purch_ret.status_code == 200, purch_ret.text
+    assert purch_ret.json()["data"]["purchase_return_numbering"]["preview"] == f"PR-{year}-0004"
+    assert purch_ret.json()["data"]["debit_note_numbering"]["preview"] == f"DN-{year}-0006"
+
+    gitems = grn.json()["data"].get("items") or []
+    if not gitems:
+        gdetail = await ac.get(f"/api/v1/purchasing/grn/{grn.json()['data']['id']}", headers=admin)
+        gitems = gdetail.json()["data"]["items"]
+    ret = await ac.post(
+        "/api/v1/purchasing/returns",
+        headers=admin,
+        json={
+            "goods_receipt_id": grn.json()["data"]["id"],
+            "reason": "damaged",
+            "items": [{"goods_receipt_item_id": gitems[0]["id"], "quantity": 1}],
+        },
+    )
+    assert ret.status_code == 200, ret.text
+    assert ret.json()["data"]["return_number"] == f"PR-{year}-0004"
+    assert ret.json()["data"].get("debit_note_number") in (None, "")
+
+    posted = await ac.post(
+        f"/api/v1/purchasing/returns/{ret.json()['data']['id']}/post",
+        headers=admin,
+    )
+    assert posted.status_code == 200, posted.text
+    assert posted.json()["data"]["debit_note_number"] == f"DN-{year}-0006"
+    assert posted.json()["data"]["status"] == "posted"
+
     # Counter advanced for next GRN
     assert await next_grn_number(db_session, seed["t1"].id) == f"GRN-{year}-0010"
     await db_session.commit()
