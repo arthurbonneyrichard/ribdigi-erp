@@ -24,6 +24,6 @@ Stage 236 Tenant MVP Support Runbook Pack Remaining-Gate Index Fidelity delivere
 
 ## Next stage
 
-Stage 237 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 236 feature scope remains frozen.
+Stage 237 opened under **ADR-480** after CONTINUE/NEXT (Incident Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-481**. Stage 236 feature scope remains frozen.
 
-**Runner-up outline (not opened):** Tenant MVP Incident Pack Remaining-Gate Index Fidelity — single index of incident-pack blockers (packaged Stage 30 I1 incident-pack materials non-claim as live incident drill Complete) with explicit non-claim. Prefixed `INCIDENT_PACK_*` if a prior `INCIDENT_*` remaining-gate exists. Distinct from Stage 236 support runbook pack remaining-gate and Stage 235 evidence ledger pack remaining-gate.
+**Amendment (2026-08-14):** Stage 237 runner-up outline was approved and opened (ADR-480); freeze ADR-481. Do not reopen Stage 236 scope.

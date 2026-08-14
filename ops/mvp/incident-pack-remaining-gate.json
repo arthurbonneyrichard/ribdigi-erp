@@ -1,0 +1,57 @@
+{
+  "id": "incident-pack-remaining-gate",
+  "stage": 237,
+  "pack": "I1",
+  "doc": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/INCIDENT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/INCIDENT_PACK_RG_POINTERS_MVP.md",
+    "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+    "incident_remaining_gate": "docs/INCIDENT_REMAINING_GATE_MVP.md",
+    "support_runbook_pack_remaining_gate": "docs/SUPPORT_RUNBOOK_PACK_REMAINING_GATE_MVP.md",
+    "evidence_ledger_pack_remaining_gate": "docs/EVIDENCE_LEDGER_PACK_REMAINING_GATE_MVP.md",
+    "incident_checklist": "ops/incident/incident-checklist.json"
+  },
+  "packaging_complete": true,
+  "live_incident_drill_claimed": false,
+  "live_incident_response_claimed": false,
+  "hosted_pagerduty_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage30_i1_incident_pack": true,
+  "distinct_from_stage211_incident_remaining_gate": true,
+  "distinct_from_stage236_support_runbook_pack_remaining_gate": true,
+  "distinct_from_stage235_evidence_ledger_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ipr-read-blockers",
+      "title": "Read B1 incident pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ipr-follow-pointers",
+      "title": "Follow P1 Stage 30 / Stage 211 / Stage 236 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ipr-drill-missing",
+      "title": "Reaffirm live incident drill MISSING until a real on-call drill ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ipr-no-packaging-as-live",
+      "title": "Do not treat Stage 30 I1 as live incident drill Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ipr-drill-remaining",
+      "title": "Live incident drill / hosted PagerDuty / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 237 I1 incident pack remaining-gate index packaging only. Do not claim live incident drill Complete."
+}
