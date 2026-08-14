@@ -1032,14 +1032,93 @@ export default function Page() {
 
       {selected && (
         <div className="card" style={{ marginTop: 16 }}>
-          <h3>Selected</h3>
+          <h3>
+            {selected.invoice_number || 'Selected'} — {selected.status}
+          </h3>
           {selected.emailed_to && (
             <p className="muted" style={{ marginBottom: 8 }}>
               Last emailed to {selected.emailed_to}
               {selected.emailed_at ? ` · ${String(selected.emailed_at).slice(0, 19)}` : ''}
             </p>
           )}
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{JSON.stringify(selected, null, 2)}</pre>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Tax %</th>
+                <th>Line tax</th>
+                <th>Line total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(selected.items || []).map((it: any) => (
+                <tr key={it.id}>
+                  <td>
+                    {it.product_id}
+                    {it.is_reverse_charge ? ' · RC' : ''}
+                  </td>
+                  <td>{it.quantity}</td>
+                  <td>{it.unit_price}</td>
+                  <td>{it.tax_rate}</td>
+                  <td>
+                    {it.line_tax ?? 0}
+                    {(it.tax_components || []).length
+                      ? ` (${(it.tax_components || [])
+                          .map((c: any) => `${c.name || c.code}:${c.amount}`)
+                          .join(', ')})`
+                      : ''}
+                  </td>
+                  <td>{it.line_total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="grid" style={{ marginTop: 12 }}>
+            <div className="card">
+              <div className="muted">Subtotal</div>
+              <div className="kpi">{selected.subtotal ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Tax</div>
+              <div className="kpi">{selected.tax_amount ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Total</div>
+              <div className="kpi">{selected.total_amount ?? 0}</div>
+            </div>
+          </div>
+          {(selected.tax_breakdown?.by_rate || []).length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <h4 style={{ margin: '8px 0' }}>Tax breakdown</h4>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Rate</th>
+                    <th>Taxable</th>
+                    <th>Tax</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selected.tax_breakdown.by_rate.map((r: any, idx: number) => (
+                    <tr key={`${r.tax_rate}-${idx}`}>
+                      <td>{r.tax_rate}%</td>
+                      <td>{r.taxable}</td>
+                      <td>{r.tax}</td>
+                      <td>{r.is_reverse_charge ? 'Reverse charge' : 'Standard'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {selected.reverse_charge_tax > 0 && (
+                <p className="muted">
+                  Reverse-charge tax (memo): {selected.reverse_charge_tax}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </Shell>

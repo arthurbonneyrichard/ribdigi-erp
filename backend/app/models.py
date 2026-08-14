@@ -953,6 +953,9 @@ class SalesInvoiceItem(Base):
     tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    is_reverse_charge: Mapped[bool] = mapped_column(Boolean, default=False)
+    tax_components: Mapped[list | None] = mapped_column(JSON, nullable=True)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 
