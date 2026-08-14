@@ -31,3 +31,10 @@ Stage 267 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for paid billing, payment provider, live subscriptions, or go-live.
+
+
+## Amendment — Stage 267 opened
+
+Stage 267 opened under **ADR-541** after CONTINUE/NEXT (Tenant MVP Tenant Company Console Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-542**. Stage 266 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 267 runner-up outline was approved and opened (ADR-541); freeze ADR-542. Do not reopen Stage 266 scope.

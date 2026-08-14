@@ -1030,6 +1030,12 @@ Authoritative MVP docs:
 - `docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ribdigi-house-console-pack-remaining-gate.json` — Stage 266 I1
 - `docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ribdigi-house-console-pack-rg-blockers.json` — Stage 266 B1
 - `docs/RIBDIGI_HOUSE_CONSOLE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ribdigi-house-console-pack-rg-pointers.json` — Stage 266 P1
+- `docs/STAGE_267_EXIT_CRITERIA.md` / `docs/ADR_542_STAGE267_FREEZE.md` (`backend/tests/test_stage267_exit_h267x.py`) — Stage 267 H267x
+- `docs/STAGE_267_FIDELITY.md` (`backend/tests/test_stage267_fidelity_d1.py`) — Stage 267 D1
+- `docs/STAGE_267_PLAN.md` (`backend/tests/test_stage267_open.py`) — Stage 267 open (ADR-541)
+- `docs/TENANT_COMPANY_CONSOLE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/tenant-company-console-pack-remaining-gate.json` — Stage 267 I1
+- `docs/TENANT_COMPANY_CONSOLE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/tenant-company-console-pack-rg-blockers.json` — Stage 267 B1
+- `docs/TENANT_COMPANY_CONSOLE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/tenant-company-console-pack-rg-pointers.json` — Stage 267 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4687,4 +4693,16 @@ H266x met — `docs/STAGE_266_EXIT_CRITERIA.md`, ADR-540. Stages 1–266 frozen 
 ## Stage 266 open
 
 `docs/ADR_539_STAGE266_OPEN.md` + `docs/STAGE_266_PLAN.md` (`test_stage266_open.py`).
+
+## Stage 267 exit
+
+H267x met — `docs/STAGE_267_EXIT_CRITERIA.md`, ADR-542. Stages 1–267 frozen for Stage 267 feature scope.
+
+## Stage 267 D1 — Tenant MVP Tenant Company Console Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_267_FIDELITY.md` (`test_stage267_fidelity_d1.py`). `TENANT_COMPANY_CONSOLE_PACK_*` remaining-gate index; paid billing / tenant module re-Complete / go-live still MISSING (ADR-002).
+
+## Stage 267 open
+
+`docs/ADR_541_STAGE267_OPEN.md` + `docs/STAGE_267_PLAN.md` (`test_stage267_open.py`).
 

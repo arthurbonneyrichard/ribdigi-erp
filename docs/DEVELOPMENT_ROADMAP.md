@@ -3816,6 +3816,18 @@ Every feature in every phase must meet:
 
 **Stage 266 exit (2026-08-14):** I1, B1, P1, D1, H266x met — `docs/STAGE_266_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_540_STAGE266_FREEZE.md`. Fidelity: `docs/STAGE_266_FIDELITY.md`.
 
+**Stage 267 open (2026-08-14):** Tenant MVP Tenant Company Console Pack Remaining-Gate Index Fidelity — `docs/ADR_541_STAGE267_OPEN.md` + `docs/STAGE_267_PLAN.md` (I1 next).
+
+**Stage 267 I1 (2026-08-14):** Tenant company console pack remaining-gate index hub (`test_stage267_index_i1.py`).
+
+**Stage 267 B1 (2026-08-14):** Tenant company console pack blocker matrix (`test_stage267_blockers_b1.py`).
+
+**Stage 267 P1 (2026-08-14):** Stage 68 / Stage 266 / Stage 265 / Stage 36 pointers (`test_stage267_pointers_p1.py`).
+
+**Stage 267 D1 (2026-08-14):** Tenant Company Console Pack Remaining-Gate Index fidelity sync — `docs/STAGE_267_FIDELITY.md` (`test_stage267_fidelity_d1.py`).
+
+**Stage 267 exit (2026-08-14):** I1, B1, P1, D1, H267x met — `docs/STAGE_267_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_542_STAGE267_FREEZE.md`. Fidelity: `docs/STAGE_267_FIDELITY.md`.
+
 
 
 
