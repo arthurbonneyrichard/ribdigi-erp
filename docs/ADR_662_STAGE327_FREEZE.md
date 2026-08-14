@@ -31,3 +31,10 @@ Stage 328 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for live ops monitoring, live monitoring, hosted Grafana, paging, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 328 opened under **ADR-663** after CONTINUE/NEXT (Tenant MVP Loadtest Baseline Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-664**. Stage 327 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 328 runner-up outline was approved and opened (ADR-663); freeze ADR-664. Do not reopen Stage 327 scope.
+

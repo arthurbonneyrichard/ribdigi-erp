@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_328_EXIT_CRITERIA.md` / `docs/ADR_664_STAGE328_FREEZE.md` (`backend/tests/test_stage328_exit_h328x.py`) — Stage 328 H328x
+- `docs/STAGE_328_FIDELITY.md` (`backend/tests/test_stage328_fidelity_d1.py`) — Stage 328 D1
+- `docs/STAGE_328_PLAN.md` (`backend/tests/test_stage328_open.py`) — Stage 328 open (ADR-663)
+- `docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/loadtest-baseline-pack-remaining-gate.json` — Stage 328 I1
+- `docs/LOADTEST_BASELINE_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/loadtest-baseline-pack-rg-blockers.json` — Stage 328 B1
+- `docs/LOADTEST_BASELINE_PACK_RG_POINTERS_MVP.md` / `ops/mvp/loadtest-baseline-pack-rg-pointers.json` — Stage 328 P1
 - `docs/STAGE_327_EXIT_CRITERIA.md` / `docs/ADR_662_STAGE327_FREEZE.md` (`backend/tests/test_stage327_exit_h327x.py`) — Stage 327 H327x
 - `docs/STAGE_327_FIDELITY.md` (`backend/tests/test_stage327_fidelity_d1.py`) — Stage 327 D1
 - `docs/STAGE_327_PLAN.md` (`backend/tests/test_stage327_open.py`) — Stage 327 open (ADR-661)
@@ -5245,6 +5251,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 328 exit
+
+H328x met — `docs/STAGE_328_EXIT_CRITERIA.md`, ADR-664. Stages 1–328 frozen for Stage 328 feature scope.
+
+## Stage 328 D1 — Tenant MVP Loadtest Baseline Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_328_FIDELITY.md` (`test_stage328_fidelity_d1.py`). `LOADTEST_BASELINE_PACK_*` remaining-gate index; certified load / live load capacity / operator 1000-VU / load cert / go-live still MISSING.
+
+## Stage 328 open
+
+ADR-663 / `docs/STAGE_328_PLAN.md`.
 
 ## Stage 327 exit
 

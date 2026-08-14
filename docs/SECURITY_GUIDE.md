@@ -1840,6 +1840,12 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 314 P1** | Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (`test_stage314_pointers_p1.py`) |
 | **Stage 314 D1** | SBOM disclosure pack remaining-gate fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`) |
 | **Stage 314 H314x** | Exit + freeze — `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636 (`test_stage314_exit_h314x.py`); Stages 1–314 frozen |
+| **Stage 328 open** | Loadtest Baseline Pack Remaining-Gate Index — `docs/STAGE_328_PLAN.md`, ADR-663 (`test_stage328_open.py`) |
+| **Stage 328 I1** | Loadtest baseline pack remaining-gate index hub (`test_stage328_index_i1.py`) |
+| **Stage 328 B1** | Loadtest baseline pack blocker matrix (`test_stage328_blockers_b1.py`) |
+| **Stage 328 P1** | Stage 225 / Stage 327 / Stage 326 / Stage 5 pointers (`test_stage328_pointers_p1.py`) |
+| **Stage 328 D1** | Loadtest baseline pack remaining-gate fidelity — `docs/STAGE_328_FIDELITY.md` (`test_stage328_fidelity_d1.py`) |
+| **Stage 328 H328x** | Exit + freeze — `docs/STAGE_328_EXIT_CRITERIA.md`, ADR-664 (`test_stage328_exit_h328x.py`); Stages 1–328 frozen |
 | **Stage 327 open** | Ops Monitoring Pack Remaining-Gate Index — `docs/STAGE_327_PLAN.md`, ADR-661 (`test_stage327_open.py`) |
 | **Stage 327 I1** | Ops monitoring pack remaining-gate index hub (`test_stage327_index_i1.py`) |
 | **Stage 327 B1** | Ops monitoring pack blocker matrix (`test_stage327_blockers_b1.py`) |
