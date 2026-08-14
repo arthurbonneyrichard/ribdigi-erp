@@ -630,3 +630,70 @@ async def test_credit_aging_and_monthly_sales_company_scoped(client, db_session)
     customers_csv = await ac.get("/api/v1/customers/export", headers=headers)
     assert customers_csv.status_code == 200, customers_csv.text
     assert "Credit B Customer" not in customers_csv.text
+
+
+@pytest.mark.asyncio
+async def test_trial_balance_and_payments_company_scoped(client, db_session):
+    """Company B journals/payments must not appear in company A statements/registers."""
+    ac, seed = client
+    from datetime import datetime
+
+    c_b = m.Company(
+        tenant_id=seed["t1"].id,
+        code="ACCT",
+        name="Alpha Acct B",
+        industry="retail",
+        is_active=True,
+        is_default=False,
+    )
+    db_session.add(c_b)
+    await db_session.flush()
+    acct_b = m.Account(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        code="9999",
+        name="Company B Only Asset",
+        account_type="asset",
+        balance=777,
+        is_active=True,
+        is_system=False,
+    )
+    cust_b = m.Party(
+        tenant_id=seed["t1"].id,
+        company_id=c_b.id,
+        kind="customer",
+        name="Pay B Customer",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add_all([acct_b, cust_b])
+    await db_session.flush()
+    db_session.add(
+        m.CustomerPayment(
+            tenant_id=seed["t1"].id,
+            company_id=c_b.id,
+            payment_number="RCP-B-ONLY",
+            customer_id=cust_b.id,
+            amount=50,
+            payment_method="cash",
+            created_by=seed["super"].id,
+        )
+    )
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = seed["c1"].id
+
+    tb = await ac.get("/api/v1/accounting/trial-balance", headers=headers)
+    assert tb.status_code == 200, tb.text
+    codes = {r.get("code") for r in tb.json()["data"].get("rows") or []}
+    assert "9999" not in codes
+
+    payments = await ac.get("/api/v1/credit/customer-payments", headers=headers)
+    assert payments.status_code == 200, payments.text
+    nums = {r.get("payment_number") for r in payments.json()["data"]}
+    assert "RCP-B-ONLY" not in nums
+
+    pnl = await ac.get("/api/v1/accounting/profit-loss", headers=headers)
+    assert pnl.status_code == 200, pnl.text

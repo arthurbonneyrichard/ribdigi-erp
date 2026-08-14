@@ -179,6 +179,9 @@ async def list_customer_payments(
         .order_by(m.CustomerPayment.created_at.desc())
         .limit(min(max(limit, 1), 500))
     )
+    company_id = claims.get("company_id")
+    if company_id:
+        stmt = stmt.where(m.CustomerPayment.company_id == company_id)
     if customer_id:
         stmt = stmt.where(m.CustomerPayment.customer_id == customer_id.strip())
     if method:
@@ -203,6 +206,9 @@ async def list_supplier_payments(
         .order_by(m.SupplierPayment.created_at.desc())
         .limit(min(max(limit, 1), 500))
     )
+    company_id = claims.get("company_id")
+    if company_id:
+        stmt = stmt.where(m.SupplierPayment.company_id == company_id)
     if supplier_id:
         stmt = stmt.where(m.SupplierPayment.supplier_id == supplier_id.strip())
     if method:

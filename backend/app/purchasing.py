@@ -1541,6 +1541,7 @@ async def record_supplier_payment(
     apply_early_discount: bool | None = None,
     currency: str | None = None,
     exchange_rate: float | None = None,
+    company_id: str | None = None,
 ) -> m.SupplierPayment:
     amount = float(amount)
     if amount <= 0:
@@ -1775,6 +1776,7 @@ async def record_supplier_payment(
 
     payment = m.SupplierPayment(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(supplier, "company_id", None),
         payment_number=f"SPY-{datetime.utcnow():%Y%m%d%H%M%S%f}",
         supplier_id=supplier_id,
         purchase_order_id=primary_po_id,

@@ -1999,13 +1999,13 @@ async def account_balances_through(
     *,
     as_of: datetime | None = None,
     store_ids: list[str] | None = None,
+    company_id: str | None = None,
 ) -> tuple[list[m.Account], dict[str, float]]:
     """Natural-side balances per account; as_of / store_ids rebuild from posted journals."""
-    accounts = (
-        await db.execute(
-            select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
-        )
-    ).scalars().all()
+    aq = select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
+    if company_id:
+        aq = aq.where(m.Account.company_id == company_id)
+    accounts = (await db.execute(aq)).scalars().all()
     if as_of is None and store_ids is None:
         return accounts, {a.id: float(a.balance or 0) for a in accounts}
 
@@ -2023,6 +2023,8 @@ async def account_balances_through(
             m.JournalEntry.status == "posted",
         )
     )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
     if as_of is not None:
         stmt = stmt.where(m.JournalEntry.entry_date <= as_of)
     if store_ids is not None:
@@ -2043,9 +2045,12 @@ async def trial_balance(
     tenant_id: str,
     *,
     as_of: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Trial balance; optional as_of rebuilds balances from posted journals through that date."""
-    accounts, bal_by_id = await account_balances_through(db, tenant_id, as_of=as_of)
+    accounts, bal_by_id = await account_balances_through(
+        db, tenant_id, as_of=as_of, company_id=company_id
+    )
     rows = []
     debit_total = 0.0
     credit_total = 0.0
@@ -2100,9 +2105,10 @@ async def profit_and_loss(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Period P&L from posted journal lines (optional date range / store / branch)."""
-    await ensure_default_accounts(db, tenant_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
         db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
     )
@@ -2118,6 +2124,9 @@ async def profit_and_loss(
             m.Account.account_type.in_(("income", "expense")),
         )
     )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+        stmt = stmt.where(m.Account.company_id == company_id)
     if from_date:
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:

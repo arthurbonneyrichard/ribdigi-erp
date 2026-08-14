@@ -61,3 +61,10 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Credit AR/AP aging (+ aging CSV) company-scoped; customer/supplier/COA/expense-category CSV exports company-scoped.
 - Company dashboard KPIs, revenue chart series, and expense-by-category slice use company filters (users/roles remain tenant-level).
 - Remaining PARTIAL: accounting P&L / cash-flow / trial-balance and some payment-register exports may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.
+
+## Phase 6 follow-up (2026-08-14)
+
+- Trial balance, P&L, cash flow, and balance sheet (APIs + CSV exports) accept workspace `company_id`; account balance rebuilds and liquid GL selection are company-filtered.
+- Customer/supplier payment registers (list + CSV) filter by company; payment creates stamp `company_id`.
+- Dashboard MTD P&L uses company scope.
+- Remaining PARTIAL: some outstanding-bill / statement exports and liquid-account helpers may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.

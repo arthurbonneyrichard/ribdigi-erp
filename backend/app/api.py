@@ -3372,7 +3372,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     from app import accounting as accounting_svc
 
     pnl_mtd = await accounting_svc.profit_and_loss(
-        db, tid, from_date=month_start, to_date=now
+        db, tid, from_date=month_start, to_date=now, company_id=cid
     )
     profit_summary = float(pnl_mtd.get("net_profit") or 0)
     income_mtd = float(pnl_mtd.get("income") or 0)
@@ -7140,6 +7140,7 @@ async def record_sales_payment(
         liquid_account_id=payload.liquid_account_id,
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -10583,13 +10584,16 @@ async def get_trial_balance(
 ):
     from app.accounting import ensure_default_accounts, trial_balance
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     await db.commit()
     return env(
         await trial_balance(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -10605,6 +10609,7 @@ async def accounting_trial_balance_export(
         db,
         tenant_id=claims["tenant_id"],
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -10627,7 +10632,9 @@ async def get_profit_loss(
 ):
     from app.accounting import ensure_default_accounts
 
-    await ensure_default_accounts(db, claims["tenant_id"])
+    await ensure_default_accounts(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
     await db.commit()
     return env(
         await reports_svc.profit_loss_with_optional_compare(
@@ -10638,6 +10645,7 @@ async def get_profit_loss(
             store_id=store_id,
             branch_id=branch_id,
             compare=compare,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -10659,6 +10667,7 @@ async def accounting_profit_loss_export(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         store_id=store_id,
         branch_id=branch_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -10701,6 +10710,7 @@ async def reports_profit_loss_export(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         store_id=store_id,
         branch_id=branch_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -10731,6 +10741,7 @@ async def reports_trial_balance_export(
         db,
         tenant_id=claims["tenant_id"],
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -10760,6 +10771,7 @@ async def report_cash_flow(
             store_id=store_id,
             branch_id=branch_id,
             compare=compare,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -10781,6 +10793,7 @@ async def reports_cash_flow_export(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         store_id=store_id,
         branch_id=branch_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -10808,6 +10821,7 @@ async def report_balance_sheet(
             store_id=store_id,
             branch_id=branch_id,
             compare=compare,
+            company_id=claims.get("company_id"),
         )
     )
 
@@ -10827,6 +10841,7 @@ async def reports_balance_sheet_export(
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
         store_id=store_id,
         branch_id=branch_id,
+        company_id=claims.get("company_id"),
     )
     return Response(
         content=text,
@@ -11793,6 +11808,7 @@ async def customer_payment_alias(
         liquid_account_id=payload.liquid_account_id,
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(
@@ -11915,6 +11931,7 @@ async def supplier_payment(
         apply_early_discount=payload.apply_early_discount,
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
+        company_id=claims.get("company_id"),
     )
     await db.commit()
     return env(

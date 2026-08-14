@@ -294,12 +294,13 @@ async def export_trial_balance_csv(
     *,
     tenant_id: str,
     as_of=None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from reports/export)."""
     from app.accounting import ensure_default_accounts, trial_balance
 
-    await ensure_default_accounts(db, tenant_id)
-    data = await trial_balance(db, tenant_id, as_of=as_of)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
+    data = await trial_balance(db, tenant_id, as_of=as_of, company_id=company_id)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TRIAL_BALANCE_EXPORT_COLUMNS)
     writer.writeheader()
@@ -374,11 +375,12 @@ async def export_profit_loss_csv(
     to_date=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 160 P1 — accounting profit-loss CSV (path-scoped; distinct from reports/export)."""
     from app.accounting import ensure_default_accounts, profit_and_loss
 
-    await ensure_default_accounts(db, tenant_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     data = await profit_and_loss(
         db,
         tenant_id,
@@ -386,6 +388,7 @@ async def export_profit_loss_csv(
         to_date=to_date,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PROFIT_LOSS_EXPORT_COLUMNS)
@@ -464,6 +467,7 @@ async def export_cash_flow_csv(
     to_date=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 160 C1 — reports cash-flow path CSV (distinct from generic /reports/export)."""
     from app import reports as reports_svc
@@ -475,6 +479,7 @@ async def export_cash_flow_csv(
         to_date=to_date,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CASH_FLOW_EXPORT_COLUMNS)
@@ -549,6 +554,7 @@ async def export_balance_sheet_csv(
     as_of=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    company_id: str | None = None,
 ) -> str:
     """Stage 160 S1 — reports balance-sheet path CSV (distinct from generic /reports/export)."""
     from app import reports as reports_svc
@@ -559,6 +565,7 @@ async def export_balance_sheet_csv(
         as_of=as_of,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=BALANCE_SHEET_EXPORT_COLUMNS)

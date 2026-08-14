@@ -126,6 +126,7 @@ async def profit_loss_with_optional_compare(
     store_id: str | None = None,
     branch_id: str | None = None,
     compare: bool = False,
+    company_id: str | None = None,
 ) -> dict:
     from app.accounting import profit_and_loss
 
@@ -137,6 +138,7 @@ async def profit_loss_with_optional_compare(
             to_date=to_date,
             store_id=store_id,
             branch_id=branch_id,
+            company_id=company_id,
         )
     cur_from, cur_to = resolve_compare_period(from_date, to_date)
     prior_from, prior_to = prior_period_bounds(cur_from, cur_to)
@@ -147,6 +149,7 @@ async def profit_loss_with_optional_compare(
         to_date=cur_to,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     prior = await profit_and_loss(
         db,
@@ -155,6 +158,7 @@ async def profit_loss_with_optional_compare(
         to_date=prior_to,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     current["comparison"] = build_comparison(
         mode="prior_period",
@@ -177,6 +181,7 @@ async def cash_flow_with_optional_compare(
     store_id: str | None = None,
     branch_id: str | None = None,
     compare: bool = False,
+    company_id: str | None = None,
 ) -> dict:
     if not compare:
         return await cash_flow(
@@ -186,6 +191,7 @@ async def cash_flow_with_optional_compare(
             to_date=to_date,
             store_id=store_id,
             branch_id=branch_id,
+            company_id=company_id,
         )
     cur_from, cur_to = resolve_compare_period(from_date, to_date)
     prior_from, prior_to = prior_period_bounds(cur_from, cur_to)
@@ -196,6 +202,7 @@ async def cash_flow_with_optional_compare(
         to_date=cur_to,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     prior = await cash_flow(
         db,
@@ -204,6 +211,7 @@ async def cash_flow_with_optional_compare(
         to_date=prior_to,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     current["comparison"] = build_comparison(
         mode="prior_period",
@@ -225,10 +233,16 @@ async def balance_sheet_with_optional_compare(
     store_id: str | None = None,
     branch_id: str | None = None,
     compare: bool = False,
+    company_id: str | None = None,
 ) -> dict:
     if not compare:
         return await balance_sheet(
-            db, tenant_id, as_of=as_of, store_id=store_id, branch_id=branch_id
+            db,
+            tenant_id,
+            as_of=as_of,
+            store_id=store_id,
+            branch_id=branch_id,
+            company_id=company_id,
         )
     current_as_of = as_of or datetime.utcnow().replace(
         hour=23, minute=59, second=59, microsecond=999999
@@ -240,6 +254,7 @@ async def balance_sheet_with_optional_compare(
         as_of=current_as_of,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     prior = await balance_sheet(
         db,
@@ -247,6 +262,7 @@ async def balance_sheet_with_optional_compare(
         as_of=prior_as_of,
         store_id=store_id,
         branch_id=branch_id,
+        company_id=company_id,
     )
     current["comparison"] = build_comparison(
         mode="prior_as_of",
@@ -1607,29 +1623,28 @@ async def cash_flow(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Cash flow from cash + bank GL accounts, split into O/I/F activities."""
     from app.accounting import ensure_default_accounts, resolve_journal_dimension_ids
 
-    await ensure_default_accounts(db, tenant_id)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
         db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
     )
-    liquid = (
-        await db.execute(
-            select(m.Account).where(
-                m.Account.tenant_id == tenant_id,
-                (m.Account.is_cash_account.is_(True)) | (m.Account.is_bank_account.is_(True)),
-            )
-        )
-    ).scalars().all()
+    liq_q = select(m.Account).where(
+        m.Account.tenant_id == tenant_id,
+        (m.Account.is_cash_account.is_(True)) | (m.Account.is_bank_account.is_(True)),
+    )
+    if company_id:
+        liq_q = liq_q.where(m.Account.company_id == company_id)
+    liquid = (await db.execute(liq_q)).scalars().all()
     if not liquid:
         # Fallback for pre-flag DBs mid-migration
-        cash = (
-            await db.execute(
-                select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == "1000")
-            )
-        ).scalar_one_or_none()
+        cash_q = select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == "1000")
+        if company_id:
+            cash_q = cash_q.where(m.Account.company_id == company_id)
+        cash = (await db.execute(cash_q)).scalar_one_or_none()
         liquid = [cash] if cash else []
     empty_sections = {
         "operating": _empty_activity(),
@@ -1670,6 +1685,8 @@ async def cash_flow(
                 m.JournalEntry.entry_date < from_date,
             )
         )
+        if company_id:
+            open_stmt = open_stmt.where(m.JournalEntry.company_id == company_id)
         if store_ids is not None:
             if store_ids:
                 open_stmt = open_stmt.where(m.JournalEntry.store_id.in_(store_ids))
@@ -1687,6 +1704,8 @@ async def cash_flow(
             m.JournalEntry.status == "posted",
         )
     )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
     if from_date:
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
@@ -1770,6 +1789,7 @@ async def balance_sheet(
     as_of: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Point-in-time balance sheet; optional as_of / store / branch from posted journals."""
     from app.accounting import account_balances_through, resolve_journal_dimension_ids
@@ -1778,7 +1798,7 @@ async def balance_sheet(
         db, tenant_id=tenant_id, store_id=store_id, branch_id=branch_id
     )
     accounts, bal_by_id = await account_balances_through(
-        db, tenant_id, as_of=as_of, store_ids=store_ids
+        db, tenant_id, as_of=as_of, store_ids=store_ids, company_id=company_id
     )
 
     def rows_for(account_type: str) -> list[dict]:
