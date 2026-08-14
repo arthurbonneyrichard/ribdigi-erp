@@ -1,0 +1,63 @@
+{
+  "id": "ops-monitoring-pack-rg-blockers",
+  "stage": 327,
+  "pack": "B1",
+  "doc": "docs/OPS_MONITORING_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPS_MONITORING_PACK_REMAINING_GATE_MVP.md",
+    "ops_monitoring_remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_ops_monitoring_claimed": false,
+  "live_monitoring_claimed": false,
+  "hosted_grafana_claimed": false,
+  "paging_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_ops_monitoring_claimed": "REMAINING",
+    "live_monitoring_claimed": "REMAINING",
+    "hosted_grafana_claimed": "REMAINING",
+    "paging_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage221_as_live_ops_monitoring": "NON_CLAIM",
+    "stage26_as_live_ops_monitoring": "NON_CLAIM",
+    "live_ops_monitoring_claimed_flag": "false",
+    "live_monitoring_claimed_flag": "false",
+    "hosted_grafana_claimed_flag": "false",
+    "paging_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "omprb-ops",
+      "title": "Mark live ops monitoring Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprb-monitoring",
+      "title": "Mark live monitoring Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprb-grafana",
+      "title": "Mark hosted Grafana Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprb-stage221-nonclaim",
+      "title": "Mark Stage 221 / Stage 26 as non-claim for live ops monitoring Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprb-monitoring-remaining",
+      "title": "Live ops monitoring Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 327 B1 ops monitoring pack RG blocker matrix packaging only. Live ops monitoring Completes remain MISSING."
+}

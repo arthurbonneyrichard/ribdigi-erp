@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_327_EXIT_CRITERIA.md` / `docs/ADR_662_STAGE327_FREEZE.md` (`backend/tests/test_stage327_exit_h327x.py`) — Stage 327 H327x
+- `docs/STAGE_327_FIDELITY.md` (`backend/tests/test_stage327_fidelity_d1.py`) — Stage 327 D1
+- `docs/STAGE_327_PLAN.md` (`backend/tests/test_stage327_open.py`) — Stage 327 open (ADR-661)
+- `docs/OPS_MONITORING_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ops-monitoring-pack-remaining-gate.json` — Stage 327 I1
+- `docs/OPS_MONITORING_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ops-monitoring-pack-rg-blockers.json` — Stage 327 B1
+- `docs/OPS_MONITORING_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ops-monitoring-pack-rg-pointers.json` — Stage 327 P1
 - `docs/STAGE_326_EXIT_CRITERIA.md` / `docs/ADR_660_STAGE326_FREEZE.md` (`backend/tests/test_stage326_exit_h326x.py`) — Stage 326 H326x
 - `docs/STAGE_326_FIDELITY.md` (`backend/tests/test_stage326_fidelity_d1.py`) — Stage 326 D1
 - `docs/STAGE_326_PLAN.md` (`backend/tests/test_stage326_open.py`) — Stage 326 open (ADR-659)
@@ -5239,6 +5245,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 327 exit
+
+H327x met — `docs/STAGE_327_EXIT_CRITERIA.md`, ADR-662. Stages 1–327 frozen for Stage 327 feature scope.
+
+## Stage 327 D1 — Tenant MVP Ops Monitoring Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_327_FIDELITY.md` (`test_stage327_fidelity_d1.py`). `OPS_MONITORING_PACK_*` remaining-gate index; live ops monitoring / live monitoring / hosted Grafana / paging / go-live still MISSING.
+
+## Stage 327 open
+
+ADR-661 / `docs/STAGE_327_PLAN.md`.
 
 ## Stage 326 exit
 

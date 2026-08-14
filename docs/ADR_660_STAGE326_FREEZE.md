@@ -31,3 +31,10 @@ Stage 327 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for hosted FAQ SaaS, helpdesk SaaS, live training, Offline Complete, or go-live.
+
+## CONTINUE/NEXT
+
+Stage 327 opened under **ADR-661** after CONTINUE/NEXT (Tenant MVP Ops Monitoring Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-662**. Stage 326 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 327 runner-up outline was approved and opened (ADR-661); freeze ADR-662. Do not reopen Stage 326 scope.
+

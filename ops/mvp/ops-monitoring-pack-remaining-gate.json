@@ -1,0 +1,57 @@
+{
+  "id": "ops-monitoring-pack-remaining-gate",
+  "stage": 327,
+  "pack": "I1",
+  "doc": "docs/OPS_MONITORING_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OPS_MONITORING_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OPS_MONITORING_PACK_RG_POINTERS_MVP.md",
+    "ops_monitoring_remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+    "hosted_faq_saas_pack_remaining_gate": "docs/HOSTED_FAQ_SAAS_PACK_REMAINING_GATE_MVP.md",
+    "golive_pack_remaining_gate": "docs/GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "ops_monitoring": "docs/OPS_MONITORING_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_ops_monitoring_claimed": false,
+  "live_monitoring_claimed": false,
+  "hosted_grafana_claimed": false,
+  "paging_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage221_ops_monitoring_remaining_gate": true,
+  "distinct_from_ops_monitoring_rg_pointers": true,
+  "distinct_from_stage326_hosted_faq_saas_pack_remaining_gate": true,
+  "distinct_from_stage325_golive_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ompr-read-blockers",
+      "title": "Read B1 ops monitoring pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ompr-follow-pointers",
+      "title": "Follow P1 Stage 221 / Stage 326 / Stage 325 / Stage 26 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ompr-monitoring-missing",
+      "title": "Reaffirm live ops monitoring / hosted Grafana MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ompr-no-packaging-as-live",
+      "title": "Do not treat Stage 221 / Stage 26 / Stage 326 as live ops monitoring Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ompr-monitoring-remaining",
+      "title": "Live ops monitoring / live monitoring / hosted Grafana / paging / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 327 I1 ops monitoring pack remaining-gate index packaging only. Do not claim live ops monitoring Complete."
+}
