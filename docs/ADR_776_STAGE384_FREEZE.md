@@ -31,3 +31,10 @@ Stage 385 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, offline stock-authority, authoritative offline stock as Offline Complete, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 385 opened under **ADR-777** after CONTINUE/NEXT (Tenant MVP Offline Queue UI Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-778**. Stage 384 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 384 runner-up outline was approved and opened (ADR-777); freeze ADR-778. Do not reopen Stage 384 scope.
+

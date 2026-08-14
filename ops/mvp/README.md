@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_385_EXIT_CRITERIA.md` / `docs/ADR_778_STAGE385_FREEZE.md` (`backend/tests/test_stage385_exit_h385x.py`) — Stage 385 H385x
+- `docs/STAGE_385_FIDELITY.md` (`backend/tests/test_stage385_fidelity_d1.py`) — Stage 385 D1
+- `docs/STAGE_385_PLAN.md` (`backend/tests/test_stage385_open.py`) — Stage 385 open (ADR-777)
+- `docs/OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-queue-ui-pack-remaining-gate.json` — Stage 385 I1
+- `docs/OFFLINE_QUEUE_UI_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-queue-ui-pack-rg-blockers.json` — Stage 385 B1
+- `docs/OFFLINE_QUEUE_UI_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-queue-ui-pack-rg-pointers.json` — Stage 385 P1
 - `docs/STAGE_384_EXIT_CRITERIA.md` / `docs/ADR_776_STAGE384_FREEZE.md` (`backend/tests/test_stage384_exit_h384x.py`) — Stage 384 H384x
 - `docs/STAGE_384_FIDELITY.md` (`backend/tests/test_stage384_fidelity_d1.py`) — Stage 384 D1
 - `docs/STAGE_384_PLAN.md` (`backend/tests/test_stage384_open.py`) — Stage 384 open (ADR-775)
@@ -5587,6 +5593,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 385 exit
+
+H385x met — `docs/STAGE_385_EXIT_CRITERIA.md`, ADR-778. Stages 1–385 frozen for Stage 385 feature scope.
+
+## Stage 385 D1 — Tenant MVP Offline Queue UI Pack Remaining-Gate Index Fidelity
+
+Packaging Completes for `OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md` / `OFFLINE_QUEUE_UI_PACK_RG_BLOCKERS_MVP.md` / `OFFLINE_QUEUE_UI_PACK_RG_POINTERS_MVP.md` / ops JSON twins. Honesty: Offline Complete / offline queue-UI / sync-queue-UI / go-live / attestation remain **false**. Packaging only.
+
+## Stage 385 open
+
+ADR-777 / `docs/STAGE_385_PLAN.md`.
 
 ## Stage 384 exit
 
