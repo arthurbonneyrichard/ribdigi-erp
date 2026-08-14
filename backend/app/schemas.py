@@ -529,8 +529,10 @@ class ExpenseUpdate(BaseModel):
     reference: str | None = None
     payee: str | None = None
     expense_date: datetime | None = None
+    store_id: str | None = None
     branch_id: str | None = None
     department_id: str | None = None
+    clear_store: bool = False
     clear_branch: bool = False
     clear_department: bool = False
 

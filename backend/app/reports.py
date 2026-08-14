@@ -1829,9 +1829,21 @@ async def expenses_summary(
     category_id: str | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
-    branch_id, branch_name, department_id, department_name = await _resolve_expense_org_filters(
-        db, tenant_id, branch_id=branch_id, department_id=department_id
+    (
+        branch_id,
+        branch_name,
+        department_id,
+        department_name,
+        store_id,
+        store_name,
+    ) = await _resolve_expense_org_filters(
+        db,
+        tenant_id,
+        branch_id=branch_id,
+        department_id=department_id,
+        store_id=store_id,
     )
     stmt = select(m.Expense).where(
         m.Expense.tenant_id == tenant_id,
@@ -1847,6 +1859,8 @@ async def expenses_summary(
         stmt = stmt.where(m.Expense.branch_id == branch_id)
     if department_id:
         stmt = stmt.where(m.Expense.department_id == department_id)
+    if store_id:
+        stmt = stmt.where(m.Expense.store_id == store_id)
     rows = (await db.execute(stmt)).scalars().all()
     by_category: dict[str, float] = defaultdict(float)
     for e in rows:
@@ -1863,6 +1877,8 @@ async def expenses_summary(
         "branch_name": branch_name,
         "department_id": department_id,
         "department_name": department_name,
+        "store_id": store_id,
+        "store_name": store_name,
     }
 
 
@@ -1872,12 +1888,17 @@ async def _resolve_expense_org_filters(
     *,
     branch_id: str | None = None,
     department_id: str | None = None,
-) -> tuple[str | None, str | None, str | None, str | None]:
-    """Validate optional branch/department filters; return (branch_id, branch_name, dept_id, dept_name)."""
+    store_id: str | None = None,
+) -> tuple[str | None, str | None, str | None, str | None, str | None, str | None]:
+    """Validate optional branch/department/store filters.
+
+    Returns (branch_id, branch_name, dept_id, dept_name, store_id, store_name).
+    """
     from fastapi import HTTPException
 
     branch_name = None
     dept_name = None
+    store_name = None
     if branch_id:
         branch = (
             await db.execute(
@@ -1909,7 +1930,25 @@ async def _resolve_expense_org_filters(
             )
         department_id = dept.id
         dept_name = dept.name
-    return branch_id, branch_name, department_id, dept_name
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.id == store_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        if branch_id and store.branch_id and store.branch_id != branch_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Store does not belong to the selected branch",
+            )
+        store_id = store.id
+        store_name = store.name
+    return branch_id, branch_name, department_id, dept_name, store_id, store_name
 
 
 def _expense_period_days(
@@ -1929,14 +1968,26 @@ async def budget_vs_actual(
     category_id: str | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
     """Monthly category budgets scaled to the period vs approved spend (BR-9.1 / BR-14.4)."""
     from app.expenses import ensure_default_categories, scale_monthly_budget
 
     await ensure_default_categories(db, tenant_id)
     period_days = _expense_period_days(from_date, to_date)
-    branch_id, branch_name, department_id, department_name = await _resolve_expense_org_filters(
-        db, tenant_id, branch_id=branch_id, department_id=department_id
+    (
+        branch_id,
+        branch_name,
+        department_id,
+        department_name,
+        store_id,
+        store_name,
+    ) = await _resolve_expense_org_filters(
+        db,
+        tenant_id,
+        branch_id=branch_id,
+        department_id=department_id,
+        store_id=store_id,
     )
 
     cat_stmt = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
@@ -1958,6 +2009,8 @@ async def budget_vs_actual(
         exp_stmt = exp_stmt.where(m.Expense.branch_id == branch_id)
     if department_id:
         exp_stmt = exp_stmt.where(m.Expense.department_id == department_id)
+    if store_id:
+        exp_stmt = exp_stmt.where(m.Expense.store_id == store_id)
     expenses = (await db.execute(exp_stmt)).scalars().all()
 
     actual_by_id: dict[str, float] = defaultdict(float)
@@ -2041,6 +2094,8 @@ async def budget_vs_actual(
         "branch_name": branch_name,
         "department_id": department_id,
         "department_name": department_name,
+        "store_id": store_id,
+        "store_name": store_name,
     }
 
 

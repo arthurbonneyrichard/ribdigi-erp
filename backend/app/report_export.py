@@ -621,6 +621,7 @@ async def build_report_payload(
             to_date=td,
             branch_id=branch_id or None,
             department_id=department_id or None,
+            store_id=store_id or None,
         )
     if report_type == "expenses_budget_vs_actual":
         return await reports_svc.budget_vs_actual(
@@ -631,6 +632,7 @@ async def build_report_payload(
             category_id=category_id or None,
             branch_id=branch_id or None,
             department_id=department_id or None,
+            store_id=store_id or None,
         )
     if report_type == "cash_flow":
         return await reports_svc.cash_flow(

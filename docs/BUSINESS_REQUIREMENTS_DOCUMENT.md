@@ -777,7 +777,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Expense summary by category and period (`GET /reports/expenses/summary`)
   - [x] Budget vs actual comparison (`GET /reports/expenses/budget-vs-actual`; monthly budget scaled by period days / 30)
   - [x] Top expense categories (top 5 by actual on budget-vs-actual)
-  - [x] Filter by branch/department (`branch_id` / `department_id` on summary + budget-vs-actual + export; Reports Expenses tab)
+  - [x] Filter by branch/department/store (`branch_id` / `department_id` / `store_id` on summary + budget-vs-actual + export; Reports Expenses tab)
 
 #### BR-14.5 Financial Reports
 - **Description:** Business financial health.
@@ -786,7 +786,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [x] Cash Flow Statement (O/I/F + internal transfers; date range; liquid GL direct method; optional `store_id`/`branch_id` for attributable operating cash)
   - [x] Balance Sheet (Assets = Liabilities + Equity; `as_of` reconstructs from posted journals; computed retained earnings)
-  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; customer/product sales support `store_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`**; others partial)
+  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; customer/product sales support `store_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
   - [x] Comparative reports (current period vs previous period) — BS `compare=prior_period|prior_year`
 
 ---
