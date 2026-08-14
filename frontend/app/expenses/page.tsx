@@ -394,6 +394,8 @@ export default function Page() {
         <h3>Approval matrix</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Amount must exceed a level&apos;s min to require that step. Roles are comma-separated.
+          Pending expenses email current-step role holders (opt out under Notifications →
+          expense_approval).
         </p>
         {levels.map((lvl, idx) => (
           <div
