@@ -31,3 +31,10 @@ Stage 282 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for residual risks closed, certification, paid billing, or go-live.
+
+
+## Amendment — Stage 282 opened
+
+Stage 282 opened under **ADR-571** after CONTINUE/NEXT (Tenant MVP Post-MVP Backlog Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-572**. Stage 281 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 282 runner-up outline was approved and opened (ADR-571); freeze ADR-572. Do not reopen Stage 281 scope.

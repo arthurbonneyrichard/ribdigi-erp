@@ -1120,6 +1120,12 @@ Authoritative MVP docs:
 - `docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/residual-risk-pack-remaining-gate.json` — Stage 281 I1
 - `docs/RESIDUAL_RISK_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/residual-risk-pack-rg-blockers.json` — Stage 281 B1
 - `docs/RESIDUAL_RISK_PACK_RG_POINTERS_MVP.md` / `ops/mvp/residual-risk-pack-rg-pointers.json` — Stage 281 P1
+- `docs/STAGE_282_EXIT_CRITERIA.md` / `docs/ADR_572_STAGE282_FREEZE.md` (`backend/tests/test_stage282_exit_h282x.py`) — Stage 282 H282x
+- `docs/STAGE_282_FIDELITY.md` (`backend/tests/test_stage282_fidelity_d1.py`) — Stage 282 D1
+- `docs/STAGE_282_PLAN.md` (`backend/tests/test_stage282_open.py`) — Stage 282 open (ADR-571)
+- `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
+- `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
+- `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
 - `docs/STAGE_117_FIDELITY.md` (`backend/tests/test_stage117_fidelity_d1.py`) — Stage 117 D1
 
 
@@ -4957,4 +4963,16 @@ H281x met — `docs/STAGE_281_EXIT_CRITERIA.md`, ADR-570. Stages 1–281 frozen 
 ## Stage 281 open
 
 `docs/ADR_569_STAGE281_OPEN.md` + `docs/STAGE_281_PLAN.md` (`test_stage281_open.py`).
+
+## Stage 282 exit
+
+H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen for Stage 282 feature scope.
+
+## Stage 282 D1 — Tenant MVP Post-MVP Backlog Pack Remaining-Gate Index Fidelity
+
+`docs/STAGE_282_FIDELITY.md` (`test_stage282_fidelity_d1.py`). `POST_MVP_BACKLOG_PACK_*` remaining-gate index; backlog closed / deferred ADR implemented / go-live still MISSING.
+
+## Stage 282 open
+
+`docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
 

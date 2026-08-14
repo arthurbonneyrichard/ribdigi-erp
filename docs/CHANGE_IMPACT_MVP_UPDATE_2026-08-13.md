@@ -557,3 +557,8 @@ Do **not** claim Offline Complete until sync + idempotency + conflict tests pass
 ## Stage 281 decision (opened after Stage 280 freeze)
 
 **Tenant MVP Residual Risk Pack Remaining-Gate Index Fidelity** — residual risk pack remaining-gate hub (I1), blocker matrix (B1), Stage 33 K1 / Stage 280 / Stage 279 / Stage 196 pointers with explicit non-claim (P1). Prefixed `RESIDUAL_RISK_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 33 K1 `RESIDUAL_RISK_MVP.md` / Stage 196 `RESIDUAL_RISK_*`). Residual risks closed / certification / paid billing / go-live Completes remain deferred (Stage 282+; ADR-002 in force). Distinct from Stage 280 compliance readiness pack remaining-gate, Stage 279 compliance questionnaire pack remaining-gate, Stage 196 residual risk remaining-gate, and Stage 33 K1 residual risk packaging. Open ADR-569 / freeze ADR-570.
+
+
+## Stage 282 decision (opened after Stage 281 freeze)
+
+**Tenant MVP Post-MVP Backlog Pack Remaining-Gate Index Fidelity** — post-MVP backlog pack remaining-gate hub (I1), blocker matrix (B1), Stage 32 B1 / Stage 281 / Stage 280 / Stage 31 R1 pointers with explicit non-claim (P1). Prefixed `POST_MVP_BACKLOG_PACK_*` remaining-gate (`_REMAINING_GATE` / `_RG_*`) (≠ Stage 32 B1 `POST_MVP_BACKLOG_MVP.md`). Backlog closed / deferred ADR implemented / paid billing / go-live Completes remain deferred (Stage 283+; ADR-002 in force). Distinct from Stage 281 residual risk pack remaining-gate, Stage 280 compliance readiness pack remaining-gate, Stage 257 `COMMERCIAL_ACCEPTANCE_PACK_*`, and Stage 32 B1 post-MVP backlog packaging. Open ADR-571 / freeze ADR-572.

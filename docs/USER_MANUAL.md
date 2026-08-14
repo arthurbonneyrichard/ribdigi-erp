@@ -314,6 +314,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **Residual risk pack remaining-gate index (Stage 281):** Status index is `docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md` → blockers `docs/RESIDUAL_RISK_PACK_RG_BLOCKERS_MVP.md` → Stage 33/280/279/196 pointers `docs/RESIDUAL_RISK_PACK_RG_POINTERS_MVP.md`. Residual risks closed Complete and certification Complete remain MISSING (not claimed). Prefixed `RESIDUAL_RISK_PACK_*` remaining-gate docs (≠ Stage 33 K1 / Stage 196 `RESIDUAL_RISK_*`).
 
+**Post-MVP backlog pack remaining-gate index (Stage 282):** Status index is `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` → blockers `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` → Stage 32/281/280/31 pointers `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md`. Backlog closed Complete and deferred ADR implemented Complete remain MISSING (not claimed). Prefixed `POST_MVP_BACKLOG_PACK_*` remaining-gate docs (≠ Stage 32 B1 `POST_MVP_BACKLOG_MVP.md`).
+
 **Attestation pack remaining-gate index (Stage 213):** Status index is `docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md` → blockers `docs/ATTESTATION_PACK_BLOCKERS_MVP.md` → Stage 30 A1/212/187 pointers `docs/ATTESTATION_PACK_RG_POINTERS_MVP.md`. Live go-live attestation Complete remains MISSING (not claimed).
 
 **Evidence ledger remaining-gate index (Stage 212):** Status index is `docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md` → blockers `docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md` → Stage 30/211 pointers `docs/EVIDENCE_LEDGER_PACK_POINTERS_MVP.md`. Live evidence-ledger Complete remains MISSING (not claimed).
