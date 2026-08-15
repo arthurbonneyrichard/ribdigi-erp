@@ -31,3 +31,7 @@ Stage 911 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Override Gate, Transfer Override Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 911 opened under **ADR-1829** after CONTINUE/NEXT (Tenant MVP Transfer Exception Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1830**. Stage 910 feature scope remains frozen.
