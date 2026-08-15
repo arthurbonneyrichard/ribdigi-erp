@@ -31,3 +31,7 @@ Stage 861 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Lawful Basis Gate, Lawful Basis Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 861 opened under **ADR-1729** after CONTINUE/NEXT (Tenant MVP Processor Record Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1730**. Stage 860 feature scope remains frozen.
