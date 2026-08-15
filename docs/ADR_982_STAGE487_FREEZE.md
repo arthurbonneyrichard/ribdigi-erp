@@ -31,3 +31,10 @@ Stage 488 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Sync Escalation, Sync Escalation honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 488 opened under **ADR-983** after CONTINUE/NEXT (Tenant MVP Offline Acceptance Path Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-984**. Stage 487 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 487 runner-up outline was approved and opened (ADR-983); freeze ADR-984. Do not reopen Stage 487 scope.
+

@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 488 D1 Offline Acceptance Path Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_488_FIDELITY.md` (`test_stage488_fidelity_d1.py`); Offline Complete / Acceptance Path honesty / go-live still MISSING.
 Stage 487 D1 Offline Sync Escalation Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_487_FIDELITY.md` (`test_stage487_fidelity_d1.py`); Offline Complete / Sync Escalation honesty / go-live still MISSING.
 Stage 486 D1 Offline SW Cache Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_486_FIDELITY.md` (`test_stage486_fidelity_d1.py`); Offline Complete / SW Cache honesty / go-live still MISSING.
 Stage 485 D1 Offline PWA Install Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_485_FIDELITY.md` (`test_stage485_fidelity_d1.py`); Offline Complete / PWA Install honesty / go-live still MISSING.
