@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 505 track opened (ADR-1017: `test_stage505_open.py`, `docs/STAGE_505_PLAN.md`) — Monthly POS Ops Pointers Honesty Pack Remaining-Gate Index; closed under ADR-1018
+- [x] Monthly POS Ops Pointers Honesty Pack remaining-gate hub (Stage 505 I1: `test_stage505_index_i1.py`, `docs/MONTHLY_POS_OPS_POINTERS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Monthly POS Ops Pointers Honesty Pack blocker matrix (Stage 505 B1: `test_stage505_blockers_b1.py`, `docs/MONTHLY_POS_OPS_POINTERS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 504 / Stage 503 / Stage 392 / CHANGE_IMPACT pointers (Stage 505 P1: `test_stage505_pointers_p1.py`, `docs/MONTHLY_POS_OPS_POINTERS_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 505 fidelity sync (D1: `test_stage505_fidelity_d1.py`, `docs/STAGE_505_FIDELITY.md`)
+- [x] Stage 505 exit + freeze (H505x: `test_stage505_exit_h505x.py`, `docs/STAGE_505_EXIT_CRITERIA.md`, ADR-1018)
+
 Stage 504 track opened (ADR-1015: `test_stage504_open.py`, `docs/STAGE_504_PLAN.md`) — Monthly POS Ops Trends Honesty Pack Remaining-Gate Index; closed under ADR-1016
 - [x] Monthly POS Ops Trends Honesty Pack remaining-gate hub (Stage 504 I1: `test_stage504_index_i1.py`, `docs/MONTHLY_POS_OPS_TRENDS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Monthly POS Ops Trends Honesty Pack blocker matrix (Stage 504 B1: `test_stage504_blockers_b1.py`, `docs/MONTHLY_POS_OPS_TRENDS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
