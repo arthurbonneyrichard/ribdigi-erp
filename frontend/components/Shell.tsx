@@ -348,6 +348,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [hasLogo, setHasLogo] = useState(false);
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [bellOpen, setBellOpen] = useState(false);
@@ -457,6 +460,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         );
         setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
+        setCompanyName(meRes.data?.company_name || '');
+        setHasLogo(Boolean(meRes.data?.has_logo));
         const mins = Number(meRes.data?.inactivity_timeout_minutes);
         if (Number.isFinite(mins)) setIdleMinutes(mins);
       } catch {
@@ -465,6 +470,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           setPermissions({});
           setEnabledModules(null);
           setRole('');
+          setCompanyName('');
+          setHasLogo(false);
+          setCompanyLogoUrl(null);
         }
       }
     }
@@ -497,6 +505,42 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setBellOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    let revoked = false;
+    let objectUrl: string | null = null;
+    async function loadLogo() {
+      if (!hasLogo) {
+        setCompanyLogoUrl(null);
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        const tenantId = localStorage.getItem('tenant');
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+        const res = await fetch(`${apiBase}/tenants/me/logo`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+          },
+        });
+        if (!res.ok) {
+          if (!revoked) setCompanyLogoUrl(null);
+          return;
+        }
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (!revoked) setCompanyLogoUrl(objectUrl);
+      } catch {
+        if (!revoked) setCompanyLogoUrl(null);
+      }
+    }
+    loadLogo();
+    return () => {
+      revoked = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [hasLogo]);
 
   // BR-19.3: auto-logout after tenant-configured idle period (default 30 minutes).
   useEffect(() => {
@@ -569,15 +613,31 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
       <main className="main">
         <div className="topbar">
-          <button
-            type="button"
-            className="menu-btn"
-            aria-label="Toggle navigation menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            <span aria-hidden>{'\u2630'}</span> Menu
-          </button>
+          <div className="topbar-left">
+            <button
+              type="button"
+              className="menu-btn"
+              aria-label="Toggle navigation menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <span aria-hidden>{'\u2630'}</span> Menu
+            </button>
+            <div className="topbar-brand" aria-label="Company brand">
+              {companyLogoUrl ? (
+                <img
+                  className="topbar-brand-logo"
+                  src={companyLogoUrl}
+                  alt={companyName || 'Company logo'}
+                />
+              ) : null}
+              {companyName ? (
+                <span className="topbar-brand-name">{companyName}</span>
+              ) : isPlatformOwner ? (
+                <span className="topbar-brand-name">RIBDIGI Platform</span>
+              ) : null}
+            </div>
+          </div>
           <div className="topbar-right">
             <StoreSwitcher visible={!isPlatformOwner} />
             <button

@@ -179,8 +179,8 @@ export default function Login() {
             className="login-logo"
             src="/brand/logo-full.png"
             alt="RIBDIGI ERP — Run your business smarter"
-            width={320}
-            height={195}
+            width={160}
+            height={98}
           />
         </div>
 
