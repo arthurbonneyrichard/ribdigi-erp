@@ -95,6 +95,7 @@ export default function Page() {
   const [expNext, setExpNext] = useState('1');
   const [expPreview, setExpPreview] = useState('');
   const [recurring, setRecurring] = useState<any[]>([]);
+  const [recurringManageFilter, setRecurringManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [recAmount, setRecAmount] = useState('100');
   const [recDescription, setRecDescription] = useState('');
   const [recPayee, setRecPayee] = useState('');
@@ -688,6 +689,11 @@ export default function Page() {
     const active = c.is_active !== false;
     return categoryManageFilter === 'inactive' ? !active : active;
   });
+  const managedRecurring = recurring.filter((r) => {
+    if (recurringManageFilter === 'all') return true;
+    const active = r.is_active !== false;
+    return recurringManageFilter === 'inactive' ? !active : active;
+  });
 
   return (
     <Shell>
@@ -1010,6 +1016,19 @@ export default function Page() {
             </button>
           </div>
         </div>
+        <select
+          value={recurringManageFilter}
+          onChange={(e) =>
+            setRecurringManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+          }
+          title="Filter manage recurring schedule list by status"
+          aria-label="Recurring expense status filter"
+          style={{ marginBottom: 8 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -1023,17 +1042,22 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {recurring.length === 0 && (
+            {managedRecurring.length === 0 && (
               <tr>
                 <td colSpan={7} className="muted">
                   No recurring schedules yet
                 </td>
               </tr>
             )}
-            {recurring.map((r) => (
+            {managedRecurring.map((r) => (
               <tr key={r.id}>
                 <td>
                   {r.category}
+                  {r.is_active === false ? (
+                    <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                      [inactive]
+                    </span>
+                  ) : null}
                   {r.description ? (
                     <div className="muted" style={{ fontSize: 12 }}>
                       {r.description}
