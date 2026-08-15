@@ -31,3 +31,7 @@ Stage 800 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Worm Storage Gate, Worm Storage Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 800 opened under **ADR-1607** after CONTINUE/NEXT (Tenant MVP Immutable Log Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1608**. Stage 799 feature scope remains frozen.
