@@ -31,3 +31,8 @@ Stage 520 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cookie Privacy Notice, Cookie Privacy Notice honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 520 opened under **ADR-1047** after CONTINUE/NEXT (Tenant MVP Accessibility Statement Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1048**. Stage 519 feature scope remains frozen.
+
