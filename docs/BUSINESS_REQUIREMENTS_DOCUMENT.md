@@ -948,11 +948,11 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Secure user access.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] Email/password login with bcrypt hashing
-  - [ ] Password complexity requirements (min 8 chars, mixed case, number, symbol)
-  - [ ] Account lockout after 5 failed attempts (30-minute cooldown)
-  - [ ] Email verification before first login
-  - [ ] Password reset via secure token link (expires in 1 hour)
+  - [x] Email/password login with bcrypt hashing (`POST /auth/login`; `hash_password` / `verify_password`)
+  - [x] Password complexity requirements (min 8 chars, mixed case, number, symbol) (`validate_password_strength` on register/user create/reset)
+  - [x] Account lockout after 5 failed attempts (30-minute cooldown) (`failed_login_attempts` / `locked_until`)
+  - [ ] Email verification before first login (verify endpoints exist; login does not yet gate on `email_verified`)
+  - [x] Password reset via secure token link (expires in 1 hour) (`POST /auth/password-reset-request` + `POST /auth/password-reset`; login **Forgot password?** → `/forgot-password`; confirm `/reset-password?token=`; console/SMTP email)
 
 #### BR-19.2 Two-Factor Authentication (2FA)
 - **Description:** Enhanced account security.

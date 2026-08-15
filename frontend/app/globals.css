@@ -264,6 +264,19 @@
   background:#fef2f2;color:#b91c1c;font-size:13px;font-weight:600;
   border:1px solid #fecaca;
 }
+.login-success{
+  margin:2px 0 0;padding:10px 12px;border-radius:10px;
+  background:#ecfdf5;color:#047857;font-size:13px;font-weight:600;
+  border:1px solid #a7f3d0;
+}
+.login-forgot{
+  margin:-4px 0 4px;text-align:right;font-size:13px;font-weight:600;
+}
+.login-forgot a{color:#0f766e;text-decoration:none}
+.login-forgot a:hover{text-decoration:underline;color:#0d9488}
+.login-heading{
+  margin:0 0 4px;font-size:22px;font-weight:800;color:#0f172a;text-align:center;
+}
 .login-foot{
   text-align:center;margin:18px 0 0;font-size:11px;color:#94a3b8;
   letter-spacing:.35px;font-weight:600;

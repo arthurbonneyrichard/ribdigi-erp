@@ -148,10 +148,13 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ### 2.4 Password Reset
 **Endpoint:** `POST /auth/password-reset-request`
 
+UI: login **Forgot password?** → `/forgot-password` (workspace + email). Always returns a neutral success message (no account enumeration). Non-production may include `reset_token` for local testing. Email link opens `/reset-password?token=…`.
+
 **Request:**
 ```json
 {
-  "email": "admin@company.com"
+  "email": "admin@company.com",
+  "tenant_id": "acme"
 }
 ```
 
@@ -165,6 +168,7 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 }
 ```
 
+Token is single-use and expires in 1 hour; new password must pass complexity rules.
 ### 2.5 Two-Factor Authentication (Optional)
 **Endpoint:** `POST /auth/2fa/enable`
 
