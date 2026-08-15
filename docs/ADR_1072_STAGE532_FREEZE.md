@@ -31,3 +31,7 @@ Stage 533 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Service Credit Warranty, Service Credit Warranty honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 533 opened under **ADR-1073** after CONTINUE/NEXT (Tenant MVP Status Uptime Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1074**. Stage 532 feature scope remains frozen.
