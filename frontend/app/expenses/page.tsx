@@ -28,6 +28,7 @@ type Expense = {
   reference?: string;
   status: string;
   rejection_reason?: string;
+  approval_comment?: string | null;
   has_attachment?: boolean;
   attachment_url?: string | null;
   approval_step?: number;
@@ -63,6 +64,7 @@ export default function Page() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [reference, setReference] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [approveComment, setApproveComment] = useState('');
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
     amount: string;
@@ -423,12 +425,15 @@ export default function Page() {
 
   async function approve(id: string) {
     setError('');
+    setMessage('');
+    const comment = approveComment.trim();
     try {
       const r = await api(`/expenses/${id}/approve`, {
         method: 'POST',
-        body: JSON.stringify({ comment: 'Approved' }),
+        body: JSON.stringify(comment ? { comment } : {}),
       });
       setMessage(r.message || (r.data?.status === 'approved' ? 'Expense approved' : 'Level approved'));
+      setApproveComment('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1203,6 +1208,18 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label>
+          Approve comment{' '}
+          <input
+            value={approveComment}
+            onChange={(e) => setApproveComment(e.target.value)}
+            placeholder="Optional — stored as approval_comment"
+            style={{ minWidth: 280 }}
+          />
+        </label>
+        <p className="muted" style={{ marginTop: 6 }}>
+          Used by Approve on pending expenses (no hardcoded <code>Approved</code> comment).
+        </p>
+        <label style={{ display: 'block', marginTop: 12 }}>
           Reject reason{' '}
           <input
             value={rejectReason}
@@ -1336,6 +1353,7 @@ export default function Page() {
             <th>Status</th>
             <th>Approval</th>
             <th>Reject reason</th>
+            <th>Approve comment</th>
             <th>Receipt</th>
             <th>Actions</th>
           </tr>
@@ -1368,6 +1386,7 @@ export default function Page() {
                     : 'auto'}
               </td>
               <td className="muted">{r.rejection_reason || '—'}</td>
+              <td className="muted">{r.approval_comment || '—'}</td>
               <td>
                 {r.has_attachment ? (
                   <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>

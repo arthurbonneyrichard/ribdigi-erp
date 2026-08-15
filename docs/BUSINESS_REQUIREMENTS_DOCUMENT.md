@@ -588,7 +588,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] Configurable approval thresholds (e.g., >$100 requires manager approval) (`expense_approval_matrix` / `expense_approval_threshold`)
   - [x] Multi-level approval chain (N-level role gates; action log; no self-approve / no duplicate-step actor)
-  - [x] Approval/rejection with comments (`comment` on approve; required `reason` on reject → `rejection_reason`; Expenses **Reject reason** input — no hardcoded `"Rejected"`)
+  - [x] Approval/rejection with comments (optional typed `comment` on approve → `approval_comment`, Expenses **Approve comment** — no hardcoded `"Approved"`; required `reason` on reject → `rejection_reason`; Expenses **Reject reason** input — no hardcoded `"Rejected"`)
   - [x] Email notification to approvers (current-step matrix roles via `create_notification(..., roles=...)`; default `expense_approval.email=true`; creator excluded; console/SMTP)
 
 #### BR-9.4 Expense Attachments

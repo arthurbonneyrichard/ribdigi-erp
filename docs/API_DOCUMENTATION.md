@@ -1103,7 +1103,7 @@ Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong
 
 Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_approval` plus email (default on; opt out via notification preferences). Creator is excluded from the email fan-out. Advancing a level re-notifies the next step's roles.
 
-**Approve:** `POST /expenses/{expense_id}/approve` — body `{ "comment"? }` (optional) → advances approval step or final `approved` + journal; no self-approve (except `super_admin`).  
+**Approve:** `POST /expenses/{expense_id}/approve` — body `{ "comment"? }` (optional typed comment → `approval_comment`; Expenses UI **Approve comment** — no hardcoded `"Approved"`) → advances approval step or final `approved` + journal; no self-approve (except `super_admin`).  
 **Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }` **required** (non-empty) → `rejected` + `rejection_reason` (Expenses UI requires typed reason; no hardcoded `"Rejected"`). Role-gated to the awaiting matrix step.
 
 ### 9.3 Recurring Expenses
