@@ -31,3 +31,7 @@ Stage 603 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Evidence Bundle Gate, Evidence Bundle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 603 opened under **ADR-1213** after CONTINUE/NEXT (Tenant MVP Launch Checklist Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1214**. Stage 602 feature scope remains frozen.
