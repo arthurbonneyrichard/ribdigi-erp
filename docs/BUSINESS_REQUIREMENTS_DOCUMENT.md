@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 550 D1 E2E Purchase Stock Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_550_FIDELITY.md` (`test_stage550_fidelity_d1.py`); Offline Complete / E2E Purchase Stock honesty / go-live still MISSING.
 Stage 549 D1 E2E Org Bootstrap Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_549_FIDELITY.md` (`test_stage549_fidelity_d1.py`); Offline Complete / E2E Org Bootstrap honesty / go-live still MISSING.
 Stage 548 D1 E2E Backup Restore Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_548_FIDELITY.md` (`test_stage548_fidelity_d1.py`); Offline Complete / E2E Backup Restore honesty / go-live still MISSING.
 Stage 547 D1 AR AP Accounting Surface Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_547_FIDELITY.md` (`test_stage547_fidelity_d1.py`); Offline Complete / AR AP Accounting Surface honesty / go-live still MISSING.
