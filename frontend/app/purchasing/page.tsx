@@ -23,6 +23,7 @@ type PurchaseRequest = {
   preferred_supplier_id?: string | null;
   department?: string | null;
   notes?: string | null;
+  rejection_reason?: string | null;
   converted_po_id?: string | null;
   approval_step?: number;
   approval_steps_required?: number;
@@ -199,6 +200,7 @@ export default function Page() {
   const [prDepartment, setPrDepartment] = useState('');
   const [prNotes, setPrNotes] = useState('');
   const [prBusy, setPrBusy] = useState('');
+  const [prRejectReason, setPrRejectReason] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
     { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
@@ -1040,11 +1042,18 @@ export default function Page() {
   async function prAction(id: string, action: 'submit' | 'approve' | 'reject' | 'convert') {
     setError('');
     setMessage('');
+    if (action === 'reject') {
+      const reason = prRejectReason.trim();
+      if (!reason) {
+        setError('Enter a reject reason before rejecting a purchase request');
+        return;
+      }
+    }
     setPrBusy(`${action}:${id}`);
     try {
       const body =
         action === 'reject'
-          ? JSON.stringify({ reason: 'Rejected from purchasing UI' })
+          ? JSON.stringify({ reason: prRejectReason.trim() })
           : action === 'convert'
             ? '{}'
             : '{}';
@@ -1052,6 +1061,9 @@ export default function Page() {
         method: 'POST',
         body,
       });
+      if (action === 'reject') {
+        setPrRejectReason('');
+      }
       if (action === 'convert') {
         setMessage(
           `Converted ${r.data.request_number} → ${r.data.purchase_order?.po_number || 'draft PO'}`
@@ -1313,6 +1325,20 @@ export default function Page() {
               </button>
             </div>
           </div>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <label>
+              Reject reason{' '}
+              <input
+                value={prRejectReason}
+                onChange={(e) => setPrRejectReason(e.target.value)}
+                placeholder="Required before Reject"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Used by Reject on pending requests (stored as <code>rejection_reason</code>).
+            </p>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -1321,6 +1347,7 @@ export default function Page() {
                 <th>Approval</th>
                 <th>Department</th>
                 <th>Lines</th>
+                <th>Reject reason</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1342,6 +1369,7 @@ export default function Page() {
                       .map((i) => `${productName(i.product_id)} × ${i.quantity}`)
                       .join(', ') || '—'}
                   </td>
+                  <td className="muted">{r.rejection_reason || '—'}</td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {r.status === 'draft' && (
                       <button
@@ -1387,7 +1415,7 @@ export default function Page() {
               ))}
               {requests.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted">
+                  <td colSpan={7} className="muted">
                     No purchase requests yet
                   </td>
                 </tr>
