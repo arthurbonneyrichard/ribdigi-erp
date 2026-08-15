@@ -1,0 +1,77 @@
+{
+  "id": "adr005-store-membership-honesty-pack-rg-pointers",
+  "stage": 461,
+  "pack": "P1",
+  "doc": "docs/ADR005_STORE_MEMBERSHIP_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ADR005_STORE_MEMBERSHIP_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "schema_per_tenant_honesty_pack_remaining_gate": "docs/SCHEMA_PER_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "shared_schema_tenancy_honesty_pack_remaining_gate": "docs/SHARED_SCHEMA_TENANCY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "adr005_store_membership_pack_remaining_gate": "docs/ADR005_STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "adr005_store_membership_honesty_complete_claimed": false,
+  "adr005_store_membership_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_adr005_store_membership_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "schema_per_tenant_honesty_pack_remaining_gate_stage460": "docs/SCHEMA_PER_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "shared_schema_tenancy_honesty_pack_remaining_gate_stage459": "docs/SHARED_SCHEMA_TENANCY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "adr005_store_membership_pack_remaining_gate": "docs/ADR005_STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / store_membership / store_membership_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "asmhprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 ADR-005 Store Membership honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asmhprp-stage460",
+      "title": "Point to Stage 460 Schema-per-Tenant honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asmhprp-stage459",
+      "title": "Point to Stage 459 Shared Schema Tenancy honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asmhprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asmhprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asmhprp-asm-pack",
+      "title": "Point to ADR-005 Store Membership Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asmhprp-checklist-remaining",
+      "title": "Offline Complete / Store Membership / Store Membership honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 461 P1 ADR-005 Store Membership Honesty Pack RG pointers packaging only."
+}

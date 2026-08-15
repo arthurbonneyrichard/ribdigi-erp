@@ -31,3 +31,9 @@ Stage 461 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Schema-per-Tenant, Schema-per-Tenant honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 461 opened under **ADR-929** after CONTINUE/NEXT (Tenant MVP ADR-005 Store Membership Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-930**. Stage 460 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 460 runner-up outline was approved and opened (ADR-929); freeze ADR-930. Do not reopen Stage 460 scope.

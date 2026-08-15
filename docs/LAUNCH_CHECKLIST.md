@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 461 track opened (ADR-929: `test_stage461_open.py`, `docs/STAGE_461_PLAN.md`) — ADR-005 Store Membership Honesty Pack Remaining-Gate Index; closed under ADR-930
+- [x] ADR-005 Store Membership honesty pack remaining-gate hub (Stage 461 I1: `test_stage461_index_i1.py`, `docs/ADR005_STORE_MEMBERSHIP_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] ADR-005 Store Membership honesty pack blocker matrix (Stage 461 B1: `test_stage461_blockers_b1.py`, `docs/ADR005_STORE_MEMBERSHIP_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 460 / Stage 459 / Stage 392 / CHANGE_IMPACT pointers (Stage 461 P1: `test_stage461_pointers_p1.py`, `docs/ADR005_STORE_MEMBERSHIP_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 461 fidelity sync (D1: `test_stage461_fidelity_d1.py`, `docs/STAGE_461_FIDELITY.md`)
+- [x] Stage 461 exit + freeze (H461x: `test_stage461_exit_h461x.py`, `docs/STAGE_461_EXIT_CRITERIA.md`, ADR-930)
 - [x] Stage 460 track opened (ADR-927: `test_stage460_open.py`, `docs/STAGE_460_PLAN.md`) — Schema-per-Tenant Honesty Pack Remaining-Gate Index; closed under ADR-928
 - [x] Schema-per-Tenant honesty pack remaining-gate hub (Stage 460 I1: `test_stage460_index_i1.py`, `docs/SCHEMA_PER_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Schema-per-Tenant honesty pack blocker matrix (Stage 460 B1: `test_stage460_blockers_b1.py`, `docs/SCHEMA_PER_TENANT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

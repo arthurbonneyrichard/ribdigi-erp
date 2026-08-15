@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 461 D1 (2026-08-14):** ADR-005 Store Membership Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_461_FIDELITY.md` (`test_stage461_fidelity_d1.py`). Open ADR: `docs/ADR_929_STAGE461_OPEN.md`; plan `docs/STAGE_461_PLAN.md`.
+
+**Stage 461 exit (2026-08-14):** I1, B1, P1, D1, H461x met — `docs/STAGE_461_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_930_STAGE461_FREEZE.md`. Fidelity: `docs/STAGE_461_FIDELITY.md`.
+
 **Stage 460 D1 (2026-08-14):** Schema-per-Tenant Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_460_FIDELITY.md` (`test_stage460_fidelity_d1.py`). Open ADR: `docs/ADR_927_STAGE460_OPEN.md`; plan `docs/STAGE_460_PLAN.md`.
 
 **Stage 460 exit (2026-08-14):** I1, B1, P1, D1, H460x met — `docs/STAGE_460_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_928_STAGE460_FREEZE.md`. Fidelity: `docs/STAGE_460_FIDELITY.md`.
