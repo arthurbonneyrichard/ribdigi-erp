@@ -11,6 +11,7 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [digestBusy, setDigestBusy] = useState(false);
   const [predBusy, setPredBusy] = useState(false);
   const [draftPrBusy, setDraftPrBusy] = useState(false);
   const [lastAtRisk, setLastAtRisk] = useState<any[]>([]);
@@ -39,6 +40,26 @@ export default function Page() {
       setA((r.data?.insights || []).join('\n'));
     } catch (err: any) {
       setError(err.message || 'Unable to load insights');
+    }
+  }
+
+  async function emailInsightDigest() {
+    setError('');
+    setMessage('');
+    setDigestBusy(true);
+    try {
+      const r = await api('/ai/insights/digest', { method: 'POST', body: '{}' });
+      const data = r.data || {};
+      setA((data.insights || []).join('\n'));
+      setMessage(
+        data.sent
+          ? 'Weekly AI insight digest emailed to your account.'
+          : 'Digest generated, but email delivery is disabled or unavailable.'
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to email the insight digest');
+    } finally {
+      setDigestBusy(false);
     }
   }
 
@@ -378,6 +399,9 @@ export default function Page() {
             {draftPiBusy ? 'Creating draft PI…' : 'Create draft purchase invoice'}
           </button>
           <button onClick={loadInsights}>Load insights</button>
+          <button onClick={emailInsightDigest} disabled={digestBusy}>
+            {digestBusy ? 'Emailing digest…' : 'Email digest to me'}
+          </button>
           <button onClick={loadInventoryPredictions} disabled={predBusy}>
             {predBusy ? 'Loading predictions…' : 'Inventory predictions'}
           </button>
@@ -404,6 +428,9 @@ export default function Page() {
           <button onClick={loadSecurityAlerts}>Security alerts</button>
         </div>
         <p className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+          Weekly AI insight digests are sent to active company and super admins every Monday at 07:00 UTC.
+          Use <strong>Email digest to me</strong> to preview the tenant-scoped email with your account.
+          {' '}
           Inventory predictions lists at-risk SKUs (14-day window). <strong>Create draft PR(s)</strong> turns
           those lines into draft purchase requests — open{' '}
           <Link href="/purchasing">Purchasing → Requests</Link> to submit. Requires purchasing write

@@ -18,16 +18,19 @@ const JOB_LABELS: Record<string, string> = {
   archive_cold_audit_logs: 'Archive cold audit logs',
   retry_due_webhooks: 'Retry webhooks',
   scan_ai_security_alerts: 'AI security alerts',
+  send_weekly_ai_insight_digest: 'Weekly AI insight digest',
 };
 
 const RUN_ROLES = new Set(['super_admin', 'platform_owner']);
 
-function beatForJob(beat: Record<string, number> | null | undefined, job: string): string {
+function beatForJob(beat: Record<string, number | string> | null | undefined, job: string): string {
   if (!beat) return '—';
   const minutesKey = `${job}_minutes`;
   const secondsKey = `${job}_seconds`;
+  const scheduleKey = `${job}_schedule`;
   if (typeof beat[minutesKey] === 'number') return `every ${beat[minutesKey]} min`;
   if (typeof beat[secondsKey] === 'number') return `every ${beat[secondsKey]} sec`;
+  if (typeof beat[scheduleKey] === 'string') return beat[scheduleKey];
   return '—';
 }
 

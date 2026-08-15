@@ -17,6 +17,7 @@ EXPECTED_HANDLERS = {
     "archive_cold_audit_logs",
     "retry_due_webhooks",
     "scan_ai_security_alerts",
+    "send_weekly_ai_insight_digest",
 }
 
 EXPECTED_BEAT = {
@@ -33,6 +34,7 @@ EXPECTED_BEAT = {
     "archive-cold-audit-logs",
     "retry-due-webhooks",
     "scan-ai-security-alerts",
+    "send-weekly-ai-insight-digest",
 }
 
 

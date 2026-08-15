@@ -1031,7 +1031,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] Highlight unusual sales drops or spikes
   - [ ] Flag expense anomalies
   - [ ] Suggest actions ("Restock Product Y — sales up 40% this week")
-  - [ ] Weekly insight digest email
+  - [x] Weekly insight digest email (tenant-scoped dashboard-rule digest to active company/super admins via `send_weekly_ai_insight_digest`, Celery beat Monday 07:00 UTC; `POST /ai/insights/digest` emails the signed-in user's preview; Jobs console exposes schedule/manual trigger)
 
 #### BR-21.3 Smart Inventory Intelligence
 - **Description:** AI-powered inventory optimization.

@@ -12,7 +12,7 @@
 | Results | Redis DB `/1` (derived from `REDIS_URL`) | Celery result backend |
 | Rate limits | Redis DB `/0` (`REDIS_URL`) | Memory fallback unless `RATE_LIMIT_REQUIRE_REDIS=true` |
 | Worker | `celery -A app.celery_app.celery worker` | `task_acks_late`, prefetch=1 |
-| Beat | `celery -A app.celery_app.celery beat` | Interval schedule from settings |
+| Beat | `celery -A app.celery_app.celery beat` | Interval and fixed UTC cron schedules |
 
 Compose services: `redis`, `rabbitmq`, `celery_worker`, `celery_beat` in root `docker-compose.yml`. Drill sketch: `ops/celery/docker-compose.celery-drill.example.yml`.
 
@@ -35,9 +35,10 @@ Compose services: `redis`, `rabbitmq`, `celery_worker`, `celery_beat` in root `d
 
 ### AI-related (rule-based; no LLM nightly)
 
-| Handler / beat key | Interval setting |
-|--------------------|------------------|
+| Handler / beat key | Schedule |
+|--------------------|----------|
 | `scan_ai_security_alerts` / `scan-ai-security-alerts` | `CELERY_AI_SECURITY_INTERVAL_MINUTES` |
+| `send_weekly_ai_insight_digest` / `send-weekly-ai-insight-digest` | Monday 07:00 UTC |
 
 Admin APIs:
 
@@ -58,7 +59,7 @@ Broker down while Celery is enabled reports `celery_broker.status=degraded` (ove
 
 1. Start Redis + RabbitMQ + API + worker + beat.
 2. Confirm `GET /api/v1/health/ready` shows `database`/`redis`/`celery_broker` ok.
-3. As `super_admin` / `company_admin` / `platform_owner`, `GET /api/v1/jobs` (or open **Jobs** in the Shell) shows all registered handlers and beat intervals (including `scan_ai_security_alerts`).
+3. As `super_admin` / `company_admin` / `platform_owner`, `GET /api/v1/jobs` (or open **Jobs** in the Shell) shows all registered handlers and beat schedules (including `scan_ai_security_alerts` and `send_weekly_ai_insight_digest`).
 4. `POST /api/v1/jobs/scan_low_stock/run` (sync) returns tenant results (UI: **Run sync**).
 5. Optional: `?enqueue=true` (UI: **Enqueue**) and confirm worker consumes the task.
 
@@ -67,11 +68,11 @@ Broker down while Celery is enabled reports `celery_broker.status=degraded` (ove
 Flags in checklist / evidence (honesty):
 
 - `live_broker_soak_executed: false` until staging soak is logged.
-- `ai_nightly_claimed: false` — LLM/nightly AI forecast jobs remain under the AI functions gate; rule-based `scan_ai_security_alerts` is registered.
+- `ai_nightly_claimed: false` — AI nightly LLM forecast jobs remain under the AI functions gate; rule-based security scans and weekly insight digests are registered.
 - `ci_queue_drained_claimed: false` — packaging tests do not prove queue drain.
 
 ## Remaining (post-MVP / other gates)
 
-- AI nightly jobs (deferred to AI section).
+- LLM/nightly AI forecast jobs (deferred to AI section).
 - Live broker soak + on-call alert wiring (Monitoring gate).
 - Managed K8s HPA for workers (Kubernetes gate).

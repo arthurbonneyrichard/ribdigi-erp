@@ -227,6 +227,20 @@ async def job_scan_ai_security_alerts() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_send_weekly_ai_insight_digest() -> dict:
+    """Email dashboard-rule insights to each active tenant's admins (BR-21.2)."""
+    from app import ai_digest as ai_digest_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await ai_digest_svc.send_tenant_digest(
+            db,
+            tenant_id=tenant_id,
+            actor_user_id=SYSTEM_USER_ID,
+        )
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -241,6 +255,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "archive_cold_audit_logs": job_archive_cold_audit_logs,
     "retry_due_webhooks": job_retry_due_webhooks,
     "scan_ai_security_alerts": job_scan_ai_security_alerts,
+    "send_weekly_ai_insight_digest": job_send_weekly_ai_insight_digest,
 }
 
 

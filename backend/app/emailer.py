@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import logging
 import smtplib
 import ssl
@@ -252,6 +253,55 @@ async def send_notification_email(
     text = f"{title}\n\n{message}\n\nCategory: {category}\n"
     html = f"<h3>{title}</h3><p>{message}</p><p><em>{category}</em></p>"
     return await send_email(to=to, subject=subject, text_body=text, html_body=html, tenant=tenant)
+
+
+def render_ai_insight_digest_bodies(
+    *,
+    company_name: str,
+    insights: list[str],
+) -> tuple[str, str]:
+    """Render the tenant-safe plain-text and HTML weekly digest."""
+    company = (company_name or "RIBDIGI ERP").strip()
+    notes = [str(note).strip() for note in insights if str(note).strip()]
+    if not notes:
+        notes = ["No urgent anomaly detected from the currently configured business rules."]
+
+    text = "\n".join(
+        [
+            f"Weekly AI insight digest — {company}",
+            "",
+            *[f"{index}. {note}" for index, note in enumerate(notes, start=1)],
+            "",
+            "Open the RIBDIGI ERP dashboard to review the underlying business data.",
+        ]
+    )
+    items = "".join(f"<li>{html.escape(note)}</li>" for note in notes)
+    html_body = (
+        f"<h2>Weekly AI insight digest — {html.escape(company)}</h2>"
+        f"<ol>{items}</ol>"
+        "<p>Open the RIBDIGI ERP dashboard to review the underlying business data.</p>"
+    )
+    return text, html_body
+
+
+async def send_ai_insight_digest_email(
+    *,
+    to: str,
+    company_name: str,
+    insights: list[str],
+    tenant: Any | None = None,
+) -> EmailResult:
+    text, html_body = render_ai_insight_digest_bodies(
+        company_name=company_name,
+        insights=insights,
+    )
+    return await send_email(
+        to=to,
+        subject=f"Weekly AI insight digest — {company_name}",
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
 
 
 def _fmt_money(value: Any) -> str:

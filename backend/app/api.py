@@ -27,6 +27,7 @@ from app import api_keys as api_keys_svc
 from app import webhooks as webhooks_svc
 from app import onboarding as onboarding_svc
 from app import ai as ai_svc
+from app import ai_digest as ai_digest_svc
 from app import ai_security as ai_security_svc
 from app import ai_inventory as ai_inventory_svc
 from app import ai_sales as ai_sales_svc
@@ -10611,6 +10612,7 @@ async def list_jobs(
                 "archive_cold_audit_logs_minutes": app_settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES,
                 "retry_due_webhooks_seconds": app_settings.CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS,
                 "scan_ai_security_alerts_minutes": app_settings.CELERY_AI_SECURITY_INTERVAL_MINUTES,
+                "send_weekly_ai_insight_digest_schedule": "Monday 07:00 UTC",
             },
         }
     )
@@ -11388,6 +11390,23 @@ async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSe
     dash = await build_dashboard(db, claims["tenant_id"])
     data = await ai_svc.handle_insights(db, claims=claims, dash=dash)
     return env(data)
+
+
+@api.post("/ai/insights/digest")
+async def send_insight_digest(
+    claims=Depends(require_permission("ai", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email the current user a tenant-scoped preview of the weekly digest."""
+    user_id = claims.get("sub") or claims.get("user_id")
+    data = await ai_digest_svc.send_tenant_digest(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=user_id,
+        recipient_user_ids=[user_id] if user_id else [],
+    )
+    await db.commit()
+    return env(data, f"Insight digest emailed to {data['sent']} recipient(s)")
 
 
 @api.get("/ai/inventory/predictions")
