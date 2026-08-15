@@ -31,3 +31,7 @@ Stage 540 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Live Migration, Live Migration honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 540 opened under **ADR-1087** after CONTINUE/NEXT (Tenant MVP Hard Delete Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1088**. Stage 539 feature scope remains frozen.

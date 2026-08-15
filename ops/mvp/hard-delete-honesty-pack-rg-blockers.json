@@ -1,0 +1,77 @@
+{
+  "id": "hard-delete-honesty-pack-rg-blockers",
+  "stage": 540,
+  "pack": "B1",
+  "doc": "docs/HARD_DELETE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HARD_DELETE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "hard_delete_pack_remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "hard_delete_honesty_complete_claimed": false,
+  "hard_delete_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "hard_delete_honesty_complete_claimed": "REMAINING",
+    "hard_delete_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_hard_delete_honesty": "NON_CLAIM",
+    "hard_delete_pack_as_hard_delete_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "hard_delete_honesty_complete_claimed_flag": "false",
+    "hard_delete_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "hdhrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrb-honesty",
+      "title": "Mark Hard Delete honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrb-as-golive",
+      "title": "Mark Hard Delete as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrb-prior-nonclaim",
+      "title": "Mark HARD_DELETE_PACK as non-claim for hard-delete Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrb-checklist-remaining",
+      "title": "Offline Complete / Hard Delete / Hard Delete honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 540 B1 Hard Delete Honesty Pack RG blocker matrix packaging only."
+}
