@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 761 track opened (ADR-1529: `test_stage761_open.py`, `docs/STAGE_761_PLAN.md`) — Bearer Token Gate Honesty Pack Remaining-Gate Index; closed under ADR-1530
+- [x] Bearer Token Gate Honesty Pack remaining-gate hub (Stage 761 I1: `test_stage761_index_i1.py`, `docs/BEARER_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Bearer Token Gate Honesty Pack blocker matrix (Stage 761 B1: `test_stage761_blockers_b1.py`, `docs/BEARER_TOKEN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 760 / Stage 759 / Stage 392 / CHANGE_IMPACT pointers (Stage 761 P1: `test_stage761_pointers_p1.py`, `docs/BEARER_TOKEN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 761 fidelity sync (D1: `test_stage761_fidelity_d1.py`, `docs/STAGE_761_FIDELITY.md`)
+- [x] Stage 761 exit + freeze (H761x: `test_stage761_exit_h761x.py`, `docs/STAGE_761_EXIT_CRITERIA.md`, ADR-1530)
+
 Stage 760 track opened (ADR-1527: `test_stage760_open.py`, `docs/STAGE_760_PLAN.md`) — Id Token Gate Honesty Pack Remaining-Gate Index; closed under ADR-1528
 - [x] Id Token Gate Honesty Pack remaining-gate hub (Stage 760 I1: `test_stage760_index_i1.py`, `docs/ID_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Id Token Gate Honesty Pack blocker matrix (Stage 760 B1: `test_stage760_blockers_b1.py`, `docs/ID_TOKEN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

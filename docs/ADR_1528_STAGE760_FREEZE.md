@@ -31,3 +31,7 @@ Stage 761 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Id Token Gate, Id Token Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 761 opened under **ADR-1529** after CONTINUE/NEXT (Tenant MVP Bearer Token Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1530**. Stage 760 feature scope remains frozen.

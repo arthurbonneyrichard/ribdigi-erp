@@ -1,0 +1,77 @@
+{
+  "id": "bearer-token-gate-honesty-pack-rg-blockers",
+  "stage": 761,
+  "pack": "B1",
+  "doc": "docs/BEARER_TOKEN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BEARER_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "bearer_token_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "bearer_token_gate_honesty_complete_claimed": false,
+  "bearer_token_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "bearer_token_gate_honesty_complete_claimed": "REMAINING",
+    "bearer_token_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_bearer_token_gate_honesty": "NON_CLAIM",
+    "bearer_token_gate_pack_as_bearer_token_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "bearer_token_gate_honesty_complete_claimed_flag": "false",
+    "bearer_token_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "btghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "btghb-honesty",
+      "title": "Mark Bearer Token Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "btghb-as-golive",
+      "title": "Mark Bearer Token Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "btghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "btghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "btghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for bearer-token-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "btghb-checklist-remaining",
+      "title": "Offline Complete / Bearer Token Gate / Bearer Token Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 761 B1 Bearer Token Gate Honesty Pack RG blocker matrix packaging only."
+}
