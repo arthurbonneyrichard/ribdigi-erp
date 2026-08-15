@@ -31,3 +31,7 @@ Stage 597 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Billing Gate, Billing Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 597 opened under **ADR-1201** after CONTINUE/NEXT (Tenant MVP Commercial Continuity Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1202**. Stage 596 feature scope remains frozen.
