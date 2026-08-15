@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 681 D1 Alert Routing Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_681_FIDELITY.md` (`test_stage681_fidelity_d1.py`); Offline Complete / Alert Routing Gate honesty / go-live still MISSING.
 Stage 680 D1 Tracing Sample Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_680_FIDELITY.md` (`test_stage680_fidelity_d1.py`); Offline Complete / Tracing Sample Gate honesty / go-live still MISSING.
 Stage 679 D1 Metrics Cardinality Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_679_FIDELITY.md` (`test_stage679_fidelity_d1.py`); Offline Complete / Metrics Cardinality Gate honesty / go-live still MISSING.
 Stage 678 D1 Log Retention Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_678_FIDELITY.md` (`test_stage678_fidelity_d1.py`); Offline Complete / Log Retention Gate honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 681 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Tracing Sample Gate, Tracing Sample Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 681 opened under **ADR-1369** after CONTINUE/NEXT (Tenant MVP Alert Routing Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1370**. Stage 680 feature scope remains frozen.
