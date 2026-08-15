@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 870 track opened (ADR-1747: `test_stage870_open.py`, `docs/STAGE_870_PLAN.md`) — LIA Gate Honesty Pack Remaining-Gate Index; closed under ADR-1748
+- [x] LIA Gate Honesty Pack remaining-gate hub (Stage 870 I1: `test_stage870_index_i1.py`, `docs/LIA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] LIA Gate Honesty Pack blocker matrix (Stage 870 B1: `test_stage870_blockers_b1.py`, `docs/LIA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 869 / Stage 868 / Stage 392 / CHANGE_IMPACT pointers (Stage 870 P1: `test_stage870_pointers_p1.py`, `docs/LIA_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 870 fidelity sync (D1: `test_stage870_fidelity_d1.py`, `docs/STAGE_870_FIDELITY.md`)
+- [x] Stage 870 exit + freeze (H870x: `test_stage870_exit_h870x.py`, `docs/STAGE_870_EXIT_CRITERIA.md`, ADR-1748)
+
 Stage 869 track opened (ADR-1745: `test_stage869_open.py`, `docs/STAGE_869_PLAN.md`) — ROPA Gate Honesty Pack Remaining-Gate Index; closed under ADR-1746
 - [x] ROPA Gate Honesty Pack remaining-gate hub (Stage 869 I1: `test_stage869_index_i1.py`, `docs/ROPA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] ROPA Gate Honesty Pack blocker matrix (Stage 869 B1: `test_stage869_blockers_b1.py`, `docs/ROPA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
