@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 745 track opened (ADR-1497: `test_stage745_open.py`, `docs/STAGE_745_PLAN.md`) — Private Network Access Gate Honesty Pack Remaining-Gate Index; closed under ADR-1498
+- [x] Private Network Access Gate Honesty Pack remaining-gate hub (Stage 745 I1: `test_stage745_index_i1.py`, `docs/PRIVATE_NETWORK_ACCESS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Private Network Access Gate Honesty Pack blocker matrix (Stage 745 B1: `test_stage745_blockers_b1.py`, `docs/PRIVATE_NETWORK_ACCESS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 744 / Stage 743 / Stage 392 / CHANGE_IMPACT pointers (Stage 745 P1: `test_stage745_pointers_p1.py`, `docs/PRIVATE_NETWORK_ACCESS_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 745 fidelity sync (D1: `test_stage745_fidelity_d1.py`, `docs/STAGE_745_FIDELITY.md`)
+- [x] Stage 745 exit + freeze (H745x: `test_stage745_exit_h745x.py`, `docs/STAGE_745_EXIT_CRITERIA.md`, ADR-1498)
+
 Stage 744 track opened (ADR-1495: `test_stage744_open.py`, `docs/STAGE_744_PLAN.md`) — Fetch Metadata Gate Honesty Pack Remaining-Gate Index; closed under ADR-1496
 - [x] Fetch Metadata Gate Honesty Pack remaining-gate hub (Stage 744 I1: `test_stage744_index_i1.py`, `docs/FETCH_METADATA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Fetch Metadata Gate Honesty Pack blocker matrix (Stage 744 B1: `test_stage744_blockers_b1.py`, `docs/FETCH_METADATA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

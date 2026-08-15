@@ -31,3 +31,7 @@ Stage 745 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Fetch Metadata Gate, Fetch Metadata Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 745 opened under **ADR-1497** after CONTINUE/NEXT (Tenant MVP Private Network Access Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1498**. Stage 744 feature scope remains frozen.
