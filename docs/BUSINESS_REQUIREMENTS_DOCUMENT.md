@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 849 D1 Purpose Limit Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_849_FIDELITY.md` (`test_stage849_fidelity_d1.py`); Offline Complete / Purpose Limit Gate honesty / go-live still MISSING.
 Stage 848 D1 Automated Decision Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_848_FIDELITY.md` (`test_stage848_fidelity_d1.py`); Offline Complete / Automated Decision Gate honesty / go-live still MISSING.
 Stage 847 D1 Objection Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_847_FIDELITY.md` (`test_stage847_fidelity_d1.py`); Offline Complete / Objection Gate honesty / go-live still MISSING.
 Stage 846 D1 Restriction Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_846_FIDELITY.md` (`test_stage846_fidelity_d1.py`); Offline Complete / Restriction Gate honesty / go-live still MISSING.
