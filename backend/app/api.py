@@ -10568,11 +10568,16 @@ async def receive_transfer(
 @api.post("/stores/transfers/{transfer_id}/cancel")
 async def cancel_transfer(
     transfer_id: str,
+    payload: StockTransferReject | None = None,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.cancel_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        reason=(payload.reason if payload else None),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")
@@ -10714,11 +10719,16 @@ async def inventory_receive_transfer(
 @api.post("/inventory/stock-transfers/{transfer_id}/cancel")
 async def inventory_cancel_transfer(
     transfer_id: str,
+    payload: StockTransferReject | None = None,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     transfer = await stores_svc.cancel_transfer(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        transfer_id=transfer_id,
+        reason=(payload.reason if payload else None),
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")

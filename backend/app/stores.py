@@ -777,11 +777,19 @@ async def receive_transfer(
 
 
 async def cancel_transfer(
-    db: AsyncSession, *, tenant_id: str, user_id: str, transfer_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    reason: str | None = None,
 ) -> m.StockTransfer:
     transfer = await get_transfer(db, tenant_id, transfer_id)
     if transfer.status not in TRANSFER_CANCELLABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel transfer in status {transfer.status}")
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
 
     if transfer.status == "in_transit":
         items = await list_transfer_items(db, tenant_id, transfer_id)
@@ -807,11 +815,13 @@ async def cancel_transfer(
                     quantity_after=before,
                     reference_type="stock_transfer",
                     reference_id=transfer.id,
-                    notes=f"Cancelled {transfer.transfer_number}",
+                    notes=f"Cancelled {transfer.transfer_number}: {reason_s}",
                     created_by=user_id,
                 )
             )
 
     transfer.status = "cancelled"
+    transfer.rejected_by = user_id
+    transfer.rejection_reason = reason_s
     await db.flush()
     return transfer
