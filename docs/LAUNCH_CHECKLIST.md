@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 458 track opened (ADR-923: `test_stage458_open.py`, `docs/STAGE_458_PLAN.md`) — Platform Principal Honesty Pack Remaining-Gate Index; closed under ADR-924
+- [x] Platform Principal honesty pack remaining-gate hub (Stage 458 I1: `test_stage458_index_i1.py`, `docs/PLATFORM_PRINCIPAL_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Platform Principal honesty pack blocker matrix (Stage 458 B1: `test_stage458_blockers_b1.py`, `docs/PLATFORM_PRINCIPAL_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 457 / Stage 456 / Stage 392 / CHANGE_IMPACT pointers (Stage 458 P1: `test_stage458_pointers_p1.py`, `docs/PLATFORM_PRINCIPAL_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 458 fidelity sync (D1: `test_stage458_fidelity_d1.py`, `docs/STAGE_458_FIDELITY.md`)
+- [x] Stage 458 exit + freeze (H458x: `test_stage458_exit_h458x.py`, `docs/STAGE_458_EXIT_CRITERIA.md`, ADR-924)
 - [x] Stage 457 track opened (ADR-921: `test_stage457_open.py`, `docs/STAGE_457_PLAN.md`) — Dual Console Honesty Pack Remaining-Gate Index; closed under ADR-922
 - [x] Dual Console honesty pack remaining-gate hub (Stage 457 I1: `test_stage457_index_i1.py`, `docs/DUAL_CONSOLE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Dual Console honesty pack blocker matrix (Stage 457 B1: `test_stage457_blockers_b1.py`, `docs/DUAL_CONSOLE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

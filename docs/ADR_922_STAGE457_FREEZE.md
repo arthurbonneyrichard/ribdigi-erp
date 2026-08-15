@@ -31,3 +31,9 @@ Stage 458 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Dual Console, Dual Console honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 458 opened under **ADR-923** after CONTINUE/NEXT (Tenant MVP Platform Principal Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-924**. Stage 457 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 457 runner-up outline was approved and opened (ADR-923); freeze ADR-924. Do not reopen Stage 457 scope.
