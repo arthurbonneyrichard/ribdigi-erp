@@ -1,0 +1,77 @@
+{
+  "id": "k8s-deploy-honesty-pack-rg-pointers",
+  "stage": 542,
+  "pack": "P1",
+  "doc": "docs/K8S_DEPLOY_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/K8S_DEPLOY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "language_i18n_honesty_pack_remaining_gate": "docs/LANGUAGE_I18N_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_honesty_pack_remaining_gate": "docs/HARD_DELETE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy_pack_remaining_gate": "docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "k8s_deploy_honesty_complete_claimed": false,
+  "k8s_deploy_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_k8s_deploy_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "language_i18n_honesty_pack_remaining_gate_stage541": "docs/LANGUAGE_I18N_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_honesty_pack_remaining_gate_stage540": "docs/HARD_DELETE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy_pack_remaining_gate": "docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / k8s_deploy / k8s_deploy_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "kdhrp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 K8s Deploy Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdhrp-stage541",
+      "title": "Point to Stage 541 LANGUAGE I18N HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdhrp-stage540",
+      "title": "Point to Stage 540 HARD DELETE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdhrp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdhrp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdhrp-prior-pack",
+      "title": "Point to K8s Deploy Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdhrp-checklist-remaining",
+      "title": "Offline Complete / K8s Deploy / K8s Deploy honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 542 P1 K8s Deploy Honesty Pack RG pointers packaging only."
+}

@@ -31,3 +31,7 @@ Stage 542 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Language I18n, Language I18n honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 542 opened under **ADR-1091** after CONTINUE/NEXT (Tenant MVP K8s Deploy Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1092**. Stage 541 feature scope remains frozen.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 542 track opened (ADR-1091: `test_stage542_open.py`, `docs/STAGE_542_PLAN.md`) — K8s Deploy Honesty Pack Remaining-Gate Index; closed under ADR-1092
+- [x] K8s Deploy Honesty Pack remaining-gate hub (Stage 542 I1: `test_stage542_index_i1.py`, `docs/K8S_DEPLOY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] K8s Deploy Honesty Pack blocker matrix (Stage 542 B1: `test_stage542_blockers_b1.py`, `docs/K8S_DEPLOY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 541 / Stage 540 / Stage 392 / CHANGE_IMPACT pointers (Stage 542 P1: `test_stage542_pointers_p1.py`, `docs/K8S_DEPLOY_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 542 fidelity sync (D1: `test_stage542_fidelity_d1.py`, `docs/STAGE_542_FIDELITY.md`)
+- [x] Stage 542 exit + freeze (H542x: `test_stage542_exit_h542x.py`, `docs/STAGE_542_EXIT_CRITERIA.md`, ADR-1092)
+
 Stage 541 track opened (ADR-1089: `test_stage541_open.py`, `docs/STAGE_541_PLAN.md`) — Language I18n Honesty Pack Remaining-Gate Index; closed under ADR-1090
 - [x] Language I18n Honesty Pack remaining-gate hub (Stage 541 I1: `test_stage541_index_i1.py`, `docs/LANGUAGE_I18N_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Language I18n Honesty Pack blocker matrix (Stage 541 B1: `test_stage541_blockers_b1.py`, `docs/LANGUAGE_I18N_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
