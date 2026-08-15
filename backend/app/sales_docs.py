@@ -263,6 +263,10 @@ async def reject_quotation(db: AsyncSession, tenant_id: str, quotation_id: str) 
     quote = await get_quotation(db, tenant_id, quotation_id)
     if quote.status not in {"draft", "sent"}:
         raise HTTPException(status_code=409, detail=f"Cannot reject quotation in status {quote.status}")
+    if quote.valid_until and quote.valid_until < datetime.utcnow():
+        quote.status = "expired"
+        await db.flush()
+        raise HTTPException(status_code=409, detail="Quotation has expired")
     quote.status = "rejected"
     quote.updated_at = datetime.utcnow()
     await db.flush()

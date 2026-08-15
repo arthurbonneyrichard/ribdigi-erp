@@ -61,29 +61,60 @@ async def test_scan_quotation_expiry_notifies_and_dedupes(client, db_session):
     assert len(notes) == 1
     assert notes[0].title == "Quotation expiring soon"
     assert qnum in (notes[0].message or "")
+    await db_session.refresh(quote)
+    assert quote.status == "draft"  # T−1 window only notifies; does not expire yet
 
     second = await notifications_svc.scan_quotation_expiry(db_session, seed["t1"].id, within_days=1)
     await db_session.commit()
     assert second == 0
 
-    # Past validity → expired title if unread cleared
-    notes[0].status = "read"
+    # Past validity with unread T−1 still open → flip status without a second alert
     quote.valid_until = datetime.utcnow() - timedelta(hours=1)
     await db_session.commit()
 
     third = await notifications_svc.scan_quotation_expiry(db_session, seed["t1"].id, within_days=1)
     await db_session.commit()
-    assert third == 1
+    assert third == 0  # unread T−1 still dedupes notify
+    await db_session.refresh(quote)
+    assert quote.status == "expired"
+
+    # Fresh past-due quote → notify "Quotation expired" + status expired
+    created2 = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "valid_days": 14,
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 10}],
+        },
+    )
+    assert created2.status_code == 200, created2.text
+    qid2 = created2.json()["data"]["id"]
+    quote2 = await db_session.get(m.SalesQuotation, qid2)
+    assert quote2 is not None
+    quote2.status = "sent"
+    quote2.valid_until = datetime.utcnow() - timedelta(days=1)
+    await db_session.commit()
+
+    fourth = await notifications_svc.scan_quotation_expiry(db_session, seed["t1"].id, within_days=1)
+    await db_session.commit()
+    assert fourth == 1
+    await db_session.refresh(quote2)
+    assert quote2.status == "expired"
     titles = (
         await db_session.execute(
             select(m.Notification.title).where(
                 m.Notification.tenant_id == seed["t1"].id,
                 m.Notification.category == "quotation_expiry",
-                m.Notification.entity_id == qid,
+                m.Notification.entity_id == qid2,
             )
         )
     ).scalars().all()
     assert "Quotation expired" in titles
+
+    # Reject of already-expired → 409
+    rejected = await ac.post(f"/api/v1/sales/quotations/{qid2}/reject", headers=headers)
+    assert rejected.status_code == 409
 
     settings = await ac.get("/api/v1/notifications/settings", headers=headers)
     assert settings.status_code == 200
