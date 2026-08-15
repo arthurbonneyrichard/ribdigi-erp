@@ -1,0 +1,77 @@
+{
+  "id": "consent-record-gate-honesty-pack-rg-pointers",
+  "stage": 830,
+  "pack": "P1",
+  "doc": "docs/CONSENT_RECORD_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CONSENT_RECORD_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "double_opt_in_gate_honesty_pack_remaining_gate": "docs/DOUBLE_OPT_IN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "list_hygiene_gate_honesty_pack_remaining_gate": "docs/LIST_HYGIENE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "consent_record_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "consent_record_gate_honesty_complete_claimed": false,
+  "consent_record_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_consent_record_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "double_opt_in_gate_honesty_pack_remaining_gate_stage829": "docs/DOUBLE_OPT_IN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "list_hygiene_gate_honesty_pack_remaining_gate_stage828": "docs/LIST_HYGIENE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "consent_record_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / consent_record_gate / consent_record_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "crghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Consent Record Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghp-stage829",
+      "title": "Point to Stage 829 DOUBLE OPT IN GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghp-stage828",
+      "title": "Point to Stage 828 LIST HYGIENE GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghp-prior-pack",
+      "title": "Point to Consent Record Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghp-checklist-remaining",
+      "title": "Offline Complete / Consent Record Gate / Consent Record Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 830 P1 Consent Record Gate Honesty Pack RG pointers packaging only."
+}
