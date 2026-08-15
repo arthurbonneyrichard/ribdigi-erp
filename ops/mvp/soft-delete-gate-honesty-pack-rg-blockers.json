@@ -1,0 +1,77 @@
+{
+  "id": "soft-delete-gate-honesty-pack-rg-blockers",
+  "stage": 708,
+  "pack": "B1",
+  "doc": "docs/SOFT_DELETE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SOFT_DELETE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "soft_delete_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "soft_delete_gate_honesty_complete_claimed": false,
+  "soft_delete_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "soft_delete_gate_honesty_complete_claimed": "REMAINING",
+    "soft_delete_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_soft_delete_gate_honesty": "NON_CLAIM",
+    "soft_delete_gate_pack_as_soft_delete_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "soft_delete_gate_honesty_complete_claimed_flag": "false",
+    "soft_delete_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "sdghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdghb-honesty",
+      "title": "Mark Soft Delete Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdghb-as-golive",
+      "title": "Mark Soft Delete Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for soft-delete-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdghb-checklist-remaining",
+      "title": "Offline Complete / Soft Delete Gate / Soft Delete Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 708 B1 Soft Delete Gate Honesty Pack RG blocker matrix packaging only."
+}

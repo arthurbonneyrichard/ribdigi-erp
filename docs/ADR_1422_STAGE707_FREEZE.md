@@ -31,3 +31,7 @@ Stage 708 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Migration Lock Gate, Migration Lock Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 708 opened under **ADR-1423** after CONTINUE/NEXT (Tenant MVP Soft Delete Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1424**. Stage 707 feature scope remains frozen.
