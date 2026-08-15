@@ -31,3 +31,7 @@ Stage 844 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Data Portability Gate, Data Portability Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 844 opened under **ADR-1695** after CONTINUE/NEXT (Tenant MVP Access Request Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1696**. Stage 843 feature scope remains frozen.

@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 844 D1 Access Request Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_844_FIDELITY.md` (`test_stage844_fidelity_d1.py`); Offline Complete / Access Request Gate honesty / go-live still MISSING.
 Stage 843 D1 Data Portability Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_843_FIDELITY.md` (`test_stage843_fidelity_d1.py`); Offline Complete / Data Portability Gate honesty / go-live still MISSING.
 Stage 842 D1 Right To Erasure Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_842_FIDELITY.md` (`test_stage842_fidelity_d1.py`); Offline Complete / Right To Erasure Gate honesty / go-live still MISSING.
 Stage 841 D1 Global Stop Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_841_FIDELITY.md` (`test_stage841_fidelity_d1.py`); Offline Complete / Global Stop Gate honesty / go-live still MISSING.
