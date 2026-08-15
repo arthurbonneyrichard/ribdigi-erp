@@ -21,6 +21,7 @@ export default function Page() {
   const [statements, setStatements] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
+  const [chequeActionReason, setChequeActionReason] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
   type ManualLine = { account_code: string; debit: string; credit: string };
@@ -676,8 +677,23 @@ export default function Page() {
   async function chequeAction(id: string, action: 'deposit' | 'clear' | 'bounce' | 'cancel') {
     setError('');
     setMessage('');
+    if (action === 'bounce' || action === 'cancel') {
+      const reason = chequeActionReason.trim();
+      if (!reason) {
+        setError(`Enter a reason before ${action === 'bounce' ? 'bouncing' : 'cancelling'} a cheque`);
+        return;
+      }
+    }
     try {
-      await api(`/accounting/cheques/${id}/${action}`, { method: 'POST' });
+      const reason = chequeActionReason.trim();
+      const qs =
+        (action === 'bounce' || action === 'cancel') && reason
+          ? `?reason=${encodeURIComponent(reason)}`
+          : '';
+      await api(`/accounting/cheques/${id}/${action}${qs}`, { method: 'POST' });
+      if (action === 'bounce' || action === 'cancel') {
+        setChequeActionReason('');
+      }
       setMessage(`Cheque ${action} ok`);
       await refresh();
     } catch (err: any) {
@@ -1780,6 +1796,20 @@ export default function Page() {
             Received cheques post to 1020 then deposit/clear to Bank. Issued cheques post to 2015 until
             cleared against Bank.
           </p>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Bounce / Cancel reason{' '}
+              <input
+                value={chequeActionReason}
+                onChange={(e) => setChequeActionReason(e.target.value)}
+                placeholder="Required before Bounce or Cancel"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Appended to cheque notes and journal description (`?reason=` on bounce/cancel).
+            </p>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -1788,6 +1818,7 @@ export default function Page() {
                 <th>Status</th>
                 <th>Amount</th>
                 <th>Bank</th>
+                <th>Notes</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1799,6 +1830,9 @@ export default function Page() {
                   <td>{c.status}</td>
                   <td>{c.amount}</td>
                   <td>{c.bank_name || '—'}</td>
+                  <td className="muted" style={{ maxWidth: 240, whiteSpace: 'pre-wrap' }}>
+                    {c.notes || '—'}
+                  </td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {c.direction === 'received' && c.status === 'pending' && (
                       <button onClick={() => chequeAction(c.id, 'deposit')}>Deposit</button>
@@ -1817,7 +1851,7 @@ export default function Page() {
               ))}
               {!cheques.length && (
                 <tr>
-                  <td colSpan={6} className="muted">
+                  <td colSpan={7} className="muted">
                     No cheques — record a customer/supplier payment with method cheque
                   </td>
                 </tr>
