@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 920 track opened (ADR-1847: `test_stage920_open.py`, `docs/STAGE_920_PLAN.md`) — Transfer Locale Gate Honesty Pack Remaining-Gate Index; closed under ADR-1848
+- [x] Transfer Locale Gate Honesty Pack remaining-gate hub (Stage 920 I1: `test_stage920_index_i1.py`, `docs/TRANSFER_LOCALE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Locale Gate Honesty Pack blocker matrix (Stage 920 B1: `test_stage920_blockers_b1.py`, `docs/TRANSFER_LOCALE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 919 / Stage 918 / Stage 392 / CHANGE_IMPACT pointers (Stage 920 P1: `test_stage920_pointers_p1.py`, `docs/TRANSFER_LOCALE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 920 fidelity sync (D1: `test_stage920_fidelity_d1.py`, `docs/STAGE_920_FIDELITY.md`)
+- [x] Stage 920 exit + freeze (H920x: `test_stage920_exit_h920x.py`, `docs/STAGE_920_EXIT_CRITERIA.md`, ADR-1848)
+
 Stage 919 track opened (ADR-1845: `test_stage919_open.py`, `docs/STAGE_919_PLAN.md`) — Transfer Jurisdiction Gate Honesty Pack Remaining-Gate Index; closed under ADR-1846
 - [x] Transfer Jurisdiction Gate Honesty Pack remaining-gate hub (Stage 919 I1: `test_stage919_index_i1.py`, `docs/TRANSFER_JURISDICTION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Jurisdiction Gate Honesty Pack blocker matrix (Stage 919 B1: `test_stage919_blockers_b1.py`, `docs/TRANSFER_JURISDICTION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

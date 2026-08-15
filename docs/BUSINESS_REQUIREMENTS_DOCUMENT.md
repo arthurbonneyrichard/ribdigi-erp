@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 920 D1 Transfer Locale Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_920_FIDELITY.md` (`test_stage920_fidelity_d1.py`); Offline Complete / Transfer Locale Gate honesty / go-live still MISSING.
 Stage 919 D1 Transfer Jurisdiction Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_919_FIDELITY.md` (`test_stage919_fidelity_d1.py`); Offline Complete / Transfer Jurisdiction Gate honesty / go-live still MISSING.
 Stage 918 D1 Transfer Boundary Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_918_FIDELITY.md` (`test_stage918_fidelity_d1.py`); Offline Complete / Transfer Boundary Gate honesty / go-live still MISSING.
 Stage 917 D1 Transfer Scope Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_917_FIDELITY.md` (`test_stage917_fidelity_d1.py`); Offline Complete / Transfer Scope Gate honesty / go-live still MISSING.
