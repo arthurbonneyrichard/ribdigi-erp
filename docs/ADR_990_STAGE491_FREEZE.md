@@ -31,3 +31,10 @@ Stage 492 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Synchronizing Status, Synchronizing Status honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 492 opened under **ADR-991** after CONTINUE/NEXT (Tenant MVP Offline Online Status Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-992**. Stage 491 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 491 runner-up outline was approved and opened (ADR-991); freeze ADR-992. Do not reopen Stage 491 scope.
+
