@@ -31,3 +31,7 @@ Stage 552 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, E2E Sale Payment, E2E Sale Payment honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 552 opened under **ADR-1111** after CONTINUE/NEXT (Tenant MVP E2E Users RBAC Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1112**. Stage 551 feature scope remains frozen.
