@@ -1844,6 +1844,8 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 478 D1 Device Offline Registry Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_478_FIDELITY.md` (`test_stage478_fidelity_d1.py`); exit ADR-964 / `test_stage478_exit_h478x.py`. Honesty: Offline Complete / Device Offline Registry honesty / go-live Completes remain MISSING.
+
 Stage 477 D1 Offline Payment Rules Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_477_FIDELITY.md` (`test_stage477_fidelity_d1.py`); exit ADR-962 / `test_stage477_exit_h477x.py`. Honesty: Offline Complete / Payment Rules honesty / go-live Completes remain MISSING.
 
 Stage 476 D1 Offline Price Version Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_476_FIDELITY.md` (`test_stage476_fidelity_d1.py`); exit ADR-960 / `test_stage476_exit_h476x.py`. Honesty: Offline Complete / Price Version honesty / go-live Completes remain MISSING.

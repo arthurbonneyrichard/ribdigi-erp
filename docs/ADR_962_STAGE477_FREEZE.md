@@ -31,3 +31,10 @@ Stage 478 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Payment Rules, Payment Rules honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 478 opened under **ADR-963** after CONTINUE/NEXT (Tenant MVP Device Offline Registry Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-964**. Stage 477 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 477 runner-up outline was approved and opened (ADR-963); freeze ADR-964. Do not reopen Stage 477 scope.
+

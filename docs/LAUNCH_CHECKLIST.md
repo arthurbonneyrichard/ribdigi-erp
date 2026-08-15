@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 478 track opened (ADR-963: `test_stage478_open.py`, `docs/STAGE_478_PLAN.md`) — Device Offline Registry Honesty Pack Remaining-Gate Index; closed under ADR-964
+- [x] Device Offline Registry honesty pack remaining-gate hub (Stage 478 I1: `test_stage478_index_i1.py`, `docs/DEVICE_OFFLINE_REGISTRY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Device Offline Registry honesty pack blocker matrix (Stage 478 B1: `test_stage478_blockers_b1.py`, `docs/DEVICE_OFFLINE_REGISTRY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 477 / Stage 476 / Stage 392 / CHANGE_IMPACT pointers (Stage 478 P1: `test_stage478_pointers_p1.py`, `docs/DEVICE_OFFLINE_REGISTRY_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 478 fidelity sync (D1: `test_stage478_fidelity_d1.py`, `docs/STAGE_478_FIDELITY.md`)
+- [x] Stage 478 exit + freeze (H478x: `test_stage478_exit_h478x.py`, `docs/STAGE_478_EXIT_CRITERIA.md`, ADR-964)
+
 Stage 477 track opened (ADR-961: `test_stage477_open.py`, `docs/STAGE_477_PLAN.md`) — Offline Payment Rules Honesty Pack Remaining-Gate Index; closed under ADR-962
 - [x] Offline Payment Rules honesty pack remaining-gate hub (Stage 477 I1: `test_stage477_index_i1.py`, `docs/OFFLINE_PAYMENT_RULES_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline Payment Rules honesty pack blocker matrix (Stage 477 B1: `test_stage477_blockers_b1.py`, `docs/OFFLINE_PAYMENT_RULES_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

@@ -1694,6 +1694,8 @@ Stage 311 D1 Service Credit Warranty Pack Remaining-Gate Index fidelity — `doc
 Stage 312 D1 Status Uptime Pack Remaining-Gate Index fidelity — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); `docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md` / `docs/STATUS_UPTIME_PACK_RG_BLOCKERS_MVP.md` / `docs/STATUS_UPTIME_PACK_RG_POINTERS_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 313 D1 Commercial Liability Pack Remaining-Gate Index fidelity — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); `docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md` / `docs/COMMERCIAL_LIABILITY_PACK_RG_BLOCKERS_MVP.md` / `docs/COMMERCIAL_LIABILITY_PACK_RG_POINTERS_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).
 Stage 314 D1 SBOM Disclosure Pack Remaining-Gate Index fidelity — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` / `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` / `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`; main `ci.yml` remains deploy-free (Stage 18 C1).
+Stage 478 D1 Device Offline Registry Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_478_FIDELITY.md` (packaging; Offline Complete / Device Offline Registry honesty / go-live still MISSING).
+
 Stage 477 D1 Offline Payment Rules Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_477_FIDELITY.md` (packaging; Offline Complete / Payment Rules honesty / go-live still MISSING).
 
 Stage 476 D1 Offline Price Version Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_476_FIDELITY.md` (packaging; Offline Complete / Price Version honesty / go-live still MISSING).
