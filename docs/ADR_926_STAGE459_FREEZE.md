@@ -31,3 +31,9 @@ Stage 460 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Shared Schema Tenancy, Shared Schema Tenancy honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 460 opened under **ADR-927** after CONTINUE/NEXT (Tenant MVP Schema-per-Tenant Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-928**. Stage 459 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 459 runner-up outline was approved and opened (ADR-927); freeze ADR-928. Do not reopen Stage 459 scope.

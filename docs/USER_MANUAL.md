@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 460 Schema-per-Tenant Honesty Pack remaining-gate — `docs/SCHEMA_PER_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/SCHEMA_PER_TENANT_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; `SCHEMA_PER_TENANT_*` ≠ schema-per-tenant / go-live Completes).
 Stage 459 Shared Schema Tenancy Honesty Pack remaining-gate — `docs/SHARED_SCHEMA_TENANCY_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/SHARED_SCHEMA_TENANCY_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; `SHARED_SCHEMA_TENANCY_PACK_*` ≠ shared-schema / go-live Completes).
 Stage 458 Platform Principal Honesty Pack remaining-gate — `docs/PLATFORM_PRINCIPAL_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/PLATFORM_PRINCIPAL_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; `PLATFORM_PRINCIPAL_PACK_*` ≠ platform-principal / go-live Completes).
 Stage 457 Dual Console Honesty Pack remaining-gate — `docs/DUAL_CONSOLE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/DUAL_CONSOLE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; `DUAL_CONSOLE_PACK_*` ≠ dual-console / go-live Completes).
