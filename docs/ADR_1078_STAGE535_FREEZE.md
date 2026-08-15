@@ -31,3 +31,7 @@ Stage 536 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Incident, Incident honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 536 opened under **ADR-1079** after CONTINUE/NEXT (Tenant MVP Loadtest Baseline Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1080**. Stage 535 feature scope remains frozen.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 536 track opened (ADR-1079: `test_stage536_open.py`, `docs/STAGE_536_PLAN.md`) — Loadtest Baseline Honesty Pack Remaining-Gate Index; closed under ADR-1080
+- [x] Loadtest Baseline Honesty Pack remaining-gate hub (Stage 536 I1: `test_stage536_index_i1.py`, `docs/LOADTEST_BASELINE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Loadtest Baseline Honesty Pack blocker matrix (Stage 536 B1: `test_stage536_blockers_b1.py`, `docs/LOADTEST_BASELINE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 535 / Stage 534 / Stage 392 / CHANGE_IMPACT pointers (Stage 536 P1: `test_stage536_pointers_p1.py`, `docs/LOADTEST_BASELINE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 536 fidelity sync (D1: `test_stage536_fidelity_d1.py`, `docs/STAGE_536_FIDELITY.md`)
+- [x] Stage 536 exit + freeze (H536x: `test_stage536_exit_h536x.py`, `docs/STAGE_536_EXIT_CRITERIA.md`, ADR-1080)
+
 Stage 535 track opened (ADR-1077: `test_stage535_open.py`, `docs/STAGE_535_PLAN.md`) — Incident Honesty Pack Remaining-Gate Index; closed under ADR-1078
 - [x] Incident Honesty Pack remaining-gate hub (Stage 535 I1: `test_stage535_index_i1.py`, `docs/INCIDENT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Incident Honesty Pack blocker matrix (Stage 535 B1: `test_stage535_blockers_b1.py`, `docs/INCIDENT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
