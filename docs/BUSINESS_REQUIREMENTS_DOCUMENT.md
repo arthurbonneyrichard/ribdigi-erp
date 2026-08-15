@@ -822,7 +822,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] **Dashboard:** In-app notification bell with badge count (Shell dropdown panel + unread badge; `/notifications` center)
-  - [ ] **Email:** SMTP integration; HTML email templates (SMTP + tenant overrides shipped; branded HTML templates still open)
+  - [x] **Email:** SMTP integration; HTML email templates (`emailer.render_branded_html` wraps outbound HTML with company name, optional logo + print header/footer; tenant SMTP overrides; console fallback in dev)
   - [x] **SMS:** SMS gateway integration (Twilio, regional providers) (`GET|PATCH /settings/sms` tenant Twilio overrides → env `TWILIO_*` → console; `POST /settings/sms/test`; auth token encrypted; notifications + POS receipt SMS use tenant config)
   - [x] User preference for channel per notification type (`GET|PATCH /notifications/settings`; dashboard/email/sms toggles per category)
 

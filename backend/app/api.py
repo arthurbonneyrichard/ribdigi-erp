@@ -6913,11 +6913,20 @@ async def pos_receipt_send(
         if not recipient:
             raise HTTPException(status_code=400, detail="No email recipient")
         tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+        import html as html_lib
+
+        inner = f'<pre style="font-family:monospace;white-space:pre-wrap;">{html_lib.escape(text)}</pre>'
+        branded = emailer.render_branded_html(
+            body_html=inner,
+            company_name=getattr(tenant, "company_name", None),
+            tenant=tenant,
+            title=f"Receipt {receipt['reference']}",
+        )
         result = await emailer.send_email(
             to=recipient,
             subject=f"Receipt {receipt['reference']}",
             text_body=text,
-            html_body=f"<pre style=\"font-family:monospace\">{text}</pre>",
+            html_body=branded,
             tenant=tenant,
         )
         await db.commit()
