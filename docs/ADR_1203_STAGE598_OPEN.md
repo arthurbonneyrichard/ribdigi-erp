@@ -15,7 +15,7 @@ Open **Stage 598 — Tenant MVP Support Escalation Honesty Pack Remaining-Gate I
 | Pack | Scope |
 |------|--------|
 | **I1** | Support Escalation Honesty Pack remaining-gate index hub |
-| **B1** | Blocker matrix — `offline_complete_claimed` / `support_escalation_honesty_complete_claimed` / `support_escalation_as_golive_complete_claimed` / `go_live_claimed` / `attestation_claimed` false; Stage 392 / CHANGE_IMPACT §5 / `SUPPORT_ESCALATION_*` ≠ support-escalation / go-live Completes |
+| **B1** | Blocker matrix — `offline_complete_claimed` / `support_escalation_honesty_complete_claimed` / `support_escalation_as_golive_complete_claimed` / `go_live_claimed` / `attestation_claimed` false; Stage 392 / CHANGE_IMPACT §5 / `SUPPORT_READINESS_PACK_*` ≠ support-escalation / go-live Completes |
 | **P1** | Pack pointers — Stage 597 / Stage 596 / Stage 392 / CHANGE_IMPACT adjacency |
 | **D1 / H598x** | Fidelity cite sync + Stage 598 exit; freeze as **ADR-1204** |
 
