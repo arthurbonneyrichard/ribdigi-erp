@@ -31,3 +31,7 @@ Stage 848 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Objection Gate, Objection Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 848 opened under **ADR-1703** after CONTINUE/NEXT (Tenant MVP Automated Decision Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1704**. Stage 847 feature scope remains frozen.
