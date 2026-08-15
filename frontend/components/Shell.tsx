@@ -541,15 +541,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
       <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
-        <div className="brand">
-          <img
-            className="brand-logo"
-            src="/brand/logo-sidebar.png"
-            alt="RIBDIGI ERP — Run your business smarter"
-            width={140}
-            height={36}
-          />
-        </div>
         {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
         <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
           {visible.map(([n, h, module]) => {

@@ -63,10 +63,10 @@ function VerifyEmailForm() {
         <div className="login-brand">
           <img
             className="login-logo"
-            src="/brand/logo-sidebar.png"
+            src="/brand/logo-full.png"
             alt="RIBDIGI ERP — Run your business smarter"
-            width={200}
-            height={52}
+            width={320}
+            height={195}
           />
         </div>
 
