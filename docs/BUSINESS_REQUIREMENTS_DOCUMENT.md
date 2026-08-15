@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 836 D1 SMS Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_836_FIDELITY.md` (`test_stage836_fidelity_d1.py`); Offline Complete / SMS Opt Out Gate honesty / go-live still MISSING.
 Stage 835 D1 Channel Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_835_FIDELITY.md` (`test_stage835_fidelity_d1.py`); Offline Complete / Channel Opt Out Gate honesty / go-live still MISSING.
 Stage 834 D1 Quiet Hours Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_834_FIDELITY.md` (`test_stage834_fidelity_d1.py`); Offline Complete / Quiet Hours Gate honesty / go-live still MISSING.
 Stage 833 D1 Frequency Cap Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_833_FIDELITY.md` (`test_stage833_fidelity_d1.py`); Offline Complete / Frequency Cap Gate honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 836 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Channel Opt Out Gate, Channel Opt Out Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 836 opened under **ADR-1679** after CONTINUE/NEXT (Tenant MVP SMS Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1680**. Stage 835 feature scope remains frozen.

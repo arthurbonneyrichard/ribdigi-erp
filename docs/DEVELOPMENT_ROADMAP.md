@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 836 D1 (2026-08-14):** SMS Opt Out Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_836_FIDELITY.md` (`test_stage836_fidelity_d1.py`). Open ADR: `docs/ADR_1679_STAGE836_OPEN.md`; plan `docs/STAGE_836_PLAN.md`.
+
+**Stage 836 exit (2026-08-14):** I1, B1, P1, D1, H836x met — `docs/STAGE_836_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1680_STAGE836_FREEZE.md`. Fidelity: `docs/STAGE_836_FIDELITY.md`.
+
 **Stage 835 D1 (2026-08-14):** Channel Opt Out Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_835_FIDELITY.md` (`test_stage835_fidelity_d1.py`). Open ADR: `docs/ADR_1677_STAGE835_OPEN.md`; plan `docs/STAGE_835_PLAN.md`.
 
 **Stage 835 exit (2026-08-14):** I1, B1, P1, D1, H835x met — `docs/STAGE_835_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1678_STAGE835_FREEZE.md`. Fidelity: `docs/STAGE_835_FIDELITY.md`.
