@@ -31,3 +31,7 @@ Stage 527 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Data Retention Return, Data Retention Return honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 527 opened under **ADR-1061** after CONTINUE/NEXT (Tenant MVP Cyber Insurance Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1062**. Stage 526 feature scope remains frozen.

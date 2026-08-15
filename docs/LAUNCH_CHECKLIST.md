@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 527 track opened (ADR-1061: `test_stage527_open.py`, `docs/STAGE_527_PLAN.md`) — Cyber Insurance Honesty Pack Remaining-Gate Index; closed under ADR-1062
+- [x] Cyber Insurance Honesty Pack remaining-gate hub (Stage 527 I1: `test_stage527_index_i1.py`, `docs/CYBER_INSURANCE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Cyber Insurance Honesty Pack blocker matrix (Stage 527 B1: `test_stage527_blockers_b1.py`, `docs/CYBER_INSURANCE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 526 / Stage 525 / Stage 392 / CHANGE_IMPACT pointers (Stage 527 P1: `test_stage527_pointers_p1.py`, `docs/CYBER_INSURANCE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 527 fidelity sync (D1: `test_stage527_fidelity_d1.py`, `docs/STAGE_527_FIDELITY.md`)
+- [x] Stage 527 exit + freeze (H527x: `test_stage527_exit_h527x.py`, `docs/STAGE_527_EXIT_CRITERIA.md`, ADR-1062)
+
 Stage 526 track opened (ADR-1059: `test_stage526_open.py`, `docs/STAGE_526_PLAN.md`) — Data Retention Return Honesty Pack Remaining-Gate Index; closed under ADR-1060
 - [x] Data Retention Return Honesty Pack remaining-gate hub (Stage 526 I1: `test_stage526_index_i1.py`, `docs/DATA_RETENTION_RETURN_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Data Retention Return Honesty Pack blocker matrix (Stage 526 B1: `test_stage526_blockers_b1.py`, `docs/DATA_RETENTION_RETURN_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

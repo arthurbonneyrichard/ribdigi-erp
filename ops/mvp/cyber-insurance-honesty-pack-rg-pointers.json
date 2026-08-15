@@ -1,0 +1,77 @@
+{
+  "id": "cyber-insurance-honesty-pack-rg-pointers",
+  "stage": 527,
+  "pack": "P1",
+  "doc": "docs/CYBER_INSURANCE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CYBER_INSURANCE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "data_retention_return_honesty_pack_remaining_gate": "docs/DATA_RETENTION_RETURN_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "data_residency_honesty_pack_remaining_gate": "docs/DATA_RESIDENCY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "cyber_insurance_pack_remaining_gate": "docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "cyber_insurance_honesty_complete_claimed": false,
+  "cyber_insurance_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_cyber_insurance_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "data_retention_return_honesty_pack_remaining_gate_stage526": "docs/DATA_RETENTION_RETURN_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "data_residency_honesty_pack_remaining_gate_stage525": "docs/DATA_RESIDENCY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "cyber_insurance_pack_remaining_gate": "docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / cyber_insurance / cyber_insurance_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "cihrp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Cyber Insurance Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cihrp-stage526",
+      "title": "Point to Stage 526 DATA RETENTION RETURN HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cihrp-stage525",
+      "title": "Point to Stage 525 DATA RESIDENCY HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cihrp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cihrp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cihrp-prior-pack",
+      "title": "Point to Cyber Insurance Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cihrp-checklist-remaining",
+      "title": "Offline Complete / Cyber Insurance / Cyber Insurance honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 527 P1 Cyber Insurance Honesty Pack RG pointers packaging only."
+}
