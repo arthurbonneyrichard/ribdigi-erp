@@ -946,7 +946,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Pagination for list endpoints
   - [x] Versioning (/api/v1/)
   - [x] OpenAPI/Swagger documentation auto-generated
-  - [x] Webhook support for event subscriptions (Integrations UI: create/test/rotate/disable/delete; delivery history `GET /webhooks/{id}/deliveries` + manual `POST .../deliveries/{id}/retry`; Celery `retry_due_webhooks`; live emits `sale.created`/`sale.paid`/`customer.created`/`purchase.order.created`/`purchase.grn.received`/`expense.approved`/`stock.low`/`webhook.test`; subscriber HMAC verify samples API docs §17.4 + Integrations **Verify signature**)
+  - [x] Webhook support for event subscriptions (Integrations UI: create/test/rotate/disable/delete; delivery history `GET /webhooks/{id}/deliveries` + manual `POST .../deliveries/{id}/retry`; Celery `retry_due_webhooks`; live emits `sale.created`/`sale.paid`/`customer.created`/`purchase.order.created`/`purchase.grn.received`/`expense.approved`/`stock.low`/`stock.in` (non-GRN inbound)/`webhook.test`; subscriber HMAC verify samples API docs §17.4 + Integrations **Verify signature**)
 
 ---
 

@@ -142,3 +142,94 @@ async def test_purchase_order_created_webhook(client, monkeypatch):
     )
     assert po.status_code == 200, po.text
     assert "purchase.order.created" in events
+
+
+@pytest.mark.asyncio
+async def test_stock_in_webhook_skips_grn(client, db_session, monkeypatch):
+    """Manual stock-in emits stock.in; GRN emits purchase.grn.received only (no double fan-out)."""
+    from app import models as m
+
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    events: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        events.append(__import__("json").loads(request.content.decode()).get("event"))
+        return httpx.Response(200, json={"ok": True})
+
+    original = webhooks_svc._deliver_http
+
+    async def _mock(*, url, body, signature_header, timeout=10.0, transport=None):
+        return await original(
+            url=url,
+            body=body,
+            signature_header=signature_header,
+            timeout=timeout,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(webhooks_svc, "_deliver_http", _mock)
+
+    await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={
+            "url": "https://hooks.example.com/stock",
+            "events": ["stock.in", "purchase.grn.received"],
+        },
+    )
+
+    stock = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers,
+        json={
+            "product_id": seed["p1"].id,
+            "quantity": 3,
+            "notes": "webhook stock.in proof",
+        },
+    )
+    assert stock.status_code == 200, stock.text
+    assert "stock.in" in events
+    assert events.count("stock.in") == 1
+
+    events.clear()
+    supplier = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "StockIn Skip GRN Vendor", "code": "WH-GRN-SKIP-1"},
+    )
+    assert supplier.status_code == 200, supplier.text
+    supplier_id = supplier.json()["data"]["id"]
+    po = await ac.post(
+        "/api/v1/purchasing/orders",
+        headers=headers,
+        json={
+            "supplier_id": supplier_id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 4}],
+        },
+    )
+    assert po.status_code == 200, po.text
+    po_id = po.json()["data"]["id"]
+    po_item_id = po.json()["data"]["items"][0]["id"]
+    po_row = await db_session.get(m.PurchaseOrder, po_id)
+    po_row.status = "sent"
+    await db_session.commit()
+
+    grn = await ac.post(
+        "/api/v1/purchasing/grn",
+        headers=headers,
+        json={
+            "purchase_order_id": po_id,
+            "items": [
+                {
+                    "po_item_id": po_item_id,
+                    "received_qty": 2,
+                    "accepted_qty": 2,
+                    "rejected_qty": 0,
+                }
+            ],
+        },
+    )
+    assert grn.status_code == 200, grn.text
+    assert "purchase.grn.received" in events
+    assert "stock.in" not in events
