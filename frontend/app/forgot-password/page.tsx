@@ -3,41 +3,44 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '../../lib/api';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
-function ResetPasswordForm() {
+function ForgotPasswordForm() {
   const params = useSearchParams();
-  const router = useRouter();
-  const [token, setToken] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [tenant, setTenant] = useState('');
+  const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [debugToken, setDebugToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const t = params.get('token');
-    if (t) setToken(t);
+    const t = params.get('tenant');
+    const e = params.get('email');
+    if (t) setTenant(t);
+    if (e) setEmail(e);
   }, [params]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setMessage('');
-    if (password !== confirm) {
-      setError('Passwords do not match');
-      return;
-    }
+    setDebugToken('');
     setSubmitting(true);
     try {
-      const r = await api('/auth/password-reset', {
+      const r = await api('/auth/password-reset-request', {
         method: 'POST',
-        body: JSON.stringify({ token, new_password: password }),
+        body: JSON.stringify({ email, tenant_id: tenant }),
       });
-      setMessage(r.message || 'Password updated — you can sign in now');
-      setTimeout(() => router.push('/'), 1200);
+      setMessage(
+        r.message ||
+          'If the account exists, a reset link was sent. Check your email (or console mail in development).'
+      );
+      if (r.data?.reset_token) {
+        setDebugToken(String(r.data.reset_token));
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Unable to request password reset');
     } finally {
       setSubmitting(false);
     }
@@ -62,54 +65,42 @@ function ResetPasswordForm() {
           />
         </div>
 
-        <h1 className="login-heading">Reset password</h1>
+        <h1 className="login-heading">Forgot password</h1>
         <p className="login-hint" style={{ marginBottom: 12 }}>
-          Choose a strong password (8+ chars, mixed case, number, and symbol).
+          Enter your workspace and email. If an account matches, we send a one-hour reset link.
         </p>
 
         <form className="login-form" onSubmit={submit}>
-          {!params.get('token') && (
-            <label className="login-field">
-              <span>Reset token</span>
-              <input
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="Paste token from email"
-                required
-              />
-            </label>
-          )}
           <label className="login-field">
-            <span>New password</span>
+            <span>Workspace</span>
             <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="New password"
-              autoComplete="new-password"
+              value={tenant}
+              onChange={(e) => setTenant(e.target.value)}
+              placeholder="Tenant slug or ID"
+              autoComplete="organization"
               required
             />
           </label>
           <label className="login-field">
-            <span>Confirm password</span>
+            <span>Email</span>
             <input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="Confirm new password"
-              autoComplete="new-password"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              type="email"
+              autoComplete="username"
               required
             />
           </label>
+
           <button className="login-primary" type="submit" disabled={submitting}>
-            {submitting ? 'Updating…' : 'Update password'}
+            {submitting ? 'Sending…' : 'Send reset link'}
           </button>
-          <Link className="login-ghost" href="/forgot-password" style={{ display: 'block', textAlign: 'center' }}>
-            Request a new link
-          </Link>
+
           <Link className="login-ghost" href="/" style={{ display: 'block', textAlign: 'center' }}>
             Back to sign in
           </Link>
+
           {error && (
             <p className="login-error" role="alert">
               {error}
@@ -120,6 +111,14 @@ function ResetPasswordForm() {
               {message}
             </p>
           )}
+          {debugToken && (
+            <p className="login-hint">
+              Dev reset link:{' '}
+              <Link href={`/reset-password?token=${encodeURIComponent(debugToken)}`}>
+                Open reset form
+              </Link>
+            </p>
+          )}
         </form>
 
         <p className="login-foot">A Ribdigi House Product</p>
@@ -128,19 +127,19 @@ function ResetPasswordForm() {
   );
 }
 
-export default function Page() {
+export default function ForgotPasswordPage() {
   return (
     <Suspense
       fallback={
         <div className="login-stage">
           <div className="login">
-            <h1 className="login-heading">Reset password</h1>
+            <h1 className="login-heading">Forgot password</h1>
             <p className="login-hint">Loading…</p>
           </div>
         </div>
       }
     >
-      <ResetPasswordForm />
+      <ForgotPasswordForm />
     </Suspense>
   );
 }

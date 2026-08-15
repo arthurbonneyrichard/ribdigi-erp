@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -189,6 +190,13 @@ export default function Login() {
                   required
                 />
               </label>
+              <p className="login-forgot">
+                <Link
+                  href={`/forgot-password${tenant ? `?tenant=${encodeURIComponent(tenant)}` : ''}${email ? `${tenant ? '&' : '?'}email=${encodeURIComponent(email)}` : ''}`}
+                >
+                  Forgot password?
+                </Link>
+              </p>
             </>
           )}
 

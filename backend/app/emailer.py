@@ -227,7 +227,7 @@ async def send_verification_email(*, to: str, token: str, company_name: str | No
     return await send_email(to=to, subject=subject, text_body=text, html_body=html)
 
 
-async def send_password_reset_email(*, to: str, token: str) -> EmailResult:
+async def send_password_reset_email(*, to: str, token: str, tenant: Any | None = None) -> EmailResult:
     link = password_reset_link(token)
     subject = "Reset your RIBDIGI ERP password"
     text = (
@@ -240,7 +240,7 @@ async def send_password_reset_email(*, to: str, token: str) -> EmailResult:
         f"<p><a href=\"{link}\">Reset password</a></p>"
         f"<p>Or paste: {link}</p>"
     )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html, tenant=tenant)
 
 
 async def send_notification_email(

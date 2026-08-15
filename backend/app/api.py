@@ -1765,7 +1765,10 @@ async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession
         await db.commit()
         from app import emailer
 
-        email_result = await emailer.send_password_reset_email(to=user.email, token=raw)
+        tenant = await db.get(m.Tenant, tenant_id)
+        email_result = await emailer.send_password_reset_email(
+            to=user.email, token=raw, tenant=tenant
+        )
         data["email"] = {
             "sent": email_result.sent,
             "mode": email_result.mode,
