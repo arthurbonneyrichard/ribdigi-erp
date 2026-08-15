@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 440 D1 Commercial DPA Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_440_FIDELITY.md` (`test_stage440_fidelity_d1.py`); Offline Complete / Commercial DPA honesty / go-live still MISSING.
 Stage 439 D1 Commercial Terms Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_439_FIDELITY.md` (`test_stage439_fidelity_d1.py`); Offline Complete / Commercial Terms honesty / go-live still MISSING.
 Stage 438 D1 Commercial Status Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_438_FIDELITY.md` (`test_stage438_fidelity_d1.py`); Offline Complete / Commercial Status honesty / go-live still MISSING.
 Stage 437 D1 Commercial Support Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_437_FIDELITY.md` (`test_stage437_fidelity_d1.py`); Offline Complete / Commercial Support honesty / go-live still MISSING.
