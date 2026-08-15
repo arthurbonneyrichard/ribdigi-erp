@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 712 track opened (ADR-1431: `test_stage712_open.py`, `docs/STAGE_712_PLAN.md`) — Unique Constraint Gate Honesty Pack Remaining-Gate Index; closed under ADR-1432
+- [x] Unique Constraint Gate Honesty Pack remaining-gate hub (Stage 712 I1: `test_stage712_index_i1.py`, `docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Unique Constraint Gate Honesty Pack blocker matrix (Stage 712 B1: `test_stage712_blockers_b1.py`, `docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 711 / Stage 710 / Stage 392 / CHANGE_IMPACT pointers (Stage 712 P1: `test_stage712_pointers_p1.py`, `docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 712 fidelity sync (D1: `test_stage712_fidelity_d1.py`, `docs/STAGE_712_FIDELITY.md`)
+- [x] Stage 712 exit + freeze (H712x: `test_stage712_exit_h712x.py`, `docs/STAGE_712_EXIT_CRITERIA.md`, ADR-1432)
+
 Stage 711 track opened (ADR-1429: `test_stage711_open.py`, `docs/STAGE_711_PLAN.md`) — Foreign Key Cascade Gate Honesty Pack Remaining-Gate Index; closed under ADR-1430
 - [x] Foreign Key Cascade Gate Honesty Pack remaining-gate hub (Stage 711 I1: `test_stage711_index_i1.py`, `docs/FOREIGN_KEY_CASCADE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Foreign Key Cascade Gate Honesty Pack blocker matrix (Stage 711 B1: `test_stage711_blockers_b1.py`, `docs/FOREIGN_KEY_CASCADE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

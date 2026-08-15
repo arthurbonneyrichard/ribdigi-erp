@@ -31,3 +31,7 @@ Stage 712 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Foreign Key Cascade Gate, Foreign Key Cascade Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 712 opened under **ADR-1431** after CONTINUE/NEXT (Tenant MVP Unique Constraint Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1432**. Stage 711 feature scope remains frozen.

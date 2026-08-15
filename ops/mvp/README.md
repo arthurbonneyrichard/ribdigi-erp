@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/unique-constraint-gate-honesty-pack-remaining-gate.json` — Stage 712 I1
+- `docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/unique-constraint-gate-honesty-pack-rg-blockers.json` — Stage 712 B1
+- `docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/unique-constraint-gate-honesty-pack-rg-pointers.json` — Stage 712 P1
 - `docs/FOREIGN_KEY_CASCADE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/foreign-key-cascade-gate-honesty-pack-remaining-gate.json` — Stage 711 I1
 - `docs/FOREIGN_KEY_CASCADE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/foreign-key-cascade-gate-honesty-pack-rg-blockers.json` — Stage 711 B1
 - `docs/FOREIGN_KEY_CASCADE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/foreign-key-cascade-gate-honesty-pack-rg-pointers.json` — Stage 711 P1
