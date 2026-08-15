@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 741 track opened (ADR-1489: `test_stage741_open.py`, `docs/STAGE_741_PLAN.md`) — Nel Reporting Gate Honesty Pack Remaining-Gate Index; closed under ADR-1490
+- [x] Nel Reporting Gate Honesty Pack remaining-gate hub (Stage 741 I1: `test_stage741_index_i1.py`, `docs/NEL_REPORTING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Nel Reporting Gate Honesty Pack blocker matrix (Stage 741 B1: `test_stage741_blockers_b1.py`, `docs/NEL_REPORTING_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 740 / Stage 739 / Stage 392 / CHANGE_IMPACT pointers (Stage 741 P1: `test_stage741_pointers_p1.py`, `docs/NEL_REPORTING_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 741 fidelity sync (D1: `test_stage741_fidelity_d1.py`, `docs/STAGE_741_FIDELITY.md`)
+- [x] Stage 741 exit + freeze (H741x: `test_stage741_exit_h741x.py`, `docs/STAGE_741_EXIT_CRITERIA.md`, ADR-1490)
+
 Stage 740 track opened (ADR-1487: `test_stage740_open.py`, `docs/STAGE_740_PLAN.md`) — Report To Gate Honesty Pack Remaining-Gate Index; closed under ADR-1488
 - [x] Report To Gate Honesty Pack remaining-gate hub (Stage 740 I1: `test_stage740_index_i1.py`, `docs/REPORT_TO_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Report To Gate Honesty Pack blocker matrix (Stage 740 B1: `test_stage740_blockers_b1.py`, `docs/REPORT_TO_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
