@@ -466,7 +466,8 @@ export default function Page() {
       <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
         <h2>Print branding</h2>
         <p className="muted">
-          Header/footer on invoices and receipts. Logo from the company logo above is embedded on PDFs.
+          Header/footer on invoices, receipts, and outbound emails. Company logo is embedded on PDFs
+          and branded HTML emails.
         </p>
         <label className="muted">Header text</label>
         <input
