@@ -31,3 +31,10 @@ Stage 443 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Privacy Notice, Commercial Privacy Notice honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 443 opened under **ADR-893** after CONTINUE/NEXT (Tenant MVP Commercial Security Contact Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-894**. Stage 442 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 442 runner-up outline was approved and opened (ADR-893); freeze ADR-894. Do not reopen Stage 442 scope.
+
