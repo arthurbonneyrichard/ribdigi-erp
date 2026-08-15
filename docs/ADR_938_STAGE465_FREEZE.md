@@ -31,3 +31,9 @@ Stage 466 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Sync Error Surface, Sync Error Surface honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 466 opened under **ADR-939** after CONTINUE/NEXT (Tenant MVP Offline Push/Pull Sync Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-940**. Stage 465 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 465 runner-up outline was approved and opened (ADR-939); freeze ADR-940. Do not reopen Stage 465 scope.
