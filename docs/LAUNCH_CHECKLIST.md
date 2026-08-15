@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 757 track opened (ADR-1521: `test_stage757_open.py`, `docs/STAGE_757_PLAN.md`) — Jwt Claim Gate Honesty Pack Remaining-Gate Index; closed under ADR-1522
+- [x] Jwt Claim Gate Honesty Pack remaining-gate hub (Stage 757 I1: `test_stage757_index_i1.py`, `docs/JWT_CLAIM_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Jwt Claim Gate Honesty Pack blocker matrix (Stage 757 B1: `test_stage757_blockers_b1.py`, `docs/JWT_CLAIM_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 756 / Stage 755 / Stage 392 / CHANGE_IMPACT pointers (Stage 757 P1: `test_stage757_pointers_p1.py`, `docs/JWT_CLAIM_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 757 fidelity sync (D1: `test_stage757_fidelity_d1.py`, `docs/STAGE_757_FIDELITY.md`)
+- [x] Stage 757 exit + freeze (H757x: `test_stage757_exit_h757x.py`, `docs/STAGE_757_EXIT_CRITERIA.md`, ADR-1522)
+
 Stage 756 track opened (ADR-1519: `test_stage756_open.py`, `docs/STAGE_756_PLAN.md`) — Token Binding Gate Honesty Pack Remaining-Gate Index; closed under ADR-1520
 - [x] Token Binding Gate Honesty Pack remaining-gate hub (Stage 756 I1: `test_stage756_index_i1.py`, `docs/TOKEN_BINDING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Token Binding Gate Honesty Pack blocker matrix (Stage 756 B1: `test_stage756_blockers_b1.py`, `docs/TOKEN_BINDING_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

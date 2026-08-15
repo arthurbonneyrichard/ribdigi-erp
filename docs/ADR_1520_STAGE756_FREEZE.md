@@ -31,3 +31,7 @@ Stage 757 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Token Binding Gate, Token Binding Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 757 opened under **ADR-1521** after CONTINUE/NEXT (Tenant MVP Jwt Claim Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1522**. Stage 756 feature scope remains frozen.
