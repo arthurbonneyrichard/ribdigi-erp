@@ -31,3 +31,7 @@ Stage 721 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Scim Provisioning Gate, Scim Provisioning Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 721 opened under **ADR-1449** after CONTINUE/NEXT (Tenant MVP Totp Enrollment Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1450**. Stage 720 feature scope remains frozen.
