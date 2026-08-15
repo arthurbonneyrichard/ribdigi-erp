@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 813 D1 BIMI Record Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_813_FIDELITY.md` (`test_stage813_fidelity_d1.py`); Offline Complete / BIMI Record Gate honesty / go-live still MISSING.
 Stage 812 D1 MTA STS Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_812_FIDELITY.md` (`test_stage812_fidelity_d1.py`); Offline Complete / MTA STS Gate honesty / go-live still MISSING.
 Stage 811 D1 DANE TLSA Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_811_FIDELITY.md` (`test_stage811_fidelity_d1.py`); Offline Complete / DANE TLSA Gate honesty / go-live still MISSING.
 Stage 810 D1 DNSSEC Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_810_FIDELITY.md` (`test_stage810_fidelity_d1.py`); Offline Complete / DNSSEC Gate honesty / go-live still MISSING.

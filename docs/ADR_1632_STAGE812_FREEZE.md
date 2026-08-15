@@ -31,3 +31,7 @@ Stage 813 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, MTA STS Gate, MTA STS Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 813 opened under **ADR-1633** after CONTINUE/NEXT (Tenant MVP BIMI Record Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1634**. Stage 812 feature scope remains frozen.
