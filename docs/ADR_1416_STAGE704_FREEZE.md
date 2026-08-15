@@ -31,3 +31,7 @@ Stage 705 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Lock Wait Gate, Lock Wait Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 705 opened under **ADR-1417** after CONTINUE/NEXT (Tenant MVP Vacuum Autovacuum Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1418**. Stage 704 feature scope remains frozen.
