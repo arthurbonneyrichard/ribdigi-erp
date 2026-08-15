@@ -181,7 +181,18 @@ async def record_query(
     return row
 
 
+SALES_ANOMALY_PCT = 25.0
+MAX_INSIGHT_NOTES = 20
+
+
+def _pct_delta(current: float, previous: float) -> float | None:
+    if previous == 0:
+        return None if current == 0 else 100.0
+    return round((current - previous) / abs(previous) * 100.0, 1)
+
+
 def build_insight_notes(dash: dict) -> list[str]:
+    """Sync baseline notes from dashboard totals (kept for unit tests / callers)."""
     notes: list[str] = []
     low = int(dash.get("low_stock") or 0)
     if low > 0:
@@ -190,9 +201,142 @@ def build_insight_notes(dash: dict) -> list[str]:
     sales = float(dash.get("total_sales") or 0)
     if expenses > sales and sales > 0:
         notes.append("Expenses currently exceed recorded sales.")
+    notes.extend(_sales_spike_drop_notes(dash))
     return notes or [
         "No urgent anomaly detected from the currently configured business rules."
     ]
+
+
+def _sales_spike_drop_notes(dash: dict) -> list[str]:
+    notes: list[str] = []
+    cmp = dash.get("comparisons") or {}
+    checks = (
+        ("sales_today_pct", "today vs yesterday"),
+        ("sales_mtd_pct", "MTD vs prior month"),
+    )
+    for key, label in checks:
+        pct = cmp.get(key)
+        if pct is None:
+            continue
+        try:
+            pct_f = float(pct)
+        except (TypeError, ValueError):
+            continue
+        if pct_f >= SALES_ANOMALY_PCT:
+            notes.append(f"Sales spike {pct_f:g}% ({label}).")
+        elif pct_f <= -SALES_ANOMALY_PCT:
+            notes.append(f"Sales drop {pct_f:g}% ({label}).")
+
+    daily = dash.get("daily_sales") or []
+    if len(daily) >= 14:
+        recent = sum(float(d.get("sales") or 0) for d in daily[-7:])
+        prior = sum(float(d.get("sales") or 0) for d in daily[-14:-7])
+        wow = _pct_delta(recent, prior)
+        if wow is not None and wow >= SALES_ANOMALY_PCT:
+            notes.append(f"Sales spike {wow:g}% (last 7 days vs prior 7).")
+        elif wow is not None and wow <= -SALES_ANOMALY_PCT:
+            notes.append(f"Sales drop {wow:g}% (last 7 days vs prior 7).")
+    return notes
+
+
+async def compose_insights(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    dash: dict,
+) -> dict[str, Any]:
+    """Compose BR-21.2 rule-based insights from dashboard + expense + inventory signals."""
+    from app import ai_expenses as ai_expenses_svc
+    from app.ai_inventory import build_product_forecasts
+
+    signals: list[dict[str, Any]] = []
+    notes: list[str] = []
+
+    def add(kind: str, headline: str, detail: str | None = None) -> None:
+        signals.append({"kind": kind, "headline": headline, "detail": detail})
+        notes.append(headline if not detail else f"{headline} — {detail}")
+
+    low = int(dash.get("low_stock") or 0)
+    if low > 0:
+        add("stock", f"{low} product(s) are at or below reorder level.")
+
+    expenses = float(dash.get("total_expenses") or 0)
+    sales = float(dash.get("total_sales") or 0)
+    if expenses > sales and sales > 0:
+        add("expense_anomaly", "Expenses currently exceed recorded sales.")
+
+    for note in _sales_spike_drop_notes(dash):
+        kind = "sales_spike" if "spike" in note.lower() else "sales_drop"
+        add(kind, note)
+
+    exp = await ai_expenses_svc.expense_analysis(
+        db, tenant_id=tenant_id, actor_user_id=None, audit=False
+    )
+    for alert in (exp.get("budget_variance_alerts") or [])[:3]:
+        add(
+            "expense_anomaly",
+            f"{alert.get('category') or 'Category'} is {alert.get('variance_pct')}% over budget",
+            f"spent {alert.get('spent')} vs {alert.get('budget_scaled')}",
+        )
+    for unusual in (exp.get("unusual_expenses") or [])[:3]:
+        payee = unusual.get("payee") or "payee"
+        add(
+            "expense_anomaly",
+            f"Unusual expense {unusual.get('amount')} ({unusual.get('category') or 'uncategorized'})",
+            f"{payee}; {unusual.get('reason') or 'outlier'}",
+        )
+    for dup in (exp.get("duplicate_candidates") or [])[:2]:
+        add(
+            "expense_anomaly",
+            f"Possible duplicate: {dup.get('payee')} × {dup.get('count')} at {dup.get('amount')}",
+            str(dup.get("date") or ""),
+        )
+
+    forecasts = await build_product_forecasts(db, tenant_id=tenant_id)
+    action_count = 0
+    for row in forecasts:
+        if action_count >= 5:
+            break
+        season = row.get("seasonality") or {}
+        label = str(season.get("label") or "")
+        rising = label in {"rising", "emerging_demand"}
+        dts = row.get("days_to_stockout")
+        stock = float(row.get("stock_qty") or 0)
+        reorder = float(row.get("reorder_level") or 0)
+        at_risk = stock <= reorder or (dts is not None and float(dts) <= 14)
+        rec_qty = float(row.get("recommended_order_qty") or 0)
+        if not (rising and at_risk and rec_qty > 0):
+            continue
+        ratio = season.get("ratio")
+        try:
+            ratio_f = float(ratio) if ratio is not None else None
+        except (TypeError, ValueError):
+            ratio_f = None
+        if ratio_f and ratio_f > 1:
+            up_txt = f"{round((ratio_f - 1) * 100):g}%"
+        else:
+            up_txt = "recently"
+        detail = None
+        if dts is not None:
+            detail = f"stockout in ~{dts} days; suggest order {rec_qty:g}"
+        elif rec_qty > 0:
+            detail = f"suggest order {rec_qty:g}"
+        add(
+            "action",
+            f"Restock {row.get('name') or row.get('sku') or 'product'} — sales up {up_txt} this period",
+            detail,
+        )
+        action_count += 1
+
+    if not notes:
+        fallback = "No urgent anomaly detected from the currently configured business rules."
+        add("info", fallback)
+
+    return {
+        "insights": notes[:MAX_INSIGHT_NOTES],
+        "signals": signals[:MAX_INSIGHT_NOTES],
+        "source": "rule_based",
+    }
 
 
 async def list_queries(
@@ -315,7 +459,9 @@ async def handle_insights(
     claims: dict,
     dash: dict,
 ) -> dict[str, Any]:
-    notes = build_insight_notes(dash)
+    payload = await compose_insights(db, tenant_id=claims["tenant_id"], dash=dash)
+    notes = payload.get("insights") or []
+    signals = payload.get("signals") or []
     await record_query(
         db,
         tenant_id=claims["tenant_id"],
@@ -323,11 +469,13 @@ async def handle_insights(
         endpoint="insights",
         status="ok",
         insight_count=len(notes),
-        details={"source": "dashboard_rules"},
+        details={
+            "source": "composed_rules",
+            "signal_kinds": sorted({str(s.get("kind")) for s in signals if s.get("kind")}),
+        },
     )
     await db.commit()
     return {
-        "insights": notes,
-        "source": "rule_based",
+        **payload,
         "provider_required": False,
     }

@@ -37,7 +37,24 @@ export default function Page() {
     setMessage('');
     try {
       const r = await api('/ai/insights');
-      setA((r.data?.insights || []).join('\n'));
+      const signals = r.data?.signals || [];
+      if (signals.length) {
+        setA(
+          signals
+            .map((s: any) => {
+              const detail = s.detail ? ` — ${s.detail}` : '';
+              return `[${s.kind || 'insight'}] ${s.headline || ''}${detail}`;
+            })
+            .join('\n')
+        );
+      } else {
+        setA((r.data?.insights || []).join('\n'));
+      }
+      setMessage(
+        signals.some((s: any) => s.kind === 'action' || s.kind === 'sales_spike' || s.kind === 'sales_drop' || s.kind === 'expense_anomaly')
+          ? 'Loaded composed rule-based insights (sales, expenses, restock actions).'
+          : 'Loaded rule-based insights.'
+      );
     } catch (err: any) {
       setError(err.message || 'Unable to load insights');
     }

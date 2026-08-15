@@ -81,6 +81,7 @@ async def expense_analysis(
     from_date: str | datetime | None = None,
     to_date: str | datetime | None = None,
     actor_user_id: str | None = None,
+    audit: bool = True,
 ) -> dict[str, Any]:
     await expenses_svc.ensure_default_categories(db, tenant_id)
     start, end = _parse_range(from_date, to_date)
@@ -228,20 +229,21 @@ async def expense_analysis(
         db, tenant_id, from_date=start, to_date=end
     )
 
-    await ai_svc.record_query(
-        db,
-        tenant_id=tenant_id,
-        user_id=actor_user_id,
-        endpoint="expense_analysis",
-        status="ok",
-        details={
-            "count": len(rows),
-            "budget_alerts": len(budget_alerts),
-            "unusual": len(unusual),
-            "method": "rule_based",
-        },
-    )
-    await db.commit()
+    if audit:
+        await ai_svc.record_query(
+            db,
+            tenant_id=tenant_id,
+            user_id=actor_user_id,
+            endpoint="expense_analysis",
+            status="ok",
+            details={
+                "count": len(rows),
+                "budget_alerts": len(budget_alerts),
+                "unusual": len(unusual),
+                "method": "rule_based",
+            },
+        )
+        await db.commit()
     return {
         "method": "rule_based",
         "from_date": start.isoformat(),
