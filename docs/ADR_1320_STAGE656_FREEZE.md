@@ -31,3 +31,7 @@ Stage 657 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cost Attribution Gate, Cost Attribution Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 657 opened under **ADR-1321** after CONTINUE/NEXT (Tenant MVP Quota Enforcement Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1322**. Stage 656 feature scope remains frozen.
