@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 754 D1 Cookie Expires Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_754_FIDELITY.md` (`test_stage754_fidelity_d1.py`); Offline Complete / Cookie Expires Gate honesty / go-live still MISSING.
 Stage 753 D1 Cookie Path Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_753_FIDELITY.md` (`test_stage753_fidelity_d1.py`); Offline Complete / Cookie Path Gate honesty / go-live still MISSING.
 Stage 752 D1 Cookie Domain Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_752_FIDELITY.md` (`test_stage752_fidelity_d1.py`); Offline Complete / Cookie Domain Gate honesty / go-live still MISSING.
 Stage 751 D1 Cookie Max Age Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_751_FIDELITY.md` (`test_stage751_fidelity_d1.py`); Offline Complete / Cookie Max Age Gate honesty / go-live still MISSING.
