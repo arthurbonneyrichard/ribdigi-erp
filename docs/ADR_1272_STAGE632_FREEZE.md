@@ -31,3 +31,7 @@ Stage 633 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Pydantic Schema Gate, Pydantic Schema Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 633 opened under **ADR-1273** after CONTINUE/NEXT (Tenant MVP Pytest Coverage Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1274**. Stage 632 feature scope remains frozen.

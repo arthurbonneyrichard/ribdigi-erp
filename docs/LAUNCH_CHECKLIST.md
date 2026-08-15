@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 633 track opened (ADR-1273: `test_stage633_open.py`, `docs/STAGE_633_PLAN.md`) — Pytest Coverage Gate Honesty Pack Remaining-Gate Index; closed under ADR-1274
+- [x] Pytest Coverage Gate Honesty Pack remaining-gate hub (Stage 633 I1: `test_stage633_index_i1.py`, `docs/PYTEST_COVERAGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Pytest Coverage Gate Honesty Pack blocker matrix (Stage 633 B1: `test_stage633_blockers_b1.py`, `docs/PYTEST_COVERAGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 632 / Stage 631 / Stage 392 / CHANGE_IMPACT pointers (Stage 633 P1: `test_stage633_pointers_p1.py`, `docs/PYTEST_COVERAGE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 633 fidelity sync (D1: `test_stage633_fidelity_d1.py`, `docs/STAGE_633_FIDELITY.md`)
+- [x] Stage 633 exit + freeze (H633x: `test_stage633_exit_h633x.py`, `docs/STAGE_633_EXIT_CRITERIA.md`, ADR-1274)
+
 Stage 632 track opened (ADR-1271: `test_stage632_open.py`, `docs/STAGE_632_PLAN.md`) — Pydantic Schema Gate Honesty Pack Remaining-Gate Index; closed under ADR-1272
 - [x] Pydantic Schema Gate Honesty Pack remaining-gate hub (Stage 632 I1: `test_stage632_index_i1.py`, `docs/PYDANTIC_SCHEMA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Pydantic Schema Gate Honesty Pack blocker matrix (Stage 632 B1: `test_stage632_blockers_b1.py`, `docs/PYDANTIC_SCHEMA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
