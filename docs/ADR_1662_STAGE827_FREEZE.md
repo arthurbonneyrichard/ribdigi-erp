@@ -31,3 +31,7 @@ Stage 828 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Unsubscribe Link Gate, Unsubscribe Link Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 828 opened under **ADR-1663** after CONTINUE/NEXT (Tenant MVP List Hygiene Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1664**. Stage 827 feature scope remains frozen.
