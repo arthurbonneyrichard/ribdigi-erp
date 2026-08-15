@@ -556,7 +556,9 @@ async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: i
     """Notify for draft/sent quotations expiring within ``within_days`` (BR-7.2).
 
     Default is 1 day before ``valid_until`` (also covers already-past validity while
-    still open). Dedupes unread notifications per quotation.
+    still open). Past-due open quotations are soft-lifecycle flipped to ``expired``
+    even when an unread T−1 notification already exists (dedupe only skips a second
+    alert). Dedupes unread notifications per quotation.
     """
     now = datetime.utcnow()
     horizon = now + timedelta(days=max(0, int(within_days)))
@@ -572,6 +574,11 @@ async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: i
     ).scalars().all()
     created = 0
     for quote in quotes:
+        until = quote.valid_until
+        past = bool(until and until < now)
+        if past and quote.status in {"draft", "sent"}:
+            quote.status = "expired"
+            quote.updated_at = now
         existing = (
             await db.execute(
                 select(m.Notification).where(
@@ -584,9 +591,7 @@ async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: i
         ).scalar_one_or_none()
         if existing:
             continue
-        until = quote.valid_until
         until_label = until.date().isoformat() if until else "unknown"
-        past = bool(until and until < now)
         title = "Quotation expired" if past else "Quotation expiring soon"
         message = (
             f"Quotation {quote.quotation_number} "
@@ -602,6 +607,7 @@ async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: i
             entity_id=quote.id,
         )
         created += 1
+    await db.flush()
     return created
 
 
