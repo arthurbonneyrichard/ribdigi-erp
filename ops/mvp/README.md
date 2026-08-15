@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/PYDANTIC_SCHEMA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/pydantic-schema-gate-honesty-pack-remaining-gate.json` — Stage 632 I1
+- `docs/PYDANTIC_SCHEMA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/pydantic-schema-gate-honesty-pack-rg-blockers.json` — Stage 632 B1
+- `docs/PYDANTIC_SCHEMA_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/pydantic-schema-gate-honesty-pack-rg-pointers.json` — Stage 632 P1
 - `docs/SQLALCHEMY_ORM_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/sqlalchemy-orm-gate-honesty-pack-remaining-gate.json` — Stage 631 I1
 - `docs/SQLALCHEMY_ORM_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/sqlalchemy-orm-gate-honesty-pack-rg-blockers.json` — Stage 631 B1
 - `docs/SQLALCHEMY_ORM_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/sqlalchemy-orm-gate-honesty-pack-rg-pointers.json` — Stage 631 P1

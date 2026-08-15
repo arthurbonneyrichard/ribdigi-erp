@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 632 D1 (2026-08-14):** Pydantic Schema Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_632_FIDELITY.md` (`test_stage632_fidelity_d1.py`). Open ADR: `docs/ADR_1271_STAGE632_OPEN.md`; plan `docs/STAGE_632_PLAN.md`.
+
+**Stage 632 exit (2026-08-14):** I1, B1, P1, D1, H632x met — `docs/STAGE_632_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1272_STAGE632_FREEZE.md`. Fidelity: `docs/STAGE_632_FIDELITY.md`.
+
 **Stage 631 D1 (2026-08-14):** SQLAlchemy ORM Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_631_FIDELITY.md` (`test_stage631_fidelity_d1.py`). Open ADR: `docs/ADR_1269_STAGE631_OPEN.md`; plan `docs/STAGE_631_PLAN.md`.
 
 **Stage 631 exit (2026-08-14):** I1, B1, P1, D1, H631x met — `docs/STAGE_631_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1270_STAGE631_FREEZE.md`. Fidelity: `docs/STAGE_631_FIDELITY.md`.
