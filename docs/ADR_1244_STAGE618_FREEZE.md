@@ -31,3 +31,7 @@ Stage 619 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Tenant Isolation Gate, Tenant Isolation Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 619 opened under **ADR-1245** after CONTINUE/NEXT (Tenant MVP Record Ownership Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1246**. Stage 618 feature scope remains frozen.
