@@ -31,3 +31,10 @@ Stage 445 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Evidence Chain, Commercial Evidence Chain honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 445 opened under **ADR-897** after CONTINUE/NEXT (Tenant MVP Commercial Residual Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-898**. Stage 444 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 444 runner-up outline was approved and opened (ADR-897); freeze ADR-898. Do not reopen Stage 444 scope.
+
