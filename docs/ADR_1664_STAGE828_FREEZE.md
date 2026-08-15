@@ -31,3 +31,7 @@ Stage 829 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, List Hygiene Gate, List Hygiene Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 829 opened under **ADR-1665** after CONTINUE/NEXT (Tenant MVP Double Opt In Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1666**. Stage 828 feature scope remains frozen.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 829 track opened (ADR-1665: `test_stage829_open.py`, `docs/STAGE_829_PLAN.md`) — Double Opt In Gate Honesty Pack Remaining-Gate Index; closed under ADR-1666
+- [x] Double Opt In Gate Honesty Pack remaining-gate hub (Stage 829 I1: `test_stage829_index_i1.py`, `docs/DOUBLE_OPT_IN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Double Opt In Gate Honesty Pack blocker matrix (Stage 829 B1: `test_stage829_blockers_b1.py`, `docs/DOUBLE_OPT_IN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 828 / Stage 827 / Stage 392 / CHANGE_IMPACT pointers (Stage 829 P1: `test_stage829_pointers_p1.py`, `docs/DOUBLE_OPT_IN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 829 fidelity sync (D1: `test_stage829_fidelity_d1.py`, `docs/STAGE_829_FIDELITY.md`)
+- [x] Stage 829 exit + freeze (H829x: `test_stage829_exit_h829x.py`, `docs/STAGE_829_EXIT_CRITERIA.md`, ADR-1666)
+
 Stage 828 track opened (ADR-1663: `test_stage828_open.py`, `docs/STAGE_828_PLAN.md`) — List Hygiene Gate Honesty Pack Remaining-Gate Index; closed under ADR-1664
 - [x] List Hygiene Gate Honesty Pack remaining-gate hub (Stage 828 I1: `test_stage828_index_i1.py`, `docs/LIST_HYGIENE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] List Hygiene Gate Honesty Pack blocker matrix (Stage 828 B1: `test_stage828_blockers_b1.py`, `docs/LIST_HYGIENE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
