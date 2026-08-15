@@ -713,7 +713,8 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - [ ] Point-in-time database restore capability
 - [ ] Immutable audit log for all sensitive operations
 - [ ] Complete REST API for external integrations (Products, Customers, Sales, Purchases)
-- [ ] Webhook system with signature verification
+- [x] Webhook system with signature verification
+  - Complete (MVP): HMAC `X-Ribdigi-Signature`; Integrations deliveries/retry; verify samples in API docs §17.4
 - [ ] Two-factor authentication (TOTP)
 - [ ] Email verification and password reset flows
 - [ ] Session management with revoke capability

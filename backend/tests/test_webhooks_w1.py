@@ -33,6 +33,31 @@ def test_hmac_sign_and_verify():
     )
 
 
+def test_hmac_golden_fixture_matches_api_docs():
+    """Stable vectors published in docs/API_DOCUMENTATION.md §17.4."""
+    secret = "whsec_demo_secret_123456"
+    body = (
+        b'{"event":"webhook.test","timestamp":"2026-08-15T07:00:00Z",'
+        b'"tenant_id":"demo","data":{"message":"ping"}}'
+    )
+    ts = 1723705200
+    header, _ = webhooks_svc.sign_payload(secret=secret, body=body, timestamp=ts)
+    assert (
+        header
+        == "t=1723705200,v1=8ba12e1df3b867331f2ccf13f760ace4afd370df9d542012046eb4aba49bb2e2"
+    )
+    assert webhooks_svc.verify_signature(
+        secret=secret, body=body, header=header, tolerance_seconds=10**9
+    )
+    assert not webhooks_svc.verify_signature(
+        secret=secret, body=body + b" ", header=header, tolerance_seconds=10**9
+    )
+    # skew rejection when "now" is far from fixture timestamp
+    assert not webhooks_svc.verify_signature(
+        secret=secret, body=body, header=header, tolerance_seconds=60
+    )
+
+
 @pytest.mark.asyncio
 async def test_webhook_crud_and_signed_delivery(client, db_session, monkeypatch):
     ac, seed = client

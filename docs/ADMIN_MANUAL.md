@@ -23,6 +23,8 @@
 12. [Troubleshooting](#12-troubleshooting)
 13. [Appendix](#13-appendix)
 
+> Also see **§9A Integrations** (API keys & webhooks) after System Settings.
+
 ---
 
 ## 1. Introduction & Role Definitions
@@ -1053,6 +1055,31 @@ Use these placeholders in custom templates:
 - `{{customer_name}}`, `{{customer_address}}`
 - `{{subtotal}}`, `{{tax_amount}}`, `{{total}}`
 - `{{payment_method}}`, `{{cashier_name}}`
+
+---
+
+## 9A. Integrations (API keys & webhooks)
+
+Company Admins manage external integrations at **Integrations** (`/integrations`).
+
+### 9A.1 API keys
+
+1. Open **Integrations**.
+2. Create a key (optional expiry). Copy the `rdk_…` secret immediately — it is shown once.
+3. Clients send `X-API-Key: rdk_…` (or `Authorization: Bearer rdk_…`) plus `X-Tenant-ID` when required.
+4. Use **Usage** to inspect request counts; **Revoke** to invalidate immediately.
+
+Default scopes (if omitted at create): read on inventory, sales, purchasing, customers, reports.
+
+### 9A.2 Webhooks
+
+1. Create an HTTPS endpoint URL and select events (at least one).
+2. Copy the `whsec_…` signing secret once (or after **Rotate secret**).
+3. Click **Test** to send a signed `webhook.test` ping.
+4. Open **Deliveries** to see recent attempts; use **Retry** for `pending_retry` / `failed` rows.
+5. Verify incoming signatures using `docs/API_DOCUMENTATION.md` §17.4 (Python/Node samples) or the on-page **Verify signature** panel.
+
+**Honesty:** Live fan-out today includes `webhook.test` and `sale.created` (invoice post). Other event chips are reserved until emit wiring lands.
 
 ---
 
