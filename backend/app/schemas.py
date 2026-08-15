@@ -321,6 +321,12 @@ class StockCountItemsUpdate(BaseModel):
     items: list[StockCountItemUpdate]
 
 
+class StockCountCancel(BaseModel):
+    """Draft stock count cancel — typed reason required (BR-5.2 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class ProductCategoryCreate(BaseModel):
     code: str
     name: str

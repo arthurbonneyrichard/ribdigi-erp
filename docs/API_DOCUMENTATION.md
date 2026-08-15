@@ -647,7 +647,7 @@ Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a s
 **Create:** `POST /inventory/stock-counts`  
 **List:** `GET /inventory/stock-counts`  
 **Get:** `GET /inventory/stock-counts/{count_id}`  
-**Cancel:** `POST /inventory/stock-counts/{count_id}/cancel` — draft only → `cancelled` (`can_cancel`); no variance movements. Inventory Counts **Cancel** / **Cancel count**.  
+**Cancel:** `POST /inventory/stock-counts/{count_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to count `notes` as `Cancel: …` and stored in audit `stock_count_cancelled.details.reason`); draft only → `cancelled` (`can_cancel`); no variance movements. Inventory Counts **Cancel reason** UI.  
 **Complete:** `POST /inventory/stock-counts/{count_id}/complete` — posts warehouse/product variance adjustments (`movement_type=adjustment`).
 
 **Variance report (BR-5.2):** `GET /reports/inventory/stock-counts?from_date=&to_date=&warehouse_id=&store_id=&variance_only=true&status=completed` — completed counts with line variances (`expected_qty` / `counted_qty` / `variance`); default `variance_only=true` omits zero lines. Flat `lines[]` for export. Export type `inventory_stock_counts`. Reports Inventory panel.

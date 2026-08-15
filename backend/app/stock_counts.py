@@ -325,10 +325,26 @@ async def cancel_count(
     *,
     tenant_id: str,
     count_id: str,
+    user_id: str | None = None,
+    reason: str | None = None,
 ) -> m.StockCount:
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
     count = await get_count(db, tenant_id, count_id)
     if count.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot cancel count in status {count.status}")
     count.status = "cancelled"
+    count.notes = ((count.notes or "") + f"\nCancel: {reason_s}").strip()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="stock_count_cancelled",
+            entity="stock_count",
+            entity_id=count.id,
+            details={"count_number": count.count_number, "reason": reason_s},
+        )
+    )
     await db.flush()
     return count

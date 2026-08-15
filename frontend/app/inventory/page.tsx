@@ -241,6 +241,7 @@ export default function Page() {
   const [xferQty, setXferQty] = useState('1');
   const [xferNotes, setXferNotes] = useState('');
   const [xferRejectReason, setXferRejectReason] = useState('');
+  const [countCancelReason, setCountCancelReason] = useState('');
   const [trPrefix, setTrPrefix] = useState('TR');
   const [trNext, setTrNext] = useState('1');
   const [trPreview, setTrPreview] = useState('');
@@ -774,9 +775,18 @@ export default function Page() {
 
   async function cancelStockCount(id: string, countNumber?: string) {
     setError('');
+    const reason = countCancelReason.trim();
+    if (!reason) {
+      setError('Enter a cancel reason before cancelling a stock count');
+      return;
+    }
     try {
-      const r = await api(`/inventory/stock-counts/${id}/cancel`, { method: 'POST' });
+      const r = await api(`/inventory/stock-counts/${id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
       setMessage(`Count ${r.data?.count_number || countNumber || id} cancelled`);
+      setCountCancelReason('');
       if (activeCount?.id === id) {
         setActiveCount(r.data);
       }
@@ -2846,12 +2856,29 @@ export default function Page() {
             </button>
           </div>
 
+          <div className="card" style={{ marginBottom: 16 }}>
+            <label>
+              Cancel reason{' '}
+              <input
+                value={countCancelReason}
+                onChange={(e) => setCountCancelReason(e.target.value)}
+                placeholder="Required before Cancel"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Appended to count notes and audit (<code>POST .../stock-counts/.../cancel</code>{' '}
+              {'{ reason }'}). Draft only; no variance postings.
+            </p>
+          </div>
+
           <table className="table" style={{ marginBottom: 16 }}>
             <thead>
               <tr>
                 <th>Number</th>
                 <th>Status</th>
                 <th>Items</th>
+                <th>Notes</th>
                 <th></th>
               </tr>
             </thead>
@@ -2862,6 +2889,9 @@ export default function Page() {
                   <td>{c.status}</td>
                   <td>
                     {c.counted_item_count}/{c.item_count}
+                  </td>
+                  <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                    {c.notes || '—'}
                   </td>
                   <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     <button type="button" onClick={() => openCount(c.id)}>
@@ -2883,6 +2913,11 @@ export default function Page() {
               <h3>
                 {activeCount.count_number} — {activeCount.status}
               </h3>
+              {activeCount.notes && (
+                <p className="muted" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                  Notes: {activeCount.notes}
+                </p>
+              )}
               <table className="table">
                 <thead>
                   <tr>

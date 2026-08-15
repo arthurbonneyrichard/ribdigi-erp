@@ -191,6 +191,7 @@ from app.schemas import (
     DepartmentUpdate,
     ProductUpdate,
     StockCountCreate,
+    StockCountCancel,
     StockCountItemsUpdate,
     WarehouseCreate,
     WarehouseUpdate,
@@ -3763,11 +3764,16 @@ async def complete_stock_count(
 @api.post("/inventory/stock-counts/{count_id}/cancel")
 async def cancel_stock_count(
     count_id: str,
+    payload: StockCountCancel,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     count = await stock_counts_svc.cancel_count(
-        db, tenant_id=claims["tenant_id"], count_id=count_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        count_id=count_id,
+        reason=payload.reason,
     )
     await db.commit()
     return env(await stock_counts_svc.serialize_count(db, count), "Stock count cancelled")
