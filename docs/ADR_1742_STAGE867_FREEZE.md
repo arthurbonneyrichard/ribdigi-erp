@@ -31,3 +31,7 @@ Stage 868 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, TIA Gate, TIA Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 868 opened under **ADR-1743** after CONTINUE/NEXT (Tenant MVP Breach Notify Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1744**. Stage 867 feature scope remains frozen.

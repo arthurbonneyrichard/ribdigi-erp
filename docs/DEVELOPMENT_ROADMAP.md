@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 868 D1 (2026-08-14):** Breach Notify Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_868_FIDELITY.md` (`test_stage868_fidelity_d1.py`). Open ADR: `docs/ADR_1743_STAGE868_OPEN.md`; plan `docs/STAGE_868_PLAN.md`.
+
+**Stage 868 exit (2026-08-14):** I1, B1, P1, D1, H868x met — `docs/STAGE_868_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1744_STAGE868_FREEZE.md`. Fidelity: `docs/STAGE_868_FIDELITY.md`.
+
 **Stage 867 D1 (2026-08-14):** TIA Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_867_FIDELITY.md` (`test_stage867_fidelity_d1.py`). Open ADR: `docs/ADR_1741_STAGE867_OPEN.md`; plan `docs/STAGE_867_PLAN.md`.
 
 **Stage 867 exit (2026-08-14):** I1, B1, P1, D1, H867x met — `docs/STAGE_867_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1742_STAGE867_FREEZE.md`. Fidelity: `docs/STAGE_867_FIDELITY.md`.
