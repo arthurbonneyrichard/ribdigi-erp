@@ -31,3 +31,7 @@ Stage 683 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Oncall Handoff Gate, Oncall Handoff Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 683 opened under **ADR-1373** after CONTINUE/NEXT (Tenant MVP Incident Timeline Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1374**. Stage 682 feature scope remains frozen.

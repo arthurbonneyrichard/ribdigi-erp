@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 683 track opened (ADR-1373: `test_stage683_open.py`, `docs/STAGE_683_PLAN.md`) — Incident Timeline Gate Honesty Pack Remaining-Gate Index; closed under ADR-1374
+- [x] Incident Timeline Gate Honesty Pack remaining-gate hub (Stage 683 I1: `test_stage683_index_i1.py`, `docs/INCIDENT_TIMELINE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Incident Timeline Gate Honesty Pack blocker matrix (Stage 683 B1: `test_stage683_blockers_b1.py`, `docs/INCIDENT_TIMELINE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 682 / Stage 681 / Stage 392 / CHANGE_IMPACT pointers (Stage 683 P1: `test_stage683_pointers_p1.py`, `docs/INCIDENT_TIMELINE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 683 fidelity sync (D1: `test_stage683_fidelity_d1.py`, `docs/STAGE_683_FIDELITY.md`)
+- [x] Stage 683 exit + freeze (H683x: `test_stage683_exit_h683x.py`, `docs/STAGE_683_EXIT_CRITERIA.md`, ADR-1374)
+
 Stage 682 track opened (ADR-1371: `test_stage682_open.py`, `docs/STAGE_682_PLAN.md`) — Oncall Handoff Gate Honesty Pack Remaining-Gate Index; closed under ADR-1372
 - [x] Oncall Handoff Gate Honesty Pack remaining-gate hub (Stage 682 I1: `test_stage682_index_i1.py`, `docs/ONCALL_HANDOFF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Oncall Handoff Gate Honesty Pack blocker matrix (Stage 682 B1: `test_stage682_blockers_b1.py`, `docs/ONCALL_HANDOFF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
