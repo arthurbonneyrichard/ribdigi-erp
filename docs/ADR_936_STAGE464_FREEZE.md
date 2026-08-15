@@ -31,3 +31,9 @@ Stage 465 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Conflict UX, Conflict UX honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 465 opened under **ADR-937** after CONTINUE/NEXT (Tenant MVP Offline Sync Error Surface Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-938**. Stage 464 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 464 runner-up outline was approved and opened (ADR-937); freeze ADR-938. Do not reopen Stage 464 scope.
