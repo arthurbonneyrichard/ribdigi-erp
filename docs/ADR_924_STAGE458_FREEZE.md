@@ -31,3 +31,9 @@ Stage 459 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Platform Principal, Platform Principal honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 459 opened under **ADR-925** after CONTINUE/NEXT (Tenant MVP Shared Schema Tenancy Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-926**. Stage 458 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 458 runner-up outline was approved and opened (ADR-925); freeze ADR-926. Do not reopen Stage 458 scope.
