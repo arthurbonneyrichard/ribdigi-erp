@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/INTEGRITY_DUTY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/integrity-duty-gate-honesty-pack-remaining-gate.json` — Stage 853 I1
+- `docs/INTEGRITY_DUTY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/integrity-duty-gate-honesty-pack-rg-blockers.json` — Stage 853 B1
+- `docs/INTEGRITY_DUTY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/integrity-duty-gate-honesty-pack-rg-pointers.json` — Stage 853 P1
 - `docs/ACCURACY_DUTY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/accuracy-duty-gate-honesty-pack-remaining-gate.json` — Stage 852 I1
 - `docs/ACCURACY_DUTY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/accuracy-duty-gate-honesty-pack-rg-blockers.json` — Stage 852 B1
 - `docs/ACCURACY_DUTY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/accuracy-duty-gate-honesty-pack-rg-pointers.json` — Stage 852 P1
