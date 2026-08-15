@@ -31,3 +31,7 @@ Stage 549 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, E2E Backup Restore, E2E Backup Restore honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 549 opened under **ADR-1105** after CONTINUE/NEXT (Tenant MVP E2E Org Bootstrap Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1106**. Stage 548 feature scope remains frozen.
