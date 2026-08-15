@@ -28,6 +28,7 @@ VALID_EVENTS: frozenset[str] = frozenset(
         "sale.paid",
         "stock.low",
         "stock.in",
+        "stock.out",
         "purchase.order.created",
         "purchase.grn.received",
         "customer.created",
