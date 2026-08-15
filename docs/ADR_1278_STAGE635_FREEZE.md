@@ -31,3 +31,7 @@ Stage 636 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Environment Config Gate, Environment Config Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 636 opened under **ADR-1279** after CONTINUE/NEXT (Tenant MVP Observability Logging Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1280**. Stage 635 feature scope remains frozen.
