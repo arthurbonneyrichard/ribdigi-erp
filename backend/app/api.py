@@ -7383,16 +7383,19 @@ async def update_expense_settings(
 
 @api.get("/expenses/recurring")
 async def list_recurring_expenses(
+    is_active: bool | None = None,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.RecurringExpense)
-            .where(m.RecurringExpense.tenant_id == claims["tenant_id"])
-            .order_by(m.RecurringExpense.created_at.desc())
-        )
-    ).scalars().all()
+    """List recurring schedules. Optional is_active filters soft-deactivated rows (Expenses manage UI)."""
+    stmt = (
+        select(m.RecurringExpense)
+        .where(m.RecurringExpense.tenant_id == claims["tenant_id"])
+        .order_by(m.RecurringExpense.created_at.desc())
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.RecurringExpense.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([expenses_svc.serialize_recurring(r) for r in rows])
 
 

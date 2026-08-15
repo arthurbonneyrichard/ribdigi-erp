@@ -12,6 +12,10 @@ def test_recurring_schedule_edit_ui_wired():
     assert "startRecurringEdit" in expenses
     assert "saveRecurringEdit" in expenses
     assert "recEditId" in expenses
+    assert "recurringManageFilter" in expenses
+    assert 'aria-label="Recurring expense status filter"' in expenses
+    assert "managedRecurring" in expenses
+    assert "[inactive]" in expenses
 
 
 def test_recurring_update_schema_has_template_fields():

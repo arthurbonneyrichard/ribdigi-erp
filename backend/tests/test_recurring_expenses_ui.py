@@ -156,3 +156,44 @@ async def test_recurring_generate_respects_future_next_run(client, seeded, db_se
     gen = await ac.post("/api/v1/expenses/recurring/generate", headers=admin, json={})
     assert gen.status_code == 200
     assert not any(e.get("description", "").startswith("Future only") for e in gen.json()["data"])
+
+
+@pytest.mark.asyncio
+async def test_recurring_list_is_active_filter(client, seeded):
+    ac, seed = client
+    admin = await _admin(ac, seed)
+
+    cats = await ac.get("/api/v1/expenses/categories", headers=admin)
+    assert cats.status_code == 200, cats.text
+    cat_id = cats.json()["data"][0]["id"]
+
+    created = await ac.post(
+        "/api/v1/expenses/recurring",
+        headers=admin,
+        json={
+            "category_id": cat_id,
+            "amount": 12.25,
+            "frequency": "weekly",
+            "description": "Filter Demo Recurring",
+            "payment_method": "cash",
+            "payee": "Filter Co",
+        },
+    )
+    assert created.status_code == 200, created.text
+    rid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/expenses/recurring/{rid}",
+        headers=admin,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/expenses/recurring", headers=admin)
+    assert rid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/expenses/recurring?is_active=true", headers=admin)
+    assert rid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/expenses/recurring?is_active=false", headers=admin)
+    assert rid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
