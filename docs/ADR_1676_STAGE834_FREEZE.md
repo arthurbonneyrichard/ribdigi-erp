@@ -31,3 +31,7 @@ Stage 835 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Quiet Hours Gate, Quiet Hours Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 835 opened under **ADR-1677** after CONTINUE/NEXT (Tenant MVP Channel Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1678**. Stage 834 feature scope remains frozen.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 835 track opened (ADR-1677: `test_stage835_open.py`, `docs/STAGE_835_PLAN.md`) — Channel Opt Out Gate Honesty Pack Remaining-Gate Index; closed under ADR-1678
+- [x] Channel Opt Out Gate Honesty Pack remaining-gate hub (Stage 835 I1: `test_stage835_index_i1.py`, `docs/CHANNEL_OPT_OUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Channel Opt Out Gate Honesty Pack blocker matrix (Stage 835 B1: `test_stage835_blockers_b1.py`, `docs/CHANNEL_OPT_OUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 834 / Stage 833 / Stage 392 / CHANGE_IMPACT pointers (Stage 835 P1: `test_stage835_pointers_p1.py`, `docs/CHANNEL_OPT_OUT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 835 fidelity sync (D1: `test_stage835_fidelity_d1.py`, `docs/STAGE_835_FIDELITY.md`)
+- [x] Stage 835 exit + freeze (H835x: `test_stage835_exit_h835x.py`, `docs/STAGE_835_EXIT_CRITERIA.md`, ADR-1678)
+
 Stage 834 track opened (ADR-1675: `test_stage834_open.py`, `docs/STAGE_834_PLAN.md`) — Quiet Hours Gate Honesty Pack Remaining-Gate Index; closed under ADR-1676
 - [x] Quiet Hours Gate Honesty Pack remaining-gate hub (Stage 834 I1: `test_stage834_index_i1.py`, `docs/QUIET_HOURS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Quiet Hours Gate Honesty Pack blocker matrix (Stage 834 B1: `test_stage834_blockers_b1.py`, `docs/QUIET_HOURS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
