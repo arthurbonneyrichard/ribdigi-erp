@@ -1,0 +1,77 @@
+{
+  "id": "offline-payment-rules-honesty-pack-rg-blockers",
+  "stage": 477,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_PAYMENT_RULES_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_PAYMENT_RULES_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_payment_rules_pack_remaining_gate": "docs/OFFLINE_PAYMENT_RULES_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_payment_rules_honesty_complete_claimed": false,
+  "offline_payment_rules_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_payment_rules_honesty_complete_claimed": "REMAINING",
+    "offline_payment_rules_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_payment_rules_honesty": "NON_CLAIM",
+    "offline_payment_rules_pack_as_payment_rules_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_payment_rules_honesty_complete_claimed_flag": "false",
+    "offline_payment_rules_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "oprhprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oprhprb-honesty",
+      "title": "Mark Payment Rules honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oprhprb-as-golive",
+      "title": "Mark Payment Rules as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oprhprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oprhprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oprhprb-opr-nonclaim",
+      "title": "Mark OFFLINE_PAYMENT_RULES_PACK as non-claim for payment-rules Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oprhprb-checklist-remaining",
+      "title": "Offline Complete / Payment Rules / Payment Rules honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 477 B1 Offline Payment Rules Honesty Pack RG blocker matrix packaging only."
+}

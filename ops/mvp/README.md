@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/OFFLINE_PAYMENT_RULES_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-payment-rules-honesty-pack-remaining-gate.json` — Stage 477 I1
+- `docs/OFFLINE_PAYMENT_RULES_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-payment-rules-honesty-pack-rg-blockers.json` — Stage 477 B1
+- `docs/OFFLINE_PAYMENT_RULES_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-payment-rules-honesty-pack-rg-pointers.json` — Stage 477 P1
 - `docs/OFFLINE_PRICE_VERSION_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-price-version-honesty-pack-remaining-gate.json` — Stage 476 I1
 - `docs/OFFLINE_PRICE_VERSION_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-price-version-honesty-pack-rg-blockers.json` — Stage 476 B1
 - `docs/OFFLINE_PRICE_VERSION_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-price-version-honesty-pack-rg-pointers.json` — Stage 476 P1

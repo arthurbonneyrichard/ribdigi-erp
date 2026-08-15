@@ -31,3 +31,10 @@ Stage 477 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Price Version, Price Version honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 477 opened under **ADR-961** after CONTINUE/NEXT (Tenant MVP Offline Payment Rules Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-962**. Stage 476 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 476 runner-up outline was approved and opened (ADR-961); freeze ADR-962. Do not reopen Stage 476 scope.
+
