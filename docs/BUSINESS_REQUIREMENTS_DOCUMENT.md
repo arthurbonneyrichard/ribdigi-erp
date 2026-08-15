@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 469 D1 Offline Queue Depth Metrics Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_469_FIDELITY.md` (`test_stage469_fidelity_d1.py`); Offline Complete / Queue Depth Metrics honesty / go-live still MISSING.
 Stage 468 D1 Offline Settings Sync IA Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_468_FIDELITY.md` (`test_stage468_fidelity_d1.py`); Offline Complete / Settings Sync IA honesty / go-live still MISSING.
 Stage 467 D1 Offline Sync Dashboard Widget Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_467_FIDELITY.md` (`test_stage467_fidelity_d1.py`); Offline Complete / Sync Dashboard Widget honesty / go-live still MISSING.
 Stage 466 D1 Offline Push/Pull Sync Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_466_FIDELITY.md` (`test_stage466_fidelity_d1.py`); Offline Complete / Push/Pull Sync honesty / go-live still MISSING.

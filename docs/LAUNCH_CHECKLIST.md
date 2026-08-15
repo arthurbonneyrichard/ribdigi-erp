@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 469 track opened (ADR-945: `test_stage469_open.py`, `docs/STAGE_469_PLAN.md`) — Offline Queue Depth Metrics Honesty Pack Remaining-Gate Index; closed under ADR-946
+- [x] Offline Queue Depth Metrics honesty pack remaining-gate hub (Stage 469 I1: `test_stage469_index_i1.py`, `docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline Queue Depth Metrics honesty pack blocker matrix (Stage 469 B1: `test_stage469_blockers_b1.py`, `docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 468 / Stage 467 / Stage 392 / CHANGE_IMPACT pointers (Stage 469 P1: `test_stage469_pointers_p1.py`, `docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 469 fidelity sync (D1: `test_stage469_fidelity_d1.py`, `docs/STAGE_469_FIDELITY.md`)
+- [x] Stage 469 exit + freeze (H469x: `test_stage469_exit_h469x.py`, `docs/STAGE_469_EXIT_CRITERIA.md`, ADR-946)
 - [x] Stage 468 track opened (ADR-943: `test_stage468_open.py`, `docs/STAGE_468_PLAN.md`) — Offline Settings Sync IA Honesty Pack Remaining-Gate Index; closed under ADR-944
 - [x] Offline Settings Sync IA honesty pack remaining-gate hub (Stage 468 I1: `test_stage468_index_i1.py`, `docs/OFFLINE_SETTINGS_SYNC_IA_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline Settings Sync IA honesty pack blocker matrix (Stage 468 B1: `test_stage468_blockers_b1.py`, `docs/OFFLINE_SETTINGS_SYNC_IA_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

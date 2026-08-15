@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-queue-depth-metrics-honesty-pack-remaining-gate.json` — Stage 469 I1
+- `docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-queue-depth-metrics-honesty-pack-rg-blockers.json` — Stage 469 B1
+- `docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-queue-depth-metrics-honesty-pack-rg-pointers.json` — Stage 469 P1
 - `docs/OFFLINE_SETTINGS_SYNC_IA_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-settings-sync-ia-honesty-pack-remaining-gate.json` — Stage 468 I1
 - `docs/OFFLINE_SETTINGS_SYNC_IA_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-settings-sync-ia-honesty-pack-rg-blockers.json` — Stage 468 B1
 - `docs/OFFLINE_SETTINGS_SYNC_IA_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-settings-sync-ia-honesty-pack-rg-pointers.json` — Stage 468 P1

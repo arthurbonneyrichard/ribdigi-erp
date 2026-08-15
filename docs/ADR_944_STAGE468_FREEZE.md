@@ -31,3 +31,9 @@ Stage 469 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Settings Sync IA, Settings Sync IA honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 469 opened under **ADR-945** after CONTINUE/NEXT (Tenant MVP Offline Queue Depth Metrics Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-946**. Stage 468 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 468 runner-up outline was approved and opened (ADR-945); freeze ADR-946. Do not reopen Stage 468 scope.
