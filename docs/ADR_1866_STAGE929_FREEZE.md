@@ -31,3 +31,7 @@ Stage 930 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Processor Gate, Transfer Processor Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 930 opened under **ADR-1867** after CONTINUE/NEXT (Tenant MVP Transfer Exporter Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1868**. Stage 929 feature scope remains frozen.
