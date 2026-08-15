@@ -496,9 +496,11 @@ async def tenant_me_suspend(
 ):
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    reason = payload.reason if payload else None
+    reason_s = ((payload.reason if payload else None) or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="suspension reason is required")
     tenant = await tenants_svc.suspend_tenant(
-        db, tenant, reason=reason, suspended_by=claims["sub"]
+        db, tenant, reason=reason_s, suspended_by=claims["sub"]
     )
     await audit_svc.record_event(
         db,
@@ -508,7 +510,7 @@ async def tenant_me_suspend(
         action="suspend",
         entity="tenant",
         entity_id=tenant.id,
-        details={"reason": reason},
+        details={"reason": reason_s},
     )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Tenant suspended; sessions revoked")
