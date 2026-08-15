@@ -31,3 +31,7 @@ Stage 507 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Weekly POS Ops Signals, Weekly POS Ops Signals honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 507 opened under **ADR-1021** after CONTINUE/NEXT (Tenant MVP Weekly POS Ops Adherence Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1022**. Stage 506 feature scope remains frozen.
