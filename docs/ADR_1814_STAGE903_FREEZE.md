@@ -31,3 +31,7 @@ Stage 904 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Quarantine Gate, Transfer Quarantine Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 904 opened under **ADR-1815** after CONTINUE/NEXT (Tenant MVP Transfer Resume Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1816**. Stage 903 feature scope remains frozen.
