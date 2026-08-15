@@ -31,3 +31,7 @@ Stage 576 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Store Open Lowstock, Store Open Lowstock honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 576 opened under **ADR-1159** after CONTINUE/NEXT (Tenant MVP Store Close Drain Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1160**. Stage 575 feature scope remains frozen.
