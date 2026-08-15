@@ -31,3 +31,10 @@ Stage 450 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Steady-State Ops, Steady-State Ops honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 450 opened under **ADR-907** after CONTINUE/NEXT (Tenant MVP Preflight Verification Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-908**. Stage 449 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 449 runner-up outline was approved and opened (ADR-907); freeze ADR-908. Do not reopen Stage 449 scope.
+

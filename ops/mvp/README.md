@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/PREFLIGHT_VERIFICATION_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/preflight-verification-honesty-pack-remaining-gate.json` — Stage 450 I1
+- `docs/PREFLIGHT_VERIFICATION_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/preflight-verification-honesty-pack-rg-blockers.json` — Stage 450 B1
+- `docs/PREFLIGHT_VERIFICATION_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/preflight-verification-honesty-pack-rg-pointers.json` — Stage 450 P1
 - `docs/STEADY_STATE_OPS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/steady-state-ops-honesty-pack-remaining-gate.json` — Stage 449 I1
 - `docs/STEADY_STATE_OPS_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/steady-state-ops-honesty-pack-rg-blockers.json` — Stage 449 B1
 - `docs/STEADY_STATE_OPS_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/steady-state-ops-honesty-pack-rg-pointers.json` — Stage 449 P1
