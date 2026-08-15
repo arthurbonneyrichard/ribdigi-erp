@@ -31,3 +31,7 @@ Stage 790 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Pii Scan Gate, Pii Scan Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 790 opened under **ADR-1587** after CONTINUE/NEXT (Tenant MVP Dlp Policy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1588**. Stage 789 feature scope remains frozen.
