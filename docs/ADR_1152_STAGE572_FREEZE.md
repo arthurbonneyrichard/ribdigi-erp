@@ -31,3 +31,7 @@ Stage 573 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Store Open Checklist, Store Open Checklist honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 573 opened under **ADR-1153** after CONTINUE/NEXT (Tenant MVP Store Close Checklist Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1154**. Stage 572 feature scope remains frozen.
