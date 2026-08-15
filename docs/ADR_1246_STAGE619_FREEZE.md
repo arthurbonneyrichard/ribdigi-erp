@@ -31,3 +31,7 @@ Stage 620 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Record Ownership Gate, Record Ownership Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 620 opened under **ADR-1247** after CONTINUE/NEXT (Tenant MVP Input Validation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1248**. Stage 619 feature scope remains frozen.

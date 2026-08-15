@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 620 D1 Input Validation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_620_FIDELITY.md` (`test_stage620_fidelity_d1.py`); exit ADR-1248 / `test_stage620_exit_h620x.py`. Honesty: Offline Complete / Input Validation Gate honesty / go-live Completes remain MISSING.
 Stage 619 D1 Record Ownership Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_619_FIDELITY.md` (`test_stage619_fidelity_d1.py`); exit ADR-1246 / `test_stage619_exit_h619x.py`. Honesty: Offline Complete / Record Ownership Gate honesty / go-live Completes remain MISSING.
 Stage 618 D1 Tenant Isolation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_618_FIDELITY.md` (`test_stage618_fidelity_d1.py`); exit ADR-1244 / `test_stage618_exit_h618x.py`. Honesty: Offline Complete / Tenant Isolation Gate honesty / go-live Completes remain MISSING.
 Stage 617 D1 RBAC Permission Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_617_FIDELITY.md` (`test_stage617_fidelity_d1.py`); exit ADR-1242 / `test_stage617_exit_h617x.py`. Honesty: Offline Complete / RBAC Permission Gate honesty / go-live Completes remain MISSING.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 620 track opened (ADR-1247: `test_stage620_open.py`, `docs/STAGE_620_PLAN.md`) — Input Validation Gate Honesty Pack Remaining-Gate Index; closed under ADR-1248
+- [x] Input Validation Gate Honesty Pack remaining-gate hub (Stage 620 I1: `test_stage620_index_i1.py`, `docs/INPUT_VALIDATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Input Validation Gate Honesty Pack blocker matrix (Stage 620 B1: `test_stage620_blockers_b1.py`, `docs/INPUT_VALIDATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 619 / Stage 618 / Stage 392 / CHANGE_IMPACT pointers (Stage 620 P1: `test_stage620_pointers_p1.py`, `docs/INPUT_VALIDATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 620 fidelity sync (D1: `test_stage620_fidelity_d1.py`, `docs/STAGE_620_FIDELITY.md`)
+- [x] Stage 620 exit + freeze (H620x: `test_stage620_exit_h620x.py`, `docs/STAGE_620_EXIT_CRITERIA.md`, ADR-1248)
+
 Stage 619 track opened (ADR-1245: `test_stage619_open.py`, `docs/STAGE_619_PLAN.md`) — Record Ownership Gate Honesty Pack Remaining-Gate Index; closed under ADR-1246
 - [x] Record Ownership Gate Honesty Pack remaining-gate hub (Stage 619 I1: `test_stage619_index_i1.py`, `docs/RECORD_OWNERSHIP_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Record Ownership Gate Honesty Pack blocker matrix (Stage 619 B1: `test_stage619_blockers_b1.py`, `docs/RECORD_OWNERSHIP_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
