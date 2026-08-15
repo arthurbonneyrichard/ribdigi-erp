@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 567 track opened (ADR-1141: `test_stage567_open.py`, `docs/STAGE_567_PLAN.md`) — Migration Gate Honesty Pack Remaining-Gate Index; closed under ADR-1142
+- [x] Migration Gate Honesty Pack remaining-gate hub (Stage 567 I1: `test_stage567_index_i1.py`, `docs/MIGRATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Migration Gate Honesty Pack blocker matrix (Stage 567 B1: `test_stage567_blockers_b1.py`, `docs/MIGRATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 566 / Stage 565 / Stage 392 / CHANGE_IMPACT pointers (Stage 567 P1: `test_stage567_pointers_p1.py`, `docs/MIGRATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 567 fidelity sync (D1: `test_stage567_fidelity_d1.py`, `docs/STAGE_567_FIDELITY.md`)
+- [x] Stage 567 exit + freeze (H567x: `test_stage567_exit_h567x.py`, `docs/STAGE_567_EXIT_CRITERIA.md`, ADR-1142)
+
 Stage 566 track opened (ADR-1139: `test_stage566_open.py`, `docs/STAGE_566_PLAN.md`) — Ops Monitoring Honesty Pack Remaining-Gate Index; closed under ADR-1140
 - [x] Ops Monitoring Honesty Pack remaining-gate hub (Stage 566 I1: `test_stage566_index_i1.py`, `docs/OPS_MONITORING_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Ops Monitoring Honesty Pack blocker matrix (Stage 566 B1: `test_stage566_blockers_b1.py`, `docs/OPS_MONITORING_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

@@ -31,3 +31,7 @@ Stage 567 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Ops Monitoring, Ops Monitoring honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 567 opened under **ADR-1141** after CONTINUE/NEXT (Tenant MVP Migration Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1142**. Stage 566 feature scope remains frozen.
