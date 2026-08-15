@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 827 D1 Unsubscribe Link Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_827_FIDELITY.md` (`test_stage827_fidelity_d1.py`); exit ADR-1662 / `test_stage827_exit_h827x.py`. Honesty: Offline Complete / Unsubscribe Link Gate honesty / go-live Completes remain MISSING.
 Stage 826 D1 Suppression List Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_826_FIDELITY.md` (`test_stage826_fidelity_d1.py`); exit ADR-1660 / `test_stage826_exit_h826x.py`. Honesty: Offline Complete / Suppression List Gate honesty / go-live Completes remain MISSING.
 Stage 825 D1 Complaint Feedback Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_825_FIDELITY.md` (`test_stage825_fidelity_d1.py`); exit ADR-1658 / `test_stage825_exit_h825x.py`. Honesty: Offline Complete / Complaint Feedback Gate honesty / go-live Completes remain MISSING.
 Stage 824 D1 Bounce Handle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_824_FIDELITY.md` (`test_stage824_fidelity_d1.py`); exit ADR-1656 / `test_stage824_exit_h824x.py`. Honesty: Offline Complete / Bounce Handle Gate honesty / go-live Completes remain MISSING.

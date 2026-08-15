@@ -31,3 +31,7 @@ Stage 827 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Suppression List Gate, Suppression List Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 827 opened under **ADR-1661** after CONTINUE/NEXT (Tenant MVP Unsubscribe Link Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1662**. Stage 826 feature scope remains frozen.
