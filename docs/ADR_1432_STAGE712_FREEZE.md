@@ -31,3 +31,7 @@ Stage 713 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Unique Constraint Gate, Unique Constraint Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 713 opened under **ADR-1433** after CONTINUE/NEXT (Tenant MVP Check Constraint Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1434**. Stage 712 feature scope remains frozen.
