@@ -31,3 +31,7 @@ Stage 794 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Retention Label Gate, Retention Label Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 794 opened under **ADR-1595** after CONTINUE/NEXT (Tenant MVP Legal Hold Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1596**. Stage 793 feature scope remains frozen.
