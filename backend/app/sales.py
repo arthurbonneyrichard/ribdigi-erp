@@ -667,11 +667,16 @@ async def cancel_sales_invoice(
     tenant_id: str,
     user_id: str,
     invoice_id: str,
+    reason: str | None = None,
 ) -> m.SalesInvoice:
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
     invoice = await get_invoice(db, tenant_id, invoice_id)
     if invoice.status != "draft":
         raise HTTPException(status_code=409, detail="Only draft invoices can be cancelled")
     invoice.status = "cancelled"
+    invoice.notes = ((invoice.notes or "") + f"\nCancel: {reason_s}").strip()
     invoice.updated_at = datetime.utcnow()
     db.add(
         m.AuditLog(
@@ -680,7 +685,7 @@ async def cancel_sales_invoice(
             action="invoice_cancelled",
             entity="sales_invoice",
             entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number},
+            details={"invoice_number": invoice.invoice_number, "reason": reason_s},
         )
     )
     return invoice

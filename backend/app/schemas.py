@@ -1016,6 +1016,12 @@ class SalesOrderCancel(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+class SalesInvoiceCancel(BaseModel):
+    """Draft sales invoice cancel — typed reason required (BR-7.4 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class SalesReturnItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
