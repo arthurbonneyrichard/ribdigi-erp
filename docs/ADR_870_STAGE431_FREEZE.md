@@ -31,3 +31,10 @@ Stage 432 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Attestation Workflow, Attestation Workflow honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 432 opened under **ADR-871** after CONTINUE/NEXT (Tenant MVP Commercial Go-Live Closeout Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-872**. Stage 431 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 431 runner-up outline was approved and opened (ADR-871); freeze ADR-872. Do not reopen Stage 431 scope.
+
