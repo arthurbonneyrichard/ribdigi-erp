@@ -31,3 +31,7 @@ Stage 869 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Breach Notify Gate, Breach Notify Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 869 opened under **ADR-1745** after CONTINUE/NEXT (Tenant MVP ROPA Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1746**. Stage 868 feature scope remains frozen.

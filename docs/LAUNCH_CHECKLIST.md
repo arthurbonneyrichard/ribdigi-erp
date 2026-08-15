@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 869 track opened (ADR-1745: `test_stage869_open.py`, `docs/STAGE_869_PLAN.md`) — ROPA Gate Honesty Pack Remaining-Gate Index; closed under ADR-1746
+- [x] ROPA Gate Honesty Pack remaining-gate hub (Stage 869 I1: `test_stage869_index_i1.py`, `docs/ROPA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] ROPA Gate Honesty Pack blocker matrix (Stage 869 B1: `test_stage869_blockers_b1.py`, `docs/ROPA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 868 / Stage 867 / Stage 392 / CHANGE_IMPACT pointers (Stage 869 P1: `test_stage869_pointers_p1.py`, `docs/ROPA_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 869 fidelity sync (D1: `test_stage869_fidelity_d1.py`, `docs/STAGE_869_FIDELITY.md`)
+- [x] Stage 869 exit + freeze (H869x: `test_stage869_exit_h869x.py`, `docs/STAGE_869_EXIT_CRITERIA.md`, ADR-1746)
+
 Stage 868 track opened (ADR-1743: `test_stage868_open.py`, `docs/STAGE_868_PLAN.md`) — Breach Notify Gate Honesty Pack Remaining-Gate Index; closed under ADR-1744
 - [x] Breach Notify Gate Honesty Pack remaining-gate hub (Stage 868 I1: `test_stage868_index_i1.py`, `docs/BREACH_NOTIFY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Breach Notify Gate Honesty Pack blocker matrix (Stage 868 B1: `test_stage868_blockers_b1.py`, `docs/BREACH_NOTIFY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
