@@ -31,3 +31,7 @@ Stage 502 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Quarterly POS Ops Review, Quarterly POS Ops Review honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 502 opened under **ADR-1011** after CONTINUE/NEXT (Tenant MVP Quarterly POS Ops Gates Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1012**. Stage 501 feature scope remains frozen.
