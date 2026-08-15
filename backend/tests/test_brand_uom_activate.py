@@ -21,6 +21,50 @@ def test_brand_uom_activate_ui_wired():
     assert "u.is_active !== false" in inventory
     assert "Activate" in inventory
     assert "Deactivate" in inventory
+    assert "brandManageFilter" in inventory
+    assert "unitManageFilter" in inventory
+    assert 'aria-label="Catalog brand status filter"' in inventory
+    assert 'aria-label="Catalog unit status filter"' in inventory
+    assert "managedBrands" in inventory
+    assert "managedUnits" in inventory
+
+
+@pytest.mark.asyncio
+async def test_catalog_brands_units_list_is_active_filter(client, seeded):
+    ac, seed = client
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+    brand = await ac.post(
+        "/api/v1/catalog/brands",
+        headers=admin,
+        json={"code": "FLT-BR", "name": "Filter Brand Co"},
+    )
+    assert brand.status_code == 200, brand.text
+    brand_id = brand.json()["data"]["id"]
+
+    unit = await ac.post(
+        "/api/v1/catalog/units",
+        headers=admin,
+        json={"code": "FBOX", "name": "Filter Box"},
+    )
+    assert unit.status_code == 200, unit.text
+    unit_id = unit.json()["data"]["id"]
+
+    await ac.delete(f"/api/v1/catalog/brands/{brand_id}", headers=admin)
+    await ac.delete(f"/api/v1/catalog/units/{unit_id}", headers=admin)
+
+    brands_active = await ac.get("/api/v1/catalog/brands?is_active=true", headers=admin)
+    assert brand_id not in {r["id"] for r in brands_active.json()["data"]}
+    brands_inactive = await ac.get("/api/v1/catalog/brands?is_active=false", headers=admin)
+    assert brand_id in {r["id"] for r in brands_inactive.json()["data"]}
+
+    units_active = await ac.get("/api/v1/catalog/units?is_active=true", headers=admin)
+    assert unit_id not in {r["id"] for r in units_active.json()["data"]}
+    units_inactive = await ac.get("/api/v1/catalog/units?is_active=false", headers=admin)
+    assert unit_id in {r["id"] for r in units_inactive.json()["data"]}
 
 
 @pytest.mark.asyncio

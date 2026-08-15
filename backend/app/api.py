@@ -3008,11 +3008,15 @@ async def patch_product(
 
 @api.get("/catalog/categories")
 async def catalog_categories(
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """List product categories. Optional is_active filters soft-deactivated rows (Catalog manage UI)."""
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
-    rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
+    rows = await catalog_meta_svc.list_categories(
+        db, claims["tenant_id"], is_active=is_active
+    )
     return env(catalog_meta_svc.serialize_categories_tree(rows))
 
 
@@ -3082,10 +3086,14 @@ async def catalog_delete_category(
 
 @api.get("/catalog/brands")
 async def catalog_brands(
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await catalog_meta_svc.list_brands(db, claims["tenant_id"])
+    """List brands. Optional is_active filters soft-deactivated rows (Catalog manage UI)."""
+    rows = await catalog_meta_svc.list_brands(
+        db, claims["tenant_id"], is_active=is_active
+    )
     return env([catalog_meta_svc.serialize_brand(r) for r in rows])
 
 
@@ -3225,12 +3233,16 @@ async def catalog_brand_logo_delete(
 
 @api.get("/catalog/units")
 async def catalog_units(
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """List units of measure. Optional is_active filters soft-deactivated rows (Catalog manage UI)."""
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
     await db.commit()
-    rows = await catalog_meta_svc.list_units(db, claims["tenant_id"])
+    rows = await catalog_meta_svc.list_units(
+        db, claims["tenant_id"], is_active=is_active
+    )
     return env(await catalog_meta_svc.serialize_units(db, claims["tenant_id"], rows))
 
 
