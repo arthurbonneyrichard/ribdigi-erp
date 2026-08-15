@@ -31,3 +31,7 @@ Stage 762 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Bearer Token Gate, Bearer Token Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 762 opened under **ADR-1531** after CONTINUE/NEXT (Tenant MVP Api Key Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1532**. Stage 761 feature scope remains frozen.
