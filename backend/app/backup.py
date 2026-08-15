@@ -331,15 +331,30 @@ async def create_backup(
         await prune_retention(db, tenant_id, settings_row.retention_count)
         await db.flush()
         return job
-    except HTTPException:
+    except HTTPException as exc:
         job.status = "failed"
-        job.error_message = "Backup failed"
+        job.error_message = str(exc.detail)[:500] if exc.detail else "Backup failed"
         await db.flush()
+        # Manual creates still raise; scheduled path catches and notifies.
+        if notes != "scheduled":
+            await notify_backup_failure(
+                db,
+                tenant_id=tenant_id,
+                reason="failed",
+                detail=str(exc.detail),
+            )
         raise
     except Exception as exc:
         job.status = "failed"
         job.error_message = str(exc)[:500]
         await db.flush()
+        if notes != "scheduled":
+            await notify_backup_failure(
+                db,
+                tenant_id=tenant_id,
+                reason="failed",
+                detail=str(exc)[:400],
+            )
         raise HTTPException(status_code=500, detail=f"Backup failed: {exc}") from exc
 
 
@@ -602,13 +617,43 @@ async def prune_retention(db: AsyncSession, tenant_id: str, keep: int) -> int:
 
 
 def ensure_backup_dir_writable() -> None:
-    root = backup_root()
-    probe = root / ".write_test"
     try:
+        root = backup_root()
+        probe = root / ".write_test"
         probe.write_text("ok", encoding="utf-8")
         probe.unlink(missing_ok=True)
     except OSError as exc:
-        raise HTTPException(status_code=503, detail=f"Backup directory not writable: {root}") from exc
+        raise HTTPException(
+            status_code=503,
+            detail=f"Backup directory not writable: {settings.BACKUP_DIR}",
+        ) from exc
+
+
+async def notify_backup_failure(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    reason: str,
+    detail: str | None = None,
+) -> None:
+    """Create an in-app system alert for admins when a backup fails (BR-16.2)."""
+    from app import notifications as notifications_svc
+
+    reason_s = (reason or "failed").strip()[:80]
+    detail_s = (detail or "").strip()[:400]
+    message = f"Backup failed ({reason_s})"
+    if detail_s:
+        message = f"{message}: {detail_s}"
+    await notifications_svc.create_notification(
+        db,
+        tenant_id=tenant_id,
+        category="system",
+        title="Backup failed",
+        message=message[:500],
+        roles=["company_admin", "super_admin"],
+        entity_type="backup",
+        entity_id=None,
+    )
 
 
 async def run_scheduled_backup_if_due(
@@ -617,7 +662,11 @@ async def run_scheduled_backup_if_due(
     tenant_id: str,
     user_id: str | None = None,
 ) -> dict:
-    """Run a backup when schedule is enabled and due. Safe for Celery/cron."""
+    """Run a backup when schedule is enabled and due. Safe for Celery/cron.
+
+    Never raises for expected schedule/create failures — returns ``ran=false`` with a
+    reason so the Celery tenant loop can commit the failed job + admin notification.
+    """
     from datetime import timedelta
 
     row = await get_or_create_settings(db, tenant_id)
@@ -630,17 +679,60 @@ async def run_scheduled_backup_if_due(
             return {"ran": False, "reason": "already_ran", "tenant_id": tenant_id}
     if now.hour < int(row.hour_utc or 0) and row.last_run_at:
         return {"ran": False, "reason": "before_hour", "tenant_id": tenant_id}
-    ensure_backup_dir_writable()
-    job = await create_backup(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        notes="scheduled",
-    )
-    return {
-        "ran": True,
-        "reason": "created",
-        "tenant_id": tenant_id,
-        "backup_id": job.id,
-        "filename": job.filename,
-    }
+
+    try:
+        ensure_backup_dir_writable()
+    except HTTPException as exc:
+        await notify_backup_failure(
+            db,
+            tenant_id=tenant_id,
+            reason="dir_not_writable",
+            detail=str(exc.detail),
+        )
+        return {
+            "ran": False,
+            "reason": "dir_not_writable",
+            "tenant_id": tenant_id,
+            "error": str(exc.detail)[:200],
+        }
+
+    try:
+        job = await create_backup(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            notes="scheduled",
+        )
+        return {
+            "ran": True,
+            "reason": "created",
+            "tenant_id": tenant_id,
+            "backup_id": job.id,
+            "filename": job.filename,
+        }
+    except HTTPException as exc:
+        await notify_backup_failure(
+            db,
+            tenant_id=tenant_id,
+            reason="failed",
+            detail=str(exc.detail),
+        )
+        return {
+            "ran": False,
+            "reason": "failed",
+            "tenant_id": tenant_id,
+            "error": str(exc.detail)[:200],
+        }
+    except Exception as exc:  # noqa: BLE001 — scheduled path must not crash the tenant loop
+        await notify_backup_failure(
+            db,
+            tenant_id=tenant_id,
+            reason="failed",
+            detail=str(exc)[:400],
+        )
+        return {
+            "ran": False,
+            "reason": "failed",
+            "tenant_id": tenant_id,
+            "error": str(exc)[:200],
+        }

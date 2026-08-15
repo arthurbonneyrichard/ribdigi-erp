@@ -117,7 +117,10 @@ export default function Page() {
   return (
     <Shell>
       <h1>Backup &amp; Recovery</h1>
-      <p className="muted">Encrypted tenant logical backups with checksum verification</p>
+      <p className="muted">
+        Encrypted tenant logical backups with checksum verification. Schedule failures raise an in-app
+        Backup failed alert for admins (see Notifications).
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
