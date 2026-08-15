@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 863 D1 Joint Controller Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_863_FIDELITY.md` (`test_stage863_fidelity_d1.py`); Offline Complete / Joint Controller Gate honesty / go-live still MISSING.
 Stage 862 D1 Controller Record Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_862_FIDELITY.md` (`test_stage862_fidelity_d1.py`); Offline Complete / Controller Record Gate honesty / go-live still MISSING.
 Stage 861 D1 Processor Record Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_861_FIDELITY.md` (`test_stage861_fidelity_d1.py`); Offline Complete / Processor Record Gate honesty / go-live still MISSING.
 Stage 860 D1 Lawful Basis Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_860_FIDELITY.md` (`test_stage860_fidelity_d1.py`); Offline Complete / Lawful Basis Gate honesty / go-live still MISSING.
