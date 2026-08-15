@@ -31,3 +31,7 @@ Stage 701 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Read Replica Lag Gate, Read Replica Lag Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 701 opened under **ADR-1409** after CONTINUE/NEXT (Tenant MVP Connection Pool Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1410**. Stage 700 feature scope remains frozen.
