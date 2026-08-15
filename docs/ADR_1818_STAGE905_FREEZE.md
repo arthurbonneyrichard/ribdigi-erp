@@ -31,3 +31,7 @@ Stage 906 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Release Gate, Transfer Release Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 906 opened under **ADR-1819** after CONTINUE/NEXT (Tenant MVP Transfer Approval Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1820**. Stage 905 feature scope remains frozen.
