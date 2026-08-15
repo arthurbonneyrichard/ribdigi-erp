@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 858 track opened (ADR-1723: `test_stage858_open.py`, `docs/STAGE_858_PLAN.md`) — Transparency Gate Honesty Pack Remaining-Gate Index; closed under ADR-1724
+- [x] Transparency Gate Honesty Pack remaining-gate hub (Stage 858 I1: `test_stage858_index_i1.py`, `docs/TRANSPARENCY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transparency Gate Honesty Pack blocker matrix (Stage 858 B1: `test_stage858_blockers_b1.py`, `docs/TRANSPARENCY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 857 / Stage 856 / Stage 392 / CHANGE_IMPACT pointers (Stage 858 P1: `test_stage858_pointers_p1.py`, `docs/TRANSPARENCY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 858 fidelity sync (D1: `test_stage858_fidelity_d1.py`, `docs/STAGE_858_FIDELITY.md`)
+- [x] Stage 858 exit + freeze (H858x: `test_stage858_exit_h858x.py`, `docs/STAGE_858_EXIT_CRITERIA.md`, ADR-1724)
+
 Stage 857 track opened (ADR-1721: `test_stage857_open.py`, `docs/STAGE_857_PLAN.md`) — Fairness Gate Honesty Pack Remaining-Gate Index; closed under ADR-1722
 - [x] Fairness Gate Honesty Pack remaining-gate hub (Stage 857 I1: `test_stage857_index_i1.py`, `docs/FAIRNESS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Fairness Gate Honesty Pack blocker matrix (Stage 857 B1: `test_stage857_blockers_b1.py`, `docs/FAIRNESS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

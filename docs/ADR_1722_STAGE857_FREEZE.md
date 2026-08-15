@@ -31,3 +31,7 @@ Stage 858 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Fairness Gate, Fairness Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 858 opened under **ADR-1723** after CONTINUE/NEXT (Tenant MVP Transparency Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1724**. Stage 857 feature scope remains frozen.
