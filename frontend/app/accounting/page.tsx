@@ -12,6 +12,7 @@ type Tab = 'ledger' | 'cash' | 'reconcile' | 'cheques';
 export default function Page() {
   const [tab, setTab] = useState<Tab>('ledger');
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [accountManageFilter, setAccountManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
   const [transfers, setTransfers] = useState<any[]>([]);
@@ -423,6 +424,21 @@ export default function Page() {
     }
   }
 
+  async function setAccountActive(id: string, isActive: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/accounts/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      setMessage(isActive ? 'Account activated' : 'Account deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function postTransfer() {
     setError('');
     setMessage('');
@@ -727,6 +743,12 @@ export default function Page() {
   const manualDebitTotal = manualLines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
   const manualCreditTotal = manualLines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
   const manualBalanced = Math.abs(manualDebitTotal - manualCreditTotal) <= 0.01;
+  const managedAccounts = accounts.filter((a) => {
+    if (accountManageFilter === 'all') return true;
+    const active = a.is_active !== false;
+    return accountManageFilter === 'inactive' ? !active : active;
+  });
+  const activeAccounts = accounts.filter((a) => a.is_active !== false);
 
   return (
     <Shell>
@@ -915,7 +937,7 @@ export default function Page() {
                 </tbody>
               </table>
               <datalist id="manual-journal-accounts">
-                {accounts.map((a) => (
+                {activeAccounts.map((a) => (
                   <option key={a.id} value={a.code}>
                     {a.name}
                   </option>
@@ -954,7 +976,7 @@ export default function Page() {
               <>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <select value={coaOpenCode} onChange={(e) => setCoaOpenCode(e.target.value)}>
-                    {accounts.map((a) => (
+                    {activeAccounts.map((a) => (
                       <option key={a.id} value={a.code}>
                         {a.code} — {a.name} ({a.account_type})
                       </option>
@@ -1028,6 +1050,19 @@ export default function Page() {
           </div>
 
           <h3>Chart of accounts</h3>
+          <select
+            value={accountManageFilter}
+            onChange={(e) =>
+              setAccountManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+            }
+            title="Filter manage chart of accounts by status"
+            aria-label="Account status filter"
+            style={{ marginBottom: 8 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -1037,20 +1072,46 @@ export default function Page() {
                 <th>Liquid</th>
                 <th>Opening</th>
                 <th>Balance</th>
+                <th>Active</th>
+                <th />
               </tr>
             </thead>
             <tbody>
-              {accounts.map((r) => (
+              {managedAccounts.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="muted">
+                    No accounts for this filter
+                  </td>
+                </tr>
+              )}
+              {managedAccounts.map((r) => (
                 <tr key={r.id}>
                   <td>{r.code}</td>
                   <td>
                     {r.name}
                     {r.is_system ? ' · system' : ''}
+                    {r.is_active === false ? (
+                      <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                        [inactive]
+                      </span>
+                    ) : null}
                   </td>
                   <td>{r.account_type}</td>
                   <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
                   <td>{r.opening_balance ?? 0}</td>
                   <td>{r.balance}</td>
+                  <td>{r.is_active === false ? 'no' : 'yes'}</td>
+                  <td>
+                    {r.is_active === false ? (
+                      <button type="button" onClick={() => setAccountActive(r.id, true)}>
+                        Activate
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => setAccountActive(r.id, false)}>
+                        Deactivate
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

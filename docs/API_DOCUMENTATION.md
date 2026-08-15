@@ -1126,9 +1126,10 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 ## 10. Accounting
 
 ### 10.1 Chart of Accounts
-**List:** `GET /accounting/accounts`  
+**List:** `GET /accounting/accounts` — optional `?is_active=true|false` (omit = all; Accounting manage status filter).  
 **Create:** `POST /accounting/accounts`  
-**Get:** `GET /accounting/accounts/{account_id}`
+**Get:** `GET /accounting/accounts/{account_id}`  
+**Update:** `PATCH /accounting/accounts/{account_id}` — partial fields include `name`, bank metadata, and soft-deactivate via `is_active` (Accounting COA **Activate** / **Deactivate**; inactive blocked on new journal lines, cash transfers, opening balances, expense-category GL, and liquid pickers).
 
 **Account Types:** `asset`, `liability`, `equity`, `income`, `expense`
 

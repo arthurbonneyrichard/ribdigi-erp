@@ -23,6 +23,7 @@ def serialize_account(account: m.Account) -> dict:
         "balance": float(account.balance or 0),
         "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
         "is_system": account.code in system_codes,
+        "is_active": bool(getattr(account, "is_active", True)),
         "is_cash_account": bool(account.is_cash_account),
         "is_bank_account": bool(account.is_bank_account),
         "bank_name": account.bank_name,
@@ -76,6 +77,8 @@ def journal_line_signed_amount(line: m.JournalEntryLine) -> float:
 
 
 async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) -> m.Account:
+    from app.accounting import assert_account_active
+
     account = (
         await db.execute(
             select(m.Account).where(m.Account.id == account_id, m.Account.tenant_id == tenant_id)
@@ -88,6 +91,7 @@ async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) 
             status_code=400,
             detail="Account must be marked as cash or bank for reconciliation",
         )
+    assert_account_active(account)
     return account
 
 
@@ -99,6 +103,7 @@ async def list_liquid_accounts(db: AsyncSession, tenant_id: str) -> list[m.Accou
                 .where(
                     m.Account.tenant_id == tenant_id,
                     or_(m.Account.is_cash_account.is_(True), m.Account.is_bank_account.is_(True)),
+                    m.Account.is_active.is_(True),
                 )
                 .order_by(m.Account.code)
             )

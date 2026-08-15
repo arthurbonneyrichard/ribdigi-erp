@@ -582,6 +582,7 @@ class Account(Base):
     opening_balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     is_cash_account: Mapped[bool] = mapped_column(Boolean, default=False)
     is_bank_account: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     account_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
     bank_branch: Mapped[str | None] = mapped_column(String(120), nullable=True)

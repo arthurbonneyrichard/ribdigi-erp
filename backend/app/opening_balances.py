@@ -25,6 +25,8 @@ EQUITY_PLUG_CODE = "3000"
 async def _resolve_account(
     db: AsyncSession, tenant_id: str, *, account_id: str | None, account_code: str | None
 ) -> m.Account:
+    from app.accounting import assert_account_active
+
     if account_id:
         row = (
             await db.execute(
@@ -36,11 +38,13 @@ async def _resolve_account(
         ).scalar_one_or_none()
         if not row:
             raise HTTPException(status_code=404, detail="Account not found")
+        assert_account_active(row)
         return row
     if account_code:
         row = await get_account_by_code(db, tenant_id, account_code.strip())
         if not row:
             raise HTTPException(status_code=404, detail=f"Account not found: {account_code}")
+        assert_account_active(row)
         return row
     raise HTTPException(status_code=400, detail="Each line needs account_id or account_code")
 
