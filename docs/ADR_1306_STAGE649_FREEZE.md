@@ -31,3 +31,7 @@ Stage 650 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Error Budget Gate, Error Budget Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 650 opened under **ADR-1307** after CONTINUE/NEXT (Tenant MVP Feature Flag Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1308**. Stage 649 feature scope remains frozen.

@@ -1,0 +1,77 @@
+{
+  "id": "feature-flag-gate-honesty-pack-rg-blockers",
+  "stage": 650,
+  "pack": "B1",
+  "doc": "docs/FEATURE_FLAG_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FEATURE_FLAG_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "feature_flag_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "feature_flag_gate_honesty_complete_claimed": false,
+  "feature_flag_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "feature_flag_gate_honesty_complete_claimed": "REMAINING",
+    "feature_flag_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_feature_flag_gate_honesty": "NON_CLAIM",
+    "feature_flag_gate_pack_as_feature_flag_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "feature_flag_gate_honesty_complete_claimed_flag": "false",
+    "feature_flag_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ffghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ffghb-honesty",
+      "title": "Mark Feature Flag Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ffghb-as-golive",
+      "title": "Mark Feature Flag Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ffghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ffghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ffghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for feature-flag-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ffghb-checklist-remaining",
+      "title": "Offline Complete / Feature Flag Gate / Feature Flag Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 650 B1 Feature Flag Gate Honesty Pack RG blocker matrix packaging only."
+}
