@@ -31,3 +31,7 @@ Stage 742 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Nel Reporting Gate, Nel Reporting Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 742 opened under **ADR-1491** after CONTINUE/NEXT (Tenant MVP Document Policy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1492**. Stage 741 feature scope remains frozen.
