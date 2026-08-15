@@ -31,3 +31,7 @@ Stage 564 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Soft Delete Erasure, Soft Delete Erasure honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 564 opened under **ADR-1135** after CONTINUE/NEXT (Tenant MVP Subscription Renewal Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1136**. Stage 563 feature scope remains frozen.

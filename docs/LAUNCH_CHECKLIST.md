@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 564 track opened (ADR-1135: `test_stage564_open.py`, `docs/STAGE_564_PLAN.md`) — Subscription Renewal Honesty Pack Remaining-Gate Index; closed under ADR-1136
+- [x] Subscription Renewal Honesty Pack remaining-gate hub (Stage 564 I1: `test_stage564_index_i1.py`, `docs/SUBSCRIPTION_RENEWAL_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Subscription Renewal Honesty Pack blocker matrix (Stage 564 B1: `test_stage564_blockers_b1.py`, `docs/SUBSCRIPTION_RENEWAL_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 563 / Stage 562 / Stage 392 / CHANGE_IMPACT pointers (Stage 564 P1: `test_stage564_pointers_p1.py`, `docs/SUBSCRIPTION_RENEWAL_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 564 fidelity sync (D1: `test_stage564_fidelity_d1.py`, `docs/STAGE_564_FIDELITY.md`)
+- [x] Stage 564 exit + freeze (H564x: `test_stage564_exit_h564x.py`, `docs/STAGE_564_EXIT_CRITERIA.md`, ADR-1136)
+
 Stage 563 track opened (ADR-1133: `test_stage563_open.py`, `docs/STAGE_563_PLAN.md`) — Soft Delete Erasure Honesty Pack Remaining-Gate Index; closed under ADR-1134
 - [x] Soft Delete Erasure Honesty Pack remaining-gate hub (Stage 563 I1: `test_stage563_index_i1.py`, `docs/SOFT_DELETE_ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Soft Delete Erasure Honesty Pack blocker matrix (Stage 563 B1: `test_stage563_blockers_b1.py`, `docs/SOFT_DELETE_ERASURE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
