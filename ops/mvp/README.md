@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/DEVICE_ATTEST_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/device-attest-gate-honesty-pack-remaining-gate.json` — Stage 773 I1
+- `docs/DEVICE_ATTEST_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/device-attest-gate-honesty-pack-rg-blockers.json` — Stage 773 B1
+- `docs/DEVICE_ATTEST_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/device-attest-gate-honesty-pack-rg-pointers.json` — Stage 773 P1
 - `docs/DEVICE_TRUST_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/device-trust-gate-honesty-pack-remaining-gate.json` — Stage 772 I1
 - `docs/DEVICE_TRUST_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/device-trust-gate-honesty-pack-rg-blockers.json` — Stage 772 B1
 - `docs/DEVICE_TRUST_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/device-trust-gate-honesty-pack-rg-pointers.json` — Stage 772 P1
