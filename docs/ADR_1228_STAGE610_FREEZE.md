@@ -31,3 +31,7 @@ Stage 611 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Development Roadmap Gate, Development Roadmap Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 611 opened under **ADR-1229** after CONTINUE/NEXT (Tenant MVP Cursor Handoff Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1230**. Stage 610 feature scope remains frozen.

@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 611 D1 (2026-08-14):** Cursor Handoff Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_611_FIDELITY.md` (`test_stage611_fidelity_d1.py`). Open ADR: `docs/ADR_1229_STAGE611_OPEN.md`; plan `docs/STAGE_611_PLAN.md`.
+
+**Stage 611 exit (2026-08-14):** I1, B1, P1, D1, H611x met — `docs/STAGE_611_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1230_STAGE611_FREEZE.md`. Fidelity: `docs/STAGE_611_FIDELITY.md`.
+
 **Stage 610 D1 (2026-08-14):** Development Roadmap Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_610_FIDELITY.md` (`test_stage610_fidelity_d1.py`). Open ADR: `docs/ADR_1227_STAGE610_OPEN.md`; plan `docs/STAGE_610_PLAN.md`.
 
 **Stage 610 exit (2026-08-14):** I1, B1, P1, D1, H610x met — `docs/STAGE_610_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1228_STAGE610_FREEZE.md`. Fidelity: `docs/STAGE_610_FIDELITY.md`.

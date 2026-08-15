@@ -1,0 +1,77 @@
+{
+  "id": "cursor-handoff-gate-honesty-pack-rg-blockers",
+  "stage": 611,
+  "pack": "B1",
+  "doc": "docs/CURSOR_HANDOFF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CURSOR_HANDOFF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "cursor_handoff_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "cursor_handoff_gate_honesty_complete_claimed": false,
+  "cursor_handoff_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "cursor_handoff_gate_honesty_complete_claimed": "REMAINING",
+    "cursor_handoff_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_cursor_handoff_gate_honesty": "NON_CLAIM",
+    "cursor_handoff_gate_pack_as_cursor_handoff_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "cursor_handoff_gate_honesty_complete_claimed_flag": "false",
+    "cursor_handoff_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "chghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "chghb-honesty",
+      "title": "Mark Cursor Handoff Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "chghb-as-golive",
+      "title": "Mark Cursor Handoff Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "chghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "chghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "chghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for cursor-handoff-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "chghb-checklist-remaining",
+      "title": "Offline Complete / Cursor Handoff Gate / Cursor Handoff Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 611 B1 Cursor Handoff Gate Honesty Pack RG blocker matrix packaging only."
+}
