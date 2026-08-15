@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 808 track opened (ADR-1623: `test_stage808_open.py`, `docs/STAGE_808_PLAN.md`) — CRL Check Gate Honesty Pack Remaining-Gate Index; closed under ADR-1624
+- [x] CRL Check Gate Honesty Pack remaining-gate hub (Stage 808 I1: `test_stage808_index_i1.py`, `docs/CRL_CHECK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] CRL Check Gate Honesty Pack blocker matrix (Stage 808 B1: `test_stage808_blockers_b1.py`, `docs/CRL_CHECK_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 807 / Stage 806 / Stage 392 / CHANGE_IMPACT pointers (Stage 808 P1: `test_stage808_pointers_p1.py`, `docs/CRL_CHECK_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 808 fidelity sync (D1: `test_stage808_fidelity_d1.py`, `docs/STAGE_808_FIDELITY.md`)
+- [x] Stage 808 exit + freeze (H808x: `test_stage808_exit_h808x.py`, `docs/STAGE_808_EXIT_CRITERIA.md`, ADR-1624)
+
 Stage 807 track opened (ADR-1621: `test_stage807_open.py`, `docs/STAGE_807_PLAN.md`) — OCSP Staple Gate Honesty Pack Remaining-Gate Index; closed under ADR-1622
 - [x] OCSP Staple Gate Honesty Pack remaining-gate hub (Stage 807 I1: `test_stage807_index_i1.py`, `docs/OCSP_STAPLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] OCSP Staple Gate Honesty Pack blocker matrix (Stage 807 B1: `test_stage807_blockers_b1.py`, `docs/OCSP_STAPLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

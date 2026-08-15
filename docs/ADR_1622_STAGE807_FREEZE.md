@@ -31,3 +31,7 @@ Stage 808 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, OCSP Staple Gate, OCSP Staple Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 808 opened under **ADR-1623** after CONTINUE/NEXT (Tenant MVP CRL Check Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1624**. Stage 807 feature scope remains frozen.
