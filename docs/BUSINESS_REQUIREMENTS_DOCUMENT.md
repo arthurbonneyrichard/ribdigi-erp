@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 744 D1 Fetch Metadata Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_744_FIDELITY.md` (`test_stage744_fidelity_d1.py`); Offline Complete / Fetch Metadata Gate honesty / go-live still MISSING.
 Stage 743 D1 Origin Agent Cluster Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_743_FIDELITY.md` (`test_stage743_fidelity_d1.py`); Offline Complete / Origin Agent Cluster Gate honesty / go-live still MISSING.
 Stage 742 D1 Document Policy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_742_FIDELITY.md` (`test_stage742_fidelity_d1.py`); Offline Complete / Document Policy Gate honesty / go-live still MISSING.
 Stage 741 D1 Nel Reporting Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_741_FIDELITY.md` (`test_stage741_fidelity_d1.py`); Offline Complete / Nel Reporting Gate honesty / go-live still MISSING.

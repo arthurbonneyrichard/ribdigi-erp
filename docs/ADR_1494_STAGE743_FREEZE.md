@@ -31,3 +31,7 @@ Stage 744 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Origin Agent Cluster Gate, Origin Agent Cluster Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 744 opened under **ADR-1495** after CONTINUE/NEXT (Tenant MVP Fetch Metadata Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1496**. Stage 743 feature scope remains frozen.
