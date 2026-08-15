@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 608 track opened (ADR-1223: `test_stage608_open.py`, `docs/STAGE_608_PLAN.md`) — User Manual Gate Honesty Pack Remaining-Gate Index; closed under ADR-1224
+- [x] User Manual Gate Honesty Pack remaining-gate hub (Stage 608 I1: `test_stage608_index_i1.py`, `docs/USER_MANUAL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] User Manual Gate Honesty Pack blocker matrix (Stage 608 B1: `test_stage608_blockers_b1.py`, `docs/USER_MANUAL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 607 / Stage 606 / Stage 392 / CHANGE_IMPACT pointers (Stage 608 P1: `test_stage608_pointers_p1.py`, `docs/USER_MANUAL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 608 fidelity sync (D1: `test_stage608_fidelity_d1.py`, `docs/STAGE_608_FIDELITY.md`)
+- [x] Stage 608 exit + freeze (H608x: `test_stage608_exit_h608x.py`, `docs/STAGE_608_EXIT_CRITERIA.md`, ADR-1224)
+
 Stage 607 track opened (ADR-1221: `test_stage607_open.py`, `docs/STAGE_607_PLAN.md`) — Deployment Guide Gate Honesty Pack Remaining-Gate Index; closed under ADR-1222
 - [x] Deployment Guide Gate Honesty Pack remaining-gate hub (Stage 607 I1: `test_stage607_index_i1.py`, `docs/DEPLOYMENT_GUIDE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Deployment Guide Gate Honesty Pack blocker matrix (Stage 607 B1: `test_stage607_blockers_b1.py`, `docs/DEPLOYMENT_GUIDE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
