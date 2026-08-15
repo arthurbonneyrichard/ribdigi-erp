@@ -1,0 +1,77 @@
+{
+  "id": "pgbouncer-live-honesty-pack-rg-blockers",
+  "stage": 592,
+  "pack": "B1",
+  "doc": "docs/PGBOUNCER_LIVE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PGBOUNCER_LIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "pgbouncer_live_pack_remaining_gate": "docs/PGBOUNCER_LIVE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "pgbouncer_live_honesty_complete_claimed": false,
+  "pgbouncer_live_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "pgbouncer_live_honesty_complete_claimed": "REMAINING",
+    "pgbouncer_live_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_pgbouncer_live_honesty": "NON_CLAIM",
+    "pgbouncer_live_pack_as_pgbouncer_live_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "pgbouncer_live_honesty_complete_claimed_flag": "false",
+    "pgbouncer_live_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "pblhb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblhb-honesty",
+      "title": "Mark PgBouncer Live honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblhb-as-golive",
+      "title": "Mark PgBouncer Live as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblhb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblhb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblhb-prior-nonclaim",
+      "title": "Mark PGBOUNCER_LIVE as non-claim for pgbouncer-live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblhb-checklist-remaining",
+      "title": "Offline Complete / PgBouncer Live / PgBouncer Live honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 592 B1 PgBouncer Live Honesty Pack RG blocker matrix packaging only."
+}

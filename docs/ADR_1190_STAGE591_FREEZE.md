@@ -31,3 +31,7 @@ Stage 592 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Audit Retention, Audit Retention honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 592 opened under **ADR-1191** after CONTINUE/NEXT (Tenant MVP PgBouncer Live Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1192**. Stage 591 feature scope remains frozen.
