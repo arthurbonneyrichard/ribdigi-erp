@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 728 track opened (ADR-1463: `test_stage728_open.py`, `docs/STAGE_728_PLAN.md`) — Hsts Header Gate Honesty Pack Remaining-Gate Index; closed under ADR-1464
+- [x] Hsts Header Gate Honesty Pack remaining-gate hub (Stage 728 I1: `test_stage728_index_i1.py`, `docs/HSTS_HEADER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Hsts Header Gate Honesty Pack blocker matrix (Stage 728 B1: `test_stage728_blockers_b1.py`, `docs/HSTS_HEADER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 727 / Stage 726 / Stage 392 / CHANGE_IMPACT pointers (Stage 728 P1: `test_stage728_pointers_p1.py`, `docs/HSTS_HEADER_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 728 fidelity sync (D1: `test_stage728_fidelity_d1.py`, `docs/STAGE_728_FIDELITY.md`)
+- [x] Stage 728 exit + freeze (H728x: `test_stage728_exit_h728x.py`, `docs/STAGE_728_EXIT_CRITERIA.md`, ADR-1464)
+
 Stage 727 track opened (ADR-1461: `test_stage727_open.py`, `docs/STAGE_727_PLAN.md`) — Content Security Policy Gate Honesty Pack Remaining-Gate Index; closed under ADR-1462
 - [x] Content Security Policy Gate Honesty Pack remaining-gate hub (Stage 727 I1: `test_stage727_index_i1.py`, `docs/CONTENT_SECURITY_POLICY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Content Security Policy Gate Honesty Pack blocker matrix (Stage 727 B1: `test_stage727_blockers_b1.py`, `docs/CONTENT_SECURITY_POLICY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

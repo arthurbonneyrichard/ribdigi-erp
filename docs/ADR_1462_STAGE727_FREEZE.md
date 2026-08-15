@@ -31,3 +31,7 @@ Stage 728 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Content Security Policy Gate, Content Security Policy Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 728 opened under **ADR-1463** after CONTINUE/NEXT (Tenant MVP Hsts Header Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1464**. Stage 727 feature scope remains frozen.
