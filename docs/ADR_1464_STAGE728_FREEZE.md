@@ -31,3 +31,7 @@ Stage 729 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Hsts Header Gate, Hsts Header Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 729 opened under **ADR-1465** after CONTINUE/NEXT (Tenant MVP X Frame Options Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1466**. Stage 728 feature scope remains frozen.
