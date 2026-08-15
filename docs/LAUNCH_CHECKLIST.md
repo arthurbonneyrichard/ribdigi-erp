@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 791 track opened (ADR-1589: `test_stage791_open.py`, `docs/STAGE_791_PLAN.md`) — Data Classification Gate Honesty Pack Remaining-Gate Index; closed under ADR-1590
+- [x] Data Classification Gate Honesty Pack remaining-gate hub (Stage 791 I1: `test_stage791_index_i1.py`, `docs/DATA_CLASSIFICATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Data Classification Gate Honesty Pack blocker matrix (Stage 791 B1: `test_stage791_blockers_b1.py`, `docs/DATA_CLASSIFICATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 790 / Stage 789 / Stage 392 / CHANGE_IMPACT pointers (Stage 791 P1: `test_stage791_pointers_p1.py`, `docs/DATA_CLASSIFICATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 791 fidelity sync (D1: `test_stage791_fidelity_d1.py`, `docs/STAGE_791_FIDELITY.md`)
+- [x] Stage 791 exit + freeze (H791x: `test_stage791_exit_h791x.py`, `docs/STAGE_791_EXIT_CRITERIA.md`, ADR-1590)
+
 Stage 790 track opened (ADR-1587: `test_stage790_open.py`, `docs/STAGE_790_PLAN.md`) — Dlp Policy Gate Honesty Pack Remaining-Gate Index; closed under ADR-1588
 - [x] Dlp Policy Gate Honesty Pack remaining-gate hub (Stage 790 I1: `test_stage790_index_i1.py`, `docs/DLP_POLICY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Dlp Policy Gate Honesty Pack blocker matrix (Stage 790 B1: `test_stage790_blockers_b1.py`, `docs/DLP_POLICY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

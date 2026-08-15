@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 791 D1 (2026-08-14):** Data Classification Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_791_FIDELITY.md` (`test_stage791_fidelity_d1.py`). Open ADR: `docs/ADR_1589_STAGE791_OPEN.md`; plan `docs/STAGE_791_PLAN.md`.
+
+**Stage 791 exit (2026-08-14):** I1, B1, P1, D1, H791x met — `docs/STAGE_791_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1590_STAGE791_FREEZE.md`. Fidelity: `docs/STAGE_791_FIDELITY.md`.
+
 **Stage 790 D1 (2026-08-14):** Dlp Policy Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_790_FIDELITY.md` (`test_stage790_fidelity_d1.py`). Open ADR: `docs/ADR_1587_STAGE790_OPEN.md`; plan `docs/STAGE_790_PLAN.md`.
 
 **Stage 790 exit (2026-08-14):** I1, B1, P1, D1, H790x met — `docs/STAGE_790_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1588_STAGE790_FREEZE.md`. Fidelity: `docs/STAGE_790_FIDELITY.md`.

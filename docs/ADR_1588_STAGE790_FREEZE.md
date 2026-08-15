@@ -31,3 +31,7 @@ Stage 791 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Dlp Policy Gate, Dlp Policy Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 791 opened under **ADR-1589** after CONTINUE/NEXT (Tenant MVP Data Classification Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1590**. Stage 790 feature scope remains frozen.

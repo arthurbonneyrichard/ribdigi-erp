@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 791 D1 Data Classification Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_791_FIDELITY.md` (`test_stage791_fidelity_d1.py`); Offline Complete / Data Classification Gate honesty / go-live still MISSING.
 Stage 790 D1 Dlp Policy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_790_FIDELITY.md` (`test_stage790_fidelity_d1.py`); Offline Complete / Dlp Policy Gate honesty / go-live still MISSING.
 Stage 789 D1 Pii Scan Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_789_FIDELITY.md` (`test_stage789_fidelity_d1.py`); Offline Complete / Pii Scan Gate honesty / go-live still MISSING.
 Stage 788 D1 Redaction Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_788_FIDELITY.md` (`test_stage788_fidelity_d1.py`); Offline Complete / Redaction Gate honesty / go-live still MISSING.
