@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 684 track opened (ADR-1375: `test_stage684_open.py`, `docs/STAGE_684_PLAN.md`) — Postmortem Template Gate Honesty Pack Remaining-Gate Index; closed under ADR-1376
+- [x] Postmortem Template Gate Honesty Pack remaining-gate hub (Stage 684 I1: `test_stage684_index_i1.py`, `docs/POSTMORTEM_TEMPLATE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Postmortem Template Gate Honesty Pack blocker matrix (Stage 684 B1: `test_stage684_blockers_b1.py`, `docs/POSTMORTEM_TEMPLATE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 683 / Stage 682 / Stage 392 / CHANGE_IMPACT pointers (Stage 684 P1: `test_stage684_pointers_p1.py`, `docs/POSTMORTEM_TEMPLATE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 684 fidelity sync (D1: `test_stage684_fidelity_d1.py`, `docs/STAGE_684_FIDELITY.md`)
+- [x] Stage 684 exit + freeze (H684x: `test_stage684_exit_h684x.py`, `docs/STAGE_684_EXIT_CRITERIA.md`, ADR-1376)
+
 Stage 683 track opened (ADR-1373: `test_stage683_open.py`, `docs/STAGE_683_PLAN.md`) — Incident Timeline Gate Honesty Pack Remaining-Gate Index; closed under ADR-1374
 - [x] Incident Timeline Gate Honesty Pack remaining-gate hub (Stage 683 I1: `test_stage683_index_i1.py`, `docs/INCIDENT_TIMELINE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Incident Timeline Gate Honesty Pack blocker matrix (Stage 683 B1: `test_stage683_blockers_b1.py`, `docs/INCIDENT_TIMELINE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
