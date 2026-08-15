@@ -31,3 +31,7 @@ Stage 658 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Quota Enforcement Gate, Quota Enforcement Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 658 opened under **ADR-1323** after CONTINUE/NEXT (Tenant MVP Multi Region Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1324**. Stage 657 feature scope remains frozen.
