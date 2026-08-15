@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 699 D1 (2026-08-14):** Cache Invalidation Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_699_FIDELITY.md` (`test_stage699_fidelity_d1.py`). Open ADR: `docs/ADR_1405_STAGE699_OPEN.md`; plan `docs/STAGE_699_PLAN.md`.
+
+**Stage 699 exit (2026-08-14):** I1, B1, P1, D1, H699x met — `docs/STAGE_699_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1406_STAGE699_FREEZE.md`. Fidelity: `docs/STAGE_699_FIDELITY.md`.
+
 **Stage 698 D1 (2026-08-14):** Partition Rebalance Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_698_FIDELITY.md` (`test_stage698_fidelity_d1.py`). Open ADR: `docs/ADR_1403_STAGE698_OPEN.md`; plan `docs/STAGE_698_PLAN.md`.
 
 **Stage 698 exit (2026-08-14):** I1, B1, P1, D1, H698x met — `docs/STAGE_698_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1404_STAGE698_FREEZE.md`. Fidelity: `docs/STAGE_698_FIDELITY.md`.

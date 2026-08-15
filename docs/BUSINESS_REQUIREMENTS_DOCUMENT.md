@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 699 D1 Cache Invalidation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_699_FIDELITY.md` (`test_stage699_fidelity_d1.py`); Offline Complete / Cache Invalidation Gate honesty / go-live still MISSING.
 Stage 698 D1 Partition Rebalance Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_698_FIDELITY.md` (`test_stage698_fidelity_d1.py`); Offline Complete / Partition Rebalance Gate honesty / go-live still MISSING.
 Stage 697 D1 Consumer Lag Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_697_FIDELITY.md` (`test_stage697_fidelity_d1.py`); Offline Complete / Consumer Lag Gate honesty / go-live still MISSING.
 Stage 696 D1 Event Versioning Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_696_FIDELITY.md` (`test_stage696_fidelity_d1.py`); Offline Complete / Event Versioning Gate honesty / go-live still MISSING.

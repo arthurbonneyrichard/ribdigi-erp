@@ -31,3 +31,7 @@ Stage 699 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Partition Rebalance Gate, Partition Rebalance Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 699 opened under **ADR-1405** after CONTINUE/NEXT (Tenant MVP Cache Invalidation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1406**. Stage 698 feature scope remains frozen.
