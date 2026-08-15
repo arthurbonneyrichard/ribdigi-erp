@@ -31,3 +31,10 @@ Stage 476 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Catalog TTL, Catalog TTL honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 476 opened under **ADR-959** after CONTINUE/NEXT (Tenant MVP Offline Price Version Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-960**. Stage 475 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 475 runner-up outline was approved and opened (ADR-959); freeze ADR-960. Do not reopen Stage 475 scope.
+

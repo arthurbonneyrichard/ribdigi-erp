@@ -1031,6 +1031,8 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 476 D1 Offline Price Version Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_476_FIDELITY.md` (`test_stage476_fidelity_d1.py`); Offline Complete / Price Version honesty / go-live still MISSING.
+
 Stage 475 D1 Offline Catalog TTL Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_475_FIDELITY.md` (`test_stage475_fidelity_d1.py`); Offline Complete / Catalog TTL honesty / go-live still MISSING.
 
 Stage 474 D1 Offline Catalog Snapshot Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_474_FIDELITY.md` (`test_stage474_fidelity_d1.py`); Offline Complete / Catalog Snapshot honesty / go-live still MISSING.

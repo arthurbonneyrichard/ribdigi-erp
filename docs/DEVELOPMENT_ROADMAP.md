@@ -4400,7 +4400,11 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
-**Stage 475 D1 (2026-08-14):** Offline Catalog TTL Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_475_FIDELITY.md` (`test_stage475_fidelity_d1.py`). Open ADR: `docs/ADR_957_STAGE475_OPEN.md`; plan `docs/STAGE_475_PLAN.md`.
+****Stage 476 D1 (2026-08-14):** Offline Price Version Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_476_FIDELITY.md` (`test_stage476_fidelity_d1.py`). Open ADR: `docs/ADR_959_STAGE476_OPEN.md`; plan `docs/STAGE_476_PLAN.md`.
+
+**Stage 476 exit (2026-08-14):** I1, B1, P1, D1, H476x met — `docs/STAGE_476_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_960_STAGE476_FREEZE.md`. Fidelity: `docs/STAGE_476_FIDELITY.md`.
+
+Stage 475 D1 (2026-08-14):** Offline Catalog TTL Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_475_FIDELITY.md` (`test_stage475_fidelity_d1.py`). Open ADR: `docs/ADR_957_STAGE475_OPEN.md`; plan `docs/STAGE_475_PLAN.md`.
 
 **Stage 475 exit (2026-08-14):** I1, B1, P1, D1, H475x met — `docs/STAGE_475_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_958_STAGE475_FREEZE.md`. Fidelity: `docs/STAGE_475_FIDELITY.md`.
 
