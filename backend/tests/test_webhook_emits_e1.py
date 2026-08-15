@@ -575,3 +575,45 @@ async def test_stock_out_webhook_skips_pos(client, db_session, monkeypatch):
     assert sale.status_code == 200, sale.text
     assert "sale.created" in events
     assert "stock.out" not in events
+
+
+@pytest.mark.asyncio
+async def test_supplier_created_webhook(client, monkeypatch):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    events: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = __import__("json").loads(request.content.decode())
+        events.append({"event": body.get("event"), "data": body.get("data") or {}})
+        return httpx.Response(200, json={"ok": True})
+
+    original = webhooks_svc._deliver_http
+
+    async def _mock(*, url, body, signature_header, timeout=10.0, transport=None):
+        return await original(
+            url=url,
+            body=body,
+            signature_header=signature_header,
+            timeout=timeout,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(webhooks_svc, "_deliver_http", _mock)
+
+    await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={"url": "https://hooks.example.com/supplier", "events": ["supplier.created"]},
+    )
+    supplier = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Webhook Supplier Created", "code": "WH-SUP-CREATED-1", "email": "wh-sup@example.com"},
+    )
+    assert supplier.status_code == 200, supplier.text
+    assert any(e["event"] == "supplier.created" for e in events)
+    payload = next(e["data"] for e in events if e["event"] == "supplier.created")
+    assert payload.get("supplier_id") == supplier.json()["data"]["id"]
+    assert payload.get("name") == "Webhook Supplier Created"
+    assert payload.get("code") == "WH-SUP-CREATED-1"

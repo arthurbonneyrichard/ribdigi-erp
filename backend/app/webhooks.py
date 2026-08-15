@@ -32,6 +32,7 @@ VALID_EVENTS: frozenset[str] = frozenset(
         "purchase.order.created",
         "purchase.grn.received",
         "customer.created",
+        "supplier.created",
         "expense.approved",
         "user.login",
         "tenant.suspended",

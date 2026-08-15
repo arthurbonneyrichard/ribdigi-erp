@@ -1603,6 +1603,7 @@ Signing secret is returned **once** on create/rotate (`secret_shown_once`). Deli
 | `purchase.order.created` | New PO created |
 | `purchase.grn.received` | GRN recorded |
 | `customer.created` | New customer added |
+| `supplier.created` | New supplier added |
 | `expense.approved` | Expense approved |
 | `user.login` | Successful interactive login (password / TOTP / WebAuthn; not refresh) |
 | `tenant.suspended` | Tenant account suspended |
@@ -1639,7 +1640,7 @@ Rules:
 3. Recompute HMAC-SHA256 with your `whsec_…` secret; compare with `hmac.compare_digest`.
 4. Secrets are shown **once** on create/rotate in Integrations — store them in your vault.
 
-**Live events today:** `webhook.test` (Integrations **Test**), `sale.created` (invoice post **or** POS checkout), `sale.paid` (customer payment **or** POS sale with no credit tender), `customer.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved` (final approval), `stock.low` (when a new low-stock notification is created), `stock.in` (inbound `stock_in` movements except `reference_type=grn`, which fans out only as `purchase.grn.received`), `stock.out` (outbound `stock_out` movements except `pos_sale` / `sales_invoice` — those use `sale.created`), `tenant.suspended` (self-suspend, platform suspend, or trial-grace expiry — first delivery is best-effort; Celery retries skip suspended tenants), and `user.login` (successful interactive login via password / TOTP / WebAuthn; **not** token refresh — higher volume; payload may include email + IP).
+**Live events today:** `webhook.test` (Integrations **Test**), `sale.created` (invoice post **or** POS checkout), `sale.paid` (customer payment **or** POS sale with no credit tender), `customer.created`, `supplier.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved` (final approval), `stock.low` (when a new low-stock notification is created), `stock.in` (inbound `stock_in` movements except `reference_type=grn`, which fans out only as `purchase.grn.received`), `stock.out` (outbound `stock_out` movements except `pos_sale` / `sales_invoice` — those use `sale.created`), `tenant.suspended` (self-suspend, platform suspend, or trial-grace expiry — first delivery is best-effort; Celery retries skip suspended tenants), and `user.login` (successful interactive login via password / TOTP / WebAuthn; **not** token refresh — higher volume; payload may include email + IP).
 
 **Golden fixture** (matches `tests/test_webhooks_w1.py`):
 
