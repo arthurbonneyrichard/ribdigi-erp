@@ -31,3 +31,9 @@ Stage 462 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Store Membership, Store Membership honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 462 opened under **ADR-931** after CONTINUE/NEXT (Tenant MVP Connectivity Sync Status Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-932**. Stage 461 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 461 runner-up outline was approved and opened (ADR-931); freeze ADR-932. Do not reopen Stage 461 scope.
