@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 593 track opened (ADR-1193: `test_stage593_open.py`, `docs/STAGE_593_PLAN.md`) — WAL Offsite Honesty Pack Remaining-Gate Index; closed under ADR-1194
+- [x] WAL Offsite Honesty Pack remaining-gate hub (Stage 593 I1: `test_stage593_index_i1.py`, `docs/WAL_OFFSITE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] WAL Offsite Honesty Pack blocker matrix (Stage 593 B1: `test_stage593_blockers_b1.py`, `docs/WAL_OFFSITE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 592 / Stage 591 / Stage 392 / CHANGE_IMPACT pointers (Stage 593 P1: `test_stage593_pointers_p1.py`, `docs/WAL_OFFSITE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 593 fidelity sync (D1: `test_stage593_fidelity_d1.py`, `docs/STAGE_593_FIDELITY.md`)
+- [x] Stage 593 exit + freeze (H593x: `test_stage593_exit_h593x.py`, `docs/STAGE_593_EXIT_CRITERIA.md`, ADR-1194)
+
 Stage 592 track opened (ADR-1191: `test_stage592_open.py`, `docs/STAGE_592_PLAN.md`) — PgBouncer Live Honesty Pack Remaining-Gate Index; closed under ADR-1192
 - [x] PgBouncer Live Honesty Pack remaining-gate hub (Stage 592 I1: `test_stage592_index_i1.py`, `docs/PGBOUNCER_LIVE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] PgBouncer Live Honesty Pack blocker matrix (Stage 592 B1: `test_stage592_blockers_b1.py`, `docs/PGBOUNCER_LIVE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
