@@ -31,3 +31,7 @@ Stage 896 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Legal Claim Gate, Legal Claim Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 896 opened under **ADR-1799** after CONTINUE/NEXT (Tenant MVP Compelling Legitimate Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1800**. Stage 895 feature scope remains frozen.
