@@ -847,7 +847,7 @@ Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`
 **Create:** `POST /purchases/invoices`  
 **Get:** `GET /purchases/invoices/{invoice_id}`  
 **Pay:** `POST /purchases/invoices/{invoice_id}/payments`  
-**Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` — allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted; idempotent when already cancelled. Serialize includes `can_cancel`. Purchasing Invoices UI Cancel (BR-6.5).
+**Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to invoice `notes` as `Cancel: …` and stored in audit `pi_cancelled.details.reason`; already-cancelled is idempotent); allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted. Serialize includes `can_cancel` + `notes`. Purchasing Invoices **Cancel reason** UI (BR-6.5).
 
 **Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_invoice_numbering` (`prefix`, `next_number`, `preview`) alongside PO/GRN. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PINV`) — not a timestamp (BR-6.5 / BR-20.4).
 

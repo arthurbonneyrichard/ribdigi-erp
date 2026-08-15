@@ -51,16 +51,21 @@ async def test_cancel_draft_purchase_invoice(client):
     assert inv.get("can_cancel") is True
 
     cancelled = await ac.post(
-        f"/api/v1/purchasing/invoices/{inv['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/invoices/{inv['id']}/cancel",
+        headers=headers,
+        json={"reason": "Draft no longer needed"},
     )
     assert cancelled.status_code == 200, cancelled.text
     body = cancelled.json()["data"]
     assert body["status"] == "cancelled"
     assert body.get("can_cancel") is False
+    assert "Cancel: Draft no longer needed" in (body.get("notes") or "")
 
     # Idempotent cancel of already-cancelled
     again = await ac.post(
-        f"/api/v1/purchasing/invoices/{inv['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/invoices/{inv['id']}/cancel",
+        headers=headers,
+        json={"reason": "idempotent"},
     )
     assert again.status_code == 200
     assert again.json()["data"]["status"] == "cancelled"
@@ -84,11 +89,16 @@ async def test_cancel_approved_unpaid_purchase_invoice(client):
     assert float(body.get("paid_amount") or 0) == 0
 
     cancelled = await ac.post(
-        f"/api/v1/purchasing/invoices/{inv['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/invoices/{inv['id']}/cancel",
+        headers=headers,
+        json={"reason": "Supplier credit note pending"},
     )
     assert cancelled.status_code == 200, cancelled.text
     assert cancelled.json()["data"]["status"] == "cancelled"
     assert cancelled.json()["data"].get("can_cancel") is False
+    assert "Cancel: Supplier credit note pending" in (
+        cancelled.json()["data"].get("notes") or ""
+    )
 
 
 @pytest.mark.asyncio
@@ -116,6 +126,8 @@ async def test_cancel_blocked_when_partially_paid(client, db_session):
     assert detail.json()["data"].get("can_cancel") is False
 
     blocked = await ac.post(
-        f"/api/v1/purchasing/invoices/{inv['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/invoices/{inv['id']}/cancel",
+        headers=headers,
+        json={"reason": "should fail when paid"},
     )
     assert blocked.status_code == 409, blocked.text

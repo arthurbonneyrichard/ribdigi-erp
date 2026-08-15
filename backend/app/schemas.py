@@ -954,6 +954,12 @@ class PurchaseInvoiceUpdate(BaseModel):
     due_date: datetime | None = None
 
 
+class PurchaseInvoiceCancel(BaseModel):
+    """Purchase invoice cancel — typed reason required (BR-6.5 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class SalesInvoiceItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)

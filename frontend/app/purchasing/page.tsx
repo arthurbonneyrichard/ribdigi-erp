@@ -121,6 +121,7 @@ type PurchaseInvoice = {
   subtotal?: number;
   discount_amount?: number;
   can_cancel?: boolean;
+  notes?: string | null;
   items?: {
     id: string;
     product_id: string;
@@ -202,6 +203,7 @@ export default function Page() {
   const [prBusy, setPrBusy] = useState('');
   const [prRejectReason, setPrRejectReason] = useState('');
   const [poCancelReason, setPoCancelReason] = useState('');
+  const [piCancelReason, setPiCancelReason] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
     { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
@@ -795,9 +797,18 @@ export default function Page() {
   async function cancelInvoice(inv: PurchaseInvoice) {
     setError('');
     setMessage('');
+    const reason = piCancelReason.trim();
+    if (!reason) {
+      setError('Enter a cancel reason before cancelling a purchase invoice');
+      return;
+    }
     try {
-      const r = await api(`/purchasing/invoices/${inv.id}/cancel`, { method: 'POST' });
+      const r = await api(`/purchasing/invoices/${inv.id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
       setMessage(r.message || `Cancelled ${r.data?.invoice_number || inv.invoice_number}`);
+      setPiCancelReason('');
       await refresh();
       setSelectedInvoice(r.data);
     } catch (err: any) {
@@ -2214,6 +2225,21 @@ export default function Page() {
               </div>
             </div>
           )}
+        <div className="card" style={{ marginBottom: 16 }}>
+          <label>
+            Cancel reason{' '}
+            <input
+              value={piCancelReason}
+              onChange={(e) => setPiCancelReason(e.target.value)}
+              placeholder="Required before Cancel"
+              style={{ minWidth: 280 }}
+            />
+          </label>
+          <p className="muted" style={{ marginTop: 6 }}>
+            Appended to invoice notes and audit (<code>POST .../invoices/.../cancel</code>{' '}
+            {'{ reason }'}).
+          </p>
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -2226,6 +2252,7 @@ export default function Page() {
               <th>Due</th>
               <th>AP posted</th>
               <th>File</th>
+              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2264,6 +2291,9 @@ export default function Page() {
                 <td>{inv.balance_due}</td>
                 <td>{inv.ap_posted ? 'yes' : 'no (via GRN)'}</td>
                 <td>{inv.has_attachment ? 'yes' : '—'}</td>
+                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                  {inv.notes || '—'}
+                </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {inv.status === 'draft' && (
                     <button onClick={() => approveInvoice(inv.id)}>Approve</button>
@@ -2326,8 +2356,14 @@ export default function Page() {
                   Cancel invoice
                 </button>
                 <span className="muted" style={{ marginLeft: 8 }}>
-                  Allowed for draft/unpaid/overdue with no payments (BR-6.5). Reverses AP if posted.
+                  Allowed for draft/unpaid/overdue with no payments; cancel reason required (BR-6.5).
+                  Reverses AP if posted.
                 </span>
+              </p>
+            )}
+            {selectedInvoice.notes && (
+              <p className="muted" style={{ marginTop: 0, whiteSpace: 'pre-wrap' }}>
+                Notes: {selectedInvoice.notes}
               </p>
             )}
             <table className="table">

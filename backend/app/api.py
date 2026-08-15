@@ -124,6 +124,7 @@ from app.schemas import (
     PurchaseOrderCreate,
     PurchaseOrderAmend,
     PurchaseOrderCancel,
+    PurchaseInvoiceCancel,
     PurchaseRequestCreate,
     PurchaseRequestConvert,
     PurchaseRequestReject,
@@ -6426,13 +6427,18 @@ async def approve_purchase_invoice(
 @api.post("/purchasing/invoices/{invoice_id}/cancel")
 async def cancel_purchase_invoice(
     invoice_id: str,
+    payload: PurchaseInvoiceCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     inv = await purchasing_svc.cancel_purchase_invoice(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        invoice_id=invoice_id,
+        reason=payload.reason,
     )
     await db.commit()
     return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Purchase invoice cancelled")
