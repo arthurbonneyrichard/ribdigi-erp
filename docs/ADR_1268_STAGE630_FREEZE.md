@@ -31,3 +31,7 @@ Stage 631 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, FastAPI Backend Gate, FastAPI Backend Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 631 opened under **ADR-1269** after CONTINUE/NEXT (Tenant MVP SQLAlchemy ORM Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1270**. Stage 630 feature scope remains frozen.

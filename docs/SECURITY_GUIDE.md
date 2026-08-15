@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 631 D1 SQLAlchemy ORM Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_631_FIDELITY.md` (`test_stage631_fidelity_d1.py`); exit ADR-1270 / `test_stage631_exit_h631x.py`. Honesty: Offline Complete / SQLAlchemy ORM Gate honesty / go-live Completes remain MISSING.
 Stage 630 D1 FastAPI Backend Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_630_FIDELITY.md` (`test_stage630_fidelity_d1.py`); exit ADR-1268 / `test_stage630_exit_h630x.py`. Honesty: Offline Complete / FastAPI Backend Gate honesty / go-live Completes remain MISSING.
 Stage 629 D1 Nextjs Frontend Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_629_FIDELITY.md` (`test_stage629_fidelity_d1.py`); exit ADR-1266 / `test_stage629_exit_h629x.py`. Honesty: Offline Complete / Nextjs Frontend Gate honesty / go-live Completes remain MISSING.
 Stage 628 D1 RabbitMQ Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_628_FIDELITY.md` (`test_stage628_fidelity_d1.py`); exit ADR-1264 / `test_stage628_exit_h628x.py`. Honesty: Offline Complete / RabbitMQ Gate honesty / go-live Completes remain MISSING.

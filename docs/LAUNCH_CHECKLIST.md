@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 631 track opened (ADR-1269: `test_stage631_open.py`, `docs/STAGE_631_PLAN.md`) — SQLAlchemy ORM Gate Honesty Pack Remaining-Gate Index; closed under ADR-1270
+- [x] SQLAlchemy ORM Gate Honesty Pack remaining-gate hub (Stage 631 I1: `test_stage631_index_i1.py`, `docs/SQLALCHEMY_ORM_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] SQLAlchemy ORM Gate Honesty Pack blocker matrix (Stage 631 B1: `test_stage631_blockers_b1.py`, `docs/SQLALCHEMY_ORM_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 630 / Stage 629 / Stage 392 / CHANGE_IMPACT pointers (Stage 631 P1: `test_stage631_pointers_p1.py`, `docs/SQLALCHEMY_ORM_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 631 fidelity sync (D1: `test_stage631_fidelity_d1.py`, `docs/STAGE_631_FIDELITY.md`)
+- [x] Stage 631 exit + freeze (H631x: `test_stage631_exit_h631x.py`, `docs/STAGE_631_EXIT_CRITERIA.md`, ADR-1270)
+
 Stage 630 track opened (ADR-1267: `test_stage630_open.py`, `docs/STAGE_630_PLAN.md`) — FastAPI Backend Gate Honesty Pack Remaining-Gate Index; closed under ADR-1268
 - [x] FastAPI Backend Gate Honesty Pack remaining-gate hub (Stage 630 I1: `test_stage630_index_i1.py`, `docs/FASTAPI_BACKEND_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] FastAPI Backend Gate Honesty Pack blocker matrix (Stage 630 B1: `test_stage630_blockers_b1.py`, `docs/FASTAPI_BACKEND_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
