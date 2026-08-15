@@ -13,6 +13,7 @@ const WEBHOOK_EVENTS = [
   'purchase.order.created',
   'purchase.grn.received',
   'customer.created',
+  'supplier.created',
   'expense.approved',
   'user.login',
   'tenant.suspended',
@@ -393,11 +394,11 @@ export default function Page() {
           Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256). Live
           fan-out today: <code>webhook.test</code>, <code>sale.created</code> (invoice + POS),{' '}
           <code>sale.paid</code> (AR payment + settled POS), <code>customer.created</code>,{' '}
-          <code>purchase.order.created</code>, <code>purchase.grn.received</code>,{' '}
-          <code>expense.approved</code>, <code>stock.low</code>, <code>stock.in</code> (manual /
-          non-GRN inbound; GRN uses <code>purchase.grn.received</code> only), <code>stock.out</code>{' '}
-          (manual / non-POS-invoice outbound), <code>tenant.suspended</code>, <code>user.login</code>{' '}
-          (interactive auth only; not refresh).
+          <code>supplier.created</code>, <code>purchase.order.created</code>,{' '}
+          <code>purchase.grn.received</code>, <code>expense.approved</code>, <code>stock.low</code>,{' '}
+          <code>stock.in</code> (manual / non-GRN inbound; GRN uses <code>purchase.grn.received</code>{' '}
+          only), <code>stock.out</code> (manual / non-POS-invoice outbound),{' '}
+          <code>tenant.suspended</code>, <code>user.login</code> (interactive auth only; not refresh).
         </p>
         <details style={{ marginBottom: 12 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Verify signature (subscriber)</summary>

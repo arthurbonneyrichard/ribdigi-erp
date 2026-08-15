@@ -4706,6 +4706,19 @@ async def add_supplier(
     await _ensure_party_code_unique(db, claims["tenant_id"], data.get("code"))
     party = m.Party(tenant_id=claims["tenant_id"], kind="supplier", **data)
     db.add(party)
+    await db.flush()
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        event="supplier.created",
+        data={
+            "supplier_id": party.id,
+            "code": party.code,
+            "name": party.name,
+            "email": party.email,
+            "status": party.status,
+        },
+    )
     await db.commit()
     await db.refresh(party)
     return env(_serialize_party(party))
