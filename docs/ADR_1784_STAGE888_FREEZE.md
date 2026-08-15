@@ -31,3 +31,7 @@ Stage 889 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Impact Gate, Transfer Impact Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 889 opened under **ADR-1785** after CONTINUE/NEXT (Tenant MVP Safeguard Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1786**. Stage 888 feature scope remains frozen.
