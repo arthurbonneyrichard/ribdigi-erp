@@ -31,3 +31,7 @@ Stage 824 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Outbound Relay Gate, Outbound Relay Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 824 opened under **ADR-1655** after CONTINUE/NEXT (Tenant MVP Bounce Handle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1656**. Stage 823 feature scope remains frozen.
