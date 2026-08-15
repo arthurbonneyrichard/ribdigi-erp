@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 871 D1 Children Privacy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_871_FIDELITY.md` (`test_stage871_fidelity_d1.py`); Offline Complete / Children Privacy Gate honesty / go-live still MISSING.
 Stage 870 D1 LIA Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_870_FIDELITY.md` (`test_stage870_fidelity_d1.py`); Offline Complete / LIA Gate honesty / go-live still MISSING.
 Stage 869 D1 ROPA Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_869_FIDELITY.md` (`test_stage869_fidelity_d1.py`); Offline Complete / ROPA Gate honesty / go-live still MISSING.
 Stage 868 D1 Breach Notify Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_868_FIDELITY.md` (`test_stage868_fidelity_d1.py`); Offline Complete / Breach Notify Gate honesty / go-live still MISSING.
