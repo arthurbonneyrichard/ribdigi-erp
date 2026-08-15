@@ -31,3 +31,10 @@ Stage 489 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Acceptance Path, Acceptance Path honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 489 opened under **ADR-985** after CONTINUE/NEXT (Tenant MVP Offline Accept Client Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-986**. Stage 488 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 488 runner-up outline was approved and opened (ADR-985); freeze ADR-986. Do not reopen Stage 488 scope.
+
