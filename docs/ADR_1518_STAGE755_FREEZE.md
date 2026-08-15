@@ -31,3 +31,7 @@ Stage 756 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Set Cookie Gate, Set Cookie Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 756 opened under **ADR-1519** after CONTINUE/NEXT (Tenant MVP Token Binding Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1520**. Stage 755 feature scope remains frozen.
