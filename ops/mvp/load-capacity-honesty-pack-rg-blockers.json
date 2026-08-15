@@ -1,0 +1,77 @@
+{
+  "id": "load-capacity-honesty-pack-rg-blockers",
+  "stage": 537,
+  "pack": "B1",
+  "doc": "docs/LOAD_CAPACITY_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LOAD_CAPACITY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "load_capacity_pack_remaining_gate": "docs/LOAD_CAPACITY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "load_capacity_honesty_complete_claimed": false,
+  "load_capacity_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "load_capacity_honesty_complete_claimed": "REMAINING",
+    "load_capacity_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_load_capacity_honesty": "NON_CLAIM",
+    "load_capacity_pack_as_load_capacity_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "load_capacity_honesty_complete_claimed_flag": "false",
+    "load_capacity_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "lchrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchrb-honesty",
+      "title": "Mark Load Capacity honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchrb-as-golive",
+      "title": "Mark Load Capacity as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchrb-prior-nonclaim",
+      "title": "Mark LOAD_CAPACITY_PACK as non-claim for load-capacity Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchrb-checklist-remaining",
+      "title": "Offline Complete / Load Capacity / Load Capacity honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 537 B1 Load Capacity Honesty Pack RG blocker matrix packaging only."
+}
