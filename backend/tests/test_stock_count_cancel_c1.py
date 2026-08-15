@@ -20,6 +20,8 @@ def test_stock_count_cancel_ui_wired():
     assert "/inventory/stock-counts/${id}/cancel" in inv
     assert "Cancel count" in inv
     assert "cancelStockCount" in inv
+    assert "countCancelReason" in inv
+    assert "Required before Cancel" in inv
 
 
 @pytest.mark.asyncio
@@ -66,13 +68,22 @@ async def test_cancel_draft_stock_count_and_block_completed(client, db_session):
     cid = count["id"]
     before_qty = float((await db_session.get(m.Product, seed["p1"].id)).stock_qty)
 
-    cancelled = await ac.post(f"/api/v1/inventory/stock-counts/{cid}/cancel", headers=headers)
+    cancelled = await ac.post(
+        f"/api/v1/inventory/stock-counts/{cid}/cancel",
+        headers=headers,
+        json={"reason": "Wrong warehouse — draft cancel"},
+    )
     assert cancelled.status_code == 200, cancelled.text
     body = cancelled.json()["data"]
     assert body["status"] == "cancelled"
     assert body.get("can_cancel") is False
+    assert "Cancel: Wrong warehouse — draft cancel" in (body.get("notes") or "")
 
-    again = await ac.post(f"/api/v1/inventory/stock-counts/{cid}/cancel", headers=headers)
+    again = await ac.post(
+        f"/api/v1/inventory/stock-counts/{cid}/cancel",
+        headers=headers,
+        json={"reason": "retry"},
+    )
     assert again.status_code == 409, again.text
 
     product = await db_session.get(m.Product, seed["p1"].id)
@@ -96,5 +107,9 @@ async def test_cancel_draft_stock_count_and_block_completed(client, db_session):
     done = await ac.post(f"/api/v1/inventory/stock-counts/{cid2}/complete", headers=headers)
     assert done.status_code == 200, done.text
     assert done.json()["data"].get("can_cancel") is False
-    blocked = await ac.post(f"/api/v1/inventory/stock-counts/{cid2}/cancel", headers=headers)
+    blocked = await ac.post(
+        f"/api/v1/inventory/stock-counts/{cid2}/cancel",
+        headers=headers,
+        json={"reason": "should fail after complete"},
+    )
     assert blocked.status_code == 409, blocked.text
