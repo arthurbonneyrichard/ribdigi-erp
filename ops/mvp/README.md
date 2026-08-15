@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/TOS_AUP_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/tos-aup-honesty-pack-remaining-gate.json` — Stage 560 I1
+- `docs/TOS_AUP_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/tos-aup-honesty-pack-rg-blockers.json` — Stage 560 B1
+- `docs/TOS_AUP_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/tos-aup-honesty-pack-rg-pointers.json` — Stage 560 P1
 - `docs/MSA_ADDENDUM_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/msa-addendum-honesty-pack-remaining-gate.json` — Stage 559 I1
 - `docs/MSA_ADDENDUM_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/msa-addendum-honesty-pack-rg-blockers.json` — Stage 559 B1
 - `docs/MSA_ADDENDUM_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/msa-addendum-honesty-pack-rg-pointers.json` — Stage 559 P1

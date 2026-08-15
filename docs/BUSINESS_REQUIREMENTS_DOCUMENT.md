@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 560 D1 TOS AUP Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_560_FIDELITY.md` (`test_stage560_fidelity_d1.py`); Offline Complete / TOS AUP honesty / go-live still MISSING.
 Stage 559 D1 MSA Addendum Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_559_FIDELITY.md` (`test_stage559_fidelity_d1.py`); Offline Complete / MSA Addendum honesty / go-live still MISSING.
 Stage 558 D1 ADR002 Paid Billing Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_558_FIDELITY.md` (`test_stage558_fidelity_d1.py`); Offline Complete / ADR002 Paid Billing honesty / go-live still MISSING.
 Stage 557 D1 Attestation Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_557_FIDELITY.md` (`test_stage557_fidelity_d1.py`); Offline Complete / Attestation honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 560 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, MSA Addendum, MSA Addendum honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 560 opened under **ADR-1127** after CONTINUE/NEXT (Tenant MVP TOS AUP Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1128**. Stage 559 feature scope remains frozen.
