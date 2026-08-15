@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 516 D1 Compliance Questionnaire Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_516_FIDELITY.md` (`test_stage516_fidelity_d1.py`); Offline Complete / Compliance Questionnaire honesty / go-live still MISSING.
 Stage 515 D1 Compliance Readiness Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_515_FIDELITY.md` (`test_stage515_fidelity_d1.py`); Offline Complete / Compliance Readiness honesty / go-live still MISSING.
 Stage 514 D1 Hosted FAQ SaaS Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_514_FIDELITY.md` (`test_stage514_fidelity_d1.py`); Offline Complete / Hosted FAQ SaaS honesty / go-live still MISSING.
 Stage 513 D1 Support Readiness Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_513_FIDELITY.md` (`test_stage513_fidelity_d1.py`); Offline Complete / Support Readiness honesty / go-live still MISSING.

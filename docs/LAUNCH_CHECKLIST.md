@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 516 track opened (ADR-1039: `test_stage516_open.py`, `docs/STAGE_516_PLAN.md`) — Compliance Questionnaire Honesty Pack Remaining-Gate Index; closed under ADR-1040
+- [x] Compliance Questionnaire Honesty Pack remaining-gate hub (Stage 516 I1: `test_stage516_index_i1.py`, `docs/COMPLIANCE_QUESTIONNAIRE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Compliance Questionnaire Honesty Pack blocker matrix (Stage 516 B1: `test_stage516_blockers_b1.py`, `docs/COMPLIANCE_QUESTIONNAIRE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 515 / Stage 514 / Stage 392 / CHANGE_IMPACT pointers (Stage 516 P1: `test_stage516_pointers_p1.py`, `docs/COMPLIANCE_QUESTIONNAIRE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 516 fidelity sync (D1: `test_stage516_fidelity_d1.py`, `docs/STAGE_516_FIDELITY.md`)
+- [x] Stage 516 exit + freeze (H516x: `test_stage516_exit_h516x.py`, `docs/STAGE_516_EXIT_CRITERIA.md`, ADR-1040)
+
 Stage 515 track opened (ADR-1037: `test_stage515_open.py`, `docs/STAGE_515_PLAN.md`) — Compliance Readiness Honesty Pack Remaining-Gate Index; closed under ADR-1038
 - [x] Compliance Readiness Honesty Pack remaining-gate hub (Stage 515 I1: `test_stage515_index_i1.py`, `docs/COMPLIANCE_READINESS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Compliance Readiness Honesty Pack blocker matrix (Stage 515 B1: `test_stage515_blockers_b1.py`, `docs/COMPLIANCE_READINESS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
