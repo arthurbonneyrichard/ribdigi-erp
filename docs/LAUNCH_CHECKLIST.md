@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 820 track opened (ADR-1647: `test_stage820_open.py`, `docs/STAGE_820_PLAN.md`) — StartTLS Gate Honesty Pack Remaining-Gate Index; closed under ADR-1648
+- [x] StartTLS Gate Honesty Pack remaining-gate hub (Stage 820 I1: `test_stage820_index_i1.py`, `docs/STARTTLS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] StartTLS Gate Honesty Pack blocker matrix (Stage 820 B1: `test_stage820_blockers_b1.py`, `docs/STARTTLS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 819 / Stage 818 / Stage 392 / CHANGE_IMPACT pointers (Stage 820 P1: `test_stage820_pointers_p1.py`, `docs/STARTTLS_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 820 fidelity sync (D1: `test_stage820_fidelity_d1.py`, `docs/STAGE_820_FIDELITY.md`)
+- [x] Stage 820 exit + freeze (H820x: `test_stage820_exit_h820x.py`, `docs/STAGE_820_EXIT_CRITERIA.md`, ADR-1648)
+
 Stage 819 track opened (ADR-1645: `test_stage819_open.py`, `docs/STAGE_819_PLAN.md`) — SMTP TLS Gate Honesty Pack Remaining-Gate Index; closed under ADR-1646
 - [x] SMTP TLS Gate Honesty Pack remaining-gate hub (Stage 819 I1: `test_stage819_index_i1.py`, `docs/SMTP_TLS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] SMTP TLS Gate Honesty Pack blocker matrix (Stage 819 B1: `test_stage819_blockers_b1.py`, `docs/SMTP_TLS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
