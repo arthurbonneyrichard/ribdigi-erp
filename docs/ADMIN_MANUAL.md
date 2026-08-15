@@ -1079,7 +1079,7 @@ Default scopes (if omitted at create): read on inventory, sales, purchasing, cus
 4. Open **Deliveries** to see recent attempts; use **Retry** for `pending_retry` / `failed` rows.
 5. Verify incoming signatures using `docs/API_DOCUMENTATION.md` §17.4 (Python/Node samples) or the on-page **Verify signature** panel.
 
-**Honesty:** Live fan-out today includes `webhook.test` and `sale.created` (invoice post). Other event chips are reserved until emit wiring lands.
+**Honesty:** Live fan-out today includes `webhook.test`, `sale.created`, `sale.paid`, `customer.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved`, and `stock.low`. Still reserved: `stock.in`, `user.login`, `tenant.suspended`.
 
 ---
 

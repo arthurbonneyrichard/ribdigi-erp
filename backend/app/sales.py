@@ -905,4 +905,23 @@ async def record_customer_payment(
             },
         )
     )
+    from app import webhooks as webhooks_svc
+
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=tenant_id,
+        event="sale.paid",
+        data={
+            "payment_id": payment.id,
+            "payment_number": payment.payment_number,
+            "amount": float(payment.amount or 0),
+            "customer_id": customer_id,
+            "sales_invoice_id": payment.sales_invoice_id,
+            "currency": pay_cur,
+            "invoice_statuses": [
+                {"invoice_id": inv.id, "status": inv.status, "amount_applied": amt}
+                for inv, amt, _disc in allocations
+            ],
+        },
+    )
     return payment

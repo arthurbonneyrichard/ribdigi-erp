@@ -336,7 +336,7 @@ async def notify_low_stock_if_needed(
     ).scalar_one_or_none()
     if existing:
         return None
-    return await create_notification(
+    note = await create_notification(
         db,
         tenant_id=tenant_id,
         category="low_stock",
@@ -346,6 +346,21 @@ async def notify_low_stock_if_needed(
         entity_id=product.id,
         roles=list(LOW_STOCK_NOTIFY_ROLES),
     )
+    from app import webhooks as webhooks_svc
+
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=tenant_id,
+        event="stock.low",
+        data={
+            "product_id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "stock_qty": stock,
+            "reorder_level": reorder,
+        },
+    )
+    return note
 
 
 async def notify_warehouse_low_stock_if_needed(
@@ -382,7 +397,7 @@ async def notify_warehouse_low_stock_if_needed(
     ).scalar_one_or_none()
     loc = wh.code if wh else stock.warehouse_id[:8]
     suggested = float(getattr(stock, "reorder_qty", 0) or 0) or max(round(reorder - qty, 3), 0)
-    return await create_notification(
+    note = await create_notification(
         db,
         tenant_id=tenant_id,
         category="low_stock",
@@ -395,6 +410,23 @@ async def notify_warehouse_low_stock_if_needed(
         entity_id=entity_id,
         roles=list(LOW_STOCK_NOTIFY_ROLES),
     )
+    from app import webhooks as webhooks_svc
+
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=tenant_id,
+        event="stock.low",
+        data={
+            "product_id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "stock_qty": qty,
+            "reorder_level": reorder,
+            "warehouse_id": stock.warehouse_id,
+            "suggested_order_qty": suggested,
+        },
+    )
+    return note
 
 
 async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
