@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 468 D1 (2026-08-14):** Offline Settings Sync IA Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_468_FIDELITY.md` (`test_stage468_fidelity_d1.py`). Open ADR: `docs/ADR_943_STAGE468_OPEN.md`; plan `docs/STAGE_468_PLAN.md`.
+
+**Stage 468 exit (2026-08-14):** I1, B1, P1, D1, H468x met — `docs/STAGE_468_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_944_STAGE468_FREEZE.md`. Fidelity: `docs/STAGE_468_FIDELITY.md`.
+
 **Stage 467 D1 (2026-08-14):** Offline Sync Dashboard Widget Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_467_FIDELITY.md` (`test_stage467_fidelity_d1.py`). Open ADR: `docs/ADR_941_STAGE467_OPEN.md`; plan `docs/STAGE_467_PLAN.md`.
 
 **Stage 467 exit (2026-08-14):** I1, B1, P1, D1, H467x met — `docs/STAGE_467_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_942_STAGE467_FREEZE.md`. Fidelity: `docs/STAGE_467_FIDELITY.md`.
