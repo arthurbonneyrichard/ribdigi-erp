@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/DPA_SUBPROCESSOR_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/dpa-subprocessor-honesty-pack-remaining-gate.json` — Stage 528 I1
+- `docs/DPA_SUBPROCESSOR_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/dpa-subprocessor-honesty-pack-rg-blockers.json` — Stage 528 B1
+- `docs/DPA_SUBPROCESSOR_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/dpa-subprocessor-honesty-pack-rg-pointers.json` — Stage 528 P1
 - `docs/CYBER_INSURANCE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/cyber-insurance-honesty-pack-remaining-gate.json` — Stage 527 I1
 - `docs/CYBER_INSURANCE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/cyber-insurance-honesty-pack-rg-blockers.json` — Stage 527 B1
 - `docs/CYBER_INSURANCE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/cyber-insurance-honesty-pack-rg-pointers.json` — Stage 527 P1

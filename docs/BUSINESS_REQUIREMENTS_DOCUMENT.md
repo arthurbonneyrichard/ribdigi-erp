@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 528 D1 DPA Subprocessor Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_528_FIDELITY.md` (`test_stage528_fidelity_d1.py`); Offline Complete / DPA Subprocessor honesty / go-live still MISSING.
 Stage 527 D1 Cyber Insurance Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_527_FIDELITY.md` (`test_stage527_fidelity_d1.py`); Offline Complete / Cyber Insurance honesty / go-live still MISSING.
 Stage 526 D1 Data Retention Return Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_526_FIDELITY.md` (`test_stage526_fidelity_d1.py`); Offline Complete / Data Retention Return honesty / go-live still MISSING.
 Stage 525 D1 Data Residency Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_525_FIDELITY.md` (`test_stage525_fidelity_d1.py`); Offline Complete / Data Residency honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 528 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cyber Insurance, Cyber Insurance honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 528 opened under **ADR-1063** after CONTINUE/NEXT (Tenant MVP DPA Subprocessor Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1064**. Stage 527 feature scope remains frozen.

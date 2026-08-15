@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 528 D1 (2026-08-14):** DPA Subprocessor Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_528_FIDELITY.md` (`test_stage528_fidelity_d1.py`). Open ADR: `docs/ADR_1063_STAGE528_OPEN.md`; plan `docs/STAGE_528_PLAN.md`.
+
+**Stage 528 exit (2026-08-14):** I1, B1, P1, D1, H528x met — `docs/STAGE_528_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1064_STAGE528_FREEZE.md`. Fidelity: `docs/STAGE_528_FIDELITY.md`.
+
 **Stage 527 D1 (2026-08-14):** Cyber Insurance Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_527_FIDELITY.md` (`test_stage527_fidelity_d1.py`). Open ADR: `docs/ADR_1061_STAGE527_OPEN.md`; plan `docs/STAGE_527_PLAN.md`.
 
 **Stage 527 exit (2026-08-14):** I1, B1, P1, D1, H527x met — `docs/STAGE_527_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1062_STAGE527_FREEZE.md`. Fidelity: `docs/STAGE_527_FIDELITY.md`.
