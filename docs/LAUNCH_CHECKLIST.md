@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 638 track opened (ADR-1283: `test_stage638_open.py`, `docs/STAGE_638_PLAN.md`) — Backup Restore Gate Honesty Pack Remaining-Gate Index; closed under ADR-1284
+- [x] Backup Restore Gate Honesty Pack remaining-gate hub (Stage 638 I1: `test_stage638_index_i1.py`, `docs/BACKUP_RESTORE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Backup Restore Gate Honesty Pack blocker matrix (Stage 638 B1: `test_stage638_blockers_b1.py`, `docs/BACKUP_RESTORE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 637 / Stage 636 / Stage 392 / CHANGE_IMPACT pointers (Stage 638 P1: `test_stage638_pointers_p1.py`, `docs/BACKUP_RESTORE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 638 fidelity sync (D1: `test_stage638_fidelity_d1.py`, `docs/STAGE_638_FIDELITY.md`)
+- [x] Stage 638 exit + freeze (H638x: `test_stage638_exit_h638x.py`, `docs/STAGE_638_EXIT_CRITERIA.md`, ADR-1284)
+
 Stage 637 track opened (ADR-1281: `test_stage637_open.py`, `docs/STAGE_637_PLAN.md`) — Healthcheck Probe Gate Honesty Pack Remaining-Gate Index; closed under ADR-1282
 - [x] Healthcheck Probe Gate Honesty Pack remaining-gate hub (Stage 637 I1: `test_stage637_index_i1.py`, `docs/HEALTHCHECK_PROBE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Healthcheck Probe Gate Honesty Pack blocker matrix (Stage 637 B1: `test_stage637_blockers_b1.py`, `docs/HEALTHCHECK_PROBE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
