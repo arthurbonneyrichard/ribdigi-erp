@@ -1031,6 +1031,8 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 479 D1 Offline Device Auth Token Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_479_FIDELITY.md` (`test_stage479_fidelity_d1.py`); Offline Complete / Device Auth Token honesty / go-live still MISSING.
+
 Stage 478 D1 Device Offline Registry Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_478_FIDELITY.md` (`test_stage478_fidelity_d1.py`); Offline Complete / Device Offline Registry honesty / go-live still MISSING.
 
 Stage 477 D1 Offline Payment Rules Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_477_FIDELITY.md` (`test_stage477_fidelity_d1.py`); Offline Complete / Payment Rules honesty / go-live still MISSING.
