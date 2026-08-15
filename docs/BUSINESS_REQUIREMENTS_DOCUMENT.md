@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 774 D1 Device Binding Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_774_FIDELITY.md` (`test_stage774_fidelity_d1.py`); Offline Complete / Device Binding Gate honesty / go-live still MISSING.
 Stage 773 D1 Device Attest Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_773_FIDELITY.md` (`test_stage773_fidelity_d1.py`); Offline Complete / Device Attest Gate honesty / go-live still MISSING.
 Stage 772 D1 Device Trust Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_772_FIDELITY.md` (`test_stage772_fidelity_d1.py`); Offline Complete / Device Trust Gate honesty / go-live still MISSING.
 Stage 771 D1 Reauth Challenge Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_771_FIDELITY.md` (`test_stage771_fidelity_d1.py`); Offline Complete / Reauth Challenge Gate honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 774 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Device Attest Gate, Device Attest Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 774 opened under **ADR-1555** after CONTINUE/NEXT (Tenant MVP Device Binding Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1556**. Stage 773 feature scope remains frozen.
