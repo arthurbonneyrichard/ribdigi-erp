@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 725 D1 (2026-08-14):** Session Idle Timeout Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_725_FIDELITY.md` (`test_stage725_fidelity_d1.py`). Open ADR: `docs/ADR_1457_STAGE725_OPEN.md`; plan `docs/STAGE_725_PLAN.md`.
+
+**Stage 725 exit (2026-08-14):** I1, B1, P1, D1, H725x met — `docs/STAGE_725_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1458_STAGE725_FREEZE.md`. Fidelity: `docs/STAGE_725_FIDELITY.md`.
+
 **Stage 724 D1 (2026-08-14):** Account Lockout Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_724_FIDELITY.md` (`test_stage724_fidelity_d1.py`). Open ADR: `docs/ADR_1455_STAGE724_OPEN.md`; plan `docs/STAGE_724_PLAN.md`.
 
 **Stage 724 exit (2026-08-14):** I1, B1, P1, D1, H724x met — `docs/STAGE_724_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1456_STAGE724_FREEZE.md`. Fidelity: `docs/STAGE_724_FIDELITY.md`.

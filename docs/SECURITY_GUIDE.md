@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 725 D1 Session Idle Timeout Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_725_FIDELITY.md` (`test_stage725_fidelity_d1.py`); exit ADR-1458 / `test_stage725_exit_h725x.py`. Honesty: Offline Complete / Session Idle Timeout Gate honesty / go-live Completes remain MISSING.
 Stage 724 D1 Account Lockout Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_724_FIDELITY.md` (`test_stage724_fidelity_d1.py`); exit ADR-1456 / `test_stage724_exit_h724x.py`. Honesty: Offline Complete / Account Lockout Gate honesty / go-live Completes remain MISSING.
 Stage 723 D1 Password Policy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_723_FIDELITY.md` (`test_stage723_fidelity_d1.py`); exit ADR-1454 / `test_stage723_exit_h723x.py`. Honesty: Offline Complete / Password Policy Gate honesty / go-live Completes remain MISSING.
 Stage 722 D1 Webauthn Passkey Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_722_FIDELITY.md` (`test_stage722_fidelity_d1.py`); exit ADR-1452 / `test_stage722_exit_h722x.py`. Honesty: Offline Complete / Webauthn Passkey Gate honesty / go-live Completes remain MISSING.

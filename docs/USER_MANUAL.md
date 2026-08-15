@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 725 Session Idle Timeout Gate Honesty Pack remaining-gate index fidelity (ADR-1457/1458). Operators track packaging status via `docs/SESSION_IDLE_TIMEOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 724 Account Lockout Gate Honesty Pack remaining-gate index fidelity (ADR-1455/1456). Operators track packaging status via `docs/ACCOUNT_LOCKOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 723 Password Policy Gate Honesty Pack remaining-gate index fidelity (ADR-1453/1454). Operators track packaging status via `docs/PASSWORD_POLICY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 722 Webauthn Passkey Gate Honesty Pack remaining-gate index fidelity (ADR-1451/1452). Operators track packaging status via `docs/WEBAUTHN_PASSKEY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.

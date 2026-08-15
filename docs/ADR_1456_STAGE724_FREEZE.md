@@ -31,3 +31,7 @@ Stage 725 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Account Lockout Gate, Account Lockout Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 725 opened under **ADR-1457** after CONTINUE/NEXT (Tenant MVP Session Idle Timeout Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1458**. Stage 724 feature scope remains frozen.

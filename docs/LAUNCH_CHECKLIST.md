@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 725 track opened (ADR-1457: `test_stage725_open.py`, `docs/STAGE_725_PLAN.md`) — Session Idle Timeout Gate Honesty Pack Remaining-Gate Index; closed under ADR-1458
+- [x] Session Idle Timeout Gate Honesty Pack remaining-gate hub (Stage 725 I1: `test_stage725_index_i1.py`, `docs/SESSION_IDLE_TIMEOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Session Idle Timeout Gate Honesty Pack blocker matrix (Stage 725 B1: `test_stage725_blockers_b1.py`, `docs/SESSION_IDLE_TIMEOUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 724 / Stage 723 / Stage 392 / CHANGE_IMPACT pointers (Stage 725 P1: `test_stage725_pointers_p1.py`, `docs/SESSION_IDLE_TIMEOUT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 725 fidelity sync (D1: `test_stage725_fidelity_d1.py`, `docs/STAGE_725_FIDELITY.md`)
+- [x] Stage 725 exit + freeze (H725x: `test_stage725_exit_h725x.py`, `docs/STAGE_725_EXIT_CRITERIA.md`, ADR-1458)
+
 Stage 724 track opened (ADR-1455: `test_stage724_open.py`, `docs/STAGE_724_PLAN.md`) — Account Lockout Gate Honesty Pack Remaining-Gate Index; closed under ADR-1456
 - [x] Account Lockout Gate Honesty Pack remaining-gate hub (Stage 724 I1: `test_stage724_index_i1.py`, `docs/ACCOUNT_LOCKOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Account Lockout Gate Honesty Pack blocker matrix (Stage 724 B1: `test_stage724_blockers_b1.py`, `docs/ACCOUNT_LOCKOUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
