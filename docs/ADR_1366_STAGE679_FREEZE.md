@@ -31,3 +31,7 @@ Stage 680 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Metrics Cardinality Gate, Metrics Cardinality Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 680 opened under **ADR-1367** after CONTINUE/NEXT (Tenant MVP Tracing Sample Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1368**. Stage 679 feature scope remains frozen.
