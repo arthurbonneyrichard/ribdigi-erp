@@ -31,3 +31,8 @@ Stage 511 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Knowledge Transfer, Knowledge Transfer honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 511 opened under **ADR-1029** after CONTINUE/NEXT (Tenant MVP Operator Handoff Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1030**. Stage 510 feature scope remains frozen.
+

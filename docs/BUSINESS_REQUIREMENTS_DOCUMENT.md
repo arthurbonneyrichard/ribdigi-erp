@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 511 D1 Operator Handoff Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_511_FIDELITY.md` (`test_stage511_fidelity_d1.py`); Offline Complete / Operator Handoff honesty / go-live still MISSING.
 Stage 510 D1 Knowledge Transfer Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_510_FIDELITY.md` (`test_stage510_fidelity_d1.py`); Offline Complete / Knowledge Transfer honesty / go-live still MISSING.
 Stage 509 D1 Customer Training Cert Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_509_FIDELITY.md` (`test_stage509_fidelity_d1.py`); Offline Complete / Customer Training Cert honesty / go-live still MISSING.
 Stage 508 D1 Live Training Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_508_FIDELITY.md` (`test_stage508_fidelity_d1.py`); Offline Complete / Live Training honesty / go-live still MISSING.
