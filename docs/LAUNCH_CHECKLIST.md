@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 544 track opened (ADR-1095: `test_stage544_open.py`, `docs/STAGE_544_PLAN.md`) — Deferred ADR Register Honesty Pack Remaining-Gate Index; closed under ADR-1096
+- [x] Deferred ADR Register Honesty Pack remaining-gate hub (Stage 544 I1: `test_stage544_index_i1.py`, `docs/DEFERRED_ADR_REGISTER_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Deferred ADR Register Honesty Pack blocker matrix (Stage 544 B1: `test_stage544_blockers_b1.py`, `docs/DEFERRED_ADR_REGISTER_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 543 / Stage 542 / Stage 392 / CHANGE_IMPACT pointers (Stage 544 P1: `test_stage544_pointers_p1.py`, `docs/DEFERRED_ADR_REGISTER_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 544 fidelity sync (D1: `test_stage544_fidelity_d1.py`, `docs/STAGE_544_FIDELITY.md`)
+- [x] Stage 544 exit + freeze (H544x: `test_stage544_exit_h544x.py`, `docs/STAGE_544_EXIT_CRITERIA.md`, ADR-1096)
+
 Stage 543 track opened (ADR-1093: `test_stage543_open.py`, `docs/STAGE_543_PLAN.md`) — Acceptance Archive Honesty Pack Remaining-Gate Index; closed under ADR-1094
 - [x] Acceptance Archive Honesty Pack remaining-gate hub (Stage 543 I1: `test_stage543_index_i1.py`, `docs/ACCEPTANCE_ARCHIVE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Acceptance Archive Honesty Pack blocker matrix (Stage 543 B1: `test_stage543_blockers_b1.py`, `docs/ACCEPTANCE_ARCHIVE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

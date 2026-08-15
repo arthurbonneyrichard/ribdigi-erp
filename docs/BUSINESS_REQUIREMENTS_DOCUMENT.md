@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 544 D1 Deferred ADR Register Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_544_FIDELITY.md` (`test_stage544_fidelity_d1.py`); Offline Complete / Deferred ADR Register honesty / go-live still MISSING.
 Stage 543 D1 Acceptance Archive Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_543_FIDELITY.md` (`test_stage543_fidelity_d1.py`); Offline Complete / Acceptance Archive honesty / go-live still MISSING.
 Stage 542 D1 K8s Deploy Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_542_FIDELITY.md` (`test_stage542_fidelity_d1.py`); Offline Complete / K8s Deploy honesty / go-live still MISSING.
 Stage 541 D1 Language I18n Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_541_FIDELITY.md` (`test_stage541_fidelity_d1.py`); Offline Complete / Language I18n honesty / go-live still MISSING.

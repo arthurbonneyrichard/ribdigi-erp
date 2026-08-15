@@ -31,3 +31,7 @@ Stage 544 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Acceptance Archive, Acceptance Archive honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 544 opened under **ADR-1095** after CONTINUE/NEXT (Tenant MVP Deferred ADR Register Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1096**. Stage 543 feature scope remains frozen.
