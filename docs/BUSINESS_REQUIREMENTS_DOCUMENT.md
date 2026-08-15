@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 769 D1 Delegation Token Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_769_FIDELITY.md` (`test_stage769_fidelity_d1.py`); Offline Complete / Delegation Token Gate honesty / go-live still MISSING.
 Stage 768 D1 Assume Role Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_768_FIDELITY.md` (`test_stage768_fidelity_d1.py`); Offline Complete / Assume Role Gate honesty / go-live still MISSING.
 Stage 767 D1 Impersonation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_767_FIDELITY.md` (`test_stage767_fidelity_d1.py`); Offline Complete / Impersonation Gate honesty / go-live still MISSING.
 Stage 766 D1 Workload Identity Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_766_FIDELITY.md` (`test_stage766_fidelity_d1.py`); Offline Complete / Workload Identity Gate honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 769 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Assume Role Gate, Assume Role Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 769 opened under **ADR-1545** after CONTINUE/NEXT (Tenant MVP Delegation Token Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1546**. Stage 768 feature scope remains frozen.

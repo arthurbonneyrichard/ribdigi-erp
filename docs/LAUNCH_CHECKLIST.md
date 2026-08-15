@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 769 track opened (ADR-1545: `test_stage769_open.py`, `docs/STAGE_769_PLAN.md`) — Delegation Token Gate Honesty Pack Remaining-Gate Index; closed under ADR-1546
+- [x] Delegation Token Gate Honesty Pack remaining-gate hub (Stage 769 I1: `test_stage769_index_i1.py`, `docs/DELEGATION_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Delegation Token Gate Honesty Pack blocker matrix (Stage 769 B1: `test_stage769_blockers_b1.py`, `docs/DELEGATION_TOKEN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 768 / Stage 767 / Stage 392 / CHANGE_IMPACT pointers (Stage 769 P1: `test_stage769_pointers_p1.py`, `docs/DELEGATION_TOKEN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 769 fidelity sync (D1: `test_stage769_fidelity_d1.py`, `docs/STAGE_769_FIDELITY.md`)
+- [x] Stage 769 exit + freeze (H769x: `test_stage769_exit_h769x.py`, `docs/STAGE_769_EXIT_CRITERIA.md`, ADR-1546)
+
 Stage 768 track opened (ADR-1543: `test_stage768_open.py`, `docs/STAGE_768_PLAN.md`) — Assume Role Gate Honesty Pack Remaining-Gate Index; closed under ADR-1544
 - [x] Assume Role Gate Honesty Pack remaining-gate hub (Stage 768 I1: `test_stage768_index_i1.py`, `docs/ASSUME_ROLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Assume Role Gate Honesty Pack blocker matrix (Stage 768 B1: `test_stage768_blockers_b1.py`, `docs/ASSUME_ROLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
