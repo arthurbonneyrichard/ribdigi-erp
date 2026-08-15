@@ -31,3 +31,7 @@ Stage 539 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Live DR, Live DR honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 539 opened under **ADR-1085** after CONTINUE/NEXT (Tenant MVP Live Migration Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1086**. Stage 538 feature scope remains frozen.
