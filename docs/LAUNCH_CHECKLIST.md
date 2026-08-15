@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 816 track opened (ADR-1639: `test_stage816_open.py`, `docs/STAGE_816_PLAN.md`) — DKIM Rotate Gate Honesty Pack Remaining-Gate Index; closed under ADR-1640
+- [x] DKIM Rotate Gate Honesty Pack remaining-gate hub (Stage 816 I1: `test_stage816_index_i1.py`, `docs/DKIM_ROTATE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] DKIM Rotate Gate Honesty Pack blocker matrix (Stage 816 B1: `test_stage816_blockers_b1.py`, `docs/DKIM_ROTATE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 815 / Stage 814 / Stage 392 / CHANGE_IMPACT pointers (Stage 816 P1: `test_stage816_pointers_p1.py`, `docs/DKIM_ROTATE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 816 fidelity sync (D1: `test_stage816_fidelity_d1.py`, `docs/STAGE_816_FIDELITY.md`)
+- [x] Stage 816 exit + freeze (H816x: `test_stage816_exit_h816x.py`, `docs/STAGE_816_EXIT_CRITERIA.md`, ADR-1640)
+
 Stage 815 track opened (ADR-1637: `test_stage815_open.py`, `docs/STAGE_815_PLAN.md`) — SPF Softfail Gate Honesty Pack Remaining-Gate Index; closed under ADR-1638
 - [x] SPF Softfail Gate Honesty Pack remaining-gate hub (Stage 815 I1: `test_stage815_index_i1.py`, `docs/SPF_SOFTFAIL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] SPF Softfail Gate Honesty Pack blocker matrix (Stage 815 B1: `test_stage815_blockers_b1.py`, `docs/SPF_SOFTFAIL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

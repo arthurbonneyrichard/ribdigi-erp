@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 816 D1 (2026-08-14):** DKIM Rotate Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_816_FIDELITY.md` (`test_stage816_fidelity_d1.py`). Open ADR: `docs/ADR_1639_STAGE816_OPEN.md`; plan `docs/STAGE_816_PLAN.md`.
+
+**Stage 816 exit (2026-08-14):** I1, B1, P1, D1, H816x met — `docs/STAGE_816_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1640_STAGE816_FREEZE.md`. Fidelity: `docs/STAGE_816_FIDELITY.md`.
+
 **Stage 815 D1 (2026-08-14):** SPF Softfail Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_815_FIDELITY.md` (`test_stage815_fidelity_d1.py`). Open ADR: `docs/ADR_1637_STAGE815_OPEN.md`; plan `docs/STAGE_815_PLAN.md`.
 
 **Stage 815 exit (2026-08-14):** I1, B1, P1, D1, H815x met — `docs/STAGE_815_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1638_STAGE815_FREEZE.md`. Fidelity: `docs/STAGE_815_FIDELITY.md`.
