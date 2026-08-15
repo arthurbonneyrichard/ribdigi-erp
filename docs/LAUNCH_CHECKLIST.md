@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 872 track opened (ADR-1751: `test_stage872_open.py`, `docs/STAGE_872_PLAN.md`) — Parental Consent Gate Honesty Pack Remaining-Gate Index; closed under ADR-1752
+- [x] Parental Consent Gate Honesty Pack remaining-gate hub (Stage 872 I1: `test_stage872_index_i1.py`, `docs/PARENTAL_CONSENT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Parental Consent Gate Honesty Pack blocker matrix (Stage 872 B1: `test_stage872_blockers_b1.py`, `docs/PARENTAL_CONSENT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 871 / Stage 870 / Stage 392 / CHANGE_IMPACT pointers (Stage 872 P1: `test_stage872_pointers_p1.py`, `docs/PARENTAL_CONSENT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 872 fidelity sync (D1: `test_stage872_fidelity_d1.py`, `docs/STAGE_872_FIDELITY.md`)
+- [x] Stage 872 exit + freeze (H872x: `test_stage872_exit_h872x.py`, `docs/STAGE_872_EXIT_CRITERIA.md`, ADR-1752)
+
 Stage 871 track opened (ADR-1749: `test_stage871_open.py`, `docs/STAGE_871_PLAN.md`) — Children Privacy Gate Honesty Pack Remaining-Gate Index; closed under ADR-1750
 - [x] Children Privacy Gate Honesty Pack remaining-gate hub (Stage 871 I1: `test_stage871_index_i1.py`, `docs/CHILDREN_PRIVACY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Children Privacy Gate Honesty Pack blocker matrix (Stage 871 B1: `test_stage871_blockers_b1.py`, `docs/CHILDREN_PRIVACY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
