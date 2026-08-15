@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 814 D1 (2026-08-14):** DMARC Align Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_814_FIDELITY.md` (`test_stage814_fidelity_d1.py`). Open ADR: `docs/ADR_1635_STAGE814_OPEN.md`; plan `docs/STAGE_814_PLAN.md`.
+
+**Stage 814 exit (2026-08-14):** I1, B1, P1, D1, H814x met — `docs/STAGE_814_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1636_STAGE814_FREEZE.md`. Fidelity: `docs/STAGE_814_FIDELITY.md`.
+
 **Stage 813 D1 (2026-08-14):** BIMI Record Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_813_FIDELITY.md` (`test_stage813_fidelity_d1.py`). Open ADR: `docs/ADR_1633_STAGE813_OPEN.md`; plan `docs/STAGE_813_PLAN.md`.
 
 **Stage 813 exit (2026-08-14):** I1, B1, P1, D1, H813x met — `docs/STAGE_813_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1634_STAGE813_FREEZE.md`. Fidelity: `docs/STAGE_813_FIDELITY.md`.
