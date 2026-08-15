@@ -31,3 +31,7 @@ Stage 575 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Store Open Health, Store Open Health honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 575 opened under **ADR-1157** after CONTINUE/NEXT (Tenant MVP Store Open Lowstock Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1158**. Stage 574 feature scope remains frozen.

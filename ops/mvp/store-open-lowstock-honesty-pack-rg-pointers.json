@@ -1,0 +1,77 @@
+{
+  "id": "store-open-lowstock-honesty-pack-rg-pointers",
+  "stage": 575,
+  "pack": "P1",
+  "doc": "docs/STORE_OPEN_LOWSTOCK_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_OPEN_LOWSTOCK_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "store_open_health_honesty_pack_remaining_gate": "docs/STORE_OPEN_HEALTH_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "store_close_checklist_honesty_pack_remaining_gate": "docs/STORE_CLOSE_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "store_open_lowstock_pack_remaining_gate": "docs/STORE_OPEN_LOWSTOCK_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "store_open_lowstock_honesty_complete_claimed": false,
+  "store_open_lowstock_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_store_open_lowstock_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "store_open_health_honesty_pack_remaining_gate_stage574": "docs/STORE_OPEN_HEALTH_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "store_close_checklist_honesty_pack_remaining_gate_stage573": "docs/STORE_CLOSE_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "store_open_lowstock_pack_remaining_gate": "docs/STORE_OPEN_LOWSTOCK_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / store_open_lowstock / store_open_lowstock_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "solhp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Store Open Lowstock Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solhp-stage574",
+      "title": "Point to Stage 574 STORE OPEN HEALTH HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solhp-stage573",
+      "title": "Point to Stage 573 STORE CLOSE CHECKLIST HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solhp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solhp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solhp-prior-pack",
+      "title": "Point to Store Open Lowstock Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "solhp-checklist-remaining",
+      "title": "Offline Complete / Store Open Lowstock / Store Open Lowstock honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 575 P1 Store Open Lowstock Honesty Pack RG pointers packaging only."
+}

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 575 track opened (ADR-1157: `test_stage575_open.py`, `docs/STAGE_575_PLAN.md`) — Store Open Lowstock Honesty Pack Remaining-Gate Index; closed under ADR-1158
+- [x] Store Open Lowstock Honesty Pack remaining-gate hub (Stage 575 I1: `test_stage575_index_i1.py`, `docs/STORE_OPEN_LOWSTOCK_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Store Open Lowstock Honesty Pack blocker matrix (Stage 575 B1: `test_stage575_blockers_b1.py`, `docs/STORE_OPEN_LOWSTOCK_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 574 / Stage 573 / Stage 392 / CHANGE_IMPACT pointers (Stage 575 P1: `test_stage575_pointers_p1.py`, `docs/STORE_OPEN_LOWSTOCK_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 575 fidelity sync (D1: `test_stage575_fidelity_d1.py`, `docs/STAGE_575_FIDELITY.md`)
+- [x] Stage 575 exit + freeze (H575x: `test_stage575_exit_h575x.py`, `docs/STAGE_575_EXIT_CRITERIA.md`, ADR-1158)
+
 Stage 574 track opened (ADR-1155: `test_stage574_open.py`, `docs/STAGE_574_PLAN.md`) — Store Open Health Honesty Pack Remaining-Gate Index; closed under ADR-1156
 - [x] Store Open Health Honesty Pack remaining-gate hub (Stage 574 I1: `test_stage574_index_i1.py`, `docs/STORE_OPEN_HEALTH_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Store Open Health Honesty Pack blocker matrix (Stage 574 B1: `test_stage574_blockers_b1.py`, `docs/STORE_OPEN_HEALTH_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
