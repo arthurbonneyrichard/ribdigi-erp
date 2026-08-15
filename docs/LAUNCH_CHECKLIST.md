@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 891 track opened (ADR-1789: `test_stage891_open.py`, `docs/STAGE_891_PLAN.md`) — Consent Transfer Gate Honesty Pack Remaining-Gate Index; closed under ADR-1790
+- [x] Consent Transfer Gate Honesty Pack remaining-gate hub (Stage 891 I1: `test_stage891_index_i1.py`, `docs/CONSENT_TRANSFER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Consent Transfer Gate Honesty Pack blocker matrix (Stage 891 B1: `test_stage891_blockers_b1.py`, `docs/CONSENT_TRANSFER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 890 / Stage 889 / Stage 392 / CHANGE_IMPACT pointers (Stage 891 P1: `test_stage891_pointers_p1.py`, `docs/CONSENT_TRANSFER_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 891 fidelity sync (D1: `test_stage891_fidelity_d1.py`, `docs/STAGE_891_FIDELITY.md`)
+- [x] Stage 891 exit + freeze (H891x: `test_stage891_exit_h891x.py`, `docs/STAGE_891_EXIT_CRITERIA.md`, ADR-1790)
+
 Stage 890 track opened (ADR-1787: `test_stage890_open.py`, `docs/STAGE_890_PLAN.md`) — Supplementary Measure Gate Honesty Pack Remaining-Gate Index; closed under ADR-1788
 - [x] Supplementary Measure Gate Honesty Pack remaining-gate hub (Stage 890 I1: `test_stage890_index_i1.py`, `docs/SUPPLEMENTARY_MEASURE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Supplementary Measure Gate Honesty Pack blocker matrix (Stage 890 B1: `test_stage890_blockers_b1.py`, `docs/SUPPLEMENTARY_MEASURE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
