@@ -156,6 +156,22 @@ export default function Page() {
   const [drawerOnCash, setDrawerOnCash] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [storeManageFilter, setStoreManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [warehouseManageFilter, setWarehouseManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [branchManageFilter, setBranchManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [departmentManageFilter, setDepartmentManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+
+  type StatusFilter = 'all' | 'active' | 'inactive';
+  const byStatus = <T extends { is_active?: boolean }>(rows: T[], filter: StatusFilter) =>
+    rows.filter((r) => {
+      if (filter === 'all') return true;
+      const active = r.is_active !== false;
+      return filter === 'inactive' ? !active : active;
+    });
+  const managedStores = byStatus(stores, storeManageFilter);
+  const managedWarehouses = byStatus(warehouses, warehouseManageFilter);
+  const managedBranches = byStatus(branches, branchManageFilter);
+  const managedDepartments = byStatus(departments, departmentManageFilter);
 
   async function refresh() {
     const [s, p, t, settings, wh, u, br, dep] = await Promise.all([
@@ -1011,6 +1027,17 @@ export default function Page() {
 
       <h3 style={{ marginTop: 16 }}>Branches</h3>
       <p className="muted">Code, manager, address, and contact; deactivate without data loss (BR-2.2).</p>
+      <select
+        value={branchManageFilter}
+        onChange={(e) => setBranchManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage branch list by status"
+        aria-label="Branch status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
       <table className="table" style={{ marginBottom: 24 }}>
         <thead>
           <tr>
@@ -1025,7 +1052,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {branches.map((b) => (
+          {managedBranches.map((b) => (
             <tr key={b.id}>
               <td>{b.code}</td>
               <td>{b.name}</td>
@@ -1055,6 +1082,17 @@ export default function Page() {
 
       <h3 style={{ marginTop: 16 }}>Departments</h3>
       <p className="muted">Code, optional branch, department head; soft deactivate (BR-2.5).</p>
+      <select
+        value={departmentManageFilter}
+        onChange={(e) => setDepartmentManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage department list by status"
+        aria-label="Department status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
       <table className="table" style={{ marginBottom: 24 }}>
         <thead>
           <tr>
@@ -1067,7 +1105,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {departments.map((d) => (
+          {managedDepartments.map((d) => (
             <tr key={d.id}>
               <td>{d.code}</td>
               <td>{d.name}</td>
@@ -1095,6 +1133,17 @@ export default function Page() {
 
       <h3 style={{ marginTop: 16 }}>Stores</h3>
       <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3). Soft-deactivate hides the store from POS and new sales without deleting history.</p>
+      <select
+        value={storeManageFilter}
+        onChange={(e) => setStoreManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage store list by status"
+        aria-label="Store status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
       <table className="table">
         <thead>
           <tr>
@@ -1109,7 +1158,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {stores.map((s) => (
+          {managedStores.map((s) => (
             <tr key={s.id}>
               <td>{s.code}</td>
               <td>
@@ -1243,6 +1292,17 @@ export default function Page() {
         Type, manager, address, and capacity (BR-2.4). Soft-deactivate hides the warehouse from new
         stock ops without deleting history.
       </p>
+      <select
+        value={warehouseManageFilter}
+        onChange={(e) => setWarehouseManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage warehouse list by status"
+        aria-label="Warehouse status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
       <table className="table" style={{ marginBottom: 24 }}>
         <thead>
           <tr>
@@ -1257,7 +1317,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {warehouses.map((w) => (
+          {managedWarehouses.map((w) => (
             <tr key={w.id}>
               <td>{w.code}</td>
               <td>
@@ -1285,7 +1345,7 @@ export default function Page() {
               </td>
             </tr>
           ))}
-          {warehouses.length === 0 && (
+          {managedWarehouses.length === 0 && (
             <tr>
               <td colSpan={8} className="muted">
                 No warehouses yet

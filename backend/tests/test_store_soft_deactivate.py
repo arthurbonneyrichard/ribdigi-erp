@@ -18,8 +18,44 @@ def test_store_soft_deactivate_ui_wired():
     assert "Deactivate" in stores
     assert "Activate" in stores
     assert 'JSON.stringify({ is_active: isActive })' in stores
+    assert "storeManageFilter" in stores
+    assert 'aria-label="Store status filter"' in stores
+    assert "managedStores" in stores
     sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
     assert "s.is_active !== false" in sales
+
+
+@pytest.mark.asyncio
+async def test_stores_list_is_active_filter(client, seeded):
+    ac, seed = client
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+    created = await ac.post(
+        "/api/v1/stores",
+        headers=admin,
+        json={"name": "Filter Store Co", "code": "FLT-ST", "address": "9 Filter Ln"},
+    )
+    assert created.status_code == 200, created.text
+    sid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/stores/{sid}",
+        headers=admin,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/stores", headers=admin)
+    assert sid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/stores?is_active=true", headers=admin)
+    assert sid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/stores?is_active=false", headers=admin)
+    assert sid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
 
 
 @pytest.mark.asyncio
