@@ -31,3 +31,7 @@ Stage 531 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, SBOM Disclosure, SBOM Disclosure honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 531 opened under **ADR-1069** after CONTINUE/NEXT (Tenant MVP Liability Indemnity Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1070**. Stage 530 feature scope remains frozen.
