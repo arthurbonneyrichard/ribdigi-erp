@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 613 D1 Architecture Docs Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_613_FIDELITY.md` (`test_stage613_fidelity_d1.py`); Offline Complete / Architecture Docs Gate honesty / go-live still MISSING.
 Stage 612 D1 Ops MVP README Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_612_FIDELITY.md` (`test_stage612_fidelity_d1.py`); Offline Complete / Ops MVP README Gate honesty / go-live still MISSING.
 Stage 611 D1 Cursor Handoff Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_611_FIDELITY.md` (`test_stage611_fidelity_d1.py`); Offline Complete / Cursor Handoff Gate honesty / go-live still MISSING.
 Stage 610 D1 Development Roadmap Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_610_FIDELITY.md` (`test_stage610_fidelity_d1.py`); Offline Complete / Development Roadmap Gate honesty / go-live still MISSING.
