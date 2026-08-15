@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 671 track opened (ADR-1349: `test_stage671_open.py`, `docs/STAGE_671_PLAN.md`) — Resource Quota Gate Honesty Pack Remaining-Gate Index; closed under ADR-1350
+- [x] Resource Quota Gate Honesty Pack remaining-gate hub (Stage 671 I1: `test_stage671_index_i1.py`, `docs/RESOURCE_QUOTA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Resource Quota Gate Honesty Pack blocker matrix (Stage 671 B1: `test_stage671_blockers_b1.py`, `docs/RESOURCE_QUOTA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 670 / Stage 669 / Stage 392 / CHANGE_IMPACT pointers (Stage 671 P1: `test_stage671_pointers_p1.py`, `docs/RESOURCE_QUOTA_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 671 fidelity sync (D1: `test_stage671_fidelity_d1.py`, `docs/STAGE_671_FIDELITY.md`)
+- [x] Stage 671 exit + freeze (H671x: `test_stage671_exit_h671x.py`, `docs/STAGE_671_EXIT_CRITERIA.md`, ADR-1350)
+
 Stage 670 track opened (ADR-1347: `test_stage670_open.py`, `docs/STAGE_670_PLAN.md`) — Node Affinity Gate Honesty Pack Remaining-Gate Index; closed under ADR-1348
 - [x] Node Affinity Gate Honesty Pack remaining-gate hub (Stage 670 I1: `test_stage670_index_i1.py`, `docs/NODE_AFFINITY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Node Affinity Gate Honesty Pack blocker matrix (Stage 670 B1: `test_stage670_blockers_b1.py`, `docs/NODE_AFFINITY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
