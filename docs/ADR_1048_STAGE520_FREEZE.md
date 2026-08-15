@@ -31,3 +31,8 @@ Stage 521 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Accessibility Statement, Accessibility Statement honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 521 opened under **ADR-1049** after CONTINUE/NEXT (Tenant MVP Change Governance Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1050**. Stage 520 feature scope remains frozen.
+

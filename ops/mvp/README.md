@@ -1129,6 +1129,15 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/AI_USE_DISCLOSURE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ai-use-disclosure-honesty-pack-remaining-gate.json` — Stage 523 I1
+- `docs/AI_USE_DISCLOSURE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ai-use-disclosure-honesty-pack-rg-blockers.json` — Stage 523 B1
+- `docs/AI_USE_DISCLOSURE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ai-use-disclosure-honesty-pack-rg-pointers.json` — Stage 523 P1
+- `docs/BREACH_NOTIFICATION_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/breach-notification-honesty-pack-remaining-gate.json` — Stage 522 I1
+- `docs/BREACH_NOTIFICATION_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/breach-notification-honesty-pack-rg-blockers.json` — Stage 522 B1
+- `docs/BREACH_NOTIFICATION_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/breach-notification-honesty-pack-rg-pointers.json` — Stage 522 P1
+- `docs/CHANGE_GOVERNANCE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/change-governance-honesty-pack-remaining-gate.json` — Stage 521 I1
+- `docs/CHANGE_GOVERNANCE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/change-governance-honesty-pack-rg-blockers.json` — Stage 521 B1
+- `docs/CHANGE_GOVERNANCE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/change-governance-honesty-pack-rg-pointers.json` — Stage 521 P1
 - `docs/ACCESSIBILITY_STATEMENT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/accessibility-statement-honesty-pack-remaining-gate.json` — Stage 520 I1
 - `docs/ACCESSIBILITY_STATEMENT_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/accessibility-statement-honesty-pack-rg-blockers.json` — Stage 520 B1
 - `docs/ACCESSIBILITY_STATEMENT_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/accessibility-statement-honesty-pack-rg-pointers.json` — Stage 520 P1
