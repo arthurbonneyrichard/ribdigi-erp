@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 651 track opened (ADR-1309: `test_stage651_open.py`, `docs/STAGE_651_PLAN.md`) — Canary Deploy Gate Honesty Pack Remaining-Gate Index; closed under ADR-1310
+- [x] Canary Deploy Gate Honesty Pack remaining-gate hub (Stage 651 I1: `test_stage651_index_i1.py`, `docs/CANARY_DEPLOY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Canary Deploy Gate Honesty Pack blocker matrix (Stage 651 B1: `test_stage651_blockers_b1.py`, `docs/CANARY_DEPLOY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 650 / Stage 649 / Stage 392 / CHANGE_IMPACT pointers (Stage 651 P1: `test_stage651_pointers_p1.py`, `docs/CANARY_DEPLOY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 651 fidelity sync (D1: `test_stage651_fidelity_d1.py`, `docs/STAGE_651_FIDELITY.md`)
+- [x] Stage 651 exit + freeze (H651x: `test_stage651_exit_h651x.py`, `docs/STAGE_651_EXIT_CRITERIA.md`, ADR-1310)
+
 Stage 650 track opened (ADR-1307: `test_stage650_open.py`, `docs/STAGE_650_PLAN.md`) — Feature Flag Gate Honesty Pack Remaining-Gate Index; closed under ADR-1308
 - [x] Feature Flag Gate Honesty Pack remaining-gate hub (Stage 650 I1: `test_stage650_index_i1.py`, `docs/FEATURE_FLAG_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Feature Flag Gate Honesty Pack blocker matrix (Stage 650 B1: `test_stage650_blockers_b1.py`, `docs/FEATURE_FLAG_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

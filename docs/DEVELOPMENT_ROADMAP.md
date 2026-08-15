@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 651 D1 (2026-08-14):** Canary Deploy Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_651_FIDELITY.md` (`test_stage651_fidelity_d1.py`). Open ADR: `docs/ADR_1309_STAGE651_OPEN.md`; plan `docs/STAGE_651_PLAN.md`.
+
+**Stage 651 exit (2026-08-14):** I1, B1, P1, D1, H651x met — `docs/STAGE_651_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1310_STAGE651_FREEZE.md`. Fidelity: `docs/STAGE_651_FIDELITY.md`.
+
 **Stage 650 D1 (2026-08-14):** Feature Flag Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_650_FIDELITY.md` (`test_stage650_fidelity_d1.py`). Open ADR: `docs/ADR_1307_STAGE650_OPEN.md`; plan `docs/STAGE_650_PLAN.md`.
 
 **Stage 650 exit (2026-08-14):** I1, B1, P1, D1, H650x met — `docs/STAGE_650_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1308_STAGE650_FREEZE.md`. Fidelity: `docs/STAGE_650_FIDELITY.md`.

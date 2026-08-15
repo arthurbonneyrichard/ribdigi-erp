@@ -31,3 +31,7 @@ Stage 651 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Feature Flag Gate, Feature Flag Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 651 opened under **ADR-1309** after CONTINUE/NEXT (Tenant MVP Canary Deploy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1310**. Stage 650 feature scope remains frozen.

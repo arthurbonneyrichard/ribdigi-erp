@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 651 D1 Canary Deploy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_651_FIDELITY.md` (`test_stage651_fidelity_d1.py`); exit ADR-1310 / `test_stage651_exit_h651x.py`. Honesty: Offline Complete / Canary Deploy Gate honesty / go-live Completes remain MISSING.
 Stage 650 D1 Feature Flag Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_650_FIDELITY.md` (`test_stage650_fidelity_d1.py`); exit ADR-1308 / `test_stage650_exit_h650x.py`. Honesty: Offline Complete / Feature Flag Gate honesty / go-live Completes remain MISSING.
 Stage 649 D1 Error Budget Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_649_FIDELITY.md` (`test_stage649_fidelity_d1.py`); exit ADR-1306 / `test_stage649_exit_h649x.py`. Honesty: Offline Complete / Error Budget Gate honesty / go-live Completes remain MISSING.
 Stage 648 D1 Performance Budget Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_648_FIDELITY.md` (`test_stage648_fidelity_d1.py`); exit ADR-1304 / `test_stage648_exit_h648x.py`. Honesty: Offline Complete / Performance Budget Gate honesty / go-live Completes remain MISSING.

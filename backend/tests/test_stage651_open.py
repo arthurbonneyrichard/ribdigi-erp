@@ -1,0 +1,34 @@
+"""Stage 651 open — ADR-1309 + STAGE_651_PLAN + ADR-1308 amendment."""
+from __future__ import annotations
+from pathlib import Path
+import pytest
+ROOT = Path(__file__).resolve().parents[2]
+DOCS = ROOT / "docs"
+
+@pytest.mark.parametrize("rel", [
+    "docs/ADR_1309_STAGE651_OPEN.md", "docs/STAGE_651_PLAN.md",
+    "docs/ADR_1308_STAGE650_FREEZE.md", "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "docs/CANARY_DEPLOY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "docs/CANARY_DEPLOY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+    "docs/CANARY_DEPLOY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+])
+def test_stage651_open_artifacts_exist(rel: str) -> None:
+    assert (ROOT / rel).is_file(), f"missing {rel}"
+
+def test_adr1309_opens_stage651() -> None:
+    text = (DOCS / "ADR_1309_STAGE651_OPEN.md").read_text(encoding="utf-8")
+    assert "ADR-1309" in text and "Stage 651" in text
+    for token in ("I1", "B1", "P1", "D1", "H651x"):
+        assert token in text, token
+
+def test_stage651_plan_structure() -> None:
+    text = (DOCS / "STAGE_651_PLAN.md").read_text(encoding="utf-8")
+    assert "Stage 651" in text
+    for token in ("I1", "B1", "P1", "D1", "H651x"):
+        assert token in text, token
+
+def test_adr1308_amended_for_stage651() -> None:
+    text = (DOCS / "ADR_1308_STAGE650_FREEZE.md").read_text(encoding="utf-8")
+    assert "Stage 651" in text
+    assert "ADR-1309" in text or "ADR_1309" in text
+    assert "CONTINUE/NEXT" in text
