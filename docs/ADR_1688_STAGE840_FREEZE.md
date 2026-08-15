@@ -31,3 +31,7 @@ Stage 841 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Do Not Contact Gate, Do Not Contact Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 841 opened under **ADR-1689** after CONTINUE/NEXT (Tenant MVP Global Stop Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1690**. Stage 840 feature scope remains frozen.

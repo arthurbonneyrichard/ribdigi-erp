@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 841 track opened (ADR-1689: `test_stage841_open.py`, `docs/STAGE_841_PLAN.md`) — Global Stop Gate Honesty Pack Remaining-Gate Index; closed under ADR-1690
+- [x] Global Stop Gate Honesty Pack remaining-gate hub (Stage 841 I1: `test_stage841_index_i1.py`, `docs/GLOBAL_STOP_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Global Stop Gate Honesty Pack blocker matrix (Stage 841 B1: `test_stage841_blockers_b1.py`, `docs/GLOBAL_STOP_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 840 / Stage 839 / Stage 392 / CHANGE_IMPACT pointers (Stage 841 P1: `test_stage841_pointers_p1.py`, `docs/GLOBAL_STOP_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 841 fidelity sync (D1: `test_stage841_fidelity_d1.py`, `docs/STAGE_841_FIDELITY.md`)
+- [x] Stage 841 exit + freeze (H841x: `test_stage841_exit_h841x.py`, `docs/STAGE_841_EXIT_CRITERIA.md`, ADR-1690)
+
 Stage 840 track opened (ADR-1687: `test_stage840_open.py`, `docs/STAGE_840_PLAN.md`) — Do Not Contact Gate Honesty Pack Remaining-Gate Index; closed under ADR-1688
 - [x] Do Not Contact Gate Honesty Pack remaining-gate hub (Stage 840 I1: `test_stage840_index_i1.py`, `docs/DO_NOT_CONTACT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Do Not Contact Gate Honesty Pack blocker matrix (Stage 840 B1: `test_stage840_blockers_b1.py`, `docs/DO_NOT_CONTACT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
