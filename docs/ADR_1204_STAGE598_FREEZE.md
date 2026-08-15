@@ -31,3 +31,7 @@ Stage 599 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Support Escalation, Support Escalation honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 599 opened under **ADR-1205** after CONTINUE/NEXT (Tenant MVP Operator Runbook Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1206**. Stage 598 feature scope remains frozen.

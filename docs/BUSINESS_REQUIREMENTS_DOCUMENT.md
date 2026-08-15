@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 599 D1 Operator Runbook Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_599_FIDELITY.md` (`test_stage599_fidelity_d1.py`); Offline Complete / Operator Runbook honesty / go-live still MISSING.
 Stage 598 D1 Support Escalation Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_598_FIDELITY.md` (`test_stage598_fidelity_d1.py`); Offline Complete / Support Escalation honesty / go-live still MISSING.
 Stage 597 D1 Commercial Continuity Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_597_FIDELITY.md` (`test_stage597_fidelity_d1.py`); Offline Complete / Commercial Continuity honesty / go-live still MISSING.
 Stage 596 D1 Billing Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_596_FIDELITY.md` (`test_stage596_fidelity_d1.py`); Offline Complete / Billing Gate honesty / go-live still MISSING.

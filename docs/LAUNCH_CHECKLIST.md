@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 599 track opened (ADR-1205: `test_stage599_open.py`, `docs/STAGE_599_PLAN.md`) — Operator Runbook Honesty Pack Remaining-Gate Index; closed under ADR-1206
+- [x] Operator Runbook Honesty Pack remaining-gate hub (Stage 599 I1: `test_stage599_index_i1.py`, `docs/OPERATOR_RUNBOOK_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Operator Runbook Honesty Pack blocker matrix (Stage 599 B1: `test_stage599_blockers_b1.py`, `docs/OPERATOR_RUNBOOK_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 598 / Stage 597 / Stage 392 / CHANGE_IMPACT pointers (Stage 599 P1: `test_stage599_pointers_p1.py`, `docs/OPERATOR_RUNBOOK_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 599 fidelity sync (D1: `test_stage599_fidelity_d1.py`, `docs/STAGE_599_FIDELITY.md`)
+- [x] Stage 599 exit + freeze (H599x: `test_stage599_exit_h599x.py`, `docs/STAGE_599_EXIT_CRITERIA.md`, ADR-1206)
+
 Stage 598 track opened (ADR-1203: `test_stage598_open.py`, `docs/STAGE_598_PLAN.md`) — Support Escalation Honesty Pack Remaining-Gate Index; closed under ADR-1204
 - [x] Support Escalation Honesty Pack remaining-gate hub (Stage 598 I1: `test_stage598_index_i1.py`, `docs/SUPPORT_ESCALATION_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Support Escalation Honesty Pack blocker matrix (Stage 598 B1: `test_stage598_blockers_b1.py`, `docs/SUPPORT_ESCALATION_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
