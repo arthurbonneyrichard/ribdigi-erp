@@ -31,3 +31,7 @@ Stage 890 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Safeguard Gate, Safeguard Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 890 opened under **ADR-1787** after CONTINUE/NEXT (Tenant MVP Supplementary Measure Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1788**. Stage 889 feature scope remains frozen.
