@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 624 track opened (ADR-1255: `test_stage624_open.py`, `docs/STAGE_624_PLAN.md`) — Docker Compose Gate Honesty Pack Remaining-Gate Index; closed under ADR-1256
+- [x] Docker Compose Gate Honesty Pack remaining-gate hub (Stage 624 I1: `test_stage624_index_i1.py`, `docs/DOCKER_COMPOSE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Docker Compose Gate Honesty Pack blocker matrix (Stage 624 B1: `test_stage624_blockers_b1.py`, `docs/DOCKER_COMPOSE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 623 / Stage 622 / Stage 392 / CHANGE_IMPACT pointers (Stage 624 P1: `test_stage624_pointers_p1.py`, `docs/DOCKER_COMPOSE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 624 fidelity sync (D1: `test_stage624_fidelity_d1.py`, `docs/STAGE_624_FIDELITY.md`)
+- [x] Stage 624 exit + freeze (H624x: `test_stage624_exit_h624x.py`, `docs/STAGE_624_EXIT_CRITERIA.md`, ADR-1256)
+
 Stage 623 track opened (ADR-1253: `test_stage623_open.py`, `docs/STAGE_623_PLAN.md`) — Alembic Migration Gate Honesty Pack Remaining-Gate Index; closed under ADR-1254
 - [x] Alembic Migration Gate Honesty Pack remaining-gate hub (Stage 623 I1: `test_stage623_index_i1.py`, `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Alembic Migration Gate Honesty Pack blocker matrix (Stage 623 B1: `test_stage623_blockers_b1.py`, `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
