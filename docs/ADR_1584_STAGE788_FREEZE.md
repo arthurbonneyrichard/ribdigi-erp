@@ -31,3 +31,7 @@ Stage 789 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Redaction Gate, Redaction Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 789 opened under **ADR-1585** after CONTINUE/NEXT (Tenant MVP Pii Scan Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1586**. Stage 788 feature scope remains frozen.

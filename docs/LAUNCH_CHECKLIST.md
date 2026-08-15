@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 789 track opened (ADR-1585: `test_stage789_open.py`, `docs/STAGE_789_PLAN.md`) — Pii Scan Gate Honesty Pack Remaining-Gate Index; closed under ADR-1586
+- [x] Pii Scan Gate Honesty Pack remaining-gate hub (Stage 789 I1: `test_stage789_index_i1.py`, `docs/PII_SCAN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Pii Scan Gate Honesty Pack blocker matrix (Stage 789 B1: `test_stage789_blockers_b1.py`, `docs/PII_SCAN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 788 / Stage 787 / Stage 392 / CHANGE_IMPACT pointers (Stage 789 P1: `test_stage789_pointers_p1.py`, `docs/PII_SCAN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 789 fidelity sync (D1: `test_stage789_fidelity_d1.py`, `docs/STAGE_789_FIDELITY.md`)
+- [x] Stage 789 exit + freeze (H789x: `test_stage789_exit_h789x.py`, `docs/STAGE_789_EXIT_CRITERIA.md`, ADR-1586)
+
 Stage 788 track opened (ADR-1583: `test_stage788_open.py`, `docs/STAGE_788_PLAN.md`) — Redaction Gate Honesty Pack Remaining-Gate Index; closed under ADR-1584
 - [x] Redaction Gate Honesty Pack remaining-gate hub (Stage 788 I1: `test_stage788_index_i1.py`, `docs/REDACTION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Redaction Gate Honesty Pack blocker matrix (Stage 788 B1: `test_stage788_blockers_b1.py`, `docs/REDACTION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
