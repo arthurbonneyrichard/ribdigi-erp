@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 775 D1 Device Fingerprint Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_775_FIDELITY.md` (`test_stage775_fidelity_d1.py`); exit ADR-1558 / `test_stage775_exit_h775x.py`. Honesty: Offline Complete / Device Fingerprint Gate honesty / go-live Completes remain MISSING.
 Stage 774 D1 Device Binding Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_774_FIDELITY.md` (`test_stage774_fidelity_d1.py`); exit ADR-1556 / `test_stage774_exit_h774x.py`. Honesty: Offline Complete / Device Binding Gate honesty / go-live Completes remain MISSING.
 Stage 773 D1 Device Attest Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_773_FIDELITY.md` (`test_stage773_fidelity_d1.py`); exit ADR-1554 / `test_stage773_exit_h773x.py`. Honesty: Offline Complete / Device Attest Gate honesty / go-live Completes remain MISSING.
 Stage 772 D1 Device Trust Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_772_FIDELITY.md` (`test_stage772_fidelity_d1.py`); exit ADR-1552 / `test_stage772_exit_h772x.py`. Honesty: Offline Complete / Device Trust Gate honesty / go-live Completes remain MISSING.
