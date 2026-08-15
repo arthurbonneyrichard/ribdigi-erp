@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 818 D1 TLS RPT Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_818_FIDELITY.md` (`test_stage818_fidelity_d1.py`); Offline Complete / TLS RPT Gate honesty / go-live still MISSING.
 Stage 817 D1 ARC Seal Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_817_FIDELITY.md` (`test_stage817_fidelity_d1.py`); Offline Complete / ARC Seal Gate honesty / go-live still MISSING.
 Stage 816 D1 DKIM Rotate Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_816_FIDELITY.md` (`test_stage816_fidelity_d1.py`); Offline Complete / DKIM Rotate Gate honesty / go-live still MISSING.
 Stage 815 D1 SPF Softfail Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_815_FIDELITY.md` (`test_stage815_fidelity_d1.py`); Offline Complete / SPF Softfail Gate honesty / go-live still MISSING.

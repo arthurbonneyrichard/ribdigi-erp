@@ -31,3 +31,7 @@ Stage 818 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, ARC Seal Gate, ARC Seal Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 818 opened under **ADR-1643** after CONTINUE/NEXT (Tenant MVP TLS RPT Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1644**. Stage 817 feature scope remains frozen.
