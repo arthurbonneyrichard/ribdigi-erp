@@ -29,6 +29,7 @@ export default function Page() {
   const [smsAccountSid, setSmsAccountSid] = useState('');
   const [smsAuthToken, setSmsAuthToken] = useState('');
   const [smsFromNumber, setSmsFromNumber] = useState('');
+  const [suspendReason, setSuspendReason] = useState('');
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -148,13 +149,20 @@ export default function Page() {
   }
 
   async function suspend() {
+    const reason = suspendReason.trim();
+    if (!reason) {
+      setError('Enter a suspend reason before suspending this company');
+      return;
+    }
     if (!window.confirm('Suspend this tenant? All sessions will be revoked.')) return;
     setError('');
+    setMessage('');
     try {
       const r = await api('/tenants/me/suspend', {
         method: 'POST',
-        body: JSON.stringify({ reason: 'Admin requested' }),
+        body: JSON.stringify({ reason }),
       });
+      setSuspendReason('');
       setTenant(r.data);
       setMessage(r.message || 'Suspended');
       localStorage.removeItem('token');
@@ -433,7 +441,18 @@ export default function Page() {
           }
         />
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          {tenant.status !== 'suspended' && (
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 260 }}>
+              <span className="muted">Suspend reason (required)</span>
+              <input
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                placeholder="Required before Suspend"
+                disabled={!!tenant.read_only}
+              />
+            </label>
+          )}
           <button onClick={save} disabled={!!tenant.read_only}>
             Save profile
           </button>
@@ -446,6 +465,11 @@ export default function Page() {
             </button>
           )}
         </div>
+        {tenant.status === 'suspended' && tenant.suspended_reason ? (
+          <p className="muted" style={{ marginTop: 8 }}>
+            Suspended reason: {tenant.suspended_reason}
+          </p>
+        ) : null}
       </div>
 
       {storageStatus && (
