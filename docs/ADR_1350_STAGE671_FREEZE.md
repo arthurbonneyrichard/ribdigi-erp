@@ -31,3 +31,7 @@ Stage 672 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Resource Quota Gate, Resource Quota Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 672 opened under **ADR-1351** after CONTINUE/NEXT (Tenant MVP Network Policy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1352**. Stage 671 feature scope remains frozen.
