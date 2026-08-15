@@ -31,3 +31,7 @@ Stage 667 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Ingress Controller Gate, Ingress Controller Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 667 opened under **ADR-1341** after CONTINUE/NEXT (Tenant MVP Load Balancer Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1342**. Stage 666 feature scope remains frozen.
