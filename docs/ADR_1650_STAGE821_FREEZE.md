@@ -31,3 +31,7 @@ Stage 822 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Mail Auth Gate, Mail Auth Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 822 opened under **ADR-1651** after CONTINUE/NEXT (Tenant MVP Inbound Relay Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1652**. Stage 821 feature scope remains frozen.
