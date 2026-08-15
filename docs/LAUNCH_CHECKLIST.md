@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 464 track opened (ADR-935: `test_stage464_open.py`, `docs/STAGE_464_PLAN.md`) — Offline Conflict UX Honesty Pack Remaining-Gate Index; closed under ADR-936
+- [x] Offline Conflict UX honesty pack remaining-gate hub (Stage 464 I1: `test_stage464_index_i1.py`, `docs/OFFLINE_CONFLICT_UX_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline Conflict UX honesty pack blocker matrix (Stage 464 B1: `test_stage464_blockers_b1.py`, `docs/OFFLINE_CONFLICT_UX_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 463 / Stage 462 / Stage 392 / CHANGE_IMPACT pointers (Stage 464 P1: `test_stage464_pointers_p1.py`, `docs/OFFLINE_CONFLICT_UX_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 464 fidelity sync (D1: `test_stage464_fidelity_d1.py`, `docs/STAGE_464_FIDELITY.md`)
+- [x] Stage 464 exit + freeze (H464x: `test_stage464_exit_h464x.py`, `docs/STAGE_464_EXIT_CRITERIA.md`, ADR-936)
 - [x] Stage 463 track opened (ADR-933: `test_stage463_open.py`, `docs/STAGE_463_PLAN.md`) — Offline Sync Push Idempotency Honesty Pack Remaining-Gate Index; closed under ADR-934
 - [x] Offline Sync Push Idempotency honesty pack remaining-gate hub (Stage 463 I1: `test_stage463_index_i1.py`, `docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline Sync Push Idempotency honesty pack blocker matrix (Stage 463 B1: `test_stage463_blockers_b1.py`, `docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

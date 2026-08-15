@@ -1,0 +1,77 @@
+{
+  "id": "offline-conflict-ux-honesty-pack-rg-blockers",
+  "stage": 464,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_CONFLICT_UX_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_CONFLICT_UX_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_conflict_ux_pack_remaining_gate": "docs/OFFLINE_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_conflict_ux_honesty_complete_claimed": false,
+  "offline_conflict_ux_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_conflict_ux_honesty_complete_claimed": "REMAINING",
+    "offline_conflict_ux_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_conflict_ux_honesty": "NON_CLAIM",
+    "offline_conflict_ux_pack_as_conflict_ux_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_conflict_ux_honesty_complete_claimed_flag": "false",
+    "offline_conflict_ux_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ocuxhprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocuxhprb-honesty",
+      "title": "Mark Conflict UX honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocuxhprb-as-golive",
+      "title": "Mark Conflict UX as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocuxhprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocuxhprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocuxhprb-ocux-nonclaim",
+      "title": "Mark OFFLINE_CONFLICT_UX_PACK as non-claim for conflict-ux Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocuxhprb-checklist-remaining",
+      "title": "Offline Complete / Conflict UX / Conflict UX honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 464 B1 Offline Conflict UX Honesty Pack RG blocker matrix packaging only."
+}
