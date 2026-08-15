@@ -31,3 +31,7 @@ Stage 803 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Hash Chain Gate, Hash Chain Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 803 opened under **ADR-1613** after CONTINUE/NEXT (Tenant MVP Merkle Proof Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1614**. Stage 802 feature scope remains frozen.

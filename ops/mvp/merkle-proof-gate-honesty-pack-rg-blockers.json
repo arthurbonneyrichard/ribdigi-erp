@@ -1,0 +1,77 @@
+{
+  "id": "merkle-proof-gate-honesty-pack-rg-blockers",
+  "stage": 803,
+  "pack": "B1",
+  "doc": "docs/MERKLE_PROOF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MERKLE_PROOF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "merkle_proof_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "merkle_proof_gate_honesty_complete_claimed": false,
+  "merkle_proof_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "merkle_proof_gate_honesty_complete_claimed": "REMAINING",
+    "merkle_proof_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_merkle_proof_gate_honesty": "NON_CLAIM",
+    "merkle_proof_gate_pack_as_merkle_proof_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "merkle_proof_gate_honesty_complete_claimed_flag": "false",
+    "merkle_proof_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "mpghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpghb-honesty",
+      "title": "Mark Merkle Proof Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpghb-as-golive",
+      "title": "Mark Merkle Proof Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for merkle-proof-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpghb-checklist-remaining",
+      "title": "Offline Complete / Merkle Proof Gate / Merkle Proof Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 803 B1 Merkle Proof Gate Honesty Pack RG blocker matrix packaging only."
+}

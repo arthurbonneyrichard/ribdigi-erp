@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 803 D1 Merkle Proof Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_803_FIDELITY.md` (`test_stage803_fidelity_d1.py`); exit ADR-1614 / `test_stage803_exit_h803x.py`. Honesty: Offline Complete / Merkle Proof Gate honesty / go-live Completes remain MISSING.
 Stage 802 D1 Hash Chain Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_802_FIDELITY.md` (`test_stage802_fidelity_d1.py`); exit ADR-1612 / `test_stage802_exit_h802x.py`. Honesty: Offline Complete / Hash Chain Gate honesty / go-live Completes remain MISSING.
 Stage 801 D1 Tamper Evident Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_801_FIDELITY.md` (`test_stage801_fidelity_d1.py`); exit ADR-1610 / `test_stage801_exit_h801x.py`. Honesty: Offline Complete / Tamper Evident Gate honesty / go-live Completes remain MISSING.
 Stage 800 D1 Immutable Log Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_800_FIDELITY.md` (`test_stage800_fidelity_d1.py`); exit ADR-1608 / `test_stage800_exit_h800x.py`. Honesty: Offline Complete / Immutable Log Gate honesty / go-live Completes remain MISSING.
