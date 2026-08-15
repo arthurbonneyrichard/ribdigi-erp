@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 795 track opened (ADR-1597: `test_stage795_open.py`, `docs/STAGE_795_PLAN.md`) — E Discovery Gate Honesty Pack Remaining-Gate Index; closed under ADR-1598
+- [x] E Discovery Gate Honesty Pack remaining-gate hub (Stage 795 I1: `test_stage795_index_i1.py`, `docs/E_DISCOVERY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] E Discovery Gate Honesty Pack blocker matrix (Stage 795 B1: `test_stage795_blockers_b1.py`, `docs/E_DISCOVERY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 794 / Stage 793 / Stage 392 / CHANGE_IMPACT pointers (Stage 795 P1: `test_stage795_pointers_p1.py`, `docs/E_DISCOVERY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 795 fidelity sync (D1: `test_stage795_fidelity_d1.py`, `docs/STAGE_795_FIDELITY.md`)
+- [x] Stage 795 exit + freeze (H795x: `test_stage795_exit_h795x.py`, `docs/STAGE_795_EXIT_CRITERIA.md`, ADR-1598)
+
 Stage 794 track opened (ADR-1595: `test_stage794_open.py`, `docs/STAGE_794_PLAN.md`) — Legal Hold Gate Honesty Pack Remaining-Gate Index; closed under ADR-1596
 - [x] Legal Hold Gate Honesty Pack remaining-gate hub (Stage 794 I1: `test_stage794_index_i1.py`, `docs/LEGAL_HOLD_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Legal Hold Gate Honesty Pack blocker matrix (Stage 794 B1: `test_stage794_blockers_b1.py`, `docs/LEGAL_HOLD_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

@@ -31,3 +31,7 @@ Stage 795 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Legal Hold Gate, Legal Hold Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 795 opened under **ADR-1597** after CONTINUE/NEXT (Tenant MVP E Discovery Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1598**. Stage 794 feature scope remains frozen.

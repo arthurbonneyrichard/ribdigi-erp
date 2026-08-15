@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 795 D1 E Discovery Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_795_FIDELITY.md` (`test_stage795_fidelity_d1.py`); Offline Complete / E Discovery Gate honesty / go-live still MISSING.
 Stage 794 D1 Legal Hold Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_794_FIDELITY.md` (`test_stage794_fidelity_d1.py`); Offline Complete / Legal Hold Gate honesty / go-live still MISSING.
 Stage 793 D1 Retention Label Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_793_FIDELITY.md` (`test_stage793_fidelity_d1.py`); Offline Complete / Retention Label Gate honesty / go-live still MISSING.
 Stage 792 D1 Sensitivity Label Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_792_FIDELITY.md` (`test_stage792_fidelity_d1.py`); Offline Complete / Sensitivity Label Gate honesty / go-live still MISSING.
