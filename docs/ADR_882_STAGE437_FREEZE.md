@@ -31,3 +31,10 @@ Stage 438 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Support, Commercial Support honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 438 opened under **ADR-883** after CONTINUE/NEXT (Tenant MVP Commercial Status Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-884**. Stage 437 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 437 runner-up outline was approved and opened (ADR-883); freeze ADR-884. Do not reopen Stage 437 scope.
+
