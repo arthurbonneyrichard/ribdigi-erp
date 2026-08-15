@@ -31,3 +31,7 @@ Stage 707 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Index Bloat Gate, Index Bloat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 707 opened under **ADR-1421** after CONTINUE/NEXT (Tenant MVP Migration Lock Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1422**. Stage 706 feature scope remains frozen.
