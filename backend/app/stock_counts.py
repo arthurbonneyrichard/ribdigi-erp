@@ -103,6 +103,7 @@ async def serialize_count(db: AsyncSession, count: m.StockCount) -> dict:
         "created_at": count.created_at,
         "item_count": len(items),
         "counted_item_count": counted_lines,
+        "can_cancel": count.status == "draft",
         "items": [serialize_item(i, product=products.get(i.product_id)) for i in items],
     }
 
