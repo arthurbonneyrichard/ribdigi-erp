@@ -31,3 +31,7 @@ Stage 771 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Step Up Auth Gate, Step Up Auth Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 771 opened under **ADR-1549** after CONTINUE/NEXT (Tenant MVP Reauth Challenge Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1550**. Stage 770 feature scope remains frozen.
