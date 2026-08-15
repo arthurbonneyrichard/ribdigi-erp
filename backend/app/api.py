@@ -3864,6 +3864,48 @@ async def inventory_warehouse_stock_reorder(
     return env(row, "Warehouse reorder policy saved")
 
 
+@api.get("/inventory/products/lookup")
+async def inventory_products_lookup(
+    q: str = "",
+    barcode: str | None = None,
+    limit: int = 48,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-18.2 — barcode / SKU / name product lookup (inventory:read; API-key friendly)."""
+    from app import inventory as inventory_svc
+
+    return env(
+        await inventory_svc.lookup_products(
+            db,
+            claims["tenant_id"],
+            q=q,
+            barcode=barcode,
+            limit=limit,
+        )
+    )
+
+
+@api.get("/products/{product_id}/warehouse-stock")
+async def product_warehouse_stock(
+    product_id: str,
+    include_zero: bool = True,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-18.2 / BR-5.4 — per-warehouse stock levels for one product."""
+    from app import inventory as inventory_svc
+
+    return env(
+        await inventory_svc.list_product_warehouse_stock(
+            db,
+            claims["tenant_id"],
+            product_id,
+            include_zero=include_zero,
+        )
+    )
+
+
 @api.get("/products/{product_id}/variants")
 async def list_product_variants(
     product_id: str,
