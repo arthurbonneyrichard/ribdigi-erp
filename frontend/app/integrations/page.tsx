@@ -394,8 +394,8 @@ export default function Page() {
           <code>sale.paid</code> (AR payment + settled POS), <code>customer.created</code>,{' '}
           <code>purchase.order.created</code>, <code>purchase.grn.received</code>,{' '}
           <code>expense.approved</code>, <code>stock.low</code>, <code>stock.in</code> (manual /
-          non-GRN inbound; GRN uses <code>purchase.grn.received</code> only). Reserved:{' '}
-          <code>user.login</code>, <code>tenant.suspended</code>.
+          non-GRN inbound; GRN uses <code>purchase.grn.received</code> only),{' '}
+          <code>tenant.suspended</code>. Reserved: <code>user.login</code>.
         </p>
         <details style={{ marginBottom: 12 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Verify signature (subscriber)</summary>

@@ -284,6 +284,7 @@ async def suspend_tenant(
     tenant: m.Tenant,
     *,
     reason: str | None = None,
+    suspended_by: str | None = None,
 ) -> m.Tenant:
     if tenant.status == "suspended":
         raise HTTPException(status_code=400, detail="Tenant is already suspended")
@@ -293,6 +294,20 @@ async def suspend_tenant(
     tenant.grace_ends_at = None
     await revoke_all_sessions(db, tenant.id)
     await db.flush()
+    from app import webhooks as webhooks_svc
+
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=tenant.id,
+        event="tenant.suspended",
+        data={
+            "tenant_id": tenant.id,
+            "slug": tenant.slug,
+            "reason": tenant.suspended_reason,
+            "suspended_at": tenant.suspended_at.isoformat() if tenant.suspended_at else None,
+            "suspended_by": suspended_by,
+        },
+    )
     return tenant
 
 
