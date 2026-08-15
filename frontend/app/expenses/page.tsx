@@ -41,6 +41,7 @@ type Expense = {
 export default function Page() {
   const [rows, setRows] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [threshold, setThreshold] = useState(100);
   const [l2Threshold, setL2Threshold] = useState(1000);
   const [levels, setLevels] = useState<
@@ -682,6 +683,12 @@ export default function Page() {
     setLevels((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
   }
 
+  const managedCategories = categories.filter((c) => {
+    if (categoryManageFilter === 'all') return true;
+    const active = c.is_active !== false;
+    return categoryManageFilter === 'inactive' ? !active : active;
+  });
+
   return (
     <Shell>
       <h1>Expenses</h1>
@@ -820,6 +827,17 @@ export default function Page() {
             Add category
           </button>
         </div>
+        <select
+          value={categoryManageFilter}
+          onChange={(e) => setCategoryManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+          title="Filter manage category list by status"
+          aria-label="Expense category status filter"
+          style={{ marginBottom: 8 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -832,7 +850,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {categories.map((c) => (
+            {managedCategories.map((c) => (
               <tr key={c.id}>
                 <td>{c.code}</td>
                 <td>
