@@ -1569,10 +1569,10 @@ RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
 Company admins can also manage endpoints in the **Integrations** UI (`/integrations`).
 
 ### 17.1 Manage Webhooks
-**List:** `GET /webhooks`  
+**List:** `GET /webhooks` — optional `?is_active=true|false` (or `active_only=true`) filters disabled endpoints (omit = all; Integrations manage status filter).  
 **Create:** `POST /webhooks`  
 **Get:** `GET /webhooks/{webhook_id}`  
-**Update:** `PATCH /webhooks/{webhook_id}` (set `rotate_secret: true` to issue a new `whsec_…`)  
+**Update:** `PATCH /webhooks/{webhook_id}` (set `rotate_secret: true` to issue a new `whsec_…`; soft-disable via `is_active: false` — Integrations **Disable** / **Enable** + manage status filter All/Active/Inactive)  
 **Delete:** `DELETE /webhooks/{webhook_id}`  
 **Test:** `POST /webhooks/{webhook_id}/test` (delivers signed `webhook.test`)  
 **Deliveries:** `GET /webhooks/{webhook_id}/deliveries?limit=50`  

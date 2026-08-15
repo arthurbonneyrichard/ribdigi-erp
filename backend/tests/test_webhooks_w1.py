@@ -164,3 +164,49 @@ async def test_webhook_unknown_event_rejected(client):
         json={"url": "https://hooks.example.com/x", "events": ["not.real"]},
     )
     assert bad.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_webhooks_list_is_active_filter(client):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    created = await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={
+            "url": "https://hooks.example.com/filter-demo",
+            "events": ["webhook.test"],
+            "description": "Filter Demo Webhook",
+        },
+    )
+    assert created.status_code == 200, created.text
+    wid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/webhooks/{wid}",
+        headers=headers,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/webhooks", headers=headers)
+    assert wid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/webhooks?is_active=true", headers=headers)
+    assert wid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/webhooks?is_active=false", headers=headers)
+    assert wid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
+
+
+def test_webhook_status_filter_ui_wired():
+    from pathlib import Path
+
+    integrations = (
+        Path(__file__).resolve().parents[2] / "frontend/app/integrations/page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "webhookManageFilter" in integrations
+    assert 'aria-label="Webhook status filter"' in integrations
+    assert "managedHooks" in integrations
+    assert "[inactive]" in integrations
+    assert "toggleActive" in integrations

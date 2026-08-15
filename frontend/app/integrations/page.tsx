@@ -62,6 +62,7 @@ type WebhookDelivery = {
 export default function Page() {
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
   const [hooks, setHooks] = useState<WebhookRow[]>([]);
+  const [webhookManageFilter, setWebhookManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [revealedKey, setRevealedKey] = useState('');
@@ -268,6 +269,12 @@ export default function Page() {
       setError(err.message);
     }
   }
+
+  const managedHooks = hooks.filter((h) => {
+    if (webhookManageFilter === 'all') return true;
+    const active = h.is_active !== false;
+    return webhookManageFilter === 'inactive' ? !active : active;
+  });
 
   return (
     <Shell>
@@ -479,6 +486,20 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           Create webhook
         </button>
 
+        <select
+          value={webhookManageFilter}
+          onChange={(e) =>
+            setWebhookManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+          }
+          title="Filter manage webhook list by status"
+          aria-label="Webhook status filter"
+          style={{ marginTop: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+        </select>
+
         <table style={{ marginTop: 16 }}>
           <thead>
             <tr>
@@ -489,10 +510,15 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             </tr>
           </thead>
           <tbody>
-            {hooks.map((h) => (
+            {managedHooks.map((h) => (
               <tr key={h.id}>
                 <td style={{ maxWidth: 220, wordBreak: 'break-all' }}>
                   {h.url}
+                  {h.is_active === false ? (
+                    <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                      [inactive]
+                    </span>
+                  ) : null}
                   {h.description ? (
                     <div className="muted" style={{ fontSize: 12 }}>
                       {h.description}
@@ -524,10 +550,10 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                 </td>
               </tr>
             ))}
-            {!hooks.length && (
+            {!managedHooks.length && (
               <tr>
                 <td colSpan={4} className="muted">
-                  No webhooks yet
+                  {hooks.length ? 'No webhooks for this filter' : 'No webhooks yet'}
                 </td>
               </tr>
             )}
