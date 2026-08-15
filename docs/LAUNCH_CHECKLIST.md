@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 612 track opened (ADR-1231: `test_stage612_open.py`, `docs/STAGE_612_PLAN.md`) — Ops MVP README Gate Honesty Pack Remaining-Gate Index; closed under ADR-1232
+- [x] Ops MVP README Gate Honesty Pack remaining-gate hub (Stage 612 I1: `test_stage612_index_i1.py`, `docs/OPS_MVP_README_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Ops MVP README Gate Honesty Pack blocker matrix (Stage 612 B1: `test_stage612_blockers_b1.py`, `docs/OPS_MVP_README_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 611 / Stage 610 / Stage 392 / CHANGE_IMPACT pointers (Stage 612 P1: `test_stage612_pointers_p1.py`, `docs/OPS_MVP_README_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 612 fidelity sync (D1: `test_stage612_fidelity_d1.py`, `docs/STAGE_612_FIDELITY.md`)
+- [x] Stage 612 exit + freeze (H612x: `test_stage612_exit_h612x.py`, `docs/STAGE_612_EXIT_CRITERIA.md`, ADR-1232)
+
 Stage 611 track opened (ADR-1229: `test_stage611_open.py`, `docs/STAGE_611_PLAN.md`) — Cursor Handoff Gate Honesty Pack Remaining-Gate Index; closed under ADR-1230
 - [x] Cursor Handoff Gate Honesty Pack remaining-gate hub (Stage 611 I1: `test_stage611_index_i1.py`, `docs/CURSOR_HANDOFF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Cursor Handoff Gate Honesty Pack blocker matrix (Stage 611 B1: `test_stage611_blockers_b1.py`, `docs/CURSOR_HANDOFF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

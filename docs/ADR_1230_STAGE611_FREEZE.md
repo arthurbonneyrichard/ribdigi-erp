@@ -31,3 +31,7 @@ Stage 612 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cursor Handoff Gate, Cursor Handoff Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 612 opened under **ADR-1231** after CONTINUE/NEXT (Tenant MVP Ops MVP README Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1232**. Stage 611 feature scope remains frozen.
