@@ -31,3 +31,7 @@ Stage 610 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Business Requirements Gate, Business Requirements Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 610 opened under **ADR-1227** after CONTINUE/NEXT (Tenant MVP Development Roadmap Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1228**. Stage 609 feature scope remains frozen.
