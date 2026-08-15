@@ -726,7 +726,7 @@ Product + warehouse policy scans create `low_stock` notifications (`scan_low_sto
 **Update:** `PATCH /suppliers/{supplier_id}` — partial fields include `name`, `status` (`active`|`inactive`), contacts profile; soft-deactivate via `status=inactive` (Purchasing **Activate** / **Deactivate**; inactive blocked on new PO / preferred-supplier PR / standalone PI; GRN/PO-linked invoices may still settle)  
 **Delete:** `DELETE /suppliers/{supplier_id}`
 
-List supports optional `?status=active|inactive`. Party `code` is unique per tenant when set.
+List supports optional `?status=active|inactive` (Purchasing Manage supplier filters All / Active / Inactive; PO/PR/PI pickers stay active-only). Party `code` is unique per tenant when set.
 **Create Supplier:**
 ```json
 {
@@ -903,7 +903,7 @@ Line credits inherit proportional PO line discount (`return_qty / ordered_qty ×
 }
 ```
 
-List supports optional `?status=active|inactive`. Party `code` is unique per tenant when set.
+List supports optional `?status=active|inactive` (Sales Manage customer filters All / Active / Inactive; Sale/POS pickers stay active-only). Party `code` is unique per tenant when set.
 
 **Contacts (BR-6.1):** same nested `/customers/{customer_id}/contacts` routes as suppliers; `GET /customers/{id}` includes `contacts`.
 

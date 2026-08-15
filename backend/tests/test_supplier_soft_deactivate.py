@@ -19,6 +19,8 @@ def test_supplier_deactivate_ui_wired():
     assert "Activate" in purchasing
     assert "status !== 'inactive'" in purchasing
     assert "[inactive]" in purchasing
+    assert "supplierManageFilter" in purchasing
+    assert 'aria-label="Supplier status filter"' in purchasing
 
 
 @pytest.mark.asyncio
