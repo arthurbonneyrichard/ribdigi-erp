@@ -31,3 +31,7 @@ Stage 862 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Processor Record Gate, Processor Record Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 862 opened under **ADR-1731** after CONTINUE/NEXT (Tenant MVP Controller Record Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1732**. Stage 861 feature scope remains frozen.
