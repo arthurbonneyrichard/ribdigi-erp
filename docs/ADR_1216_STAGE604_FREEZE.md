@@ -31,3 +31,7 @@ Stage 605 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Production Readiness Gate, Production Readiness Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 605 opened under **ADR-1217** after CONTINUE/NEXT (Tenant MVP Security Guide Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1218**. Stage 604 feature scope remains frozen.
