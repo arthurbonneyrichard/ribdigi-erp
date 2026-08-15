@@ -6406,8 +6406,9 @@ async def pos_open_cash_drawer(
         db,
         tenant_id=claims["tenant_id"],
         store_id=session.store_id,
-        reason=payload.reason or "manual",
+        reason=payload.reason,
         user_id=claims.get("sub"),
+        require_specific_reason=True,
     )
     await audit_svc.record_event(
         db,
@@ -6417,7 +6418,7 @@ async def pos_open_cash_drawer(
         action="drawer_open",
         entity="pos_session",
         entity_id=session.id,
-        details={"reason": payload.reason, "result": result},
+        details={"reason": result.get("reason") or payload.reason, "result": result},
     )
     await db.commit()
     return env(result, result.get("message") or "Drawer command issued")

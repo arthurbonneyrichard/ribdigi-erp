@@ -540,7 +540,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [ ] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers)
   - [x] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
   - [x] Sale reference auto-generation (`Transaction.reference` via tenant series `GET|PATCH /pos/settings` → `pos_sale_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `POS`; POS Document numbering UI)
-  - [ ] **Cash Drawer:** Auto-open on cash payment; manual open with reason
+  - [x] **Cash Drawer:** Auto-open on cash payment; manual open with required specific reason (`POST /pos/sessions/{id}/drawer/open`; rejects blank/placeholder; POS Drawer prompt)
 
 #### BR-8.2 Shift Management
 - **Description:** Cashier accountability and reconciliation.

@@ -681,7 +681,9 @@ class StoreDrawerSettingsUpdate(BaseModel):
 
 
 class PosDrawerOpen(BaseModel):
-    reason: str = "manual"
+    """Manual drawer open — cashier must supply a specific reason (not blank / not 'manual')."""
+
+    reason: str = Field(min_length=1, max_length=200)
 
 
 class StoreReorderPolicyUpdate(BaseModel):
