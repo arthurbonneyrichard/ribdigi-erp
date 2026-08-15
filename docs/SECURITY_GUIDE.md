@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 498 D1 Cashier Bind Catalog Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_498_FIDELITY.md` (`test_stage498_fidelity_d1.py`); exit ADR-1004 / `test_stage498_exit_h498x.py`. Honesty: Offline Complete / Cashier Bind Catalog honesty / go-live Completes remain MISSING.
 Stage 497 D1 Cashier Quickstart Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_497_FIDELITY.md` (`test_stage497_fidelity_d1.py`); exit ADR-1002 / `test_stage497_exit_h497x.py`. Honesty: Offline Complete / Cashier Quickstart honesty / go-live Completes remain MISSING.
 Stage 496 D1 Cashier POS Day-One Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_496_FIDELITY.md` (`test_stage496_fidelity_d1.py`); exit ADR-1000 / `test_stage496_exit_h496x.py`. Honesty: Offline Complete / Cashier POS Day-One honesty / go-live Completes remain MISSING.
 Stage 495 D1 FAQ Offline POS Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_495_FIDELITY.md` (`test_stage495_fidelity_d1.py`); exit ADR-998 / `test_stage495_exit_h495x.py`. Honesty: Offline Complete / FAQ Offline POS honesty / go-live Completes remain MISSING.

@@ -1,0 +1,77 @@
+{
+  "id": "cashier-bind-catalog-honesty-pack-rg-blockers",
+  "stage": 498,
+  "pack": "B1",
+  "doc": "docs/CASHIER_BIND_CATALOG_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CASHIER_BIND_CATALOG_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "cashier_bind_catalog_pack_remaining_gate": "docs/CASHIER_BIND_CATALOG_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "cashier_bind_catalog_honesty_complete_claimed": false,
+  "cashier_bind_catalog_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "cashier_bind_catalog_honesty_complete_claimed": "REMAINING",
+    "cashier_bind_catalog_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_cashier_bind_catalog_honesty": "NON_CLAIM",
+    "cashier_bind_catalog_pack_as_cashier_bind_catalog_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "cashier_bind_catalog_honesty_complete_claimed_flag": "false",
+    "cashier_bind_catalog_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "cbchprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbchprb-honesty",
+      "title": "Mark Cashier Bind Catalog honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbchprb-as-golive",
+      "title": "Mark Cashier Bind Catalog as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbchprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbchprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbchprb-prior-nonclaim",
+      "title": "Mark CASHIER_BIND_CATALOG_PACK as non-claim for cashier-bind-catalog Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbchprb-checklist-remaining",
+      "title": "Offline Complete / Cashier Bind Catalog / Cashier Bind Catalog honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 498 B1 Cashier Bind Catalog Honesty Pack RG blocker matrix packaging only."
+}

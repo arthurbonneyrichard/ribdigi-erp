@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 498 Cashier Bind Catalog Honesty Pack remaining-gate index fidelity (ADR-1003/1004). Operators track packaging status via `docs/CASHIER_BIND_CATALOG_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 497 Cashier Quickstart Honesty Pack remaining-gate index fidelity (ADR-1001/1002). Operators track packaging status via `docs/CASHIER_QUICKSTART_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 496 Cashier POS Day-One Honesty Pack remaining-gate index fidelity (ADR-999/1000). Operators track packaging status via `docs/CASHIER_POS_DAYONE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 495 FAQ Offline POS Honesty Pack remaining-gate index fidelity (ADR-997/998). Operators track packaging status via `docs/FAQ_OFFLINE_POS_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
