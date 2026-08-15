@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 647 D1 Accessibility A11y Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_647_FIDELITY.md` (`test_stage647_fidelity_d1.py`); Offline Complete / Accessibility A11y Gate honesty / go-live still MISSING.
 Stage 646 D1 Cookie Consent Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_646_FIDELITY.md` (`test_stage646_fidelity_d1.py`); Offline Complete / Cookie Consent Gate honesty / go-live still MISSING.
 Stage 645 D1 Privacy Notice Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_645_FIDELITY.md` (`test_stage645_fidelity_d1.py`); Offline Complete / Privacy Notice Gate honesty / go-live still MISSING.
 Stage 644 D1 Data Retention Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_644_FIDELITY.md` (`test_stage644_fidelity_d1.py`); Offline Complete / Data Retention Gate honesty / go-live still MISSING.

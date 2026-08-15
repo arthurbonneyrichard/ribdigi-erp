@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 647 track opened (ADR-1301: `test_stage647_open.py`, `docs/STAGE_647_PLAN.md`) — Accessibility A11y Gate Honesty Pack Remaining-Gate Index; closed under ADR-1302
+- [x] Accessibility A11y Gate Honesty Pack remaining-gate hub (Stage 647 I1: `test_stage647_index_i1.py`, `docs/ACCESSIBILITY_A11Y_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Accessibility A11y Gate Honesty Pack blocker matrix (Stage 647 B1: `test_stage647_blockers_b1.py`, `docs/ACCESSIBILITY_A11Y_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 646 / Stage 645 / Stage 392 / CHANGE_IMPACT pointers (Stage 647 P1: `test_stage647_pointers_p1.py`, `docs/ACCESSIBILITY_A11Y_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 647 fidelity sync (D1: `test_stage647_fidelity_d1.py`, `docs/STAGE_647_FIDELITY.md`)
+- [x] Stage 647 exit + freeze (H647x: `test_stage647_exit_h647x.py`, `docs/STAGE_647_EXIT_CRITERIA.md`, ADR-1302)
+
 Stage 646 track opened (ADR-1299: `test_stage646_open.py`, `docs/STAGE_646_PLAN.md`) — Cookie Consent Gate Honesty Pack Remaining-Gate Index; closed under ADR-1300
 - [x] Cookie Consent Gate Honesty Pack remaining-gate hub (Stage 646 I1: `test_stage646_index_i1.py`, `docs/COOKIE_CONSENT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Cookie Consent Gate Honesty Pack blocker matrix (Stage 646 B1: `test_stage646_blockers_b1.py`, `docs/COOKIE_CONSENT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

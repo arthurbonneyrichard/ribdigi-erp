@@ -31,3 +31,7 @@ Stage 647 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cookie Consent Gate, Cookie Consent Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 647 opened under **ADR-1301** after CONTINUE/NEXT (Tenant MVP Accessibility A11y Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1302**. Stage 646 feature scope remains frozen.
