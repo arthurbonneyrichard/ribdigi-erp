@@ -1079,7 +1079,7 @@ Default scopes (if omitted at create): read on inventory, sales, purchasing, cus
 4. Open **Deliveries** to see recent attempts; use **Retry** for `pending_retry` / `failed` rows.
 5. Verify incoming signatures using `docs/API_DOCUMENTATION.md` §17.4 (Python/Node samples) or the on-page **Verify signature** panel.
 
-**Honesty:** Live fan-out today includes `webhook.test`, `sale.created` (invoice post + POS), `sale.paid` (AR payment + fully settled POS), `customer.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved`, `stock.low`, `stock.in` (skips GRN — use `purchase.grn.received`), and `tenant.suspended`. Still reserved: `user.login`.
+**Honesty:** Live fan-out today includes `webhook.test`, `sale.created` (invoice post + POS), `sale.paid` (AR payment + fully settled POS), `customer.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved`, `stock.low`, `stock.in` (skips GRN — use `purchase.grn.received`), `tenant.suspended`, and `user.login` (interactive auth only; not refresh).
 
 ---
 
