@@ -1677,7 +1677,14 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
-- [x] Stage 474 track opened (ADR-955: `test_stage474_open.py`, `docs/STAGE_474_PLAN.md`) — Offline Catalog Snapshot Honesty Pack Remaining-Gate Index; closed under ADR-956
+Stage 475 track opened (ADR-957: `test_stage475_open.py`, `docs/STAGE_475_PLAN.md`) — Offline Catalog TTL Honesty Pack Remaining-Gate Index; closed under ADR-958
+- [x] Offline Catalog TTL honesty pack remaining-gate hub (Stage 475 I1: `test_stage475_index_i1.py`, `docs/OFFLINE_CATALOG_TTL_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline Catalog TTL honesty pack blocker matrix (Stage 475 B1: `test_stage475_blockers_b1.py`, `docs/OFFLINE_CATALOG_TTL_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 474 / Stage 473 / Stage 392 / CHANGE_IMPACT pointers (Stage 475 P1: `test_stage475_pointers_p1.py`, `docs/OFFLINE_CATALOG_TTL_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 475 fidelity sync (D1: `test_stage475_fidelity_d1.py`, `docs/STAGE_475_FIDELITY.md`)
+- [x] Stage 475 exit + freeze (H475x: `test_stage475_exit_h475x.py`, `docs/STAGE_475_EXIT_CRITERIA.md`, ADR-958)
+
+Stage 474 track opened (ADR-955: `test_stage474_open.py`, `docs/STAGE_474_PLAN.md`) — Offline Catalog Snapshot Honesty Pack Remaining-Gate Index; closed under ADR-956
 - [x] Offline Catalog Snapshot honesty pack remaining-gate hub (Stage 474 I1: `test_stage474_index_i1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline Catalog Snapshot honesty pack blocker matrix (Stage 474 B1: `test_stage474_blockers_b1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
 - [x] Stage 473 / Stage 472 / Stage 392 / CHANGE_IMPACT pointers (Stage 474 P1: `test_stage474_pointers_p1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_RG_POINTERS_MVP.md`)

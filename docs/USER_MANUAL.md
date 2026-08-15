@@ -380,6 +380,8 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 475 Offline Catalog TTL Honesty Pack remaining-gate index fidelity (ADR-957/958). Operators track packaging status via `docs/OFFLINE_CATALOG_TTL_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
+
 Stage 474 Offline Catalog Snapshot Honesty Pack remaining-gate — `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; `OFFLINE_CATALOG_SNAPSHOT_PACK_*` ≠ catalog-snapshot / go-live Completes).
 Stage 473 Offline Client Request ID Honesty Pack remaining-gate — `docs/OFFLINE_CLIENT_REQUEST_ID_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_CLIENT_REQUEST_ID_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; `OFFLINE_CLIENT_REQUEST_ID_PACK_*` ≠ client-request-id / go-live Completes).
 Stage 472 Offline IndexedDB Queue Honesty Pack remaining-gate — `docs/OFFLINE_INDEXEDDB_QUEUE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `docs/OFFLINE_INDEXEDDB_QUEUE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; `OFFLINE_INDEXEDDB_QUEUE_PACK_*` ≠ indexeddb-queue / go-live Completes).

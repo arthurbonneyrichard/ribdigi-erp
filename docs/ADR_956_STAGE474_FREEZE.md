@@ -31,3 +31,9 @@ Stage 475 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Catalog Snapshot, Catalog Snapshot honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 475 opened under **ADR-957** after CONTINUE/NEXT (Tenant MVP Offline Catalog TTL Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-958**. Stage 474 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 474 runner-up outline was approved and opened (ADR-957); freeze ADR-958. Do not reopen Stage 474 scope.
