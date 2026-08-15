@@ -18,12 +18,56 @@ def test_product_deactivate_ui_wired():
     assert "Deactivate" in inventory
     assert "Activate" in inventory
     assert "[inactive]" in inventory
+    assert "productManageFilter" in inventory
+    assert 'aria-label="Product status filter"' in inventory
+    assert "managedProducts" in inventory
 
     sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
     assert "is_active !== false" in sales
 
     purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "is_active !== false" in purchasing
+
+
+@pytest.mark.asyncio
+async def test_products_list_is_active_filter(client, seeded):
+    ac, seed = client
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+    created = await ac.post(
+        "/api/v1/products",
+        headers=admin,
+        json={
+            "name": "Filter Demo Widget",
+            "sku": "FLT-WDG-1",
+            "selling_price": 4.25,
+            "cost_price": 1,
+        },
+    )
+    assert created.status_code == 200, created.text
+    pid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/products/{pid}",
+        headers=admin,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/products", headers=admin)
+    assert all_rows.status_code == 200
+    assert pid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/products?is_active=true", headers=admin)
+    assert active_only.status_code == 200
+    assert pid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/products?is_active=false", headers=admin)
+    assert inactive_only.status_code == 200
+    assert pid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
 
 
 @pytest.mark.asyncio
