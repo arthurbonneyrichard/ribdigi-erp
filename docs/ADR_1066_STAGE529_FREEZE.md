@@ -31,3 +31,7 @@ Stage 530 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Encryption KMS, Encryption KMS honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 530 opened under **ADR-1067** after CONTINUE/NEXT (Tenant MVP SBOM Disclosure Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1068**. Stage 529 feature scope remains frozen.
