@@ -31,3 +31,7 @@ Stage 781 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Tee Isolate Gate, Tee Isolate Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 781 opened under **ADR-1569** after CONTINUE/NEXT (Tenant MVP Key Wrap Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1570**. Stage 780 feature scope remains frozen.
