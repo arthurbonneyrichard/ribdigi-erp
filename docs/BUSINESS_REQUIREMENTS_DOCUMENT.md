@@ -1028,10 +1028,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Automated anomaly detection and recommendations.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Highlight unusual sales drops or spikes
-  - [ ] Flag expense anomalies
-  - [ ] Suggest actions ("Restock Product Y — sales up 40% this week")
-  - [x] Weekly insight digest email (tenant-scoped dashboard-rule digest to active company/super admins via `send_weekly_ai_insight_digest`, Celery beat Monday 07:00 UTC; `POST /ai/insights/digest` emails the signed-in user's preview; Jobs console exposes schedule/manual trigger)
+  - [x] Highlight unusual sales drops or spikes (`GET /ai/insights` composed rules: today/yesterday, MTD/prior month, and 7d vs prior 7d ≥25%; also included in weekly digest)
+  - [x] Flag expense anomalies (budget overage, statistical outliers, duplicate payee/amount day — via expense analysis rules composed into insights/digest)
+  - [x] Suggest actions ("Restock Product Y — sales up 40% this week") (rising-velocity + at-risk stock from inventory forecasts → action signals)
+  - [x] Weekly insight digest email (tenant-scoped composed-rule digest to active company/super admins via `send_weekly_ai_insight_digest`, Celery beat Monday 07:00 UTC; `POST /ai/insights/digest` emails the signed-in user's preview; Jobs console exposes schedule/manual trigger)
 
 #### BR-21.3 Smart Inventory Intelligence
 - **Description:** AI-powered inventory optimization.

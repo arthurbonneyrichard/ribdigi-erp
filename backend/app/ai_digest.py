@@ -51,7 +51,9 @@ async def send_tenant_digest(
         raise HTTPException(status_code=404, detail="Tenant not found")
 
     dashboard = await build_dashboard(db, tenant_id)
-    insights = ai_svc.build_insight_notes(dashboard)
+    composed = await ai_svc.compose_insights(db, tenant_id=tenant_id, dash=dashboard)
+    insights = list(composed.get("insights") or [])
+    signals = list(composed.get("signals") or [])
     recipients = await _recipient_users(
         db,
         tenant_id=tenant_id,
@@ -83,7 +85,8 @@ async def send_tenant_digest(
         status=status,
         insight_count=len(insights),
         details={
-            "source": "dashboard_rules",
+            "source": "composed_rules",
+            "signal_kinds": sorted({str(s.get("kind")) for s in signals if s.get("kind")}),
             "recipient_count": len(recipients),
             "sent": sent,
             "failed": failed,
@@ -93,6 +96,7 @@ async def send_tenant_digest(
     await db.flush()
     return {
         "insights": insights,
+        "signals": signals,
         "source": "rule_based",
         "recipient_count": len(recipients),
         "sent": sent,
