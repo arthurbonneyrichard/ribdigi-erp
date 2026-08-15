@@ -31,3 +31,7 @@ Stage 880 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Crypto Shred Gate, Crypto Shred Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 880 opened under **ADR-1767** after CONTINUE/NEXT (Tenant MVP Data Lifecycle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1768**. Stage 879 feature scope remains frozen.
