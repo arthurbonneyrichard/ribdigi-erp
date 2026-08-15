@@ -31,3 +31,9 @@ Stage 472 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Queue UI, Queue UI honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 472 opened under **ADR-951** after CONTINUE/NEXT (Tenant MVP Offline IndexedDB Queue Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-952**. Stage 471 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 471 runner-up outline was approved and opened (ADR-951); freeze ADR-952. Do not reopen Stage 471 scope.
