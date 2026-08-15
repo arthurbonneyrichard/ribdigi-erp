@@ -31,3 +31,7 @@ Stage 864 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Joint Controller Gate, Joint Controller Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 864 opened under **ADR-1735** after CONTINUE/NEXT (Tenant MVP Subprocessor Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1736**. Stage 863 feature scope remains frozen.

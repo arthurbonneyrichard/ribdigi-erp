@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 864 track opened (ADR-1735: `test_stage864_open.py`, `docs/STAGE_864_PLAN.md`) — Subprocessor Gate Honesty Pack Remaining-Gate Index; closed under ADR-1736
+- [x] Subprocessor Gate Honesty Pack remaining-gate hub (Stage 864 I1: `test_stage864_index_i1.py`, `docs/SUBPROCESSOR_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Subprocessor Gate Honesty Pack blocker matrix (Stage 864 B1: `test_stage864_blockers_b1.py`, `docs/SUBPROCESSOR_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 863 / Stage 862 / Stage 392 / CHANGE_IMPACT pointers (Stage 864 P1: `test_stage864_pointers_p1.py`, `docs/SUBPROCESSOR_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 864 fidelity sync (D1: `test_stage864_fidelity_d1.py`, `docs/STAGE_864_FIDELITY.md`)
+- [x] Stage 864 exit + freeze (H864x: `test_stage864_exit_h864x.py`, `docs/STAGE_864_EXIT_CRITERIA.md`, ADR-1736)
+
 Stage 863 track opened (ADR-1733: `test_stage863_open.py`, `docs/STAGE_863_PLAN.md`) — Joint Controller Gate Honesty Pack Remaining-Gate Index; closed under ADR-1734
 - [x] Joint Controller Gate Honesty Pack remaining-gate hub (Stage 863 I1: `test_stage863_index_i1.py`, `docs/JOINT_CONTROLLER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Joint Controller Gate Honesty Pack blocker matrix (Stage 863 B1: `test_stage863_blockers_b1.py`, `docs/JOINT_CONTROLLER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
