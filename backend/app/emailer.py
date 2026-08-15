@@ -210,7 +210,9 @@ def password_reset_link(token: str) -> str:
     return f"{base}/reset-password?token={token}"
 
 
-async def send_verification_email(*, to: str, token: str, company_name: str | None = None) -> EmailResult:
+async def send_verification_email(
+    *, to: str, token: str, company_name: str | None = None, tenant: Any | None = None
+) -> EmailResult:
     link = verification_link(token)
     company = company_name or "RIBDIGI ERP"
     subject = f"Verify your {company} email"
@@ -224,7 +226,7 @@ async def send_verification_email(*, to: str, token: str, company_name: str | No
         f"<p><a href=\"{link}\">Verify your email</a></p>"
         f"<p>Or paste: {link}</p>"
     )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    return await send_email(to=to, subject=subject, text_body=text, html_body=html, tenant=tenant)
 
 
 async def send_password_reset_email(*, to: str, token: str, tenant: Any | None = None) -> EmailResult:

@@ -169,6 +169,12 @@ UI: login **Forgot password?** → `/forgot-password` (workspace + email). Alway
 ```
 
 Token is single-use and expires in 1 hour; new password must pass complexity rules.
+
+### 2.4b Email verification (BR-19.1)
+**Verify:** `POST /auth/verify-email` — `{ "token": "..." }` sets `email_verified=true` (single-use token). UI: `/verify-email?token=…` (auto-submits when token present).  
+**Resend:** `POST /auth/resend-verification` — `{ "email", "tenant_id" }` neutral success; invalidates unused prior verify tokens; non-prod may echo `verification_token`.  
+**Login gate:** `POST /auth/login` returns `403` with `detail.code = "EMAIL_NOT_VERIFIED"` when credentials are valid but email is unverified (no tokens issued). Login UI offers resend.
+
 ### 2.5 Two-Factor Authentication (Optional)
 **Endpoint:** `POST /auth/2fa/enable`
 

@@ -31,6 +31,9 @@ export default function Login() {
   const [challengeToken, setChallengeToken] = useState('');
   const [methods, setMethods] = useState<string[]>([]);
   const [needs2fa, setNeeds2fa] = useState(false);
+  const [needsEmailVerify, setNeedsEmailVerify] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState('');
+  const [debugVerifyToken, setDebugVerifyToken] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
@@ -129,7 +132,33 @@ export default function Login() {
       }
       finishLogin(r.data);
     } catch (err: any) {
+      const detail = err.detail;
+      const code = typeof detail === 'object' && detail ? detail.code : null;
+      if (err.status === 403 && code === 'EMAIL_NOT_VERIFIED') {
+        setNeedsEmailVerify(true);
+        setVerifyMessage('');
+        setError(detail?.message || 'Verify your email before signing in');
+        return;
+      }
       setError(err.message || 'Login failed');
+    }
+  }
+
+  async function resendVerification() {
+    setError('');
+    setVerifyMessage('');
+    setDebugVerifyToken('');
+    try {
+      const r = await api('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email, tenant_id: tenant }),
+      });
+      setVerifyMessage(r.message || 'If verification is needed, a link was sent');
+      if (r.data?.verification_token) {
+        setDebugVerifyToken(String(r.data.verification_token));
+      }
+    } catch (err: any) {
+      setError(err.message || 'Unable to resend verification');
     }
   }
 
@@ -244,6 +273,32 @@ export default function Login() {
           )}
 
           {error && <p className="login-error" role="alert">{error}</p>}
+          {needsEmailVerify && (
+            <div className="login-verify-box">
+              <p className="login-hint">
+                Check your inbox for a verification link, or resend one below.
+              </p>
+              <button className="login-secondary" type="button" onClick={resendVerification}>
+                Resend verification email
+              </button>
+              <Link className="login-ghost" href="/verify-email" style={{ display: 'block', textAlign: 'center' }}>
+                Open verify page
+              </Link>
+              {verifyMessage && (
+                <p className="login-success" role="status">
+                  {verifyMessage}
+                </p>
+              )}
+              {debugVerifyToken && (
+                <p className="login-hint">
+                  Dev verify link:{' '}
+                  <Link href={`/verify-email?token=${encodeURIComponent(debugVerifyToken)}`}>
+                    Open verify form
+                  </Link>
+                </p>
+              )}
+            </div>
+          )}
         </form>
 
         <p className="login-foot">A Ribdigi House Product</p>
