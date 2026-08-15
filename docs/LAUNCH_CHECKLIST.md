@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 722 track opened (ADR-1451: `test_stage722_open.py`, `docs/STAGE_722_PLAN.md`) — Webauthn Passkey Gate Honesty Pack Remaining-Gate Index; closed under ADR-1452
+- [x] Webauthn Passkey Gate Honesty Pack remaining-gate hub (Stage 722 I1: `test_stage722_index_i1.py`, `docs/WEBAUTHN_PASSKEY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Webauthn Passkey Gate Honesty Pack blocker matrix (Stage 722 B1: `test_stage722_blockers_b1.py`, `docs/WEBAUTHN_PASSKEY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 721 / Stage 720 / Stage 392 / CHANGE_IMPACT pointers (Stage 722 P1: `test_stage722_pointers_p1.py`, `docs/WEBAUTHN_PASSKEY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 722 fidelity sync (D1: `test_stage722_fidelity_d1.py`, `docs/STAGE_722_FIDELITY.md`)
+- [x] Stage 722 exit + freeze (H722x: `test_stage722_exit_h722x.py`, `docs/STAGE_722_EXIT_CRITERIA.md`, ADR-1452)
+
 Stage 721 track opened (ADR-1449: `test_stage721_open.py`, `docs/STAGE_721_PLAN.md`) — Totp Enrollment Gate Honesty Pack Remaining-Gate Index; closed under ADR-1450
 - [x] Totp Enrollment Gate Honesty Pack remaining-gate hub (Stage 721 I1: `test_stage721_index_i1.py`, `docs/TOTP_ENROLLMENT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Totp Enrollment Gate Honesty Pack blocker matrix (Stage 721 B1: `test_stage721_blockers_b1.py`, `docs/TOTP_ENROLLMENT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
