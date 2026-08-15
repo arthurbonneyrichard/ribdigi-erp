@@ -31,3 +31,7 @@ Stage 792 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Data Classification Gate, Data Classification Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 792 opened under **ADR-1591** after CONTINUE/NEXT (Tenant MVP Sensitivity Label Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1592**. Stage 791 feature scope remains frozen.
