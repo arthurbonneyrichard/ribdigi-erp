@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 457 D1 Dual Console Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_457_FIDELITY.md` (`test_stage457_fidelity_d1.py`); Offline Complete / Dual Console honesty / go-live still MISSING.
 Stage 456 D1 Tenant Company Console Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_456_FIDELITY.md` (`test_stage456_fidelity_d1.py`); Offline Complete / Tenant Company Console honesty / go-live still MISSING.
 Stage 455 D1 RIBDIGI House Console Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_455_FIDELITY.md` (`test_stage455_fidelity_d1.py`); Offline Complete / RIBDIGI House Console honesty / go-live still MISSING.
 Stage 454 D1 Post-Launch Continuity Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_454_FIDELITY.md` (`test_stage454_fidelity_d1.py`); Offline Complete / Post-Launch Continuity honesty / go-live still MISSING.
