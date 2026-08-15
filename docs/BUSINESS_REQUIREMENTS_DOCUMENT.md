@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 664 D1 Api Gateway Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_664_FIDELITY.md` (`test_stage664_fidelity_d1.py`); Offline Complete / Api Gateway Gate honesty / go-live still MISSING.
 Stage 663 D1 Bot Defense Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_663_FIDELITY.md` (`test_stage663_fidelity_d1.py`); Offline Complete / Bot Defense Gate honesty / go-live still MISSING.
 Stage 662 D1 Ddos Mitigation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_662_FIDELITY.md` (`test_stage662_fidelity_d1.py`); Offline Complete / Ddos Mitigation Gate honesty / go-live still MISSING.
 Stage 661 D1 Waf Shield Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_661_FIDELITY.md` (`test_stage661_fidelity_d1.py`); Offline Complete / Waf Shield Gate honesty / go-live still MISSING.
