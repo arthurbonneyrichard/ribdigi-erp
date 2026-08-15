@@ -31,3 +31,9 @@ Stage 463 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Connectivity Sync Status, Connectivity Sync Status honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 463 opened under **ADR-933** after CONTINUE/NEXT (Tenant MVP Offline Sync Push Idempotency Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-934**. Stage 462 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 462 runner-up outline was approved and opened (ADR-933); freeze ADR-934. Do not reopen Stage 462 scope.

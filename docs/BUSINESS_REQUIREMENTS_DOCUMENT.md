@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 463 D1 Offline Sync Push Idempotency Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_463_FIDELITY.md` (`test_stage463_fidelity_d1.py`); Offline Complete / Sync Push Idempotency honesty / go-live still MISSING.
 Stage 462 D1 Connectivity Sync Status Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_462_FIDELITY.md` (`test_stage462_fidelity_d1.py`); Offline Complete / Connectivity Sync Status honesty / go-live still MISSING.
 Stage 461 D1 ADR-005 Store Membership Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_461_FIDELITY.md` (`test_stage461_fidelity_d1.py`); Offline Complete / Store Membership honesty / go-live still MISSING.
 Stage 460 D1 Schema-per-Tenant Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_460_FIDELITY.md` (`test_stage460_fidelity_d1.py`); Offline Complete / Schema-per-Tenant honesty / go-live still MISSING.

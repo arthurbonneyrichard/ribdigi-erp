@@ -1,0 +1,77 @@
+{
+  "id": "offline-sync-push-idempotency-honesty-pack-rg-blockers",
+  "stage": 463,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_sync_push_idempotency_pack_remaining_gate": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_sync_push_idempotency_honesty_complete_claimed": false,
+  "offline_sync_push_idempotency_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_sync_push_idempotency_honesty_complete_claimed": "REMAINING",
+    "offline_sync_push_idempotency_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_sync_push_idempotency_honesty": "NON_CLAIM",
+    "offline_sync_push_idempotency_pack_as_sync_push_idempotency_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_sync_push_idempotency_honesty_complete_claimed_flag": "false",
+    "offline_sync_push_idempotency_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ospihprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospihprb-honesty",
+      "title": "Mark Sync Push Idempotency honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospihprb-as-golive",
+      "title": "Mark Sync Push Idempotency as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospihprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospihprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospihprb-ospi-nonclaim",
+      "title": "Mark OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK as non-claim for sync-push-idempotency Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ospihprb-checklist-remaining",
+      "title": "Offline Complete / Sync Push Idempotency / Sync Push Idempotency honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 463 B1 Offline Sync Push Idempotency Honesty Pack RG blocker matrix packaging only."
+}
