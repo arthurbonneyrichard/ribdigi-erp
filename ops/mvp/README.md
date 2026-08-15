@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/CONTENT_SECURITY_POLICY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/content-security-policy-gate-honesty-pack-remaining-gate.json` — Stage 727 I1
+- `docs/CONTENT_SECURITY_POLICY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/content-security-policy-gate-honesty-pack-rg-blockers.json` — Stage 727 B1
+- `docs/CONTENT_SECURITY_POLICY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/content-security-policy-gate-honesty-pack-rg-pointers.json` — Stage 727 P1
 - `docs/CSRF_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/csrf-token-gate-honesty-pack-remaining-gate.json` — Stage 726 I1
 - `docs/CSRF_TOKEN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/csrf-token-gate-honesty-pack-rg-blockers.json` — Stage 726 B1
 - `docs/CSRF_TOKEN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/csrf-token-gate-honesty-pack-rg-pointers.json` — Stage 726 P1

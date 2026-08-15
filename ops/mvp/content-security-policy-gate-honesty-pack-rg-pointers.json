@@ -1,0 +1,77 @@
+{
+  "id": "content-security-policy-gate-honesty-pack-rg-pointers",
+  "stage": 727,
+  "pack": "P1",
+  "doc": "docs/CONTENT_SECURITY_POLICY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CONTENT_SECURITY_POLICY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "csrf_token_gate_honesty_pack_remaining_gate": "docs/CSRF_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "session_idle_timeout_gate_honesty_pack_remaining_gate": "docs/SESSION_IDLE_TIMEOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "content_security_policy_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "content_security_policy_gate_honesty_complete_claimed": false,
+  "content_security_policy_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_content_security_policy_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "csrf_token_gate_honesty_pack_remaining_gate_stage726": "docs/CSRF_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "session_idle_timeout_gate_honesty_pack_remaining_gate_stage725": "docs/SESSION_IDLE_TIMEOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "content_security_policy_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / content_security_policy_gate / content_security_policy_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "cspghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Content Security Policy Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspghp-stage726",
+      "title": "Point to Stage 726 CSRF TOKEN GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspghp-stage725",
+      "title": "Point to Stage 725 SESSION IDLE TIMEOUT GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspghp-prior-pack",
+      "title": "Point to Content Security Policy Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cspghp-checklist-remaining",
+      "title": "Offline Complete / Content Security Policy Gate / Content Security Policy Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 727 P1 Content Security Policy Gate Honesty Pack RG pointers packaging only."
+}

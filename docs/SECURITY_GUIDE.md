@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 727 D1 Content Security Policy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_727_FIDELITY.md` (`test_stage727_fidelity_d1.py`); exit ADR-1462 / `test_stage727_exit_h727x.py`. Honesty: Offline Complete / Content Security Policy Gate honesty / go-live Completes remain MISSING.
 Stage 726 D1 Csrf Token Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_726_FIDELITY.md` (`test_stage726_fidelity_d1.py`); exit ADR-1460 / `test_stage726_exit_h726x.py`. Honesty: Offline Complete / Csrf Token Gate honesty / go-live Completes remain MISSING.
 Stage 725 D1 Session Idle Timeout Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_725_FIDELITY.md` (`test_stage725_fidelity_d1.py`); exit ADR-1458 / `test_stage725_exit_h725x.py`. Honesty: Offline Complete / Session Idle Timeout Gate honesty / go-live Completes remain MISSING.
 Stage 724 D1 Account Lockout Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_724_FIDELITY.md` (`test_stage724_fidelity_d1.py`); exit ADR-1456 / `test_stage724_exit_h724x.py`. Honesty: Offline Complete / Account Lockout Gate honesty / go-live Completes remain MISSING.
