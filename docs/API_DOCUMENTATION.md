@@ -900,9 +900,9 @@ List supports optional `?status=active|inactive` (Sales Manage customer filters 
 **Contacts (BR-6.1):** same nested `/customers/{customer_id}/contacts` routes as suppliers; `GET /customers/{id}` includes `contacts`.
 
 ### 7.2 Customer Groups
-**List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults)  
+**List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults; `is_active=true|false` optional — Sales manage All/Active/Inactive; default returns all)  
 **Create:** `POST /customers/groups`  
-**Update:** `PATCH /customers/groups/{group_id}` — `{ name?, discount_percent?, is_active? }` (soft-deactivate via `is_active=false`; Sales UI **Activate** / **Deactivate** + **Save discount**)  
+**Update:** `PATCH /customers/groups/{group_id}` — `{ name?, discount_percent?, is_active? }` (soft-deactivate via `is_active=false`; Sales UI **Activate** / **Deactivate** + **Save discount** + manage status filter)
 **Assign on customer:** `POST /customers` / `PATCH /customers/{customer_id}` with `customer_group_id` (inactive group → 400)  
 **Preview price:** `GET /products/{product_id}/price?customer_id=&variant_id=`
 

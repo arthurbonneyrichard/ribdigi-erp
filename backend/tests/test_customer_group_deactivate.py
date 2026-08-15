@@ -20,6 +20,42 @@ def test_customer_group_deactivate_ui_wired():
     assert "Activate" in sales
     assert "[inactive]" in sales
     assert "Save discount" in sales
+    assert "groupManageFilter" in sales
+    assert 'aria-label="Customer group status filter"' in sales
+    assert "managedGroups" in sales
+
+
+@pytest.mark.asyncio
+async def test_customer_groups_list_is_active_filter(client, seeded):
+    ac, seed = client
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+    created = await ac.post(
+        "/api/v1/customers/groups",
+        headers=admin,
+        json={"name": "Filter Demo Club", "discount_percent": 5},
+    )
+    assert created.status_code == 200, created.text
+    gid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/customers/groups/{gid}",
+        headers=admin,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/customers/groups", headers=admin)
+    assert gid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/customers/groups?is_active=true", headers=admin)
+    assert gid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/customers/groups?is_active=false", headers=admin)
+    assert gid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
 
 
 @pytest.mark.asyncio

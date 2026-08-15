@@ -56,17 +56,18 @@ def serialize_group(row: m.CustomerGroup) -> dict:
     }
 
 
-async def list_groups(db: AsyncSession, tenant_id: str) -> list[m.CustomerGroup]:
+async def list_groups(
+    db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
+) -> list[m.CustomerGroup]:
     await ensure_default_groups(db, tenant_id)
-    return list(
-        (
-            await db.execute(
-                select(m.CustomerGroup)
-                .where(m.CustomerGroup.tenant_id == tenant_id)
-                .order_by(m.CustomerGroup.name.asc())
-            )
-        ).scalars().all()
+    stmt = (
+        select(m.CustomerGroup)
+        .where(m.CustomerGroup.tenant_id == tenant_id)
+        .order_by(m.CustomerGroup.name.asc())
     )
+    if is_active is not None:
+        stmt = stmt.where(m.CustomerGroup.is_active.is_(bool(is_active)))
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def get_group(db: AsyncSession, tenant_id: str, group_id: str) -> m.CustomerGroup:
