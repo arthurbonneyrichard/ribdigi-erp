@@ -31,3 +31,7 @@ Stage 706 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Vacuum Autovacuum Gate, Vacuum Autovacuum Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 706 opened under **ADR-1419** after CONTINUE/NEXT (Tenant MVP Index Bloat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1420**. Stage 705 feature scope remains frozen.
