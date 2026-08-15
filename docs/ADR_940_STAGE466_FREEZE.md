@@ -31,3 +31,9 @@ Stage 467 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Push/Pull Sync, Push/Pull Sync honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 467 opened under **ADR-941** after CONTINUE/NEXT (Tenant MVP Offline Sync Dashboard Widget Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-942**. Stage 466 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 466 runner-up outline was approved and opened (ADR-941); freeze ADR-942. Do not reopen Stage 466 scope.

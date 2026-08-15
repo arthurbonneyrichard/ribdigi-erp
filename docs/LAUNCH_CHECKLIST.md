@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 467 track opened (ADR-941: `test_stage467_open.py`, `docs/STAGE_467_PLAN.md`) — Offline Sync Dashboard Widget Honesty Pack Remaining-Gate Index; closed under ADR-942
+- [x] Offline Sync Dashboard Widget honesty pack remaining-gate hub (Stage 467 I1: `test_stage467_index_i1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline Sync Dashboard Widget honesty pack blocker matrix (Stage 467 B1: `test_stage467_blockers_b1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 466 / Stage 465 / Stage 392 / CHANGE_IMPACT pointers (Stage 467 P1: `test_stage467_pointers_p1.py`, `docs/OFFLINE_SYNC_DASHBOARD_WIDGET_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 467 fidelity sync (D1: `test_stage467_fidelity_d1.py`, `docs/STAGE_467_FIDELITY.md`)
+- [x] Stage 467 exit + freeze (H467x: `test_stage467_exit_h467x.py`, `docs/STAGE_467_EXIT_CRITERIA.md`, ADR-942)
 - [x] Stage 466 track opened (ADR-939: `test_stage466_open.py`, `docs/STAGE_466_PLAN.md`) — Offline Push/Pull Sync Honesty Pack Remaining-Gate Index; closed under ADR-940
 - [x] Offline Push/Pull Sync honesty pack remaining-gate hub (Stage 466 I1: `test_stage466_index_i1.py`, `docs/OFFLINE_PUSH_PULL_SYNC_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline Push/Pull Sync honesty pack blocker matrix (Stage 466 B1: `test_stage466_blockers_b1.py`, `docs/OFFLINE_PUSH_PULL_SYNC_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

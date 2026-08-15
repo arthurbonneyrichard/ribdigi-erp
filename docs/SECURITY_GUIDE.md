@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 467 D1 Offline Sync Dashboard Widget Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_467_FIDELITY.md` (`test_stage467_fidelity_d1.py`); exit ADR-942 / `test_stage467_exit_h467x.py`. Honesty: Offline Complete / Sync Dashboard Widget honesty / go-live Completes remain MISSING.
 Stage 466 D1 Offline Push/Pull Sync Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_466_FIDELITY.md` (`test_stage466_fidelity_d1.py`); exit ADR-940 / `test_stage466_exit_h466x.py`. Honesty: Offline Complete / Push/Pull Sync honesty / go-live Completes remain MISSING.
 Stage 465 D1 Offline Sync Error Surface Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_465_FIDELITY.md` (`test_stage465_fidelity_d1.py`); exit ADR-938 / `test_stage465_exit_h465x.py`. Honesty: Offline Complete / Sync Error Surface honesty / go-live Completes remain MISSING.
 Stage 464 D1 Offline Conflict UX Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_464_FIDELITY.md` (`test_stage464_fidelity_d1.py`); exit ADR-936 / `test_stage464_exit_h464x.py`. Honesty: Offline Complete / Conflict UX honesty / go-live Completes remain MISSING.

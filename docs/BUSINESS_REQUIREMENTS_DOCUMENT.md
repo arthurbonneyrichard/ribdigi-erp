@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 467 D1 Offline Sync Dashboard Widget Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_467_FIDELITY.md` (`test_stage467_fidelity_d1.py`); Offline Complete / Sync Dashboard Widget honesty / go-live still MISSING.
 Stage 466 D1 Offline Push/Pull Sync Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_466_FIDELITY.md` (`test_stage466_fidelity_d1.py`); Offline Complete / Push/Pull Sync honesty / go-live still MISSING.
 Stage 465 D1 Offline Sync Error Surface Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_465_FIDELITY.md` (`test_stage465_fidelity_d1.py`); Offline Complete / Sync Error Surface honesty / go-live still MISSING.
 Stage 464 D1 Offline Conflict UX Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_464_FIDELITY.md` (`test_stage464_fidelity_d1.py`); Offline Complete / Conflict UX honesty / go-live still MISSING.

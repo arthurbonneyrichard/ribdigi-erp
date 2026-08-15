@@ -1,0 +1,77 @@
+{
+  "id": "offline-sync-dashboard-widget-honesty-pack-rg-pointers",
+  "stage": 467,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_push_pull_sync_honesty_pack_remaining_gate": "docs/OFFLINE_PUSH_PULL_SYNC_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_error_surface_honesty_pack_remaining_gate": "docs/OFFLINE_SYNC_ERROR_SURFACE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_dashboard_widget_pack_remaining_gate": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_sync_dashboard_widget_honesty_complete_claimed": false,
+  "offline_sync_dashboard_widget_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_offline_sync_dashboard_widget_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_push_pull_sync_honesty_pack_remaining_gate_stage466": "docs/OFFLINE_PUSH_PULL_SYNC_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_error_surface_honesty_pack_remaining_gate_stage465": "docs/OFFLINE_SYNC_ERROR_SURFACE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_dashboard_widget_pack_remaining_gate": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / sync_dashboard_widget / sync_dashboard_widget_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "osdwhprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Offline Sync Dashboard Widget honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwhprp-stage466",
+      "title": "Point to Stage 466 Offline Push/Pull Sync honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwhprp-stage465",
+      "title": "Point to Stage 465 Offline Sync Error Surface honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwhprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwhprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwhprp-osdw-pack",
+      "title": "Point to Offline Sync Dashboard Widget Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwhprp-checklist-remaining",
+      "title": "Offline Complete / Sync Dashboard Widget / Sync Dashboard Widget honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 467 P1 Offline Sync Dashboard Widget Honesty Pack RG pointers packaging only."
+}
