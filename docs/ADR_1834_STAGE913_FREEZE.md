@@ -31,3 +31,7 @@ Stage 914 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Justification Gate, Transfer Justification Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 914 opened under **ADR-1835** after CONTINUE/NEXT (Tenant MVP Transfer Rationale Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1836**. Stage 913 feature scope remains frozen.
