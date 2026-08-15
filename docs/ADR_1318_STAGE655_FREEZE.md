@@ -31,3 +31,7 @@ Stage 656 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Capacity Planning Gate, Capacity Planning Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 656 opened under **ADR-1319** after CONTINUE/NEXT (Tenant MVP Cost Attribution Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1320**. Stage 655 feature scope remains frozen.

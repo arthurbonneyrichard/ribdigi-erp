@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 656 track opened (ADR-1319: `test_stage656_open.py`, `docs/STAGE_656_PLAN.md`) — Cost Attribution Gate Honesty Pack Remaining-Gate Index; closed under ADR-1320
+- [x] Cost Attribution Gate Honesty Pack remaining-gate hub (Stage 656 I1: `test_stage656_index_i1.py`, `docs/COST_ATTRIBUTION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Cost Attribution Gate Honesty Pack blocker matrix (Stage 656 B1: `test_stage656_blockers_b1.py`, `docs/COST_ATTRIBUTION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 655 / Stage 654 / Stage 392 / CHANGE_IMPACT pointers (Stage 656 P1: `test_stage656_pointers_p1.py`, `docs/COST_ATTRIBUTION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 656 fidelity sync (D1: `test_stage656_fidelity_d1.py`, `docs/STAGE_656_FIDELITY.md`)
+- [x] Stage 656 exit + freeze (H656x: `test_stage656_exit_h656x.py`, `docs/STAGE_656_EXIT_CRITERIA.md`, ADR-1320)
+
 Stage 655 track opened (ADR-1317: `test_stage655_open.py`, `docs/STAGE_655_PLAN.md`) — Capacity Planning Gate Honesty Pack Remaining-Gate Index; closed under ADR-1318
 - [x] Capacity Planning Gate Honesty Pack remaining-gate hub (Stage 655 I1: `test_stage655_index_i1.py`, `docs/CAPACITY_PLANNING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Capacity Planning Gate Honesty Pack blocker matrix (Stage 655 B1: `test_stage655_blockers_b1.py`, `docs/CAPACITY_PLANNING_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
