@@ -1434,6 +1434,7 @@ class SalesReturn(Base):
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     sales_invoice_id: Mapped[str] = mapped_column(ForeignKey("sales_invoices.id"), index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
+    # draft -> posted | cancelled
     reason: Mapped[str] = mapped_column(String(80), default="other")
     restock: Mapped[bool] = mapped_column(Boolean, default=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)

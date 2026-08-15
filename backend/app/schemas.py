@@ -1045,6 +1045,12 @@ class SalesReturnCreate(BaseModel):
     items: list[SalesReturnItemCreate] = Field(min_length=1)
 
 
+class SalesReturnCancel(BaseModel):
+    """Draft sales return cancel — typed reason required (BR-7.5 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class SalesReturnPost(BaseModel):
     settlement_method: str | None = None  # adjust | refund (required when return exceeds open AR)
     payment_method: str = "cash"
