@@ -31,3 +31,10 @@ Stage 482 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Stock Authority, Stock Authority honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 482 opened under **ADR-971** after CONTINUE/NEXT (Tenant MVP Offline Sale Flush Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-972**. Stage 481 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 481 runner-up outline was approved and opened (ADR-971); freeze ADR-972. Do not reopen Stage 481 scope.
+
