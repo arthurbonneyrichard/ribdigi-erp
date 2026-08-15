@@ -31,3 +31,8 @@ Stage 517 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Compliance Questionnaire, Compliance Questionnaire honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 517 opened under **ADR-1041** after CONTINUE/NEXT (Tenant MVP Support SLA Boundary Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1042**. Stage 516 feature scope remains frozen.
+
