@@ -100,6 +100,8 @@ type PurchaseReturn = {
   discount_amount?: number;
   subtotal?: number;
   tax_amount?: number;
+  can_cancel?: boolean;
+  notes?: string | null;
 };
 type PurchaseInvoice = {
   id: string;
@@ -204,6 +206,7 @@ export default function Page() {
   const [prRejectReason, setPrRejectReason] = useState('');
   const [poCancelReason, setPoCancelReason] = useState('');
   const [piCancelReason, setPiCancelReason] = useState('');
+  const [prCancelReason, setPrCancelReason] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
     { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
@@ -921,6 +924,27 @@ export default function Page() {
     try {
       const r = await api(`/purchasing/returns/${id}/post`, { method: 'POST', body: '{}' });
       setMessage(`Posted ${r.data.return_number} / ${r.data.debit_note_number}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function cancelReturn(ret: PurchaseReturn) {
+    setError('');
+    setMessage('');
+    const reason = prCancelReason.trim();
+    if (!reason) {
+      setError('Enter a cancel reason before cancelling a purchase return');
+      return;
+    }
+    try {
+      const r = await api(`/purchasing/returns/${ret.id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
+      setMessage(r.message || `Cancelled ${r.data?.return_number || ret.return_number}`);
+      setPrCancelReason('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -2485,6 +2509,21 @@ export default function Page() {
           </button>
         </div>
       </div>
+      <div className="card" style={{ marginBottom: 12 }}>
+        <label>
+          Cancel reason{' '}
+          <input
+            value={prCancelReason}
+            onChange={(e) => setPrCancelReason(e.target.value)}
+            placeholder="Required before Cancel"
+            style={{ minWidth: 280 }}
+          />
+        </label>
+        <p className="muted" style={{ marginTop: 6 }}>
+          Appended to draft return notes and audit (<code>POST .../returns/.../cancel</code>{' '}
+          {'{ reason }'}). Draft only; no stock/AP.
+        </p>
+      </div>
         <table className="table">
           <thead>
             <tr>
@@ -2494,6 +2533,7 @@ export default function Page() {
               <th>Status</th>
               <th>Discount</th>
               <th>Total</th>
+              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2506,8 +2546,16 @@ export default function Page() {
                 <td>{r.status}</td>
                 <td>{r.discount_amount ?? 0}</td>
                 <td>{r.total_amount}</td>
-                <td>
-                  {r.status === 'draft' && <button onClick={() => postReturn(r.id)}>Post</button>}
+                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                  {r.notes || '—'}
+                </td>
+                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {r.status === 'draft' && (
+                    <>
+                      <button onClick={() => postReturn(r.id)}>Post</button>
+                      <button onClick={() => cancelReturn(r)}>Cancel</button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

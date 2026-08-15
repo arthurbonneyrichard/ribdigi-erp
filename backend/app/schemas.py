@@ -929,6 +929,12 @@ class PurchaseReturnCreate(BaseModel):
     items: list[PurchaseReturnItemCreate] = Field(min_length=1)
 
 
+class PurchaseReturnCancel(BaseModel):
+    """Draft purchase return cancel — typed reason required (BR-6.6 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class PurchaseInvoiceItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
