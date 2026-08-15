@@ -1008,7 +1008,8 @@ class SalesReturnItemCreate(BaseModel):
 
 class SalesReturnCreate(BaseModel):
     sales_invoice_id: str
-    reason: str = "other"
+    # Required coded reason (BR-7.5); no silent default to "other"
+    reason: str
     restock: bool = True
     notes: str | None = None
     items: list[SalesReturnItemCreate] = Field(min_length=1)

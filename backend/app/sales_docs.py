@@ -747,10 +747,13 @@ async def create_return(
     user_id: str,
     sales_invoice_id: str,
     items: list[dict],
-    reason: str = "other",
+    reason: str,
     restock: bool = True,
     notes: str | None = None,
 ) -> m.SalesReturn:
+    reason = (reason or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="reason is required")
     if reason not in RETURN_REASONS:
         raise HTTPException(status_code=400, detail=f"reason must be one of {sorted(RETURN_REASONS)}")
     invoice = await get_invoice(db, tenant_id, sales_invoice_id)
