@@ -31,3 +31,7 @@ Stage 689 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Dependency Health Gate, Dependency Health Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 689 opened under **ADR-1385** after CONTINUE/NEXT (Tenant MVP Circuit Breaker Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1386**. Stage 688 feature scope remains frozen.
