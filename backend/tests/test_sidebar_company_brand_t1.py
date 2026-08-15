@@ -1,4 +1,4 @@
-"""Topbar company brand space + /me company fields."""
+"""Sidebar company brand space + /me company fields."""
 
 from __future__ import annotations
 
@@ -12,19 +12,21 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_topbar_brand_ui_wired():
+def test_sidebar_brand_ui_wired():
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
-    assert "topbar-brand" in shell
-    assert "topbar-brand-logo" in shell
-    assert "topbar-brand-name" in shell
+    assert 'className="brand"' in shell
+    assert "brand-logo" in shell
+    assert "brand-name" in shell
     assert "company_name" in shell
     assert "has_logo" in shell
     assert "/tenants/me/logo" in shell
+    assert "topbar-brand" not in shell
     css = (ROOT / "frontend/app/globals.css").read_text(encoding="utf-8")
-    assert "topbar-brand" in css
-    assert "justify-content:space-between" in css
-    login_css = css
-    assert "width:min(120px,42%)" in login_css
+    assert ".brand{" in css or ".brand{" in css.replace(" ", "")
+    assert "min-height:72px" in css
+    assert "brand-name" in css
+    assert "topbar-brand" not in css
+    assert "width:min(120px,42%)" in css
 
 
 @pytest.mark.asyncio

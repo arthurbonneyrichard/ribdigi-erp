@@ -585,6 +585,20 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
       <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
+        <div className="brand" aria-label="Company brand">
+          {companyLogoUrl ? (
+            <img
+              className="brand-logo"
+              src={companyLogoUrl}
+              alt={companyName || 'Company logo'}
+            />
+          ) : null}
+          {companyName ? (
+            <div className="brand-name">{companyName}</div>
+          ) : isPlatformOwner ? (
+            <div className="brand-name">RIBDIGI Platform</div>
+          ) : null}
+        </div>
         {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
         <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
           {visible.map(([n, h, module]) => {
@@ -623,20 +637,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             >
               <span aria-hidden>{'\u2630'}</span> Menu
             </button>
-            <div className="topbar-brand" aria-label="Company brand">
-              {companyLogoUrl ? (
-                <img
-                  className="topbar-brand-logo"
-                  src={companyLogoUrl}
-                  alt={companyName || 'Company logo'}
-                />
-              ) : null}
-              {companyName ? (
-                <span className="topbar-brand-name">{companyName}</span>
-              ) : isPlatformOwner ? (
-                <span className="topbar-brand-name">RIBDIGI Platform</span>
-              ) : null}
-            </div>
           </div>
           <div className="topbar-right">
             <StoreSwitcher visible={!isPlatformOwner} />
