@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 724 D1 Account Lockout Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_724_FIDELITY.md` (`test_stage724_fidelity_d1.py`); Offline Complete / Account Lockout Gate honesty / go-live still MISSING.
 Stage 723 D1 Password Policy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_723_FIDELITY.md` (`test_stage723_fidelity_d1.py`); Offline Complete / Password Policy Gate honesty / go-live still MISSING.
 Stage 722 D1 Webauthn Passkey Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_722_FIDELITY.md` (`test_stage722_fidelity_d1.py`); Offline Complete / Webauthn Passkey Gate honesty / go-live still MISSING.
 Stage 721 D1 Totp Enrollment Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_721_FIDELITY.md` (`test_stage721_fidelity_d1.py`); Offline Complete / Totp Enrollment Gate honesty / go-live still MISSING.

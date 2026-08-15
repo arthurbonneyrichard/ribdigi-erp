@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 724 track opened (ADR-1455: `test_stage724_open.py`, `docs/STAGE_724_PLAN.md`) — Account Lockout Gate Honesty Pack Remaining-Gate Index; closed under ADR-1456
+- [x] Account Lockout Gate Honesty Pack remaining-gate hub (Stage 724 I1: `test_stage724_index_i1.py`, `docs/ACCOUNT_LOCKOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Account Lockout Gate Honesty Pack blocker matrix (Stage 724 B1: `test_stage724_blockers_b1.py`, `docs/ACCOUNT_LOCKOUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 723 / Stage 722 / Stage 392 / CHANGE_IMPACT pointers (Stage 724 P1: `test_stage724_pointers_p1.py`, `docs/ACCOUNT_LOCKOUT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 724 fidelity sync (D1: `test_stage724_fidelity_d1.py`, `docs/STAGE_724_FIDELITY.md`)
+- [x] Stage 724 exit + freeze (H724x: `test_stage724_exit_h724x.py`, `docs/STAGE_724_EXIT_CRITERIA.md`, ADR-1456)
+
 Stage 723 track opened (ADR-1453: `test_stage723_open.py`, `docs/STAGE_723_PLAN.md`) — Password Policy Gate Honesty Pack Remaining-Gate Index; closed under ADR-1454
 - [x] Password Policy Gate Honesty Pack remaining-gate hub (Stage 723 I1: `test_stage723_index_i1.py`, `docs/PASSWORD_POLICY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Password Policy Gate Honesty Pack blocker matrix (Stage 723 B1: `test_stage723_blockers_b1.py`, `docs/PASSWORD_POLICY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
