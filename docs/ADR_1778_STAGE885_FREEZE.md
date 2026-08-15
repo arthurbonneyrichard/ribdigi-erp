@@ -31,3 +31,7 @@ Stage 886 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, BCR Gate, BCR Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 886 opened under **ADR-1779** after CONTINUE/NEXT (Tenant MVP IDTA Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1780**. Stage 885 feature scope remains frozen.
