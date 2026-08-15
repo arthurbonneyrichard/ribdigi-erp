@@ -1181,6 +1181,11 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 `transfer` requires two distinct liquid accounts (Dr destination / Cr source).  
 `deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.
 
+**Cheques (BR-10.4):**  
+**List:** `GET /accounting/cheques`  
+**Deposit / Clear:** `POST /accounting/cheques/{id}/deposit|clear`  
+**Bounce / Cancel:** `POST /accounting/cheques/{id}/bounce|cancel?reason=` — reason appended to notes + journal description (Accounting Cheques UI requires reason for Bounce/Cancel)
+
 **Bank feed connections (reconcile):**  
 **List:** `GET /accounting/bank-connections` — optional `?is_active=true|false` filters soft-deactivated connections (omit = all; Accounting Reconcile manage status filter).  
 **Create:** `POST /accounting/bank-connections` — `{ account_id, provider: mock|http_json, display_name?, external_account_id?, feed_url?, access_token?, auto_sync?, auto_match_after_sync?, sync_lookback_days? }` (`mock` blocked in production)  
