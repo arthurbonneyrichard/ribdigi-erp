@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 887 track opened (ADR-1781: `test_stage887_open.py`, `docs/STAGE_887_PLAN.md`) — Derogation Gate Honesty Pack Remaining-Gate Index; closed under ADR-1782
+- [x] Derogation Gate Honesty Pack remaining-gate hub (Stage 887 I1: `test_stage887_index_i1.py`, `docs/DEROGATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Derogation Gate Honesty Pack blocker matrix (Stage 887 B1: `test_stage887_blockers_b1.py`, `docs/DEROGATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 886 / Stage 885 / Stage 392 / CHANGE_IMPACT pointers (Stage 887 P1: `test_stage887_pointers_p1.py`, `docs/DEROGATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 887 fidelity sync (D1: `test_stage887_fidelity_d1.py`, `docs/STAGE_887_FIDELITY.md`)
+- [x] Stage 887 exit + freeze (H887x: `test_stage887_exit_h887x.py`, `docs/STAGE_887_EXIT_CRITERIA.md`, ADR-1782)
+
 Stage 886 track opened (ADR-1779: `test_stage886_open.py`, `docs/STAGE_886_PLAN.md`) — IDTA Gate Honesty Pack Remaining-Gate Index; closed under ADR-1780
 - [x] IDTA Gate Honesty Pack remaining-gate hub (Stage 886 I1: `test_stage886_index_i1.py`, `docs/IDTA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] IDTA Gate Honesty Pack blocker matrix (Stage 886 B1: `test_stage886_blockers_b1.py`, `docs/IDTA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
