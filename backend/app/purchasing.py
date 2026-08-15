@@ -2046,10 +2046,14 @@ async def cancel_purchase_invoice(
     tenant_id: str,
     user_id: str,
     invoice_id: str,
+    reason: str | None = None,
 ) -> m.PurchaseInvoice:
     inv = await get_purchase_invoice(db, tenant_id, invoice_id)
     if inv.status == "cancelled":
         return inv
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
     if float(inv.paid_amount or 0) > 0:
         raise HTTPException(status_code=409, detail="Cannot cancel invoice with payments")
     if inv.status not in {"draft", "unpaid", "overdue"}:
@@ -2063,6 +2067,17 @@ async def cancel_purchase_invoice(
             db, tenant_id=tenant_id, user_id=user_id, purchase_invoice=inv
         )
     inv.status = "cancelled"
+    inv.notes = ((inv.notes or "") + f"\nCancel: {reason_s}").strip()
     inv.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pi_cancelled",
+            entity="purchase_invoice",
+            entity_id=inv.id,
+            details={"invoice_number": inv.invoice_number, "reason": reason_s},
+        )
+    )
     await db.flush()
     return inv
