@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 590 D1 (2026-08-14):** Offline Complete Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_590_FIDELITY.md` (`test_stage590_fidelity_d1.py`). Open ADR: `docs/ADR_1187_STAGE590_OPEN.md`; plan `docs/STAGE_590_PLAN.md`.
+
+**Stage 590 exit (2026-08-14):** I1, B1, P1, D1, H590x met — `docs/STAGE_590_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1188_STAGE590_FREEZE.md`. Fidelity: `docs/STAGE_590_FIDELITY.md`.
+
 **Stage 589 D1 (2026-08-14):** Professional Services SOW Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_589_FIDELITY.md` (`test_stage589_fidelity_d1.py`). Open ADR: `docs/ADR_1185_STAGE589_OPEN.md`; plan `docs/STAGE_589_PLAN.md`.
 
 **Stage 589 exit (2026-08-14):** I1, B1, P1, D1, H589x met — `docs/STAGE_589_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1186_STAGE589_FREEZE.md`. Fidelity: `docs/STAGE_589_FIDELITY.md`.

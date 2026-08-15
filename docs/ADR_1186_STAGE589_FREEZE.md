@@ -31,3 +31,7 @@ Stage 590 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Professional Services SOW, Professional Services SOW honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 590 opened under **ADR-1187** after CONTINUE/NEXT (Tenant MVP Offline Complete Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1188**. Stage 589 feature scope remains frozen.
