@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 659 D1 Disaster Failover Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_659_FIDELITY.md` (`test_stage659_fidelity_d1.py`); Offline Complete / Disaster Failover Gate honesty / go-live still MISSING.
 Stage 658 D1 Multi Region Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_658_FIDELITY.md` (`test_stage658_fidelity_d1.py`); Offline Complete / Multi Region Gate honesty / go-live still MISSING.
 Stage 657 D1 Quota Enforcement Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_657_FIDELITY.md` (`test_stage657_fidelity_d1.py`); Offline Complete / Quota Enforcement Gate honesty / go-live still MISSING.
 Stage 656 D1 Cost Attribution Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_656_FIDELITY.md` (`test_stage656_fidelity_d1.py`); Offline Complete / Cost Attribution Gate honesty / go-live still MISSING.

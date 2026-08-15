@@ -31,3 +31,7 @@ Stage 659 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Multi Region Gate, Multi Region Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 659 opened under **ADR-1325** after CONTINUE/NEXT (Tenant MVP Disaster Failover Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1326**. Stage 658 feature scope remains frozen.
