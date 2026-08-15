@@ -31,3 +31,7 @@ Stage 703 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Query Timeout Gate, Query Timeout Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 703 opened under **ADR-1413** after CONTINUE/NEXT (Tenant MVP Statement Timeout Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1414**. Stage 702 feature scope remains frozen.

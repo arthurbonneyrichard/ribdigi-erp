@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 703 track opened (ADR-1413: `test_stage703_open.py`, `docs/STAGE_703_PLAN.md`) — Statement Timeout Gate Honesty Pack Remaining-Gate Index; closed under ADR-1414
+- [x] Statement Timeout Gate Honesty Pack remaining-gate hub (Stage 703 I1: `test_stage703_index_i1.py`, `docs/STATEMENT_TIMEOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Statement Timeout Gate Honesty Pack blocker matrix (Stage 703 B1: `test_stage703_blockers_b1.py`, `docs/STATEMENT_TIMEOUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 702 / Stage 701 / Stage 392 / CHANGE_IMPACT pointers (Stage 703 P1: `test_stage703_pointers_p1.py`, `docs/STATEMENT_TIMEOUT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 703 fidelity sync (D1: `test_stage703_fidelity_d1.py`, `docs/STAGE_703_FIDELITY.md`)
+- [x] Stage 703 exit + freeze (H703x: `test_stage703_exit_h703x.py`, `docs/STAGE_703_EXIT_CRITERIA.md`, ADR-1414)
+
 Stage 702 track opened (ADR-1411: `test_stage702_open.py`, `docs/STAGE_702_PLAN.md`) — Query Timeout Gate Honesty Pack Remaining-Gate Index; closed under ADR-1412
 - [x] Query Timeout Gate Honesty Pack remaining-gate hub (Stage 702 I1: `test_stage702_index_i1.py`, `docs/QUERY_TIMEOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Query Timeout Gate Honesty Pack blocker matrix (Stage 702 B1: `test_stage702_blockers_b1.py`, `docs/QUERY_TIMEOUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
