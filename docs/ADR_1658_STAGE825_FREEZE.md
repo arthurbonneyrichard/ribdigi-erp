@@ -31,3 +31,7 @@ Stage 826 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Complaint Feedback Gate, Complaint Feedback Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 826 opened under **ADR-1659** after CONTINUE/NEXT (Tenant MVP Suppression List Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1660**. Stage 825 feature scope remains frozen.
