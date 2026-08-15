@@ -31,3 +31,7 @@ Stage 723 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Webauthn Passkey Gate, Webauthn Passkey Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 723 opened under **ADR-1453** after CONTINUE/NEXT (Tenant MVP Password Policy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1454**. Stage 722 feature scope remains frozen.

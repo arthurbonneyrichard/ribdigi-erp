@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 723 D1 Password Policy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_723_FIDELITY.md` (`test_stage723_fidelity_d1.py`); exit ADR-1454 / `test_stage723_exit_h723x.py`. Honesty: Offline Complete / Password Policy Gate honesty / go-live Completes remain MISSING.
 Stage 722 D1 Webauthn Passkey Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_722_FIDELITY.md` (`test_stage722_fidelity_d1.py`); exit ADR-1452 / `test_stage722_exit_h722x.py`. Honesty: Offline Complete / Webauthn Passkey Gate honesty / go-live Completes remain MISSING.
 Stage 721 D1 Totp Enrollment Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_721_FIDELITY.md` (`test_stage721_fidelity_d1.py`); exit ADR-1450 / `test_stage721_exit_h721x.py`. Honesty: Offline Complete / Totp Enrollment Gate honesty / go-live Completes remain MISSING.
 Stage 720 D1 Scim Provisioning Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_720_FIDELITY.md` (`test_stage720_fidelity_d1.py`); exit ADR-1448 / `test_stage720_exit_h720x.py`. Honesty: Offline Complete / Scim Provisioning Gate honesty / go-live Completes remain MISSING.

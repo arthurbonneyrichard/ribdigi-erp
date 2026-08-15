@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 723 track opened (ADR-1453: `test_stage723_open.py`, `docs/STAGE_723_PLAN.md`) — Password Policy Gate Honesty Pack Remaining-Gate Index; closed under ADR-1454
+- [x] Password Policy Gate Honesty Pack remaining-gate hub (Stage 723 I1: `test_stage723_index_i1.py`, `docs/PASSWORD_POLICY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Password Policy Gate Honesty Pack blocker matrix (Stage 723 B1: `test_stage723_blockers_b1.py`, `docs/PASSWORD_POLICY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 722 / Stage 721 / Stage 392 / CHANGE_IMPACT pointers (Stage 723 P1: `test_stage723_pointers_p1.py`, `docs/PASSWORD_POLICY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 723 fidelity sync (D1: `test_stage723_fidelity_d1.py`, `docs/STAGE_723_FIDELITY.md`)
+- [x] Stage 723 exit + freeze (H723x: `test_stage723_exit_h723x.py`, `docs/STAGE_723_EXIT_CRITERIA.md`, ADR-1454)
+
 Stage 722 track opened (ADR-1451: `test_stage722_open.py`, `docs/STAGE_722_PLAN.md`) — Webauthn Passkey Gate Honesty Pack Remaining-Gate Index; closed under ADR-1452
 - [x] Webauthn Passkey Gate Honesty Pack remaining-gate hub (Stage 722 I1: `test_stage722_index_i1.py`, `docs/WEBAUTHN_PASSKEY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Webauthn Passkey Gate Honesty Pack blocker matrix (Stage 722 B1: `test_stage722_blockers_b1.py`, `docs/WEBAUTHN_PASSKEY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
