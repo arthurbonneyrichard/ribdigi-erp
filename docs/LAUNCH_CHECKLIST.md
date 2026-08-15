@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 879 track opened (ADR-1765: `test_stage879_open.py`, `docs/STAGE_879_PLAN.md`) — Crypto Shred Gate Honesty Pack Remaining-Gate Index; closed under ADR-1766
+- [x] Crypto Shred Gate Honesty Pack remaining-gate hub (Stage 879 I1: `test_stage879_index_i1.py`, `docs/CRYPTO_SHRED_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Crypto Shred Gate Honesty Pack blocker matrix (Stage 879 B1: `test_stage879_blockers_b1.py`, `docs/CRYPTO_SHRED_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 878 / Stage 877 / Stage 392 / CHANGE_IMPACT pointers (Stage 879 P1: `test_stage879_pointers_p1.py`, `docs/CRYPTO_SHRED_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 879 fidelity sync (D1: `test_stage879_fidelity_d1.py`, `docs/STAGE_879_FIDELITY.md`)
+- [x] Stage 879 exit + freeze (H879x: `test_stage879_exit_h879x.py`, `docs/STAGE_879_EXIT_CRITERIA.md`, ADR-1766)
+
 Stage 878 track opened (ADR-1763: `test_stage878_open.py`, `docs/STAGE_878_PLAN.md`) — Secure Erasure Gate Honesty Pack Remaining-Gate Index; closed under ADR-1764
 - [x] Secure Erasure Gate Honesty Pack remaining-gate hub (Stage 878 I1: `test_stage878_index_i1.py`, `docs/SECURE_ERASURE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Secure Erasure Gate Honesty Pack blocker matrix (Stage 878 B1: `test_stage878_blockers_b1.py`, `docs/SECURE_ERASURE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

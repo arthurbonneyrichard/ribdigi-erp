@@ -31,3 +31,7 @@ Stage 879 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Secure Erasure Gate, Secure Erasure Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 879 opened under **ADR-1765** after CONTINUE/NEXT (Tenant MVP Crypto Shred Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1766**. Stage 878 feature scope remains frozen.
