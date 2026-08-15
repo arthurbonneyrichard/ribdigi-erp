@@ -834,28 +834,28 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** On-demand data protection.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] One-click backup initiation by Super Admin
-  - [ ] Backup includes database, uploaded files, configurations
-  - [ ] Download backup archive
-  - [ ] Backup encryption
+  - [x] One-click backup initiation by Super Admin (`POST /backup`; Backup UI; company_admin / super_admin)
+  - [x] Backup includes database, uploaded files, configurations (encrypted `.ribbak` with tenant config snapshot + business datasets incl. product image rows; binary media blob packaging / restore-to-new-tenant remain follow-ups — see `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`)
+  - [x] Download backup archive (`GET /backup/{id}/download` + `X-Checksum-SHA256`)
+  - [x] Backup encryption (Fernet envelope via `BACKUP_ENCRYPTION_KEY` or derived key)
 
 #### BR-16.2 Scheduled Backup
 - **Description:** Automated data protection.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Configurable schedule (daily, weekly)
-  - [ ] Retention policy (keep last N backups)
-  - [ ] Backup storage to S3-compatible storage
-  - [ ] Failure alerts to admin
+  - [x] Configurable schedule (daily, weekly) (`GET|PATCH /backup/settings`; Celery `run_due_backups` / `POST /backup/run-due`)
+  - [x] Retention policy (keep last N backups) (`retention_count` 1–365; prune after success)
+  - [ ] Backup storage to S3-compatible storage (MVP writes local `BACKUP_DIR`; ops offsite sync / in-app upload remain packaging follow-ups)
+  - [x] Failure alerts to admin (`BackupJob.status=failed` + in-app **Backup failed** system notification for schedule/create failures and non-writable backup dir)
 
 #### BR-16.3 Database Restore
 - **Description:** Disaster recovery capability.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Restore from backup archive
-  - [ ] Restore to new tenant (for testing)
-  - [ ] Restore validation (checksum verification)
-  - [ ] Point-in-time recovery (if WAL archiving enabled)
+  - [x] Restore from backup archive (`POST /backup/{id}/restore` dry-run + `confirm_text=RESTORE` apply; Backup UI)
+  - [ ] Restore to new tenant (for testing) (explicitly out of scope for logical MVP — cross-tenant restore blocked)
+  - [x] Restore validation (checksum verification) (`POST /backup/{id}/verify` + restore proof / checksum guards)
+  - [ ] Point-in-time recovery (if WAL archiving enabled) (ops WAL/PITR strategy — `docs/DR_WAL_PITR_RUNBOOK.md`; not part of logical `.ribbak` MVP)
 
 ---
 
@@ -958,10 +958,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Enhanced account security.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Optional TOTP-based 2FA (Google Authenticator, Authy)
-  - [ ] QR code setup for 2FA
-  - [ ] Backup recovery codes
-  - [ ] Enforce 2FA for Super Admin and Company Admin roles
+  - [x] Optional TOTP-based 2FA (Google Authenticator, Authy) (`/auth/2fa/*`; gated by `LOGIN_2FA_ENABLED`; Security UI)
+  - [x] QR code setup for 2FA (`POST /auth/2fa/setup` → `qr_png_base64` / otpauth URI; confirm enroll)
+  - [x] Backup recovery codes (`POST /auth/2fa/backup-codes`; hashed; usable as second factor)
+  - [x] Enforce 2FA for Super Admin and Company Admin roles (`TOTP_ENFORCED_ROLES` + `must_enroll_2fa` when `LOGIN_2FA_ENABLED`; passkeys also satisfy MFA)
 
 #### BR-19.3 Session Management
 - **Description:** Control active user sessions.
