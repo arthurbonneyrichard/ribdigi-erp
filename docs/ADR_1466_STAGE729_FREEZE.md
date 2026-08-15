@@ -31,3 +31,7 @@ Stage 730 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, X Frame Options Gate, X Frame Options Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 730 opened under **ADR-1467** after CONTINUE/NEXT (Tenant MVP Referrer Policy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1468**. Stage 729 feature scope remains frozen.
