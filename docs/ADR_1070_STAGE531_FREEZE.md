@@ -31,3 +31,7 @@ Stage 532 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Liability Indemnity, Liability Indemnity honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 532 opened under **ADR-1071** after CONTINUE/NEXT (Tenant MVP Service Credit Warranty Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1072**. Stage 531 feature scope remains frozen.

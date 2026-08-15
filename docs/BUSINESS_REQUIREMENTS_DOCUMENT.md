@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 532 D1 Service Credit Warranty Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_532_FIDELITY.md` (`test_stage532_fidelity_d1.py`); Offline Complete / Service Credit Warranty honesty / go-live still MISSING.
 Stage 531 D1 Liability Indemnity Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_531_FIDELITY.md` (`test_stage531_fidelity_d1.py`); Offline Complete / Liability Indemnity honesty / go-live still MISSING.
 Stage 530 D1 SBOM Disclosure Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_530_FIDELITY.md` (`test_stage530_fidelity_d1.py`); Offline Complete / SBOM Disclosure honesty / go-live still MISSING.
 Stage 529 D1 Encryption KMS Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_529_FIDELITY.md` (`test_stage529_fidelity_d1.py`); Offline Complete / Encryption KMS honesty / go-live still MISSING.

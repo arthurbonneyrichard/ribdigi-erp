@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/SERVICE_CREDIT_WARRANTY_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/service-credit-warranty-honesty-pack-remaining-gate.json` — Stage 532 I1
+- `docs/SERVICE_CREDIT_WARRANTY_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/service-credit-warranty-honesty-pack-rg-blockers.json` — Stage 532 B1
+- `docs/SERVICE_CREDIT_WARRANTY_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/service-credit-warranty-honesty-pack-rg-pointers.json` — Stage 532 P1
 - `docs/LIABILITY_INDEMNITY_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/liability-indemnity-honesty-pack-remaining-gate.json` — Stage 531 I1
 - `docs/LIABILITY_INDEMNITY_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/liability-indemnity-honesty-pack-rg-blockers.json` — Stage 531 B1
 - `docs/LIABILITY_INDEMNITY_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/liability-indemnity-honesty-pack-rg-pointers.json` — Stage 531 P1
