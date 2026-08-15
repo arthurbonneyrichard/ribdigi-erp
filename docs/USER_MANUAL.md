@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 717 Webhook Signature Gate Honesty Pack remaining-gate index fidelity (ADR-1441/1442). Operators track packaging status via `docs/WEBHOOK_SIGNATURE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 716 Graphql Schema Gate Honesty Pack remaining-gate index fidelity (ADR-1439/1440). Operators track packaging status via `docs/GRAPHQL_SCHEMA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 715 Openapi Contract Gate Honesty Pack remaining-gate index fidelity (ADR-1437/1438). Operators track packaging status via `docs/OPENAPI_CONTRACT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 714 Json Schema Gate Honesty Pack remaining-gate index fidelity (ADR-1435/1436). Operators track packaging status via `docs/JSON_SCHEMA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.

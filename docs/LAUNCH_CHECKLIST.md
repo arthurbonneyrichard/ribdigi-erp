@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 717 track opened (ADR-1441: `test_stage717_open.py`, `docs/STAGE_717_PLAN.md`) — Webhook Signature Gate Honesty Pack Remaining-Gate Index; closed under ADR-1442
+- [x] Webhook Signature Gate Honesty Pack remaining-gate hub (Stage 717 I1: `test_stage717_index_i1.py`, `docs/WEBHOOK_SIGNATURE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Webhook Signature Gate Honesty Pack blocker matrix (Stage 717 B1: `test_stage717_blockers_b1.py`, `docs/WEBHOOK_SIGNATURE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 716 / Stage 715 / Stage 392 / CHANGE_IMPACT pointers (Stage 717 P1: `test_stage717_pointers_p1.py`, `docs/WEBHOOK_SIGNATURE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 717 fidelity sync (D1: `test_stage717_fidelity_d1.py`, `docs/STAGE_717_FIDELITY.md`)
+- [x] Stage 717 exit + freeze (H717x: `test_stage717_exit_h717x.py`, `docs/STAGE_717_EXIT_CRITERIA.md`, ADR-1442)
+
 Stage 716 track opened (ADR-1439: `test_stage716_open.py`, `docs/STAGE_716_PLAN.md`) — Graphql Schema Gate Honesty Pack Remaining-Gate Index; closed under ADR-1440
 - [x] Graphql Schema Gate Honesty Pack remaining-gate hub (Stage 716 I1: `test_stage716_index_i1.py`, `docs/GRAPHQL_SCHEMA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Graphql Schema Gate Honesty Pack blocker matrix (Stage 716 B1: `test_stage716_blockers_b1.py`, `docs/GRAPHQL_SCHEMA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

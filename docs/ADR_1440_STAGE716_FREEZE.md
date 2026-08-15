@@ -31,3 +31,7 @@ Stage 717 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Graphql Schema Gate, Graphql Schema Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 717 opened under **ADR-1441** after CONTINUE/NEXT (Tenant MVP Webhook Signature Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1442**. Stage 716 feature scope remains frozen.

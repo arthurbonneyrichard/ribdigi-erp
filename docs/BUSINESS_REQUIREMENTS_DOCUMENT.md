@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 717 D1 Webhook Signature Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_717_FIDELITY.md` (`test_stage717_fidelity_d1.py`); Offline Complete / Webhook Signature Gate honesty / go-live still MISSING.
 Stage 716 D1 Graphql Schema Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_716_FIDELITY.md` (`test_stage716_fidelity_d1.py`); Offline Complete / Graphql Schema Gate honesty / go-live still MISSING.
 Stage 715 D1 Openapi Contract Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_715_FIDELITY.md` (`test_stage715_fidelity_d1.py`); Offline Complete / Openapi Contract Gate honesty / go-live still MISSING.
 Stage 714 D1 Json Schema Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_714_FIDELITY.md` (`test_stage714_fidelity_d1.py`); Offline Complete / Json Schema Gate honesty / go-live still MISSING.
