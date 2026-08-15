@@ -299,6 +299,27 @@ async def apply_stock_change(
             },
         )
     )
+    # Inbound stock webhook — skip GRN (document-level purchase.grn.received already fans out).
+    if movement_type == "stock_in" and (reference_type or "").lower() != "grn":
+        from app import webhooks as webhooks_svc
+
+        await webhooks_svc.emit_event(
+            db,
+            tenant_id=tenant_id,
+            event="stock.in",
+            data={
+                "product_id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "quantity": float(quantity_delta),
+                "stock_qty": after,
+                "warehouse_id": warehouse_id,
+                "variant_id": variant_id,
+                "batch_id": batch_id,
+                "reference_type": reference_type,
+                "reference_id": reference_id,
+            },
+        )
     if after <= float(product.reorder_level or 0):
         from app.notifications import notify_low_stock_if_needed
 
