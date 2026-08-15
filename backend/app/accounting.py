@@ -1418,12 +1418,16 @@ async def trial_balance(
     tenant_id: str,
     *,
     as_of: datetime | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
     """Trial balance (BR-10.6 / BR-14.5).
 
-    - No ``as_of``: live ``Account.balance`` (``mode=balances``).
+    - No ``as_of`` (and no location filter): live ``Account.balance`` (``mode=balances``).
     - With ``as_of``: reconstruct signed balances from posted journal lines
       through that timestamp (``mode=journals``), matching balance-sheet as-of.
+    - Optional ``store_id`` / ``branch_id``: reconstruct from journals attributable to
+      that location (forces ``mode=journals``; defaults ``as_of`` to end of today).
     """
     await ensure_default_accounts(db, tenant_id)
     accounts = (
@@ -1432,12 +1436,28 @@ async def trial_balance(
         )
     ).scalars().all()
 
-    if as_of is None:
+    store_ids = await _pnl_store_ids(
+        db, tenant_id, store_id=store_id, branch_id=branch_id
+    )
+    location_filter = store_ids is not None
+    effective_as_of = as_of
+    if location_filter and effective_as_of is None:
+        today = datetime.utcnow().date()
+        effective_as_of = datetime(
+            today.year, today.month, today.day, 23, 59, 59, 999999
+        )
+
+    if effective_as_of is None:
         bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
         as_of_day = datetime.utcnow().date()
         mode = "balances"
     else:
         bal_by_id = {a.id: 0.0 for a in accounts}
+        allowed_journal_ids: set[str] | None = None
+        if location_filter:
+            allowed_journal_ids = await _pnl_journal_ids_for_stores(
+                db, tenant_id, store_ids or [], branch_id=branch_id
+            )
         stmt = (
             select(m.JournalEntryLine, m.Account)
             .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
@@ -1446,17 +1466,22 @@ async def trial_balance(
                 m.JournalEntryLine.tenant_id == tenant_id,
                 m.JournalEntry.tenant_id == tenant_id,
                 m.JournalEntry.status == "posted",
-                m.JournalEntry.entry_date <= as_of,
+                m.JournalEntry.entry_date <= effective_as_of,
                 m.Account.tenant_id == tenant_id,
             )
         )
+        if allowed_journal_ids is not None:
+            if not allowed_journal_ids:
+                stmt = stmt.where(m.JournalEntry.id.in_([]))
+            else:
+                stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
         for line, account in (await db.execute(stmt)).all():
             bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
                 account.account_type,
                 float(line.debit or 0),
                 float(line.credit or 0),
             )
-        as_of_day = as_of.date()
+        as_of_day = effective_as_of.date()
         mode = "journals"
 
     rows = []
@@ -1486,6 +1511,8 @@ async def trial_balance(
     return {
         "as_of": as_of_day.isoformat(),
         "mode": mode,
+        "store_id": store_id,
+        "branch_id": branch_id,
         "rows": rows,
         "total_debit": round(debit_total, 2),
         "total_credit": round(credit_total, 2),

@@ -2957,6 +2957,8 @@ def _pack_balance_sheet(
     liabilities: list[dict],
     equity: list[dict],
     compare: dict | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
     total_assets = round(sum(float(r["balance"]) for r in assets), 2)
     total_liabilities = round(sum(float(r["balance"]) for r in liabilities), 2)
@@ -2965,6 +2967,8 @@ def _pack_balance_sheet(
     payload = {
         "as_of": as_of_day.isoformat() if hasattr(as_of_day, "isoformat") else str(as_of_day),
         "mode": mode,
+        "store_id": store_id,
+        "branch_id": branch_id,
         "assets": assets,
         "liabilities": liabilities,
         "equity": equity,
@@ -3054,9 +3058,20 @@ async def _balance_sheet_at(
     tenant_id: str,
     *,
     as_of: datetime | None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
-    """Build BS at as_of from posted journals, or live balances when as_of is None."""
-    from app.accounting import _signed_balance_delta, ensure_default_accounts
+    """Build BS at as_of from posted journals, or live balances when as_of is None.
+
+    Optional ``store_id`` / ``branch_id`` scopes to journals attributable to that
+    location (same helper as P&L / cash-flow) and forces journal reconstruction.
+    """
+    from app.accounting import (
+        _pnl_journal_ids_for_stores,
+        _pnl_store_ids,
+        _signed_balance_delta,
+        ensure_default_accounts,
+    )
 
     await ensure_default_accounts(db, tenant_id)
     accounts = (
@@ -3065,12 +3080,28 @@ async def _balance_sheet_at(
         )
     ).scalars().all()
 
-    if as_of is None:
+    store_ids = await _pnl_store_ids(
+        db, tenant_id, store_id=store_id, branch_id=branch_id
+    )
+    location_filter = store_ids is not None
+    effective_as_of = as_of
+    if location_filter and effective_as_of is None:
+        today = datetime.utcnow().date()
+        effective_as_of = datetime(
+            today.year, today.month, today.day, 23, 59, 59, 999999
+        )
+
+    if effective_as_of is None:
         bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
         as_of_day = datetime.utcnow().date()
         mode = "balances"
     else:
         bal_by_id = {a.id: 0.0 for a in accounts}
+        allowed_journal_ids: set[str] | None = None
+        if location_filter:
+            allowed_journal_ids = await _pnl_journal_ids_for_stores(
+                db, tenant_id, store_ids or [], branch_id=branch_id
+            )
         stmt = (
             select(m.JournalEntryLine, m.Account)
             .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
@@ -3079,17 +3110,22 @@ async def _balance_sheet_at(
                 m.JournalEntryLine.tenant_id == tenant_id,
                 m.JournalEntry.tenant_id == tenant_id,
                 m.JournalEntry.status == "posted",
-                m.JournalEntry.entry_date <= as_of,
+                m.JournalEntry.entry_date <= effective_as_of,
                 m.Account.tenant_id == tenant_id,
             )
         )
+        if allowed_journal_ids is not None:
+            if not allowed_journal_ids:
+                stmt = stmt.where(m.JournalEntry.id.in_([]))
+            else:
+                stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
         for line, account in (await db.execute(stmt)).all():
             bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
                 account.account_type,
                 float(line.debit or 0),
                 float(line.credit or 0),
             )
-        as_of_day = as_of.date()
+        as_of_day = effective_as_of.date()
         mode = "journals"
 
     def rows_for(account_type: str) -> list[dict]:
@@ -3127,6 +3163,8 @@ async def _balance_sheet_at(
         liabilities=liabilities,
         equity=equity,
         compare=None,
+        store_id=store_id,
+        branch_id=branch_id,
     )
 
 
@@ -3136,11 +3174,14 @@ async def balance_sheet(
     *,
     as_of: datetime | None = None,
     compare: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
     """Point-in-time balance sheet (BR-14.5).
 
-    - No ``as_of`` / compare: live ``Account.balance`` (back-compat, ``mode=balances``).
+    - No ``as_of`` / compare / location: live ``Account.balance`` (back-compat, ``mode=balances``).
     - With ``as_of``: reconstruct from posted journal lines through that timestamp.
+    - Optional ``store_id`` / ``branch_id``: attributable journals only (forces journals mode).
     - ``compare=prior_period|prior_year``: side-by-side prior balances and deltas.
       When compare is set without ``as_of``, uses end of today.
     """
@@ -3160,7 +3201,13 @@ async def balance_sheet(
             today.year, today.month, today.day, 23, 59, 59, 999999
         )
 
-    current = await _balance_sheet_at(db, tenant_id, as_of=effective_as_of)
+    current = await _balance_sheet_at(
+        db,
+        tenant_id,
+        as_of=effective_as_of,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
     if not compare_mode:
         return current
 
@@ -3172,5 +3219,11 @@ async def balance_sheet(
         prior_dt = _prior_year_end(day)
     else:
         prior_dt = _prior_period_end(day)
-    prior = await _balance_sheet_at(db, tenant_id, as_of=prior_dt)
+    prior = await _balance_sheet_at(
+        db,
+        tenant_id,
+        as_of=prior_dt,
+        store_id=store_id,
+        branch_id=branch_id,
+    )
     return _merge_bs_compare(current, prior, compare_mode)
