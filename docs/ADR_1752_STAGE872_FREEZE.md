@@ -31,3 +31,7 @@ Stage 873 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Parental Consent Gate, Parental Consent Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 873 opened under **ADR-1753** after CONTINUE/NEXT (Tenant MVP Age Assurance Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1754**. Stage 872 feature scope remains frozen.

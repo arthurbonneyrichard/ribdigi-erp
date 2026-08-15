@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 873 D1 Age Assurance Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_873_FIDELITY.md` (`test_stage873_fidelity_d1.py`); exit ADR-1754 / `test_stage873_exit_h873x.py`. Honesty: Offline Complete / Age Assurance Gate honesty / go-live Completes remain MISSING.
 Stage 872 D1 Parental Consent Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_872_FIDELITY.md` (`test_stage872_fidelity_d1.py`); exit ADR-1752 / `test_stage872_exit_h872x.py`. Honesty: Offline Complete / Parental Consent Gate honesty / go-live Completes remain MISSING.
 Stage 871 D1 Children Privacy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_871_FIDELITY.md` (`test_stage871_fidelity_d1.py`); exit ADR-1750 / `test_stage871_exit_h871x.py`. Honesty: Offline Complete / Children Privacy Gate honesty / go-live Completes remain MISSING.
 Stage 870 D1 LIA Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_870_FIDELITY.md` (`test_stage870_fidelity_d1.py`); exit ADR-1748 / `test_stage870_exit_h870x.py`. Honesty: Offline Complete / LIA Gate honesty / go-live Completes remain MISSING.
