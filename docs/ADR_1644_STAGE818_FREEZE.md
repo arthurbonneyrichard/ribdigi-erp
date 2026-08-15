@@ -31,3 +31,7 @@ Stage 819 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, TLS RPT Gate, TLS RPT Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 819 opened under **ADR-1645** after CONTINUE/NEXT (Tenant MVP SMTP TLS Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1646**. Stage 818 feature scope remains frozen.
