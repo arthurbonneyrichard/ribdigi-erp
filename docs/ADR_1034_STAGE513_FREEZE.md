@@ -31,3 +31,8 @@ Stage 514 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Support Readiness, Support Readiness honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 514 opened under **ADR-1035** after CONTINUE/NEXT (Tenant MVP Hosted FAQ SaaS Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1036**. Stage 513 feature scope remains frozen.
+
