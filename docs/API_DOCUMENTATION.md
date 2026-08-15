@@ -1078,7 +1078,8 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **Query Params:** `?template=thermal&format=pdf`
 
 ### 8.5 Cash Drawer
-**Endpoint:** `GET /pos/sessions/{session_id}/drawer`
+**Get:** `GET /pos/sessions/{session_id}/drawer`  
+**Open (manual):** `POST /pos/sessions/{session_id}/drawer/open` — body `{ "reason" }` required (min 3 chars; rejects placeholders like `manual` / `n/a`); POS **Drawer reason** input (no `window.prompt`). Auto-open on cash sale uses internal `pos_sale:{id}` reason.
 
 ---
 
