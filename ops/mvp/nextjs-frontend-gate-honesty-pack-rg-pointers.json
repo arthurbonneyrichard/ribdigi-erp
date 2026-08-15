@@ -1,0 +1,77 @@
+{
+  "id": "nextjs-frontend-gate-honesty-pack-rg-pointers",
+  "stage": 629,
+  "pack": "P1",
+  "doc": "docs/NEXTJS_FRONTEND_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/NEXTJS_FRONTEND_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "rabbitmq_gate_honesty_pack_remaining_gate": "docs/RABBITMQ_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "postgresql_gate_honesty_pack_remaining_gate": "docs/POSTGRESQL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "nextjs_frontend_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "nextjs_frontend_gate_honesty_complete_claimed": false,
+  "nextjs_frontend_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_nextjs_frontend_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "rabbitmq_gate_honesty_pack_remaining_gate_stage628": "docs/RABBITMQ_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "postgresql_gate_honesty_pack_remaining_gate_stage627": "docs/POSTGRESQL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "nextjs_frontend_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / nextjs_frontend_gate / nextjs_frontend_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "nfghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Nextjs Frontend Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "nfghp-stage628",
+      "title": "Point to Stage 628 RABBITMQ GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "nfghp-stage627",
+      "title": "Point to Stage 627 POSTGRESQL GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "nfghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "nfghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "nfghp-prior-pack",
+      "title": "Point to Nextjs Frontend Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "nfghp-checklist-remaining",
+      "title": "Offline Complete / Nextjs Frontend Gate / Nextjs Frontend Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 629 P1 Nextjs Frontend Gate Honesty Pack RG pointers packaging only."
+}
