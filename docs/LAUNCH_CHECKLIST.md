@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 435 track opened (ADR-877: `test_stage435_open.py`, `docs/STAGE_435_PLAN.md`) — Customer Assurance Honesty Pack Remaining-Gate Index; closed under ADR-878
+- [x] Customer Assurance honesty pack remaining-gate hub (Stage 435 I1: `test_stage435_index_i1.py`, `docs/CUSTOMER_ASSURANCE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Customer Assurance honesty pack blocker matrix (Stage 435 B1: `test_stage435_blockers_b1.py`, `docs/CUSTOMER_ASSURANCE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 434 / Stage 433 / Stage 392 / CHANGE_IMPACT pointers (Stage 435 P1: `test_stage435_pointers_p1.py`, `docs/CUSTOMER_ASSURANCE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 435 fidelity sync (D1: `test_stage435_fidelity_d1.py`, `docs/STAGE_435_FIDELITY.md`)
+- [x] Stage 435 exit + freeze (H435x: `test_stage435_exit_h435x.py`, `docs/STAGE_435_EXIT_CRITERIA.md`, ADR-878)
 - [x] Stage 434 track opened (ADR-875: `test_stage434_open.py`, `docs/STAGE_434_PLAN.md`) — Assurance Evidence Honesty Pack Remaining-Gate Index; closed under ADR-876
 - [x] Assurance Evidence honesty pack remaining-gate hub (Stage 434 I1: `test_stage434_index_i1.py`, `docs/ASSURANCE_EVIDENCE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Assurance Evidence honesty pack blocker matrix (Stage 434 B1: `test_stage434_blockers_b1.py`, `docs/ASSURANCE_EVIDENCE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

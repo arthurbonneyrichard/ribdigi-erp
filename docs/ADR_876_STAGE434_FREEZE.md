@@ -31,3 +31,10 @@ Stage 435 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Assurance Evidence, Assurance Evidence honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 435 opened under **ADR-877** after CONTINUE/NEXT (Tenant MVP Customer Assurance Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-878**. Stage 434 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 434 runner-up outline was approved and opened (ADR-877); freeze ADR-878. Do not reopen Stage 434 scope.
+
