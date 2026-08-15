@@ -31,3 +31,7 @@ Stage 716 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Openapi Contract Gate, Openapi Contract Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 716 opened under **ADR-1439** after CONTINUE/NEXT (Tenant MVP Graphql Schema Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1440**. Stage 715 feature scope remains frozen.

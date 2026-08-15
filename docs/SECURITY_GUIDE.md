@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 716 D1 Graphql Schema Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_716_FIDELITY.md` (`test_stage716_fidelity_d1.py`); exit ADR-1440 / `test_stage716_exit_h716x.py`. Honesty: Offline Complete / Graphql Schema Gate honesty / go-live Completes remain MISSING.
 Stage 715 D1 Openapi Contract Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_715_FIDELITY.md` (`test_stage715_fidelity_d1.py`); exit ADR-1438 / `test_stage715_exit_h715x.py`. Honesty: Offline Complete / Openapi Contract Gate honesty / go-live Completes remain MISSING.
 Stage 714 D1 Json Schema Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_714_FIDELITY.md` (`test_stage714_fidelity_d1.py`); exit ADR-1436 / `test_stage714_exit_h714x.py`. Honesty: Offline Complete / Json Schema Gate honesty / go-live Completes remain MISSING.
 Stage 713 D1 Check Constraint Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_713_FIDELITY.md` (`test_stage713_fidelity_d1.py`); exit ADR-1434 / `test_stage713_exit_h713x.py`. Honesty: Offline Complete / Check Constraint Gate honesty / go-live Completes remain MISSING.

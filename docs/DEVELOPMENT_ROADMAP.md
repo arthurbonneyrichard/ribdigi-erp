@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 716 D1 (2026-08-14):** Graphql Schema Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_716_FIDELITY.md` (`test_stage716_fidelity_d1.py`). Open ADR: `docs/ADR_1439_STAGE716_OPEN.md`; plan `docs/STAGE_716_PLAN.md`.
+
+**Stage 716 exit (2026-08-14):** I1, B1, P1, D1, H716x met — `docs/STAGE_716_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1440_STAGE716_FREEZE.md`. Fidelity: `docs/STAGE_716_FIDELITY.md`.
+
 **Stage 715 D1 (2026-08-14):** Openapi Contract Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_715_FIDELITY.md` (`test_stage715_fidelity_d1.py`). Open ADR: `docs/ADR_1437_STAGE715_OPEN.md`; plan `docs/STAGE_715_PLAN.md`.
 
 **Stage 715 exit (2026-08-14):** I1, B1, P1, D1, H715x met — `docs/STAGE_715_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1438_STAGE715_FREEZE.md`. Fidelity: `docs/STAGE_715_FIDELITY.md`.
