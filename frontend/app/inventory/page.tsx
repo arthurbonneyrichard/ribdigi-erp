@@ -751,6 +751,20 @@ export default function Page() {
     }
   }
 
+  async function cancelStockCount(id: string, countNumber?: string) {
+    setError('');
+    try {
+      const r = await api(`/inventory/stock-counts/${id}/cancel`, { method: 'POST' });
+      setMessage(`Count ${r.data?.count_number || countNumber || id} cancelled`);
+      if (activeCount?.id === id) {
+        setActiveCount(r.data);
+      }
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function createProduct() {
     setError('');
     try {
@@ -2817,10 +2831,15 @@ export default function Page() {
                   <td>
                     {c.counted_item_count}/{c.item_count}
                   </td>
-                  <td>
+                  <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     <button type="button" onClick={() => openCount(c.id)}>
                       Open
                     </button>
+                    {(c.can_cancel || c.status === 'draft') && (
+                      <button type="button" onClick={() => cancelStockCount(c.id, c.count_number)}>
+                        Cancel
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -2869,12 +2888,18 @@ export default function Page() {
                 </tbody>
               </table>
               {activeCount.status === 'draft' && (
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button type="button" onClick={saveCountLines}>
                     Save counts
                   </button>
                   <button type="button" onClick={completeActiveCount}>
                     Complete &amp; post variances
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cancelStockCount(activeCount.id, activeCount.count_number)}
+                  >
+                    Cancel count
                   </button>
                 </div>
               )}
