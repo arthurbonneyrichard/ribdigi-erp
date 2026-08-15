@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 686 track opened (ADR-1379: `test_stage686_open.py`, `docs/STAGE_686_PLAN.md`) — Slo Error Budget Gate Honesty Pack Remaining-Gate Index; closed under ADR-1380
+- [x] Slo Error Budget Gate Honesty Pack remaining-gate hub (Stage 686 I1: `test_stage686_index_i1.py`, `docs/SLO_ERROR_BUDGET_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Slo Error Budget Gate Honesty Pack blocker matrix (Stage 686 B1: `test_stage686_blockers_b1.py`, `docs/SLO_ERROR_BUDGET_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 685 / Stage 684 / Stage 392 / CHANGE_IMPACT pointers (Stage 686 P1: `test_stage686_pointers_p1.py`, `docs/SLO_ERROR_BUDGET_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 686 fidelity sync (D1: `test_stage686_fidelity_d1.py`, `docs/STAGE_686_FIDELITY.md`)
+- [x] Stage 686 exit + freeze (H686x: `test_stage686_exit_h686x.py`, `docs/STAGE_686_EXIT_CRITERIA.md`, ADR-1380)
+
 Stage 685 track opened (ADR-1377: `test_stage685_open.py`, `docs/STAGE_685_PLAN.md`) — Status Page Gate Honesty Pack Remaining-Gate Index; closed under ADR-1378
 - [x] Status Page Gate Honesty Pack remaining-gate hub (Stage 685 I1: `test_stage685_index_i1.py`, `docs/STATUS_PAGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Status Page Gate Honesty Pack blocker matrix (Stage 685 B1: `test_stage685_blockers_b1.py`, `docs/STATUS_PAGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

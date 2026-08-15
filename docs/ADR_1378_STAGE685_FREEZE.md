@@ -31,3 +31,7 @@ Stage 686 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Status Page Gate, Status Page Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 686 opened under **ADR-1379** after CONTINUE/NEXT (Tenant MVP Slo Error Budget Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1380**. Stage 685 feature scope remains frozen.

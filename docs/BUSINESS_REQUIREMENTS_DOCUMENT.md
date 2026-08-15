@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 686 D1 Slo Error Budget Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_686_FIDELITY.md` (`test_stage686_fidelity_d1.py`); Offline Complete / Slo Error Budget Gate honesty / go-live still MISSING.
 Stage 685 D1 Status Page Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_685_FIDELITY.md` (`test_stage685_fidelity_d1.py`); Offline Complete / Status Page Gate honesty / go-live still MISSING.
 Stage 684 D1 Postmortem Template Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_684_FIDELITY.md` (`test_stage684_fidelity_d1.py`); Offline Complete / Postmortem Template Gate honesty / go-live still MISSING.
 Stage 683 D1 Incident Timeline Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_683_FIDELITY.md` (`test_stage683_fidelity_d1.py`); Offline Complete / Incident Timeline Gate honesty / go-live still MISSING.
