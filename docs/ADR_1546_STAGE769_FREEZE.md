@@ -31,3 +31,7 @@ Stage 770 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Delegation Token Gate, Delegation Token Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 770 opened under **ADR-1547** after CONTINUE/NEXT (Tenant MVP Step Up Auth Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1548**. Stage 769 feature scope remains frozen.
