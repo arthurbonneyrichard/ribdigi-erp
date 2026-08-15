@@ -3978,10 +3978,14 @@ async def product_warehouse_stock(
 @api.get("/products/{product_id}/variants")
 async def list_product_variants(
     product_id: str,
+    is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await catalog_svc.list_variants(db, claims["tenant_id"], product_id)
+    """List product variants. Optional is_active filters soft-deactivated rows (Inventory manage UI)."""
+    rows = await catalog_svc.list_variants(
+        db, claims["tenant_id"], product_id, is_active=is_active
+    )
     return env([catalog_svc.serialize_variant(v) for v in rows])
 
 
