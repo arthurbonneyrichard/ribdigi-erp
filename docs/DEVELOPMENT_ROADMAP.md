@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 587 D1 (2026-08-14):** MVP Product Update Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_587_FIDELITY.md` (`test_stage587_fidelity_d1.py`). Open ADR: `docs/ADR_1181_STAGE587_OPEN.md`; plan `docs/STAGE_587_PLAN.md`.
+
+**Stage 587 exit (2026-08-14):** I1, B1, P1, D1, H587x met — `docs/STAGE_587_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1182_STAGE587_FREEZE.md`. Fidelity: `docs/STAGE_587_FIDELITY.md`.
+
 **Stage 586 D1 (2026-08-14):** MVP Declaration Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_586_FIDELITY.md` (`test_stage586_fidelity_d1.py`). Open ADR: `docs/ADR_1179_STAGE586_OPEN.md`; plan `docs/STAGE_586_PLAN.md`.
 
 **Stage 586 exit (2026-08-14):** I1, B1, P1, D1, H586x met — `docs/STAGE_586_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1180_STAGE586_FREEZE.md`. Fidelity: `docs/STAGE_586_FIDELITY.md`.
