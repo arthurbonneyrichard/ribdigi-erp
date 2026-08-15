@@ -31,3 +31,7 @@ Stage 780 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Hsm Key Gate, Hsm Key Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 780 opened under **ADR-1567** after CONTINUE/NEXT (Tenant MVP Tee Isolate Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1568**. Stage 779 feature scope remains frozen.
