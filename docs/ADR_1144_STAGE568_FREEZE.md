@@ -31,3 +31,7 @@ Stage 569 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Menu Permissions, Menu Permissions honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 569 opened under **ADR-1145** after CONTINUE/NEXT (Tenant MVP Permission Alias Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1146**. Stage 568 feature scope remains frozen.

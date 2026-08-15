@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 569 D1 (2026-08-14):** Permission Alias Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_569_FIDELITY.md` (`test_stage569_fidelity_d1.py`). Open ADR: `docs/ADR_1145_STAGE569_OPEN.md`; plan `docs/STAGE_569_PLAN.md`.
+
+**Stage 569 exit (2026-08-14):** I1, B1, P1, D1, H569x met — `docs/STAGE_569_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1146_STAGE569_FREEZE.md`. Fidelity: `docs/STAGE_569_FIDELITY.md`.
+
 **Stage 568 D1 (2026-08-14):** Menu Permissions Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_568_FIDELITY.md` (`test_stage568_fidelity_d1.py`). Open ADR: `docs/ADR_1143_STAGE568_OPEN.md`; plan `docs/STAGE_568_PLAN.md`.
 
 **Stage 568 exit (2026-08-14):** I1, B1, P1, D1, H568x met — `docs/STAGE_568_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1144_STAGE568_FREEZE.md`. Fidelity: `docs/STAGE_568_FIDELITY.md`.
