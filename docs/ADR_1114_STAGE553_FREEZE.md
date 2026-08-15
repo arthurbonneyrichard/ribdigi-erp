@@ -31,3 +31,7 @@ Stage 554 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, E2E Verify Financials, E2E Verify Financials honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 554 opened under **ADR-1115** after CONTINUE/NEXT (Tenant MVP First Tenant Onboarding Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1116**. Stage 553 feature scope remains frozen.

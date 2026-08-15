@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 554 D1 First Tenant Onboarding Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_554_FIDELITY.md` (`test_stage554_fidelity_d1.py`); Offline Complete / First Tenant Onboarding honesty / go-live still MISSING.
 Stage 553 D1 E2E Verify Financials Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_553_FIDELITY.md` (`test_stage553_fidelity_d1.py`); Offline Complete / E2E Verify Financials honesty / go-live still MISSING.
 Stage 552 D1 E2E Users RBAC Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_552_FIDELITY.md` (`test_stage552_fidelity_d1.py`); Offline Complete / E2E Users RBAC honesty / go-live still MISSING.
 Stage 551 D1 E2E Sale Payment Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_551_FIDELITY.md` (`test_stage551_fidelity_d1.py`); Offline Complete / E2E Sale Payment honesty / go-live still MISSING.
