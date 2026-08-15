@@ -31,3 +31,10 @@ Stage 455 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Post-Launch Continuity, Post-Launch Continuity honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 455 opened under **ADR-917** after CONTINUE/NEXT (Tenant MVP RIBDIGI House Console Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-918**. Stage 454 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 454 runner-up outline was approved and opened (ADR-917); freeze ADR-918. Do not reopen Stage 454 scope.
+
