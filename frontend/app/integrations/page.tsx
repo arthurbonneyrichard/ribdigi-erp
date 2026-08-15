@@ -9,6 +9,7 @@ const WEBHOOK_EVENTS = [
   'sale.paid',
   'stock.low',
   'stock.in',
+  'stock.out',
   'purchase.order.created',
   'purchase.grn.received',
   'customer.created',
@@ -394,9 +395,9 @@ export default function Page() {
           <code>sale.paid</code> (AR payment + settled POS), <code>customer.created</code>,{' '}
           <code>purchase.order.created</code>, <code>purchase.grn.received</code>,{' '}
           <code>expense.approved</code>, <code>stock.low</code>, <code>stock.in</code> (manual /
-          non-GRN inbound; GRN uses <code>purchase.grn.received</code> only),{' '}
-          <code>tenant.suspended</code>, <code>user.login</code> (interactive auth only; not
-          refresh).
+          non-GRN inbound; GRN uses <code>purchase.grn.received</code> only), <code>stock.out</code>{' '}
+          (manual / non-POS-invoice outbound), <code>tenant.suspended</code>, <code>user.login</code>{' '}
+          (interactive auth only; not refresh).
         </p>
         <details style={{ marginBottom: 12 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Verify signature (subscriber)</summary>

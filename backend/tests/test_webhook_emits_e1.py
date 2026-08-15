@@ -508,3 +508,70 @@ async def test_user_login_webhook_password_not_refresh(client, db_session, monke
     )
     assert refreshed.status_code == 200, refreshed.text
     assert not any(e["event"] == "user.login" for e in events)
+
+
+@pytest.mark.asyncio
+async def test_stock_out_webhook_skips_pos(client, db_session, monkeypatch):
+    """Manual stock-out emits stock.out; POS checkout does not (sale.created covers it)."""
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    events: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        events.append(__import__("json").loads(request.content.decode()).get("event"))
+        return httpx.Response(200, json={"ok": True})
+
+    original = webhooks_svc._deliver_http
+
+    async def _mock(*, url, body, signature_header, timeout=10.0, transport=None):
+        return await original(
+            url=url,
+            body=body,
+            signature_header=signature_header,
+            timeout=timeout,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(webhooks_svc, "_deliver_http", _mock)
+
+    await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={
+            "url": "https://hooks.example.com/stock-out",
+            "events": ["stock.out", "sale.created"],
+        },
+    )
+
+    product = seed["p1"]
+    product.stock_qty = float(product.stock_qty or 0) + 20
+    await db_session.commit()
+
+    out = await ac.post(
+        "/api/v1/inventory/stock-out",
+        headers=headers,
+        json={
+            "product_id": product.id,
+            "quantity": 2,
+            "reference_type": "damage",
+            "notes": "webhook stock.out proof",
+        },
+    )
+    assert out.status_code == 200, out.text
+    assert "stock.out" in events
+    assert events.count("stock.out") == 1
+
+    events.clear()
+    session_id = await _open_pos_session(ac, headers)
+    sale = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "payment_method": "cash",
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 8}],
+        },
+    )
+    assert sale.status_code == 200, sale.text
+    assert "sale.created" in events
+    assert "stock.out" not in events

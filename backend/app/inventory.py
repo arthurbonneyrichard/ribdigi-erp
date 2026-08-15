@@ -320,6 +320,30 @@ async def apply_stock_change(
                 "reference_id": reference_id,
             },
         )
+    # Outbound stock webhook — skip POS/invoice document paths (sale.created already fans out).
+    if movement_type == "stock_out" and (reference_type or "").lower() not in {
+        "pos_sale",
+        "sales_invoice",
+    }:
+        from app import webhooks as webhooks_svc
+
+        await webhooks_svc.emit_event(
+            db,
+            tenant_id=tenant_id,
+            event="stock.out",
+            data={
+                "product_id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "quantity": abs(float(quantity_delta)),
+                "stock_qty": after,
+                "warehouse_id": warehouse_id,
+                "variant_id": variant_id,
+                "batch_id": batch_id,
+                "reference_type": reference_type,
+                "reference_id": reference_id,
+            },
+        )
     if after <= float(product.reorder_level or 0):
         from app.notifications import notify_low_stock_if_needed
 
