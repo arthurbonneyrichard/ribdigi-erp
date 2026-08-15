@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_436_EXIT_CRITERIA.md` / `docs/ADR_880_STAGE436_FREEZE.md` (`backend/tests/test_stage436_exit_h436x.py`) — Stage 436 H436x
+- `docs/STAGE_436_FIDELITY.md` (`backend/tests/test_stage436_fidelity_d1.py`) — Stage 436 D1
+- `docs/STAGE_436_PLAN.md` (`backend/tests/test_stage436_open.py`) — Stage 436 open (ADR-879)
+- `docs/COMMERCIAL_ASSURANCE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-assurance-honesty-pack-remaining-gate.json` — Stage 436 I1
+- `docs/COMMERCIAL_ASSURANCE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-assurance-honesty-pack-rg-blockers.json` — Stage 436 B1
+- `docs/COMMERCIAL_ASSURANCE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-assurance-honesty-pack-rg-pointers.json` — Stage 436 P1
 - `docs/STAGE_435_EXIT_CRITERIA.md` / `docs/ADR_878_STAGE435_FREEZE.md` (`backend/tests/test_stage435_exit_h435x.py`) — Stage 435 H435x
 - `docs/STAGE_435_FIDELITY.md` (`backend/tests/test_stage435_fidelity_d1.py`) — Stage 435 D1
 - `docs/STAGE_435_PLAN.md` (`backend/tests/test_stage435_open.py`) — Stage 435 open (ADR-877)
@@ -5893,6 +5899,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 436 exit
+
+H436x met — `docs/STAGE_436_EXIT_CRITERIA.md`, ADR-880. Stages 1–436 frozen for Stage 436 feature scope.
+
+## Stage 436 D1 — Tenant MVP Commercial Assurance Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Commercial Assurance honesty / go-live Completes remain MISSING. See `docs/STAGE_436_FIDELITY.md`.
+
+## Stage 436 open
+
+Opened under ADR-879; plan `docs/STAGE_436_PLAN.md`.
 
 ## Stage 435 exit
 
