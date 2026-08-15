@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 604 track opened (ADR-1215: `test_stage604_open.py`, `docs/STAGE_604_PLAN.md`) — Production Readiness Gate Honesty Pack Remaining-Gate Index; closed under ADR-1216
+- [x] Production Readiness Gate Honesty Pack remaining-gate hub (Stage 604 I1: `test_stage604_index_i1.py`, `docs/PRODUCTION_READINESS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Production Readiness Gate Honesty Pack blocker matrix (Stage 604 B1: `test_stage604_blockers_b1.py`, `docs/PRODUCTION_READINESS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 603 / Stage 602 / Stage 392 / CHANGE_IMPACT pointers (Stage 604 P1: `test_stage604_pointers_p1.py`, `docs/PRODUCTION_READINESS_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 604 fidelity sync (D1: `test_stage604_fidelity_d1.py`, `docs/STAGE_604_FIDELITY.md`)
+- [x] Stage 604 exit + freeze (H604x: `test_stage604_exit_h604x.py`, `docs/STAGE_604_EXIT_CRITERIA.md`, ADR-1216)
+
 Stage 603 track opened (ADR-1213: `test_stage603_open.py`, `docs/STAGE_603_PLAN.md`) — Launch Checklist Gate Honesty Pack Remaining-Gate Index; closed under ADR-1214
 - [x] Launch Checklist Gate Honesty Pack remaining-gate hub (Stage 603 I1: `test_stage603_index_i1.py`, `docs/LAUNCH_CHECKLIST_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Launch Checklist Gate Honesty Pack blocker matrix (Stage 603 B1: `test_stage603_blockers_b1.py`, `docs/LAUNCH_CHECKLIST_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
