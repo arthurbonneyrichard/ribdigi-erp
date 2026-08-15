@@ -31,3 +31,7 @@ Stage 663 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Ddos Mitigation Gate, Ddos Mitigation Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 663 opened under **ADR-1333** after CONTINUE/NEXT (Tenant MVP Bot Defense Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1334**. Stage 662 feature scope remains frozen.

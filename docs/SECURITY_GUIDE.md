@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 663 D1 Bot Defense Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_663_FIDELITY.md` (`test_stage663_fidelity_d1.py`); exit ADR-1334 / `test_stage663_exit_h663x.py`. Honesty: Offline Complete / Bot Defense Gate honesty / go-live Completes remain MISSING.
 Stage 662 D1 Ddos Mitigation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_662_FIDELITY.md` (`test_stage662_fidelity_d1.py`); exit ADR-1332 / `test_stage662_exit_h662x.py`. Honesty: Offline Complete / Ddos Mitigation Gate honesty / go-live Completes remain MISSING.
 Stage 661 D1 Waf Shield Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_661_FIDELITY.md` (`test_stage661_fidelity_d1.py`); exit ADR-1330 / `test_stage661_exit_h661x.py`. Honesty: Offline Complete / Waf Shield Gate honesty / go-live Completes remain MISSING.
 Stage 660 D1 Cdn Edge Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_660_FIDELITY.md` (`test_stage660_fidelity_d1.py`); exit ADR-1328 / `test_stage660_exit_h660x.py`. Honesty: Offline Complete / Cdn Edge Gate honesty / go-live Completes remain MISSING.
