@@ -31,3 +31,7 @@ Stage 748 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Partitioned Cookie Gate, Partitioned Cookie Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 748 opened under **ADR-1503** after CONTINUE/NEXT (Tenant MVP Cookie Prefix Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1504**. Stage 747 feature scope remains frozen.
