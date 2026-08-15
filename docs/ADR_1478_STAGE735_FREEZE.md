@@ -31,3 +31,7 @@ Stage 736 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cross Origin Resource Gate, Cross Origin Resource Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 736 opened under **ADR-1479** after CONTINUE/NEXT (Tenant MVP Subresource Integrity Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1480**. Stage 735 feature scope remains frozen.

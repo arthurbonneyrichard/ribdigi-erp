@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 736 track opened (ADR-1479: `test_stage736_open.py`, `docs/STAGE_736_PLAN.md`) — Subresource Integrity Gate Honesty Pack Remaining-Gate Index; closed under ADR-1480
+- [x] Subresource Integrity Gate Honesty Pack remaining-gate hub (Stage 736 I1: `test_stage736_index_i1.py`, `docs/SUBRESOURCE_INTEGRITY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Subresource Integrity Gate Honesty Pack blocker matrix (Stage 736 B1: `test_stage736_blockers_b1.py`, `docs/SUBRESOURCE_INTEGRITY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 735 / Stage 734 / Stage 392 / CHANGE_IMPACT pointers (Stage 736 P1: `test_stage736_pointers_p1.py`, `docs/SUBRESOURCE_INTEGRITY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 736 fidelity sync (D1: `test_stage736_fidelity_d1.py`, `docs/STAGE_736_FIDELITY.md`)
+- [x] Stage 736 exit + freeze (H736x: `test_stage736_exit_h736x.py`, `docs/STAGE_736_EXIT_CRITERIA.md`, ADR-1480)
+
 Stage 735 track opened (ADR-1477: `test_stage735_open.py`, `docs/STAGE_735_PLAN.md`) — Cross Origin Resource Gate Honesty Pack Remaining-Gate Index; closed under ADR-1478
 - [x] Cross Origin Resource Gate Honesty Pack remaining-gate hub (Stage 735 I1: `test_stage735_index_i1.py`, `docs/CROSS_ORIGIN_RESOURCE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Cross Origin Resource Gate Honesty Pack blocker matrix (Stage 735 B1: `test_stage735_blockers_b1.py`, `docs/CROSS_ORIGIN_RESOURCE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
