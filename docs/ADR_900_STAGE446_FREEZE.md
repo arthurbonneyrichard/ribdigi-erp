@@ -31,3 +31,10 @@ Stage 447 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Packaging Archive, Commercial Packaging Archive honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 447 opened under **ADR-901** after CONTINUE/NEXT (Tenant MVP Commercial Billing Deferred Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-902**. Stage 446 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 446 runner-up outline was approved and opened (ADR-901); freeze ADR-902. Do not reopen Stage 446 scope.
+
