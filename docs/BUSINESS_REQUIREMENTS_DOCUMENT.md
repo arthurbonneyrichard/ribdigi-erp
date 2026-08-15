@@ -526,7 +526,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Create return referencing original invoice
-  - [x] Record return reason and condition
+  - [x] Record return reason and condition (`reason` required on `POST /sales/returns` ∈ damaged|wrong_item|defective|customer_change|other; no silent default to `other`; Sales Select reason UI; line `condition` optional)
   - [x] Restock or discard returned items
   - [x] Generate credit note (`credit_note_number` on post via tenant series `GET|PATCH /sales/settings` → `credit_note_numbering`; return `return_number` series on create; unique per tenant; Sales Document numbering UI)
   - [x] Refund or adjust customer balance (`settlement_method=adjust|refund`; refund required/optional when return exceeds open invoice AR; cash/bank refund journal)

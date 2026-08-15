@@ -93,7 +93,7 @@ export default function Page() {
   const [headerDiscount, setHeaderDiscount] = useState('');
   const [invoiceReverseCharge, setInvoiceReverseCharge] = useState(false);
   const [invoiceId, setInvoiceId] = useState('');
-  const [returnReason, setReturnReason] = useState('other');
+  const [returnReason, setReturnReason] = useState('');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -516,6 +516,11 @@ export default function Page() {
 
   async function createReturn() {
     setError('');
+    setMessage('');
+    if (!returnReason.trim()) {
+      setError('Select a return reason');
+      return;
+    }
     try {
       const r = await api('/sales/returns', {
         method: 'POST',
@@ -528,6 +533,7 @@ export default function Page() {
       });
       setMessage(`Return ${r.data.return_number} drafted`);
       setSelected(r.data);
+      setReturnReason('');
       setTab('returns');
       await refresh();
     } catch (err: any) {
@@ -1413,7 +1419,12 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+          <select
+            value={returnReason}
+            onChange={(e) => setReturnReason(e.target.value)}
+            aria-label="Return reason"
+          >
+            <option value="">Select reason</option>
             {['damaged', 'wrong_item', 'defective', 'customer_change', 'other'].map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -1423,7 +1434,9 @@ export default function Page() {
           <label>
             <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock
           </label>
-          <button onClick={createReturn}>Create return</button>
+          <button onClick={createReturn} disabled={!invoiceId || !productId || !returnReason}>
+            Create return
+          </button>
         </div>
                   </div>
           </div>

@@ -988,7 +988,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 
 ### 7.6 Sales Return
 **List:** `GET /sales/returns`  
-**Create:** `POST /sales/returns`  
+**Create:** `POST /sales/returns` — body requires `sales_invoice_id`, coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (no silent default to `other`; omit → 422, blank → 400), `items[]`, optional `restock` / `notes`. Sales UI uses **Select reason** (BR-7.5).  
 **Get:** `GET /sales/returns/{return_id}`
 
 **Numbering:** `GET|PATCH /sales/settings` exposes `sales_return_numbering` and `credit_note_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` for `return_number` (default `SR`); post allocates series `credit_note_number` (default `CN`, unique per tenant). Sales Document numbering UI (BR-7.5 / BR-20.4).
@@ -996,14 +996,13 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **Create Return:**
 ```json
 {
-  "invoice_id": "inv_001",
-  "return_date": "2026-08-07",
+  "sales_invoice_id": "inv_001",
+  "reason": "damaged",
+  "restock": true,
   "items": [
     {
-      "invoice_item_id": "invi_001",
-      "return_qty": 1,
-      "reason": "defective",
-      "refund_amount": 12.99
+      "product_id": "prod_001",
+      "quantity": 1
     }
   ]
 }
