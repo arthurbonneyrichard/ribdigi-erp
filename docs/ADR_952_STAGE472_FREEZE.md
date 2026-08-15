@@ -31,3 +31,9 @@ Stage 473 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, IndexedDB Queue, IndexedDB Queue honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 473 opened under **ADR-953** after CONTINUE/NEXT (Tenant MVP Offline Client Request ID Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-954**. Stage 472 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 472 runner-up outline was approved and opened (ADR-953); freeze ADR-954. Do not reopen Stage 472 scope.
