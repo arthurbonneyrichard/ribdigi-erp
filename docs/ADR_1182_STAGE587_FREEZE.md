@@ -31,3 +31,7 @@ Stage 588 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, MVP Product Update, MVP Product Update honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 588 opened under **ADR-1183** after CONTINUE/NEXT (Tenant MVP Post MVP Backlog Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1184**. Stage 587 feature scope remains frozen.

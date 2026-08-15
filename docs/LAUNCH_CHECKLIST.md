@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 588 track opened (ADR-1183: `test_stage588_open.py`, `docs/STAGE_588_PLAN.md`) — Post MVP Backlog Honesty Pack Remaining-Gate Index; closed under ADR-1184
+- [x] Post MVP Backlog Honesty Pack remaining-gate hub (Stage 588 I1: `test_stage588_index_i1.py`, `docs/POST_MVP_BACKLOG_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Post MVP Backlog Honesty Pack blocker matrix (Stage 588 B1: `test_stage588_blockers_b1.py`, `docs/POST_MVP_BACKLOG_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 587 / Stage 586 / Stage 392 / CHANGE_IMPACT pointers (Stage 588 P1: `test_stage588_pointers_p1.py`, `docs/POST_MVP_BACKLOG_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 588 fidelity sync (D1: `test_stage588_fidelity_d1.py`, `docs/STAGE_588_FIDELITY.md`)
+- [x] Stage 588 exit + freeze (H588x: `test_stage588_exit_h588x.py`, `docs/STAGE_588_EXIT_CRITERIA.md`, ADR-1184)
+
 Stage 587 track opened (ADR-1181: `test_stage587_open.py`, `docs/STAGE_587_PLAN.md`) — MVP Product Update Honesty Pack Remaining-Gate Index; closed under ADR-1182
 - [x] MVP Product Update Honesty Pack remaining-gate hub (Stage 587 I1: `test_stage587_index_i1.py`, `docs/MVP_PRODUCT_UPDATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] MVP Product Update Honesty Pack blocker matrix (Stage 587 B1: `test_stage587_blockers_b1.py`, `docs/MVP_PRODUCT_UPDATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
