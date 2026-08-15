@@ -4310,12 +4310,16 @@ async def _ensure_party_code_unique(
 
 @api.get("/customers/groups")
 async def list_customer_groups(
+    is_active: bool | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """List customer groups. Optional is_active filters soft-deactivated rows (Sales manage UI)."""
     from app import customer_groups as customer_groups_svc
 
-    rows = await customer_groups_svc.list_groups(db, claims["tenant_id"])
+    rows = await customer_groups_svc.list_groups(
+        db, claims["tenant_id"], is_active=is_active
+    )
     await db.commit()
     return env([customer_groups_svc.serialize_group(r) for r in rows])
 

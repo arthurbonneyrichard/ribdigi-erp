@@ -53,6 +53,7 @@ export default function Page() {
   const [returns, setReturns] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
+  const [groupManageFilter, setGroupManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [products, setProducts] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
@@ -617,6 +618,12 @@ export default function Page() {
     }
   }
 
+  const managedGroups = groups.filter((g) => {
+    if (groupManageFilter === 'all') return true;
+    const active = g.is_active !== false;
+    return groupManageFilter === 'inactive' ? !active : active;
+  });
+
   return (
     <Shell>
       <h1>Sales</h1>
@@ -755,8 +762,18 @@ export default function Page() {
             Soft-deactivate hides a group from assign/create pickers; existing customers keep the link
             but pricing ignores inactive groups until reassigned or reactivated.
           </p>
+          <select
+            value={groupManageFilter}
+            onChange={(e) => setGroupManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+            title="Filter manage customer group list by status"
+            aria-label="Customer group status filter"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
-            {groups.map((g) => (
+            {managedGroups.map((g) => (
               <li
                 key={g.id}
                 style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
