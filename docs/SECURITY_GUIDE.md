@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 518 D1 Support SLA Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_518_FIDELITY.md` (`test_stage518_fidelity_d1.py`); exit ADR-1044 / `test_stage518_exit_h518x.py`. Honesty: Offline Complete / Support SLA honesty / go-live Completes remain MISSING.
 Stage 517 D1 Support SLA Boundary Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_517_FIDELITY.md` (`test_stage517_fidelity_d1.py`); exit ADR-1042 / `test_stage517_exit_h517x.py`. Honesty: Offline Complete / Support SLA Boundary honesty / go-live Completes remain MISSING.
 Stage 516 D1 Compliance Questionnaire Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_516_FIDELITY.md` (`test_stage516_fidelity_d1.py`); exit ADR-1040 / `test_stage516_exit_h516x.py`. Honesty: Offline Complete / Compliance Questionnaire honesty / go-live Completes remain MISSING.
 Stage 515 D1 Compliance Readiness Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_515_FIDELITY.md` (`test_stage515_fidelity_d1.py`); exit ADR-1038 / `test_stage515_exit_h515x.py`. Honesty: Offline Complete / Compliance Readiness honesty / go-live Completes remain MISSING.

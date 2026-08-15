@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 518 track opened (ADR-1043: `test_stage518_open.py`, `docs/STAGE_518_PLAN.md`) — Support SLA Honesty Pack Remaining-Gate Index; closed under ADR-1044
+- [x] Support SLA Honesty Pack remaining-gate hub (Stage 518 I1: `test_stage518_index_i1.py`, `docs/SUPPORT_SLA_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Support SLA Honesty Pack blocker matrix (Stage 518 B1: `test_stage518_blockers_b1.py`, `docs/SUPPORT_SLA_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 517 / Stage 516 / Stage 392 / CHANGE_IMPACT pointers (Stage 518 P1: `test_stage518_pointers_p1.py`, `docs/SUPPORT_SLA_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 518 fidelity sync (D1: `test_stage518_fidelity_d1.py`, `docs/STAGE_518_FIDELITY.md`)
+- [x] Stage 518 exit + freeze (H518x: `test_stage518_exit_h518x.py`, `docs/STAGE_518_EXIT_CRITERIA.md`, ADR-1044)
+
 Stage 517 track opened (ADR-1041: `test_stage517_open.py`, `docs/STAGE_517_PLAN.md`) — Support SLA Boundary Honesty Pack Remaining-Gate Index; closed under ADR-1042
 - [x] Support SLA Boundary Honesty Pack remaining-gate hub (Stage 517 I1: `test_stage517_index_i1.py`, `docs/SUPPORT_SLA_BOUNDARY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Support SLA Boundary Honesty Pack blocker matrix (Stage 517 B1: `test_stage517_blockers_b1.py`, `docs/SUPPORT_SLA_BOUNDARY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
