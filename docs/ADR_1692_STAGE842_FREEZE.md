@@ -31,3 +31,7 @@ Stage 843 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Right To Erasure Gate, Right To Erasure Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 843 opened under **ADR-1693** after CONTINUE/NEXT (Tenant MVP Data Portability Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1694**. Stage 842 feature scope remains frozen.
