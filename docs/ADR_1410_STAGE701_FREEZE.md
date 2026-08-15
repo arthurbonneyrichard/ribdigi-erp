@@ -31,3 +31,7 @@ Stage 702 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Connection Pool Gate, Connection Pool Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 702 opened under **ADR-1411** after CONTINUE/NEXT (Tenant MVP Query Timeout Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1412**. Stage 701 feature scope remains frozen.
