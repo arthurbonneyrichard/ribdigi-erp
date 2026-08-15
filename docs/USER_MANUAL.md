@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 621 Session Auth Gate Honesty Pack remaining-gate index fidelity (ADR-1249/1250). Operators track packaging status via `docs/SESSION_AUTH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 620 Input Validation Gate Honesty Pack remaining-gate index fidelity (ADR-1247/1248). Operators track packaging status via `docs/INPUT_VALIDATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 619 Record Ownership Gate Honesty Pack remaining-gate index fidelity (ADR-1245/1246). Operators track packaging status via `docs/RECORD_OWNERSHIP_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 618 Tenant Isolation Gate Honesty Pack remaining-gate index fidelity (ADR-1243/1244). Operators track packaging status via `docs/TENANT_ISOLATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
