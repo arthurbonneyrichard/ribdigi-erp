@@ -946,7 +946,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Pagination for list endpoints
   - [x] Versioning (/api/v1/)
   - [x] OpenAPI/Swagger documentation auto-generated
-  - [x] Webhook support for event subscriptions (Integrations UI: create/test/rotate/disable/delete)
+  - [x] Webhook support for event subscriptions (Integrations UI: create/test/rotate/disable/delete; delivery history `GET /webhooks/{id}/deliveries` + manual `POST .../deliveries/{id}/retry`; Celery `retry_due_webhooks`)
 
 ---
 

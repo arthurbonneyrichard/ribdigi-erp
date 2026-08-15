@@ -11408,6 +11408,55 @@ async def webhooks_test_delivery(
     return env(webhooks_svc.serialize_delivery(delivery), "Webhook test attempted")
 
 
+@api.get("/webhooks/{webhook_id}/deliveries")
+async def webhooks_list_deliveries(
+    webhook_id: str,
+    limit: int = 50,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Recent outbound delivery attempts for one webhook (Integrations UI)."""
+    rows = await webhooks_svc.list_deliveries(
+        db, claims["tenant_id"], webhook_id, limit=limit
+    )
+    return env([webhooks_svc.serialize_delivery(r) for r in rows])
+
+
+@api.post("/webhooks/{webhook_id}/deliveries/{delivery_id}/retry")
+async def webhooks_retry_delivery(
+    webhook_id: str,
+    delivery_id: str,
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manually retry a pending_retry or failed delivery."""
+    tenants_svc.assert_writable(claims)
+    delivery = await webhooks_svc.get_delivery(
+        db, claims["tenant_id"], webhook_id, delivery_id
+    )
+    updated = await webhooks_svc.retry_delivery(db, delivery)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="security",
+        action="webhook_delivery_retry",
+        entity="webhook_delivery",
+        entity_id=delivery_id,
+        details={
+            "webhook_id": webhook_id,
+            "status": updated.status,
+            "attempt_count": updated.attempt_count,
+            "response_status": updated.response_status,
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(webhooks_svc.serialize_delivery(updated), "Webhook delivery retry attempted")
+
+
 @api.get("/onboarding/checklist")
 async def onboarding_checklist_get(
     claims=Depends(current_claims),
