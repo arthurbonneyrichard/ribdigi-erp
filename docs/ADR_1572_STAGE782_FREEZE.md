@@ -31,3 +31,7 @@ Stage 783 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Key Derivation Gate, Key Derivation Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 783 opened under **ADR-1573** after CONTINUE/NEXT (Tenant MVP Envelope Encrypt Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1574**. Stage 782 feature scope remains frozen.
