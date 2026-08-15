@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 548 D1 E2E Backup Restore Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_548_FIDELITY.md` (`test_stage548_fidelity_d1.py`); Offline Complete / E2E Backup Restore honesty / go-live still MISSING.
 Stage 547 D1 AR AP Accounting Surface Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_547_FIDELITY.md` (`test_stage547_fidelity_d1.py`); Offline Complete / AR AP Accounting Surface honesty / go-live still MISSING.
 Stage 546 D1 AI Provider Boundary Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_546_FIDELITY.md` (`test_stage546_fidelity_d1.py`); Offline Complete / AI Provider Boundary honesty / go-live still MISSING.
 Stage 545 D1 AI Metrics Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_545_FIDELITY.md` (`test_stage545_fidelity_d1.py`); Offline Complete / AI Metrics honesty / go-live still MISSING.

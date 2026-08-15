@@ -31,3 +31,7 @@ Stage 548 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, AR AP Accounting Surface, AR AP Accounting Surface honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 548 opened under **ADR-1103** after CONTINUE/NEXT (Tenant MVP E2E Backup Restore Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1104**. Stage 547 feature scope remains frozen.

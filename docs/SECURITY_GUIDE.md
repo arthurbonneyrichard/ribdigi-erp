@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 548 D1 E2E Backup Restore Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_548_FIDELITY.md` (`test_stage548_fidelity_d1.py`); exit ADR-1104 / `test_stage548_exit_h548x.py`. Honesty: Offline Complete / E2E Backup Restore honesty / go-live Completes remain MISSING.
 Stage 547 D1 AR AP Accounting Surface Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_547_FIDELITY.md` (`test_stage547_fidelity_d1.py`); exit ADR-1102 / `test_stage547_exit_h547x.py`. Honesty: Offline Complete / AR AP Accounting Surface honesty / go-live Completes remain MISSING.
 Stage 546 D1 AI Provider Boundary Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_546_FIDELITY.md` (`test_stage546_fidelity_d1.py`); exit ADR-1100 / `test_stage546_exit_h546x.py`. Honesty: Offline Complete / AI Provider Boundary honesty / go-live Completes remain MISSING.
 Stage 545 D1 AI Metrics Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_545_FIDELITY.md` (`test_stage545_fidelity_d1.py`); exit ADR-1098 / `test_stage545_exit_h545x.py`. Honesty: Offline Complete / AI Metrics honesty / go-live Completes remain MISSING.
