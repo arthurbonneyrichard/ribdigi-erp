@@ -31,3 +31,7 @@ Stage 917 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Category Gate, Transfer Category Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 917 opened under **ADR-1841** after CONTINUE/NEXT (Tenant MVP Transfer Scope Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1842**. Stage 916 feature scope remains frozen.
