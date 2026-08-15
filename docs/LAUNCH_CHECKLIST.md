@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 747 track opened (ADR-1501: `test_stage747_open.py`, `docs/STAGE_747_PLAN.md`) — Partitioned Cookie Gate Honesty Pack Remaining-Gate Index; closed under ADR-1502
+- [x] Partitioned Cookie Gate Honesty Pack remaining-gate hub (Stage 747 I1: `test_stage747_index_i1.py`, `docs/PARTITIONED_COOKIE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Partitioned Cookie Gate Honesty Pack blocker matrix (Stage 747 B1: `test_stage747_blockers_b1.py`, `docs/PARTITIONED_COOKIE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 746 / Stage 745 / Stage 392 / CHANGE_IMPACT pointers (Stage 747 P1: `test_stage747_pointers_p1.py`, `docs/PARTITIONED_COOKIE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 747 fidelity sync (D1: `test_stage747_fidelity_d1.py`, `docs/STAGE_747_FIDELITY.md`)
+- [x] Stage 747 exit + freeze (H747x: `test_stage747_exit_h747x.py`, `docs/STAGE_747_EXIT_CRITERIA.md`, ADR-1502)
+
 Stage 746 track opened (ADR-1499: `test_stage746_open.py`, `docs/STAGE_746_PLAN.md`) — Same Site Cookie Gate Honesty Pack Remaining-Gate Index; closed under ADR-1500
 - [x] Same Site Cookie Gate Honesty Pack remaining-gate hub (Stage 746 I1: `test_stage746_index_i1.py`, `docs/SAME_SITE_COOKIE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Same Site Cookie Gate Honesty Pack blocker matrix (Stage 746 B1: `test_stage746_blockers_b1.py`, `docs/SAME_SITE_COOKIE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
