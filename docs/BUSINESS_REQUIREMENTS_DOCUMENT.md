@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 589 D1 Professional Services SOW Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_589_FIDELITY.md` (`test_stage589_fidelity_d1.py`); Offline Complete / Professional Services SOW honesty / go-live still MISSING.
 Stage 588 D1 Post MVP Backlog Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_588_FIDELITY.md` (`test_stage588_fidelity_d1.py`); Offline Complete / Post MVP Backlog honesty / go-live still MISSING.
 Stage 587 D1 MVP Product Update Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_587_FIDELITY.md` (`test_stage587_fidelity_d1.py`); Offline Complete / MVP Product Update honesty / go-live still MISSING.
 Stage 586 D1 MVP Declaration Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_586_FIDELITY.md` (`test_stage586_fidelity_d1.py`); Offline Complete / MVP Declaration honesty / go-live still MISSING.

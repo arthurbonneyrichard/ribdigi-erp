@@ -31,3 +31,7 @@ Stage 589 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Post MVP Backlog, Post MVP Backlog honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 589 opened under **ADR-1185** after CONTINUE/NEXT (Tenant MVP Professional Services SOW Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1186**. Stage 588 feature scope remains frozen.
