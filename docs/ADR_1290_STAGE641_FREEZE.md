@@ -31,3 +31,7 @@ Stage 642 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, TLS Certificate Gate, TLS Certificate Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 642 opened under **ADR-1291** after CONTINUE/NEXT (Tenant MVP Dependency Pin Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1292**. Stage 641 feature scope remains frozen.

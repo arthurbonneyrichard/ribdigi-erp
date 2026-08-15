@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 642 track opened (ADR-1291: `test_stage642_open.py`, `docs/STAGE_642_PLAN.md`) — Dependency Pin Gate Honesty Pack Remaining-Gate Index; closed under ADR-1292
+- [x] Dependency Pin Gate Honesty Pack remaining-gate hub (Stage 642 I1: `test_stage642_index_i1.py`, `docs/DEPENDENCY_PIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Dependency Pin Gate Honesty Pack blocker matrix (Stage 642 B1: `test_stage642_blockers_b1.py`, `docs/DEPENDENCY_PIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 641 / Stage 640 / Stage 392 / CHANGE_IMPACT pointers (Stage 642 P1: `test_stage642_pointers_p1.py`, `docs/DEPENDENCY_PIN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 642 fidelity sync (D1: `test_stage642_fidelity_d1.py`, `docs/STAGE_642_FIDELITY.md`)
+- [x] Stage 642 exit + freeze (H642x: `test_stage642_exit_h642x.py`, `docs/STAGE_642_EXIT_CRITERIA.md`, ADR-1292)
+
 Stage 641 track opened (ADR-1289: `test_stage641_open.py`, `docs/STAGE_641_PLAN.md`) — TLS Certificate Gate Honesty Pack Remaining-Gate Index; closed under ADR-1290
 - [x] TLS Certificate Gate Honesty Pack remaining-gate hub (Stage 641 I1: `test_stage641_index_i1.py`, `docs/TLS_CERTIFICATE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] TLS Certificate Gate Honesty Pack blocker matrix (Stage 641 B1: `test_stage641_blockers_b1.py`, `docs/TLS_CERTIFICATE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
