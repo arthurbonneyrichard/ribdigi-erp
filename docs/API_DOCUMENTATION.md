@@ -1638,7 +1638,7 @@ Rules:
 3. Recompute HMAC-SHA256 with your `whsec_…` secret; compare with `hmac.compare_digest`.
 4. Secrets are shown **once** on create/rotate in Integrations — store them in your vault.
 
-**Live events today:** `webhook.test` (Integrations **Test**) and `sale.created` (invoice post). Other event names in the UI are reserved for upcoming emit wiring.
+**Live events today:** `webhook.test` (Integrations **Test**), `sale.created` (invoice post), `sale.paid` (customer payment), `customer.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved` (final approval), and `stock.low` (when a new low-stock notification is created). Reserved / not yet emitted: `stock.in`, `user.login`, `tenant.suspended`.
 
 **Golden fixture** (matches `tests/test_webhooks_w1.py`):
 

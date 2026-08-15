@@ -4406,6 +4406,18 @@ async def add_customer(
         **data,
     )
     db.add(party)
+    await db.flush()
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        event="customer.created",
+        data={
+            "customer_id": party.id,
+            "code": party.code,
+            "name": party.name,
+            "customer_group_id": party.customer_group_id,
+        },
+    )
     await db.commit()
     await db.refresh(party)
     group = None
@@ -5941,6 +5953,19 @@ async def create_purchase_order(
         delivery_address=payload.delivery_address,
         items=[i.model_dump() for i in payload.items],
     )
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        event="purchase.order.created",
+        data={
+            "po_id": po.id,
+            "po_number": po.po_number,
+            "supplier_id": po.supplier_id,
+            "warehouse_id": po.warehouse_id,
+            "total_amount": float(getattr(po, "total_amount", 0) or 0),
+            "status": po.status,
+        },
+    )
     await db.commit()
     return env(await purchasing_svc.serialize_po(db, po), "Purchase order created")
 
@@ -6090,6 +6115,19 @@ async def create_grn(
         warehouse_id=payload.warehouse_id,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+    )
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        event="purchase.grn.received",
+        data={
+            "grn_id": grn.id,
+            "grn_number": grn.grn_number,
+            "purchase_order_id": grn.purchase_order_id,
+            "supplier_id": grn.supplier_id,
+            "warehouse_id": grn.warehouse_id,
+            "status": grn.status,
+        },
     )
     await db.commit()
     return env(await purchasing_svc.serialize_grn(db, grn), "GRN posted and stock updated")
@@ -7553,6 +7591,21 @@ async def approve_expense(
         comment=payload.comment,
         actor_role=claims.get("role"),
     )
+    if expense.status == "approved":
+        await webhooks_svc.emit_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            event="expense.approved",
+            data={
+                "expense_id": expense.id,
+                "amount": float(expense.amount or 0),
+                "category": expense.category,
+                "approved_by": expense.approved_by,
+                "approved_at": expense.approved_at.isoformat()
+                if getattr(expense, "approved_at", None)
+                else None,
+            },
+        )
     await db.commit()
     msg = "Expense approved" if expense.status == "approved" else f"Level {int(expense.approval_step) - 1} approved; awaiting next level"
     return env(await expenses_svc.serialize_expense_full(db, expense), msg)
