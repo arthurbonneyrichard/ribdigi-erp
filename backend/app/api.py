@@ -75,6 +75,7 @@ from app.schemas import (
     DocumentNumberingFields,
     PrintBrandingUpdate,
     EmailVerifyConfirm,
+    ResendVerificationRequest,
     ExchangeRateRefresh,
     ExchangeRateUpsert,
     FxAutoRefreshUpdate,
@@ -396,7 +397,7 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
     from app import emailer
 
     email_result = await emailer.send_verification_email(
-        to=payload.admin_email, token=raw, company_name=tenant.company_name
+        to=payload.admin_email, token=raw, company_name=tenant.company_name, tenant=tenant
     )
     data["email"] = {
         "sent": email_result.sent,
@@ -1222,6 +1223,28 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     user.failed_login_attempts = 0
     user.locked_until = None
 
+    if not user.email_verified:
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login_blocked_unverified",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        await db.commit()
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "EMAIL_NOT_VERIFIED",
+                "message": "Verify your email before signing in",
+            },
+        )
+
     from app import webauthn_svc as webauthn
 
     has_webauthn = await webauthn.user_has_webauthn(db, user.id)
@@ -1834,7 +1857,63 @@ async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(g
     user.email_verified = True
     row.used_at = datetime.utcnow()
     await db.commit()
-    return env({"verified": True})
+    return env({"verified": True, "email": user.email}, "Email verified")
+
+
+@api.post("/auth/resend-verification")
+async def resend_verification(
+    payload: ResendVerificationRequest, db: AsyncSession = Depends(get_db)
+):
+    """Neutral resend — does not reveal whether the account exists or is verified."""
+    tenant_id = await tenant_pk(db, payload.tenant_id)
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.tenant_id == tenant_id, m.User.email == payload.email)
+        )
+    ).scalar_one_or_none()
+    data: dict = {"requested": True}
+    if user and user.is_active and not user.email_verified:
+        # Invalidate unused prior verify tokens for this user
+        prior = (
+            await db.execute(
+                select(m.AuthToken).where(
+                    m.AuthToken.user_id == user.id,
+                    m.AuthToken.purpose == "email_verify",
+                    m.AuthToken.used_at.is_(None),
+                )
+            )
+        ).scalars().all()
+        now = datetime.utcnow()
+        for row in prior:
+            row.used_at = now
+        raw, token_hash, expires = issue_one_time_token()
+        db.add(
+            m.AuthToken(
+                tenant_id=tenant_id,
+                user_id=user.id,
+                purpose="email_verify",
+                token_hash=token_hash,
+                expires_at=expires,
+            )
+        )
+        await db.commit()
+        from app import emailer
+
+        tenant = await db.get(m.Tenant, tenant_id)
+        email_result = await emailer.send_verification_email(
+            to=user.email,
+            token=raw,
+            company_name=tenant.company_name if tenant else None,
+            tenant=tenant,
+        )
+        data["email"] = {
+            "sent": email_result.sent,
+            "mode": email_result.mode,
+            "error": email_result.error,
+        }
+        if settings.DEBUG or settings.APP_ENV.lower() != "production":
+            data["verification_token"] = raw
+    return env(data, "If the account exists and needs verification, a link was sent")
 
 
 @api.get("/me")
@@ -2386,7 +2465,13 @@ async def add_user(
     )
     from app import emailer
 
-    email_result = await emailer.send_verification_email(to=user.email, token=raw)
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    email_result = await emailer.send_verification_email(
+        to=user.email,
+        token=raw,
+        company_name=tenant.company_name if tenant else None,
+        tenant=tenant,
+    )
     await db.commit()
     data = {
         "id": user.id,

@@ -277,6 +277,9 @@
 .login-heading{
   margin:0 0 4px;font-size:22px;font-weight:800;color:#0f172a;text-align:center;
 }
+.login-verify-box{
+  margin-top:8px;display:flex;flex-direction:column;gap:8px;
+}
 .login-foot{
   text-align:center;margin:18px 0 0;font-size:11px;color:#94a3b8;
   letter-spacing:.35px;font-weight:600;
