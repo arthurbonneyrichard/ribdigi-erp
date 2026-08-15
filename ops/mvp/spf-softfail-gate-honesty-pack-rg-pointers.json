@@ -1,0 +1,77 @@
+{
+  "id": "spf-softfail-gate-honesty-pack-rg-pointers",
+  "stage": 815,
+  "pack": "P1",
+  "doc": "docs/SPF_SOFTFAIL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SPF_SOFTFAIL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "dmarc_align_gate_honesty_pack_remaining_gate": "docs/DMARC_ALIGN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "bimi_record_gate_honesty_pack_remaining_gate": "docs/BIMI_RECORD_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "spf_softfail_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "spf_softfail_gate_honesty_complete_claimed": false,
+  "spf_softfail_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_spf_softfail_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "dmarc_align_gate_honesty_pack_remaining_gate_stage814": "docs/DMARC_ALIGN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "bimi_record_gate_honesty_pack_remaining_gate_stage813": "docs/BIMI_RECORD_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "spf_softfail_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / spf_softfail_gate / spf_softfail_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "ssfghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 SPF Softfail Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssfghp-stage814",
+      "title": "Point to Stage 814 DMARC ALIGN GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssfghp-stage813",
+      "title": "Point to Stage 813 BIMI RECORD GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssfghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssfghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssfghp-prior-pack",
+      "title": "Point to SPF Softfail Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssfghp-checklist-remaining",
+      "title": "Offline Complete / SPF Softfail Gate / SPF Softfail Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 815 P1 SPF Softfail Gate Honesty Pack RG pointers packaging only."
+}
