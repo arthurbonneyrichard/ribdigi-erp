@@ -31,3 +31,7 @@ Stage 688 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Synthetic Check Gate, Synthetic Check Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 688 opened under **ADR-1383** after CONTINUE/NEXT (Tenant MVP Dependency Health Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1384**. Stage 687 feature scope remains frozen.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 688 track opened (ADR-1383: `test_stage688_open.py`, `docs/STAGE_688_PLAN.md`) — Dependency Health Gate Honesty Pack Remaining-Gate Index; closed under ADR-1384
+- [x] Dependency Health Gate Honesty Pack remaining-gate hub (Stage 688 I1: `test_stage688_index_i1.py`, `docs/DEPENDENCY_HEALTH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Dependency Health Gate Honesty Pack blocker matrix (Stage 688 B1: `test_stage688_blockers_b1.py`, `docs/DEPENDENCY_HEALTH_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 687 / Stage 686 / Stage 392 / CHANGE_IMPACT pointers (Stage 688 P1: `test_stage688_pointers_p1.py`, `docs/DEPENDENCY_HEALTH_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 688 fidelity sync (D1: `test_stage688_fidelity_d1.py`, `docs/STAGE_688_FIDELITY.md`)
+- [x] Stage 688 exit + freeze (H688x: `test_stage688_exit_h688x.py`, `docs/STAGE_688_EXIT_CRITERIA.md`, ADR-1384)
+
 Stage 687 track opened (ADR-1381: `test_stage687_open.py`, `docs/STAGE_687_PLAN.md`) — Synthetic Check Gate Honesty Pack Remaining-Gate Index; closed under ADR-1382
 - [x] Synthetic Check Gate Honesty Pack remaining-gate hub (Stage 687 I1: `test_stage687_index_i1.py`, `docs/SYNTHETIC_CHECK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Synthetic Check Gate Honesty Pack blocker matrix (Stage 687 B1: `test_stage687_blockers_b1.py`, `docs/SYNTHETIC_CHECK_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
