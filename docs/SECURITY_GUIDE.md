@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 625 D1 Celery Worker Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_625_FIDELITY.md` (`test_stage625_fidelity_d1.py`); exit ADR-1258 / `test_stage625_exit_h625x.py`. Honesty: Offline Complete / Celery Worker Gate honesty / go-live Completes remain MISSING.
 Stage 624 D1 Docker Compose Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_624_FIDELITY.md` (`test_stage624_fidelity_d1.py`); exit ADR-1256 / `test_stage624_exit_h624x.py`. Honesty: Offline Complete / Docker Compose Gate honesty / go-live Completes remain MISSING.
 Stage 623 D1 Alembic Migration Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_623_FIDELITY.md` (`test_stage623_fidelity_d1.py`); exit ADR-1254 / `test_stage623_exit_h623x.py`. Honesty: Offline Complete / Alembic Migration Gate honesty / go-live Completes remain MISSING.
 Stage 622 D1 Secrets Config Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_622_FIDELITY.md` (`test_stage622_fidelity_d1.py`); exit ADR-1252 / `test_stage622_exit_h622x.py`. Honesty: Offline Complete / Secrets Config Gate honesty / go-live Completes remain MISSING.

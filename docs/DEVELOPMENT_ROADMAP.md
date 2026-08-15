@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 625 D1 (2026-08-14):** Celery Worker Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_625_FIDELITY.md` (`test_stage625_fidelity_d1.py`). Open ADR: `docs/ADR_1257_STAGE625_OPEN.md`; plan `docs/STAGE_625_PLAN.md`.
+
+**Stage 625 exit (2026-08-14):** I1, B1, P1, D1, H625x met — `docs/STAGE_625_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1258_STAGE625_FREEZE.md`. Fidelity: `docs/STAGE_625_FIDELITY.md`.
+
 **Stage 624 D1 (2026-08-14):** Docker Compose Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_624_FIDELITY.md` (`test_stage624_fidelity_d1.py`). Open ADR: `docs/ADR_1255_STAGE624_OPEN.md`; plan `docs/STAGE_624_PLAN.md`.
 
 **Stage 624 exit (2026-08-14):** I1, B1, P1, D1, H624x met — `docs/STAGE_624_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1256_STAGE624_FREEZE.md`. Fidelity: `docs/STAGE_624_FIDELITY.md`.
