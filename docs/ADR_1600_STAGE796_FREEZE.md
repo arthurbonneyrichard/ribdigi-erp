@@ -31,3 +31,7 @@ Stage 797 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Litigation Export Gate, Litigation Export Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 797 opened under **ADR-1601** after CONTINUE/NEXT (Tenant MVP Chain Of Custody Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1602**. Stage 796 feature scope remains frozen.
