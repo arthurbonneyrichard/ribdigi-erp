@@ -31,3 +31,7 @@ Stage 913 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Waiver Gate, Transfer Waiver Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 913 opened under **ADR-1833** after CONTINUE/NEXT (Tenant MVP Transfer Justification Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1834**. Stage 912 feature scope remains frozen.
