@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 662 D1 (2026-08-14):** Ddos Mitigation Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_662_FIDELITY.md` (`test_stage662_fidelity_d1.py`). Open ADR: `docs/ADR_1331_STAGE662_OPEN.md`; plan `docs/STAGE_662_PLAN.md`.
+
+**Stage 662 exit (2026-08-14):** I1, B1, P1, D1, H662x met — `docs/STAGE_662_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1332_STAGE662_FREEZE.md`. Fidelity: `docs/STAGE_662_FIDELITY.md`.
+
 **Stage 661 D1 (2026-08-14):** Waf Shield Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_661_FIDELITY.md` (`test_stage661_fidelity_d1.py`). Open ADR: `docs/ADR_1329_STAGE661_OPEN.md`; plan `docs/STAGE_661_PLAN.md`.
 
 **Stage 661 exit (2026-08-14):** I1, B1, P1, D1, H661x met — `docs/STAGE_661_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1330_STAGE661_FREEZE.md`. Fidelity: `docs/STAGE_661_FIDELITY.md`.

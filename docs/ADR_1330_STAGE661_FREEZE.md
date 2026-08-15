@@ -31,3 +31,7 @@ Stage 662 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Waf Shield Gate, Waf Shield Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 662 opened under **ADR-1331** after CONTINUE/NEXT (Tenant MVP Ddos Mitigation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1332**. Stage 661 feature scope remains frozen.
