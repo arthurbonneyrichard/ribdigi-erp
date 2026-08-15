@@ -31,3 +31,7 @@ Stage 696 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Schema Registry Gate, Schema Registry Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 696 opened under **ADR-1399** after CONTINUE/NEXT (Tenant MVP Event Versioning Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1400**. Stage 695 feature scope remains frozen.

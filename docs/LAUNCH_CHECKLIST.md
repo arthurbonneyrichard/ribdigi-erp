@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 696 track opened (ADR-1399: `test_stage696_open.py`, `docs/STAGE_696_PLAN.md`) — Event Versioning Gate Honesty Pack Remaining-Gate Index; closed under ADR-1400
+- [x] Event Versioning Gate Honesty Pack remaining-gate hub (Stage 696 I1: `test_stage696_index_i1.py`, `docs/EVENT_VERSIONING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Event Versioning Gate Honesty Pack blocker matrix (Stage 696 B1: `test_stage696_blockers_b1.py`, `docs/EVENT_VERSIONING_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 695 / Stage 694 / Stage 392 / CHANGE_IMPACT pointers (Stage 696 P1: `test_stage696_pointers_p1.py`, `docs/EVENT_VERSIONING_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 696 fidelity sync (D1: `test_stage696_fidelity_d1.py`, `docs/STAGE_696_FIDELITY.md`)
+- [x] Stage 696 exit + freeze (H696x: `test_stage696_exit_h696x.py`, `docs/STAGE_696_EXIT_CRITERIA.md`, ADR-1400)
+
 Stage 695 track opened (ADR-1397: `test_stage695_open.py`, `docs/STAGE_695_PLAN.md`) — Schema Registry Gate Honesty Pack Remaining-Gate Index; closed under ADR-1398
 - [x] Schema Registry Gate Honesty Pack remaining-gate hub (Stage 695 I1: `test_stage695_index_i1.py`, `docs/SCHEMA_REGISTRY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Schema Registry Gate Honesty Pack blocker matrix (Stage 695 B1: `test_stage695_blockers_b1.py`, `docs/SCHEMA_REGISTRY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
