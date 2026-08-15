@@ -31,3 +31,7 @@ Stage 504 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Quarterly POS Ops Rollup, Quarterly POS Ops Rollup honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 504 opened under **ADR-1015** after CONTINUE/NEXT (Tenant MVP Monthly POS Ops Trends Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1016**. Stage 503 feature scope remains frozen.

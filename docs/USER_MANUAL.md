@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 504 Monthly POS Ops Trends Honesty Pack remaining-gate index fidelity (ADR-1015/1016). Operators track packaging status via `docs/MONTHLY_POS_OPS_TRENDS_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 503 Quarterly POS Ops Rollup Honesty Pack remaining-gate index fidelity (ADR-1013/1014). Operators track packaging status via `docs/QUARTERLY_POS_OPS_ROLLUP_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 502 Quarterly POS Ops Gates Honesty Pack remaining-gate index fidelity (ADR-1011/1012). Operators track packaging status via `docs/QUARTERLY_POS_OPS_GATES_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 501 Quarterly POS Ops Review Honesty Pack remaining-gate index fidelity (ADR-1009/1010). Operators track packaging status via `docs/QUARTERLY_POS_OPS_REVIEW_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
