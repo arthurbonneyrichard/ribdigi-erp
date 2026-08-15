@@ -87,6 +87,7 @@ export default function Page() {
   const [taxRate, setTaxRate] = useState('');
   const [lineDiscount, setLineDiscount] = useState('');
   const [headerDiscount, setHeaderDiscount] = useState('');
+  const [invoiceReverseCharge, setInvoiceReverseCharge] = useState(false);
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('other');
   const [restock, setRestock] = useState(true);
@@ -257,6 +258,7 @@ export default function Page() {
     discount_amount: hdrDisc,
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
+    is_reverse_charge: invoiceReverseCharge,
   };
 
   async function createCustomer() {
@@ -1059,6 +1061,14 @@ export default function Page() {
           Line discount is stored on the line (tax before discount). Header discount reduces the
           document total — same model as Purchasing invoices.
         </p>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+          <input
+            type="checkbox"
+            checked={invoiceReverseCharge}
+            onChange={(e) => setInvoiceReverseCharge(e.target.checked)}
+          />
+          Reverse charge (tax memo only — not charged to customer)
+        </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={createQuotation}>Create quotation</button>
           <button onClick={createOrder}>Create order</button>
@@ -1468,6 +1478,7 @@ export default function Page() {
               {selected.reverse_charge_tax > 0 && (
                 <p className="muted">
                   Reverse-charge tax (memo): {selected.reverse_charge_tax}
+                  {selected.is_reverse_charge ? ' · header RC' : ''}
                 </p>
               )}
             </div>

@@ -712,7 +712,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Auto-calculate tax on sales invoices, purchase invoices, POS transactions (PO/PI omit `tax_rate` → product → category → tenant default via `resolve_product_tax`; explicit rate incl. 0 wins)
   - [x] Display tax breakdown per line item and total (`line_tax` / `tax_components` / `tax_breakdown` on sales invoices; Sales UI + print; Alembic `20260813_0093`; purchase invoices + Purchasing UI; Alembic `20260813_0094`)
   - [x] Handle tax exemptions (zero-rated, exempt products)
-  - [ ] Reverse charge mechanism support
+  - [x] Reverse charge mechanism support (tax-rate `is_reverse_charge` memo on sales/POS/PI; purchase invoice header override; **sales invoice header** `is_reverse_charge` on `POST /sales/invoices` + Create sale checkbox — tax memo only, not charged to customer; Alembic `20260815_0101`)
 
 #### BR-12.3 Tax Reports
 - **Description:** Compliance and filing support.

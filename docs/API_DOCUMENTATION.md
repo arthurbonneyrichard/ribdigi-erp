@@ -978,7 +978,9 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 
 Create accepts header `discount_amount` and per-line `items[].discount` (≥0) with the same tax-before-line-discount order as quotations/orders. Sales UI Create sale + invoice detail show discounts (BR-7.4).
 
-Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, and `is_reverse_charge`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Print JSON/PDF includes per-line tax amounts.
+Optional header `is_reverse_charge: true` forces reverse-charge memo for all lines (tax excluded from customer total / `tax_amount`; stored on `reverse_charge_tax` and `sales_invoices.is_reverse_charge`). Same pattern as purchase invoices; Create sale checkbox. Rate-level RC still applies when header is false.
+
+Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, and `is_reverse_charge`. Header includes `tax_amount`, `reverse_charge_tax`, `is_reverse_charge`, plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Print JSON/PDF includes per-line tax amounts.
 
 ### 7.6 Sales Return
 **List:** `GET /sales/returns`  
