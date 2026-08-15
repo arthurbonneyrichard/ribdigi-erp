@@ -31,3 +31,7 @@ Stage 669 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Autoscaling Hpa Gate, Autoscaling Hpa Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 669 opened under **ADR-1345** after CONTINUE/NEXT (Tenant MVP Pod Disruption Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1346**. Stage 668 feature scope remains frozen.
