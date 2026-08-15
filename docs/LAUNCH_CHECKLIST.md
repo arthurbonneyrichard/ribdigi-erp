@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 878 track opened (ADR-1763: `test_stage878_open.py`, `docs/STAGE_878_PLAN.md`) — Secure Erasure Gate Honesty Pack Remaining-Gate Index; closed under ADR-1764
+- [x] Secure Erasure Gate Honesty Pack remaining-gate hub (Stage 878 I1: `test_stage878_index_i1.py`, `docs/SECURE_ERASURE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Secure Erasure Gate Honesty Pack blocker matrix (Stage 878 B1: `test_stage878_blockers_b1.py`, `docs/SECURE_ERASURE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 877 / Stage 876 / Stage 392 / CHANGE_IMPACT pointers (Stage 878 P1: `test_stage878_pointers_p1.py`, `docs/SECURE_ERASURE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 878 fidelity sync (D1: `test_stage878_fidelity_d1.py`, `docs/STAGE_878_FIDELITY.md`)
+- [x] Stage 878 exit + freeze (H878x: `test_stage878_exit_h878x.py`, `docs/STAGE_878_EXIT_CRITERIA.md`, ADR-1764)
+
 Stage 877 track opened (ADR-1761: `test_stage877_open.py`, `docs/STAGE_877_PLAN.md`) — Disposal Gate Honesty Pack Remaining-Gate Index; closed under ADR-1762
 - [x] Disposal Gate Honesty Pack remaining-gate hub (Stage 877 I1: `test_stage877_index_i1.py`, `docs/DISPOSAL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Disposal Gate Honesty Pack blocker matrix (Stage 877 B1: `test_stage877_blockers_b1.py`, `docs/DISPOSAL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

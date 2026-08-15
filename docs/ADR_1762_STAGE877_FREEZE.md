@@ -31,3 +31,7 @@ Stage 878 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Disposal Gate, Disposal Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 878 opened under **ADR-1763** after CONTINUE/NEXT (Tenant MVP Secure Erasure Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1764**. Stage 877 feature scope remains frozen.
