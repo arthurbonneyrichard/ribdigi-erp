@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 698 track opened (ADR-1403: `test_stage698_open.py`, `docs/STAGE_698_PLAN.md`) — Partition Rebalance Gate Honesty Pack Remaining-Gate Index; closed under ADR-1404
+- [x] Partition Rebalance Gate Honesty Pack remaining-gate hub (Stage 698 I1: `test_stage698_index_i1.py`, `docs/PARTITION_REBALANCE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Partition Rebalance Gate Honesty Pack blocker matrix (Stage 698 B1: `test_stage698_blockers_b1.py`, `docs/PARTITION_REBALANCE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 697 / Stage 696 / Stage 392 / CHANGE_IMPACT pointers (Stage 698 P1: `test_stage698_pointers_p1.py`, `docs/PARTITION_REBALANCE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 698 fidelity sync (D1: `test_stage698_fidelity_d1.py`, `docs/STAGE_698_FIDELITY.md`)
+- [x] Stage 698 exit + freeze (H698x: `test_stage698_exit_h698x.py`, `docs/STAGE_698_EXIT_CRITERIA.md`, ADR-1404)
+
 Stage 697 track opened (ADR-1401: `test_stage697_open.py`, `docs/STAGE_697_PLAN.md`) — Consumer Lag Gate Honesty Pack Remaining-Gate Index; closed under ADR-1402
 - [x] Consumer Lag Gate Honesty Pack remaining-gate hub (Stage 697 I1: `test_stage697_index_i1.py`, `docs/CONSUMER_LAG_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Consumer Lag Gate Honesty Pack blocker matrix (Stage 697 B1: `test_stage697_blockers_b1.py`, `docs/CONSUMER_LAG_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
