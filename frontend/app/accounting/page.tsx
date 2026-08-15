@@ -22,6 +22,7 @@ export default function Page() {
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
   const [chequeActionReason, setChequeActionReason] = useState('');
+  const [unpostReason, setUnpostReason] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
   type ManualLine = { account_code: string; debit: string; credit: string };
@@ -268,9 +269,18 @@ export default function Page() {
   async function unpostJournal(id: string) {
     setError('');
     setMessage('');
+    const reason = unpostReason.trim();
+    if (!reason) {
+      setError('Enter an unpost reason before unposting a journal');
+      return;
+    }
     try {
-      await api(`/accounting/journal-entries/${id}/unpost`, { method: 'POST', body: '{}' });
+      await api(`/accounting/journal-entries/${id}/unpost`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
       setMessage('Journal unposted');
+      setUnpostReason('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1232,6 +1242,18 @@ export default function Page() {
             Manual journals can be unposted within the current fiscal period when books are open for
             that date. Attach supporting
             documents on any entry (BR-10.2).
+          </p>
+          <label style={{ display: 'block', marginBottom: 8 }}>
+            Unpost reason{' '}
+            <input
+              value={unpostReason}
+              onChange={(e) => setUnpostReason(e.target.value)}
+              placeholder="Required before Unpost"
+              style={{ minWidth: 280 }}
+            />
+          </label>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Appended to the journal description and audit (`POST .../unpost` {'{ reason }'}).
           </p>
           <table className="table">
             <thead>

@@ -1142,7 +1142,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 ### 10.2 Journal Entries
 **List:** `GET /accounting/journal-entries`  
 **Create:** `POST /accounting/journal-entries`  
-**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` — manual journals only; reverses account balances; allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD) **and** not on/before `books_closed_through`. Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected.  
+**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` `{ "reason": "..." }` — manual journals only; reverses account balances; **reason required** (appended to journal `description` as `Unpost: …` and stored in audit `journal_unposted.details.reason`); allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD) **and** not on/before `books_closed_through`. Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected.  
 **Attachment:** `POST|GET|DELETE /accounting/journal-entries/{entry_id}/attachment` — multipart `file` upload (PDF/image); tenant-scoped media key on `journal_entries.attachment_url`.
 
 **Period close (BR-10.2):**

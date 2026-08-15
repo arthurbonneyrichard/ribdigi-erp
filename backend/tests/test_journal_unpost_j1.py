@@ -76,10 +76,15 @@ async def test_unpost_manual_journal_reverses_balances(client, db_session):
     assert abs(float(exp1["balance"]) - (exp_bal0 + 75)) < 0.01
     assert abs(float(cash1["balance"]) - (cash_bal0 - 75)) < 0.01
 
-    u = await ac.post(f"/api/v1/accounting/journal-entries/{entry_id}/unpost", headers=headers)
+    u = await ac.post(
+        f"/api/v1/accounting/journal-entries/{entry_id}/unpost",
+        headers=headers,
+        json={"reason": "Correction — wrong account"},
+    )
     assert u.status_code == 200, u.text
     assert u.json()["data"]["status"] == "unposted"
     assert u.json()["data"]["can_unpost"] is False
+    assert "Unpost: Correction — wrong account" in (u.json()["data"].get("description") or "")
 
     after = await ac.get("/api/v1/accounting/accounts", headers=headers)
     cash2 = next(a for a in after.json()["data"] if a["code"] == "1000")
@@ -87,7 +92,11 @@ async def test_unpost_manual_journal_reverses_balances(client, db_session):
     assert abs(float(cash2["balance"]) - cash_bal0) < 0.01
     assert abs(float(exp2["balance"]) - exp_bal0) < 0.01
 
-    again = await ac.post(f"/api/v1/accounting/journal-entries/{entry_id}/unpost", headers=headers)
+    again = await ac.post(
+        f"/api/v1/accounting/journal-entries/{entry_id}/unpost",
+        headers=headers,
+        json={"reason": "retry"},
+    )
     assert again.status_code == 400
 
 
@@ -112,7 +121,9 @@ async def test_unpost_blocks_auto_source_journals(client, db_session):
     await db_session.commit()
 
     r = await ac.post(
-        f"/api/v1/accounting/journal-entries/{entry.id}/unpost", headers=headers
+        f"/api/v1/accounting/journal-entries/{entry.id}/unpost",
+        headers=headers,
+        json={"reason": "should fail — auto source"},
     )
     assert r.status_code == 400
     assert "manual" in r.json()["detail"].lower()
@@ -139,7 +150,9 @@ async def test_unpost_blocks_outside_fiscal_period(client, db_session):
     await db_session.commit()
 
     r = await ac.post(
-        f"/api/v1/accounting/journal-entries/{entry.id}/unpost", headers=headers
+        f"/api/v1/accounting/journal-entries/{entry.id}/unpost",
+        headers=headers,
+        json={"reason": "should fail — prior year"},
     )
     assert r.status_code == 400
     assert "fiscal" in r.json()["detail"].lower()
@@ -193,5 +206,9 @@ async def test_journal_attachment_upload_download_delete(client, db_session, tmp
 async def test_unpost_requires_accounting_write(client):
     ac, seed = client
     headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
-    r = await ac.post("/api/v1/accounting/journal-entries/x/unpost", headers=headers)
+    r = await ac.post(
+        "/api/v1/accounting/journal-entries/x/unpost",
+        headers=headers,
+        json={"reason": "nope"},
+    )
     assert r.status_code == 403
