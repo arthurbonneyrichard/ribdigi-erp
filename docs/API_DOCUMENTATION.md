@@ -755,7 +755,7 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 **Create:** `POST /purchases/requests`  
 **Get:** `GET /purchases/requests/{request_id}`  
 **Approve:** `POST /purchases/requests/{request_id}/approve`  
-**Reject:** `POST /purchases/requests/{request_id}/reject`
+**Reject:** `POST /purchasing/requests/{request_id}/reject` — body `{ "reason" }` → `rejection_reason` (Purchasing UI requires a non-empty reason; no hardcoded string)
 
 **Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_request_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PREQ`) — not a daily `R{yymmdd}-NNN` stamp (BR-6.2 / BR-20.4).
 
