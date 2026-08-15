@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 441 track opened (ADR-889: `test_stage441_open.py`, `docs/STAGE_441_PLAN.md`) — Commercial Liability Honesty Pack Remaining-Gate Index; closed under ADR-890
+- [x] Commercial Liability honesty pack remaining-gate hub (Stage 441 I1: `test_stage441_index_i1.py`, `docs/COMMERCIAL_LIABILITY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Commercial Liability honesty pack blocker matrix (Stage 441 B1: `test_stage441_blockers_b1.py`, `docs/COMMERCIAL_LIABILITY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 440 / Stage 439 / Stage 392 / CHANGE_IMPACT pointers (Stage 441 P1: `test_stage441_pointers_p1.py`, `docs/COMMERCIAL_LIABILITY_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 441 fidelity sync (D1: `test_stage441_fidelity_d1.py`, `docs/STAGE_441_FIDELITY.md`)
+- [x] Stage 441 exit + freeze (H441x: `test_stage441_exit_h441x.py`, `docs/STAGE_441_EXIT_CRITERIA.md`, ADR-890)
 - [x] Stage 440 track opened (ADR-887: `test_stage440_open.py`, `docs/STAGE_440_PLAN.md`) — Commercial DPA Honesty Pack Remaining-Gate Index; closed under ADR-888
 - [x] Commercial DPA honesty pack remaining-gate hub (Stage 440 I1: `test_stage440_index_i1.py`, `docs/COMMERCIAL_DPA_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Commercial DPA honesty pack blocker matrix (Stage 440 B1: `test_stage440_blockers_b1.py`, `docs/COMMERCIAL_DPA_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

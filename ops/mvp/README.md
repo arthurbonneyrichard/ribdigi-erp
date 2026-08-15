@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_441_EXIT_CRITERIA.md` / `docs/ADR_890_STAGE441_FREEZE.md` (`backend/tests/test_stage441_exit_h441x.py`) — Stage 441 H441x
+- `docs/STAGE_441_FIDELITY.md` (`backend/tests/test_stage441_fidelity_d1.py`) — Stage 441 D1
+- `docs/STAGE_441_PLAN.md` (`backend/tests/test_stage441_open.py`) — Stage 441 open (ADR-889)
+- `docs/COMMERCIAL_LIABILITY_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-liability-honesty-pack-remaining-gate.json` — Stage 441 I1
+- `docs/COMMERCIAL_LIABILITY_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-liability-honesty-pack-rg-blockers.json` — Stage 441 B1
+- `docs/COMMERCIAL_LIABILITY_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-liability-honesty-pack-rg-pointers.json` — Stage 441 P1
 - `docs/STAGE_440_EXIT_CRITERIA.md` / `docs/ADR_888_STAGE440_FREEZE.md` (`backend/tests/test_stage440_exit_h440x.py`) — Stage 440 H440x
 - `docs/STAGE_440_FIDELITY.md` (`backend/tests/test_stage440_fidelity_d1.py`) — Stage 440 D1
 - `docs/STAGE_440_PLAN.md` (`backend/tests/test_stage440_open.py`) — Stage 440 open (ADR-887)
@@ -5923,6 +5929,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 441 exit
+
+H441x met — `docs/STAGE_441_EXIT_CRITERIA.md`, ADR-890. Stages 1–441 frozen for Stage 441 feature scope.
+
+## Stage 441 D1 — Tenant MVP Commercial Liability Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Commercial Liability honesty / go-live Completes remain MISSING. See `docs/STAGE_441_FIDELITY.md`.
+
+## Stage 441 open
+
+Opened under ADR-889; plan `docs/STAGE_441_PLAN.md`.
 
 ## Stage 440 exit
 

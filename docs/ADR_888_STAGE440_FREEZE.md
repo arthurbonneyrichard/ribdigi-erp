@@ -31,3 +31,10 @@ Stage 441 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial DPA, Commercial DPA honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 441 opened under **ADR-889** after CONTINUE/NEXT (Tenant MVP Commercial Liability Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-890**. Stage 440 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 440 runner-up outline was approved and opened (ADR-889); freeze ADR-890. Do not reopen Stage 440 scope.
+
