@@ -31,3 +31,7 @@ Stage 534 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Status Uptime, Status Uptime honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 534 opened under **ADR-1075** after CONTINUE/NEXT (Tenant MVP Incident Severity Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1076**. Stage 533 feature scope remains frozen.
