@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 582 D1 Sync Idempotency Replay Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_582_FIDELITY.md` (`test_stage582_fidelity_d1.py`); exit ADR-1172 / `test_stage582_exit_h582x.py`. Honesty: Offline Complete / Sync Idempotency Replay honesty / go-live Completes remain MISSING.
 Stage 581 D1 Sync Conflict UX Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_581_FIDELITY.md` (`test_stage581_fidelity_d1.py`); exit ADR-1170 / `test_stage581_exit_h581x.py`. Honesty: Offline Complete / Sync Conflict UX honesty / go-live Completes remain MISSING.
 Stage 580 D1 Shift Handover Pointers Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_580_FIDELITY.md` (`test_stage580_fidelity_d1.py`); exit ADR-1168 / `test_stage580_exit_h580x.py`. Honesty: Offline Complete / Shift Handover Pointers honesty / go-live Completes remain MISSING.
 Stage 579 D1 Shift Handover Snapshot Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_579_FIDELITY.md` (`test_stage579_fidelity_d1.py`); exit ADR-1166 / `test_stage579_exit_h579x.py`. Honesty: Offline Complete / Shift Handover Snapshot honesty / go-live Completes remain MISSING.

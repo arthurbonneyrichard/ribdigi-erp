@@ -31,3 +31,7 @@ Stage 582 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Sync Conflict UX, Sync Conflict UX honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 582 opened under **ADR-1171** after CONTINUE/NEXT (Tenant MVP Sync Idempotency Replay Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1172**. Stage 581 feature scope remains frozen.
