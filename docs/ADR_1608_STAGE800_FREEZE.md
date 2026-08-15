@@ -31,3 +31,7 @@ Stage 801 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Immutable Log Gate, Immutable Log Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 801 opened under **ADR-1609** after CONTINUE/NEXT (Tenant MVP Tamper Evident Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1610**. Stage 800 feature scope remains frozen.
