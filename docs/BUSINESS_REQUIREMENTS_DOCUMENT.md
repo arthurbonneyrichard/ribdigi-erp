@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 581 D1 Sync Conflict UX Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_581_FIDELITY.md` (`test_stage581_fidelity_d1.py`); Offline Complete / Sync Conflict UX honesty / go-live still MISSING.
 Stage 580 D1 Shift Handover Pointers Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_580_FIDELITY.md` (`test_stage580_fidelity_d1.py`); Offline Complete / Shift Handover Pointers honesty / go-live still MISSING.
 Stage 579 D1 Shift Handover Snapshot Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_579_FIDELITY.md` (`test_stage579_fidelity_d1.py`); Offline Complete / Shift Handover Snapshot honesty / go-live still MISSING.
 Stage 578 D1 Shift Handover Checklist Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_578_FIDELITY.md` (`test_stage578_fidelity_d1.py`); Offline Complete / Shift Handover Checklist honesty / go-live still MISSING.

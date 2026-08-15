@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 581 track opened (ADR-1169: `test_stage581_open.py`, `docs/STAGE_581_PLAN.md`) — Sync Conflict UX Honesty Pack Remaining-Gate Index; closed under ADR-1170
+- [x] Sync Conflict UX Honesty Pack remaining-gate hub (Stage 581 I1: `test_stage581_index_i1.py`, `docs/SYNC_CONFLICT_UX_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Sync Conflict UX Honesty Pack blocker matrix (Stage 581 B1: `test_stage581_blockers_b1.py`, `docs/SYNC_CONFLICT_UX_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 580 / Stage 579 / Stage 392 / CHANGE_IMPACT pointers (Stage 581 P1: `test_stage581_pointers_p1.py`, `docs/SYNC_CONFLICT_UX_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 581 fidelity sync (D1: `test_stage581_fidelity_d1.py`, `docs/STAGE_581_FIDELITY.md`)
+- [x] Stage 581 exit + freeze (H581x: `test_stage581_exit_h581x.py`, `docs/STAGE_581_EXIT_CRITERIA.md`, ADR-1170)
+
 Stage 580 track opened (ADR-1167: `test_stage580_open.py`, `docs/STAGE_580_PLAN.md`) — Shift Handover Pointers Honesty Pack Remaining-Gate Index; closed under ADR-1168
 - [x] Shift Handover Pointers Honesty Pack remaining-gate hub (Stage 580 I1: `test_stage580_index_i1.py`, `docs/SHIFT_HANDOVER_POINTERS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Shift Handover Pointers Honesty Pack blocker matrix (Stage 580 B1: `test_stage580_blockers_b1.py`, `docs/SHIFT_HANDOVER_POINTERS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

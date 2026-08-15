@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 581 D1 (2026-08-14):** Sync Conflict UX Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_581_FIDELITY.md` (`test_stage581_fidelity_d1.py`). Open ADR: `docs/ADR_1169_STAGE581_OPEN.md`; plan `docs/STAGE_581_PLAN.md`.
+
+**Stage 581 exit (2026-08-14):** I1, B1, P1, D1, H581x met — `docs/STAGE_581_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1170_STAGE581_FREEZE.md`. Fidelity: `docs/STAGE_581_FIDELITY.md`.
+
 **Stage 580 D1 (2026-08-14):** Shift Handover Pointers Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_580_FIDELITY.md` (`test_stage580_fidelity_d1.py`). Open ADR: `docs/ADR_1167_STAGE580_OPEN.md`; plan `docs/STAGE_580_PLAN.md`.
 
 **Stage 580 exit (2026-08-14):** I1, B1, P1, D1, H580x met — `docs/STAGE_580_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1168_STAGE580_FREEZE.md`. Fidelity: `docs/STAGE_580_FIDELITY.md`.
