@@ -1126,6 +1126,12 @@ Authoritative MVP docs:
 - `docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/post-mvp-backlog-pack-remaining-gate.json` — Stage 282 I1
 - `docs/POST_MVP_BACKLOG_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-blockers.json` — Stage 282 B1
 - `docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md` / `ops/mvp/post-mvp-backlog-pack-rg-pointers.json` — Stage 282 P1
+- `docs/STAGE_444_EXIT_CRITERIA.md` / `docs/ADR_896_STAGE444_FREEZE.md` (`backend/tests/test_stage444_exit_h444x.py`) — Stage 444 H444x
+- `docs/STAGE_444_FIDELITY.md` (`backend/tests/test_stage444_fidelity_d1.py`) — Stage 444 D1
+- `docs/STAGE_444_PLAN.md` (`backend/tests/test_stage444_open.py`) — Stage 444 open (ADR-895)
+- `docs/COMMERCIAL_EVIDENCE_CHAIN_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/commercial-evidence-chain-honesty-pack-remaining-gate.json` — Stage 444 I1
+- `docs/COMMERCIAL_EVIDENCE_CHAIN_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/commercial-evidence-chain-honesty-pack-rg-blockers.json` — Stage 444 B1
+- `docs/COMMERCIAL_EVIDENCE_CHAIN_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/commercial-evidence-chain-honesty-pack-rg-pointers.json` — Stage 444 P1
 - `docs/STAGE_443_EXIT_CRITERIA.md` / `docs/ADR_894_STAGE443_FREEZE.md` (`backend/tests/test_stage443_exit_h443x.py`) — Stage 443 H443x
 - `docs/STAGE_443_FIDELITY.md` (`backend/tests/test_stage443_fidelity_d1.py`) — Stage 443 D1
 - `docs/STAGE_443_PLAN.md` (`backend/tests/test_stage443_open.py`) — Stage 443 open (ADR-893)
@@ -5941,6 +5947,18 @@ H282x met — `docs/STAGE_282_EXIT_CRITERIA.md`, ADR-572. Stages 1–282 frozen 
 ## Stage 282 open
 
 `docs/ADR_571_STAGE282_OPEN.md` + `docs/STAGE_282_PLAN.md` (`test_stage282_open.py`).
+
+## Stage 444 exit
+
+H444x met — `docs/STAGE_444_EXIT_CRITERIA.md`, ADR-896. Stages 1–444 frozen for Stage 444 feature scope.
+
+## Stage 444 D1 — Tenant MVP Commercial Evidence Chain Honesty Pack Remaining-Gate Index Fidelity
+
+Packaging only — Offline Complete / Commercial Evidence Chain honesty / go-live Completes remain MISSING. See `docs/STAGE_444_FIDELITY.md`.
+
+## Stage 444 open
+
+Opened under ADR-895; plan `docs/STAGE_444_PLAN.md`.
 
 ## Stage 443 exit
 
