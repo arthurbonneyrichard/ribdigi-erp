@@ -31,3 +31,10 @@ Stage 449 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, First Commercial Day, First Commercial Day honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 449 opened under **ADR-905** after CONTINUE/NEXT (Tenant MVP Steady-State Ops Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-906**. Stage 448 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 448 runner-up outline was approved and opened (ADR-905); freeze ADR-906. Do not reopen Stage 448 scope.
+

@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 449 track opened (ADR-905: `test_stage449_open.py`, `docs/STAGE_449_PLAN.md`) — Steady-State Ops Honesty Pack Remaining-Gate Index; closed under ADR-906
+- [x] Steady-State Ops honesty pack remaining-gate hub (Stage 449 I1: `test_stage449_index_i1.py`, `docs/STEADY_STATE_OPS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Steady-State Ops honesty pack blocker matrix (Stage 449 B1: `test_stage449_blockers_b1.py`, `docs/STEADY_STATE_OPS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 448 / Stage 447 / Stage 392 / CHANGE_IMPACT pointers (Stage 449 P1: `test_stage449_pointers_p1.py`, `docs/STEADY_STATE_OPS_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 449 fidelity sync (D1: `test_stage449_fidelity_d1.py`, `docs/STAGE_449_FIDELITY.md`)
+- [x] Stage 449 exit + freeze (H449x: `test_stage449_exit_h449x.py`, `docs/STAGE_449_EXIT_CRITERIA.md`, ADR-906)
 - [x] Stage 448 track opened (ADR-903: `test_stage448_open.py`, `docs/STAGE_448_PLAN.md`) — First Commercial Day Honesty Pack Remaining-Gate Index; closed under ADR-904
 - [x] First Commercial Day honesty pack remaining-gate hub (Stage 448 I1: `test_stage448_index_i1.py`, `docs/FIRST_COMMERCIAL_DAY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] First Commercial Day honesty pack blocker matrix (Stage 448 B1: `test_stage448_blockers_b1.py`, `docs/FIRST_COMMERCIAL_DAY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
