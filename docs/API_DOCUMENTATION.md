@@ -266,9 +266,9 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
 ### 3.4 Tenant Status Management
-**Suspend:** `POST /tenants/{tenant_ref}/suspend`  
+**Suspend:** `POST /tenants/{tenant_ref}/suspend` — body `{ "reason" }` **required** (non-empty) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Suspend reason** input (no `window.prompt`).  
 **Activate:** `POST /tenants/{tenant_ref}/activate`  
-(`tenant_ref` = id or slug; **super_admin** only for cross-tenant)
+(`tenant_ref` = id or slug; platform `platform_tenants:write` / legacy **super_admin** for cross-tenant)
 
 **Allowed statuses:** `trial`, `active`, `grace`, `suspended`
 
