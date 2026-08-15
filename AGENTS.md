@@ -27,3 +27,4 @@
 - Do not commit `.devdata/` or `dump.rdb`.
 - **Notification center (BR-4.4 / BR-15.2):** Shell topbar **Alerts** opens a dropdown (`GET /notifications?status=unread&limit=8`) with badge from `GET /notifications/unread-count`. Full page `/notifications` supports `?status=` + `?category=` chips and `PATCH .../read|unread`. Prefs: `GET|PATCH /notifications/settings`.
 - **Branded emails (BR-15.2):** `emailer.render_branded_html` wraps outbound HTML (verification, reset, notifications, digests, QT/PO/INV, test, receipt email) with company name + optional logo/print header/footer from Company → Print branding.
+- **Financial report location filters (BR-14.5):** P&L, cash-flow, **balance sheet**, and **trial balance** accept `store_id` / `branch_id` (attributable journals via `_pnl_journal_ids_for_stores`). Reports UI tabs pass the same filters.

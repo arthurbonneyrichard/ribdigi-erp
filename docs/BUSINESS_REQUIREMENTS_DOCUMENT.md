@@ -798,7 +798,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Profit & Loss Statement (`GET /accounting/profit-loss` + `/reports/profit-loss` with date/store/branch filters)
   - [x] Cash Flow Statement (O/I/F + internal transfers; date range; liquid GL direct method; optional `store_id`/`branch_id` for attributable operating cash)
   - [x] Balance Sheet (Assets = Liabilities + Equity; `as_of` reconstructs from posted journals; computed retained earnings)
-  - [ ] All reports filterable by date range, branch, store (P&L + cash-flow support date/store/branch; daily/monthly/product/customer/salesperson/returns sales support `store_id`; purchase summary/suppliers/pending/returns support `store_id`/`warehouse_id`; inventory balance/valuation/expiry/movements/low-stock/transfers support `store_id`/`warehouse_id`; tax report/filing support `store_id`; BS + TB support `as_of`; **expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`**; others partial)
+  - [x] All reports filterable by date range, branch, store (P&L + cash-flow + **BS + TB** support date/`as_of`/store/branch via attributable journals; daily/monthly/product/customer/salesperson/returns sales support `store_id`; purchase summary/suppliers/pending/returns support `store_id`/`warehouse_id`; inventory balance/valuation/expiry/movements/low-stock/transfers support `store_id`/`warehouse_id`; tax report/filing support `store_id`; expense summary/budget-vs-actual support `branch_id`/`department_id`/`store_id`)
   - [x] Comparative reports (current period vs previous period) — BS `compare=prior_period|prior_year`
 
 ---

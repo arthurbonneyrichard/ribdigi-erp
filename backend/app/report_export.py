@@ -746,6 +746,8 @@ async def build_report_payload(
             db,
             tenant_id,
             as_of=reports_svc.parse_date(as_of_raw, end_of_day=True),
+            store_id=store_id or None,
+            branch_id=branch_id or None,
         )
     if report_type == "profit_loss":
         return await accounting_svc.profit_and_loss(
@@ -763,6 +765,8 @@ async def build_report_payload(
             tenant_id,
             as_of=reports_svc.parse_date(as_of_raw, end_of_day=True),
             compare=compare,
+            store_id=store_id or None,
+            branch_id=branch_id or None,
         )
     if report_type == "tax":
         return await tax_svc.tax_report(

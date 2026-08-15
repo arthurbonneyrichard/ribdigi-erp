@@ -122,6 +122,8 @@ export default function Page() {
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
     if (compare) params.set('compare', compare);
+    if (storeId) params.set('store_id', storeId);
+    if (branchId) params.set('branch_id', branchId);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -130,6 +132,8 @@ export default function Page() {
     const params = new URLSearchParams();
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
+    if (storeId) params.set('store_id', storeId);
+    if (branchId) params.set('branch_id', branchId);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -558,9 +562,22 @@ export default function Page() {
             </select>
           </>
         )}
-        {(tab === 'pnl' || tab === 'stores' || tab === 'sales' || tab === 'customers' || tab === 'expenses' || tab === 'cashflow' || tab === 'salesperson') && (
+        {(tab === 'pnl' ||
+          tab === 'stores' ||
+          tab === 'sales' ||
+          tab === 'customers' ||
+          tab === 'expenses' ||
+          tab === 'cashflow' ||
+          tab === 'salesperson' ||
+          tab === 'balancesheet' ||
+          tab === 'trialbalance') && (
           <>
-            {(tab === 'pnl' || tab === 'stores' || tab === 'expenses' || tab === 'cashflow') && (
+            {(tab === 'pnl' ||
+              tab === 'stores' ||
+              tab === 'expenses' ||
+              tab === 'cashflow' ||
+              tab === 'balancesheet' ||
+              tab === 'trialbalance') && (
               <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                 <option value="">All branches</option>
                 {branches.map((b) => (
@@ -1725,6 +1742,11 @@ export default function Page() {
           <p className="muted">
             As of {data.as_of}
             {data.mode === 'journals' ? ' · reconstructed from posted journals' : ' · live balances'}
+            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
+            {data.branch_id ? ` · branch ${String(data.branch_id).slice(0, 8)}…` : ''}
+            {data.store_id || data.branch_id
+              ? ' · attributable journals only (sales / POS / expenses / returns)'
+              : ''}
             {' · '}
             Balanced: {String(data.balanced)} | Dr {data.total_debit} / Cr {data.total_credit}
           </p>
@@ -1765,6 +1787,11 @@ export default function Page() {
           <p className="muted">
             As of {data.as_of}
             {data.mode === 'journals' ? ' · reconstructed from posted journals' : ' · live balances'}
+            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
+            {data.branch_id ? ` · branch ${String(data.branch_id).slice(0, 8)}…` : ''}
+            {data.store_id || data.branch_id
+              ? ' · attributable journals only (sales / POS / expenses / returns)'
+              : ''}
             {data.compare
               ? ` · compare ${data.compare.mode} (${data.compare.as_of})`
               : ''}
