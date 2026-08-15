@@ -31,3 +31,7 @@ Stage 602 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Change Impact Gate, Change Impact Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 602 opened under **ADR-1211** after CONTINUE/NEXT (Tenant MVP Evidence Bundle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1212**. Stage 601 feature scope remains frozen.

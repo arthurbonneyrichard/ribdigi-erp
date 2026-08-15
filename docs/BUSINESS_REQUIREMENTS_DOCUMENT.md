@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 602 D1 Evidence Bundle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_602_FIDELITY.md` (`test_stage602_fidelity_d1.py`); Offline Complete / Evidence Bundle Gate honesty / go-live still MISSING.
 Stage 601 D1 Change Impact Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_601_FIDELITY.md` (`test_stage601_fidelity_d1.py`); Offline Complete / Change Impact Gate honesty / go-live still MISSING.
 Stage 600 D1 MVP Closeout Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_600_FIDELITY.md` (`test_stage600_fidelity_d1.py`); Offline Complete / MVP Closeout honesty / go-live still MISSING.
 Stage 599 D1 Operator Runbook Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_599_FIDELITY.md` (`test_stage599_fidelity_d1.py`); Offline Complete / Operator Runbook honesty / go-live still MISSING.
