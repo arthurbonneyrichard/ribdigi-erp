@@ -1621,6 +1621,70 @@ Signing secret is returned **once** on create/rotate (`secret_shown_once`). Deli
 }
 ```
 
+### 17.4 Signature verification (subscribers)
+
+Every delivery includes header **`X-Ribdigi-Signature`** with format:
+
+```text
+t=<unix_seconds>,v1=<hmac_sha256_hex>
+```
+
+Signed bytes are: `f"{t}.".encode("utf-8") + raw_body` (raw JSON body **exactly** as received — do not re-serialize).
+
+Rules:
+
+1. Parse `t` and `v1` from the header.
+2. Reject if `|now - t| > 300` seconds (replay window).
+3. Recompute HMAC-SHA256 with your `whsec_…` secret; compare with `hmac.compare_digest`.
+4. Secrets are shown **once** on create/rotate in Integrations — store them in your vault.
+
+**Live events today:** `webhook.test` (Integrations **Test**) and `sale.created` (invoice post). Other event names in the UI are reserved for upcoming emit wiring.
+
+**Golden fixture** (matches `tests/test_webhooks_w1.py`):
+
+| Field | Value |
+|-------|--------|
+| Secret | `whsec_demo_secret_123456` |
+| Body | `{"event":"webhook.test","timestamp":"2026-08-15T07:00:00Z","tenant_id":"demo","data":{"message":"ping"}}` |
+| Timestamp `t` | `1723705200` |
+| Header | `t=1723705200,v1=8ba12e1df3b867331f2ccf13f760ace4afd370df9d542012046eb4aba49bb2e2` |
+
+**Python:**
+
+```python
+import hashlib, hmac, time
+
+def verify_ribdigi_signature(secret: str, body: bytes, header: str, skew: int = 300) -> bool:
+    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)
+    ts = int(parts.get("t", "0"))
+    expected = parts.get("v1", "")
+    if abs(int(time.time()) - ts) > skew:
+        return False
+    signed = f"{ts}.".encode() + body
+    got = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(got, expected)
+```
+
+**Node.js:**
+
+```js
+const crypto = require("crypto");
+
+function verifyRibdigiSignature(secret, bodyBuf, header, skew = 300) {
+  const parts = Object.fromEntries(
+    header.split(",").map((c) => c.trim().split("="))
+  );
+  const ts = Number(parts.t || 0);
+  const expected = parts.v1 || "";
+  if (Math.abs(Math.floor(Date.now() / 1000) - ts) > skew) return false;
+  const signed = Buffer.concat([Buffer.from(`${ts}.`), bodyBuf]);
+  const got = crypto.createHmac("sha256", secret).update(signed).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected));
+}
+```
+
+See also Integrations UI **Verify signature** panel and `docs/SECURITY_GUIDE.md` §8.5.
+
 ---
 
 ## 17A. API Keys

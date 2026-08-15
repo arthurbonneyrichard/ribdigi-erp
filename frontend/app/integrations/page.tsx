@@ -389,8 +389,55 @@ export default function Page() {
       <div className="card" style={{ maxWidth: 960 }}>
         <h2>Webhooks</h2>
         <p className="muted">
-          Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256).
+          Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256). Live
+          fan-out today: <code>webhook.test</code> + <code>sale.created</code> (other chips reserved).
         </p>
+        <details style={{ marginBottom: 12 }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Verify signature (subscriber)</summary>
+          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+            <p className="muted" style={{ margin: 0 }}>
+              Header format <code>t=&lt;unix&gt;,v1=&lt;hex&gt;</code>. Signed bytes are the ASCII
+              timestamp, a dot, then the raw JSON body. Reject if timestamp skew exceeds 300s. Full
+              samples: API docs §17.4 / Security Guide §8.5.
+            </p>
+            <pre
+              style={{
+                margin: 0,
+                padding: 12,
+                overflow: 'auto',
+                fontSize: 12,
+                background: 'var(--surface-2, #f8fafc)',
+                borderRadius: 8,
+              }}
+            >{`# Python
+import hashlib, hmac, time
+
+def verify(secret, body: bytes, header: str, skew=300) -> bool:
+    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)
+    ts = int(parts.get("t", "0"))
+    if abs(int(time.time()) - ts) > skew:
+        return False
+    signed = f"{ts}.".encode() + body
+    got = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(got, parts.get("v1", ""))
+
+# Golden fixture
+# secret = whsec_demo_secret_123456
+# body   = {"event":"webhook.test",...}  # exact raw bytes
+# t=1723705200
+# v1=8ba12e1df3b867331f2ccf13f760ace4afd370df9d542012046eb4aba49bb2e2`}</pre>
+            <button
+              type="button"
+              onClick={() =>
+                navigator.clipboard?.writeText(
+                  `import hashlib, hmac, time\n\ndef verify(secret, body: bytes, header: str, skew=300) -> bool:\n    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)\n    ts = int(parts.get("t", "0"))\n    if abs(int(time.time()) - ts) > skew:\n        return False\n    signed = f"{ts}.".encode() + body\n    got = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()\n    return hmac.compare_digest(got, parts.get("v1", ""))\n`
+                )
+              }
+            >
+              Copy Python verifier
+            </button>
+          </div>
+        </details>
         <label className="muted">Endpoint URL</label>
         <input
           value={hookUrl}

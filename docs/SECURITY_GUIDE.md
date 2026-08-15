@@ -372,6 +372,15 @@ X-RateLimit-Reset: 1691415060
 - Deprecated versions receive 6-month sunset notice
 - Security patches backported to supported versions
 
+### 8.5 Outbound webhooks (HMAC)
+
+- Endpoints require HTTPS (localhost `http://` allowed for development).
+- Signing secret `whsec_…` is encrypted at rest and shown **once** on create/rotate.
+- Deliveries include `X-Ribdigi-Signature: t=<unix>,v1=<hmac-sha256-hex>` over `f"{t}.".encode() + raw_body`.
+- Subscribers must reject signatures outside a **300s** timestamp skew and use constant-time compare.
+- Failed deliveries enter `pending_retry` with exponential backoff (`retry_due_webhooks`); admins can inspect/retry from **Integrations → Deliveries**.
+- Verify samples: `docs/API_DOCUMENTATION.md` §17.4.
+
 ---
 
 ## 9. Session Management
