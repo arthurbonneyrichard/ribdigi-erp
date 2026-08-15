@@ -1,4 +1,4 @@
-"""Sales return reason honesty (BR-7.5) — FE/API required coded reason."""
+"""Sales return condition honesty (BR-7.5) — FE/API required coded condition."""
 
 from __future__ import annotations
 
@@ -8,24 +8,26 @@ import pyotp
 import pytest
 from pydantic_core import PydanticUndefined
 
-from app.schemas import SalesReturnCreate
+from app.schemas import SalesReturnItemCreate
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_sales_return_reason_ui_wired():
+def test_sales_return_condition_ui_wired():
     sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    assert "const [returnReason, setReturnReason] = useState('');" in sales
-    assert "Select a return reason" in sales
-    assert "Select reason" in sales
-    assert "!returnReason" in sales
-    assert "useState('other')" not in sales
+    assert "const [returnCondition, setReturnCondition] = useState('');" in sales
+    assert "Select a return condition" in sales
+    assert "Select condition" in sales
+    assert "!returnCondition" in sales
+    assert "condition: returnCondition" in sales
+    assert 'or ("sellable" if restock else "discard")' not in (
+        ROOT / "backend/app/sales_docs.py"
+    ).read_text(encoding="utf-8")
 
 
-def test_sales_return_create_schema_no_silent_other():
-    field = SalesReturnCreate.model_fields["reason"]
-    assert field.is_required() or field.default is PydanticUndefined
+def test_sales_return_item_schema_requires_condition():
+    field = SalesReturnItemCreate.model_fields["condition"]
     assert field.default is PydanticUndefined
 
 
@@ -36,13 +38,13 @@ async def _super(ac, seed):
     )
 
 
-async def _posted_invoice(ac, admin, seed, *, unit_price=50.0):
+async def _posted_invoice(ac, admin, seed):
     created = await ac.post(
         "/api/v1/sales/invoices",
         headers=admin,
         json={
             "customer_id": seed["party1"].id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": unit_price}],
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 20}],
         },
     )
     assert created.status_code == 200, created.text
@@ -53,7 +55,7 @@ async def _posted_invoice(ac, admin, seed, *, unit_price=50.0):
 
 
 @pytest.mark.asyncio
-async def test_sales_return_reason_required(client, seeded):
+async def test_sales_return_condition_required_and_persisted(client, seeded):
     ac, seed = client
     admin = await _super(ac, seed)
     inv = await _posted_invoice(ac, admin, seed)
@@ -63,8 +65,9 @@ async def test_sales_return_reason_required(client, seeded):
         headers=admin,
         json={
             "sales_invoice_id": inv["id"],
-            "restock": False,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "discard"}],
+            "reason": "damaged",
+            "restock": True,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
         },
     )
     assert omit.status_code == 422, omit.text
@@ -74,35 +77,38 @@ async def test_sales_return_reason_required(client, seeded):
         headers=admin,
         json={
             "sales_invoice_id": inv["id"],
-            "reason": "   ",
-            "restock": False,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "discard"}],
+            "reason": "damaged",
+            "restock": True,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "  "}],
         },
     )
     assert blank.status_code == 400, blank.text
-    assert "reason" in blank.text.lower()
+    assert "condition" in blank.text.lower()
 
     bad = await ac.post(
         "/api/v1/sales/returns",
         headers=admin,
         json={
             "sales_invoice_id": inv["id"],
-            "reason": "not_a_reason",
-            "restock": False,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "discard"}],
+            "reason": "damaged",
+            "restock": True,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "broken"}],
         },
     )
     assert bad.status_code == 400, bad.text
 
-    ok = await ac.post(
+    # Restock checked but condition discard — must not silently become sellable
+    discard = await ac.post(
         "/api/v1/sales/returns",
         headers=admin,
         json={
             "sales_invoice_id": inv["id"],
-            "reason": "damaged",
-            "restock": False,
+            "reason": "defective",
+            "restock": True,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "discard"}],
         },
     )
-    assert ok.status_code == 200, ok.text
-    assert ok.json()["data"]["reason"] == "damaged"
+    assert discard.status_code == 200, discard.text
+    body = discard.json()["data"]
+    assert body["items"][0]["condition"] == "discard"
+    assert body["restock"] is True

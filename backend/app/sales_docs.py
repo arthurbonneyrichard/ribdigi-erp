@@ -21,6 +21,7 @@ from app.tax import resolve_product_tax
 from app.catalog import get_variant, resolve_sale_line
 
 RETURN_REASONS = frozenset({"damaged", "wrong_item", "defective", "customer_change", "other"})
+RETURN_CONDITIONS = frozenset({"sellable", "discard"})
 
 
 async def _prepare_lines(
@@ -790,6 +791,14 @@ async def create_return(
         line_total = round(line_net + line_tax, 2)
         subtotal += line_net
         tax_total += line_tax
+        condition = (item.get("condition") or "").strip()
+        if not condition:
+            raise HTTPException(status_code=400, detail="items[].condition is required")
+        if condition not in RETURN_CONDITIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"condition must be one of {sorted(RETURN_CONDITIONS)}",
+            )
         prepared.append(
             {
                 "product_id": pid,
@@ -798,7 +807,7 @@ async def create_return(
                 "unit_price": unit,
                 "tax_rate": rate,
                 "line_total": line_total,
-                "condition": item.get("condition") or ("sellable" if restock else "discard"),
+                "condition": condition,
             }
         )
 

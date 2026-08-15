@@ -1002,7 +1002,8 @@ class SalesOrderConfirm(BaseModel):
 class SalesReturnItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
-    condition: str | None = None
+    # Required coded condition (BR-7.5); no silent sellable/discard from restock
+    condition: str
     variant_id: str | None = None
 
 

@@ -214,7 +214,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "sales_invoice_id": sinv_id,
             "reason": "damaged",
             "restock": True,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "sellable"}],
         },
     )
     assert sret.status_code == 200, sret.text

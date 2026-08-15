@@ -94,6 +94,7 @@ export default function Page() {
   const [invoiceReverseCharge, setInvoiceReverseCharge] = useState(false);
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('');
+  const [returnCondition, setReturnCondition] = useState('');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -521,6 +522,10 @@ export default function Page() {
       setError('Select a return reason');
       return;
     }
+    if (!returnCondition.trim()) {
+      setError('Select a return condition');
+      return;
+    }
     try {
       const r = await api('/sales/returns', {
         method: 'POST',
@@ -528,12 +533,20 @@ export default function Page() {
           sales_invoice_id: invoiceId,
           reason: returnReason,
           restock,
-          items: [{ product_id: productId, variant_id: variantId || null, quantity: Number(qty) }],
+          items: [
+            {
+              product_id: productId,
+              variant_id: variantId || null,
+              quantity: Number(qty),
+              condition: returnCondition,
+            },
+          ],
         }),
       });
       setMessage(`Return ${r.data.return_number} drafted`);
       setSelected(r.data);
       setReturnReason('');
+      setReturnCondition('');
       setTab('returns');
       await refresh();
     } catch (err: any) {
@@ -1431,10 +1444,22 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <select
+            value={returnCondition}
+            onChange={(e) => setReturnCondition(e.target.value)}
+            aria-label="Return condition"
+          >
+            <option value="">Select condition</option>
+            <option value="sellable">sellable</option>
+            <option value="discard">discard</option>
+          </select>
           <label>
             <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock
           </label>
-          <button onClick={createReturn} disabled={!invoiceId || !productId || !returnReason}>
+          <button
+            onClick={createReturn}
+            disabled={!invoiceId || !productId || !returnReason || !returnCondition}
+          >
             Create return
           </button>
         </div>
@@ -1516,6 +1541,7 @@ export default function Page() {
                 <th>Unit</th>
                 <th>Tax %</th>
                 <th>Discount</th>
+                <th>Condition</th>
                 <th>Line tax</th>
                 <th>Line total</th>
               </tr>
@@ -1531,6 +1557,7 @@ export default function Page() {
                   <td>{it.unit_price}</td>
                   <td>{it.tax_rate}</td>
                   <td>{it.discount ?? 0}</td>
+                  <td>{it.condition || '—'}</td>
                   <td>
                     {it.line_tax ?? 0}
                     {(it.tax_components || []).length
