@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 804 track opened (ADR-1615: `test_stage804_open.py`, `docs/STAGE_804_PLAN.md`) — Signed Audit Gate Honesty Pack Remaining-Gate Index; closed under ADR-1616
+- [x] Signed Audit Gate Honesty Pack remaining-gate hub (Stage 804 I1: `test_stage804_index_i1.py`, `docs/SIGNED_AUDIT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Signed Audit Gate Honesty Pack blocker matrix (Stage 804 B1: `test_stage804_blockers_b1.py`, `docs/SIGNED_AUDIT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 803 / Stage 802 / Stage 392 / CHANGE_IMPACT pointers (Stage 804 P1: `test_stage804_pointers_p1.py`, `docs/SIGNED_AUDIT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 804 fidelity sync (D1: `test_stage804_fidelity_d1.py`, `docs/STAGE_804_FIDELITY.md`)
+- [x] Stage 804 exit + freeze (H804x: `test_stage804_exit_h804x.py`, `docs/STAGE_804_EXIT_CRITERIA.md`, ADR-1616)
+
 Stage 803 track opened (ADR-1613: `test_stage803_open.py`, `docs/STAGE_803_PLAN.md`) — Merkle Proof Gate Honesty Pack Remaining-Gate Index; closed under ADR-1614
 - [x] Merkle Proof Gate Honesty Pack remaining-gate hub (Stage 803 I1: `test_stage803_index_i1.py`, `docs/MERKLE_PROOF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Merkle Proof Gate Honesty Pack blocker matrix (Stage 803 B1: `test_stage803_blockers_b1.py`, `docs/MERKLE_PROOF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
