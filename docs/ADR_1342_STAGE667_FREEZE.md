@@ -31,3 +31,7 @@ Stage 668 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Load Balancer Gate, Load Balancer Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 668 opened under **ADR-1343** after CONTINUE/NEXT (Tenant MVP Autoscaling Hpa Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1344**. Stage 667 feature scope remains frozen.

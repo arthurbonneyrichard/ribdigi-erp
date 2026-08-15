@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 668 track opened (ADR-1343: `test_stage668_open.py`, `docs/STAGE_668_PLAN.md`) — Autoscaling Hpa Gate Honesty Pack Remaining-Gate Index; closed under ADR-1344
+- [x] Autoscaling Hpa Gate Honesty Pack remaining-gate hub (Stage 668 I1: `test_stage668_index_i1.py`, `docs/AUTOSCALING_HPA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Autoscaling Hpa Gate Honesty Pack blocker matrix (Stage 668 B1: `test_stage668_blockers_b1.py`, `docs/AUTOSCALING_HPA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 667 / Stage 666 / Stage 392 / CHANGE_IMPACT pointers (Stage 668 P1: `test_stage668_pointers_p1.py`, `docs/AUTOSCALING_HPA_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 668 fidelity sync (D1: `test_stage668_fidelity_d1.py`, `docs/STAGE_668_FIDELITY.md`)
+- [x] Stage 668 exit + freeze (H668x: `test_stage668_exit_h668x.py`, `docs/STAGE_668_EXIT_CRITERIA.md`, ADR-1344)
+
 Stage 667 track opened (ADR-1341: `test_stage667_open.py`, `docs/STAGE_667_PLAN.md`) — Load Balancer Gate Honesty Pack Remaining-Gate Index; closed under ADR-1342
 - [x] Load Balancer Gate Honesty Pack remaining-gate hub (Stage 667 I1: `test_stage667_index_i1.py`, `docs/LOAD_BALANCER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Load Balancer Gate Honesty Pack blocker matrix (Stage 667 B1: `test_stage667_blockers_b1.py`, `docs/LOAD_BALANCER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
