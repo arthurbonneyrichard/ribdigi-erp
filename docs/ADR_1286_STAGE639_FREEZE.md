@@ -31,3 +31,7 @@ Stage 640 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Rate Limit Gate, Rate Limit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 640 opened under **ADR-1287** after CONTINUE/NEXT (Tenant MVP CORS Headers Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1288**. Stage 639 feature scope remains frozen.

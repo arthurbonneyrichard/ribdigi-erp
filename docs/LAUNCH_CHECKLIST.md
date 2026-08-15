@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 640 track opened (ADR-1287: `test_stage640_open.py`, `docs/STAGE_640_PLAN.md`) — CORS Headers Gate Honesty Pack Remaining-Gate Index; closed under ADR-1288
+- [x] CORS Headers Gate Honesty Pack remaining-gate hub (Stage 640 I1: `test_stage640_index_i1.py`, `docs/CORS_HEADERS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] CORS Headers Gate Honesty Pack blocker matrix (Stage 640 B1: `test_stage640_blockers_b1.py`, `docs/CORS_HEADERS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 639 / Stage 638 / Stage 392 / CHANGE_IMPACT pointers (Stage 640 P1: `test_stage640_pointers_p1.py`, `docs/CORS_HEADERS_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 640 fidelity sync (D1: `test_stage640_fidelity_d1.py`, `docs/STAGE_640_FIDELITY.md`)
+- [x] Stage 640 exit + freeze (H640x: `test_stage640_exit_h640x.py`, `docs/STAGE_640_EXIT_CRITERIA.md`, ADR-1288)
+
 Stage 639 track opened (ADR-1285: `test_stage639_open.py`, `docs/STAGE_639_PLAN.md`) — Rate Limit Gate Honesty Pack Remaining-Gate Index; closed under ADR-1286
 - [x] Rate Limit Gate Honesty Pack remaining-gate hub (Stage 639 I1: `test_stage639_index_i1.py`, `docs/RATE_LIMIT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Rate Limit Gate Honesty Pack blocker matrix (Stage 639 B1: `test_stage639_blockers_b1.py`, `docs/RATE_LIMIT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
