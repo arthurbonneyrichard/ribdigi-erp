@@ -31,3 +31,7 @@ Stage 821 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, StartTLS Gate, StartTLS Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 821 opened under **ADR-1649** after CONTINUE/NEXT (Tenant MVP Mail Auth Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1650**. Stage 820 feature scope remains frozen.
