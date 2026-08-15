@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 563 Soft Delete Erasure Honesty Pack remaining-gate index fidelity (ADR-1133/1134). Operators track packaging status via `docs/SOFT_DELETE_ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 562 RTO RPO Honesty Pack remaining-gate index fidelity (ADR-1131/1132). Operators track packaging status via `docs/RTO_RPO_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 561 Vuln Disclosure Honesty Pack remaining-gate index fidelity (ADR-1129/1130). Operators track packaging status via `docs/VULN_DISCLOSURE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 560 TOS AUP Honesty Pack remaining-gate index fidelity (ADR-1127/1128). Operators track packaging status via `docs/TOS_AUP_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.

@@ -1,0 +1,77 @@
+{
+  "id": "soft-delete-erasure-honesty-pack-rg-pointers",
+  "stage": 563,
+  "pack": "P1",
+  "doc": "docs/SOFT_DELETE_ERASURE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SOFT_DELETE_ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "rto_rpo_honesty_pack_remaining_gate": "docs/RTO_RPO_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "vuln_disclosure_honesty_pack_remaining_gate": "docs/VULN_DISCLOSURE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "soft_delete_erasure_pack_remaining_gate": "docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "soft_delete_erasure_honesty_complete_claimed": false,
+  "soft_delete_erasure_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_soft_delete_erasure_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "rto_rpo_honesty_pack_remaining_gate_stage562": "docs/RTO_RPO_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "vuln_disclosure_honesty_pack_remaining_gate_stage561": "docs/VULN_DISCLOSURE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "soft_delete_erasure_pack_remaining_gate": "docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / soft_delete_erasure / soft_delete_erasure_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "sdehp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Soft Delete Erasure Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdehp-stage562",
+      "title": "Point to Stage 562 RTO RPO HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdehp-stage561",
+      "title": "Point to Stage 561 VULN DISCLOSURE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdehp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdehp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdehp-prior-pack",
+      "title": "Point to Soft Delete Erasure Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdehp-checklist-remaining",
+      "title": "Offline Complete / Soft Delete Erasure / Soft Delete Erasure honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 563 P1 Soft Delete Erasure Honesty Pack RG pointers packaging only."
+}
