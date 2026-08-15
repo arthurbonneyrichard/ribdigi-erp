@@ -31,3 +31,7 @@ Stage 923 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Territory Gate, Transfer Territory Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 923 opened under **ADR-1853** after CONTINUE/NEXT (Tenant MVP Transfer Country Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1854**. Stage 922 feature scope remains frozen.
