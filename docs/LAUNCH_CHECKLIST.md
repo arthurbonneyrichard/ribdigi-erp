@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 627 track opened (ADR-1261: `test_stage627_open.py`, `docs/STAGE_627_PLAN.md`) — PostgreSQL Gate Honesty Pack Remaining-Gate Index; closed under ADR-1262
+- [x] PostgreSQL Gate Honesty Pack remaining-gate hub (Stage 627 I1: `test_stage627_index_i1.py`, `docs/POSTGRESQL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] PostgreSQL Gate Honesty Pack blocker matrix (Stage 627 B1: `test_stage627_blockers_b1.py`, `docs/POSTGRESQL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 626 / Stage 625 / Stage 392 / CHANGE_IMPACT pointers (Stage 627 P1: `test_stage627_pointers_p1.py`, `docs/POSTGRESQL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 627 fidelity sync (D1: `test_stage627_fidelity_d1.py`, `docs/STAGE_627_FIDELITY.md`)
+- [x] Stage 627 exit + freeze (H627x: `test_stage627_exit_h627x.py`, `docs/STAGE_627_EXIT_CRITERIA.md`, ADR-1262)
+
 Stage 626 track opened (ADR-1259: `test_stage626_open.py`, `docs/STAGE_626_PLAN.md`) — Redis Cache Gate Honesty Pack Remaining-Gate Index; closed under ADR-1260
 - [x] Redis Cache Gate Honesty Pack remaining-gate hub (Stage 626 I1: `test_stage626_index_i1.py`, `docs/REDIS_CACHE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Redis Cache Gate Honesty Pack blocker matrix (Stage 626 B1: `test_stage626_blockers_b1.py`, `docs/REDIS_CACHE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

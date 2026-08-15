@@ -31,3 +31,7 @@ Stage 627 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Redis Cache Gate, Redis Cache Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 627 opened under **ADR-1261** after CONTINUE/NEXT (Tenant MVP PostgreSQL Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1262**. Stage 626 feature scope remains frozen.

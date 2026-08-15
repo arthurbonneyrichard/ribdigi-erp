@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 627 PostgreSQL Gate Honesty Pack remaining-gate index fidelity (ADR-1261/1262). Operators track packaging status via `docs/POSTGRESQL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 626 Redis Cache Gate Honesty Pack remaining-gate index fidelity (ADR-1259/1260). Operators track packaging status via `docs/REDIS_CACHE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 625 Celery Worker Gate Honesty Pack remaining-gate index fidelity (ADR-1257/1258). Operators track packaging status via `docs/CELERY_WORKER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 624 Docker Compose Gate Honesty Pack remaining-gate index fidelity (ADR-1255/1256). Operators track packaging status via `docs/DOCKER_COMPOSE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
