@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 579 track opened (ADR-1165: `test_stage579_open.py`, `docs/STAGE_579_PLAN.md`) — Shift Handover Snapshot Honesty Pack Remaining-Gate Index; closed under ADR-1166
+- [x] Shift Handover Snapshot Honesty Pack remaining-gate hub (Stage 579 I1: `test_stage579_index_i1.py`, `docs/SHIFT_HANDOVER_SNAPSHOT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Shift Handover Snapshot Honesty Pack blocker matrix (Stage 579 B1: `test_stage579_blockers_b1.py`, `docs/SHIFT_HANDOVER_SNAPSHOT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 578 / Stage 577 / Stage 392 / CHANGE_IMPACT pointers (Stage 579 P1: `test_stage579_pointers_p1.py`, `docs/SHIFT_HANDOVER_SNAPSHOT_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 579 fidelity sync (D1: `test_stage579_fidelity_d1.py`, `docs/STAGE_579_FIDELITY.md`)
+- [x] Stage 579 exit + freeze (H579x: `test_stage579_exit_h579x.py`, `docs/STAGE_579_EXIT_CRITERIA.md`, ADR-1166)
+
 Stage 578 track opened (ADR-1163: `test_stage578_open.py`, `docs/STAGE_578_PLAN.md`) — Shift Handover Checklist Honesty Pack Remaining-Gate Index; closed under ADR-1164
 - [x] Shift Handover Checklist Honesty Pack remaining-gate hub (Stage 578 I1: `test_stage578_index_i1.py`, `docs/SHIFT_HANDOVER_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Shift Handover Checklist Honesty Pack blocker matrix (Stage 578 B1: `test_stage578_blockers_b1.py`, `docs/SHIFT_HANDOVER_CHECKLIST_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
