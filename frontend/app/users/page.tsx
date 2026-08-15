@@ -73,6 +73,7 @@ type ImportReport = {
 
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
+  const [userManageFilter, setUserManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [branches, setBranches] = useState<BranchRow[]>([]);
   const [departments, setDepartments] = useState<DepartmentRow[]>([]);
@@ -140,6 +141,11 @@ export default function Page() {
   };
 
   const activeBranches = branches.filter((b) => b.is_active !== false);
+  const managedUsers = rows.filter((r) => {
+    if (userManageFilter === 'all') return true;
+    const active = r.is_active !== false;
+    return userManageFilter === 'inactive' ? !active : active;
+  });
   const activeDepartments = (branchId?: string) =>
     departments.filter(
       (d) =>
@@ -609,6 +615,18 @@ export default function Page() {
         </form>
       )}
 
+      <select
+        value={userManageFilter}
+        onChange={(e) => setUserManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage user list by status"
+        aria-label="User status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
+
       <table className="table">
         <thead>
           <tr>
@@ -623,9 +641,23 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {managedUsers.length === 0 && (
+            <tr>
+              <td colSpan={canWrite ? 8 : 7} className="muted">
+                {rows.length ? 'No users for this filter' : 'No users yet'}
+              </td>
+            </tr>
+          )}
+          {managedUsers.map((r) => (
             <tr key={r.id}>
-              <td>{r.full_name}</td>
+              <td>
+                {r.full_name}
+                {r.is_active === false ? (
+                  <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                    [inactive]
+                  </span>
+                ) : null}
+              </td>
               <td>{r.email}</td>
               <td>
                 {canWrite ? (

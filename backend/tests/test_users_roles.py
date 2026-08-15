@@ -123,6 +123,49 @@ async def test_cannot_deactivate_self(client):
 
 
 @pytest.mark.asyncio
+async def test_users_list_is_active_filter(client):
+    ac, seed = client
+    headers = await _admin_headers(ac, seed)
+    created = await ac.post(
+        "/api/v1/users",
+        headers=headers,
+        json={
+            "email": "filter-demo@alpha.example.com",
+            "full_name": "Filter Demo User",
+            "password": "SecurePass123!",
+            "role": "cashier",
+        },
+    )
+    assert created.status_code == 200, created.text
+    uid = created.json()["data"]["id"]
+
+    await ac.delete(f"/api/v1/users/{uid}", headers=headers)
+
+    all_rows = await ac.get("/api/v1/users", headers=headers)
+    assert uid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/users?is_active=true", headers=headers)
+    assert uid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/users?is_active=false", headers=headers)
+    assert uid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
+
+
+def test_user_status_filter_ui_wired():
+    from pathlib import Path
+
+    users = (
+        Path(__file__).resolve().parents[2] / "frontend/app/users/page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "userManageFilter" in users
+    assert 'aria-label="User status filter"' in users
+    assert "managedUsers" in users
+    assert "[inactive]" in users
+    assert "setActive" in users
+
+
+@pytest.mark.asyncio
 async def test_foreign_user_get_404(client):
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
