@@ -31,3 +31,10 @@ Stage 442 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Liability, Commercial Liability honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 442 opened under **ADR-891** after CONTINUE/NEXT (Tenant MVP Commercial Privacy Notice Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-892**. Stage 441 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 441 runner-up outline was approved and opened (ADR-891); freeze ADR-892. Do not reopen Stage 441 scope.
+
