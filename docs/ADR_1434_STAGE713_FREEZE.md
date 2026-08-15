@@ -31,3 +31,7 @@ Stage 714 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Check Constraint Gate, Check Constraint Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 714 opened under **ADR-1435** after CONTINUE/NEXT (Tenant MVP Json Schema Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1436**. Stage 713 feature scope remains frozen.
