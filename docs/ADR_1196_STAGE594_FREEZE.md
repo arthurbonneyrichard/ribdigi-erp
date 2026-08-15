@@ -31,3 +31,7 @@ Stage 595 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Membership Gate, Membership Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 595 opened under **ADR-1197** after CONTINUE/NEXT (Tenant MVP I18n Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1198**. Stage 594 feature scope remains frozen.

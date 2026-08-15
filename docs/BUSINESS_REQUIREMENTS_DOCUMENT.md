@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 595 D1 I18n Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_595_FIDELITY.md` (`test_stage595_fidelity_d1.py`); Offline Complete / I18n Gate honesty / go-live still MISSING.
 Stage 594 D1 Membership Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_594_FIDELITY.md` (`test_stage594_fidelity_d1.py`); Offline Complete / Membership Gate honesty / go-live still MISSING.
 Stage 593 D1 WAL Offsite Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_593_FIDELITY.md` (`test_stage593_fidelity_d1.py`); Offline Complete / WAL Offsite honesty / go-live still MISSING.
 Stage 592 D1 PgBouncer Live Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_592_FIDELITY.md` (`test_stage592_fidelity_d1.py`); Offline Complete / PgBouncer Live honesty / go-live still MISSING.
