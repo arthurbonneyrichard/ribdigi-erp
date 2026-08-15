@@ -31,3 +31,7 @@ Stage 694 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Dead Letter Gate, Dead Letter Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 694 opened under **ADR-1395** after CONTINUE/NEXT (Tenant MVP Message Ordering Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1396**. Stage 693 feature scope remains frozen.
