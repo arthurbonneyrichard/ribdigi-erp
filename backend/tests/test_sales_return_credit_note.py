@@ -64,7 +64,7 @@ async def test_return_on_open_invoice_assigns_credit_note(client, db_session, se
             "sales_invoice_id": inv["id"],
             "reason": "damaged",
             "restock": True,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "sellable"}],
         },
     )
     assert ret.status_code == 200, ret.text
@@ -111,7 +111,7 @@ async def test_paid_invoice_return_requires_settlement_and_refunds(client, db_se
             "sales_invoice_id": inv["id"],
             "reason": "customer_change",
             "restock": True,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "sellable"}],
         },
     )
     rid = ret.json()["data"]["id"]
