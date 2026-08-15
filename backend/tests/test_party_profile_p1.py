@@ -64,6 +64,13 @@ async def test_customer_profile_create_get_patch_and_code_unique(client):
     assert active_only.status_code == 200
     assert all(c["id"] != cid for c in active_only.json()["data"])
 
+    inactive_only = await ac.get("/api/v1/customers?status=inactive", headers=headers)
+    assert inactive_only.status_code == 200
+    assert any(c["id"] == cid for c in inactive_only.json()["data"])
+
+    bad_status = await ac.get("/api/v1/customers?status=archived", headers=headers)
+    assert bad_status.status_code == 400
+
     dup = await ac.post(
         "/api/v1/customers",
         headers=headers,
@@ -116,3 +123,15 @@ async def test_supplier_profile_create_get_and_category(client):
     listed = await ac.get("/api/v1/suppliers?status=active", headers=headers)
     assert listed.status_code == 200
     assert any(s["id"] == sid for s in listed.json()["data"])
+
+    inactive = await ac.patch(
+        f"/api/v1/suppliers/{sid}",
+        headers=headers,
+        json={"status": "inactive"},
+    )
+    assert inactive.status_code == 200, inactive.text
+    inactive_only = await ac.get("/api/v1/suppliers?status=inactive", headers=headers)
+    assert inactive_only.status_code == 200
+    assert any(s["id"] == sid for s in inactive_only.json()["data"])
+    bad_status = await ac.get("/api/v1/suppliers?status=gone", headers=headers)
+    assert bad_status.status_code == 400

@@ -167,6 +167,7 @@ export default function Page() {
     >
   >({});
   const [supplierId, setSupplierId] = useState('');
+  const [supplierManageFilter, setSupplierManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [supplierName, setSupplierName] = useState('');
   const [supplierCode, setSupplierCode] = useState('');
   const [supplierEmail, setSupplierEmail] = useState('');
@@ -1474,13 +1475,38 @@ export default function Page() {
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
           <select
+            value={supplierManageFilter}
+            onChange={(e) => {
+              const next = e.target.value as 'all' | 'active' | 'inactive';
+              setSupplierManageFilter(next);
+              if (supplierId) {
+                const row = suppliers.find((s) => s.id === supplierId);
+                const st = (row?.status || 'active') as string;
+                if (next === 'active' && st === 'inactive') setSupplierId('');
+                if (next === 'inactive' && st !== 'inactive') setSupplierId('');
+              }
+            }}
+            title="Filter manage supplier list by status"
+            aria-label="Supplier status filter"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+          <select
             value={supplierId}
             onChange={(e) => setSupplierId(e.target.value)}
             title="Select supplier to manage"
             aria-label="Manage supplier"
           >
             <option value="">Manage supplier…</option>
-            {suppliers.map((s) => (
+            {suppliers
+              .filter((s) => {
+                if (supplierManageFilter === 'all') return true;
+                const st = s.status || 'active';
+                return supplierManageFilter === 'inactive' ? st === 'inactive' : st !== 'inactive';
+              })
+              .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.code ? `${s.code} — ` : ''}
                 {s.name}

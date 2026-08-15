@@ -19,6 +19,8 @@ def test_customer_deactivate_ui_wired():
     assert "Activate" in sales
     assert "status !== 'inactive'" in sales
     assert "[inactive]" in sales
+    assert "customerManageFilter" in sales
+    assert 'aria-label="Customer status filter"' in sales
     pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
     assert "status !== 'inactive'" in pos
 

@@ -58,6 +58,7 @@ export default function Page() {
   const [variants, setVariants] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [customerId, setCustomerId] = useState('');
+  const [customerManageFilter, setCustomerManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [storeId, setStoreId] = useState('');
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [currency, setCurrency] = useState('');
@@ -805,13 +806,38 @@ export default function Page() {
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select
+            value={customerManageFilter}
+            onChange={(e) => {
+              const next = e.target.value as 'all' | 'active' | 'inactive';
+              setCustomerManageFilter(next);
+              if (customerId) {
+                const row = customers.find((c) => c.id === customerId);
+                const st = (row?.status || 'active') as string;
+                if (next === 'active' && st === 'inactive') setCustomerId('');
+                if (next === 'inactive' && st !== 'inactive') setCustomerId('');
+              }
+            }}
+            title="Filter manage customer list by status"
+            aria-label="Customer status filter"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+          <select
             value={customerId}
             onChange={(e) => setCustomerId(e.target.value)}
             title="Manage customer"
             aria-label="Manage customer"
           >
             <option value="">Manage customer…</option>
-            {customers.map((c) => (
+            {customers
+              .filter((c) => {
+                if (customerManageFilter === 'all') return true;
+                const st = c.status || 'active';
+                return customerManageFilter === 'inactive' ? st === 'inactive' : st !== 'inactive';
+              })
+              .map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code ? `${c.code} — ` : ''}
                 {c.name}
