@@ -31,3 +31,7 @@ Stage 840 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, WhatsApp Opt Out Gate, WhatsApp Opt Out Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 840 opened under **ADR-1687** after CONTINUE/NEXT (Tenant MVP Do Not Contact Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1688**. Stage 839 feature scope remains frozen.

@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 840 D1 (2026-08-14):** Do Not Contact Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_840_FIDELITY.md` (`test_stage840_fidelity_d1.py`). Open ADR: `docs/ADR_1687_STAGE840_OPEN.md`; plan `docs/STAGE_840_PLAN.md`.
+
+**Stage 840 exit (2026-08-14):** I1, B1, P1, D1, H840x met — `docs/STAGE_840_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1688_STAGE840_FREEZE.md`. Fidelity: `docs/STAGE_840_FIDELITY.md`.
+
 **Stage 839 D1 (2026-08-14):** WhatsApp Opt Out Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_839_FIDELITY.md` (`test_stage839_fidelity_d1.py`). Open ADR: `docs/ADR_1685_STAGE839_OPEN.md`; plan `docs/STAGE_839_PLAN.md`.
 
 **Stage 839 exit (2026-08-14):** I1, B1, P1, D1, H839x met — `docs/STAGE_839_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1686_STAGE839_FREEZE.md`. Fidelity: `docs/STAGE_839_FIDELITY.md`.
