@@ -31,3 +31,7 @@ Stage 720 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Saml Sso Gate, Saml Sso Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 720 opened under **ADR-1447** after CONTINUE/NEXT (Tenant MVP Scim Provisioning Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1448**. Stage 719 feature scope remains frozen.
