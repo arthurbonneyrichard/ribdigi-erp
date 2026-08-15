@@ -4400,7 +4400,11 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
-******************Stage 483 D1 (2026-08-14):** Offline Hold Reserve Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_483_FIDELITY.md` (`test_stage483_fidelity_d1.py`). Open ADR: `docs/ADR_973_STAGE483_OPEN.md`; plan `docs/STAGE_483_PLAN.md`.
+********************Stage 484 D1 (2026-08-14):** Offline Hold Expiry Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_484_FIDELITY.md` (`test_stage484_fidelity_d1.py`). Open ADR: `docs/ADR_975_STAGE484_OPEN.md`; plan `docs/STAGE_484_PLAN.md`.
+
+**Stage 484 exit (2026-08-14):** I1, B1, P1, D1, H484x met — `docs/STAGE_484_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_976_STAGE484_FREEZE.md`. Fidelity: `docs/STAGE_484_FIDELITY.md`.
+
+Stage 483 D1 (2026-08-14):** Offline Hold Reserve Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_483_FIDELITY.md` (`test_stage483_fidelity_d1.py`). Open ADR: `docs/ADR_973_STAGE483_OPEN.md`; plan `docs/STAGE_483_PLAN.md`.
 
 **Stage 483 exit (2026-08-14):** I1, B1, P1, D1, H483x met — `docs/STAGE_483_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_974_STAGE483_FREEZE.md`. Fidelity: `docs/STAGE_483_FIDELITY.md`.
 
