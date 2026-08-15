@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 580 D1 Shift Handover Pointers Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_580_FIDELITY.md` (`test_stage580_fidelity_d1.py`); exit ADR-1168 / `test_stage580_exit_h580x.py`. Honesty: Offline Complete / Shift Handover Pointers honesty / go-live Completes remain MISSING.
 Stage 579 D1 Shift Handover Snapshot Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_579_FIDELITY.md` (`test_stage579_fidelity_d1.py`); exit ADR-1166 / `test_stage579_exit_h579x.py`. Honesty: Offline Complete / Shift Handover Snapshot honesty / go-live Completes remain MISSING.
 Stage 578 D1 Shift Handover Checklist Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_578_FIDELITY.md` (`test_stage578_fidelity_d1.py`); exit ADR-1164 / `test_stage578_exit_h578x.py`. Honesty: Offline Complete / Shift Handover Checklist honesty / go-live Completes remain MISSING.
 Stage 577 D1 Store Close Triage Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_577_FIDELITY.md` (`test_stage577_fidelity_d1.py`); exit ADR-1162 / `test_stage577_exit_h577x.py`. Honesty: Offline Complete / Store Close Triage honesty / go-live Completes remain MISSING.

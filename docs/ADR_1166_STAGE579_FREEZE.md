@@ -31,3 +31,7 @@ Stage 580 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Shift Handover Snapshot, Shift Handover Snapshot honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 580 opened under **ADR-1167** after CONTINUE/NEXT (Tenant MVP Shift Handover Pointers Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1168**. Stage 579 feature scope remains frozen.
