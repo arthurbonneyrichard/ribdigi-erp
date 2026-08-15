@@ -31,3 +31,7 @@ Stage 634 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Pytest Coverage Gate, Pytest Coverage Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 634 opened under **ADR-1275** after CONTINUE/NEXT (Tenant MVP CI Workflow Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1276**. Stage 633 feature scope remains frozen.
