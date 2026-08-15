@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 788 D1 Redaction Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_788_FIDELITY.md` (`test_stage788_fidelity_d1.py`); Offline Complete / Redaction Gate honesty / go-live still MISSING.
 Stage 787 D1 Data Masking Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_787_FIDELITY.md` (`test_stage787_fidelity_d1.py`); Offline Complete / Data Masking Gate honesty / go-live still MISSING.
 Stage 786 D1 Tokenize Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_786_FIDELITY.md` (`test_stage786_fidelity_d1.py`); Offline Complete / Tokenize Gate honesty / go-live still MISSING.
 Stage 785 D1 Column Encrypt Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_785_FIDELITY.md` (`test_stage785_fidelity_d1.py`); Offline Complete / Column Encrypt Gate honesty / go-live still MISSING.
