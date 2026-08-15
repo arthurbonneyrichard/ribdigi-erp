@@ -1403,8 +1403,38 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
+        "can_cancel": ret.status == "draft",
         "items": serialized_items,
     }
+
+
+async def cancel_purchase_return(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    return_id: str,
+    reason: str | None = None,
+) -> m.PurchaseReturn:
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
+    ret = await get_purchase_return(db, tenant_id, return_id)
+    if ret.status != "draft":
+        raise HTTPException(status_code=409, detail="Only draft purchase returns can be cancelled")
+    ret.status = "cancelled"
+    ret.notes = ((ret.notes or "") + f"\nCancel: {reason_s}").strip()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="purchase_return_cancelled",
+            entity="purchase_return",
+            entity_id=ret.id,
+            details={"return_number": ret.return_number, "reason": reason_s},
+        )
+    )
+    return ret
 
 
 async def create_purchase_return(

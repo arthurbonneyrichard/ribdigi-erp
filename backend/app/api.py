@@ -136,6 +136,7 @@ from app.schemas import (
     PurchaseInvoiceCreate,
     PurchaseInvoiceUpdate,
     PurchaseReturnCreate,
+    PurchaseReturnCancel,
     RecurringExpenseCreate,
     RecurringExpenseUpdate,
     RefreshRequest,
@@ -6347,6 +6348,29 @@ async def post_purchase_return(
     return env(
         await purchasing_svc.serialize_purchase_return(db, ret),
         "Return posted; stock/AP/journal updated",
+    )
+
+
+@api.post("/purchasing/returns/{return_id}/cancel")
+async def cancel_purchase_return(
+    return_id: str,
+    payload: PurchaseReturnCancel,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, existing.created_by)
+    ret = await purchasing_svc.cancel_purchase_return(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        return_id=return_id,
+        reason=payload.reason,
+    )
+    await db.commit()
+    return env(
+        await purchasing_svc.serialize_purchase_return(db, ret),
+        "Draft purchase return cancelled",
     )
 
 

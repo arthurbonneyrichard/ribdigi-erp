@@ -858,9 +858,11 @@ Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced 
 Response lines include `line_subtotal`, `line_tax`, and optional `tax_components`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Purchasing → Invoices UI shows per-line tax and by-rate totals when an invoice number is selected.
 
 ### 6.6 Purchase Return
-**List:** `GET /purchases/returns`  
-**Create:** `POST /purchases/returns`  
-**Get:** `GET /purchases/returns/{return_id}`
+**List:** `GET /purchasing/returns`  
+**Create:** `POST /purchasing/returns`  
+**Get:** `GET /purchasing/returns/{return_id}`  
+**Post:** `POST /purchasing/returns/{return_id}/post` — draft only; stock/AP/journal on post.  
+**Cancel:** `POST /purchasing/returns/{return_id}/cancel` — body `{ "reason" }` **required** (non-empty). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `purchase_return_cancelled.details.reason`. Serialize includes `can_cancel`. Purchasing **Cancel reason** input (BR-6.6). No stock/AP on cancel.
 
 **Create** requires `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (no silent default to `other`). Omit/blank → 422/400. Purchasing UI uses Select reason (BR-6.6).
 
