@@ -31,3 +31,7 @@ Stage 817 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, DKIM Rotate Gate, DKIM Rotate Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 817 opened under **ADR-1641** after CONTINUE/NEXT (Tenant MVP ARC Seal Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1642**. Stage 816 feature scope remains frozen.
