@@ -2045,10 +2045,16 @@ async def _revoke_user_sessions(db: AsyncSession, *, tenant_id: str, user_id: st
 
 @api.get("/roles")
 async def roles_catalog(
+    include_inactive: bool = False,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await custom_roles_svc.catalog_for_tenant(db, claims["tenant_id"]))
+    """System + custom roles. Default hides inactive custom roles; set include_inactive for manage UI."""
+    return env(
+        await custom_roles_svc.catalog_for_tenant(
+            db, claims["tenant_id"], include_inactive=bool(include_inactive)
+        )
+    )
 
 
 @api.get("/roles/{role}")

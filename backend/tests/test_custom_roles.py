@@ -73,6 +73,19 @@ async def test_create_assign_and_enforce_custom_role(client, db_session):
     assert user.status_code == 200, user.text
     assert user.json()["data"]["user"]["role"] == "warehouse_lead"
 
+    # Admin-created users start unverified; mark verified so login exercises RBAC.
+    from sqlalchemy import select
+
+    from app import models as m
+
+    row = (
+        await db_session.execute(
+            select(m.User).where(m.User.email == "whlead@alpha.example.com")
+        )
+    ).scalar_one()
+    row.email_verified = True
+    await db_session.commit()
+
     login = await ac.post(
         "/api/v1/auth/login",
         json={
@@ -156,3 +169,96 @@ async def test_system_roles_immutable(client):
         json={"key": "cashier", "label": "Clone", "base_role": "cashier"},
     )
     assert collide.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_custom_role_soft_deactivate_and_reactivate(client):
+    """BR-3.2 — PATCH is_active; default catalog hides inactive; include_inactive lists them;
+    new assignment of inactive roles is blocked; reactivation restores catalog + assign."""
+    ac, seed = client
+    admin = await _super(ac, seed)
+    key = "night_auditor"
+
+    created = await ac.post(
+        "/api/v1/roles",
+        headers=admin,
+        json={
+            "key": key,
+            "label": "Night Auditor",
+            "base_role": "accountant",
+            "record_scope": "branch",
+        },
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["data"]["is_active"] is True
+
+    deact = await ac.patch(
+        f"/api/v1/roles/{key}",
+        headers=admin,
+        json={"is_active": False},
+    )
+    assert deact.status_code == 200, deact.text
+    assert deact.json()["data"]["is_active"] is False
+
+    default_catalog = await ac.get("/api/v1/roles", headers=admin)
+    assert default_catalog.status_code == 200
+    default_keys = {r["role"] for r in default_catalog.json()["data"]}
+    assert key not in default_keys
+    assert "cashier" in default_keys
+
+    full = await ac.get("/api/v1/roles?include_inactive=true", headers=admin)
+    assert full.status_code == 200
+    by_role = {r["role"]: r for r in full.json()["data"]}
+    assert key in by_role
+    assert by_role[key]["is_active"] is False
+    assert by_role[key]["system"] is False
+
+    blocked = await ac.post(
+        "/api/v1/users",
+        headers=admin,
+        json={
+            "email": "night@alpha.example.com",
+            "full_name": "Night User",
+            "password": "SecurePass123!",
+            "role": key,
+        },
+    )
+    assert blocked.status_code == 400, blocked.text
+
+    react = await ac.patch(
+        f"/api/v1/roles/{key}",
+        headers=admin,
+        json={"is_active": True},
+    )
+    assert react.status_code == 200, react.text
+    assert react.json()["data"]["is_active"] is True
+
+    restored = await ac.get("/api/v1/roles", headers=admin)
+    assert key in {r["role"] for r in restored.json()["data"]}
+
+    user = await ac.post(
+        "/api/v1/users",
+        headers=admin,
+        json={
+            "email": "night@alpha.example.com",
+            "full_name": "Night User",
+            "password": "SecurePass123!",
+            "role": key,
+        },
+    )
+    assert user.status_code == 200, user.text
+    assert user.json()["data"]["user"]["role"] == key
+
+
+def test_custom_role_soft_deactivate_ui_wired():
+    from pathlib import Path
+
+    users = (Path(__file__).resolve().parents[2] / "frontend/app/users/page.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert "setCustomRoleActive" in users
+    assert "include_inactive=true" in users
+    assert "[inactive]" in users
+    assert "Deactivate" in users
+    assert "Activate" in users
+    assert "assignableRoles" in users

@@ -10,6 +10,7 @@ type RoleRow = {
   system?: boolean;
   base_role?: string | null;
   record_scope?: string;
+  is_active?: boolean;
 };
 type BranchRow = { id: string; code: string; name: string; is_active?: boolean };
 type DepartmentRow = {
@@ -92,7 +93,8 @@ export default function Page() {
   async function refresh() {
     const [usersRes, rolesRes, meRes, branchesRes, deptsRes] = await Promise.all([
       api('/users'),
-      api('/roles'),
+      // Manage list needs inactive custom roles for Activate / Deactivate (BR-3.2).
+      api('/roles?include_inactive=true'),
       api('/me'),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
@@ -111,6 +113,15 @@ export default function Page() {
         (perms.users || []).includes('*')
     );
   }
+
+  const isCustomRole = (r: RoleRow) => r.system === false;
+  const isRoleActive = (r: RoleRow) => !isCustomRole(r) || r.is_active !== false;
+  const assignableRoles = (currentRole?: string) =>
+    roles.filter(
+      (r) =>
+        r.role !== 'super_admin' &&
+        (isRoleActive(r) || (currentRole != null && r.role === currentRole)),
+    );
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
@@ -194,6 +205,21 @@ export default function Page() {
     try {
       await api(`/roles/${role}`, { method: 'DELETE' });
       setMessage(`Deleted role ${role}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setCustomRoleActive(role: string, is_active: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/roles/${role}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active }),
+      });
+      setMessage(is_active ? `Activated role ${role}` : `Deactivated role ${role}`);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -351,7 +377,7 @@ export default function Page() {
       <h1>User Management</h1>
       <p className="muted">
         Create users, assign roles, branch/department, and record scope; activate or deactivate
-        accounts (BR-3.1).
+        accounts (BR-3.1). Soft-deactivate custom roles without deleting assignees (BR-3.2).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -361,7 +387,9 @@ export default function Page() {
           <h2 style={{ fontSize: 18, margin: 0 }}>Custom roles</h2>
           <p className="muted" style={{ margin: 0 }}>
             Clone a system role&apos;s permissions into a tenant-specific role key, then assign it to
-            users. System roles stay immutable.
+            users. Soft-deactivate with <strong>Deactivate</strong> (keeps assignees; blocks new
+            assignment). Delete is blocked while any user still has the role. System roles stay
+            immutable.
           </p>
           <input
             value={roleForm.key}
@@ -380,7 +408,7 @@ export default function Page() {
             onChange={(e) => setRoleForm({ ...roleForm, base_role: e.target.value })}
           >
             {roles
-              .filter((r) => r.system !== false && r.role !== 'super_admin')
+              .filter((r) => !isCustomRole(r) && r.role !== 'super_admin')
               .map((r) => (
                 <option key={r.role} value={r.role}>
                   Clone from {r.label}
@@ -391,20 +419,40 @@ export default function Page() {
             {busy ? 'Saving…' : 'Create custom role'}
           </button>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {roles
-              .filter((r) => r.system === false)
-              .map((r) => (
-                <li key={r.role}>
-                  {r.label} <code>{r.role}</code>
+            {roles.filter(isCustomRole).map((r) => (
+              <li key={r.role}>
+                {r.label} <code>{r.role}</code>
+                {r.is_active === false ? (
+                  <span className="muted" style={{ marginLeft: 6 }}>
+                    [inactive]
+                  </span>
+                ) : null}
+                {r.is_active === false ? (
                   <button
                     type="button"
                     style={{ marginLeft: 8 }}
-                    onClick={() => deleteCustomRole(r.role)}
+                    onClick={() => setCustomRoleActive(r.role, true)}
                   >
-                    Delete
+                    Activate
                   </button>
-                </li>
-              ))}
+                ) : (
+                  <button
+                    type="button"
+                    style={{ marginLeft: 8 }}
+                    onClick={() => setCustomRoleActive(r.role, false)}
+                  >
+                    Deactivate
+                  </button>
+                )}
+                <button
+                  type="button"
+                  style={{ marginLeft: 8 }}
+                  onClick={() => deleteCustomRole(r.role)}
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
           </ul>
         </form>
       )}
@@ -514,14 +562,12 @@ export default function Page() {
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
           >
-            {roles
-              .filter((r) => r.role !== 'super_admin')
-              .map((r) => (
-                <option key={r.role} value={r.role}>
-                  {r.label}
-                  {r.system === false ? ' (custom)' : ''}
-                </option>
-              ))}
+            {assignableRoles().map((r) => (
+              <option key={r.role} value={r.role}>
+                {r.label}
+                {isCustomRole(r) ? ' (custom)' : ''}
+              </option>
+            ))}
           </select>
           <select
             value={form.branch_id}
@@ -584,10 +630,11 @@ export default function Page() {
               <td>
                 {canWrite ? (
                   <select value={r.role} onChange={(e) => setRole(r.id, e.target.value)}>
-                    {roles.map((role) => (
+                    {assignableRoles(r.role).map((role) => (
                       <option key={role.role} value={role.role}>
                         {role.label}
-                        {role.system === false ? ' (custom)' : ''}
+                        {isCustomRole(role) ? ' (custom)' : ''}
+                        {role.is_active === false ? ' [inactive]' : ''}
                       </option>
                     ))}
                   </select>
