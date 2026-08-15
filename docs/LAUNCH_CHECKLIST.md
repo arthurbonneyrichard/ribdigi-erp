@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 768 track opened (ADR-1543: `test_stage768_open.py`, `docs/STAGE_768_PLAN.md`) — Assume Role Gate Honesty Pack Remaining-Gate Index; closed under ADR-1544
+- [x] Assume Role Gate Honesty Pack remaining-gate hub (Stage 768 I1: `test_stage768_index_i1.py`, `docs/ASSUME_ROLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Assume Role Gate Honesty Pack blocker matrix (Stage 768 B1: `test_stage768_blockers_b1.py`, `docs/ASSUME_ROLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 767 / Stage 766 / Stage 392 / CHANGE_IMPACT pointers (Stage 768 P1: `test_stage768_pointers_p1.py`, `docs/ASSUME_ROLE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 768 fidelity sync (D1: `test_stage768_fidelity_d1.py`, `docs/STAGE_768_FIDELITY.md`)
+- [x] Stage 768 exit + freeze (H768x: `test_stage768_exit_h768x.py`, `docs/STAGE_768_EXIT_CRITERIA.md`, ADR-1544)
+
 Stage 767 track opened (ADR-1541: `test_stage767_open.py`, `docs/STAGE_767_PLAN.md`) — Impersonation Gate Honesty Pack Remaining-Gate Index; closed under ADR-1542
 - [x] Impersonation Gate Honesty Pack remaining-gate hub (Stage 767 I1: `test_stage767_index_i1.py`, `docs/IMPERSONATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Impersonation Gate Honesty Pack blocker matrix (Stage 767 B1: `test_stage767_blockers_b1.py`, `docs/IMPERSONATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
