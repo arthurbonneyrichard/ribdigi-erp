@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 854 track opened (ADR-1715: `test_stage854_open.py`, `docs/STAGE_854_PLAN.md`) — Confidentiality Duty Gate Honesty Pack Remaining-Gate Index; closed under ADR-1716
+- [x] Confidentiality Duty Gate Honesty Pack remaining-gate hub (Stage 854 I1: `test_stage854_index_i1.py`, `docs/CONFIDENTIALITY_DUTY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Confidentiality Duty Gate Honesty Pack blocker matrix (Stage 854 B1: `test_stage854_blockers_b1.py`, `docs/CONFIDENTIALITY_DUTY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 853 / Stage 852 / Stage 392 / CHANGE_IMPACT pointers (Stage 854 P1: `test_stage854_pointers_p1.py`, `docs/CONFIDENTIALITY_DUTY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 854 fidelity sync (D1: `test_stage854_fidelity_d1.py`, `docs/STAGE_854_FIDELITY.md`)
+- [x] Stage 854 exit + freeze (H854x: `test_stage854_exit_h854x.py`, `docs/STAGE_854_EXIT_CRITERIA.md`, ADR-1716)
+
 Stage 853 track opened (ADR-1713: `test_stage853_open.py`, `docs/STAGE_853_PLAN.md`) — Integrity Duty Gate Honesty Pack Remaining-Gate Index; closed under ADR-1714
 - [x] Integrity Duty Gate Honesty Pack remaining-gate hub (Stage 853 I1: `test_stage853_index_i1.py`, `docs/INTEGRITY_DUTY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Integrity Duty Gate Honesty Pack blocker matrix (Stage 853 B1: `test_stage853_blockers_b1.py`, `docs/INTEGRITY_DUTY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

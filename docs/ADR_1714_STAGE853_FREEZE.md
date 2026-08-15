@@ -31,3 +31,7 @@ Stage 854 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Integrity Duty Gate, Integrity Duty Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 854 opened under **ADR-1715** after CONTINUE/NEXT (Tenant MVP Confidentiality Duty Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1716**. Stage 853 feature scope remains frozen.
