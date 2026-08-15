@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 618 D1 (2026-08-14):** Tenant Isolation Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_618_FIDELITY.md` (`test_stage618_fidelity_d1.py`). Open ADR: `docs/ADR_1243_STAGE618_OPEN.md`; plan `docs/STAGE_618_PLAN.md`.
+
+**Stage 618 exit (2026-08-14):** I1, B1, P1, D1, H618x met — `docs/STAGE_618_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1244_STAGE618_FREEZE.md`. Fidelity: `docs/STAGE_618_FIDELITY.md`.
+
 **Stage 617 D1 (2026-08-14):** RBAC Permission Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_617_FIDELITY.md` (`test_stage617_fidelity_d1.py`). Open ADR: `docs/ADR_1241_STAGE617_OPEN.md`; plan `docs/STAGE_617_PLAN.md`.
 
 **Stage 617 exit (2026-08-14):** I1, B1, P1, D1, H617x met — `docs/STAGE_617_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1242_STAGE617_FREEZE.md`. Fidelity: `docs/STAGE_617_FIDELITY.md`.

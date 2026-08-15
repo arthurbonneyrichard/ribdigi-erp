@@ -31,3 +31,7 @@ Stage 618 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, RBAC Permission Gate, RBAC Permission Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 618 opened under **ADR-1243** after CONTINUE/NEXT (Tenant MVP Tenant Isolation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1244**. Stage 617 feature scope remains frozen.

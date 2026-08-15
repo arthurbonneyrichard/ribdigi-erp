@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 618 D1 Tenant Isolation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_618_FIDELITY.md` (`test_stage618_fidelity_d1.py`); exit ADR-1244 / `test_stage618_exit_h618x.py`. Honesty: Offline Complete / Tenant Isolation Gate honesty / go-live Completes remain MISSING.
 Stage 617 D1 RBAC Permission Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_617_FIDELITY.md` (`test_stage617_fidelity_d1.py`); exit ADR-1242 / `test_stage617_exit_h617x.py`. Honesty: Offline Complete / RBAC Permission Gate honesty / go-live Completes remain MISSING.
 Stage 616 D1 Security ADR Tenancy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_616_FIDELITY.md` (`test_stage616_fidelity_d1.py`); exit ADR-1240 / `test_stage616_exit_h616x.py`. Honesty: Offline Complete / Security ADR Tenancy Gate honesty / go-live Completes remain MISSING.
 Stage 615 D1 Database ADR Tenancy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_615_FIDELITY.md` (`test_stage615_fidelity_d1.py`); exit ADR-1238 / `test_stage615_exit_h615x.py`. Honesty: Offline Complete / Database ADR Tenancy Gate honesty / go-live Completes remain MISSING.

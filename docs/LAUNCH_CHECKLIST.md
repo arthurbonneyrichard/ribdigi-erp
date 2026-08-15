@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 618 track opened (ADR-1243: `test_stage618_open.py`, `docs/STAGE_618_PLAN.md`) — Tenant Isolation Gate Honesty Pack Remaining-Gate Index; closed under ADR-1244
+- [x] Tenant Isolation Gate Honesty Pack remaining-gate hub (Stage 618 I1: `test_stage618_index_i1.py`, `docs/TENANT_ISOLATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Tenant Isolation Gate Honesty Pack blocker matrix (Stage 618 B1: `test_stage618_blockers_b1.py`, `docs/TENANT_ISOLATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 617 / Stage 616 / Stage 392 / CHANGE_IMPACT pointers (Stage 618 P1: `test_stage618_pointers_p1.py`, `docs/TENANT_ISOLATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 618 fidelity sync (D1: `test_stage618_fidelity_d1.py`, `docs/STAGE_618_FIDELITY.md`)
+- [x] Stage 618 exit + freeze (H618x: `test_stage618_exit_h618x.py`, `docs/STAGE_618_EXIT_CRITERIA.md`, ADR-1244)
+
 Stage 617 track opened (ADR-1241: `test_stage617_open.py`, `docs/STAGE_617_PLAN.md`) — RBAC Permission Gate Honesty Pack Remaining-Gate Index; closed under ADR-1242
 - [x] RBAC Permission Gate Honesty Pack remaining-gate hub (Stage 617 I1: `test_stage617_index_i1.py`, `docs/RBAC_PERMISSION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] RBAC Permission Gate Honesty Pack blocker matrix (Stage 617 B1: `test_stage617_blockers_b1.py`, `docs/RBAC_PERMISSION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
