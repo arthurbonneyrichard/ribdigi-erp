@@ -31,3 +31,7 @@ Stage 547 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, AI Provider Boundary, AI Provider Boundary honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 547 opened under **ADR-1101** after CONTINUE/NEXT (Tenant MVP AR AP Accounting Surface Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1102**. Stage 546 feature scope remains frozen.

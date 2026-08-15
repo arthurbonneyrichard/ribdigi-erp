@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 547 D1 (2026-08-14):** AR AP Accounting Surface Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_547_FIDELITY.md` (`test_stage547_fidelity_d1.py`). Open ADR: `docs/ADR_1101_STAGE547_OPEN.md`; plan `docs/STAGE_547_PLAN.md`.
+
+**Stage 547 exit (2026-08-14):** I1, B1, P1, D1, H547x met — `docs/STAGE_547_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1102_STAGE547_FREEZE.md`. Fidelity: `docs/STAGE_547_FIDELITY.md`.
+
 **Stage 546 D1 (2026-08-14):** AI Provider Boundary Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_546_FIDELITY.md` (`test_stage546_fidelity_d1.py`). Open ADR: `docs/ADR_1099_STAGE546_OPEN.md`; plan `docs/STAGE_546_PLAN.md`.
 
 **Stage 546 exit (2026-08-14):** I1, B1, P1, D1, H546x met — `docs/STAGE_546_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1100_STAGE546_FREEZE.md`. Fidelity: `docs/STAGE_546_FIDELITY.md`.
