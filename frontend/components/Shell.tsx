@@ -580,19 +580,21 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     [role, permissions, enabledModules]
   );
   const showAlerts = visible.some(([, href]) => href === '/notifications');
+  const sidebarLogoSrc = companyLogoUrl || '/brand/logo-sidebar.svg';
+  const sidebarLogoAlt = companyLogoUrl
+    ? companyName || 'Company logo'
+    : 'RIBDIGI ERP';
 
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
       <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
         <div className="brand" aria-label="Company brand">
-          {companyLogoUrl ? (
-            <img
-              className="brand-logo"
-              src={companyLogoUrl}
-              alt={companyName || 'Company logo'}
-            />
-          ) : null}
+          <img
+            className="brand-logo"
+            src={sidebarLogoSrc}
+            alt={sidebarLogoAlt}
+          />
           {companyName ? (
             <div className="brand-name">{companyName}</div>
           ) : isPlatformOwner ? (
