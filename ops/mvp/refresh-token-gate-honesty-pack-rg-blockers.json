@@ -1,0 +1,77 @@
+{
+  "id": "refresh-token-gate-honesty-pack-rg-blockers",
+  "stage": 758,
+  "pack": "B1",
+  "doc": "docs/REFRESH_TOKEN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/REFRESH_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "refresh_token_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "refresh_token_gate_honesty_complete_claimed": false,
+  "refresh_token_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "refresh_token_gate_honesty_complete_claimed": "REMAINING",
+    "refresh_token_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_refresh_token_gate_honesty": "NON_CLAIM",
+    "refresh_token_gate_pack_as_refresh_token_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "refresh_token_gate_honesty_complete_claimed_flag": "false",
+    "refresh_token_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "rtkghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghb-honesty",
+      "title": "Mark Refresh Token Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghb-as-golive",
+      "title": "Mark Refresh Token Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for refresh-token-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghb-checklist-remaining",
+      "title": "Offline Complete / Refresh Token Gate / Refresh Token Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 758 B1 Refresh Token Gate Honesty Pack RG blocker matrix packaging only."
+}
