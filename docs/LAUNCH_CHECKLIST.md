@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 509 track opened (ADR-1025: `test_stage509_open.py`, `docs/STAGE_509_PLAN.md`) — Customer Training Cert Honesty Pack Remaining-Gate Index; closed under ADR-1026
+- [x] Customer Training Cert Honesty Pack remaining-gate hub (Stage 509 I1: `test_stage509_index_i1.py`, `docs/CUSTOMER_TRAINING_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Customer Training Cert Honesty Pack blocker matrix (Stage 509 B1: `test_stage509_blockers_b1.py`, `docs/CUSTOMER_TRAINING_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 508 / Stage 507 / Stage 392 / CHANGE_IMPACT pointers (Stage 509 P1: `test_stage509_pointers_p1.py`, `docs/CUSTOMER_TRAINING_CERT_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 509 fidelity sync (D1: `test_stage509_fidelity_d1.py`, `docs/STAGE_509_FIDELITY.md`)
+- [x] Stage 509 exit + freeze (H509x: `test_stage509_exit_h509x.py`, `docs/STAGE_509_EXIT_CRITERIA.md`, ADR-1026)
+
 Stage 508 track opened (ADR-1023: `test_stage508_open.py`, `docs/STAGE_508_PLAN.md`) — Live Training Honesty Pack Remaining-Gate Index; closed under ADR-1024
 - [x] Live Training Honesty Pack remaining-gate hub (Stage 508 I1: `test_stage508_index_i1.py`, `docs/LIVE_TRAINING_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Live Training Honesty Pack blocker matrix (Stage 508 B1: `test_stage508_blockers_b1.py`, `docs/LIVE_TRAINING_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

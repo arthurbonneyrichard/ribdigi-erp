@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 509 D1 (2026-08-14):** Customer Training Cert Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_509_FIDELITY.md` (`test_stage509_fidelity_d1.py`). Open ADR: `docs/ADR_1025_STAGE509_OPEN.md`; plan `docs/STAGE_509_PLAN.md`.
+
+**Stage 509 exit (2026-08-14):** I1, B1, P1, D1, H509x met — `docs/STAGE_509_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1026_STAGE509_FREEZE.md`. Fidelity: `docs/STAGE_509_FIDELITY.md`.
+
 **Stage 508 D1 (2026-08-14):** Live Training Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_508_FIDELITY.md` (`test_stage508_fidelity_d1.py`). Open ADR: `docs/ADR_1023_STAGE508_OPEN.md`; plan `docs/STAGE_508_PLAN.md`.
 
 **Stage 508 exit (2026-08-14):** I1, B1, P1, D1, H508x met — `docs/STAGE_508_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1024_STAGE508_FREEZE.md`. Fidelity: `docs/STAGE_508_FIDELITY.md`.

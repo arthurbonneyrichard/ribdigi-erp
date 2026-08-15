@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/CUSTOMER_TRAINING_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/customer-training-cert-honesty-pack-remaining-gate.json` — Stage 509 I1
+- `docs/CUSTOMER_TRAINING_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/customer-training-cert-honesty-pack-rg-blockers.json` — Stage 509 B1
+- `docs/CUSTOMER_TRAINING_CERT_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/customer-training-cert-honesty-pack-rg-pointers.json` — Stage 509 P1
 - `docs/LIVE_TRAINING_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/live-training-honesty-pack-remaining-gate.json` — Stage 508 I1
 - `docs/LIVE_TRAINING_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/live-training-honesty-pack-rg-blockers.json` — Stage 508 B1
 - `docs/LIVE_TRAINING_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/live-training-honesty-pack-rg-pointers.json` — Stage 508 P1

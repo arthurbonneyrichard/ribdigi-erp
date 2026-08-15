@@ -31,3 +31,8 @@ Stage 509 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Live Training, Live Training honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 509 opened under **ADR-1025** after CONTINUE/NEXT (Tenant MVP Customer Training Cert Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1026**. Stage 508 feature scope remains frozen.
+
