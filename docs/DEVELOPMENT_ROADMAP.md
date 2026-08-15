@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 776 D1 (2026-08-14):** Hardware Key Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_776_FIDELITY.md` (`test_stage776_fidelity_d1.py`). Open ADR: `docs/ADR_1559_STAGE776_OPEN.md`; plan `docs/STAGE_776_PLAN.md`.
+
+**Stage 776 exit (2026-08-14):** I1, B1, P1, D1, H776x met — `docs/STAGE_776_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1560_STAGE776_FREEZE.md`. Fidelity: `docs/STAGE_776_FIDELITY.md`.
+
 **Stage 775 D1 (2026-08-14):** Device Fingerprint Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_775_FIDELITY.md` (`test_stage775_fidelity_d1.py`). Open ADR: `docs/ADR_1557_STAGE775_OPEN.md`; plan `docs/STAGE_775_PLAN.md`.
 
 **Stage 775 exit (2026-08-14):** I1, B1, P1, D1, H775x met — `docs/STAGE_775_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1558_STAGE775_FREEZE.md`. Fidelity: `docs/STAGE_775_FIDELITY.md`.
