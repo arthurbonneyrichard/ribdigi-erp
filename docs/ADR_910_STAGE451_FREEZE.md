@@ -31,3 +31,10 @@ Stage 452 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Production Launch, Production Launch honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 452 opened under **ADR-911** after CONTINUE/NEXT (Tenant MVP Go-Live Attestation Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-912**. Stage 451 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 451 runner-up outline was approved and opened (ADR-911); freeze ADR-912. Do not reopen Stage 451 scope.
+
