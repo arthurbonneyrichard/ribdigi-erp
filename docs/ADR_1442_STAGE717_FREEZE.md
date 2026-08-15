@@ -31,3 +31,7 @@ Stage 718 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Webhook Signature Gate, Webhook Signature Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 718 opened under **ADR-1443** after CONTINUE/NEXT (Tenant MVP Oauth Client Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1444**. Stage 717 feature scope remains frozen.
