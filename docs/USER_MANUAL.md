@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 839 WhatsApp Opt Out Gate Honesty Pack remaining-gate index fidelity (ADR-1685/1686). Operators track packaging status via `docs/WHATSAPP_OPT_OUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 838 Push Opt Out Gate Honesty Pack remaining-gate index fidelity (ADR-1683/1684). Operators track packaging status via `docs/PUSH_OPT_OUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 837 Email Opt Out Gate Honesty Pack remaining-gate index fidelity (ADR-1681/1682). Operators track packaging status via `docs/EMAIL_OPT_OUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 836 SMS Opt Out Gate Honesty Pack remaining-gate index fidelity (ADR-1679/1680). Operators track packaging status via `docs/SMS_OPT_OUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.

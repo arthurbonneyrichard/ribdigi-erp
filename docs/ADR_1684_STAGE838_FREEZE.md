@@ -31,3 +31,7 @@ Stage 839 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Push Opt Out Gate, Push Opt Out Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 839 opened under **ADR-1685** after CONTINUE/NEXT (Tenant MVP WhatsApp Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1686**. Stage 838 feature scope remains frozen.

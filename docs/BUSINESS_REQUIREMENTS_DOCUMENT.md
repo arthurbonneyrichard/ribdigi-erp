@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 839 D1 WhatsApp Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_839_FIDELITY.md` (`test_stage839_fidelity_d1.py`); Offline Complete / WhatsApp Opt Out Gate honesty / go-live still MISSING.
 Stage 838 D1 Push Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_838_FIDELITY.md` (`test_stage838_fidelity_d1.py`); Offline Complete / Push Opt Out Gate honesty / go-live still MISSING.
 Stage 837 D1 Email Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_837_FIDELITY.md` (`test_stage837_fidelity_d1.py`); Offline Complete / Email Opt Out Gate honesty / go-live still MISSING.
 Stage 836 D1 SMS Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_836_FIDELITY.md` (`test_stage836_fidelity_d1.py`); Offline Complete / SMS Opt Out Gate honesty / go-live still MISSING.

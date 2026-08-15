@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 839 track opened (ADR-1685: `test_stage839_open.py`, `docs/STAGE_839_PLAN.md`) — WhatsApp Opt Out Gate Honesty Pack Remaining-Gate Index; closed under ADR-1686
+- [x] WhatsApp Opt Out Gate Honesty Pack remaining-gate hub (Stage 839 I1: `test_stage839_index_i1.py`, `docs/WHATSAPP_OPT_OUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] WhatsApp Opt Out Gate Honesty Pack blocker matrix (Stage 839 B1: `test_stage839_blockers_b1.py`, `docs/WHATSAPP_OPT_OUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 838 / Stage 837 / Stage 392 / CHANGE_IMPACT pointers (Stage 839 P1: `test_stage839_pointers_p1.py`, `docs/WHATSAPP_OPT_OUT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 839 fidelity sync (D1: `test_stage839_fidelity_d1.py`, `docs/STAGE_839_FIDELITY.md`)
+- [x] Stage 839 exit + freeze (H839x: `test_stage839_exit_h839x.py`, `docs/STAGE_839_EXIT_CRITERIA.md`, ADR-1686)
+
 Stage 838 track opened (ADR-1683: `test_stage838_open.py`, `docs/STAGE_838_PLAN.md`) — Push Opt Out Gate Honesty Pack Remaining-Gate Index; closed under ADR-1684
 - [x] Push Opt Out Gate Honesty Pack remaining-gate hub (Stage 838 I1: `test_stage838_index_i1.py`, `docs/PUSH_OPT_OUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Push Opt Out Gate Honesty Pack blocker matrix (Stage 838 B1: `test_stage838_blockers_b1.py`, `docs/PUSH_OPT_OUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
