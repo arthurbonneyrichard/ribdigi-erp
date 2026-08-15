@@ -233,3 +233,96 @@ async def test_stock_in_webhook_skips_grn(client, db_session, monkeypatch):
     assert grn.status_code == 200, grn.text
     assert "purchase.grn.received" in events
     assert "stock.in" not in events
+
+
+async def _open_pos_session(ac, headers):
+    cur = await ac.get("/api/v1/pos/sessions/current", headers=headers)
+    if cur.status_code == 200 and cur.json().get("data"):
+        sid = cur.json()["data"].get("session_id") or cur.json()["data"].get("id")
+        if sid:
+            await ac.post(
+                f"/api/v1/pos/sessions/{sid}/close",
+                headers=headers,
+                json={"actual_cash": 0},
+            )
+    opened = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"opening_cash": 50},
+    )
+    assert opened.status_code == 200, opened.text
+    return opened.json()["data"].get("session_id") or opened.json()["data"]["id"]
+
+
+@pytest.mark.asyncio
+async def test_pos_sale_webhooks_cash_and_credit(client, db_session, monkeypatch):
+    """Cash POS → sale.created + sale.paid; credit tender → sale.created only."""
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    events: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = __import__("json").loads(request.content.decode())
+        events.append({"event": body.get("event"), "data": body.get("data") or {}})
+        return httpx.Response(200, json={"ok": True})
+
+    original = webhooks_svc._deliver_http
+
+    async def _mock(*, url, body, signature_header, timeout=10.0, transport=None):
+        return await original(
+            url=url,
+            body=body,
+            signature_header=signature_header,
+            timeout=timeout,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(webhooks_svc, "_deliver_http", _mock)
+
+    await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={
+            "url": "https://hooks.example.com/pos",
+            "events": ["sale.created", "sale.paid"],
+        },
+    )
+
+    product = seed["p1"]
+    product.stock_qty = float(product.stock_qty or 0) + 20
+    await db_session.commit()
+    session_id = await _open_pos_session(ac, headers)
+
+    cash = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "payment_method": "cash",
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 12}],
+        },
+    )
+    assert cash.status_code == 200, cash.text
+    names = [e["event"] for e in events]
+    assert "sale.created" in names
+    assert "sale.paid" in names
+    created = next(e for e in events if e["event"] == "sale.created")
+    assert created["data"].get("source") == "pos"
+    assert created["data"].get("sale_id") == cash.json()["data"]["id"]
+
+    events.clear()
+    credit = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "payment_method": "credit",
+            "party_id": seed["party1"].id,
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 15}],
+        },
+    )
+    assert credit.status_code == 200, credit.text
+    names = [e["event"] for e in events]
+    assert "sale.created" in names
+    assert "sale.paid" not in names
+    assert all(e["data"].get("source") == "pos" for e in events if e["event"] == "sale.created")

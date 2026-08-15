@@ -6835,6 +6835,41 @@ async def pos_sale(
                 },
             )
         )
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        event="sale.created",
+        data={
+            "sale_id": tx.id,
+            "reference": ref,
+            "amount": float(tx.total or 0),
+            "customer_id": payload.party_id,
+            "payment_method": payment_method,
+            "status": tx.status,
+            "source": "pos",
+            "session_id": session.id,
+            "credit_amount": float(credit_amount or 0),
+        },
+    )
+    # Fully settled at till (no on-account credit tender) → also emit sale.paid.
+    if float(credit_amount or 0) <= 0:
+        await webhooks_svc.emit_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            event="sale.paid",
+            data={
+                "sale_id": tx.id,
+                "reference": ref,
+                "amount": float(tx.total or 0),
+                "customer_id": payload.party_id,
+                "payment_method": payment_method,
+                "payments": [
+                    {"payment_method": p.get("payment_method"), "amount": float(p.get("amount") or 0)}
+                    for p in payments
+                ],
+                "source": "pos",
+            },
+        )
     await db.commit()
     payload_out = {
         "id": tx.id,
