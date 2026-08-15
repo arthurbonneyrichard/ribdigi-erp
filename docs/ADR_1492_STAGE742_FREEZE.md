@@ -31,3 +31,7 @@ Stage 743 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Document Policy Gate, Document Policy Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 743 opened under **ADR-1493** after CONTINUE/NEXT (Tenant MVP Origin Agent Cluster Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1494**. Stage 742 feature scope remains frozen.
