@@ -31,3 +31,7 @@ Stage 500 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Monthly POS Ops Review, Monthly POS Ops Review honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 500 opened under **ADR-1007** after CONTINUE/NEXT (Tenant MVP Weekly POS Ops Review Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1008**. Stage 499 feature scope remains frozen.
