@@ -31,3 +31,7 @@ Stage 541 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Hard Delete, Hard Delete honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 541 opened under **ADR-1089** after CONTINUE/NEXT (Tenant MVP Language I18n Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1090**. Stage 540 feature scope remains frozen.
