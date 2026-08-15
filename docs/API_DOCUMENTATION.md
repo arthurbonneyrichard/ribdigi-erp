@@ -1595,8 +1595,8 @@ Signing secret is returned **once** on create/rotate (`secret_shown_once`). Deli
 
 | Event | Description |
 |-------|-------------|
-| `sale.created` | New sale/invoice created |
-| `sale.paid` | Invoice payment received |
+| `sale.created` | New sale/invoice created (invoice post or POS checkout) |
+| `sale.paid` | Invoice payment received, or POS sale fully settled at till (no credit tender) |
 | `stock.low` | Product reached low stock level |
 | `stock.in` | Stock received into warehouse |
 | `purchase.order.created` | New PO created |
@@ -1638,7 +1638,7 @@ Rules:
 3. Recompute HMAC-SHA256 with your `whsec_…` secret; compare with `hmac.compare_digest`.
 4. Secrets are shown **once** on create/rotate in Integrations — store them in your vault.
 
-**Live events today:** `webhook.test` (Integrations **Test**), `sale.created` (invoice post), `sale.paid` (customer payment), `customer.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved` (final approval), `stock.low` (when a new low-stock notification is created), and `stock.in` (inbound `stock_in` movements except `reference_type=grn`, which fans out only as `purchase.grn.received`). Reserved / not yet emitted: `user.login`, `tenant.suspended`.
+**Live events today:** `webhook.test` (Integrations **Test**), `sale.created` (invoice post **or** POS checkout), `sale.paid` (customer payment **or** POS sale with no credit tender), `customer.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved` (final approval), `stock.low` (when a new low-stock notification is created), and `stock.in` (inbound `stock_in` movements except `reference_type=grn`, which fans out only as `purchase.grn.received`). Reserved / not yet emitted: `user.login`, `tenant.suspended`.
 
 **Golden fixture** (matches `tests/test_webhooks_w1.py`):
 

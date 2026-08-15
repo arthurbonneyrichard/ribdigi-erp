@@ -390,11 +390,12 @@ export default function Page() {
         <h2>Webhooks</h2>
         <p className="muted">
           Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256). Live
-          fan-out today: <code>webhook.test</code>, <code>sale.created</code>, <code>sale.paid</code>,{' '}
-          <code>customer.created</code>, <code>purchase.order.created</code>,{' '}
-          <code>purchase.grn.received</code>, <code>expense.approved</code>, <code>stock.low</code>,{' '}
-          <code>stock.in</code> (manual / non-GRN inbound; GRN uses <code>purchase.grn.received</code>
-          only). Reserved: <code>user.login</code>, <code>tenant.suspended</code>.
+          fan-out today: <code>webhook.test</code>, <code>sale.created</code> (invoice + POS),{' '}
+          <code>sale.paid</code> (AR payment + settled POS), <code>customer.created</code>,{' '}
+          <code>purchase.order.created</code>, <code>purchase.grn.received</code>,{' '}
+          <code>expense.approved</code>, <code>stock.low</code>, <code>stock.in</code> (manual /
+          non-GRN inbound; GRN uses <code>purchase.grn.received</code> only). Reserved:{' '}
+          <code>user.login</code>, <code>tenant.suspended</code>.
         </p>
         <details style={{ marginBottom: 12 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Verify signature (subscriber)</summary>
