@@ -31,3 +31,7 @@ Stage 767 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Workload Identity Gate, Workload Identity Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 767 opened under **ADR-1541** after CONTINUE/NEXT (Tenant MVP Impersonation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1542**. Stage 766 feature scope remains frozen.

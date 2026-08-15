@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 767 D1 (2026-08-14):** Impersonation Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_767_FIDELITY.md` (`test_stage767_fidelity_d1.py`). Open ADR: `docs/ADR_1541_STAGE767_OPEN.md`; plan `docs/STAGE_767_PLAN.md`.
+
+**Stage 767 exit (2026-08-14):** I1, B1, P1, D1, H767x met — `docs/STAGE_767_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1542_STAGE767_FREEZE.md`. Fidelity: `docs/STAGE_767_FIDELITY.md`.
+
 **Stage 766 D1 (2026-08-14):** Workload Identity Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_766_FIDELITY.md` (`test_stage766_fidelity_d1.py`). Open ADR: `docs/ADR_1539_STAGE766_OPEN.md`; plan `docs/STAGE_766_PLAN.md`.
 
 **Stage 766 exit (2026-08-14):** I1, B1, P1, D1, H766x met — `docs/STAGE_766_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1540_STAGE766_FREEZE.md`. Fidelity: `docs/STAGE_766_FIDELITY.md`.
