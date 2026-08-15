@@ -617,6 +617,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** Critical
 - **Acceptance Criteria:**
   - [x] Predefined COA based on industry template
+    - Complete (MVP): shared default COA via `ensure_default_accounts`; industry-specific packs remain open under BR-1.5
   - [x] Account types: Asset, Liability, Equity, Income, Expense
   - [x] Account code hierarchy (e.g., 1000-Assets, 1100-Current Assets) — flat coded template (parent_id deferred)
   - [x] Add/edit accounts (create + `PATCH` name/bank fields; system seed codes flagged)
@@ -906,9 +907,9 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [x] CRUD operations for products, categories, brands, units (`GET|POST|PATCH /products`; soft-deactivate via `is_active`; `GET|POST|PATCH|DELETE /catalog/categories|brands|units`)
   - [x] Bulk import/export
-    - Complete (MVP): `GET|POST /products/import[/template]`; export via `GET /products` + `POST /reports/export` (`inventory_balance` / related). Dedicated catalog CSV export optional.
-  - [x] Stock level queries (`product.stock_qty`; `GET /inventory/warehouse-stock`; `GET /products/{id}/warehouse-stock`; `GET /inventory/low-stock`; `GET /reports/inventory/balance`)
-  - [x] Barcode lookup (`GET /inventory/products/lookup?barcode=` / `?q=`; also `GET /pos/products/search?barcode=` for POS)
+    - Complete (MVP): `GET|POST /products/import[/template]`; dedicated `GET /products/export` (same CSV columns); also `GET /products` + `POST /reports/export` (`inventory_balance` / related)
+  - [x] Stock level queries (`product.stock_qty`; `GET /inventory/warehouse-stock`; `GET /products/{id}/warehouse-stock`; `GET /inventory/low-stock`; `GET /reports/inventory/balance`; Inventory **Lookup** tab)
+  - [x] Barcode lookup (`GET /inventory/products/lookup?barcode=` / `?q=`; Inventory **Lookup** UI; also `GET /pos/products/search?barcode=` for POS)
 
 #### BR-18.3 Customers API
 - **Description:** Customer data access.

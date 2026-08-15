@@ -67,6 +67,99 @@ def template_csv() -> str:
     return buf.getvalue()
 
 
+def products_to_csv(
+    products: list[m.Product],
+    *,
+    category_by_id: dict[str, m.ProductCategory] | None = None,
+    brand_by_id: dict[str, m.Brand] | None = None,
+    unit_by_id: dict[str, m.UnitOfMeasure] | None = None,
+) -> str:
+    """Serialize catalog products to the same columns as the import template (BR-18.2 export)."""
+    cats = category_by_id or {}
+    brands = brand_by_id or {}
+    units = unit_by_id or {}
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=list(TEMPLATE_HEADERS))
+    writer.writeheader()
+    for p in products:
+        cat = cats.get(getattr(p, "category_id", None) or "")
+        brand = brands.get(getattr(p, "brand_id", None) or "")
+        unit = units.get(getattr(p, "unit_id", None) or "")
+        writer.writerow(
+            {
+                "name": p.name or "",
+                "sku": p.sku or "",
+                "barcode": p.barcode or "",
+                "description": getattr(p, "description", None) or "",
+                "category": (cat.name if cat else None) or (p.category or ""),
+                "brand": (brand.name if brand else "") or "",
+                "unit": (unit.code if unit else "") or "",
+                "cost_price": f"{float(p.cost_price or 0):.4f}".rstrip("0").rstrip(".") or "0",
+                "selling_price": f"{float(p.selling_price or 0):.4f}".rstrip("0").rstrip(".")
+                or "0",
+                "weight": "" if getattr(p, "weight", None) is None else str(float(p.weight)),
+                "length": "" if getattr(p, "length", None) is None else str(float(p.length)),
+                "width": "" if getattr(p, "width", None) is None else str(float(p.width)),
+                "height": "" if getattr(p, "height", None) is None else str(float(p.height)),
+                "stock_qty": f"{float(p.stock_qty or 0):.3f}".rstrip("0").rstrip(".") or "0",
+                "reorder_level": f"{float(p.reorder_level or 0):.3f}".rstrip("0").rstrip(".")
+                or "0",
+                "tax_exempt": "true" if p.tax_exempt else "false",
+                "tax_supply_class": getattr(p, "tax_supply_class", None)
+                or ("exempt" if p.tax_exempt else "standard"),
+                "tracks_batches": "true" if p.tracks_batches else "false",
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_tenant_products_csv(db: AsyncSession, tenant_id: str) -> str:
+    products = (
+        await db.execute(
+            select(m.Product)
+            .where(m.Product.tenant_id == tenant_id)
+            .order_by(m.Product.sku, m.Product.name)
+        )
+    ).scalars().all()
+    cat_ids = {p.category_id for p in products if p.category_id}
+    brand_ids = {p.brand_id for p in products if p.brand_id}
+    unit_ids = {p.unit_id for p in products if p.unit_id}
+    cats: dict[str, m.ProductCategory] = {}
+    brands: dict[str, m.Brand] = {}
+    units: dict[str, m.UnitOfMeasure] = {}
+    if cat_ids:
+        rows = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.tenant_id == tenant_id,
+                    m.ProductCategory.id.in_(cat_ids),
+                )
+            )
+        ).scalars().all()
+        cats = {r.id: r for r in rows}
+    if brand_ids:
+        rows = (
+            await db.execute(
+                select(m.Brand).where(
+                    m.Brand.tenant_id == tenant_id,
+                    m.Brand.id.in_(brand_ids),
+                )
+            )
+        ).scalars().all()
+        brands = {r.id: r for r in rows}
+    if unit_ids:
+        rows = (
+            await db.execute(
+                select(m.UnitOfMeasure).where(
+                    m.UnitOfMeasure.tenant_id == tenant_id,
+                    m.UnitOfMeasure.id.in_(unit_ids),
+                )
+            )
+        ).scalars().all()
+        units = {r.id: r for r in rows}
+    return products_to_csv(products, category_by_id=cats, brand_by_id=brands, unit_by_id=units)
+
+
 def _truthy(value: str | None) -> bool:
     if value is None:
         return False

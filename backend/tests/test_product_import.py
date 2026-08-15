@@ -24,6 +24,28 @@ def test_template_has_required_headers():
     assert "stock_qty" in header
 
 
+@pytest.mark.asyncio
+async def test_products_export_csv_route(client):
+    ac, seeded = client
+    admin = await _admin(ac, seeded)
+    product = seeded["p1"]
+
+    patched = await ac.patch(
+        f"/api/v1/products/{product.id}",
+        headers=admin,
+        json={"barcode": "EXPORT-BC-1"},
+    )
+    assert patched.status_code == 200, patched.text
+
+    exported = await ac.get("/api/v1/products/export", headers=admin)
+    assert exported.status_code == 200, exported.text
+    assert "text/csv" in exported.headers.get("content-type", "")
+    body = exported.text
+    assert "name,sku,barcode" in body.splitlines()[0]
+    assert product.sku in body
+    assert "EXPORT-BC-1" in body
+
+
 def test_parse_csv_rows_skips_blank_and_requires_headers():
     rows = parse_csv_rows(
         "name,sku,selling_price\nWidget,W-1,9.99\n,,\nGadget,G-1,4.50\n"

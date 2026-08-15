@@ -2724,6 +2724,22 @@ async def products_import_template(
     )
 
 
+@api.get("/products/export")
+async def products_export(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """BR-18.2 — catalog CSV export using the same columns as the import template."""
+    from app import product_import as product_import_svc
+
+    csv_text = await product_import_svc.export_tenant_products_csv(db, claims["tenant_id"])
+    return Response(
+        content=csv_text,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=products-export.csv"},
+    )
+
+
 @api.post("/products/import")
 async def products_import(
     file: UploadFile = File(...),

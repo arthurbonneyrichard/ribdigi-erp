@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 
 type Tab =
   | 'products'
+  | 'lookup'
   | 'import'
   | 'catalog'
   | 'variants'
@@ -148,6 +149,14 @@ export default function Page() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importReport, setImportReport] = useState<ImportReport | null>(null);
   const [importBusy, setImportBusy] = useState(false);
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupBarcode, setLookupBarcode] = useState('');
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [lookupHits, setLookupHits] = useState<any[]>([]);
+  const [lookupMeta, setLookupMeta] = useState<{ q?: string; barcode?: string | null; count?: number } | null>(
+    null
+  );
+  const [lookupStock, setLookupStock] = useState<any | null>(null);
 
   const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
@@ -805,6 +814,85 @@ export default function Page() {
     }
   }
 
+  async function downloadProductsExport() {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/products/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Product export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'products-export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Products CSV exported');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function runProductLookup(opts?: { selectId?: string }) {
+    setError('');
+    setMessage('');
+    const q = lookupQuery.trim();
+    const barcode = lookupBarcode.trim();
+    if (!q && !barcode) {
+      setError('Enter a barcode or search text');
+      return;
+    }
+    setLookupBusy(true);
+    try {
+      const params = new URLSearchParams();
+      if (barcode) params.set('barcode', barcode);
+      else if (q) params.set('q', q);
+      const r = await api(`/inventory/products/lookup?${params.toString()}`);
+      const data = r.data || {};
+      const items = data.items || [];
+      setLookupHits(items);
+      setLookupMeta({ q: data.q, barcode: data.barcode, count: data.count });
+      setLookupStock(null);
+      if (!items.length) {
+        setMessage('No products matched');
+        return;
+      }
+      const pickId = opts?.selectId || items[0].id;
+      setSelectedId(pickId);
+      const stock = await api(`/products/${pickId}/warehouse-stock`);
+      setLookupStock(stock.data);
+      setMessage(
+        `Found ${data.count} product(s)` +
+          (data.barcode ? ` for barcode ${data.barcode}` : q ? ` for “${q}”` : '')
+      );
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLookupBusy(false);
+    }
+  }
+
+  async function selectLookupHit(productId: string) {
+    setSelectedId(productId);
+    setError('');
+    try {
+      const stock = await api(`/products/${productId}/warehouse-stock`);
+      setLookupStock(stock.data);
+      setTab('lookup');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function runProductImport(dryRun: boolean) {
     if (!importFile) {
       setError('Choose a CSV file first');
@@ -1288,6 +1376,7 @@ export default function Page() {
         {(
           [
             ['products', 'Products'],
+            ['lookup', 'Lookup'],
             ['import', 'Import'],
             ['catalog', 'Catalog'],
             ['variants', 'Variants'],
@@ -1508,16 +1597,147 @@ export default function Page() {
         )}
       </div>
 
+      {tab === 'lookup' && (
+        <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
+          <h3>Product lookup</h3>
+          <p className="muted" style={{ margin: 0 }}>
+            Scan a barcode or search by name/SKU (GET /inventory/products/lookup). Selecting a hit
+            loads per-warehouse stock (GET /products/:id/warehouse-stock) and sets the product for
+            other Inventory actions.
+          </p>
+          <div className="erp-form-grid" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              value={lookupBarcode}
+              onChange={(e) => setLookupBarcode(e.target.value)}
+              placeholder="Barcode (exact)"
+              style={{ minWidth: 180 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  runProductLookup();
+                }
+              }}
+            />
+            <input
+              value={lookupQuery}
+              onChange={(e) => setLookupQuery(e.target.value)}
+              placeholder="Name / SKU search"
+              style={{ minWidth: 200 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  runProductLookup();
+                }
+              }}
+            />
+            <button type="button" onClick={() => runProductLookup()} disabled={lookupBusy}>
+              {lookupBusy ? 'Searching…' : 'Lookup'}
+            </button>
+          </div>
+          {lookupMeta && (
+            <p className="muted" style={{ margin: 0 }}>
+              Matches: {lookupMeta.count ?? lookupHits.length}
+              {lookupMeta.barcode ? ` · barcode ${lookupMeta.barcode}` : ''}
+              {lookupMeta.q ? ` · q “${lookupMeta.q}”` : ''}
+            </p>
+          )}
+          <table className="table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Barcode</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lookupHits.map((p) => (
+                <tr key={p.id} style={{ background: p.id === selectedId ? '#eff6ff' : undefined }}>
+                  <td>{p.sku}</td>
+                  <td>{p.name}</td>
+                  <td>{p.barcode || '—'}</td>
+                  <td>
+                    <StockStatusBadge product={p} />
+                  </td>
+                  <td>{p.is_active === false ? 'inactive' : 'active'}</td>
+                  <td>
+                    <button type="button" onClick={() => selectLookupHit(p.id)}>
+                      Select
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!lookupHits.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No lookup results yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {lookupStock && (
+            <div style={{ display: 'grid', gap: 8 }}>
+              <strong>
+                Warehouse stock — {lookupStock.sku} ({lookupStock.name}) · consolidated{' '}
+                {lookupStock.consolidated_stock}
+              </strong>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Warehouse</th>
+                    <th>Qty</th>
+                    <th>Reorder</th>
+                    <th>Reorder qty</th>
+                    <th>Below?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(lookupStock.items || []).map((row: any) => (
+                    <tr key={row.warehouse_id}>
+                      <td>
+                        {row.warehouse_code} — {row.warehouse_name}
+                      </td>
+                      <td>{row.quantity}</td>
+                      <td>{row.reorder_level}</td>
+                      <td>{row.reorder_qty}</td>
+                      <td>{row.below_reorder ? 'yes' : '—'}</td>
+                    </tr>
+                  ))}
+                  {!(lookupStock.items || []).length && (
+                    <tr>
+                      <td colSpan={5} className="muted">
+                        No warehouse rows for this product
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <p className="muted" style={{ margin: 0 }}>
+                Located total {lookupStock.total_quantity ?? 0} · product selected for stock
+                ops / barcode tools above
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {tab === 'import' && (
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
           <h3>Bulk import products</h3>
           <p className="muted" style={{ margin: 0 }}>
             Download the CSV template, fill product rows (category / brand / unit must already exist),
-            validate, then import. Import is all-or-nothing — fix every error row first.
+            validate, then import. Import is all-or-nothing — fix every error row first. Export
+            downloads the current catalog in the same column layout.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button type="button" onClick={downloadImportTemplate}>
               Download CSV template
+            </button>
+            <button type="button" onClick={downloadProductsExport}>
+              Export products CSV
             </button>
           </div>
           <label className="muted">CSV file</label>
