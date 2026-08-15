@@ -111,6 +111,7 @@ export default function Page() {
   const [units, setUnits] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState('');
+  const [productManageFilter, setProductManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [variants, setVariants] = useState<any[]>([]);
   const [gallery, setGallery] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
@@ -1361,6 +1362,11 @@ export default function Page() {
   }
 
   const selected = products.find((p) => p.id === selectedId);
+  const managedProducts = products.filter((p) => {
+    if (productManageFilter === 'all') return true;
+    const active = p.is_active !== false;
+    return productManageFilter === 'inactive' ? !active : active;
+  });
 
   return (
     <Shell>
@@ -1458,9 +1464,30 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">Selected product</label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+          <select
+            value={productManageFilter}
+            onChange={(e) => {
+              const next = e.target.value as 'all' | 'active' | 'inactive';
+              setProductManageFilter(next);
+              if (selectedId) {
+                const row = products.find((p) => p.id === selectedId);
+                const active = row?.is_active !== false;
+                if (next === 'active' && !active) setSelectedId('');
+                if (next === 'inactive' && active) setSelectedId('');
+              }
+            }}
+            title="Filter manage product list by status"
+            aria-label="Product status filter"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+        </div>
         <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={{ width: '100%' }}>
           <option value="">Select product</option>
-          {products.map((p) => (
+          {managedProducts.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name} ({p.sku}) — {p.stock_qty}
               {p.is_active === false ? ' [inactive]' : ''}
@@ -1903,7 +1930,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {managedProducts.map((p) => (
                 <tr key={p.id}>
                   <td>
                     <button

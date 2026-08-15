@@ -2664,15 +2664,21 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
 
 
 @api.get("/products")
-async def products(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
+async def products(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List products. Optional is_active filters soft-deactivated rows (Inventory manage UI)."""
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
-    rows = (
-        await db.execute(
-            select(m.Product)
-            .where(m.Product.tenant_id == claims["tenant_id"])
-            .order_by(m.Product.name)
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.Product)
+        .where(m.Product.tenant_id == claims["tenant_id"])
+        .order_by(m.Product.name)
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.Product.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([catalog_meta_svc.serialize_product(p) for p in rows])
 
 
