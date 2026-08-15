@@ -96,6 +96,7 @@ type Transfer = {
   awaiting_approval?: string | null;
   fully_approved?: boolean;
   can_ship?: boolean;
+  rejection_reason?: string | null;
   items: { product_id: string; quantity: number }[];
 };
 
@@ -144,6 +145,7 @@ export default function Page() {
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('1');
+  const [xferRejectReason, setXferRejectReason] = useState('');
   const [viewStore, setViewStore] = useState('');
   const [reorderProductId, setReorderProductId] = useState('');
   const [reorderLevel, setReorderLevel] = useState('5');
@@ -700,8 +702,25 @@ export default function Page() {
 
   async function act(id: string, action: string) {
     setError('');
+    setMessage('');
+    if (action === 'reject') {
+      const reason = xferRejectReason.trim();
+      if (!reason) {
+        setError('Enter a reject reason before rejecting a store transfer');
+        return;
+      }
+    }
     try {
-      const r = await api(`/stores/transfers/${id}/${action}`, { method: 'POST' });
+      const r = await api(`/stores/transfers/${id}/${action}`, {
+        method: 'POST',
+        body:
+          action === 'reject'
+            ? JSON.stringify({ reason: xferRejectReason.trim() })
+            : undefined,
+      });
+      if (action === 'reject') {
+        setXferRejectReason('');
+      }
       setMessage(`${r.data.transfer_number} → ${r.data.status}`);
       await refresh();
       if (viewStore) await loadInventory(viewStore);
@@ -1359,6 +1378,21 @@ export default function Page() {
       <p className="muted">
         Dual approval: source store manager → destination store manager, then ship / receive.
       </p>
+      <div className="card" style={{ marginBottom: 12 }}>
+        <label>
+          Reject reason{' '}
+          <input
+            value={xferRejectReason}
+            onChange={(e) => setXferRejectReason(e.target.value)}
+            placeholder="Required before Reject"
+            style={{ minWidth: 280 }}
+          />
+        </label>
+        <p className="muted" style={{ marginTop: 6 }}>
+          Used by Reject on requested transfers (stored as <code>rejection_reason</code>; status →
+          cancelled).
+        </p>
+      </div>
       <table className="table">
         <thead>
           <tr>
@@ -1367,6 +1401,7 @@ export default function Page() {
             <th>To</th>
             <th>Status</th>
             <th>Approval</th>
+            <th>Reject reason</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -1386,6 +1421,7 @@ export default function Page() {
                       : 'Awaiting source'
                   : '—'}
               </td>
+              <td>{t.rejection_reason || '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {t.status === 'draft' && (
                   <button type="button" onClick={() => act(t.id, 'submit')}>

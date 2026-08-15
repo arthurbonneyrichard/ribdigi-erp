@@ -658,9 +658,12 @@ async def reject_transfer(
             # If neither store has a manager assigned, any store_manager may reject
             if from_store.manager_id or to_store.manager_id:
                 raise HTTPException(status_code=403, detail="Not an assigned store manager for this transfer")
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="rejection reason is required")
     transfer.status = "cancelled"
     transfer.rejected_by = user_id
-    transfer.rejection_reason = (reason or "").strip() or None
+    transfer.rejection_reason = reason_s
     await db.flush()
     return transfer
 
