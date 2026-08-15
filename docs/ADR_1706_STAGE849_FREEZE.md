@@ -31,3 +31,7 @@ Stage 850 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Purpose Limit Gate, Purpose Limit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 850 opened under **ADR-1707** after CONTINUE/NEXT (Tenant MVP Data Minimization Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1708**. Stage 849 feature scope remains frozen.
