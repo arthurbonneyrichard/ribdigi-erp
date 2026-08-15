@@ -8691,6 +8691,7 @@ async def accounting_period_close(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         through_date=payload.through_date,
+        reason=payload.reason,
     )
     await db.commit()
     return env(status, "Books closed")
@@ -8710,6 +8711,7 @@ async def accounting_period_reopen(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         through_date=payload.through_date,
+        reason=payload.reason,
     )
     await db.commit()
     return env(status, "Books reopened")

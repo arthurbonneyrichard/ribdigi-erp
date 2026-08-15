@@ -574,8 +574,12 @@ async def close_books(
     tenant_id: str,
     user_id: str | None,
     through_date: date,
+    reason: str | None = None,
 ) -> dict:
     """Advance tenants.books_closed_through (inclusive). Cannot close future dates."""
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="close reason is required")
     tenant = await get_tenant_or_404(db, tenant_id)
     today = datetime.utcnow().date()
     if through_date > today:
@@ -603,6 +607,7 @@ async def close_books(
             details={
                 "books_closed_through": through_date.isoformat(),
                 "previous": current.isoformat() if current else None,
+                "reason": reason_s,
             },
         )
     )
@@ -615,8 +620,12 @@ async def reopen_books(
     tenant_id: str,
     user_id: str | None,
     through_date: date | None,
+    reason: str | None = None,
 ) -> dict:
     """Move books_closed_through earlier, or clear when through_date is null."""
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="reopen reason is required")
     tenant = await get_tenant_or_404(db, tenant_id)
     current = as_calendar_date(tenant.books_closed_through)
     if current is None:
@@ -647,6 +656,7 @@ async def reopen_books(
             details={
                 "books_closed_through": through_date.isoformat() if through_date else None,
                 "previous": previous,
+                "reason": reason_s,
             },
         )
     )
