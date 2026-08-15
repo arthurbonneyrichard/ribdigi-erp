@@ -31,3 +31,7 @@ Stage 732 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Permissions Policy Gate, Permissions Policy Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 732 opened under **ADR-1471** after CONTINUE/NEXT (Tenant MVP X Content Type Options Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1472**. Stage 731 feature scope remains frozen.
