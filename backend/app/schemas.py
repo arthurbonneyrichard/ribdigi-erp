@@ -958,6 +958,7 @@ class SalesInvoiceCreate(BaseModel):
     store_id: str | None = None
     currency: str | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
+    is_reverse_charge: bool = False
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 

@@ -168,6 +168,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "subtotal": float(invoice.subtotal),
         "tax_amount": float(invoice.tax_amount),
         "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
+        "is_reverse_charge": bool(getattr(invoice, "is_reverse_charge", False)),
         "discount_amount": float(invoice.discount_amount),
         "total_amount": float(invoice.total_amount),
         "paid_amount": float(invoice.paid_amount),
@@ -287,6 +288,7 @@ async def create_sales_invoice(
     store_id: str | None = None,
     currency: str | None = None,
     exchange_rate: float | None = None,
+    is_reverse_charge: bool = False,
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
@@ -305,6 +307,7 @@ async def create_sales_invoice(
 
     from app.uom import resolve_line_unit
 
+    header_rc = bool(is_reverse_charge)
     subtotal = 0.0
     tax_total = 0.0
     reverse_charge_tax = 0.0
@@ -331,11 +334,16 @@ async def create_sales_invoice(
         breakdown = spec.compute_breakdown(line_amount)
         line_sub = float(breakdown["net"])
         line_tax = float(breakdown["tax"])
-        line_total = float(breakdown["gross"])
+        line_is_rc = header_rc or bool(spec.is_reverse_charge)
+        # Customer-charged line: exclude tax when reverse charge (header or rate).
+        if line_is_rc:
+            line_total = line_sub
+        else:
+            line_total = float(breakdown["gross"])
         discount = float(item.get("discount") or 0)
         line_total = max(line_total - discount, 0)
         subtotal += line_sub
-        if spec.is_reverse_charge:
+        if line_is_rc:
             reverse_charge_tax += line_tax
         else:
             tax_total += line_tax
@@ -352,7 +360,7 @@ async def create_sales_invoice(
                     "tax_supply_class": spec.supply_class,
                     "line_subtotal": line_sub,
                     "line_tax": line_tax,
-                    "is_reverse_charge": bool(spec.is_reverse_charge),
+                    "is_reverse_charge": line_is_rc,
                     "tax_components": list(breakdown.get("components") or []) or None,
                 },
                 line_total,
@@ -370,6 +378,7 @@ async def create_sales_invoice(
         subtotal=subtotal,
         tax_amount=tax_total,
         reverse_charge_tax=round(reverse_charge_tax, 2),
+        is_reverse_charge=header_rc,
         discount_amount=discount_amount,
         total_amount=total,
         paid_amount=0,
@@ -410,7 +419,11 @@ async def create_sales_invoice(
             action="invoice_created",
             entity="sales_invoice",
             entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
+            details={
+                "invoice_number": invoice.invoice_number,
+                "total": float(invoice.total_amount),
+                "is_reverse_charge": header_rc,
+            },
         )
     )
     return invoice

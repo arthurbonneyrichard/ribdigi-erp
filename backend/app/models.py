@@ -926,6 +926,8 @@ class SalesInvoice(Base):
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     # Memo tax under reverse charge (not charged to customer / not seller output).
     reverse_charge_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    # Header override: force reverse-charge memo for all lines (purchase parity).
+    is_reverse_charge: Mapped[bool] = mapped_column(Boolean, default=False)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     paid_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)

@@ -4952,6 +4952,7 @@ async def create_sales_invoice(
         store_id=payload.store_id,
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
+        is_reverse_charge=bool(payload.is_reverse_charge),
         items=[i.model_dump() for i in payload.items],
     )
     await db.commit()
