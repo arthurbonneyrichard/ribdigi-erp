@@ -31,3 +31,7 @@ Stage 901 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Impermissible Transfer Gate, Impermissible Transfer Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 901 opened under **ADR-1809** after CONTINUE/NEXT (Tenant MVP Transfer Block Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1810**. Stage 900 feature scope remains frozen.
