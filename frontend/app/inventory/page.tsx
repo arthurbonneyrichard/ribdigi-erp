@@ -112,6 +112,9 @@ export default function Page() {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [productManageFilter, setProductManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [brandManageFilter, setBrandManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [unitManageFilter, setUnitManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [variants, setVariants] = useState<any[]>([]);
   const [gallery, setGallery] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
@@ -1367,6 +1370,18 @@ export default function Page() {
     const active = p.is_active !== false;
     return productManageFilter === 'inactive' ? !active : active;
   });
+  const byStatus = <T extends { is_active?: boolean }>(
+    rows: T[],
+    filter: 'all' | 'active' | 'inactive',
+  ) =>
+    rows.filter((r) => {
+      if (filter === 'all') return true;
+      const active = r.is_active !== false;
+      return filter === 'inactive' ? !active : active;
+    });
+  const managedCategories = byStatus(categories, categoryManageFilter);
+  const managedBrands = byStatus(brands, brandManageFilter);
+  const managedUnits = byStatus(units, unitManageFilter);
 
   return (
     <Shell>
@@ -2016,8 +2031,20 @@ export default function Page() {
             >
               Add category
             </button>
+            <select
+              value={categoryManageFilter}
+              onChange={(e) =>
+                setCategoryManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+              }
+              title="Filter manage category list by status"
+              aria-label="Catalog category status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-              {categories.map((c) => {
+              {managedCategories.map((c) => {
                 const rate = taxRates.find((r) => r.id === c.tax_rate_id);
                 const depth = Math.max(0, Number(c.depth) || 0);
                 return (
@@ -2186,8 +2213,18 @@ export default function Page() {
             >
               Add brand
             </button>
+            <select
+              value={brandManageFilter}
+              onChange={(e) => setBrandManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              title="Filter manage brand list by status"
+              aria-label="Catalog brand status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
             <ul className="muted">
-              {brands.map((b) => (
+              {managedBrands.map((b) => (
                 <li
                   key={b.id}
                   style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}
@@ -2318,8 +2355,18 @@ export default function Page() {
             >
               Add unit
             </button>
+            <select
+              value={unitManageFilter}
+              onChange={(e) => setUnitManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              title="Filter manage unit list by status"
+              aria-label="Catalog unit status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
             <ul className="muted">
-              {units.map((u) => (
+              {managedUnits.map((u) => (
                 <li key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span>
                     {u.code} — {u.name}

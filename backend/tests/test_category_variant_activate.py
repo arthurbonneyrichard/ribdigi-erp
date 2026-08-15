@@ -20,6 +20,38 @@ def test_category_variant_activate_ui_wired():
     assert 'JSON.stringify({ is_active: true })' in inventory
     assert "Activate" in inventory
     assert "Deactivate" in inventory
+    assert "categoryManageFilter" in inventory
+    assert 'aria-label="Catalog category status filter"' in inventory
+    assert "managedCategories" in inventory
+
+
+@pytest.mark.asyncio
+async def test_catalog_categories_list_is_active_filter(client, seeded):
+    ac, seed = client
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+    cat = await ac.post(
+        "/api/v1/catalog/categories",
+        headers=admin,
+        json={"code": "FLT-CAT", "name": "Filter Category"},
+    )
+    assert cat.status_code == 200, cat.text
+    cat_id = cat.json()["data"]["id"]
+
+    await ac.delete(f"/api/v1/catalog/categories/{cat_id}", headers=admin)
+
+    all_rows = await ac.get("/api/v1/catalog/categories", headers=admin)
+    assert cat_id in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/catalog/categories?is_active=true", headers=admin)
+    assert cat_id not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/catalog/categories?is_active=false", headers=admin)
+    assert cat_id in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
 
 
 @pytest.mark.asyncio

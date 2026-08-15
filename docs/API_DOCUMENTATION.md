@@ -477,7 +477,7 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 ## 5. Inventory & Products
 
 ### 5.1 Product Categories
-**List:** `GET /catalog/categories` — tree order with `depth` and `path` (e.g. `Food › Soft Drinks › Colas`) (BR-5.1)  
+**List:** `GET /catalog/categories` — tree order with `depth` and `path` (e.g. `Food › Soft Drinks › Colas`) (BR-5.1); optional `is_active=true|false` for Catalog manage All/Active/Inactive (default all)  
 **Create:** `POST /catalog/categories` (`code`, `name`, optional `parent_id`, `tax_rate_id`)  
 **Update:** `PATCH /catalog/categories/{category_id}` — reparent via `parent_id` (null clears to root); rejects self-parent and cycles; soft-reactivate via `is_active: true` (Inventory Catalog **Activate**)  
 **Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate `is_active=false`; Inventory **Deactivate**; inactive blocked on product create/PATCH; product create category picker hides inactive)
@@ -487,7 +487,7 @@ Inventory Catalog **Category tree** UI shows indented hierarchy + reparent picke
 Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rate_id": null`. Resolve order for product lines: product `tax_rate_id` → category (walk `parent_id`, nearest wins) → tenant default tax rate → 0%.
 
 ### 5.2 Brands
-**List:** `GET /catalog/brands`  
+**List:** `GET /catalog/brands` (`is_active=true|false` optional — Catalog manage filter; default returns all)  
 **Create:** `POST /catalog/brands` `{ "code", "name", "description"? }`  
 **Update:** `PATCH /catalog/brands/{brand_id}` — partial fields include `name`, `description`, `is_active` (Inventory Catalog **Activate** when inactive)  
 **Deactivate:** `DELETE /catalog/brands/{brand_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive brands cannot be assigned on product create/PATCH)  
@@ -496,7 +496,7 @@ Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rat
 Responses include `description`, `logo_url`, and `has_logo` (BR-5.1).
 
 ### 5.3 Units
-**List:** `GET /catalog/units`  
+**List:** `GET /catalog/units` (`is_active=true|false` optional — Catalog manage filter; default returns all)  
 **Create:** `POST /catalog/units`  
 **Update:** `PATCH /catalog/units/{unit_id}` — partial fields include `name`, conversion fields, `is_active` (Inventory Catalog **Activate** when inactive)  
 **Deactivate:** `DELETE /catalog/units/{unit_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive units cannot be assigned on product create/PATCH)  
