@@ -1173,6 +1173,12 @@ class JournalCreate(BaseModel):
     lines: list[JournalLineCreate] = Field(min_length=2)
 
 
+class JournalUnpost(BaseModel):
+    """Manual journal unpost — typed reason required (BR-10.2 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class PeriodCloseBody(BaseModel):
     """Close books through an inclusive calendar date (BR-10.2)."""
 

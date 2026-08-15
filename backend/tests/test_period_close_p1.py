@@ -87,7 +87,9 @@ async def test_close_blocks_post_and_unpost_then_reopen(client, db_session):
     assert open_post.json()["data"]["can_unpost"] is True
 
     unpost_closed = await ac.post(
-        f"/api/v1/accounting/journal-entries/{prior_id}/unpost", headers=headers
+        f"/api/v1/accounting/journal-entries/{prior_id}/unpost",
+        headers=headers,
+        json={"reason": "should fail — books closed"},
     )
     assert unpost_closed.status_code == 400
     assert "closed" in unpost_closed.json()["detail"].lower()
@@ -124,12 +126,16 @@ async def test_close_blocks_post_and_unpost_then_reopen(client, db_session):
     assert reopen.json()["data"]["books_closed_through"] is None
 
     unpost_ok = await ac.post(
-        f"/api/v1/accounting/journal-entries/{prior_id}/unpost", headers=headers
+        f"/api/v1/accounting/journal-entries/{prior_id}/unpost",
+        headers=headers,
+        json={"reason": "Period reopen — unpost hello-world"},
     )
     assert unpost_ok.status_code == 200, unpost_ok.text
 
     unpost_open = await ac.post(
-        f"/api/v1/accounting/journal-entries/{open_id}/unpost", headers=headers
+        f"/api/v1/accounting/journal-entries/{open_id}/unpost",
+        headers=headers,
+        json={"reason": "Open period cleanup"},
     )
     assert unpost_open.status_code == 200, unpost_open.text
 

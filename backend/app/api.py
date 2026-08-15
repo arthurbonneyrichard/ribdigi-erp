@@ -92,6 +92,7 @@ from app.schemas import (
     ExpenseUpdate,
     GrnCreate,
     JournalCreate,
+    JournalUnpost,
     PeriodCloseBody,
     PeriodReopenBody,
     CreditLimitOverrideBody,
@@ -8640,6 +8641,7 @@ async def accounting_period_reopen(
 @api.post("/accounting/journal-entries/{entry_id}/unpost")
 async def unpost_journal(
     entry_id: str,
+    payload: JournalUnpost,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8650,6 +8652,7 @@ async def unpost_journal(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         entry_id=entry_id,
+        reason=payload.reason,
     )
     await db.commit()
     return env(await accounting_svc.serialize_journal(db, entry), "Journal entry unposted")

@@ -336,8 +336,13 @@ async def unpost_journal_entry(
     tenant_id: str,
     user_id: str | None,
     entry_id: str,
+    reason: str | None = None,
 ) -> m.JournalEntry:
     """Reverse a posted manual journal within the current fiscal period (BR-10.2)."""
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="unpost reason is required")
+
     entry = await get_journal_entry(db, tenant_id, entry_id)
     if entry.status != "posted":
         raise HTTPException(status_code=400, detail="Only posted journal entries can be unposted")
@@ -381,6 +386,7 @@ async def unpost_journal_entry(
         )
 
     entry.status = "unposted"
+    entry.description = ((entry.description or "") + f"\nUnpost: {reason_s}").strip()
     db.add(
         m.AuditLog(
             tenant_id=tenant_id,
@@ -392,6 +398,7 @@ async def unpost_journal_entry(
                 "entry_number": entry.entry_number,
                 "total_debit": float(entry.total_debit or 0),
                 "total_credit": float(entry.total_credit or 0),
+                "reason": reason_s,
             },
         )
     )
