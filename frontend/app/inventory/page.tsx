@@ -213,11 +213,11 @@ export default function Page() {
   const [mvMeta, setMvMeta] = useState<{ count?: number; warehouse_name?: string | null }>({});
   const [mvReason, setMvReason] = useState('');
   const [adjQty, setAdjQty] = useState('-1');
-  const [adjReason, setAdjReason] = useState('damage');
+  const [adjReason, setAdjReason] = useState('');
   const [adjWarehouseId, setAdjWarehouseId] = useState('');
   const [adjNotes, setAdjNotes] = useState('');
   const [outQty, setOutQty] = useState('1');
-  const [outRefType, setOutRefType] = useState('other');
+  const [outRefType, setOutRefType] = useState('');
   const [outRefId, setOutRefId] = useState('');
   const [outWarehouseId, setOutWarehouseId] = useState('');
   const [outVariantId, setOutVariantId] = useState('');
@@ -1323,17 +1323,22 @@ export default function Page() {
       setError('Select a product');
       return;
     }
+    if (!adjReason.trim()) {
+      setError('Select an adjustment reason');
+      return;
+    }
     const qty = Number(adjQty);
     if (!Number.isFinite(qty) || qty === 0) {
       setError('Quantity delta must be a non-zero number');
       return;
     }
     try {
+      const reason = adjReason;
       const r = await api(`/inventory/adjust/${selectedId}`, {
         method: 'POST',
         body: JSON.stringify({
           quantity: qty,
-          reason: adjReason,
+          reason,
           notes: adjNotes.trim() || null,
           warehouse_id: adjWarehouseId || null,
         }),
@@ -1343,11 +1348,12 @@ export default function Page() {
           (r.data.warehouse_id ? ` · warehouse ${String(r.data.warehouse_id).slice(0, 8)}…` : '')
       );
       setAdjNotes('');
+      setAdjReason('');
       await refresh();
       setMvType('adjustment');
-      setMvReason(adjReason);
+      setMvReason(reason);
       setTab('movements');
-      await loadMovements({ movement_type: 'adjustment', reason: adjReason });
+      await loadMovements({ movement_type: 'adjustment', reason });
     } catch (err: any) {
       setError(err.message);
     }
@@ -1358,6 +1364,10 @@ export default function Page() {
     setMessage('');
     if (!selectedId) {
       setError('Select a product');
+      return;
+    }
+    if (!outRefType.trim()) {
+      setError('Select a stock-out reference type');
       return;
     }
     const qty = Number(outQty);
@@ -1386,6 +1396,7 @@ export default function Page() {
       );
       setOutNotes('');
       setOutRefId('');
+      setOutRefType('');
       await refresh();
       setMvType('stock_out');
       setMvReason('');
@@ -3051,7 +3062,12 @@ export default function Page() {
             placeholder="-1"
           />
           <label className="muted">Reason</label>
-          <select value={adjReason} onChange={(e) => setAdjReason(e.target.value)}>
+          <select
+            value={adjReason}
+            onChange={(e) => setAdjReason(e.target.value)}
+            aria-label="Adjustment reason"
+          >
+            <option value="">Select reason</option>
             <option value="damage">damage</option>
             <option value="theft">theft</option>
             <option value="expiry">expiry</option>
@@ -3075,7 +3091,7 @@ export default function Page() {
             onChange={(e) => setAdjNotes(e.target.value)}
             placeholder="Details"
           />
-          <button type="button" onClick={postStockAdjust} disabled={!selectedId}>
+          <button type="button" onClick={postStockAdjust} disabled={!selectedId || !adjReason}>
             Post adjustment
           </button>
         </div>
@@ -3100,7 +3116,12 @@ export default function Page() {
             placeholder="1"
           />
           <label className="muted">Reference type</label>
-          <select value={outRefType} onChange={(e) => setOutRefType(e.target.value)}>
+          <select
+            value={outRefType}
+            onChange={(e) => setOutRefType(e.target.value)}
+            aria-label="Stock-out reference type"
+          >
+            <option value="">Select reference type</option>
             <option value="sale">sale</option>
             <option value="transfer">transfer</option>
             <option value="adjustment">adjustment</option>
@@ -3166,7 +3187,7 @@ export default function Page() {
             onChange={(e) => setOutNotes(e.target.value)}
             placeholder="Details"
           />
-          <button type="button" onClick={postStockOut} disabled={!selectedId}>
+          <button type="button" onClick={postStockOut} disabled={!selectedId || !outRefType}>
             Post stock out
           </button>
         </div>
