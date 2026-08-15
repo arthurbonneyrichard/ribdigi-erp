@@ -438,7 +438,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 `record_scope`: `own` | `department` | `branch` | `all` (optional; defaults from role). Response wraps `{ "user": {...}, ... }`.
 
 ### 4.2 List Users
-**Endpoint:** `GET /users`
+**Endpoint:** `GET /users` — optional `?is_active=true|false` filters soft-deactivated users (omit = all; Users manage status filter All/Active/Inactive).
 
 ### 4.3 Get User
 **Endpoint:** `GET /users/{user_id}`

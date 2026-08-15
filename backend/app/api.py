@@ -2336,14 +2336,20 @@ async def update_department(
 
 
 @api.get("/users")
-async def users(claims=Depends(require_permission("users", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.User)
-            .where(m.User.tenant_id == claims["tenant_id"])
-            .order_by(m.User.full_name.asc())
-        )
-    ).scalars().all()
+async def users(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List tenant users. Optional is_active filters soft-deactivated rows (Users manage UI)."""
+    stmt = (
+        select(m.User)
+        .where(m.User.tenant_id == claims["tenant_id"])
+        .order_by(m.User.full_name.asc())
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.User.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([serialize_user(u) for u in rows])
 
 
