@@ -31,3 +31,7 @@ Stage 860 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, DPIA Gate, DPIA Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 860 opened under **ADR-1727** after CONTINUE/NEXT (Tenant MVP Lawful Basis Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1728**. Stage 859 feature scope remains frozen.

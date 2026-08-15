@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 860 track opened (ADR-1727: `test_stage860_open.py`, `docs/STAGE_860_PLAN.md`) — Lawful Basis Gate Honesty Pack Remaining-Gate Index; closed under ADR-1728
+- [x] Lawful Basis Gate Honesty Pack remaining-gate hub (Stage 860 I1: `test_stage860_index_i1.py`, `docs/LAWFUL_BASIS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Lawful Basis Gate Honesty Pack blocker matrix (Stage 860 B1: `test_stage860_blockers_b1.py`, `docs/LAWFUL_BASIS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 859 / Stage 858 / Stage 392 / CHANGE_IMPACT pointers (Stage 860 P1: `test_stage860_pointers_p1.py`, `docs/LAWFUL_BASIS_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 860 fidelity sync (D1: `test_stage860_fidelity_d1.py`, `docs/STAGE_860_FIDELITY.md`)
+- [x] Stage 860 exit + freeze (H860x: `test_stage860_exit_h860x.py`, `docs/STAGE_860_EXIT_CRITERIA.md`, ADR-1728)
+
 Stage 859 track opened (ADR-1725: `test_stage859_open.py`, `docs/STAGE_859_PLAN.md`) — DPIA Gate Honesty Pack Remaining-Gate Index; closed under ADR-1726
 - [x] DPIA Gate Honesty Pack remaining-gate hub (Stage 859 I1: `test_stage859_index_i1.py`, `docs/DPIA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] DPIA Gate Honesty Pack blocker matrix (Stage 859 B1: `test_stage859_blockers_b1.py`, `docs/DPIA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

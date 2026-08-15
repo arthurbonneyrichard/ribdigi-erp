@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 860 D1 Lawful Basis Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_860_FIDELITY.md` (`test_stage860_fidelity_d1.py`); exit ADR-1728 / `test_stage860_exit_h860x.py`. Honesty: Offline Complete / Lawful Basis Gate honesty / go-live Completes remain MISSING.
 Stage 859 D1 DPIA Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_859_FIDELITY.md` (`test_stage859_fidelity_d1.py`); exit ADR-1726 / `test_stage859_exit_h859x.py`. Honesty: Offline Complete / DPIA Gate honesty / go-live Completes remain MISSING.
 Stage 858 D1 Transparency Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_858_FIDELITY.md` (`test_stage858_fidelity_d1.py`); exit ADR-1724 / `test_stage858_exit_h858x.py`. Honesty: Offline Complete / Transparency Gate honesty / go-live Completes remain MISSING.
 Stage 857 D1 Fairness Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_857_FIDELITY.md` (`test_stage857_fidelity_d1.py`); exit ADR-1722 / `test_stage857_exit_h857x.py`. Honesty: Offline Complete / Fairness Gate honesty / go-live Completes remain MISSING.
