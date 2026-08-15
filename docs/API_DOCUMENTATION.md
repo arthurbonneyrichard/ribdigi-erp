@@ -453,25 +453,17 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 
 ### 4.6 Roles & Permissions
 
-**List Roles:** `GET /roles`
+**List Roles:** `GET /roles` — system roles + **active** tenant custom roles (default `record_scope` on each row). Pass `?include_inactive=true` to include soft-deactivated custom roles (Users manage UI). Custom rows include `system: false`, `is_active`, `base_role`, and `id`.
 
-**Get Role Permissions:** `GET /roles/{role_id}/permissions`
+**Get Role:** `GET /roles/{role}` — system catalog entry or custom role (inactive custom roles still resolve).
 
-**Update Permissions:** `PUT /roles/{role_id}/permissions`
+**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope`. Clones system `base_role` permission map when provided.
 
-**Request:**
-```json
-{
-  "module_permissions": ["inventory", "sales", "pos"],
-  "menu_permissions": ["products", "stock_in", "stock_out"],
-  "record_permissions": {
-    "products": ["read", "write", "delete"],
-    "sales": ["read", "write"]
-  }
-}
-```
+**Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope?, is_active? }`. Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
 
-**Available Roles:**
+**Delete Custom Role:** `DELETE /roles/{role}` — hard delete; returns **409** while any user still has that role. Prefer soft-deactivate for retirement.
+
+**Available system roles:**
 - `super_admin`
 - `company_admin`
 - `store_manager`
