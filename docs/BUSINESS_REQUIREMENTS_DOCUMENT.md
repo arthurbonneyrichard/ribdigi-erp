@@ -246,11 +246,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Multi-currency support for international operations.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Add currencies with exchange rates
-  - [ ] Set base currency
-  - [ ] Auto-update exchange rates (manual or API)
-  - [ ] Transaction-level currency selection
-
+  - [x] Add currencies with exchange rates (`GET|PUT|DELETE /credit/exchange-rates/{code}`; Credit → Exchange rates UI)
+  - [x] Set base currency (`tenants.currency` on Platform create + Company `PATCH /tenants/me`; Credit rates list shows `base_currency`)
+  - [x] Auto-update exchange rates (manual or API) (`POST /credit/exchange-rates/refresh`; `fx_auto_refresh` via `PATCH /credit/exchange-rates/settings`; Celery `refresh_fx_rates`; `FX_PROVIDER`)
+  - [x] Transaction-level currency selection (sales invoice/payment + purchase invoice/supplier payment `currency`/`exchange_rate`; Sales + Purchasing create UIs; Credit settle FX + gain/loss)
 #### BR-2.7 Language Configuration
 - **Description:** UI language preferences.
 - **Priority:** Medium

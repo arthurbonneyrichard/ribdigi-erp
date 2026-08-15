@@ -113,6 +113,8 @@ type PurchaseInvoice = {
   paid_amount: number;
   balance_due: number;
   ap_posted: boolean;
+  currency?: string | null;
+  exchange_rate?: number | null;
   has_attachment?: boolean;
   attachment_url?: string | null;
   subtotal?: number;
@@ -214,6 +216,8 @@ export default function Page() {
   const [manualInvLineDiscount, setManualInvLineDiscount] = useState('0');
   const [manualInvHeaderDiscount, setManualInvHeaderDiscount] = useState('0');
   const [grnInvHeaderDiscount, setGrnInvHeaderDiscount] = useState('0');
+  const [invCurrency, setInvCurrency] = useState('');
+  const [invExchangeRate, setInvExchangeRate] = useState('');
   const [manualInvRc, setManualInvRc] = useState(false);
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
@@ -699,12 +703,19 @@ export default function Page() {
           goods_receipt_id: invoiceGrnId,
           supplier_invoice_number: supplierInvoiceNo || undefined,
           discount_amount: headerDisc,
+          currency: invCurrency.trim() || null,
+          exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
         }),
       });
-      setMessage(`Invoice ${r.data.invoice_number} drafted`);
+      setMessage(
+        `Invoice ${r.data.invoice_number} drafted` +
+          (r.data.currency ? ` (${r.data.currency} @ ${r.data.exchange_rate})` : '')
+      );
       setTab('invoices');
       setSupplierInvoiceNo('');
       setGrnInvHeaderDiscount('0');
+      setInvCurrency('');
+      setInvExchangeRate('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -723,6 +734,8 @@ export default function Page() {
           supplier_invoice_number: supplierInvoiceNo || undefined,
           is_reverse_charge: manualInvRc,
           discount_amount: headerDisc,
+          currency: invCurrency.trim() || null,
+          exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
           items: [
             {
               product_id: manualInvProductId,
@@ -738,13 +751,16 @@ export default function Page() {
       });
       setMessage(
         `Invoice ${r.data.invoice_number} drafted` +
-          (r.data.is_reverse_charge ? ` (RC tax ${r.data.reverse_charge_tax})` : '')
+          (r.data.is_reverse_charge ? ` (RC tax ${r.data.reverse_charge_tax})` : '') +
+          (r.data.currency ? ` (${r.data.currency} @ ${r.data.exchange_rate})` : '')
       );
       setTab('invoices');
       setSupplierInvoiceNo('');
       setManualInvLineDiscount('0');
       setManualInvHeaderDiscount('0');
       setManualInvRc(false);
+      setInvCurrency('');
+      setInvExchangeRate('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1964,9 +1980,24 @@ export default function Page() {
             min={0}
             step="0.01"
           />
+          <input
+            value={invCurrency}
+            onChange={(e) => setInvCurrency(e.target.value.toUpperCase())}
+            placeholder="Currency (blank=base)"
+            style={{ width: 140 }}
+          />
+          <input
+            value={invExchangeRate}
+            onChange={(e) => setInvExchangeRate(e.target.value)}
+            placeholder="FX rate (optional)"
+            style={{ width: 120 }}
+            type="number"
+            min={0}
+            step="0.0001"
+          />
           <span className="muted span-2">
             From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
-            invoice total.
+            invoice total. Currency/FX apply when paying foreign supplier invoices (Credit).
           </span>
           <button onClick={createInvoiceFromGrn} disabled={!invoiceGrnId}>
             Draft invoice from GRN
@@ -2023,6 +2054,21 @@ export default function Page() {
             value={supplierInvoiceNo}
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
+          />
+          <input
+            value={invCurrency}
+            onChange={(e) => setInvCurrency(e.target.value.toUpperCase())}
+            placeholder="Currency (blank=base)"
+            style={{ width: 140 }}
+          />
+          <input
+            value={invExchangeRate}
+            onChange={(e) => setInvExchangeRate(e.target.value)}
+            placeholder="FX rate (optional)"
+            style={{ width: 120 }}
+            type="number"
+            min={0}
+            step="0.0001"
           />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} />
@@ -2086,6 +2132,7 @@ export default function Page() {
               <th>Invoice</th>
               <th>Supplier #</th>
               <th>Status</th>
+              <th>Currency</th>
               <th>Total</th>
               <th>RC</th>
               <th>Due</th>
@@ -2115,6 +2162,11 @@ export default function Page() {
                 </td>
                 <td>{inv.supplier_invoice_number || '—'}</td>
                 <td>{inv.status}</td>
+                <td>
+                  {inv.currency
+                    ? `${inv.currency}${inv.exchange_rate != null ? ` @ ${inv.exchange_rate}` : ''}`
+                    : '—'}
+                </td>
                 <td>{inv.total_amount}</td>
                 <td>
                   {inv.is_reverse_charge
@@ -2176,6 +2228,9 @@ export default function Page() {
           <div className="card" style={{ marginTop: 16 }}>
             <h3>
               {selectedInvoice.invoice_number} — {selectedInvoice.status}
+              {selectedInvoice.currency
+                ? ` · ${selectedInvoice.currency} @ ${selectedInvoice.exchange_rate ?? 1}`
+                : ''}
             </h3>
             {selectedInvoice.can_cancel && (
               <p style={{ marginTop: 0 }}>
