@@ -31,3 +31,10 @@ Stage 490 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Accept Client, Accept Client honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 490 opened under **ADR-987** after CONTINUE/NEXT (Tenant MVP Offline Sync Runbook Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-988**. Stage 489 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 489 runner-up outline was approved and opened (ADR-987); freeze ADR-988. Do not reopen Stage 489 scope.
+
