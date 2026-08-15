@@ -7986,12 +7986,16 @@ async def bank_feed_settings(claims=Depends(require_permission("accounting", "re
 
 @api.get("/accounting/bank-connections")
 async def list_bank_connections(
+    is_active: bool | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """List bank feed connections. Optional is_active filters soft-deactivated rows (Reconcile manage UI)."""
     from app import bank_connectors as bank_connectors_svc
 
-    rows = await bank_connectors_svc.list_connections(db, claims["tenant_id"])
+    rows = await bank_connectors_svc.list_connections(
+        db, claims["tenant_id"], is_active=is_active
+    )
     return env([bank_connectors_svc.serialize_connection(r) for r in rows])
 
 
