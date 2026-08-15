@@ -31,3 +31,10 @@ Stage 481 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Device Revoke, Device Revoke honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 481 opened under **ADR-969** after CONTINUE/NEXT (Tenant MVP Offline Stock Authority Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-970**. Stage 480 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 480 runner-up outline was approved and opened (ADR-969); freeze ADR-970. Do not reopen Stage 480 scope.
+
