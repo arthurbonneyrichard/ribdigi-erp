@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 565 D1 Release Notes Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_565_FIDELITY.md` (`test_stage565_fidelity_d1.py`); Offline Complete / Release Notes honesty / go-live still MISSING.
 Stage 564 D1 Subscription Renewal Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_564_FIDELITY.md` (`test_stage564_fidelity_d1.py`); Offline Complete / Subscription Renewal honesty / go-live still MISSING.
 Stage 563 D1 Soft Delete Erasure Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_563_FIDELITY.md` (`test_stage563_fidelity_d1.py`); Offline Complete / Soft Delete Erasure honesty / go-live still MISSING.
 Stage 562 D1 RTO RPO Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_562_FIDELITY.md` (`test_stage562_fidelity_d1.py`); Offline Complete / RTO RPO honesty / go-live still MISSING.
