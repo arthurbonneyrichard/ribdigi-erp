@@ -31,3 +31,7 @@ Stage 559 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, ADR002 Paid Billing, ADR002 Paid Billing honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 559 opened under **ADR-1125** after CONTINUE/NEXT (Tenant MVP MSA Addendum Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1126**. Stage 558 feature scope remains frozen.
