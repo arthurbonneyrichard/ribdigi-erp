@@ -166,6 +166,7 @@ from app.schemas import (
     TransactionCreate,
     EmailTestRequest,
     EmailSettingsUpdate,
+    SmsSettingsUpdate,
     TwoFactorConfirm,
     TwoFactorDisable,
     TwoFactorVerify,
@@ -1067,10 +1068,40 @@ async def settings_email_test(
 @api.get("/settings/sms")
 async def settings_sms_get(
     claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
 ):
     from app import sms as sms_svc
 
-    return env(sms_svc.sms_status())
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env(sms_svc.sms_status(tenant))
+
+
+@api.patch("/settings/sms")
+async def settings_sms_patch(
+    payload: SmsSettingsUpdate,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.sms_settings import apply_sms_settings_update
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = apply_sms_settings_update(tenant, payload.model_dump(exclude_unset=True))
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="settings",
+        action="sms_settings_update",
+        entity="sms",
+        details={
+            "from_number": data.get("from_number"),
+            "account_sid_set": data.get("account_sid_set"),
+            "tenant_override": data.get("tenant_override"),
+            "has_auth_token": data.get("has_auth_token"),
+        },
+    )
+    await db.commit()
+    return env(data, "SMS settings updated")
 
 
 @api.get("/settings/storage")
@@ -1116,6 +1147,7 @@ async def settings_sms_test(
 ):
     from app import sms as sms_svc
 
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     user = await db.get(m.User, claims["sub"])
     to = (payload.to if payload and payload.to else None) or (user.phone if user else None)
     if not to:
@@ -1123,7 +1155,7 @@ async def settings_sms_test(
             status_code=400,
             detail="No recipient phone — set your profile phone or pass `to`",
         )
-    result = await sms_svc.send_test_sms(to=to)
+    result = await sms_svc.send_test_sms(to=to, tenant=tenant)
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -6789,11 +6821,13 @@ async def pos_receipt_send(
         recipient = to or (user.email if user else None)
         if not recipient:
             raise HTTPException(status_code=400, detail="No email recipient")
+        tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
         result = await emailer.send_email(
             to=recipient,
             subject=f"Receipt {receipt['reference']}",
             text_body=text,
             html_body=f"<pre style=\"font-family:monospace\">{text}</pre>",
+            tenant=tenant,
         )
         await db.commit()
         if not result.sent and result.mode == "smtp":
@@ -6813,7 +6847,8 @@ async def pos_receipt_send(
             f"{receipt.get('currency', '')} {_money_safe(receipt.get('total'))} "
             f"via {receipt.get('payment_method')}"
         )
-        result = await sms_svc.send_sms(to=recipient, body=body)
+        tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+        result = await sms_svc.send_sms(to=recipient, body=body, tenant=tenant)
         await db.commit()
         if not result.sent and result.mode == "twilio":
             raise HTTPException(status_code=502, detail=result.error or "SMS send failed")

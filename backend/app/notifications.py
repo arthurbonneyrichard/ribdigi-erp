@@ -222,7 +222,9 @@ async def create_notification(
         for admin in await _recipients_for_channel("sms"):
             phone = getattr(admin, "phone", None)
             if phone:
-                await sms_svc.send_notification_sms(to=phone, title=title, message=message)
+                await sms_svc.send_notification_sms(
+                    to=phone, title=title, message=message, tenant=tenant
+                )
     except Exception:
         pass
 

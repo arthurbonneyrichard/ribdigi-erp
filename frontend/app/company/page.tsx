@@ -26,6 +26,9 @@ export default function Page() {
   const [emailFromName, setEmailFromName] = useState('');
   const [emailUseTls, setEmailUseTls] = useState(true);
   const [emailUseSsl, setEmailUseSsl] = useState(false);
+  const [smsAccountSid, setSmsAccountSid] = useState('');
+  const [smsAuthToken, setSmsAuthToken] = useState('');
+  const [smsFromNumber, setSmsFromNumber] = useState('');
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -76,6 +79,11 @@ export default function Page() {
       setEmailUseSsl(!!e.data.use_ssl);
     }
     setSmsStatus(s.data);
+    if (s.data) {
+      setSmsAccountSid(s.data.account_sid || '');
+      setSmsAuthToken('');
+      setSmsFromNumber(s.data.from_number || '');
+    }
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
     if (print.data) {
@@ -642,10 +650,36 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
           <h2>SMS / Twilio</h2>
           <p className="muted">
-            Mode: {smsStatus.mode} · Configured: {String(smsStatus.configured)} · Enabled:{' '}
-            {String(smsStatus.enabled)}
+            Mode: {smsStatus.mode} · Source: {smsStatus.source || '—'} · Configured:{' '}
+            {String(smsStatus.configured)} · Enabled: {String(smsStatus.enabled)}
+            {smsStatus.tenant_override ? ' · Tenant override' : ''}
           </p>
-          <p className="muted">From: {smsStatus.from_number || 'console fallback'}</p>
+          <label className="muted">Account SID</label>
+          <input
+            value={smsAccountSid}
+            onChange={(e) => setSmsAccountSid(e.target.value)}
+            placeholder="ACxxxxxxxx"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">
+            Auth token{smsStatus.has_auth_token ? ' (saved — leave blank to keep)' : ''}
+          </label>
+          <input
+            type="password"
+            value={smsAuthToken}
+            onChange={(e) => setSmsAuthToken(e.target.value)}
+            placeholder={smsStatus.has_auth_token ? '••••••••' : ''}
+            autoComplete="new-password"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">From number (E.164)</label>
+          <input
+            value={smsFromNumber}
+            onChange={(e) => setSmsFromNumber(e.target.value)}
+            placeholder="+15551234567"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">Your mobile (for test SMS)</label>
           <input
             value={profilePhone}
             onChange={(e) => setProfilePhone(e.target.value)}
@@ -653,6 +687,30 @@ export default function Page() {
             style={{ width: '100%', marginBottom: 8 }}
           />
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              onClick={async () => {
+                setError('');
+                try {
+                  const body: Record<string, unknown> = {
+                    account_sid: smsAccountSid,
+                    from_number: smsFromNumber,
+                  };
+                  if (smsAuthToken) body.auth_token = smsAuthToken;
+                  const r = await api('/settings/sms', {
+                    method: 'PATCH',
+                    body: JSON.stringify(body),
+                  });
+                  setSmsStatus(r.data);
+                  setSmsAuthToken('');
+                  setMessage('SMS settings saved');
+                  await refresh();
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Save SMS settings
+            </button>
             <button
               onClick={async () => {
                 setError('');
