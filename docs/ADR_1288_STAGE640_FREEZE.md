@@ -31,3 +31,7 @@ Stage 641 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, CORS Headers Gate, CORS Headers Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 641 opened under **ADR-1289** after CONTINUE/NEXT (Tenant MVP TLS Certificate Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1290**. Stage 640 feature scope remains frozen.

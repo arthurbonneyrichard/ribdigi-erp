@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 641 D1 (2026-08-14):** TLS Certificate Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_641_FIDELITY.md` (`test_stage641_fidelity_d1.py`). Open ADR: `docs/ADR_1289_STAGE641_OPEN.md`; plan `docs/STAGE_641_PLAN.md`.
+
+**Stage 641 exit (2026-08-14):** I1, B1, P1, D1, H641x met — `docs/STAGE_641_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1290_STAGE641_FREEZE.md`. Fidelity: `docs/STAGE_641_FIDELITY.md`.
+
 **Stage 640 D1 (2026-08-14):** CORS Headers Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_640_FIDELITY.md` (`test_stage640_fidelity_d1.py`). Open ADR: `docs/ADR_1287_STAGE640_OPEN.md`; plan `docs/STAGE_640_PLAN.md`.
 
 **Stage 640 exit (2026-08-14):** I1, B1, P1, D1, H640x met — `docs/STAGE_640_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1288_STAGE640_FREEZE.md`. Fidelity: `docs/STAGE_640_FIDELITY.md`.
