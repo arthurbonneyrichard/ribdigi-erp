@@ -31,3 +31,7 @@ Stage 726 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Session Idle Timeout Gate, Session Idle Timeout Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 726 opened under **ADR-1459** after CONTINUE/NEXT (Tenant MVP Csrf Token Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1460**. Stage 725 feature scope remains frozen.
