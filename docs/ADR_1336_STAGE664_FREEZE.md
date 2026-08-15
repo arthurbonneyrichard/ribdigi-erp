@@ -31,3 +31,7 @@ Stage 665 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Api Gateway Gate, Api Gateway Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 665 opened under **ADR-1337** after CONTINUE/NEXT (Tenant MVP Service Mesh Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1338**. Stage 664 feature scope remains frozen.

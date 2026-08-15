@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 665 track opened (ADR-1337: `test_stage665_open.py`, `docs/STAGE_665_PLAN.md`) — Service Mesh Gate Honesty Pack Remaining-Gate Index; closed under ADR-1338
+- [x] Service Mesh Gate Honesty Pack remaining-gate hub (Stage 665 I1: `test_stage665_index_i1.py`, `docs/SERVICE_MESH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Service Mesh Gate Honesty Pack blocker matrix (Stage 665 B1: `test_stage665_blockers_b1.py`, `docs/SERVICE_MESH_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 664 / Stage 663 / Stage 392 / CHANGE_IMPACT pointers (Stage 665 P1: `test_stage665_pointers_p1.py`, `docs/SERVICE_MESH_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 665 fidelity sync (D1: `test_stage665_fidelity_d1.py`, `docs/STAGE_665_FIDELITY.md`)
+- [x] Stage 665 exit + freeze (H665x: `test_stage665_exit_h665x.py`, `docs/STAGE_665_EXIT_CRITERIA.md`, ADR-1338)
+
 Stage 664 track opened (ADR-1335: `test_stage664_open.py`, `docs/STAGE_664_PLAN.md`) — Api Gateway Gate Honesty Pack Remaining-Gate Index; closed under ADR-1336
 - [x] Api Gateway Gate Honesty Pack remaining-gate hub (Stage 664 I1: `test_stage664_index_i1.py`, `docs/API_GATEWAY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Api Gateway Gate Honesty Pack blocker matrix (Stage 664 B1: `test_stage664_blockers_b1.py`, `docs/API_GATEWAY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
