@@ -31,3 +31,7 @@ Stage 786 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Column Encrypt Gate, Column Encrypt Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 786 opened under **ADR-1579** after CONTINUE/NEXT (Tenant MVP Tokenize Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1580**. Stage 785 feature scope remains frozen.
