@@ -746,6 +746,7 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
+        "can_cancel": ret.status == "draft",
         "items": [
             {
                 "id": i.id,
@@ -760,6 +761,35 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
             for i in items
         ],
     }
+
+
+async def cancel_return(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    return_id: str,
+    reason: str | None = None,
+) -> m.SalesReturn:
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
+    ret = await get_return(db, tenant_id, return_id)
+    if ret.status != "draft":
+        raise HTTPException(status_code=409, detail="Only draft sales returns can be cancelled")
+    ret.status = "cancelled"
+    ret.notes = ((ret.notes or "") + f"\nCancel: {reason_s}").strip()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="sales_return_cancelled",
+            entity="sales_return",
+            entity_id=ret.id,
+            details={"return_number": ret.return_number, "reason": reason_s},
+        )
+    )
+    return ret
 
 
 async def create_return(

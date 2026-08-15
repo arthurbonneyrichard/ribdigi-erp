@@ -79,6 +79,7 @@ export default function Page() {
   const [quoteRejectReason, setQuoteRejectReason] = useState('');
   const [soCancelReason, setSoCancelReason] = useState('');
   const [siCancelReason, setSiCancelReason] = useState('');
+  const [srCancelReason, setSrCancelReason] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
@@ -583,6 +584,14 @@ export default function Page() {
       }
       body = { ...body, reason };
     }
+    if (path.includes('/returns/') && path.endsWith('/cancel')) {
+      const reason = srCancelReason.trim();
+      if (!reason) {
+        setError('Enter a cancel reason before cancelling a sales return');
+        return;
+      }
+      body = { ...body, reason };
+    }
     try {
       const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
       if (path.includes('/quotations/') && path.endsWith('/reject')) {
@@ -593,6 +602,9 @@ export default function Page() {
       }
       if (path.includes('/invoices/') && path.endsWith('/cancel')) {
         setSiCancelReason('');
+      }
+      if (path.includes('/returns/') && path.endsWith('/cancel')) {
+        setSrCancelReason('');
       }
       setMessage(r.message || label);
       setSelected(r.data);
@@ -1529,6 +1541,21 @@ export default function Page() {
         </div>
                   </div>
           </div>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Cancel reason{' '}
+              <input
+                value={srCancelReason}
+                onChange={(e) => setSrCancelReason(e.target.value)}
+                placeholder="Required before Cancel"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Appended to draft return notes and audit (<code>POST .../returns/.../cancel</code>{' '}
+              {'{ reason }'}). Draft only.
+            </p>
+          </div>
         <table className="table">
           <thead>
             <tr>
@@ -1538,6 +1565,7 @@ export default function Page() {
               <th>Settlement</th>
               <th>Reason</th>
               <th>Total</th>
+              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1553,6 +1581,9 @@ export default function Page() {
                 </td>
                 <td>{r.reason}</td>
                 <td>{formatNumber(r.total_amount, fmt)}</td>
+                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                  {r.notes || '—'}
+                </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(r)}>View</button>
                   {r.status === 'draft' && (
@@ -1575,6 +1606,9 @@ export default function Page() {
                         }
                       >
                         Post + refund
+                      </button>
+                      <button onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}>
+                        Cancel
                       </button>
                     </>
                   )}

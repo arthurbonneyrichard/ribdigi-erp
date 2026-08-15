@@ -147,6 +147,7 @@ from app.schemas import (
     SalesQuotationCreate,
     SalesQuotationReject,
     SalesReturnCreate,
+    SalesReturnCancel,
     SalesReturnPost,
     SmsTestRequest,
     StockAdjust,
@@ -5782,6 +5783,26 @@ async def post_sales_return(
         await sales_docs_svc.serialize_return(db, ret),
         f"Return posted ({ret.credit_note_number}); stock/AR/journal updated",
     )
+
+
+@api.post("/sales/returns/{return_id}/cancel")
+async def cancel_sales_return(
+    return_id: str,
+    payload: SalesReturnCancel,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, existing.created_by)
+    ret = await sales_docs_svc.cancel_return(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        return_id=return_id,
+        reason=payload.reason,
+    )
+    await db.commit()
+    return env(await sales_docs_svc.serialize_return(db, ret), "Draft sales return cancelled")
 
 
 @api.post("/sales/payments")
