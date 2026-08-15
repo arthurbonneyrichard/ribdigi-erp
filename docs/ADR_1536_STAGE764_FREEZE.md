@@ -31,3 +31,7 @@ Stage 765 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Service Account Gate, Service Account Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 765 opened under **ADR-1537** after CONTINUE/NEXT (Tenant MVP Client Credential Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1538**. Stage 764 feature scope remains frozen.
