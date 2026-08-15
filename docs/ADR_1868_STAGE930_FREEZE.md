@@ -31,3 +31,7 @@ Stage 931 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Exporter Gate, Transfer Exporter Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 931 opened under **ADR-1869** after CONTINUE/NEXT (Tenant MVP Transfer Importer Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1870**. Stage 930 feature scope remains frozen.
