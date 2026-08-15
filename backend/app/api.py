@@ -1979,6 +1979,8 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             )
             if tenant
             else 30,
+            "company_name": getattr(tenant, "company_name", None) if tenant else None,
+            "has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
             **totp_svc.status_payload(user),
         }
     )
