@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 779 track opened (ADR-1565: `test_stage779_open.py`, `docs/STAGE_779_PLAN.md`) — Hsm Key Gate Honesty Pack Remaining-Gate Index; closed under ADR-1566
+- [x] Hsm Key Gate Honesty Pack remaining-gate hub (Stage 779 I1: `test_stage779_index_i1.py`, `docs/HSM_KEY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Hsm Key Gate Honesty Pack blocker matrix (Stage 779 B1: `test_stage779_blockers_b1.py`, `docs/HSM_KEY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 778 / Stage 777 / Stage 392 / CHANGE_IMPACT pointers (Stage 779 P1: `test_stage779_pointers_p1.py`, `docs/HSM_KEY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 779 fidelity sync (D1: `test_stage779_fidelity_d1.py`, `docs/STAGE_779_FIDELITY.md`)
+- [x] Stage 779 exit + freeze (H779x: `test_stage779_exit_h779x.py`, `docs/STAGE_779_EXIT_CRITERIA.md`, ADR-1566)
+
 Stage 778 track opened (ADR-1563: `test_stage778_open.py`, `docs/STAGE_778_PLAN.md`) — Tpm Attest Gate Honesty Pack Remaining-Gate Index; closed under ADR-1564
 - [x] Tpm Attest Gate Honesty Pack remaining-gate hub (Stage 778 I1: `test_stage778_index_i1.py`, `docs/TPM_ATTEST_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Tpm Attest Gate Honesty Pack blocker matrix (Stage 778 B1: `test_stage778_blockers_b1.py`, `docs/TPM_ATTEST_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
