@@ -31,3 +31,7 @@ Stage 687 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Slo Error Budget Gate, Slo Error Budget Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 687 opened under **ADR-1381** after CONTINUE/NEXT (Tenant MVP Synthetic Check Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1382**. Stage 686 feature scope remains frozen.
