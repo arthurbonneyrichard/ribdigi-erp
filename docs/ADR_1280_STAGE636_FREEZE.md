@@ -31,3 +31,7 @@ Stage 637 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Observability Logging Gate, Observability Logging Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 637 opened under **ADR-1281** after CONTINUE/NEXT (Tenant MVP Healthcheck Probe Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1282**. Stage 636 feature scope remains frozen.
