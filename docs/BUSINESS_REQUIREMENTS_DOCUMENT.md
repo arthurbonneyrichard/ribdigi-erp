@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 451 D1 Production Launch Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_451_FIDELITY.md` (`test_stage451_fidelity_d1.py`); Offline Complete / Production Launch honesty / go-live still MISSING.
 Stage 450 D1 Preflight Verification Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_450_FIDELITY.md` (`test_stage450_fidelity_d1.py`); Offline Complete / Preflight Verification honesty / go-live still MISSING.
 Stage 449 D1 Steady-State Ops Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_449_FIDELITY.md` (`test_stage449_fidelity_d1.py`); Offline Complete / Steady-State Ops honesty / go-live still MISSING.
 Stage 448 D1 First Commercial Day Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_448_FIDELITY.md` (`test_stage448_fidelity_d1.py`); Offline Complete / First Commercial Day honesty / go-live still MISSING.
