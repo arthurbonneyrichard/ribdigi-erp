@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 654 track opened (ADR-1315: `test_stage654_open.py`, `docs/STAGE_654_PLAN.md`) — Chaos Drill Gate Honesty Pack Remaining-Gate Index; closed under ADR-1316
+- [x] Chaos Drill Gate Honesty Pack remaining-gate hub (Stage 654 I1: `test_stage654_index_i1.py`, `docs/CHAOS_DRILL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Chaos Drill Gate Honesty Pack blocker matrix (Stage 654 B1: `test_stage654_blockers_b1.py`, `docs/CHAOS_DRILL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 653 / Stage 652 / Stage 392 / CHANGE_IMPACT pointers (Stage 654 P1: `test_stage654_pointers_p1.py`, `docs/CHAOS_DRILL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 654 fidelity sync (D1: `test_stage654_fidelity_d1.py`, `docs/STAGE_654_FIDELITY.md`)
+- [x] Stage 654 exit + freeze (H654x: `test_stage654_exit_h654x.py`, `docs/STAGE_654_EXIT_CRITERIA.md`, ADR-1316)
+
 Stage 653 track opened (ADR-1313: `test_stage653_open.py`, `docs/STAGE_653_PLAN.md`) — Rollback Runbook Gate Honesty Pack Remaining-Gate Index; closed under ADR-1314
 - [x] Rollback Runbook Gate Honesty Pack remaining-gate hub (Stage 653 I1: `test_stage653_index_i1.py`, `docs/ROLLBACK_RUNBOOK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Rollback Runbook Gate Honesty Pack blocker matrix (Stage 653 B1: `test_stage653_blockers_b1.py`, `docs/ROLLBACK_RUNBOOK_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
