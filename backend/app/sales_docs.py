@@ -124,6 +124,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "total_amount": float(quote.total_amount),
         "valid_until": quote.valid_until,
         "notes": quote.notes,
+        "rejection_reason": quote.rejection_reason,
         "converted_order_id": quote.converted_order_id,
         "converted_invoice_id": quote.converted_invoice_id,
         "emailed_at": quote.emailed_at,
@@ -259,7 +260,13 @@ async def accept_quotation(db: AsyncSession, tenant_id: str, quotation_id: str) 
     return quote
 
 
-async def reject_quotation(db: AsyncSession, tenant_id: str, quotation_id: str) -> m.SalesQuotation:
+async def reject_quotation(
+    db: AsyncSession,
+    tenant_id: str,
+    quotation_id: str,
+    *,
+    reason: str | None = None,
+) -> m.SalesQuotation:
     quote = await get_quotation(db, tenant_id, quotation_id)
     if quote.status not in {"draft", "sent"}:
         raise HTTPException(status_code=409, detail=f"Cannot reject quotation in status {quote.status}")
@@ -267,7 +274,11 @@ async def reject_quotation(db: AsyncSession, tenant_id: str, quotation_id: str) 
         quote.status = "expired"
         await db.flush()
         raise HTTPException(status_code=409, detail="Quotation has expired")
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="rejection reason is required")
     quote.status = "rejected"
+    quote.rejection_reason = reason_s
     quote.updated_at = datetime.utcnow()
     await db.flush()
     return quote

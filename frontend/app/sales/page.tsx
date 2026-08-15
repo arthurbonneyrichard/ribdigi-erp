@@ -76,6 +76,7 @@ export default function Page() {
   const [customerGroupId, setCustomerGroupId] = useState('');
   const [creditLimit, setCreditLimit] = useState('0');
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
+  const [quoteRejectReason, setQuoteRejectReason] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
@@ -536,8 +537,20 @@ export default function Page() {
 
   async function act(path: string, label: string, body: Record<string, unknown> = {}) {
     setError('');
+    setMessage('');
+    if (path.includes('/quotations/') && path.endsWith('/reject')) {
+      const reason = quoteRejectReason.trim();
+      if (!reason) {
+        setError('Enter a reject reason before rejecting a quotation');
+        return;
+      }
+      body = { ...body, reason };
+    }
     try {
       const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
+      if (path.includes('/quotations/') && path.endsWith('/reject')) {
+        setQuoteRejectReason('');
+      }
       setMessage(r.message || label);
       setSelected(r.data);
       await refresh();
@@ -1127,6 +1140,21 @@ export default function Page() {
       </div>
 
       {tab === 'quotations' && (
+        <>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Reject reason{' '}
+              <input
+                value={quoteRejectReason}
+                onChange={(e) => setQuoteRejectReason(e.target.value)}
+                placeholder="Required before Reject"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Used by Reject on draft/sent quotations (stored as <code>rejection_reason</code>).
+            </p>
+          </div>
         <table className="table">
           <thead>
             <tr>
@@ -1134,6 +1162,7 @@ export default function Page() {
               <th>Status</th>
               <th>Total</th>
               <th>Valid</th>
+              <th>Reject reason</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1144,6 +1173,7 @@ export default function Page() {
                 <td>{q.status}</td>
                 <td>{formatNumber(q.total_amount, fmt)}</td>
                 <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
+                <td>{q.rejection_reason || '—'}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(q)}>View</button>
                   {q.status === 'draft' && (
@@ -1169,6 +1199,7 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </>
       )}
 
       {tab === 'orders' && (

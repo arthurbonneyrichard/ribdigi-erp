@@ -493,6 +493,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Quotation number auto-generation (configurable series via `/sales/settings`)
   - [x] Print/email quotation to customer (`POST /sales/quotations/{id}/send`)
   - [x] Convert quotation to sales order (`POST /sales/quotations/{id}/convert`)
+  - [x] Reject with required reason (`POST /sales/quotations/{id}/reject` `{ reason }` → `rejection_reason`; Sales Reject reason field; Alembic `20260815_0103`)
   - [x] Expiry notification before validity ends (`scan_quotation_expiry` Celery job + `POST /notifications/scan-due`; category `quotation_expiry`; T−1 day window; past-due `draft`/`sent` auto-flip to `expired`)
 
 #### BR-7.3 Sales Order
