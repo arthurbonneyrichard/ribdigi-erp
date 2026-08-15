@@ -31,3 +31,7 @@ Stage 752 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cookie Max Age Gate, Cookie Max Age Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 752 opened under **ADR-1511** after CONTINUE/NEXT (Tenant MVP Cookie Domain Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1512**. Stage 751 feature scope remains frozen.

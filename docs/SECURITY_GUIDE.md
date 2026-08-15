@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 752 D1 Cookie Domain Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_752_FIDELITY.md` (`test_stage752_fidelity_d1.py`); exit ADR-1512 / `test_stage752_exit_h752x.py`. Honesty: Offline Complete / Cookie Domain Gate honesty / go-live Completes remain MISSING.
 Stage 751 D1 Cookie Max Age Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_751_FIDELITY.md` (`test_stage751_fidelity_d1.py`); exit ADR-1510 / `test_stage751_exit_h751x.py`. Honesty: Offline Complete / Cookie Max Age Gate honesty / go-live Completes remain MISSING.
 Stage 750 D1 Secure Cookie Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_750_FIDELITY.md` (`test_stage750_fidelity_d1.py`); exit ADR-1508 / `test_stage750_exit_h750x.py`. Honesty: Offline Complete / Secure Cookie Gate honesty / go-live Completes remain MISSING.
 Stage 749 D1 Http Only Cookie Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_749_FIDELITY.md` (`test_stage749_fidelity_d1.py`); exit ADR-1506 / `test_stage749_exit_h749x.py`. Honesty: Offline Complete / Http Only Cookie Gate honesty / go-live Completes remain MISSING.
