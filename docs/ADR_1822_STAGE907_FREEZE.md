@@ -31,3 +31,7 @@ Stage 908 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Escalation Gate, Transfer Escalation Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 908 opened under **ADR-1823** after CONTINUE/NEXT (Tenant MVP Transfer Denial Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1824**. Stage 907 feature scope remains frozen.
