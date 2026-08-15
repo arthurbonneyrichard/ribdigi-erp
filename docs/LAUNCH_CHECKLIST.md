@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 715 track opened (ADR-1437: `test_stage715_open.py`, `docs/STAGE_715_PLAN.md`) — Openapi Contract Gate Honesty Pack Remaining-Gate Index; closed under ADR-1438
+- [x] Openapi Contract Gate Honesty Pack remaining-gate hub (Stage 715 I1: `test_stage715_index_i1.py`, `docs/OPENAPI_CONTRACT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Openapi Contract Gate Honesty Pack blocker matrix (Stage 715 B1: `test_stage715_blockers_b1.py`, `docs/OPENAPI_CONTRACT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 714 / Stage 713 / Stage 392 / CHANGE_IMPACT pointers (Stage 715 P1: `test_stage715_pointers_p1.py`, `docs/OPENAPI_CONTRACT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 715 fidelity sync (D1: `test_stage715_fidelity_d1.py`, `docs/STAGE_715_FIDELITY.md`)
+- [x] Stage 715 exit + freeze (H715x: `test_stage715_exit_h715x.py`, `docs/STAGE_715_EXIT_CRITERIA.md`, ADR-1438)
+
 Stage 714 track opened (ADR-1435: `test_stage714_open.py`, `docs/STAGE_714_PLAN.md`) — Json Schema Gate Honesty Pack Remaining-Gate Index; closed under ADR-1436
 - [x] Json Schema Gate Honesty Pack remaining-gate hub (Stage 714 I1: `test_stage714_index_i1.py`, `docs/JSON_SCHEMA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Json Schema Gate Honesty Pack blocker matrix (Stage 714 B1: `test_stage714_blockers_b1.py`, `docs/JSON_SCHEMA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

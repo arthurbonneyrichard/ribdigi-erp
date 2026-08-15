@@ -31,3 +31,7 @@ Stage 715 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Json Schema Gate, Json Schema Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 715 opened under **ADR-1437** after CONTINUE/NEXT (Tenant MVP Openapi Contract Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1438**. Stage 714 feature scope remains frozen.
