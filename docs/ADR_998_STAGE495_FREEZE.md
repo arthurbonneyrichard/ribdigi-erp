@@ -31,3 +31,10 @@ Stage 496 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, FAQ Offline POS, FAQ Offline POS honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 496 opened under **ADR-999** after CONTINUE/NEXT (Tenant MVP Cashier POS Day-One Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1000**. Stage 495 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 495 runner-up outline was approved and opened (ADR-999); freeze ADR-1000. Do not reopen Stage 495 scope.
+

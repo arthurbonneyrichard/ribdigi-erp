@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 496 track opened (ADR-999: `test_stage496_open.py`, `docs/STAGE_496_PLAN.md`) — Cashier POS Day-One Honesty Pack Remaining-Gate Index; closed under ADR-1000
+- [x] Cashier POS Day-One Honesty Pack remaining-gate hub (Stage 496 I1: `test_stage496_index_i1.py`, `docs/CASHIER_POS_DAYONE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Cashier POS Day-One Honesty Pack blocker matrix (Stage 496 B1: `test_stage496_blockers_b1.py`, `docs/CASHIER_POS_DAYONE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 495 / Stage 494 / Stage 392 / CHANGE_IMPACT pointers (Stage 496 P1: `test_stage496_pointers_p1.py`, `docs/CASHIER_POS_DAYONE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 496 fidelity sync (D1: `test_stage496_fidelity_d1.py`, `docs/STAGE_496_FIDELITY.md`)
+- [x] Stage 496 exit + freeze (H496x: `test_stage496_exit_h496x.py`, `docs/STAGE_496_EXIT_CRITERIA.md`, ADR-1000)
+
 Stage 495 track opened (ADR-997: `test_stage495_open.py`, `docs/STAGE_495_PLAN.md`) — FAQ Offline POS Honesty Pack Remaining-Gate Index; closed under ADR-998
 - [x] FAQ Offline POS Honesty Pack remaining-gate hub (Stage 495 I1: `test_stage495_index_i1.py`, `docs/FAQ_OFFLINE_POS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] FAQ Offline POS Honesty Pack blocker matrix (Stage 495 B1: `test_stage495_blockers_b1.py`, `docs/FAQ_OFFLINE_POS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
