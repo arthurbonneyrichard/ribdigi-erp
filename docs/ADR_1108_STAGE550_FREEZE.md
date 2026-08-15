@@ -31,3 +31,7 @@ Stage 551 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, E2E Purchase Stock, E2E Purchase Stock honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 551 opened under **ADR-1109** after CONTINUE/NEXT (Tenant MVP E2E Sale Payment Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1110**. Stage 550 feature scope remains frozen.
