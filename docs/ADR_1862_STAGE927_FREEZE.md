@@ -31,3 +31,7 @@ Stage 928 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Recipient Gate, Transfer Recipient Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 928 opened under **ADR-1863** after CONTINUE/NEXT (Tenant MVP Transfer Controller Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1864**. Stage 927 feature scope remains frozen.
