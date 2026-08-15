@@ -7210,18 +7210,21 @@ def _money_safe(value) -> str:
 
 @api.get("/expenses/categories")
 async def list_expense_categories(
+    is_active: bool | None = None,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """List expense categories. Optional is_active filters soft-deactivated rows (Expenses manage UI)."""
     await expenses_svc.ensure_default_categories(db, claims["tenant_id"])
     await db.commit()
-    rows = (
-        await db.execute(
-            select(m.ExpenseCategory)
-            .where(m.ExpenseCategory.tenant_id == claims["tenant_id"])
-            .order_by(m.ExpenseCategory.name)
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.ExpenseCategory)
+        .where(m.ExpenseCategory.tenant_id == claims["tenant_id"])
+        .order_by(m.ExpenseCategory.name)
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.ExpenseCategory.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     account_ids = {c.account_id for c in rows if getattr(c, "account_id", None)}
     accounts: dict[str, m.Account] = {}
     if account_ids:

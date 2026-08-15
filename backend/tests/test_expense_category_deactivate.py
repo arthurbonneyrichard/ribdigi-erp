@@ -19,6 +19,41 @@ def test_category_deactivate_ui_wired():
     assert "Activate" in expenses
     assert "[inactive]" in expenses
     assert "is_active" in expenses
+    assert "categoryManageFilter" in expenses
+    assert 'aria-label="Expense category status filter"' in expenses
+    assert "managedCategories" in expenses
+
+
+@pytest.mark.asyncio
+async def test_expense_categories_list_is_active_filter(client, seeded):
+    ac, seed = client
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+    created = await ac.post(
+        "/api/v1/expenses/categories",
+        headers=admin,
+        json={"code": "FLTGL", "name": "Filter Demo Cat", "budget_amount": 0},
+    )
+    assert created.status_code == 200, created.text
+    cat_id = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/expenses/categories/{cat_id}",
+        headers=admin,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/expenses/categories", headers=admin)
+    assert cat_id in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/expenses/categories?is_active=true", headers=admin)
+    assert cat_id not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/expenses/categories?is_active=false", headers=admin)
+    assert cat_id in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
 
 
 @pytest.mark.asyncio
