@@ -31,3 +31,7 @@ Stage 709 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Soft Delete Gate, Soft Delete Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 709 opened under **ADR-1425** after CONTINUE/NEXT (Tenant MVP Optimistic Lock Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1426**. Stage 708 feature scope remains frozen.

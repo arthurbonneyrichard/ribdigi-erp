@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 709 track opened (ADR-1425: `test_stage709_open.py`, `docs/STAGE_709_PLAN.md`) — Optimistic Lock Gate Honesty Pack Remaining-Gate Index; closed under ADR-1426
+- [x] Optimistic Lock Gate Honesty Pack remaining-gate hub (Stage 709 I1: `test_stage709_index_i1.py`, `docs/OPTIMISTIC_LOCK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Optimistic Lock Gate Honesty Pack blocker matrix (Stage 709 B1: `test_stage709_blockers_b1.py`, `docs/OPTIMISTIC_LOCK_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 708 / Stage 707 / Stage 392 / CHANGE_IMPACT pointers (Stage 709 P1: `test_stage709_pointers_p1.py`, `docs/OPTIMISTIC_LOCK_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 709 fidelity sync (D1: `test_stage709_fidelity_d1.py`, `docs/STAGE_709_FIDELITY.md`)
+- [x] Stage 709 exit + freeze (H709x: `test_stage709_exit_h709x.py`, `docs/STAGE_709_EXIT_CRITERIA.md`, ADR-1426)
+
 Stage 708 track opened (ADR-1423: `test_stage708_open.py`, `docs/STAGE_708_PLAN.md`) — Soft Delete Gate Honesty Pack Remaining-Gate Index; closed under ADR-1424
 - [x] Soft Delete Gate Honesty Pack remaining-gate hub (Stage 708 I1: `test_stage708_index_i1.py`, `docs/SOFT_DELETE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Soft Delete Gate Honesty Pack blocker matrix (Stage 708 B1: `test_stage708_blockers_b1.py`, `docs/SOFT_DELETE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
