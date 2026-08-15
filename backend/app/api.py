@@ -348,12 +348,13 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
     if existing:
         raise HTTPException(status_code=409, detail="Tenant slug exists")
 
+    industry = tenants_svc.normalize_industry(payload.industry)
     trial_end = tenants_svc.default_trial_ends_at()
     now = datetime.utcnow()
     tenant = m.Tenant(
         slug=payload.slug,
         company_name=payload.company_name,
-        industry=payload.industry,
+        industry=industry,
         currency=payload.currency,
         status="trial",
         trial_ends_at=trial_end,

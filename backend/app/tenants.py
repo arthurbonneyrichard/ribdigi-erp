@@ -23,6 +23,31 @@ VALID_TIME_FORMATS = frozenset({"12h", "24h"})
 TRIAL_REMINDER_DAYS = (7, 3, 1)
 
 
+def normalize_industry(industry: str | None, *, required: bool = True) -> str | None:
+    """Normalize industry to a BR-1.2 / VALID_INDUSTRIES value (lowercase)."""
+    if industry is None:
+        if required:
+            raise HTTPException(
+                status_code=400,
+                detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
+            )
+        return None
+    ind = industry.strip().lower()
+    if not ind:
+        if required:
+            raise HTTPException(
+                status_code=400,
+                detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
+            )
+        return None
+    if ind not in VALID_INDUSTRIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
+        )
+    return ind
+
+
 def _validate_separators(decimal_sep: str, thousand_sep: str) -> None:
     if thousand_sep and thousand_sep == decimal_sep:
         raise HTTPException(
@@ -424,13 +449,7 @@ async def update_profile(
             raise HTTPException(status_code=400, detail="company_name is required")
         tenant.company_name = name
     if industry is not None:
-        ind = industry.strip().lower()
-        if ind not in VALID_INDUSTRIES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
-            )
-        tenant.industry = ind
+        tenant.industry = normalize_industry(industry)
     if currency is not None:
         cur = currency.strip().upper()
         if len(cur) < 3 or len(cur) > 10:
