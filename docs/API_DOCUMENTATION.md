@@ -641,7 +641,7 @@ Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory
 }
 ```
 
-Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). **Reject:** `POST /inventory/stock-transfers/{id}/reject` (and `POST /stores/transfers/{id}/reject`) body `{ "reason" }` **required** → status `cancelled` + `rejection_reason` (Inventory + Multi-Store Transfers UIs require reason). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab.
+Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). **Reject / Cancel:** `POST /inventory/stock-transfers/{id}/reject|cancel` (and `/stores/transfers/{id}/…`) body `{ "reason" }` **required** → status `cancelled` + `rejection_reason` (Inventory + Multi-Store UIs require typed reason for both). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab.
 
 ### 5.6 Stock Count
 **Create:** `POST /inventory/stock-counts`  
@@ -1336,7 +1336,8 @@ Tax UI (`/tax`) period controls include store picker.
 **Create:** `POST /stores/transfers`  
 **Get:** `GET /stores/transfers/{transfer_id}`  
 **Update Status:** `PATCH /stores/transfers/{transfer_id}/status`  
-**Reject (BR-13.2):** `POST /stores/transfers/{transfer_id}/reject` — body `{ "reason" }` required (non-empty) → status `cancelled` + `rejection_reason`. Multi-Store Transfers UI requires typed reason (no blank reject). Same helper as `POST /inventory/stock-transfers/{id}/reject`.
+**Reject (BR-13.2):** `POST /stores/transfers/{transfer_id}/reject` — body `{ "reason" }` required (non-empty) → status `cancelled` + `rejection_reason`. Multi-Store Transfers UI requires typed reason (no blank reject). Same helper as `POST /inventory/stock-transfers/{id}/reject`.  
+**Cancel:** `POST /stores/transfers/{transfer_id}/cancel` — body `{ "reason" }` required (non-empty) → status `cancelled` + `rejection_reason` (also Inventory `/inventory/stock-transfers/{id}/cancel`). Reject / Cancel share the same reason input in UI.
 
 **Create Transfer:**
 ```json

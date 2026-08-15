@@ -703,10 +703,14 @@ export default function Page() {
   async function act(id: string, action: string) {
     setError('');
     setMessage('');
-    if (action === 'reject') {
+    if (action === 'reject' || action === 'cancel') {
       const reason = xferRejectReason.trim();
       if (!reason) {
-        setError('Enter a reject reason before rejecting a store transfer');
+        setError(
+          action === 'cancel'
+            ? 'Enter a cancel reason before cancelling a store transfer'
+            : 'Enter a reject reason before rejecting a store transfer'
+        );
         return;
       }
     }
@@ -714,11 +718,11 @@ export default function Page() {
       const r = await api(`/stores/transfers/${id}/${action}`, {
         method: 'POST',
         body:
-          action === 'reject'
+          action === 'reject' || action === 'cancel'
             ? JSON.stringify({ reason: xferRejectReason.trim() })
             : undefined,
       });
-      if (action === 'reject') {
+      if (action === 'reject' || action === 'cancel') {
         setXferRejectReason('');
       }
       setMessage(`${r.data.transfer_number} → ${r.data.status}`);
@@ -1380,17 +1384,16 @@ export default function Page() {
       </p>
       <div className="card" style={{ marginBottom: 12 }}>
         <label>
-          Reject reason{' '}
+          Reject / Cancel reason{' '}
           <input
             value={xferRejectReason}
             onChange={(e) => setXferRejectReason(e.target.value)}
-            placeholder="Required before Reject"
+            placeholder="Required before Reject or Cancel"
             style={{ minWidth: 280 }}
           />
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
-          Used by Reject on requested transfers (stored as <code>rejection_reason</code>; status →
-          cancelled).
+          Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
         </p>
       </div>
       <table className="table">
@@ -1401,7 +1404,7 @@ export default function Page() {
             <th>To</th>
             <th>Status</th>
             <th>Approval</th>
-            <th>Reject reason</th>
+            <th>Reject / Cancel reason</th>
             <th>Actions</th>
           </tr>
         </thead>

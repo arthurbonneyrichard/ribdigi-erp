@@ -519,10 +519,14 @@ export default function Page() {
   async function transferAct(id: string, action: string) {
     setError('');
     setMessage('');
-    if (action === 'reject') {
+    if (action === 'reject' || action === 'cancel') {
       const reason = xferRejectReason.trim();
       if (!reason) {
-        setError('Enter a reject reason before rejecting a stock transfer');
+        setError(
+          action === 'cancel'
+            ? 'Enter a cancel reason before cancelling a stock transfer'
+            : 'Enter a reject reason before rejecting a stock transfer'
+        );
         return;
       }
     }
@@ -530,11 +534,11 @@ export default function Page() {
       const r = await api(`/inventory/stock-transfers/${id}/${action}`, {
         method: 'POST',
         body:
-          action === 'reject'
+          action === 'reject' || action === 'cancel'
             ? JSON.stringify({ reason: xferRejectReason.trim() })
             : undefined,
       });
-      if (action === 'reject') {
+      if (action === 'reject' || action === 'cancel') {
         setXferRejectReason('');
       }
       setMessage(r.message || `Transfer ${action} ok`);
@@ -3374,17 +3378,16 @@ export default function Page() {
           </p>
           <div className="card" style={{ marginBottom: 12 }}>
             <label>
-              Reject reason{' '}
+              Reject / Cancel reason{' '}
               <input
                 value={xferRejectReason}
                 onChange={(e) => setXferRejectReason(e.target.value)}
-                placeholder="Required before Reject"
+                placeholder="Required before Reject or Cancel"
                 style={{ minWidth: 280 }}
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
-              Used by Reject on requested transfers (stored as <code>rejection_reason</code>; status →
-              cancelled).
+              Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
             </p>
           </div>
           <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }}>
@@ -3398,7 +3401,7 @@ export default function Page() {
                 <th>To WH</th>
                 <th>Status</th>
                 <th>Approval</th>
-                <th>Reject reason</th>
+                <th>Reject / Cancel reason</th>
                 <th>Actions</th>
               </tr>
             </thead>

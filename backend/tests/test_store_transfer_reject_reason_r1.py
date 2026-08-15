@@ -19,8 +19,8 @@ def test_store_transfer_reject_reason_ui_wired():
     assert "Enter a reject reason before rejecting a store transfer" in stores
     assert "JSON.stringify({ reason: xferRejectReason.trim() })" in stores
     assert "rejection_reason" in stores
-    assert "Required before Reject" in stores
-    reject_block_start = stores.find("Reject reason")
+    assert "Required before Reject or Cancel" in stores
+    reject_block_start = stores.find("Reject / Cancel reason")
     assert reject_block_start > 0
     # Reject path must not use window.prompt
     assert "window.prompt" not in stores[reject_block_start : reject_block_start + 2500]
