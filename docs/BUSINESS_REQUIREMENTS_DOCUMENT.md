@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 493 D1 Offline Offline Status Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_493_FIDELITY.md` (`test_stage493_fidelity_d1.py`); Offline Complete / Offline Status honesty / go-live still MISSING.
 Stage 492 D1 Offline Online Status Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_492_FIDELITY.md` (`test_stage492_fidelity_d1.py`); Offline Complete / Online Status honesty / go-live still MISSING.
 Stage 491 D1 Offline Synchronizing Status Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_491_FIDELITY.md` (`test_stage491_fidelity_d1.py`); Offline Complete / Synchronizing Status honesty / go-live still MISSING.
 Stage 490 D1 Offline Sync Runbook Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_490_FIDELITY.md` (`test_stage490_fidelity_d1.py`); Offline Complete / Sync Runbook honesty / go-live still MISSING.
