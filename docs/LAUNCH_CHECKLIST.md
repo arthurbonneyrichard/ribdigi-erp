@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 799 track opened (ADR-1605: `test_stage799_open.py`, `docs/STAGE_799_PLAN.md`) — Worm Storage Gate Honesty Pack Remaining-Gate Index; closed under ADR-1606
+- [x] Worm Storage Gate Honesty Pack remaining-gate hub (Stage 799 I1: `test_stage799_index_i1.py`, `docs/WORM_STORAGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Worm Storage Gate Honesty Pack blocker matrix (Stage 799 B1: `test_stage799_blockers_b1.py`, `docs/WORM_STORAGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 798 / Stage 797 / Stage 392 / CHANGE_IMPACT pointers (Stage 799 P1: `test_stage799_pointers_p1.py`, `docs/WORM_STORAGE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 799 fidelity sync (D1: `test_stage799_fidelity_d1.py`, `docs/STAGE_799_FIDELITY.md`)
+- [x] Stage 799 exit + freeze (H799x: `test_stage799_exit_h799x.py`, `docs/STAGE_799_EXIT_CRITERIA.md`, ADR-1606)
+
 Stage 798 track opened (ADR-1603: `test_stage798_open.py`, `docs/STAGE_798_PLAN.md`) — Forensic Hash Gate Honesty Pack Remaining-Gate Index; closed under ADR-1604
 - [x] Forensic Hash Gate Honesty Pack remaining-gate hub (Stage 798 I1: `test_stage798_index_i1.py`, `docs/FORENSIC_HASH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Forensic Hash Gate Honesty Pack blocker matrix (Stage 798 B1: `test_stage798_blockers_b1.py`, `docs/FORENSIC_HASH_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
