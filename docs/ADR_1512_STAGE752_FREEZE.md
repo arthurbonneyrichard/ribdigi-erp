@@ -31,3 +31,7 @@ Stage 753 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cookie Domain Gate, Cookie Domain Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 753 opened under **ADR-1513** after CONTINUE/NEXT (Tenant MVP Cookie Path Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1514**. Stage 752 feature scope remains frozen.
