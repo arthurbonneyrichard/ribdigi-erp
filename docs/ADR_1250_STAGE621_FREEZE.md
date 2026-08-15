@@ -31,3 +31,7 @@ Stage 622 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Session Auth Gate, Session Auth Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 622 opened under **ADR-1251** after CONTINUE/NEXT (Tenant MVP Secrets Config Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1252**. Stage 621 feature scope remains frozen.
