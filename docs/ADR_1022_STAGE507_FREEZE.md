@@ -31,3 +31,8 @@ Stage 508 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Weekly POS Ops Adherence, Weekly POS Ops Adherence honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 508 opened under **ADR-1023** after CONTINUE/NEXT (Tenant MVP Live Training Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1024**. Stage 507 feature scope remains frozen.
+

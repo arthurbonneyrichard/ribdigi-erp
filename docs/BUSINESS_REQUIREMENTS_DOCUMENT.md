@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 508 D1 Live Training Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_508_FIDELITY.md` (`test_stage508_fidelity_d1.py`); Offline Complete / Live Training honesty / go-live still MISSING.
 Stage 507 D1 Weekly POS Ops Adherence Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_507_FIDELITY.md` (`test_stage507_fidelity_d1.py`); Offline Complete / Weekly POS Ops Adherence honesty / go-live still MISSING.
 Stage 506 D1 Weekly POS Ops Signals Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_506_FIDELITY.md` (`test_stage506_fidelity_d1.py`); Offline Complete / Weekly POS Ops Signals honesty / go-live still MISSING.
 Stage 505 D1 Monthly POS Ops Pointers Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_505_FIDELITY.md` (`test_stage505_fidelity_d1.py`); Offline Complete / Monthly POS Ops Pointers honesty / go-live still MISSING.
