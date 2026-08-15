@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 572 D1 Store Open Checklist Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_572_FIDELITY.md` (`test_stage572_fidelity_d1.py`); Offline Complete / Store Open Checklist honesty / go-live still MISSING.
 Stage 571 D1 Store Membership Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_571_FIDELITY.md` (`test_stage571_fidelity_d1.py`); Offline Complete / Store Membership honesty / go-live still MISSING.
 Stage 570 D1 Permission Alias Map Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_570_FIDELITY.md` (`test_stage570_fidelity_d1.py`); Offline Complete / Permission Alias Map honesty / go-live still MISSING.
 Stage 569 D1 Permission Alias Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_569_FIDELITY.md` (`test_stage569_fidelity_d1.py`); Offline Complete / Permission Alias honesty / go-live still MISSING.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 572 track opened (ADR-1151: `test_stage572_open.py`, `docs/STAGE_572_PLAN.md`) — Store Open Checklist Honesty Pack Remaining-Gate Index; closed under ADR-1152
+- [x] Store Open Checklist Honesty Pack remaining-gate hub (Stage 572 I1: `test_stage572_index_i1.py`, `docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Store Open Checklist Honesty Pack blocker matrix (Stage 572 B1: `test_stage572_blockers_b1.py`, `docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 571 / Stage 570 / Stage 392 / CHANGE_IMPACT pointers (Stage 572 P1: `test_stage572_pointers_p1.py`, `docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 572 fidelity sync (D1: `test_stage572_fidelity_d1.py`, `docs/STAGE_572_FIDELITY.md`)
+- [x] Stage 572 exit + freeze (H572x: `test_stage572_exit_h572x.py`, `docs/STAGE_572_EXIT_CRITERIA.md`, ADR-1152)
+
 Stage 571 track opened (ADR-1149: `test_stage571_open.py`, `docs/STAGE_571_PLAN.md`) — Store Membership Honesty Pack Remaining-Gate Index; closed under ADR-1150
 - [x] Store Membership Honesty Pack remaining-gate hub (Stage 571 I1: `test_stage571_index_i1.py`, `docs/STORE_MEMBERSHIP_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Store Membership Honesty Pack blocker matrix (Stage 571 B1: `test_stage571_blockers_b1.py`, `docs/STORE_MEMBERSHIP_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

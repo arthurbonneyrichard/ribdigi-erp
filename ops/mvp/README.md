@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-open-checklist-honesty-pack-remaining-gate.json` — Stage 572 I1
+- `docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-open-checklist-honesty-pack-rg-blockers.json` — Stage 572 B1
+- `docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-open-checklist-honesty-pack-rg-pointers.json` — Stage 572 P1
 - `docs/STORE_MEMBERSHIP_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-membership-honesty-pack-remaining-gate.json` — Stage 571 I1
 - `docs/STORE_MEMBERSHIP_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-membership-honesty-pack-rg-blockers.json` — Stage 571 B1
 - `docs/STORE_MEMBERSHIP_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-membership-honesty-pack-rg-pointers.json` — Stage 571 P1
