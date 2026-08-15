@@ -109,6 +109,7 @@ export default function PlatformConsole() {
     term_unit: 'months',
   });
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
+  const [suspendReason, setSuspendReason] = useState('');
 
   const selected = useMemo(
     () => tenants.find((t) => t.id === selectedId) || null,
@@ -201,16 +202,21 @@ export default function PlatformConsole() {
   }
 
   async function suspendTenant(row: TenantRow) {
-    const reason = window.prompt(`Suspend ${row.company_name}? Optional reason:`, '') ?? null;
-    if (reason === null) return;
+    const reason = suspendReason.trim();
+    if (!reason) {
+      setError('Enter a suspend reason before suspending a tenant');
+      return;
+    }
+    if (!window.confirm(`Suspend ${row.company_name}?`)) return;
     setBusy(row.id);
     setError('');
     setMessage('');
     try {
       await api(`/tenants/${row.slug || row.id}/suspend`, {
         method: 'POST',
-        body: JSON.stringify({ reason: reason || null }),
+        body: JSON.stringify({ reason }),
       });
+      setSuspendReason('');
       setMessage(`Suspended ${row.company_name}`);
       await refresh();
     } catch (err: any) {
@@ -459,6 +465,20 @@ export default function PlatformConsole() {
 
         <div className="plat-panel">
           <h2>Tenant management</h2>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Suspend reason{' '}
+              <input
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                placeholder="Required before Suspend"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Used by Suspend on non-suspended tenants (stored as <code>suspended_reason</code>).
+            </p>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -467,6 +487,7 @@ export default function PlatformConsole() {
                 <th>Term / usage</th>
                 <th>Remaining</th>
                 <th>Status</th>
+                <th>Suspend reason</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -510,6 +531,9 @@ export default function PlatformConsole() {
                       <span className={`status-pill ${statusClass(t.status)}`} style={{ margin: 0 }}>
                         {t.status}
                       </span>
+                    </td>
+                    <td style={{ fontSize: 12, maxWidth: 220 }}>
+                      {t.suspended_reason || '—'}
                     </td>
                     <td>
                       <div className="plat-actions">
