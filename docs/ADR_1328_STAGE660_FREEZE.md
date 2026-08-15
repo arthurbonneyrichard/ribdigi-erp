@@ -31,3 +31,7 @@ Stage 661 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cdn Edge Gate, Cdn Edge Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 661 opened under **ADR-1329** after CONTINUE/NEXT (Tenant MVP Waf Shield Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1330**. Stage 660 feature scope remains frozen.
