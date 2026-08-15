@@ -31,3 +31,7 @@ Stage 693 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Outbox Pattern Gate, Outbox Pattern Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 693 opened under **ADR-1393** after CONTINUE/NEXT (Tenant MVP Dead Letter Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1394**. Stage 692 feature scope remains frozen.
