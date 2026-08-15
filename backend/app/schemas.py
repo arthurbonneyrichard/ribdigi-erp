@@ -1224,12 +1224,14 @@ class PeriodCloseBody(BaseModel):
     """Close books through an inclusive calendar date (BR-10.2)."""
 
     through_date: date
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class PeriodReopenBody(BaseModel):
-    """Reopen: set an earlier closed-through date, or null to clear."""
+    """Reopen: set an earlier closed-through date, or null to clear — reason required (BR-10.2 honesty)."""
 
     through_date: date | None = None
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class PosSessionOpen(BaseModel):

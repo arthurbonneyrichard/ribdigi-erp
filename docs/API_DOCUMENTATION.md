@@ -1155,8 +1155,8 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 
 **Period close (BR-10.2):**
 - `GET /accounting/period` — `fiscal_year_start`, current fiscal bounds, `books_closed_through`
-- `POST /accounting/period/close` `{ "through_date": "YYYY-MM-DD" }` — inclusive close; cannot be future; cannot move earlier (use reopen)
-- `POST /accounting/period/reopen` `{ "through_date": null | "YYYY-MM-DD" }` — clear or set an earlier closed-through date
+- `POST /accounting/period/close` `{ "through_date": "YYYY-MM-DD", "reason": "..." }` — inclusive close; cannot be future; cannot move earlier (use reopen); **reason required** → audit `period_closed.details.reason`. Accounting UI **Close / reopen reason** input.
+- `POST /accounting/period/reopen` `{ "through_date": null | "YYYY-MM-DD", "reason": "..." }` — clear or move closed-through earlier; **reason required** → audit `period_reopened.details.reason`.
 
 Posting a journal (`POST /accounting/journal-entries`) rejects `entry_date` (default: now) on or before `books_closed_through` with **400**.
 

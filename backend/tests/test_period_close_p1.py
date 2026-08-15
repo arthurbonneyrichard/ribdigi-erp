@@ -49,7 +49,7 @@ async def test_close_blocks_post_and_unpost_then_reopen(client, db_session):
     close = await ac.post(
         "/api/v1/accounting/period/close",
         headers=headers,
-        json={"through_date": yesterday_s},
+        json={"through_date": yesterday_s, "reason": "Month-end close — period test"},
     )
     assert close.status_code == 200, close.text
     assert close.json()["data"]["books_closed_through"] == yesterday_s
@@ -104,7 +104,7 @@ async def test_close_blocks_post_and_unpost_then_reopen(client, db_session):
     bad_future = await ac.post(
         "/api/v1/accounting/period/close",
         headers=headers,
-        json={"through_date": future},
+        json={"through_date": future, "reason": "should fail future"},
     )
     assert bad_future.status_code == 400
 
@@ -113,14 +113,14 @@ async def test_close_blocks_post_and_unpost_then_reopen(client, db_session):
     bad_earlier = await ac.post(
         "/api/v1/accounting/period/close",
         headers=headers,
-        json={"through_date": earlier},
+        json={"through_date": earlier, "reason": "should fail earlier"},
     )
     assert bad_earlier.status_code == 400
 
     reopen = await ac.post(
         "/api/v1/accounting/period/reopen",
         headers=headers,
-        json={"through_date": None},
+        json={"through_date": None, "reason": "Correction after month-end — reopen test"},
     )
     assert reopen.status_code == 200, reopen.text
     assert reopen.json()["data"]["books_closed_through"] is None
@@ -149,6 +149,9 @@ async def test_period_requires_accounting_permission(client):
     c = await ac.post(
         "/api/v1/accounting/period/close",
         headers=headers,
-        json={"through_date": datetime.utcnow().date().isoformat()},
+        json={
+            "through_date": datetime.utcnow().date().isoformat(),
+            "reason": "should be forbidden",
+        },
     )
     assert c.status_code == 403

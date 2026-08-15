@@ -77,6 +77,7 @@ export default function Page() {
   const [branches, setBranches] = useState<any[]>([]);
   const [period, setPeriod] = useState<any>(null);
   const [closeThrough, setCloseThrough] = useState('');
+  const [periodReason, setPeriodReason] = useState('');
   const [tbAsOf, setTbAsOf] = useState('');
 
   function pnlQuery() {
@@ -193,11 +194,17 @@ export default function Page() {
     setMessage('');
     try {
       if (!closeThrough) throw new Error('Choose a close-through date');
+      const reason = periodReason.trim();
+      if (!reason) {
+        setError('Enter a close reason before closing the books');
+        return;
+      }
       await api('/accounting/period/close', {
         method: 'POST',
-        body: JSON.stringify({ through_date: closeThrough }),
+        body: JSON.stringify({ through_date: closeThrough, reason }),
       });
       setMessage(`Books closed through ${closeThrough}`);
+      setPeriodReason('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -208,11 +215,17 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
+      const reason = periodReason.trim();
+      if (!reason) {
+        setError('Enter a reopen reason before reopening the books');
+        return;
+      }
       await api('/accounting/period/reopen', {
         method: 'POST',
-        body: JSON.stringify({ through_date: null }),
+        body: JSON.stringify({ through_date: null, reason }),
       });
       setMessage('Books reopened (closed date cleared)');
+      setPeriodReason('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -862,6 +875,13 @@ export default function Page() {
                 value={closeThrough}
                 onChange={(e) => setCloseThrough(e.target.value)}
               />
+              <input
+                value={periodReason}
+                onChange={(e) => setPeriodReason(e.target.value)}
+                placeholder="Required close / reopen reason"
+                style={{ minWidth: 280 }}
+                aria-label="Period close or reopen reason"
+              />
               <button type="button" onClick={closeBooks}>
                 Close books
               </button>
@@ -871,6 +891,10 @@ export default function Page() {
                 </button>
               )}
             </div>
+            <p className="muted" style={{ margin: 0 }}>
+              Reason is required for close and reopen (audit <code>period_closed</code> /{' '}
+              <code>period_reopened</code> <code>details.reason</code>).
+            </p>
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
