@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 674 D1 Mtls Cert Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_674_FIDELITY.md` (`test_stage674_fidelity_d1.py`); Offline Complete / Mtls Cert Gate honesty / go-live still MISSING.
 Stage 673 D1 Secret Rotation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_673_FIDELITY.md` (`test_stage673_fidelity_d1.py`); Offline Complete / Secret Rotation Gate honesty / go-live still MISSING.
 Stage 672 D1 Network Policy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_672_FIDELITY.md` (`test_stage672_fidelity_d1.py`); Offline Complete / Network Policy Gate honesty / go-live still MISSING.
 Stage 671 D1 Resource Quota Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_671_FIDELITY.md` (`test_stage671_fidelity_d1.py`); Offline Complete / Resource Quota Gate honesty / go-live still MISSING.
