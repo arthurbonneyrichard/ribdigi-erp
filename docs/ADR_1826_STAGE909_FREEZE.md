@@ -31,3 +31,7 @@ Stage 910 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Audit Gate, Transfer Audit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 910 opened under **ADR-1827** after CONTINUE/NEXT (Tenant MVP Transfer Override Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1828**. Stage 909 feature scope remains frozen.

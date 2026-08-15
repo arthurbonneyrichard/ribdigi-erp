@@ -1,0 +1,77 @@
+{
+  "id": "transfer-override-gate-honesty-pack-rg-blockers",
+  "stage": 910,
+  "pack": "B1",
+  "doc": "docs/TRANSFER_OVERRIDE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TRANSFER_OVERRIDE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "transfer_override_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_override_gate_honesty_complete_claimed": false,
+  "transfer_override_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "transfer_override_gate_honesty_complete_claimed": "REMAINING",
+    "transfer_override_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_transfer_override_gate_honesty": "NON_CLAIM",
+    "transfer_override_gate_pack_as_transfer_override_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "transfer_override_gate_honesty_complete_claimed_flag": "false",
+    "transfer_override_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "toverghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "toverghb-honesty",
+      "title": "Mark Transfer Override Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "toverghb-as-golive",
+      "title": "Mark Transfer Override Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "toverghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "toverghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "toverghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for transfer-override-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "toverghb-checklist-remaining",
+      "title": "Offline Complete / Transfer Override Gate / Transfer Override Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 910 B1 Transfer Override Gate Honesty Pack RG blocker matrix packaging only."
+}
