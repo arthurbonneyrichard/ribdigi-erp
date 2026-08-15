@@ -31,3 +31,8 @@ Stage 510 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Customer Training Cert, Customer Training Cert honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 510 opened under **ADR-1027** after CONTINUE/NEXT (Tenant MVP Knowledge Transfer Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1028**. Stage 509 feature scope remains frozen.
+
