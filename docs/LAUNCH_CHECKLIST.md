@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 690 track opened (ADR-1387: `test_stage690_open.py`, `docs/STAGE_690_PLAN.md`) — Retry Backoff Gate Honesty Pack Remaining-Gate Index; closed under ADR-1388
+- [x] Retry Backoff Gate Honesty Pack remaining-gate hub (Stage 690 I1: `test_stage690_index_i1.py`, `docs/RETRY_BACKOFF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Retry Backoff Gate Honesty Pack blocker matrix (Stage 690 B1: `test_stage690_blockers_b1.py`, `docs/RETRY_BACKOFF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 689 / Stage 688 / Stage 392 / CHANGE_IMPACT pointers (Stage 690 P1: `test_stage690_pointers_p1.py`, `docs/RETRY_BACKOFF_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 690 fidelity sync (D1: `test_stage690_fidelity_d1.py`, `docs/STAGE_690_FIDELITY.md`)
+- [x] Stage 690 exit + freeze (H690x: `test_stage690_exit_h690x.py`, `docs/STAGE_690_EXIT_CRITERIA.md`, ADR-1388)
+
 Stage 689 track opened (ADR-1385: `test_stage689_open.py`, `docs/STAGE_689_PLAN.md`) — Circuit Breaker Gate Honesty Pack Remaining-Gate Index; closed under ADR-1386
 - [x] Circuit Breaker Gate Honesty Pack remaining-gate hub (Stage 689 I1: `test_stage689_index_i1.py`, `docs/CIRCUIT_BREAKER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Circuit Breaker Gate Honesty Pack blocker matrix (Stage 689 B1: `test_stage689_blockers_b1.py`, `docs/CIRCUIT_BREAKER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
