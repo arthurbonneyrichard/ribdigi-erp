@@ -159,7 +159,53 @@ def serialize_delivery(row: m.WebhookDelivery) -> dict[str, Any]:
         "next_retry_at": row.next_retry_at,
         "created_at": row.created_at,
         "delivered_at": row.delivered_at,
+        "can_retry": row.status in {STATUS_PENDING_RETRY, STATUS_FAILED},
     }
+
+
+async def list_deliveries(
+    db: AsyncSession,
+    tenant_id: str,
+    webhook_id: str,
+    *,
+    limit: int = 50,
+) -> list[m.WebhookDelivery]:
+    """Recent delivery attempts for one webhook endpoint (Integrations UI)."""
+    await get_endpoint(db, tenant_id, webhook_id)
+    lim = max(1, min(int(limit or 50), 200))
+    rows = (
+        await db.execute(
+            select(m.WebhookDelivery)
+            .where(
+                m.WebhookDelivery.tenant_id == tenant_id,
+                m.WebhookDelivery.webhook_id == webhook_id,
+            )
+            .order_by(m.WebhookDelivery.created_at.desc())
+            .limit(lim)
+        )
+    ).scalars().all()
+    return list(rows)
+
+
+async def get_delivery(
+    db: AsyncSession,
+    tenant_id: str,
+    webhook_id: str,
+    delivery_id: str,
+) -> m.WebhookDelivery:
+    await get_endpoint(db, tenant_id, webhook_id)
+    row = (
+        await db.execute(
+            select(m.WebhookDelivery).where(
+                m.WebhookDelivery.id == delivery_id,
+                m.WebhookDelivery.tenant_id == tenant_id,
+                m.WebhookDelivery.webhook_id == webhook_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Webhook delivery not found")
+    return row
 
 
 async def list_endpoints(
@@ -373,8 +419,16 @@ async def retry_delivery(
     delivery: m.WebhookDelivery,
     *,
     transport: httpx.AsyncBaseTransport | None = None,
+    force: bool = False,
 ) -> m.WebhookDelivery:
-    """Re-attempt a pending_retry delivery with a freshly signed payload."""
+    """Re-attempt a pending_retry (or failed when force=True) delivery with a freshly signed payload."""
+    if delivery.status == STATUS_DELIVERED and not force:
+        raise HTTPException(status_code=400, detail="Delivery already succeeded")
+    if delivery.status not in {STATUS_PENDING_RETRY, STATUS_FAILED} and not force:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Delivery status {delivery.status} cannot be retried",
+        )
     endpoint = await db.get(m.WebhookEndpoint, delivery.webhook_id)
     if not endpoint or endpoint.tenant_id != delivery.tenant_id:
         delivery.status = STATUS_FAILED

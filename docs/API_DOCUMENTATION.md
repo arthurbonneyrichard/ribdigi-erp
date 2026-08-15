@@ -1575,7 +1575,9 @@ Company admins can also manage endpoints in the **Integrations** UI (`/integrati
 **Get:** `GET /webhooks/{webhook_id}`  
 **Update:** `PATCH /webhooks/{webhook_id}` (set `rotate_secret: true` to issue a new `whsec_…`)  
 **Delete:** `DELETE /webhooks/{webhook_id}`  
-**Test:** `POST /webhooks/{webhook_id}/test` (delivers signed `webhook.test`)
+**Test:** `POST /webhooks/{webhook_id}/test` (delivers signed `webhook.test`)  
+**Deliveries:** `GET /webhooks/{webhook_id}/deliveries?limit=50`  
+**Retry delivery:** `POST /webhooks/{webhook_id}/deliveries/{delivery_id}/retry` (pending_retry or failed)
 
 **Create Webhook:**
 ```json

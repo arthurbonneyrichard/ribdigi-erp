@@ -43,6 +43,20 @@ type WebhookRow = {
   secret?: string;
 };
 
+type WebhookDelivery = {
+  id: string;
+  webhook_id: string;
+  event: string;
+  status: string;
+  attempt_count?: number;
+  response_status?: number | null;
+  error?: string | null;
+  next_retry_at?: string | null;
+  created_at?: string;
+  delivered_at?: string | null;
+  can_retry?: boolean;
+};
+
 export default function Page() {
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
   const [hooks, setHooks] = useState<WebhookRow[]>([]);
@@ -51,6 +65,9 @@ export default function Page() {
   const [revealedKey, setRevealedKey] = useState('');
   const [revealedSecret, setRevealedSecret] = useState('');
   const [usage, setUsage] = useState<any>(null);
+  const [deliveriesFor, setDeliveriesFor] = useState<string | null>(null);
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
+  const [deliveriesBusy, setDeliveriesBusy] = useState(false);
 
   const [keyName, setKeyName] = useState('');
   const [keyExpires, setKeyExpires] = useState('');
@@ -162,6 +179,44 @@ export default function Page() {
           (r.data?.error ? ` — ${r.data.error}` : '')
       );
       await refresh();
+      if (deliveriesFor === id) {
+        await loadDeliveries(id);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadDeliveries(id: string) {
+    setError('');
+    setDeliveriesBusy(true);
+    setDeliveriesFor(id);
+    try {
+      const r = await api(`/webhooks/${id}/deliveries?limit=30`);
+      setDeliveries(r.data || []);
+    } catch (err: any) {
+      setError(err.message);
+      setDeliveries([]);
+    } finally {
+      setDeliveriesBusy(false);
+    }
+  }
+
+  async function retryDelivery(webhookId: string, deliveryId: string) {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/webhooks/${webhookId}/deliveries/${deliveryId}/retry`, {
+        method: 'POST',
+        body: '{}',
+      });
+      setMessage(
+        `Retry: ${r.data?.status || 'unknown'}` +
+          (r.data?.response_status != null ? ` (HTTP ${r.data.response_status})` : '') +
+          (r.data?.error ? ` — ${r.data.error}` : '')
+      );
+      await refresh();
+      await loadDeliveries(webhookId);
     } catch (err: any) {
       setError(err.message);
     }
@@ -331,7 +386,7 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ maxWidth: 720 }}>
+      <div className="card" style={{ maxWidth: 960 }}>
         <h2>Webhooks</h2>
         <p className="muted">
           Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256).
@@ -399,6 +454,9 @@ export default function Page() {
                   <button type="button" onClick={() => testWebhook(h.id)}>
                     Test
                   </button>
+                  <button type="button" onClick={() => loadDeliveries(h.id)}>
+                    Deliveries
+                  </button>
                   <button type="button" onClick={() => rotateSecret(h.id)}>
                     Rotate secret
                   </button>
@@ -420,6 +478,69 @@ export default function Page() {
             )}
           </tbody>
         </table>
+        {deliveriesFor && (
+          <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>
+            <strong>
+              Delivery history
+              {hooks.find((h) => h.id === deliveriesFor)
+                ? ` — ${hooks.find((h) => h.id === deliveriesFor)?.url}`
+                : ''}
+            </strong>
+            <p className="muted" style={{ margin: 0 }}>
+              Recent attempts from GET /webhooks/:id/deliveries. Retry re-signs and POSTs the stored
+              payload (pending_retry or failed).
+            </p>
+            {deliveriesBusy ? <p className="muted">Loading…</p> : null}
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Event</th>
+                  <th>Status</th>
+                  <th>HTTP</th>
+                  <th>Attempts</th>
+                  <th>Error</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {deliveries.map((d) => (
+                  <tr key={d.id}>
+                    <td style={{ fontSize: 12 }}>
+                      {d.created_at ? String(d.created_at).replace('T', ' ').slice(0, 19) : '—'}
+                    </td>
+                    <td style={{ fontSize: 12 }}>{d.event}</td>
+                    <td>{d.status}</td>
+                    <td>{d.response_status ?? '—'}</td>
+                    <td>{d.attempt_count ?? 0}</td>
+                    <td style={{ fontSize: 12, maxWidth: 180, wordBreak: 'break-word' }}>
+                      {d.error || '—'}
+                    </td>
+                    <td>
+                      {d.can_retry ? (
+                        <button type="button" onClick={() => retryDelivery(deliveriesFor, d.id)}>
+                          Retry
+                        </button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!deliveries.length && !deliveriesBusy && (
+                  <tr>
+                    <td colSpan={7} className="muted">
+                      No deliveries yet — click Test to create one
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <button type="button" onClick={() => loadDeliveries(deliveriesFor)} disabled={deliveriesBusy}>
+              Refresh deliveries
+            </button>
+          </div>
+        )}
       </div>
     </Shell>
   );
