@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from celery import Celery
-from celery.schedules import schedule
+from celery.schedules import crontab, schedule
 
 from app.config import settings
 
@@ -96,6 +96,10 @@ celery.conf.update(
             "schedule": schedule(
                 run_every=max(1, int(settings.CELERY_AI_SECURITY_INTERVAL_MINUTES)) * 60.0
             ),
+        },
+        "send-weekly-ai-insight-digest": {
+            "task": "app.tasks.send_weekly_ai_insight_digest",
+            "schedule": crontab(minute=0, hour=7, day_of_week="monday"),
         },
     },
 )
