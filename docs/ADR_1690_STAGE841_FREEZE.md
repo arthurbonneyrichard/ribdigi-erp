@@ -31,3 +31,7 @@ Stage 842 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Global Stop Gate, Global Stop Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 842 opened under **ADR-1691** after CONTINUE/NEXT (Tenant MVP Right To Erasure Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1692**. Stage 841 feature scope remains frozen.

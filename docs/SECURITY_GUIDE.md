@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 842 D1 Right To Erasure Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_842_FIDELITY.md` (`test_stage842_fidelity_d1.py`); exit ADR-1692 / `test_stage842_exit_h842x.py`. Honesty: Offline Complete / Right To Erasure Gate honesty / go-live Completes remain MISSING.
 Stage 841 D1 Global Stop Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_841_FIDELITY.md` (`test_stage841_fidelity_d1.py`); exit ADR-1690 / `test_stage841_exit_h841x.py`. Honesty: Offline Complete / Global Stop Gate honesty / go-live Completes remain MISSING.
 Stage 840 D1 Do Not Contact Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_840_FIDELITY.md` (`test_stage840_fidelity_d1.py`); exit ADR-1688 / `test_stage840_exit_h840x.py`. Honesty: Offline Complete / Do Not Contact Gate honesty / go-live Completes remain MISSING.
 Stage 839 D1 WhatsApp Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_839_FIDELITY.md` (`test_stage839_fidelity_d1.py`); exit ADR-1686 / `test_stage839_exit_h839x.py`. Honesty: Offline Complete / WhatsApp Opt Out Gate honesty / go-live Completes remain MISSING.
