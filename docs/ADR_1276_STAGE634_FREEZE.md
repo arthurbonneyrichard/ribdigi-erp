@@ -31,3 +31,7 @@ Stage 635 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, CI Workflow Gate, CI Workflow Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 635 opened under **ADR-1277** after CONTINUE/NEXT (Tenant MVP Environment Config Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1278**. Stage 634 feature scope remains frozen.

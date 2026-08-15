@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 635 track opened (ADR-1277: `test_stage635_open.py`, `docs/STAGE_635_PLAN.md`) — Environment Config Gate Honesty Pack Remaining-Gate Index; closed under ADR-1278
+- [x] Environment Config Gate Honesty Pack remaining-gate hub (Stage 635 I1: `test_stage635_index_i1.py`, `docs/ENVIRONMENT_CONFIG_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Environment Config Gate Honesty Pack blocker matrix (Stage 635 B1: `test_stage635_blockers_b1.py`, `docs/ENVIRONMENT_CONFIG_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 634 / Stage 633 / Stage 392 / CHANGE_IMPACT pointers (Stage 635 P1: `test_stage635_pointers_p1.py`, `docs/ENVIRONMENT_CONFIG_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 635 fidelity sync (D1: `test_stage635_fidelity_d1.py`, `docs/STAGE_635_FIDELITY.md`)
+- [x] Stage 635 exit + freeze (H635x: `test_stage635_exit_h635x.py`, `docs/STAGE_635_EXIT_CRITERIA.md`, ADR-1278)
+
 Stage 634 track opened (ADR-1275: `test_stage634_open.py`, `docs/STAGE_634_PLAN.md`) — CI Workflow Gate Honesty Pack Remaining-Gate Index; closed under ADR-1276
 - [x] CI Workflow Gate Honesty Pack remaining-gate hub (Stage 634 I1: `test_stage634_index_i1.py`, `docs/CI_WORKFLOW_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] CI Workflow Gate Honesty Pack blocker matrix (Stage 634 B1: `test_stage634_blockers_b1.py`, `docs/CI_WORKFLOW_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
