@@ -31,3 +31,7 @@ Stage 679 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Log Retention Gate, Log Retention Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 679 opened under **ADR-1365** after CONTINUE/NEXT (Tenant MVP Metrics Cardinality Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1366**. Stage 678 feature scope remains frozen.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 679 track opened (ADR-1365: `test_stage679_open.py`, `docs/STAGE_679_PLAN.md`) — Metrics Cardinality Gate Honesty Pack Remaining-Gate Index; closed under ADR-1366
+- [x] Metrics Cardinality Gate Honesty Pack remaining-gate hub (Stage 679 I1: `test_stage679_index_i1.py`, `docs/METRICS_CARDINALITY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Metrics Cardinality Gate Honesty Pack blocker matrix (Stage 679 B1: `test_stage679_blockers_b1.py`, `docs/METRICS_CARDINALITY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 678 / Stage 677 / Stage 392 / CHANGE_IMPACT pointers (Stage 679 P1: `test_stage679_pointers_p1.py`, `docs/METRICS_CARDINALITY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 679 fidelity sync (D1: `test_stage679_fidelity_d1.py`, `docs/STAGE_679_FIDELITY.md`)
+- [x] Stage 679 exit + freeze (H679x: `test_stage679_exit_h679x.py`, `docs/STAGE_679_EXIT_CRITERIA.md`, ADR-1366)
+
 Stage 678 track opened (ADR-1363: `test_stage678_open.py`, `docs/STAGE_678_PLAN.md`) — Log Retention Gate Honesty Pack Remaining-Gate Index; closed under ADR-1364
 - [x] Log Retention Gate Honesty Pack remaining-gate hub (Stage 678 I1: `test_stage678_index_i1.py`, `docs/LOG_RETENTION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Log Retention Gate Honesty Pack blocker matrix (Stage 678 B1: `test_stage678_blockers_b1.py`, `docs/LOG_RETENTION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
