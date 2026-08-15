@@ -21,7 +21,14 @@ def compute_variance(actual_cash: float, expected_cash: float) -> float:
 
 
 def normalize_payment_method(method: str | None) -> str:
-    value = (method or "cash").strip().lower()
+    value = (method or "cash").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "digital_wallet": "wallet",
+        "mobile_money": "wallet",
+        "momo": "wallet",
+        "mobilemoney": "wallet",
+    }
+    value = aliases.get(value, value)
     if value in {"cash", "card", "wallet", "credit", "other"}:
         return value
     return "other"

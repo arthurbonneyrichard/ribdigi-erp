@@ -29,3 +29,4 @@
 - **Branded emails (BR-15.2):** `emailer.render_branded_html` wraps outbound HTML (verification, reset, notifications, digests, QT/PO/INV, test, receipt email) with company name + optional logo/print header/footer from Company → Print branding.
 - **Financial report location filters (BR-14.5):** P&L, cash-flow, **balance sheet**, and **trial balance** accept `store_id` / `branch_id` (attributable journals via `_pnl_journal_ids_for_stores`). Reports UI tabs pass the same filters.
 - **Backup failure alerts (BR-16.2):** Scheduled/manual backup failures create an in-app **Backup failed** system notification for company/super admins. `run_scheduled_backup_if_due` returns `ran=false` with `reason=failed|dir_not_writable` (never raises for those paths).
+- **POS tenders (BR-8.1):** `normalize_payment_method` accepts `digital_wallet` / `mobile_money` / `momo` as `wallet`. Product `PATCH` audit details include `changes.{field}.{before,after}` (BR-17.1).

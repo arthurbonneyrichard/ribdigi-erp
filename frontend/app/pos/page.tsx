@@ -1294,7 +1294,7 @@ export default function Page() {
                   <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
-                    <option value="wallet">Wallet</option>
+                    <option value="wallet">Digital wallet</option>
                     <option value="credit">Credit</option>
                   </select>
                 </label>

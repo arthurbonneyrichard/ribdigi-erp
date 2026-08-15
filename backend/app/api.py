@@ -2808,6 +2808,30 @@ async def patch_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
+    tracked = (
+        "name",
+        "sku",
+        "barcode",
+        "cost_price",
+        "selling_price",
+        "reorder_level",
+        "description",
+        "category",
+        "category_id",
+        "brand_id",
+        "unit_id",
+        "tax_rate_id",
+        "tax_supply_class",
+        "tax_exempt",
+        "tracks_batches",
+        "is_active",
+        "weight",
+        "length",
+        "width",
+        "height",
+    )
+    before = {key: getattr(product, key, None) for key in tracked}
+
     data = payload.model_dump(exclude_unset=True)
     if not data:
         return env(catalog_meta_svc.serialize_product(product), "No changes")
@@ -2883,6 +2907,28 @@ async def patch_product(
         elif key == "is_active" and value is not None:
             product.is_active = bool(value)
 
+    after = {key: getattr(product, key, None) for key in tracked}
+
+    def _jsonable(value):
+        from decimal import Decimal
+
+        if isinstance(value, Decimal):
+            return float(value)
+        if hasattr(value, "isoformat"):
+            try:
+                return value.isoformat()
+            except Exception:
+                return str(value)
+        if isinstance(value, float):
+            return round(value, 4)
+        return value
+
+    changes = {
+        key: {"before": _jsonable(before[key]), "after": _jsonable(after[key])}
+        for key in tracked
+        if before.get(key) != after.get(key)
+    }
+
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -2891,7 +2937,11 @@ async def patch_product(
         action="product_update",
         entity="product",
         entity_id=product.id,
-        details={"sku": product.sku, "fields": sorted(payload.model_dump(exclude_unset=True).keys())},
+        details={
+            "sku": product.sku,
+            "fields": sorted(payload.model_dump(exclude_unset=True).keys()),
+            "changes": changes,
+        },
     )
     await db.commit()
     await db.refresh(product)
