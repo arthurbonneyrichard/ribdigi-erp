@@ -31,3 +31,7 @@ Stage 639 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Backup Restore Gate, Backup Restore Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 639 opened under **ADR-1285** after CONTINUE/NEXT (Tenant MVP Rate Limit Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1286**. Stage 638 feature scope remains frozen.
