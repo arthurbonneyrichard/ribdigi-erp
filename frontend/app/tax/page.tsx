@@ -38,6 +38,13 @@ export default function Page() {
   const [calcResult, setCalcResult] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [taxRateManageFilter, setTaxRateManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+
+  const managedRates = rows.filter((r) => {
+    if (taxRateManageFilter === 'all') return true;
+    const active = r.is_active !== false;
+    return taxRateManageFilter === 'inactive' ? !active : active;
+  });
 
   function qs() {
     const params = new URLSearchParams();
@@ -365,7 +372,18 @@ export default function Page() {
         </p>
       </div>
 
-      <table className="table" style={{ marginTop: 16 }}>
+      <select
+        value={taxRateManageFilter}
+        onChange={(e) => setTaxRateManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage tax rate list by status"
+        aria-label="Tax rate status filter"
+        style={{ marginTop: 16, marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
+      <table className="table">
         <thead>
           <tr>
             <th>Name</th>
@@ -380,7 +398,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {managedRates.map((r) => (
             <tr key={r.id}>
               <td>{r.name}</td>
               <td>{r.tax_type}</td>

@@ -9914,14 +9914,20 @@ async def supplier_payment(
 
 
 @api.get("/tax/rates")
-async def taxes(claims=Depends(require_permission("tax", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.TaxRate)
-            .where(m.TaxRate.tenant_id == claims["tenant_id"])
-            .order_by(m.TaxRate.name)
-        )
-    ).scalars().all()
+async def taxes(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("tax", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List tax rates. Optional is_active filters soft-deactivated rows (Tax manage UI)."""
+    stmt = (
+        select(m.TaxRate)
+        .where(m.TaxRate.tenant_id == claims["tenant_id"])
+        .order_by(m.TaxRate.name)
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.TaxRate.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([tax_svc.serialize_tax_rate(r) for r in rows])
 
 
@@ -10128,8 +10134,12 @@ async def reports_tax_filing(
 
 
 @api.get("/taxes/rates")
-async def taxes_alias(claims=Depends(require_permission("tax", "read")), db: AsyncSession = Depends(get_db)):
-    return await taxes(claims, db)
+async def taxes_alias(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("tax", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await taxes(is_active=is_active, claims=claims, db=db)
 
 
 @api.get("/stores")

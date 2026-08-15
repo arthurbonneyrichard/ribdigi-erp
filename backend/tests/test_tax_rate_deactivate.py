@@ -19,6 +19,53 @@ def test_tax_rate_deactivate_ui_wired():
     assert "Activate" in tax
     assert "/tax/rates/" in tax
     assert "is_active" in tax
+    assert "taxRateManageFilter" in tax
+    assert 'aria-label="Tax rate status filter"' in tax
+    assert "managedRates" in tax
+
+
+@pytest.mark.asyncio
+async def test_tax_rates_list_is_active_filter(client, seeded):
+    ac, seed = client
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+    created = await ac.post(
+        "/api/v1/tax/rates",
+        headers=admin,
+        json={
+            "name": "Filter Demo VAT",
+            "rate": 8.25,
+            "tax_type": "vat",
+            "pricing_mode": "exclusive",
+            "is_default": False,
+            "is_active": True,
+        },
+    )
+    assert created.status_code == 200, created.text
+    rid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/tax/rates/{rid}",
+        headers=admin,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/tax/rates", headers=admin)
+    assert rid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/tax/rates?is_active=true", headers=admin)
+    assert rid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/tax/rates?is_active=false", headers=admin)
+    assert rid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
+
+    alias = await ac.get("/api/v1/taxes/rates?is_active=false", headers=admin)
+    assert alias.status_code == 200
+    assert rid in {r["id"] for r in alias.json()["data"]}
 
 
 @pytest.mark.asyncio

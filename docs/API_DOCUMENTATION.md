@@ -1248,7 +1248,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ## 12. Tax Management
 
 ### 12.1 Tax Rates
-**List:** `GET /tax/rates`  
+**List:** `GET /tax/rates` (`is_active=true|false` optional — Tax manage All/Active/Inactive; default returns all)  
 **Create:** `POST /tax/rates`  
 **Get:** `GET /tax/rates/{rate_id}`  
 **Update:** `PATCH /tax/rates/{rate_id}` — `{ name?, rate?, tax_type?, pricing_mode?, components?, is_reverse_charge?, is_active? }` (soft-deactivate via `is_active=false` clears `is_default`; Tax UI **Activate** / **Deactivate**)  
