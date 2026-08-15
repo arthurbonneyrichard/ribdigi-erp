@@ -950,6 +950,8 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 
 **Numbering:** `GET|PATCH /sales/settings` exposes `sales_order_numbering`. Create (and quotation convert) allocates `{PREFIX}-{YYYY}-{NNNN}` (default `SO`) — not a timestamp stamp (BR-7.3 / BR-20.4).
 
+**Cancel:** `POST /sales/orders/{order_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to order `notes` as `Cancel: …` and stored in audit `so_cancelled.details.reason`); allowed for `draft` / `confirmed` / `processing` (`can_cancel`); releases soft reservations; blocked after ship/deliver/invoiced. Sales Orders **Cancel reason** UI (BR-7.3).
+
 **Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `cancelled`
 
 ### 7.5 Invoices

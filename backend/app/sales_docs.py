@@ -607,7 +607,17 @@ async def deliver_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.Sa
     )
 
 
-async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+async def cancel_order(
+    db: AsyncSession,
+    tenant_id: str,
+    order_id: str,
+    *,
+    user_id: str | None = None,
+    reason: str | None = None,
+) -> m.SalesOrder:
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
     order = await get_order(db, tenant_id, order_id)
     if order.status not in ORDER_CANCELABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel order in status {order.status}")
@@ -616,7 +626,18 @@ async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.Sal
 
         await release_order_reservations(db, tenant_id=tenant_id, order_id=order.id)
     order.status = "cancelled"
+    order.notes = ((order.notes or "") + f"\nCancel: {reason_s}").strip()
     order.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="so_cancelled",
+            entity="sales_order",
+            entity_id=order.id,
+            details={"order_number": order.order_number, "reason": reason_s},
+        )
+    )
     await db.flush()
     return order
 

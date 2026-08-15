@@ -77,6 +77,7 @@ export default function Page() {
   const [creditLimit, setCreditLimit] = useState('0');
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
   const [quoteRejectReason, setQuoteRejectReason] = useState('');
+  const [soCancelReason, setSoCancelReason] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
@@ -565,10 +566,21 @@ export default function Page() {
       }
       body = { ...body, reason };
     }
+    if (path.includes('/orders/') && path.endsWith('/cancel')) {
+      const reason = soCancelReason.trim();
+      if (!reason) {
+        setError('Enter a cancel reason before cancelling a sales order');
+        return;
+      }
+      body = { ...body, reason };
+    }
     try {
       const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
       if (path.includes('/quotations/') && path.endsWith('/reject')) {
         setQuoteRejectReason('');
+      }
+      if (path.includes('/orders/') && path.endsWith('/cancel')) {
+        setSoCancelReason('');
       }
       setMessage(r.message || label);
       setSelected(r.data);
@@ -1222,7 +1234,23 @@ export default function Page() {
       )}
 
       {tab === 'orders' && (
-        <table className="table">
+        <>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Cancel reason{' '}
+              <input
+                value={soCancelReason}
+                onChange={(e) => setSoCancelReason(e.target.value)}
+                placeholder="Required before Cancel"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Appended to order notes and audit (<code>POST .../orders/.../cancel</code>{' '}
+              {'{ reason }'}).
+            </p>
+          </div>
+          <table className="table">
           <thead>
             <tr>
               <th>Number</th>
@@ -1231,6 +1259,7 @@ export default function Page() {
               <th>Reserved</th>
               <th>Delivery</th>
               <th>Total</th>
+              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1255,6 +1284,9 @@ export default function Page() {
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
                 </td>
                 <td>{formatNumber(o.total_amount, fmt)}</td>
+                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                  {o.notes || '—'}
+                </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(o)}>View</button>
                   {o.status === 'draft' && (
@@ -1306,6 +1338,7 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </>
       )}
 
       {tab === 'invoices' && (

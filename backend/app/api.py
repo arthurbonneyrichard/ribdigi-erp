@@ -141,6 +141,7 @@ from app.schemas import (
     RefreshRequest,
     SalesInvoiceCreate,
     SalesOrderCreate,
+    SalesOrderCancel,
     SalesOrderConfirm,
     SalesQuotationCreate,
     SalesQuotationReject,
@@ -5668,12 +5669,19 @@ async def deliver_sales_order(
 @api.post("/sales/orders/{order_id}/cancel")
 async def cancel_sales_order(
     order_id: str,
+    payload: SalesOrderCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
-    order = await sales_docs_svc.cancel_order(db, claims["tenant_id"], order_id)
+    order = await sales_docs_svc.cancel_order(
+        db,
+        claims["tenant_id"],
+        order_id,
+        user_id=claims["sub"],
+        reason=payload.reason,
+    )
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Order cancelled")
 
