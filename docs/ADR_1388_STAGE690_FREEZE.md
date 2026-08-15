@@ -31,3 +31,7 @@ Stage 691 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Retry Backoff Gate, Retry Backoff Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 691 opened under **ADR-1389** after CONTINUE/NEXT (Tenant MVP Idempotency Key Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1390**. Stage 690 feature scope remains frozen.

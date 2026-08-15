@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 691 D1 Idempotency Key Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_691_FIDELITY.md` (`test_stage691_fidelity_d1.py`); Offline Complete / Idempotency Key Gate honesty / go-live still MISSING.
 Stage 690 D1 Retry Backoff Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_690_FIDELITY.md` (`test_stage690_fidelity_d1.py`); Offline Complete / Retry Backoff Gate honesty / go-live still MISSING.
 Stage 689 D1 Circuit Breaker Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_689_FIDELITY.md` (`test_stage689_fidelity_d1.py`); Offline Complete / Circuit Breaker Gate honesty / go-live still MISSING.
 Stage 688 D1 Dependency Health Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_688_FIDELITY.md` (`test_stage688_fidelity_d1.py`); Offline Complete / Dependency Health Gate honesty / go-live still MISSING.

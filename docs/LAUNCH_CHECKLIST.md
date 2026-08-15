@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 691 track opened (ADR-1389: `test_stage691_open.py`, `docs/STAGE_691_PLAN.md`) — Idempotency Key Gate Honesty Pack Remaining-Gate Index; closed under ADR-1390
+- [x] Idempotency Key Gate Honesty Pack remaining-gate hub (Stage 691 I1: `test_stage691_index_i1.py`, `docs/IDEMPOTENCY_KEY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Idempotency Key Gate Honesty Pack blocker matrix (Stage 691 B1: `test_stage691_blockers_b1.py`, `docs/IDEMPOTENCY_KEY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 690 / Stage 689 / Stage 392 / CHANGE_IMPACT pointers (Stage 691 P1: `test_stage691_pointers_p1.py`, `docs/IDEMPOTENCY_KEY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 691 fidelity sync (D1: `test_stage691_fidelity_d1.py`, `docs/STAGE_691_FIDELITY.md`)
+- [x] Stage 691 exit + freeze (H691x: `test_stage691_exit_h691x.py`, `docs/STAGE_691_EXIT_CRITERIA.md`, ADR-1390)
+
 Stage 690 track opened (ADR-1387: `test_stage690_open.py`, `docs/STAGE_690_PLAN.md`) — Retry Backoff Gate Honesty Pack Remaining-Gate Index; closed under ADR-1388
 - [x] Retry Backoff Gate Honesty Pack remaining-gate hub (Stage 690 I1: `test_stage690_index_i1.py`, `docs/RETRY_BACKOFF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Retry Backoff Gate Honesty Pack blocker matrix (Stage 690 B1: `test_stage690_blockers_b1.py`, `docs/RETRY_BACKOFF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
