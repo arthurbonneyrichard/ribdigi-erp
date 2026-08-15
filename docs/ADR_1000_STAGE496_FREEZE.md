@@ -31,3 +31,7 @@ Stage 497 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cashier POS Day-One, Cashier POS Day-One honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 497 opened under **ADR-1001** after CONTINUE/NEXT (Tenant MVP Cashier Quickstart Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1002**. Stage 496 feature scope remains frozen.

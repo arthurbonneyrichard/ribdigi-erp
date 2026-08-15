@@ -1,0 +1,77 @@
+{
+  "id": "cashier-quickstart-honesty-pack-rg-blockers",
+  "stage": 497,
+  "pack": "B1",
+  "doc": "docs/CASHIER_QUICKSTART_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CASHIER_QUICKSTART_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "cashier_quickstart_pack_remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "cashier_quickstart_honesty_complete_claimed": false,
+  "cashier_quickstart_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "cashier_quickstart_honesty_complete_claimed": "REMAINING",
+    "cashier_quickstart_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_cashier_quickstart_honesty": "NON_CLAIM",
+    "cashier_quickstart_pack_as_cashier_quickstart_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "cashier_quickstart_honesty_complete_claimed_flag": "false",
+    "cashier_quickstart_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "cqhprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-honesty",
+      "title": "Mark Cashier Quickstart honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-as-golive",
+      "title": "Mark Cashier Quickstart as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-prior-nonclaim",
+      "title": "Mark CASHIER_QUICKSTART_PACK as non-claim for cashier-quickstart Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-checklist-remaining",
+      "title": "Offline Complete / Cashier Quickstart / Cashier Quickstart honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 497 B1 Cashier Quickstart Honesty Pack RG blocker matrix packaging only."
+}
