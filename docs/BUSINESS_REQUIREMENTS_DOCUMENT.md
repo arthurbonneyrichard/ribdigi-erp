@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 740 D1 Report To Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_740_FIDELITY.md` (`test_stage740_fidelity_d1.py`); Offline Complete / Report To Gate honesty / go-live still MISSING.
 Stage 739 D1 Expect Ct Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_739_FIDELITY.md` (`test_stage739_fidelity_d1.py`); Offline Complete / Expect Ct Gate honesty / go-live still MISSING.
 Stage 738 D1 Trusted Types Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_738_FIDELITY.md` (`test_stage738_fidelity_d1.py`); Offline Complete / Trusted Types Gate honesty / go-live still MISSING.
 Stage 737 D1 Clear Site Data Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_737_FIDELITY.md` (`test_stage737_fidelity_d1.py`); Offline Complete / Clear Site Data Gate honesty / go-live still MISSING.

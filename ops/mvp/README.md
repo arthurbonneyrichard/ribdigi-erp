@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/REPORT_TO_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/report-to-gate-honesty-pack-remaining-gate.json` — Stage 740 I1
+- `docs/REPORT_TO_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/report-to-gate-honesty-pack-rg-blockers.json` — Stage 740 B1
+- `docs/REPORT_TO_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/report-to-gate-honesty-pack-rg-pointers.json` — Stage 740 P1
 - `docs/EXPECT_CT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/expect-ct-gate-honesty-pack-remaining-gate.json` — Stage 739 I1
 - `docs/EXPECT_CT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/expect-ct-gate-honesty-pack-rg-blockers.json` — Stage 739 B1
 - `docs/EXPECT_CT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/expect-ct-gate-honesty-pack-rg-pointers.json` — Stage 739 P1
