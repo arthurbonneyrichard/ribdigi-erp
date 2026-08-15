@@ -31,3 +31,9 @@ Stage 471 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Connectivity Badge, Connectivity Badge honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 471 opened under **ADR-949** after CONTINUE/NEXT (Tenant MVP Offline Queue UI Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-950**. Stage 470 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 470 runner-up outline was approved and opened (ADR-949); freeze ADR-950. Do not reopen Stage 470 scope.

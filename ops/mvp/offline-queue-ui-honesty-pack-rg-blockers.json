@@ -1,0 +1,77 @@
+{
+  "id": "offline-queue-ui-honesty-pack-rg-blockers",
+  "stage": 471,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_QUEUE_UI_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_QUEUE_UI_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_queue_ui_pack_remaining_gate": "docs/OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_queue_ui_honesty_complete_claimed": false,
+  "offline_queue_ui_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_queue_ui_honesty_complete_claimed": "REMAINING",
+    "offline_queue_ui_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_queue_ui_honesty": "NON_CLAIM",
+    "offline_queue_ui_pack_as_queue_ui_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_queue_ui_honesty_complete_claimed_flag": "false",
+    "offline_queue_ui_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "oquihprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oquihprb-honesty",
+      "title": "Mark Queue UI honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oquihprb-as-golive",
+      "title": "Mark Queue UI as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oquihprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oquihprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oquihprb-oqui-nonclaim",
+      "title": "Mark OFFLINE_QUEUE_UI_PACK as non-claim for queue-ui Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oquihprb-checklist-remaining",
+      "title": "Offline Complete / Queue UI / Queue UI honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 471 B1 Offline Queue UI Honesty Pack RG blocker matrix packaging only."
+}
