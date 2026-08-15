@@ -361,7 +361,7 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 ```
 
 ### 3.5a Branches (BR-2.2)
-**List:** `GET /branches` (`active_only=true` optional)  
+**List:** `GET /branches` (`active_only=true` optional; `is_active=true|false` for Multi-Store manage filter)  
 **Create:** `POST /branches`  
 **Update:** `PATCH /branches/{branch_id}`
 
@@ -379,7 +379,7 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 PATCH supports `name`, `address`, `phone`, `email`, `manager_id`, `clear_manager`, `is_active`. Deactivate with `is_active: false` (soft; row retained). Code is unique per tenant and immutable after create.
 
 ### 3.5a2 Departments (BR-2.5)
-**List:** `GET /departments` (`branch_id`, `active_only` optional)  
+**List:** `GET /departments` (`branch_id`, `active_only` optional; `is_active=true|false` for Multi-Store manage filter)  
 **Create:** `POST /departments`  
 **Update:** `PATCH /departments/{department_id}`
 
@@ -395,7 +395,7 @@ PATCH supports `name`, `address`, `phone`, `email`, `manager_id`, `clear_manager
 PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`, `is_active`. Soft-deactivate with `is_active: false`. Code unique per tenant.
 
 ### 3.5b Warehouses (BR-2.4)
-**List:** `GET /warehouses`  
+**List:** `GET /warehouses` (`is_active=true|false` optional — Multi-Store manage filter; default returns all)  
 **Get:** `GET /warehouses/{warehouse_id}`  
 **Create:** `POST /warehouses`  
 **Update:** `PATCH /warehouses/{warehouse_id}` — partial fields include name/type/manager/address/capacity/store plus soft-deactivate via `is_active` (Multi-Store **Activate** / **Deactivate**; inactive hidden from Inventory/Reports pickers; stock movements, warehouse transfers, and PO warehouse assign return 400)
@@ -1276,7 +1276,7 @@ Tax UI (`/tax`) period controls include store picker.
 ## 13. Multi-Store Management
 
 ### 13.1 Stores
-**List:** `GET /stores`  
+**List:** `GET /stores` (`is_active=true|false` optional — Multi-Store manage All/Active/Inactive; default returns all)  
 **Create:** `POST /stores`  
 **Get:** `GET /stores/{store_id}`  
 **Update:** `PATCH /stores/{store_id}`

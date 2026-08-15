@@ -10133,12 +10133,18 @@ async def taxes_alias(claims=Depends(require_permission("tax", "read")), db: Asy
 
 
 @api.get("/stores")
-async def stores(claims=Depends(require_permission("stores", "read")), db: AsyncSession = Depends(get_db)):
+async def stores(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List stores. Optional is_active filters soft-deactivated rows (Multi-Store manage UI)."""
     from app import cash_drawer as cash_drawer_svc
 
-    rows = (
-        await db.execute(select(m.Store).where(m.Store.tenant_id == claims["tenant_id"]))
-    ).scalars().all()
+    stmt = select(m.Store).where(m.Store.tenant_id == claims["tenant_id"])
+    if is_active is not None:
+        stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     return env(
         [
             stores_svc.serialize_store(
@@ -10667,12 +10673,18 @@ async def get_store(
 
 
 @api.get("/warehouses")
-async def warehouses(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
+async def warehouses(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List warehouses. Optional is_active filters soft-deactivated rows (Multi-Store manage UI)."""
     from app import warehouses as warehouses_svc
 
-    rows = (
-        await db.execute(select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"]))
-    ).scalars().all()
+    stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"])
+    if is_active is not None:
+        stmt = stmt.where(m.Warehouse.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([warehouses_svc.serialize_warehouse(r) for r in rows])
 
 
