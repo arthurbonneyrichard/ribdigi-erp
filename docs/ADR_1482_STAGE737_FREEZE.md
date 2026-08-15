@@ -31,3 +31,7 @@ Stage 738 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Clear Site Data Gate, Clear Site Data Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 738 opened under **ADR-1483** after CONTINUE/NEXT (Tenant MVP Trusted Types Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1484**. Stage 737 feature scope remains frozen.

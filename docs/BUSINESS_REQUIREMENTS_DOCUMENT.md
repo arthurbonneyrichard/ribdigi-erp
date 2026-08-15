@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 738 D1 Trusted Types Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_738_FIDELITY.md` (`test_stage738_fidelity_d1.py`); Offline Complete / Trusted Types Gate honesty / go-live still MISSING.
 Stage 737 D1 Clear Site Data Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_737_FIDELITY.md` (`test_stage737_fidelity_d1.py`); Offline Complete / Clear Site Data Gate honesty / go-live still MISSING.
 Stage 736 D1 Subresource Integrity Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_736_FIDELITY.md` (`test_stage736_fidelity_d1.py`); Offline Complete / Subresource Integrity Gate honesty / go-live still MISSING.
 Stage 735 D1 Cross Origin Resource Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_735_FIDELITY.md` (`test_stage735_fidelity_d1.py`); Offline Complete / Cross Origin Resource Gate honesty / go-live still MISSING.
