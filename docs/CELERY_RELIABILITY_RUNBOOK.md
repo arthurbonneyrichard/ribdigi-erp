@@ -68,7 +68,7 @@ Broker down while Celery is enabled reports `celery_broker.status=degraded` (ove
 Flags in checklist / evidence (honesty):
 
 - `live_broker_soak_executed: false` until staging soak is logged.
-- `ai_nightly_claimed: false` — LLM/nightly AI forecast jobs remain under the AI functions gate; rule-based security scans and weekly insight digests are registered.
+- `ai_nightly_claimed: false` — AI nightly LLM forecast jobs remain under the AI functions gate; rule-based security scans and weekly insight digests are registered.
 - `ci_queue_drained_claimed: false` — packaging tests do not prove queue drain.
 
 ## Remaining (post-MVP / other gates)
