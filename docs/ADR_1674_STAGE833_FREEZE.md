@@ -31,3 +31,7 @@ Stage 834 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Frequency Cap Gate, Frequency Cap Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 834 opened under **ADR-1675** after CONTINUE/NEXT (Tenant MVP Quiet Hours Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1676**. Stage 833 feature scope remains frozen.
