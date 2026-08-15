@@ -1031,6 +1031,8 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 483 D1 Offline Hold Reserve Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_483_FIDELITY.md` (`test_stage483_fidelity_d1.py`); Offline Complete / Hold Reserve honesty / go-live still MISSING.
+
 Stage 482 D1 Offline Sale Flush Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_482_FIDELITY.md` (`test_stage482_fidelity_d1.py`); Offline Complete / Sale Flush honesty / go-live still MISSING.
 
 Stage 481 D1 Offline Stock Authority Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_481_FIDELITY.md` (`test_stage481_fidelity_d1.py`); Offline Complete / Stock Authority honesty / go-live still MISSING.

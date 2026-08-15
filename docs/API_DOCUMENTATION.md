@@ -1862,6 +1862,8 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`): 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`): status uptime pack remaining-gate index packaging only — blocker matrix / Stage 40/311/310/36 pointers; no new public API Completes; live status page / measured uptime / go-live remain deferred.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`): commercial liability pack remaining-gate index packaging only — blocker matrix / Stage 77/312/311/310 pointers; no new public API Completes; liability-cap signed / indemnity / go-live remain deferred.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`): SBOM disclosure pack remaining-gate index packaging only — blocker matrix / Stage 40/313/312/38 pointers; no new public API Completes; live SBOM pipeline / Cosign / go-live remain deferred.
+Stage 483 Offline Hold Reserve Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_483_FIDELITY.md` (packaging only; no Offline Complete / Hold Reserve honesty / go-live Completes).
+
 Stage 482 Offline Sale Flush Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_482_FIDELITY.md` (packaging only; no Offline Complete / Sale Flush honesty / go-live Completes).
 
 Stage 481 Offline Stock Authority Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_481_FIDELITY.md` (packaging only; no Offline Complete / Stock Authority honesty / go-live Completes).
