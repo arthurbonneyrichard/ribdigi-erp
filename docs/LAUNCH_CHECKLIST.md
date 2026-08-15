@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 561 track opened (ADR-1129: `test_stage561_open.py`, `docs/STAGE_561_PLAN.md`) — Vuln Disclosure Honesty Pack Remaining-Gate Index; closed under ADR-1130
+- [x] Vuln Disclosure Honesty Pack remaining-gate hub (Stage 561 I1: `test_stage561_index_i1.py`, `docs/VULN_DISCLOSURE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Vuln Disclosure Honesty Pack blocker matrix (Stage 561 B1: `test_stage561_blockers_b1.py`, `docs/VULN_DISCLOSURE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 560 / Stage 559 / Stage 392 / CHANGE_IMPACT pointers (Stage 561 P1: `test_stage561_pointers_p1.py`, `docs/VULN_DISCLOSURE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 561 fidelity sync (D1: `test_stage561_fidelity_d1.py`, `docs/STAGE_561_FIDELITY.md`)
+- [x] Stage 561 exit + freeze (H561x: `test_stage561_exit_h561x.py`, `docs/STAGE_561_EXIT_CRITERIA.md`, ADR-1130)
+
 Stage 560 track opened (ADR-1127: `test_stage560_open.py`, `docs/STAGE_560_PLAN.md`) — TOS AUP Honesty Pack Remaining-Gate Index; closed under ADR-1128
 - [x] TOS AUP Honesty Pack remaining-gate hub (Stage 560 I1: `test_stage560_index_i1.py`, `docs/TOS_AUP_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] TOS AUP Honesty Pack blocker matrix (Stage 560 B1: `test_stage560_blockers_b1.py`, `docs/TOS_AUP_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

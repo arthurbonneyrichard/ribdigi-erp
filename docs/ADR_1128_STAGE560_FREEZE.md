@@ -31,3 +31,7 @@ Stage 561 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, TOS AUP, TOS AUP honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 561 opened under **ADR-1129** after CONTINUE/NEXT (Tenant MVP Vuln Disclosure Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1130**. Stage 560 feature scope remains frozen.
