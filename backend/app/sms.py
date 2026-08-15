@@ -11,6 +11,7 @@ import httpx
 from fastapi import HTTPException
 
 from app.config import settings
+from app.sms_settings import SmsConfig, resolve_sms_config
 
 logger = logging.getLogger(__name__)
 
@@ -34,30 +35,23 @@ def get_dev_outbox() -> list[dict[str, Any]]:
     return list(_DEV_OUTBOX)
 
 
-def twilio_configured() -> bool:
-    return bool(
-        (settings.TWILIO_ACCOUNT_SID or "").strip()
-        and (settings.TWILIO_AUTH_TOKEN or "").strip()
-        and (settings.TWILIO_FROM_NUMBER or "").strip()
-    )
+def twilio_configured(tenant: Any | None = None) -> bool:
+    return resolve_sms_config(tenant).configured
 
 
-def _delivery_mode() -> str:
-    if not settings.SMS_ENABLED:
+def _delivery_mode(cfg: SmsConfig | None = None) -> str:
+    c = cfg or resolve_sms_config(None)
+    if not c.enabled:
         return "disabled"
-    if twilio_configured():
+    if c.configured:
         return "twilio"
     return "console"
 
 
-def sms_status() -> dict:
-    return {
-        "enabled": bool(settings.SMS_ENABLED),
-        "configured": twilio_configured(),
-        "mode": _delivery_mode(),
-        "from_number": settings.TWILIO_FROM_NUMBER or None,
-        "account_sid_set": bool((settings.TWILIO_ACCOUNT_SID or "").strip()),
-    }
+def sms_status(tenant: Any | None = None) -> dict:
+    from app.sms_settings import sms_status as _sms_status
+
+    return _sms_status(tenant)
 
 
 def normalize_phone(raw: str | None) -> str | None:
@@ -79,12 +73,19 @@ def normalize_phone(raw: str | None) -> str | None:
     return digits
 
 
-async def send_sms(*, to: str, body: str) -> SmsResult:
+async def send_sms(
+    *,
+    to: str,
+    body: str,
+    tenant: Any | None = None,
+    cfg: SmsConfig | None = None,
+) -> SmsResult:
     phone = normalize_phone(to)
+    c = cfg or resolve_sms_config(tenant)
     if not phone:
-        return SmsResult(sent=False, mode=_delivery_mode(), error="Invalid phone number", recipients=[])
+        return SmsResult(sent=False, mode=_delivery_mode(c), error="Invalid phone number", recipients=[])
 
-    mode = _delivery_mode()
+    mode = _delivery_mode(c)
     recipients = [phone]
     if mode == "disabled":
         return SmsResult(sent=False, mode="disabled", recipients=recipients)
@@ -103,9 +104,9 @@ async def send_sms(*, to: str, body: str) -> SmsResult:
         logger.info("SMS console to=%s body=%s", phone, text[:80])
         return SmsResult(sent=True, mode="console", recipients=recipients)
 
-    sid = settings.TWILIO_ACCOUNT_SID.strip()
-    token = settings.TWILIO_AUTH_TOKEN.strip()
-    from_number = settings.TWILIO_FROM_NUMBER.strip()
+    sid = (c.account_sid or "").strip()
+    token = (c.auth_token or "").strip()
+    from_number = (c.from_number or "").strip()
     if not phone.startswith("+"):
         return SmsResult(
             sent=False,
@@ -136,14 +137,18 @@ async def send_sms(*, to: str, body: str) -> SmsResult:
         return SmsResult(sent=False, mode="twilio", recipients=recipients, error=str(exc)[:500])
 
 
-async def send_notification_sms(*, to: str, title: str, message: str) -> SmsResult:
+async def send_notification_sms(
+    *, to: str, title: str, message: str, tenant: Any | None = None
+) -> SmsResult:
     body = f"RIBDIGI: {title} — {message}"
-    return await send_sms(to=to, body=body)
+    return await send_sms(to=to, body=body, tenant=tenant)
 
 
-async def send_test_sms(*, to: str) -> SmsResult:
-    if not settings.SMS_ENABLED:
+async def send_test_sms(*, to: str, tenant: Any | None = None) -> SmsResult:
+    c = resolve_sms_config(tenant)
+    if not c.enabled:
         raise HTTPException(status_code=400, detail="SMS_ENABLED is false")
-    if not twilio_configured() and _delivery_mode() != "console":
+    mode = _delivery_mode(c)
+    if not c.configured and mode != "console":
         raise HTTPException(status_code=400, detail="Twilio is not configured")
-    return await send_sms(to=to, body="RIBDIGI ERP test SMS. Delivery is working.")
+    return await send_sms(to=to, body="RIBDIGI ERP test SMS. Delivery is working.", cfg=c, tenant=tenant)

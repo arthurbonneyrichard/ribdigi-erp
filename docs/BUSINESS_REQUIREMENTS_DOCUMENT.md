@@ -823,7 +823,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Acceptance Criteria:**
   - [ ] **Dashboard:** In-app notification bell with badge count
   - [ ] **Email:** SMTP integration; HTML email templates
-  - [ ] **SMS:** SMS gateway integration (Twilio, regional providers)
+  - [x] **SMS:** SMS gateway integration (Twilio, regional providers) (`GET|PATCH /settings/sms` tenant Twilio overrides → env `TWILIO_*` → console; `POST /settings/sms/test`; auth token encrypted; notifications + POS receipt SMS use tenant config)
   - [ ] User preference for channel per notification type
 
 ---

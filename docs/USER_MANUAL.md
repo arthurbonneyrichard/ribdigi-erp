@@ -1106,6 +1106,12 @@ Go to **Company → Email / SMTP** to configure tenant SMTP (overrides process e
 - Default sender name and from email
 - **Send test email to me** to verify delivery (console mode when SMTP is unset)
 
+### 15.5 SMS / Twilio Settings
+
+Go to **Company → SMS / Twilio** to configure tenant Twilio credentials (overrides process env when Account SID + From + Auth token are set):
+- Account SID, Auth token (encrypted; leave blank on save to keep), From number (E.164)
+- Save your profile phone, then **Send test SMS to me** (console mode when Twilio is unset)
+
 ---
 
 ## 16. Troubleshooting & FAQs

@@ -337,6 +337,19 @@ Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `pla
 }
 ```
 
+### 3.5z2 SMS / Twilio settings (BR-15.2)
+**Get:** `GET /settings/sms` — resolved status (`source`: `tenant` | `env` | `none`); never returns auth token (only `has_auth_token`).  
+**Patch:** `PATCH /settings/sms` — tenant Twilio override on `tenants.sms_settings` (`auth_token_enc`). Omit `auth_token` to keep; `clear_auth_token: true` removes it. Requires account_sid + from_number + token for tenant override.  
+**Test:** `POST /settings/sms/test` — optional `{ "to": "+233..." }` or profile phone; console when unset.
+
+```json
+{
+  "account_sid": "ACxxxxxxxx",
+  "auth_token": "secret",
+  "from_number": "+15551234567"
+}
+```
+
 ### 3.5a Branches (BR-2.2)
 **List:** `GET /branches` (`active_only=true` optional)  
 **Create:** `POST /branches`  

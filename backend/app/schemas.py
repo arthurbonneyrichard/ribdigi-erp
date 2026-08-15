@@ -64,6 +64,13 @@ class SmsTestRequest(BaseModel):
     to: str | None = None
 
 
+class SmsSettingsUpdate(BaseModel):
+    account_sid: str | None = None
+    auth_token: str | None = None
+    clear_auth_token: bool = False
+    from_number: str | None = None
+
+
 class ProfileUpdate(BaseModel):
     full_name: str | None = None
     phone: str | None = None
