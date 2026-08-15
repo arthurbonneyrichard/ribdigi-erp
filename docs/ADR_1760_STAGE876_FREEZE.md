@@ -31,3 +31,7 @@ Stage 877 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cross Border Gate, Cross Border Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 877 opened under **ADR-1761** after CONTINUE/NEXT (Tenant MVP Disposal Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1762**. Stage 876 feature scope remains frozen.
