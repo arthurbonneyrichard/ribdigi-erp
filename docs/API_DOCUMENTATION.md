@@ -1152,11 +1152,14 @@ Posting a journal (`POST /accounting/journal-entries`) rejects `entry_date` (def
   "description": "Adjusting entry for depreciation",
   "entry_date": "2026-08-01",
   "lines": [
-    { "account_code": "6000", "debit": 100.00, "credit": 0.00 },
+    { "account_code": "6000", "debit": 40.00, "credit": 0.00 },
+    { "account_code": "5000", "debit": 60.00, "credit": 0.00 },
     { "account_code": "1000", "debit": 0.00, "credit": 100.00 }
   ]
 }
 ```
+
+`lines` requires **≥2** rows; each line must have `account_id` or `account_code`, a non-zero debit **or** credit (not both), and Σ debit = Σ credit within ±0.01. Accounting Manual journal UI supports Add/Remove lines (default two) with live balance (BR-10.2).
 
 ### 10.3 Cash & Bank Accounts
 **List liquid:** `GET /accounting/liquid-accounts`  

@@ -22,9 +22,9 @@ export default function Page() {
   const [cheques, setCheques] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
-  const [debitCode, setDebitCode] = useState('6000');
-  const [creditCode, setCreditCode] = useState('1000');
-  const [amount, setAmount] = useState('100');
+  type ManualLine = { account_code: string; debit: string; credit: string };
+  const emptyManualLine = (): ManualLine => ({ account_code: '', debit: '', credit: '' });
+  const [manualLines, setManualLines] = useState<ManualLine[]>([emptyManualLine(), emptyManualLine()]);
   const [description, setDescription] = useState('Manual adjusting entry');
   const [message, setMessage] = useState('');
   const [reconAccountId, setReconAccountId] = useState('');
@@ -224,18 +224,39 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const value = Number(amount);
+      const lines = manualLines.map((l) => ({
+        account_code: l.account_code.trim(),
+        debit: Math.max(0, Number(l.debit) || 0),
+        credit: Math.max(0, Number(l.credit) || 0),
+      }));
+      if (lines.length < 2) {
+        throw new Error('Journal entry requires at least two lines');
+      }
+      for (const line of lines) {
+        if (!line.account_code) throw new Error('Each line needs an account code');
+        if (line.debit <= 0 && line.credit <= 0) {
+          throw new Error('Each line needs a debit or credit amount');
+        }
+        if (line.debit > 0 && line.credit > 0) {
+          throw new Error('A line cannot have both debit and credit');
+        }
+      }
+      const debitTotal = lines.reduce((s, l) => s + l.debit, 0);
+      const creditTotal = lines.reduce((s, l) => s + l.credit, 0);
+      if (Math.abs(debitTotal - creditTotal) > 0.01) {
+        throw new Error(
+          `Entry is unbalanced (debit ${debitTotal.toFixed(2)} ≠ credit ${creditTotal.toFixed(2)})`,
+        );
+      }
       await api('/accounting/journal-entries', {
         method: 'POST',
         body: JSON.stringify({
           description,
-          lines: [
-            { account_code: debitCode, debit: value, credit: 0 },
-            { account_code: creditCode, debit: 0, credit: value },
-          ],
+          lines,
         }),
       });
       setMessage('Journal posted');
+      setManualLines([emptyManualLine(), emptyManualLine()]);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -703,6 +724,10 @@ export default function Page() {
     return connectionManageFilter === 'inactive' ? !active : active;
   });
 
+  const manualDebitTotal = manualLines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+  const manualCreditTotal = manualLines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
+  const manualBalanced = Math.abs(manualDebitTotal - manualCreditTotal) <= 0.01;
+
   return (
     <Shell>
       <h1>Accounting</h1>
@@ -802,24 +827,115 @@ export default function Page() {
 
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Manual journal</h3>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Multi-line adjusting entries (BR-10.2). At least two lines; Σ debit must equal Σ credit
+              (±0.01). Each line is debit <em>or</em> credit.
+            </p>
             <div style={{ display: 'grid', gap: 8 }}>
               <input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
               />
-              <input
-                value={debitCode}
-                onChange={(e) => setDebitCode(e.target.value)}
-                placeholder="Debit account code"
-              />
-              <input
-                value={creditCode}
-                onChange={(e) => setCreditCode(e.target.value)}
-                placeholder="Credit account code"
-              />
-              <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-              <button onClick={postManual}>Post balanced entry</button>
+              <table className="table" aria-label="Manual journal lines">
+                <thead>
+                  <tr>
+                    <th>Account code</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {manualLines.map((line, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <input
+                          list="manual-journal-accounts"
+                          value={line.account_code}
+                          onChange={(e) =>
+                            setManualLines((prev) =>
+                              prev.map((row, i) =>
+                                i === idx ? { ...row, account_code: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          placeholder="e.g. 6000"
+                          aria-label={`Journal line ${idx + 1} account code`}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          value={line.debit}
+                          onChange={(e) =>
+                            setManualLines((prev) =>
+                              prev.map((row, i) =>
+                                i === idx ? { ...row, debit: e.target.value, credit: '' } : row,
+                              ),
+                            )
+                          }
+                          placeholder="0"
+                          style={{ width: 100 }}
+                          aria-label={`Journal line ${idx + 1} debit`}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          value={line.credit}
+                          onChange={(e) =>
+                            setManualLines((prev) =>
+                              prev.map((row, i) =>
+                                i === idx ? { ...row, credit: e.target.value, debit: '' } : row,
+                              ),
+                            )
+                          }
+                          placeholder="0"
+                          style={{ width: 100 }}
+                          aria-label={`Journal line ${idx + 1} credit`}
+                        />
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          disabled={manualLines.length <= 2}
+                          onClick={() =>
+                            setManualLines((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                          title={
+                            manualLines.length <= 2
+                              ? 'Journal requires at least two lines'
+                              : 'Remove line'
+                          }
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <datalist id="manual-journal-accounts">
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.code}>
+                    {a.name}
+                  </option>
+                ))}
+              </datalist>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => setManualLines((prev) => [...prev, emptyManualLine()])}
+                >
+                  Add line
+                </button>
+                <span className="muted" style={{ fontSize: 13 }}>
+                  Debit {manualDebitTotal.toFixed(2)} · Credit {manualCreditTotal.toFixed(2)}
+                  {manualBalanced ? ' · balanced' : ' · unbalanced'}
+                </span>
+              </div>
+              <button type="button" onClick={postManual} disabled={!manualBalanced}>
+                Post balanced entry
+              </button>
             </div>
           </div>
 
