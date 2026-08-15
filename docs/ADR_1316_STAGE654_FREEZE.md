@@ -31,3 +31,7 @@ Stage 655 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Chaos Drill Gate, Chaos Drill Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 655 opened under **ADR-1317** after CONTINUE/NEXT (Tenant MVP Capacity Planning Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1318**. Stage 654 feature scope remains frozen.

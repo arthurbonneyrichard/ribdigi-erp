@@ -1,0 +1,77 @@
+{
+  "id": "capacity-planning-gate-honesty-pack-rg-pointers",
+  "stage": 655,
+  "pack": "P1",
+  "doc": "docs/CAPACITY_PLANNING_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CAPACITY_PLANNING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "chaos_drill_gate_honesty_pack_remaining_gate": "docs/CHAOS_DRILL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "rollback_runbook_gate_honesty_pack_remaining_gate": "docs/ROLLBACK_RUNBOOK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "capacity_planning_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "capacity_planning_gate_honesty_complete_claimed": false,
+  "capacity_planning_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_capacity_planning_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "chaos_drill_gate_honesty_pack_remaining_gate_stage654": "docs/CHAOS_DRILL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "rollback_runbook_gate_honesty_pack_remaining_gate_stage653": "docs/ROLLBACK_RUNBOOK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "capacity_planning_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / capacity_planning_gate / capacity_planning_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "cpghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Capacity Planning Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpghp-stage654",
+      "title": "Point to Stage 654 CHAOS DRILL GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpghp-stage653",
+      "title": "Point to Stage 653 ROLLBACK RUNBOOK GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpghp-prior-pack",
+      "title": "Point to Capacity Planning Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpghp-checklist-remaining",
+      "title": "Offline Complete / Capacity Planning Gate / Capacity Planning Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 655 P1 Capacity Planning Gate Honesty Pack RG pointers packaging only."
+}
