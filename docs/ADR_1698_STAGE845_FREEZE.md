@@ -31,3 +31,7 @@ Stage 846 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Rectification Gate, Rectification Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 846 opened under **ADR-1699** after CONTINUE/NEXT (Tenant MVP Restriction Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1700**. Stage 845 feature scope remains frozen.
