@@ -31,3 +31,10 @@ Stage 480 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Device Auth Token, Device Auth Token honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 480 opened under **ADR-967** after CONTINUE/NEXT (Tenant MVP Offline Device Revoke Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-968**. Stage 479 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 479 runner-up outline was approved and opened (ADR-967); freeze ADR-968. Do not reopen Stage 479 scope.
+
