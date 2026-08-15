@@ -536,7 +536,7 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
 
 `sku` is optional on create: omit or blank to auto-allocate `SKU-YYYY-NNNN` unique per tenant (products + variants). Explicit SKU is uppercased and must be unique (409 on clash). Same auto/manual rules apply to `POST /products/{id}/variants`.
 
-Variant attributes (BR-5.1): `size`, `color`, `flavor`, `dosage` on `POST|PATCH /products/{id}/variants` (set to `null` on PATCH to clear). Soft-deactivate via `DELETE /products/{id}/variants/{vid}`; reactivate via `PATCH …/variants/{vid}` `{ is_active: true }` (Inventory Variants **Activate** / **Deactivate**; inactive variants excluded from sale/stock pickers).
+Variant attributes (BR-5.1): `size`, `color`, `flavor`, `dosage` on `POST|PATCH /products/{id}/variants` (set to `null` on PATCH to clear). Soft-deactivate via `DELETE /products/{id}/variants/{vid}`; reactivate via `PATCH …/variants/{vid}` `{ is_active: true }` (Inventory Variants **Activate** / **Deactivate** + manage status filter All/Active/Inactive; `GET /products/{id}/variants?is_active=true|false` optional — omit = all; inactive variants excluded from sale/stock pickers).
 
 Optional physical fields: `weight` (kg), `length` / `width` / `height` (cm). Also accepted on `PATCH /products/{id}` and CSV import columns.
 

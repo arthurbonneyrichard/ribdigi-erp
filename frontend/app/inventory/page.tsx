@@ -115,6 +115,7 @@ export default function Page() {
   const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [brandManageFilter, setBrandManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [unitManageFilter, setUnitManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [variantManageFilter, setVariantManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [variants, setVariants] = useState<any[]>([]);
   const [gallery, setGallery] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
@@ -1382,6 +1383,7 @@ export default function Page() {
   const managedCategories = byStatus(categories, categoryManageFilter);
   const managedBrands = byStatus(brands, brandManageFilter);
   const managedUnits = byStatus(units, unitManageFilter);
+  const managedVariants = byStatus(variants, variantManageFilter);
 
   return (
     <Shell>
@@ -2454,6 +2456,19 @@ export default function Page() {
               Create variant
             </button>
           </div>
+          <select
+            value={variantManageFilter}
+            onChange={(e) =>
+              setVariantManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+            }
+            title="Filter manage variant list by status"
+            aria-label="Product variant status filter"
+            style={{ marginBottom: 8 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -2471,9 +2486,23 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {variants.map((v) => (
+              {managedVariants.length === 0 && (
+                <tr>
+                  <td colSpan={11} className="muted">
+                    No variants for this filter
+                  </td>
+                </tr>
+              )}
+              {managedVariants.map((v) => (
                 <tr key={v.id}>
-                  <td>{v.name}</td>
+                  <td>
+                    {v.name}
+                    {v.is_active === false ? (
+                      <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                        [inactive]
+                      </span>
+                    ) : null}
+                  </td>
                   <td>{v.sku}</td>
                   <td>{v.barcode || '—'}</td>
                   <td>{v.size || '—'}</td>

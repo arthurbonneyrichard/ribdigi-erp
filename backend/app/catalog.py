@@ -186,18 +186,25 @@ async def resolve_sale_line(
     return product, variant, unit_price
 
 
-async def list_variants(db: AsyncSession, tenant_id: str, product_id: str) -> list[m.ProductVariant]:
+async def list_variants(
+    db: AsyncSession,
+    tenant_id: str,
+    product_id: str,
+    *,
+    is_active: bool | None = None,
+) -> list[m.ProductVariant]:
     await get_product(db, tenant_id, product_id)
-    return (
-        await db.execute(
-            select(m.ProductVariant)
-            .where(
-                m.ProductVariant.tenant_id == tenant_id,
-                m.ProductVariant.product_id == product_id,
-            )
-            .order_by(m.ProductVariant.name)
+    stmt = (
+        select(m.ProductVariant)
+        .where(
+            m.ProductVariant.tenant_id == tenant_id,
+            m.ProductVariant.product_id == product_id,
         )
-    ).scalars().all()
+        .order_by(m.ProductVariant.name)
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.ProductVariant.is_active.is_(bool(is_active)))
+    return (await db.execute(stmt)).scalars().all()
 
 
 def _clean_attr(value: str | None) -> str | None:
