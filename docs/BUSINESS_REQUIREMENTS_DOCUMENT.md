@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 894 D1 Vital Interest Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_894_FIDELITY.md` (`test_stage894_fidelity_d1.py`); Offline Complete / Vital Interest Gate honesty / go-live still MISSING.
 Stage 893 D1 Public Interest Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_893_FIDELITY.md` (`test_stage893_fidelity_d1.py`); Offline Complete / Public Interest Gate honesty / go-live still MISSING.
 Stage 892 D1 Contract Necessity Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_892_FIDELITY.md` (`test_stage892_fidelity_d1.py`); Offline Complete / Contract Necessity Gate honesty / go-live still MISSING.
 Stage 891 D1 Consent Transfer Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_891_FIDELITY.md` (`test_stage891_fidelity_d1.py`); Offline Complete / Consent Transfer Gate honesty / go-live still MISSING.
