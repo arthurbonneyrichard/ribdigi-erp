@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/BCR_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/bcr-gate-honesty-pack-remaining-gate.json` — Stage 885 I1
+- `docs/BCR_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/bcr-gate-honesty-pack-rg-blockers.json` — Stage 885 B1
+- `docs/BCR_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/bcr-gate-honesty-pack-rg-pointers.json` — Stage 885 P1
 - `docs/ADEQUACY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/adequacy-gate-honesty-pack-remaining-gate.json` — Stage 884 I1
 - `docs/ADEQUACY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/adequacy-gate-honesty-pack-rg-blockers.json` — Stage 884 B1
 - `docs/ADEQUACY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/adequacy-gate-honesty-pack-rg-pointers.json` — Stage 884 P1

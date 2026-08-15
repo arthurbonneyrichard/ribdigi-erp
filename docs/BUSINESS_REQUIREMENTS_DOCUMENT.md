@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 885 D1 BCR Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_885_FIDELITY.md` (`test_stage885_fidelity_d1.py`); Offline Complete / BCR Gate honesty / go-live still MISSING.
 Stage 884 D1 Adequacy Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_884_FIDELITY.md` (`test_stage884_fidelity_d1.py`); Offline Complete / Adequacy Gate honesty / go-live still MISSING.
 Stage 883 D1 Transfer Mechanism Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_883_FIDELITY.md` (`test_stage883_fidelity_d1.py`); Offline Complete / Transfer Mechanism Gate honesty / go-live still MISSING.
 Stage 882 D1 Cold Storage Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_882_FIDELITY.md` (`test_stage882_fidelity_d1.py`); Offline Complete / Cold Storage Gate honesty / go-live still MISSING.
