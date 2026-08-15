@@ -31,3 +31,7 @@ Stage 615 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Database Docs Gate, Database Docs Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 615 opened under **ADR-1237** after CONTINUE/NEXT (Tenant MVP Database ADR Tenancy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1238**. Stage 614 feature scope remains frozen.

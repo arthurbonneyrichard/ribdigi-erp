@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 615 track opened (ADR-1237: `test_stage615_open.py`, `docs/STAGE_615_PLAN.md`) — Database ADR Tenancy Gate Honesty Pack Remaining-Gate Index; closed under ADR-1238
+- [x] Database ADR Tenancy Gate Honesty Pack remaining-gate hub (Stage 615 I1: `test_stage615_index_i1.py`, `docs/DATABASE_ADR_TENANCY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Database ADR Tenancy Gate Honesty Pack blocker matrix (Stage 615 B1: `test_stage615_blockers_b1.py`, `docs/DATABASE_ADR_TENANCY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 614 / Stage 613 / Stage 392 / CHANGE_IMPACT pointers (Stage 615 P1: `test_stage615_pointers_p1.py`, `docs/DATABASE_ADR_TENANCY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 615 fidelity sync (D1: `test_stage615_fidelity_d1.py`, `docs/STAGE_615_FIDELITY.md`)
+- [x] Stage 615 exit + freeze (H615x: `test_stage615_exit_h615x.py`, `docs/STAGE_615_EXIT_CRITERIA.md`, ADR-1238)
+
 Stage 614 track opened (ADR-1235: `test_stage614_open.py`, `docs/STAGE_614_PLAN.md`) — Database Docs Gate Honesty Pack Remaining-Gate Index; closed under ADR-1236
 - [x] Database Docs Gate Honesty Pack remaining-gate hub (Stage 614 I1: `test_stage614_index_i1.py`, `docs/DATABASE_DOCS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Database Docs Gate Honesty Pack blocker matrix (Stage 614 B1: `test_stage614_blockers_b1.py`, `docs/DATABASE_DOCS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
