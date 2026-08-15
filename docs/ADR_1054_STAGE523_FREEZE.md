@@ -31,3 +31,8 @@ Stage 524 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, AI Use Disclosure, AI Use Disclosure honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 524 opened under **ADR-1055** after CONTINUE/NEXT (Tenant MVP Data Portability Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1056**. Stage 523 feature scope remains frozen.
+

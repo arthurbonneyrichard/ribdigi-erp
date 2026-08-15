@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 524 D1 Data Portability Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_524_FIDELITY.md` (`test_stage524_fidelity_d1.py`); Offline Complete / Data Portability honesty / go-live still MISSING.
 Stage 523 D1 AI Use Disclosure Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_523_FIDELITY.md` (`test_stage523_fidelity_d1.py`); Offline Complete / AI Use Disclosure honesty / go-live still MISSING.
 Stage 522 D1 Breach Notification Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_522_FIDELITY.md` (`test_stage522_fidelity_d1.py`); Offline Complete / Breach Notification honesty / go-live still MISSING.
 Stage 521 D1 Change Governance Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_521_FIDELITY.md` (`test_stage521_fidelity_d1.py`); Offline Complete / Change Governance honesty / go-live still MISSING.
