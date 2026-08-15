@@ -7769,17 +7769,25 @@ async def delete_expense(
 
 
 @api.get("/accounting/accounts")
-async def accounts(claims=Depends(require_permission("accounting", "read")), db: AsyncSession = Depends(get_db)):
+async def accounts(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List COA accounts. Optional is_active filters soft-deactivated rows (Accounting manage UI)."""
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
-    rows = (
-        await db.execute(
-            select(m.Account).where(m.Account.tenant_id == claims["tenant_id"]).order_by(m.Account.code)
-        )
-    ).scalars().all()
+    stmt = (
+        select(m.Account)
+        .where(m.Account.tenant_id == claims["tenant_id"])
+        .order_by(m.Account.code)
+    )
+    if is_active is not None:
+        stmt = stmt.where(m.Account.is_active.is_(bool(is_active)))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([bank_recon_svc.serialize_account(r) for r in rows])
 
 
@@ -7839,6 +7847,7 @@ async def patch_account(
         bank_name=data.get("bank_name"),
         account_number=data.get("account_number"),
         bank_branch=data.get("bank_branch"),
+        is_active=data.get("is_active"),
     )
     await audit_svc.record_event(
         db,

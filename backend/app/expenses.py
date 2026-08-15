@@ -222,6 +222,8 @@ async def resolve_expense_category_account(
     db: AsyncSession, tenant_id: str, account_id: str | None
 ) -> m.Account | None:
     """Validate optional GL link: must be a tenant expense-type account."""
+    from app.accounting import assert_account_active
+
     if not account_id:
         return None
     account = (
@@ -239,6 +241,7 @@ async def resolve_expense_category_account(
             status_code=400,
             detail="Expense category GL must be an expense-type account",
         )
+    assert_account_active(account)
     return account
 
 

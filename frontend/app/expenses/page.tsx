@@ -130,7 +130,8 @@ export default function Page() {
     setDepartments(dep.data || []);
     setRecurring(rec.data || []);
     const glExpense = (accounts.data || []).filter(
-      (a: any) => String(a.account_type || '').toLowerCase() === 'expense'
+      (a: any) =>
+        String(a.account_type || '').toLowerCase() === 'expense' && a.is_active !== false
     );
     setExpenseAccounts(glExpense);
     setThreshold(settings.data?.expense_approval_threshold ?? 100);

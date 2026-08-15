@@ -33,6 +33,7 @@ def serialize_account(account: m.Account) -> dict:
         "balance": float(account.balance or 0),
         "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
         "is_system": account.code in system_codes,
+        "is_active": bool(getattr(account, "is_active", True)),
         "is_cash_account": bool(account.is_cash_account),
         "is_bank_account": bool(account.is_bank_account),
         "bank_name": account.bank_name,
@@ -84,6 +85,7 @@ async def update_account(
     bank_name: str | None = None,
     account_number: str | None = None,
     bank_branch: str | None = None,
+    is_active: bool | None = None,
 ) -> m.Account:
     row = await get_account(db, tenant_id, account_id)
     if name is not None:
@@ -97,6 +99,8 @@ async def update_account(
         row.account_number = account_number.strip() or None
     if bank_branch is not None:
         row.bank_branch = bank_branch.strip() or None
+    if is_active is not None:
+        row.is_active = bool(is_active)
     if row.is_bank_account and not row.bank_name:
         raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
     await db.flush()
@@ -220,6 +224,10 @@ async def create_transfer(
             raise HTTPException(status_code=400, detail="Cannot transfer to the same account")
         src = await get_account(db, tenant_id, from_account_id)
         dst = await get_account(db, tenant_id, to_account_id)
+        from app.accounting import assert_account_active
+
+        assert_account_active(src)
+        assert_account_active(dst)
         if not _is_liquid(src) or not _is_liquid(dst):
             raise HTTPException(status_code=400, detail="Transfers require cash/bank liquid accounts")
         debit_id, credit_id = dst.id, src.id
@@ -228,6 +236,9 @@ async def create_transfer(
         if not to_account_id:
             raise HTTPException(status_code=400, detail="to_account_id is required for deposit")
         dst = await get_account(db, tenant_id, to_account_id)
+        from app.accounting import assert_account_active
+
+        assert_account_active(dst)
         if not _is_liquid(dst):
             raise HTTPException(status_code=400, detail="Deposit destination must be a cash/bank account")
         src = equity
@@ -238,6 +249,9 @@ async def create_transfer(
         if not from_account_id:
             raise HTTPException(status_code=400, detail="from_account_id is required for withdrawal")
         src = await get_account(db, tenant_id, from_account_id)
+        from app.accounting import assert_account_active
+
+        assert_account_active(src)
         if not _is_liquid(src):
             raise HTTPException(status_code=400, detail="Withdrawal source must be a cash/bank account")
         dst = equity

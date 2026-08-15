@@ -150,6 +150,15 @@ async def get_account_by_code(db: AsyncSession, tenant_id: str, code: str) -> m.
     return account
 
 
+def assert_account_active(account: m.Account) -> None:
+    """Block new postings/assignments against soft-deactivated COA rows (BR-10.1)."""
+    if getattr(account, "is_active", True) is False:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Account {account.code} is inactive",
+        )
+
+
 async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
     existing = {
         a.code: a
@@ -463,6 +472,7 @@ async def post_journal_entry(
             account = await get_account_by_code(db, tenant_id, line["account_code"])
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
+        assert_account_active(account)
 
         db.add(
             m.JournalEntryLine(
