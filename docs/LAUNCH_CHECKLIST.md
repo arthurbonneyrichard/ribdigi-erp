@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 525 track opened (ADR-1057: `test_stage525_open.py`, `docs/STAGE_525_PLAN.md`) — Data Residency Honesty Pack Remaining-Gate Index; closed under ADR-1058
+- [x] Data Residency Honesty Pack remaining-gate hub (Stage 525 I1: `test_stage525_index_i1.py`, `docs/DATA_RESIDENCY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Data Residency Honesty Pack blocker matrix (Stage 525 B1: `test_stage525_blockers_b1.py`, `docs/DATA_RESIDENCY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 524 / Stage 523 / Stage 392 / CHANGE_IMPACT pointers (Stage 525 P1: `test_stage525_pointers_p1.py`, `docs/DATA_RESIDENCY_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 525 fidelity sync (D1: `test_stage525_fidelity_d1.py`, `docs/STAGE_525_FIDELITY.md`)
+- [x] Stage 525 exit + freeze (H525x: `test_stage525_exit_h525x.py`, `docs/STAGE_525_EXIT_CRITERIA.md`, ADR-1058)
+
 Stage 524 track opened (ADR-1055: `test_stage524_open.py`, `docs/STAGE_524_PLAN.md`) — Data Portability Honesty Pack Remaining-Gate Index; closed under ADR-1056
 - [x] Data Portability Honesty Pack remaining-gate hub (Stage 524 I1: `test_stage524_index_i1.py`, `docs/DATA_PORTABILITY_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Data Portability Honesty Pack blocker matrix (Stage 524 B1: `test_stage524_blockers_b1.py`, `docs/DATA_PORTABILITY_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

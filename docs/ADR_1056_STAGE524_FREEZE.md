@@ -31,3 +31,7 @@ Stage 525 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Data Portability, Data Portability honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 525 opened under **ADR-1057** after CONTINUE/NEXT (Tenant MVP Data Residency Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1058**. Stage 524 feature scope remains frozen.
