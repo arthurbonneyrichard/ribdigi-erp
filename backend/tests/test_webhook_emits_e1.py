@@ -404,3 +404,107 @@ async def test_tenant_suspended_webhook(client, db_session, monkeypatch):
     )
     assert activated.status_code == 200, activated.text
     assert activated.json()["data"]["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_user_login_webhook_password_not_refresh(client, db_session, monkeypatch):
+    """Password login emits user.login; requires_2fa challenge and refresh do not."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+    from app.security import hash_password
+
+    ac, seed = client
+    events: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = __import__("json").loads(request.content.decode())
+        events.append({"event": body.get("event"), "data": body.get("data") or {}})
+        return httpx.Response(200, json={"ok": True})
+
+    original = webhooks_svc._deliver_http
+
+    async def _mock(*, url, body, signature_header, timeout=10.0, transport=None):
+        return await original(
+            url=url,
+            body=body,
+            signature_header=signature_header,
+            timeout=timeout,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(webhooks_svc, "_deliver_http", _mock)
+
+    user = m.User(
+        tenant_id=seed["t1"].id,
+        email="login-hook@alpha.example.com",
+        full_name="Login Hook User",
+        password_hash=hash_password("SecurePass123!"),
+        role="company_admin",
+        email_verified=True,
+        permissions=permissions_for_role("company_admin"),
+        totp_enabled=False,
+    )
+    db_session.add(user)
+    await db_session.commit()
+
+    # Create webhook as this password-only admin (login itself will emit once)
+    login1 = await ac.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "login-hook@alpha.example.com",
+            "password": "SecurePass123!",
+            "tenant_id": "alpha",
+        },
+    )
+    assert login1.status_code == 200, login1.text
+    # No webhook yet → no capture
+    assert not any(e["event"] == "user.login" for e in events)
+
+    token = login1.json()["data"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    hook = await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={"url": "https://hooks.example.com/login", "events": ["user.login"]},
+    )
+    assert hook.status_code == 200, hook.text
+
+    login2 = await ac.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "login-hook@alpha.example.com",
+            "password": "SecurePass123!",
+            "tenant_id": "alpha",
+        },
+    )
+    assert login2.status_code == 200, login2.text
+    assert sum(1 for e in events if e["event"] == "user.login") == 1
+    payload = next(e["data"] for e in events if e["event"] == "user.login")
+    assert payload.get("method") == "password"
+    assert payload.get("email") == "login-hook@alpha.example.com"
+    assert payload.get("user_id") == user.id
+
+    # 2FA challenge without completing login must not emit
+    events.clear()
+    monkeypatch.setattr("app.totp.login_2fa_enabled", lambda: True)
+    challenge = await ac.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "super@alpha.example.com",
+            "password": "SecurePass123!",
+            "tenant_id": "alpha",
+        },
+    )
+    assert challenge.status_code == 200, challenge.text
+    assert challenge.json()["data"].get("requires_2fa") is True
+    assert not any(e["event"] == "user.login" for e in events)
+
+    # Refresh must not emit
+    events.clear()
+    refresh_tok = login2.json()["data"]["refresh_token"]
+    refreshed = await ac.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": refresh_tok},
+    )
+    assert refreshed.status_code == 200, refreshed.text
+    assert not any(e["event"] == "user.login" for e in events)

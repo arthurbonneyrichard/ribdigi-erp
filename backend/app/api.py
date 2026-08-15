@@ -265,6 +265,7 @@ async def create_session(
     *,
     user: m.User,
     request: Request | None = None,
+    login_method: str | None = None,
 ) -> tuple[str, str]:
     refresh_raw, refresh_hash, refresh_exp = issue_refresh_token()
     jti = __import__("secrets").token_hex(16)
@@ -279,6 +280,21 @@ async def create_session(
         expires_at=refresh_exp,
     )
     db.add(session)
+    # Interactive login only — refresh must not fan out user.login.
+    if login_method:
+        await webhooks_svc.emit_event(
+            db,
+            tenant_id=user.tenant_id,
+            event="user.login",
+            data={
+                "user_id": user.id,
+                "email": user.email,
+                "role": user.role,
+                "method": login_method,
+                "session_id": session.id,
+                "ip": session.ip_address,
+            },
+        )
     return access, refresh_raw
 
 
@@ -1319,7 +1335,12 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
                 detail="TOTP is not enabled; use a passkey to complete login",
             )
 
-    access, refresh = await create_session(db, user=user, request=request)
+    access, refresh = await create_session(
+        db,
+        user=user,
+        request=request,
+        login_method="totp" if (needs_2fa and payload.totp_code) else "password",
+    )
     await audit_svc.record_event(
         db,
         tenant_id=tenant_id,
@@ -1378,7 +1399,9 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
         await db.commit()
         raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
-    access, refresh = await create_session(db, user=user, request=request)
+    access, refresh = await create_session(
+        db, user=user, request=request, login_method="totp"
+    )
     await audit_svc.record_event(
         db,
         tenant_id=user.tenant_id,
@@ -1534,7 +1557,9 @@ async def webauthn_login_verify(
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
     await webauthn.verify_authentication(db, user, credential=payload.credential)
-    access, refresh = await create_session(db, user=user, request=request)
+    access, refresh = await create_session(
+        db, user=user, request=request, login_method="webauthn"
+    )
     await audit_svc.record_event(
         db,
         tenant_id=user.tenant_id,
