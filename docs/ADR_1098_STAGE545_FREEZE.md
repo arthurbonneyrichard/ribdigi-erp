@@ -31,3 +31,7 @@ Stage 546 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, AI Metrics, AI Metrics honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 546 opened under **ADR-1099** after CONTINUE/NEXT (Tenant MVP AI Provider Boundary Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1100**. Stage 545 feature scope remains frozen.
