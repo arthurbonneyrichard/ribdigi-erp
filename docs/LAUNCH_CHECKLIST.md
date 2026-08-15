@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 649 track opened (ADR-1305: `test_stage649_open.py`, `docs/STAGE_649_PLAN.md`) — Error Budget Gate Honesty Pack Remaining-Gate Index; closed under ADR-1306
+- [x] Error Budget Gate Honesty Pack remaining-gate hub (Stage 649 I1: `test_stage649_index_i1.py`, `docs/ERROR_BUDGET_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Error Budget Gate Honesty Pack blocker matrix (Stage 649 B1: `test_stage649_blockers_b1.py`, `docs/ERROR_BUDGET_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 648 / Stage 647 / Stage 392 / CHANGE_IMPACT pointers (Stage 649 P1: `test_stage649_pointers_p1.py`, `docs/ERROR_BUDGET_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 649 fidelity sync (D1: `test_stage649_fidelity_d1.py`, `docs/STAGE_649_FIDELITY.md`)
+- [x] Stage 649 exit + freeze (H649x: `test_stage649_exit_h649x.py`, `docs/STAGE_649_EXIT_CRITERIA.md`, ADR-1306)
+
 Stage 648 track opened (ADR-1303: `test_stage648_open.py`, `docs/STAGE_648_PLAN.md`) — Performance Budget Gate Honesty Pack Remaining-Gate Index; closed under ADR-1304
 - [x] Performance Budget Gate Honesty Pack remaining-gate hub (Stage 648 I1: `test_stage648_index_i1.py`, `docs/PERFORMANCE_BUDGET_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Performance Budget Gate Honesty Pack blocker matrix (Stage 648 B1: `test_stage648_blockers_b1.py`, `docs/PERFORMANCE_BUDGET_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
