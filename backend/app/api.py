@@ -10492,15 +10492,18 @@ async def report(claims=Depends(require_permission("reports", "read")), db: Asyn
 async def notifications(
     status: str | None = None,
     category: str | None = None,
+    limit: int = 100,
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    lim = max(1, min(int(limit or 100), 200))
     rows = await notifications_svc.list_notifications(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         status=status,
         category=category,
+        limit=lim,
     )
     return env([notifications_svc.serialize_notification(n) for n in rows])
 
@@ -10525,6 +10528,19 @@ async def notification_read(
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked read")
+
+
+@api.patch("/notifications/{nid}/unread")
+async def notification_unread(
+    nid: str,
+    claims=Depends(require_permission("notifications", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    note = await notifications_svc.mark_unread(
+        db, tenant_id=claims["tenant_id"], notification_id=nid, user_id=claims["sub"]
+    )
+    await db.commit()
+    return env(notifications_svc.serialize_notification(note), "Marked unread")
 
 
 @api.post("/notifications/read-all")

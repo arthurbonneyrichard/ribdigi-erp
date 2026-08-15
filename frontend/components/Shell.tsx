@@ -332,6 +332,15 @@ function navItemsForRole(
   });
 }
 
+type BellNote = {
+  id: string;
+  category: string;
+  title: string;
+  message: string;
+  status: string;
+  created_at: string;
+};
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
@@ -341,6 +350,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [fullName, setFullName] = useState('');
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [bellOpen, setBellOpen] = useState(false);
+  const [bellNotes, setBellNotes] = useState<BellNote[]>([]);
+  const [bellBusy, setBellBusy] = useState(false);
   const pathname = usePathname();
   const isPlatformOwner = PLATFORM_ROLES.has(role);
 
@@ -379,6 +391,56 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     window.location.href = '/';
   }
 
+  async function refreshUnread() {
+    try {
+      const countRes = await api('/notifications/unread-count');
+      setUnread(countRes.data?.count || 0);
+    } catch {
+      setUnread(0);
+    }
+  }
+
+  async function loadBellNotes() {
+    try {
+      const res = await api('/notifications?status=unread&limit=8');
+      setBellNotes(res.data || []);
+    } catch {
+      setBellNotes([]);
+    }
+  }
+
+  async function openBell() {
+    const next = !bellOpen;
+    setBellOpen(next);
+    if (next) {
+      await Promise.all([refreshUnread(), loadBellNotes()]);
+    }
+  }
+
+  async function markBellRead(id: string) {
+    setBellBusy(true);
+    try {
+      await api(`/notifications/${id}/read`, { method: 'PATCH' });
+      await Promise.all([refreshUnread(), loadBellNotes()]);
+    } catch {
+      /* ignore — panel stays open */
+    } finally {
+      setBellBusy(false);
+    }
+  }
+
+  async function markBellAllRead() {
+    setBellBusy(true);
+    try {
+      await api('/notifications/read-all', { method: 'POST' });
+      await Promise.all([refreshUnread(), loadBellNotes()]);
+    } catch {
+      /* ignore */
+    } finally {
+      setBellBusy(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
     async function load() {
@@ -413,6 +475,28 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       clearInterval(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (!bellOpen) return;
+    function onDoc(e: MouseEvent) {
+      const t = e.target as HTMLElement | null;
+      if (t && t.closest('.bell-wrap')) return;
+      setBellOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setBellOpen(false);
+    }
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [bellOpen]);
+
+  useEffect(() => {
+    setBellOpen(false);
+  }, [pathname]);
 
   // BR-19.3: auto-logout after tenant-configured idle period (default 30 minutes).
   useEffect(() => {
@@ -515,9 +599,59 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <span aria-hidden>{theme === 'dark' ? '\u2600\ufe0f' : '\ud83c\udf19'}</span>
             </button>
             {showAlerts && (
-              <Link href="/notifications" className="bell">
-                Alerts{unread > 0 ? ` · ${unread}` : ''}
-              </Link>
+              <div className="bell-wrap">
+                <button
+                  type="button"
+                  className="bell"
+                  aria-label={unread > 0 ? `Alerts, ${unread} unread` : 'Alerts'}
+                  aria-expanded={bellOpen}
+                  aria-haspopup="dialog"
+                  onClick={() => openBell()}
+                >
+                  Alerts
+                  {unread > 0 ? <span className="bell-badge">{unread > 99 ? '99+' : unread}</span> : null}
+                </button>
+                {bellOpen && (
+                  <div className="bell-panel" role="dialog" aria-label="Notification center">
+                    <div className="bell-panel-head">
+                      <strong>Notifications</strong>
+                      <span className="muted">{unread} unread</span>
+                    </div>
+                    <div className="bell-panel-list">
+                      {bellNotes.length === 0 ? (
+                        <p className="muted bell-empty">No unread alerts</p>
+                      ) : (
+                        bellNotes.map((n) => (
+                          <div key={n.id} className="bell-item">
+                            <div className="bell-item-meta">
+                              <span className="bell-cat">{n.category}</span>
+                              <span className="muted">{n.created_at?.slice?.(0, 16) || ''}</span>
+                            </div>
+                            <div className="bell-item-title">{n.title}</div>
+                            <div className="muted bell-item-msg">{n.message}</div>
+                            <button
+                              type="button"
+                              className="bell-item-action"
+                              disabled={bellBusy}
+                              onClick={() => markBellRead(n.id)}
+                            >
+                              Mark read
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="bell-panel-foot">
+                      <button type="button" disabled={bellBusy || unread === 0} onClick={markBellAllRead}>
+                        Mark all read
+                      </button>
+                      <Link href="/notifications" className="bell-view-all" onClick={() => setBellOpen(false)}>
+                        View all
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {fullName && (
               <span className="userchip" title={fullName}>
