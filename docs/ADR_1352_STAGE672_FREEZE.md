@@ -31,3 +31,7 @@ Stage 673 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Network Policy Gate, Network Policy Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 673 opened under **ADR-1353** after CONTINUE/NEXT (Tenant MVP Secret Rotation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1354**. Stage 672 feature scope remains frozen.
