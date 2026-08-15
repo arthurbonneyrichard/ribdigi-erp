@@ -36,6 +36,7 @@ export default function Page() {
   const [pickBook, setPickBook] = useState<string[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [connections, setConnections] = useState<any[]>([]);
+  const [connectionManageFilter, setConnectionManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [connName, setConnName] = useState('Operating account feed');
   const [connProvider, setConnProvider] = useState('mock');
   const [connFeedUrl, setConnFeedUrl] = useState('');
@@ -696,6 +697,12 @@ export default function Page() {
     }
   }
 
+  const managedConnections = connections.filter((c) => {
+    if (connectionManageFilter === 'all') return true;
+    const active = c.is_active !== false;
+    return connectionManageFilter === 'inactive' ? !active : active;
+  });
+
   return (
     <Shell>
       <h1>Accounting</h1>
@@ -1329,10 +1336,29 @@ export default function Page() {
             <button onClick={createConnection} disabled={!reconAccountId}>
               Connect selected liquid account
             </button>
+            <select
+              value={connectionManageFilter}
+              onChange={(e) =>
+                setConnectionManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+              }
+              title="Filter manage bank connection list by status"
+              aria-label="Bank connection status filter"
+              style={{ marginTop: 8 }}
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
             <ul>
-              {connections.map((c) => (
+              {managedConnections.map((c) => (
                 <li key={c.id} style={{ marginBottom: 8 }}>
-                  {c.display_name} · {c.provider}
+                  {c.display_name}
+                  {c.is_active === false ? (
+                    <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                      [inactive]
+                    </span>
+                  ) : null}{' '}
+                  · {c.provider}
                   {c.is_active === false ? ' · inactive' : ' · active'}
                   {c.last_sync_status ? ` · last ${c.last_sync_status}` : ''}{' '}
                   <button
@@ -1357,7 +1383,11 @@ export default function Page() {
                   </button>
                 </li>
               ))}
-              {!connections.length && <li className="muted">No API connections yet</li>}
+              {!managedConnections.length && (
+                <li className="muted">
+                  {connections.length ? 'No connections for this filter' : 'No API connections yet'}
+                </li>
+              )}
             </ul>
           </div>
 
