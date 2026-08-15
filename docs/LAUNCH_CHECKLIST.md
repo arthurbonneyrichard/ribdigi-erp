@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 676 track opened (ADR-1359: `test_stage676_open.py`, `docs/STAGE_676_PLAN.md`) — Siem Export Gate Honesty Pack Remaining-Gate Index; closed under ADR-1360
+- [x] Siem Export Gate Honesty Pack remaining-gate hub (Stage 676 I1: `test_stage676_index_i1.py`, `docs/SIEM_EXPORT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Siem Export Gate Honesty Pack blocker matrix (Stage 676 B1: `test_stage676_blockers_b1.py`, `docs/SIEM_EXPORT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 675 / Stage 674 / Stage 392 / CHANGE_IMPACT pointers (Stage 676 P1: `test_stage676_pointers_p1.py`, `docs/SIEM_EXPORT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 676 fidelity sync (D1: `test_stage676_fidelity_d1.py`, `docs/STAGE_676_FIDELITY.md`)
+- [x] Stage 676 exit + freeze (H676x: `test_stage676_exit_h676x.py`, `docs/STAGE_676_EXIT_CRITERIA.md`, ADR-1360)
+
 Stage 675 track opened (ADR-1357: `test_stage675_open.py`, `docs/STAGE_675_PLAN.md`) — Vault Integration Gate Honesty Pack Remaining-Gate Index; closed under ADR-1358
 - [x] Vault Integration Gate Honesty Pack remaining-gate hub (Stage 675 I1: `test_stage675_index_i1.py`, `docs/VAULT_INTEGRATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Vault Integration Gate Honesty Pack blocker matrix (Stage 675 B1: `test_stage675_blockers_b1.py`, `docs/VAULT_INTEGRATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
