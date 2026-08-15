@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 643 D1 License Compliance Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_643_FIDELITY.md` (`test_stage643_fidelity_d1.py`); Offline Complete / License Compliance Gate honesty / go-live still MISSING.
 Stage 642 D1 Dependency Pin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_642_FIDELITY.md` (`test_stage642_fidelity_d1.py`); Offline Complete / Dependency Pin Gate honesty / go-live still MISSING.
 Stage 641 D1 TLS Certificate Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_641_FIDELITY.md` (`test_stage641_fidelity_d1.py`); Offline Complete / TLS Certificate Gate honesty / go-live still MISSING.
 Stage 640 D1 CORS Headers Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_640_FIDELITY.md` (`test_stage640_fidelity_d1.py`); Offline Complete / CORS Headers Gate honesty / go-live still MISSING.

@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 643 track opened (ADR-1293: `test_stage643_open.py`, `docs/STAGE_643_PLAN.md`) — License Compliance Gate Honesty Pack Remaining-Gate Index; closed under ADR-1294
+- [x] License Compliance Gate Honesty Pack remaining-gate hub (Stage 643 I1: `test_stage643_index_i1.py`, `docs/LICENSE_COMPLIANCE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] License Compliance Gate Honesty Pack blocker matrix (Stage 643 B1: `test_stage643_blockers_b1.py`, `docs/LICENSE_COMPLIANCE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 642 / Stage 641 / Stage 392 / CHANGE_IMPACT pointers (Stage 643 P1: `test_stage643_pointers_p1.py`, `docs/LICENSE_COMPLIANCE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 643 fidelity sync (D1: `test_stage643_fidelity_d1.py`, `docs/STAGE_643_FIDELITY.md`)
+- [x] Stage 643 exit + freeze (H643x: `test_stage643_exit_h643x.py`, `docs/STAGE_643_EXIT_CRITERIA.md`, ADR-1294)
+
 Stage 642 track opened (ADR-1291: `test_stage642_open.py`, `docs/STAGE_642_PLAN.md`) — Dependency Pin Gate Honesty Pack Remaining-Gate Index; closed under ADR-1292
 - [x] Dependency Pin Gate Honesty Pack remaining-gate hub (Stage 642 I1: `test_stage642_index_i1.py`, `docs/DEPENDENCY_PIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Dependency Pin Gate Honesty Pack blocker matrix (Stage 642 B1: `test_stage642_blockers_b1.py`, `docs/DEPENDENCY_PIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
