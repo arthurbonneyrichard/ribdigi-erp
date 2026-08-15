@@ -461,7 +461,17 @@ async def send_purchase_order(
     return po, delivery
 
 
-async def cancel_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: str, po_id: str) -> m.PurchaseOrder:
+async def cancel_purchase_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    po_id: str,
+    reason: str | None = None,
+) -> m.PurchaseOrder:
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
     po = await get_po(db, tenant_id, po_id)
     if po.status in {"received", "cancelled"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel PO in status {po.status}")
@@ -469,6 +479,7 @@ async def cancel_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: st
     if any(float(i.received_qty or 0) > 0 for i in items):
         raise HTTPException(status_code=409, detail="Cannot cancel PO after goods have been received")
     po.status = "cancelled"
+    po.notes = ((po.notes or "") + f"\nCancel: {reason_s}").strip()
     po.updated_at = datetime.utcnow()
     db.add(
         m.AuditLog(
@@ -477,7 +488,7 @@ async def cancel_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: st
             action="po_cancelled",
             entity="purchase_order",
             entity_id=po.id,
-            details={"po_number": po.po_number},
+            details={"po_number": po.po_number, "reason": reason_s},
         )
     )
     return po

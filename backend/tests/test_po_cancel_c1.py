@@ -45,16 +45,21 @@ async def test_cancel_draft_po(client):
     assert po.get("can_cancel") is True
 
     cancelled = await ac.post(
-        f"/api/v1/purchasing/orders/{po['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/orders/{po['id']}/cancel",
+        headers=headers,
+        json={"reason": "Supplier unavailable — draft cancel"},
     )
     assert cancelled.status_code == 200, cancelled.text
     body = cancelled.json()["data"]
     assert body["status"] == "cancelled"
     assert body.get("can_cancel") is False
     assert body.get("can_amend") is False
+    assert "Cancel: Supplier unavailable — draft cancel" in (body.get("notes") or "")
 
     again = await ac.post(
-        f"/api/v1/purchasing/orders/{po['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/orders/{po['id']}/cancel",
+        headers=headers,
+        json={"reason": "retry"},
     )
     assert again.status_code == 409
 
@@ -73,10 +78,15 @@ async def test_cancel_sent_po(client):
     assert sent.json()["data"].get("can_cancel") is True
 
     cancelled = await ac.post(
-        f"/api/v1/purchasing/orders/{po['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/orders/{po['id']}/cancel",
+        headers=headers,
+        json={"reason": "Order duplicate — sent cancel"},
     )
     assert cancelled.status_code == 200, cancelled.text
     assert cancelled.json()["data"]["status"] == "cancelled"
+    assert "Cancel: Order duplicate — sent cancel" in (
+        cancelled.json()["data"].get("notes") or ""
+    )
 
 
 @pytest.mark.asyncio
@@ -110,7 +120,9 @@ async def test_cancel_blocked_after_grn_receipt(client, db_session):
     assert detail.json()["data"].get("can_cancel") is False
 
     blocked = await ac.post(
-        f"/api/v1/purchasing/orders/{po['id']}/cancel", headers=headers
+        f"/api/v1/purchasing/orders/{po['id']}/cancel",
+        headers=headers,
+        json={"reason": "should fail after GRN"},
     )
     assert blocked.status_code == 409, blocked.text
     assert "received" in blocked.json()["detail"].lower()

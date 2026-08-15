@@ -123,6 +123,7 @@ from app.schemas import (
     ProfileUpdate,
     PurchaseOrderCreate,
     PurchaseOrderAmend,
+    PurchaseOrderCancel,
     PurchaseRequestCreate,
     PurchaseRequestConvert,
     PurchaseRequestReject,
@@ -6169,13 +6170,18 @@ async def list_purchase_order_amendments(
 @api.post("/purchasing/orders/{po_id}/cancel")
 async def cancel_purchase_order(
     po_id: str,
+    payload: PurchaseOrderCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
     po = await purchasing_svc.cancel_purchase_order(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+        reason=payload.reason,
     )
     await db.commit()
     return env(await purchasing_svc.serialize_po(db, po), "Purchase order cancelled")
