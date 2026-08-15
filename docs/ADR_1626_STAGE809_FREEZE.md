@@ -31,3 +31,7 @@ Stage 810 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, CAA Record Gate, CAA Record Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 810 opened under **ADR-1627** after CONTINUE/NEXT (Tenant MVP DNSSEC Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1628**. Stage 809 feature scope remains frozen.
