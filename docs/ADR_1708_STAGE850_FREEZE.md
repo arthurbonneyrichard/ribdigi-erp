@@ -31,3 +31,7 @@ Stage 851 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Data Minimization Gate, Data Minimization Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 851 opened under **ADR-1709** after CONTINUE/NEXT (Tenant MVP Storage Limit Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1710**. Stage 850 feature scope remains frozen.
