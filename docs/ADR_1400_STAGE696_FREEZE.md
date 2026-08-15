@@ -31,3 +31,7 @@ Stage 697 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Event Versioning Gate, Event Versioning Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 697 opened under **ADR-1401** after CONTINUE/NEXT (Tenant MVP Consumer Lag Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1402**. Stage 696 feature scope remains frozen.
