@@ -31,3 +31,10 @@ Stage 433 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Go-Live Closeout, Commercial Go-Live Closeout honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 433 opened under **ADR-873** after CONTINUE/NEXT (Tenant MVP Commercial Acceptance Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-874**. Stage 432 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 432 runner-up outline was approved and opened (ADR-873); freeze ADR-874. Do not reopen Stage 432 scope.
+
