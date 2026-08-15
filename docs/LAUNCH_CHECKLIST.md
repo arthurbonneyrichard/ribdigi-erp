@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 660 track opened (ADR-1327: `test_stage660_open.py`, `docs/STAGE_660_PLAN.md`) — Cdn Edge Gate Honesty Pack Remaining-Gate Index; closed under ADR-1328
+- [x] Cdn Edge Gate Honesty Pack remaining-gate hub (Stage 660 I1: `test_stage660_index_i1.py`, `docs/CDN_EDGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Cdn Edge Gate Honesty Pack blocker matrix (Stage 660 B1: `test_stage660_blockers_b1.py`, `docs/CDN_EDGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 659 / Stage 658 / Stage 392 / CHANGE_IMPACT pointers (Stage 660 P1: `test_stage660_pointers_p1.py`, `docs/CDN_EDGE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 660 fidelity sync (D1: `test_stage660_fidelity_d1.py`, `docs/STAGE_660_FIDELITY.md`)
+- [x] Stage 660 exit + freeze (H660x: `test_stage660_exit_h660x.py`, `docs/STAGE_660_EXIT_CRITERIA.md`, ADR-1328)
+
 Stage 659 track opened (ADR-1325: `test_stage659_open.py`, `docs/STAGE_659_PLAN.md`) — Disaster Failover Gate Honesty Pack Remaining-Gate Index; closed under ADR-1326
 - [x] Disaster Failover Gate Honesty Pack remaining-gate hub (Stage 659 I1: `test_stage659_index_i1.py`, `docs/DISASTER_FAILOVER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Disaster Failover Gate Honesty Pack blocker matrix (Stage 659 B1: `test_stage659_blockers_b1.py`, `docs/DISASTER_FAILOVER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

@@ -31,3 +31,7 @@ Stage 660 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Disaster Failover Gate, Disaster Failover Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 660 opened under **ADR-1327** after CONTINUE/NEXT (Tenant MVP Cdn Edge Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1328**. Stage 659 feature scope remains frozen.
