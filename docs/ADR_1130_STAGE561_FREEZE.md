@@ -31,3 +31,7 @@ Stage 562 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Vuln Disclosure, Vuln Disclosure honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 562 opened under **ADR-1131** after CONTINUE/NEXT (Tenant MVP RTO RPO Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1132**. Stage 561 feature scope remains frozen.
