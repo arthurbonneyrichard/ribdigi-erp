@@ -1329,6 +1329,7 @@ class SalesQuotation(Base):
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     valid_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     converted_order_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     converted_invoice_id: Mapped[str | None] = mapped_column(String(36), nullable=True)

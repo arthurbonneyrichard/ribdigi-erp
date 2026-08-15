@@ -18,6 +18,10 @@ def test_quotation_reject_ui_wired():
     assert "Rejected" in sales
     assert "/sales/quotations/${q.id}/accept" in sales
     assert "Accept" in sales
+    assert "quoteRejectReason" in sales
+    assert "Enter a reject reason before rejecting a quotation" in sales
+    assert "rejection_reason" in sales
+    assert "Required before Reject" in sales
 
 
 async def _admin(ac, seed):
@@ -47,13 +51,18 @@ async def test_quotation_reject_from_draft_and_sent(client, db_session):
     assert draft.json()["data"]["status"] == "draft"
 
     rejected_draft = await ac.post(
-        f"/api/v1/sales/quotations/{draft_id}/reject", headers=headers
+        f"/api/v1/sales/quotations/{draft_id}/reject",
+        headers=headers,
+        json={"reason": "Customer declined — draft"},
     )
     assert rejected_draft.status_code == 200, rejected_draft.text
     assert rejected_draft.json()["data"]["status"] == "rejected"
+    assert rejected_draft.json()["data"]["rejection_reason"] == "Customer declined — draft"
 
     again = await ac.post(
-        f"/api/v1/sales/quotations/{draft_id}/reject", headers=headers
+        f"/api/v1/sales/quotations/{draft_id}/reject",
+        headers=headers,
+        json={"reason": "again"},
     )
     assert again.status_code == 409, again.text
 
@@ -83,10 +92,13 @@ async def test_quotation_reject_from_draft_and_sent(client, db_session):
     await db_session.commit()
 
     rejected_sent = await ac.post(
-        f"/api/v1/sales/quotations/{sent_id}/reject", headers=headers
+        f"/api/v1/sales/quotations/{sent_id}/reject",
+        headers=headers,
+        json={"reason": "Customer declined — sent"},
     )
     assert rejected_sent.status_code == 200, rejected_sent.text
     assert rejected_sent.json()["data"]["status"] == "rejected"
+    assert rejected_sent.json()["data"]["rejection_reason"] == "Customer declined — sent"
 
     accept_blocked = await ac.post(
         f"/api/v1/sales/quotations/{sent_id}/accept", headers=headers

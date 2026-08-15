@@ -140,6 +140,7 @@ from app.schemas import (
     SalesOrderCreate,
     SalesOrderConfirm,
     SalesQuotationCreate,
+    SalesQuotationReject,
     SalesReturnCreate,
     SalesReturnPost,
     SmsTestRequest,
@@ -5504,12 +5505,18 @@ async def accept_quotation(
 @api.post("/sales/quotations/{quotation_id}/reject")
 async def reject_quotation(
     quotation_id: str,
+    payload: SalesQuotationReject | None = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
-    quote = await sales_docs_svc.reject_quotation(db, claims["tenant_id"], quotation_id)
+    quote = await sales_docs_svc.reject_quotation(
+        db,
+        claims["tenant_id"],
+        quotation_id,
+        reason=(payload.reason if payload else None),
+    )
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation rejected")
 

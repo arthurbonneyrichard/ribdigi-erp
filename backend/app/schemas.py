@@ -978,6 +978,10 @@ class SalesQuotationCreate(BaseModel):
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 
+class SalesQuotationReject(BaseModel):
+    reason: str | None = None
+
+
 class SalesOrderCreate(BaseModel):
     customer_id: str
     quotation_id: str | None = None
