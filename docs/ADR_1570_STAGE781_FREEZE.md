@@ -31,3 +31,7 @@ Stage 782 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Key Wrap Gate, Key Wrap Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 782 opened under **ADR-1571** after CONTINUE/NEXT (Tenant MVP Key Derivation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1572**. Stage 781 feature scope remains frozen.
