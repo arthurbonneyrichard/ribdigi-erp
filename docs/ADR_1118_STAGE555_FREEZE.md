@@ -31,3 +31,7 @@ Stage 556 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, First Tenant Live Onboarding, First Tenant Live Onboarding honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 556 opened under **ADR-1119** after CONTINUE/NEXT (Tenant MVP First Tenant Golive Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1120**. Stage 555 feature scope remains frozen.
