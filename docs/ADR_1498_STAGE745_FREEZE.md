@@ -31,3 +31,7 @@ Stage 746 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Private Network Access Gate, Private Network Access Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 746 opened under **ADR-1499** after CONTINUE/NEXT (Tenant MVP Same Site Cookie Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1500**. Stage 745 feature scope remains frozen.
