@@ -595,3 +595,36 @@
   .erp-split{grid-template-columns:1fr}
   .erp-form-grid{grid-template-columns:1fr}
 }
+
+/* ---------- Notification center (BR-4.4 / BR-15.2) ---------- */
+.bell-wrap{position:relative;display:inline-flex;align-items:center}
+.bell{position:relative;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:#e2e8f0;color:#111827;font-size:14px;font-weight:600;cursor:pointer}
+.bell:hover{background:#cbd5e1}
+.bell-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#dc2626;color:#fff;font-size:11px;font-weight:700;line-height:1}
+.bell-panel{position:absolute;right:0;top:calc(100% + 8px);width:min(360px,calc(100vw - 24px));max-height:min(480px,70vh);display:flex;flex-direction:column;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 12px 40px rgba(15,23,42,.18);z-index:80;overflow:hidden}
+.bell-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid #e2e8f0}
+.bell-panel-list{overflow-y:auto;flex:1 1 auto;padding:4px 0}
+.bell-empty{margin:16px 14px;font-size:13px}
+.bell-item{padding:10px 14px;border-bottom:1px solid #f1f5f9}
+.bell-item:last-child{border-bottom:0}
+.bell-item-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin-bottom:2px}
+.bell-cat{font-weight:700;color:#4338ca;text-transform:uppercase;letter-spacing:.02em}
+.bell-item-title{font-size:13px;font-weight:600;color:#0f172a}
+.bell-item-msg{font-size:12px;margin:2px 0 6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bell-item-action{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;cursor:pointer}
+.bell-item-action:hover{background:#e2e8f0}
+.bell-panel-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-top:1px solid #e2e8f0;background:#f8fafc}
+.bell-panel-foot button{font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer}
+.bell-view-all{font-size:12px;font-weight:600;color:#3730a3}
+.notif-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.notif-chip{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#334155;cursor:pointer}
+.notif-chip.active,.notif-chip:hover{background:#eef2ff;border-color:#a5b4fc;color:#3730a3}
+[data-theme="dark"] .bell{background:#1b2740;color:#e5e7eb;border-color:#233047}
+[data-theme="dark"] .bell:hover{background:#233047}
+[data-theme="dark"] .bell-panel{background:#0f172a;border-color:#233047;box-shadow:0 12px 40px rgba(0,0,0,.45)}
+[data-theme="dark"] .bell-panel-head,[data-theme="dark"] .bell-panel-foot,[data-theme="dark"] .bell-item{border-color:#1e293b}
+[data-theme="dark"] .bell-panel-foot{background:#111827}
+[data-theme="dark"] .bell-item-title{color:#e2e8f0}
+[data-theme="dark"] .bell-item-action,[data-theme="dark"] .bell-panel-foot button{background:#1e293b;border-color:#334155;color:#e2e8f0}
+[data-theme="dark"] .notif-chip{background:#0f172a;border-color:#334155;color:#cbd5e1}
+[data-theme="dark"] .notif-chip.active,[data-theme="dark"] .notif-chip:hover{background:#1e1b4b;border-color:#6366f1;color:#c7d2fe}

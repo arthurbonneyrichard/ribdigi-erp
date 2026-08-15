@@ -330,10 +330,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Centralized notification stream.
 - **Priority:** Medium
 - **Acceptance Criteria:**
-  - [ ] Display unread notification count
-  - [ ] Categorized notifications (stock, orders, payments, system)
-  - [ ] Mark as read/unread
-  - [ ] Notification history (last 90 days)
+  - [x] Display unread notification count (`GET /notifications/unread-count`; Shell bell badge + sidebar count)
+  - [x] Categorized notifications (stock, orders, payments, system) (`GET /notifications?category=`; Notifications page category chips)
+  - [x] Mark as read/unread (`PATCH /notifications/{id}/read|unread`; Shell panel + Notifications page)
+  - [x] Notification history (last 90 days) (`list_notifications` cutoff; All (90 days) filter)
 
 ---
 
@@ -821,10 +821,10 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Multi-channel alert delivery.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] **Dashboard:** In-app notification bell with badge count
-  - [ ] **Email:** SMTP integration; HTML email templates
+  - [x] **Dashboard:** In-app notification bell with badge count (Shell dropdown panel + unread badge; `/notifications` center)
+  - [ ] **Email:** SMTP integration; HTML email templates (SMTP + tenant overrides shipped; branded HTML templates still open)
   - [x] **SMS:** SMS gateway integration (Twilio, regional providers) (`GET|PATCH /settings/sms` tenant Twilio overrides → env `TWILIO_*` → console; `POST /settings/sms/test`; auth token encrypted; notifications + POS receipt SMS use tenant config)
-  - [ ] User preference for channel per notification type
+  - [x] User preference for channel per notification type (`GET|PATCH /notifications/settings`; dashboard/email/sms toggles per category)
 
 ---
 

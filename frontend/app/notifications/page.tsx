@@ -13,15 +13,35 @@ type Note = {
   created_at: string;
 };
 
+/** BR-4.4 category chips — maps to backend notification categories. */
+const CATEGORY_CHIPS: { id: string; label: string }[] = [
+  { id: '', label: 'All types' },
+  { id: 'low_stock', label: 'Stock' },
+  { id: 'new_order', label: 'Orders' },
+  { id: 'payment_due', label: 'Payments' },
+  { id: 'purchase_received', label: 'Purchasing' },
+  { id: 'credit_limit', label: 'Credit' },
+  { id: 'shift_variance', label: 'POS' },
+  { id: 'expense_approval', label: 'Expenses' },
+  { id: 'system', label: 'System' },
+  { id: 'security', label: 'Security' },
+  { id: 'billing', label: 'Billing' },
+];
+
 export default function Page() {
   const [rows, setRows] = useState<Note[]>([]);
   const [status, setStatus] = useState('unread');
+  const [category, setCategory] = useState('');
   const [prefs, setPrefs] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   async function refresh() {
-    const q = status ? `?status=${status}` : '';
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (category) params.set('category', category);
+    params.set('limit', '100');
+    const q = `?${params.toString()}`;
     const [notes, settings] = await Promise.all([
       api(`/notifications${q}`),
       api('/notifications/settings'),
@@ -32,12 +52,22 @@ export default function Page() {
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
-  }, [status]);
+  }, [status, category]);
 
   async function markRead(id: string) {
     setError('');
     try {
       await api(`/notifications/${id}/read`, { method: 'PATCH' });
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function markUnread(id: string) {
+    setError('');
+    try {
+      await api(`/notifications/${id}/unread`, { method: 'PATCH' });
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -72,13 +102,13 @@ export default function Page() {
     }
   }
 
-  async function togglePref(category: string, channel: string) {
+  async function togglePref(categoryKey: string, channel: string) {
     if (!prefs) return;
     const next = {
       ...prefs,
-      [category]: {
-        ...prefs[category],
-        [channel]: !prefs[category]?.[channel],
+      [categoryKey]: {
+        ...prefs[categoryKey],
+        [channel]: !prefs[categoryKey]?.[channel],
       },
     };
     setError('');
@@ -98,20 +128,34 @@ export default function Page() {
     <Shell>
       <h1>Notifications</h1>
       <p className="muted">
-        In-app alerts, preferences, payment-due, quotation-expiry, and recurring-expense-due scan
+        In-app notification center — unread badge, category filters, mark read/unread, and 90-day
+        history. Channel preferences for dashboard / email / SMS per type.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
         <button onClick={() => setStatus('unread')} disabled={status === 'unread'}>
           Unread
         </button>
         <button onClick={() => setStatus('')} disabled={status === ''}>
-          All
+          All (90 days)
         </button>
         <button onClick={markAll}>Mark all read</button>
         <button onClick={scanDue}>Scan due alerts</button>
+      </div>
+
+      <div className="notif-chips" aria-label="Filter by category">
+        {CATEGORY_CHIPS.map((c) => (
+          <button
+            key={c.id || 'all'}
+            type="button"
+            className={category === c.id ? 'notif-chip active' : 'notif-chip'}
+            onClick={() => setCategory(c.id)}
+          >
+            {c.label}
+          </button>
+        ))}
       </div>
 
       <table className="table">
@@ -132,8 +176,10 @@ export default function Page() {
               <td>{n.message}</td>
               <td>{n.status}</td>
               <td>
-                {n.status === 'unread' && (
+                {n.status === 'unread' ? (
                   <button onClick={() => markRead(n.id)}>Mark read</button>
+                ) : (
+                  <button onClick={() => markUnread(n.id)}>Mark unread</button>
                 )}
               </td>
             </tr>
