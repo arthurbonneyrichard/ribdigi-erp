@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 825 track opened (ADR-1657: `test_stage825_open.py`, `docs/STAGE_825_PLAN.md`) — Complaint Feedback Gate Honesty Pack Remaining-Gate Index; closed under ADR-1658
+- [x] Complaint Feedback Gate Honesty Pack remaining-gate hub (Stage 825 I1: `test_stage825_index_i1.py`, `docs/COMPLAINT_FEEDBACK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Complaint Feedback Gate Honesty Pack blocker matrix (Stage 825 B1: `test_stage825_blockers_b1.py`, `docs/COMPLAINT_FEEDBACK_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 824 / Stage 823 / Stage 392 / CHANGE_IMPACT pointers (Stage 825 P1: `test_stage825_pointers_p1.py`, `docs/COMPLAINT_FEEDBACK_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 825 fidelity sync (D1: `test_stage825_fidelity_d1.py`, `docs/STAGE_825_FIDELITY.md`)
+- [x] Stage 825 exit + freeze (H825x: `test_stage825_exit_h825x.py`, `docs/STAGE_825_EXIT_CRITERIA.md`, ADR-1658)
+
 Stage 824 track opened (ADR-1655: `test_stage824_open.py`, `docs/STAGE_824_PLAN.md`) — Bounce Handle Gate Honesty Pack Remaining-Gate Index; closed under ADR-1656
 - [x] Bounce Handle Gate Honesty Pack remaining-gate hub (Stage 824 I1: `test_stage824_index_i1.py`, `docs/BOUNCE_HANDLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Bounce Handle Gate Honesty Pack blocker matrix (Stage 824 B1: `test_stage824_blockers_b1.py`, `docs/BOUNCE_HANDLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

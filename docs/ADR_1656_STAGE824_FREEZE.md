@@ -31,3 +31,7 @@ Stage 825 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Bounce Handle Gate, Bounce Handle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 825 opened under **ADR-1657** after CONTINUE/NEXT (Tenant MVP Complaint Feedback Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1658**. Stage 824 feature scope remains frozen.
