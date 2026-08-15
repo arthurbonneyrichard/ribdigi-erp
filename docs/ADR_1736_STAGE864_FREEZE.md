@@ -31,3 +31,7 @@ Stage 865 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Subprocessor Gate, Subprocessor Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 865 opened under **ADR-1737** after CONTINUE/NEXT (Tenant MVP DPA Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1738**. Stage 864 feature scope remains frozen.
