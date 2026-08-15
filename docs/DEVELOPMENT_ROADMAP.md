@@ -645,10 +645,10 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 | 5.2 | Database Restore | Backup & Recovery | P0 |
 | 5.3 | Audit Logs (Login, Logout, Product Changes, Sales, Purchases, User Activity) | Audit Logs | P0 |
 | 5.4 | Authentication API | API | P0 |
-| 5.5 | Products API | API | P0 |
-| 5.6 | Customers API | API | P0 |
-| 5.7 | Sales API | API | P0 |
-| 5.8 | Purchases API | API | P0 |
+| 5.5 | Products API | API | P0 | Complete (MVP) — BR-18.2; `GET /inventory/products/lookup`, `GET /products/{id}/warehouse-stock` |
+| 5.6 | Customers API | API | P0 | Complete (MVP) — BR-18.3 balance/history |
+| 5.7 | Sales API | API | P0 | Complete (MVP) — BR-18.4 QT/SO/INV/payments/returns/POS |
+| 5.8 | Purchases API | API | P0 | Complete (MVP) — BR-18.5 PR/PO/GRN/PI/suppliers/payments |
 | 5.9 | Two-Factor Authentication (Optional) | Authentication & Security | P1 |
 | 5.10 | Email Verification | Authentication & Security | P0 |
 | 5.11 | Password Reset | Authentication & Security | P0 |

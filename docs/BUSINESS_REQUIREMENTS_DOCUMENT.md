@@ -904,35 +904,36 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Product data access and management.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] CRUD operations for products, categories, brands, units
-  - [ ] Bulk import/export
-  - [ ] Stock level queries
-  - [ ] Barcode lookup
+  - [x] CRUD operations for products, categories, brands, units (`GET|POST|PATCH /products`; soft-deactivate via `is_active`; `GET|POST|PATCH|DELETE /catalog/categories|brands|units`)
+  - [x] Bulk import/export
+    - Complete (MVP): `GET|POST /products/import[/template]`; export via `GET /products` + `POST /reports/export` (`inventory_balance` / related). Dedicated catalog CSV export optional.
+  - [x] Stock level queries (`product.stock_qty`; `GET /inventory/warehouse-stock`; `GET /products/{id}/warehouse-stock`; `GET /inventory/low-stock`; `GET /reports/inventory/balance`)
+  - [x] Barcode lookup (`GET /inventory/products/lookup?barcode=` / `?q=`; also `GET /pos/products/search?barcode=` for POS)
 
 #### BR-18.3 Customers API
 - **Description:** Customer data access.
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] CRUD operations for customers and customer groups
-  - [ ] Balance inquiry
-  - [ ] Purchase history
+  - [x] Balance inquiry (`balance` on party serialize; `GET /customers/{id}/credit` + `/outstanding`)
+  - [x] Purchase history (`GET /customers/{id}/history` — invoices/POS, returns, payments)
 
 #### BR-18.4 Sales API
 - **Description:** Sales transaction API.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create quotations, sales orders, invoices
-  - [ ] Record payments
-  - [ ] Sales return processing
-  - [ ] POS transaction submission
+  - [x] Create quotations, sales orders, invoices (`POST /sales/quotations|orders|invoices` + list/get/confirm/post flows)
+  - [x] Record payments (`POST /sales/payments` / Credit customer pay)
+  - [x] Sales return processing (`POST /sales/returns` + credit-note flows)
+  - [x] POS transaction submission (`POST /pos/sessions/open`; `POST /pos/sales`)
 
 #### BR-18.5 Purchases API
 - **Description:** Procurement API.
 - **Priority:** High
 - **Acceptance Criteria:**
-  - [ ] Create purchase requests, orders, GRNs, invoices
-  - [ ] Supplier management
-  - [ ] Payment recording
+  - [x] Create purchase requests, orders, GRNs, invoices (`POST /purchasing/requests|orders|grn|invoices` + convert/send/approve flows)
+  - [x] Supplier management (`GET|POST|PATCH /suppliers` + soft status)
+  - [x] Payment recording (`POST /suppliers/{id}/payments` / Credit supplier pay)
 
 #### BR-18.6 API Standards
 - **Description:** Consistent API design.

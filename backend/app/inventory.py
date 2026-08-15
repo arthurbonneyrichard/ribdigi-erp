@@ -479,3 +479,115 @@ async def set_warehouse_reorder_policy(
         "warehouse_id": wh.id,
         "store_id": wh.store_id,
     }
+
+
+async def lookup_products(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    q: str = "",
+    barcode: str | None = None,
+    limit: int = 48,
+) -> dict:
+    """BR-18.2 barcode/SKU/name lookup under inventory:read (not POS-scoped)."""
+    from app import barcodes as barcodes_svc
+    from app import catalog_meta as catalog_meta_svc
+
+    q_clean = (q or "").strip()
+    barcode_key = (barcode or "").strip() or (
+        q_clean if barcodes_svc.looks_like_barcode(q_clean) else ""
+    )
+    stmt = select(m.Product).where(
+        m.Product.tenant_id == tenant_id,
+        m.Product.is_active == True,  # noqa: E712
+    )
+    if barcode_key:
+        stmt = stmt.where(
+            (m.Product.barcode == barcode_key)
+            | (m.Product.sku == barcode_key)
+            | (func.lower(m.Product.barcode) == barcode_key.lower())
+            | (func.lower(m.Product.sku) == barcode_key.lower())
+        )
+    elif q_clean:
+        like = f"%{q_clean}%"
+        stmt = stmt.where(
+            m.Product.name.ilike(like)
+            | m.Product.sku.ilike(like)
+            | m.Product.barcode.ilike(like)
+        )
+    else:
+        return {
+            "q": q_clean,
+            "barcode": barcode_key or None,
+            "count": 0,
+            "items": [],
+        }
+
+    lim = max(1, min(int(limit or 48), 100))
+    products = (await db.execute(stmt.order_by(m.Product.name).limit(lim))).scalars().all()
+    return {
+        "q": q_clean,
+        "barcode": barcode_key or None,
+        "count": len(products),
+        "items": [catalog_meta_svc.serialize_product(p) for p in products],
+    }
+
+
+async def list_product_warehouse_stock(
+    db: AsyncSession,
+    tenant_id: str,
+    product_id: str,
+    *,
+    include_zero: bool = True,
+) -> dict:
+    """BR-18.2 / BR-5.4 — stock levels for one product across warehouses."""
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id, m.Product.tenant_id == tenant_id
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    stmt = (
+        select(m.WarehouseStock, m.Warehouse)
+        .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+        .where(
+            m.WarehouseStock.tenant_id == tenant_id,
+            m.WarehouseStock.product_id == product.id,
+        )
+        .order_by(m.Warehouse.code)
+    )
+    if not include_zero:
+        stmt = stmt.where(
+            (m.WarehouseStock.quantity > 0) | (m.WarehouseStock.reorder_level > 0)
+        )
+    rows = (await db.execute(stmt)).all()
+    items = []
+    for stock, wh in rows:
+        qty = float(stock.quantity or 0)
+        reorder = float(stock.reorder_level or 0)
+        items.append(
+            {
+                "warehouse_id": wh.id,
+                "warehouse_code": wh.code,
+                "warehouse_name": wh.name,
+                "store_id": wh.store_id,
+                "quantity": qty,
+                "reorder_level": reorder,
+                "reorder_qty": float(stock.reorder_qty or 0),
+                "below_reorder": reorder > 0 and qty <= reorder,
+            }
+        )
+    return {
+        "product_id": product.id,
+        "sku": product.sku,
+        "name": product.name,
+        "consolidated_stock": float(product.stock_qty or 0),
+        "reorder_level": float(product.reorder_level or 0),
+        "count": len(items),
+        "items": items,
+        "total_quantity": round(sum(i["quantity"] for i in items), 3),
+    }
