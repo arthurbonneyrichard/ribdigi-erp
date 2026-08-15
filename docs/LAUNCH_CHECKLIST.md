@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 751 track opened (ADR-1509: `test_stage751_open.py`, `docs/STAGE_751_PLAN.md`) — Cookie Max Age Gate Honesty Pack Remaining-Gate Index; closed under ADR-1510
+- [x] Cookie Max Age Gate Honesty Pack remaining-gate hub (Stage 751 I1: `test_stage751_index_i1.py`, `docs/COOKIE_MAX_AGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Cookie Max Age Gate Honesty Pack blocker matrix (Stage 751 B1: `test_stage751_blockers_b1.py`, `docs/COOKIE_MAX_AGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 750 / Stage 749 / Stage 392 / CHANGE_IMPACT pointers (Stage 751 P1: `test_stage751_pointers_p1.py`, `docs/COOKIE_MAX_AGE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 751 fidelity sync (D1: `test_stage751_fidelity_d1.py`, `docs/STAGE_751_FIDELITY.md`)
+- [x] Stage 751 exit + freeze (H751x: `test_stage751_exit_h751x.py`, `docs/STAGE_751_EXIT_CRITERIA.md`, ADR-1510)
+
 Stage 750 track opened (ADR-1507: `test_stage750_open.py`, `docs/STAGE_750_PLAN.md`) — Secure Cookie Gate Honesty Pack Remaining-Gate Index; closed under ADR-1508
 - [x] Secure Cookie Gate Honesty Pack remaining-gate hub (Stage 750 I1: `test_stage750_index_i1.py`, `docs/SECURE_COOKIE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Secure Cookie Gate Honesty Pack blocker matrix (Stage 750 B1: `test_stage750_blockers_b1.py`, `docs/SECURE_COOKIE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

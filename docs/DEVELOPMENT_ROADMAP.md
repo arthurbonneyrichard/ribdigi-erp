@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 751 D1 (2026-08-14):** Cookie Max Age Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_751_FIDELITY.md` (`test_stage751_fidelity_d1.py`). Open ADR: `docs/ADR_1509_STAGE751_OPEN.md`; plan `docs/STAGE_751_PLAN.md`.
+
+**Stage 751 exit (2026-08-14):** I1, B1, P1, D1, H751x met — `docs/STAGE_751_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1510_STAGE751_FREEZE.md`. Fidelity: `docs/STAGE_751_FIDELITY.md`.
+
 **Stage 750 D1 (2026-08-14):** Secure Cookie Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_750_FIDELITY.md` (`test_stage750_fidelity_d1.py`). Open ADR: `docs/ADR_1507_STAGE750_OPEN.md`; plan `docs/STAGE_750_PLAN.md`.
 
 **Stage 750 exit (2026-08-14):** I1, B1, P1, D1, H750x met — `docs/STAGE_750_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1508_STAGE750_FREEZE.md`. Fidelity: `docs/STAGE_750_FIDELITY.md`.
