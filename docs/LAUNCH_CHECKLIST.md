@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 529 track opened (ADR-1065: `test_stage529_open.py`, `docs/STAGE_529_PLAN.md`) — Encryption KMS Honesty Pack Remaining-Gate Index; closed under ADR-1066
+- [x] Encryption KMS Honesty Pack remaining-gate hub (Stage 529 I1: `test_stage529_index_i1.py`, `docs/ENCRYPTION_KMS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Encryption KMS Honesty Pack blocker matrix (Stage 529 B1: `test_stage529_blockers_b1.py`, `docs/ENCRYPTION_KMS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 528 / Stage 527 / Stage 392 / CHANGE_IMPACT pointers (Stage 529 P1: `test_stage529_pointers_p1.py`, `docs/ENCRYPTION_KMS_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 529 fidelity sync (D1: `test_stage529_fidelity_d1.py`, `docs/STAGE_529_FIDELITY.md`)
+- [x] Stage 529 exit + freeze (H529x: `test_stage529_exit_h529x.py`, `docs/STAGE_529_EXIT_CRITERIA.md`, ADR-1066)
+
 Stage 528 track opened (ADR-1063: `test_stage528_open.py`, `docs/STAGE_528_PLAN.md`) — DPA Subprocessor Honesty Pack Remaining-Gate Index; closed under ADR-1064
 - [x] DPA Subprocessor Honesty Pack remaining-gate hub (Stage 528 I1: `test_stage528_index_i1.py`, `docs/DPA_SUBPROCESSOR_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] DPA Subprocessor Honesty Pack blocker matrix (Stage 528 B1: `test_stage528_blockers_b1.py`, `docs/DPA_SUBPROCESSOR_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
