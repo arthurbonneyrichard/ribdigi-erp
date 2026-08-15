@@ -31,3 +31,7 @@ Stage 750 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Http Only Cookie Gate, Http Only Cookie Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 750 opened under **ADR-1507** after CONTINUE/NEXT (Tenant MVP Secure Cookie Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1508**. Stage 749 feature scope remains frozen.
