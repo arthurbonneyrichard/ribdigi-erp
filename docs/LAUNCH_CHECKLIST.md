@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 630 track opened (ADR-1267: `test_stage630_open.py`, `docs/STAGE_630_PLAN.md`) — FastAPI Backend Gate Honesty Pack Remaining-Gate Index; closed under ADR-1268
+- [x] FastAPI Backend Gate Honesty Pack remaining-gate hub (Stage 630 I1: `test_stage630_index_i1.py`, `docs/FASTAPI_BACKEND_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] FastAPI Backend Gate Honesty Pack blocker matrix (Stage 630 B1: `test_stage630_blockers_b1.py`, `docs/FASTAPI_BACKEND_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 629 / Stage 628 / Stage 392 / CHANGE_IMPACT pointers (Stage 630 P1: `test_stage630_pointers_p1.py`, `docs/FASTAPI_BACKEND_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 630 fidelity sync (D1: `test_stage630_fidelity_d1.py`, `docs/STAGE_630_FIDELITY.md`)
+- [x] Stage 630 exit + freeze (H630x: `test_stage630_exit_h630x.py`, `docs/STAGE_630_EXIT_CRITERIA.md`, ADR-1268)
+
 Stage 629 track opened (ADR-1265: `test_stage629_open.py`, `docs/STAGE_629_PLAN.md`) — Nextjs Frontend Gate Honesty Pack Remaining-Gate Index; closed under ADR-1266
 - [x] Nextjs Frontend Gate Honesty Pack remaining-gate hub (Stage 629 I1: `test_stage629_index_i1.py`, `docs/NEXTJS_FRONTEND_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Nextjs Frontend Gate Honesty Pack blocker matrix (Stage 629 B1: `test_stage629_blockers_b1.py`, `docs/NEXTJS_FRONTEND_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

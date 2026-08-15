@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 630 D1 FastAPI Backend Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_630_FIDELITY.md` (`test_stage630_fidelity_d1.py`); Offline Complete / FastAPI Backend Gate honesty / go-live still MISSING.
 Stage 629 D1 Nextjs Frontend Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_629_FIDELITY.md` (`test_stage629_fidelity_d1.py`); Offline Complete / Nextjs Frontend Gate honesty / go-live still MISSING.
 Stage 628 D1 RabbitMQ Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_628_FIDELITY.md` (`test_stage628_fidelity_d1.py`); Offline Complete / RabbitMQ Gate honesty / go-live still MISSING.
 Stage 627 D1 PostgreSQL Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_627_FIDELITY.md` (`test_stage627_fidelity_d1.py`); Offline Complete / PostgreSQL Gate honesty / go-live still MISSING.

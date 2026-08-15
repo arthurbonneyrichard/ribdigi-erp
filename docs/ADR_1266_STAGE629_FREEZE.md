@@ -31,3 +31,7 @@ Stage 630 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Nextjs Frontend Gate, Nextjs Frontend Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 630 opened under **ADR-1267** after CONTINUE/NEXT (Tenant MVP FastAPI Backend Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1268**. Stage 629 feature scope remains frozen.
