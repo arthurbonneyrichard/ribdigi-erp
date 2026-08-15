@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 558 track opened (ADR-1123: `test_stage558_open.py`, `docs/STAGE_558_PLAN.md`) — ADR002 Paid Billing Honesty Pack Remaining-Gate Index; closed under ADR-1124
+- [x] ADR002 Paid Billing Honesty Pack remaining-gate hub (Stage 558 I1: `test_stage558_index_i1.py`, `docs/ADR002_PAID_BILLING_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] ADR002 Paid Billing Honesty Pack blocker matrix (Stage 558 B1: `test_stage558_blockers_b1.py`, `docs/ADR002_PAID_BILLING_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 557 / Stage 556 / Stage 392 / CHANGE_IMPACT pointers (Stage 558 P1: `test_stage558_pointers_p1.py`, `docs/ADR002_PAID_BILLING_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 558 fidelity sync (D1: `test_stage558_fidelity_d1.py`, `docs/STAGE_558_FIDELITY.md`)
+- [x] Stage 558 exit + freeze (H558x: `test_stage558_exit_h558x.py`, `docs/STAGE_558_EXIT_CRITERIA.md`, ADR-1124)
+
 Stage 557 track opened (ADR-1121: `test_stage557_open.py`, `docs/STAGE_557_PLAN.md`) — Attestation Honesty Pack Remaining-Gate Index; closed under ADR-1122
 - [x] Attestation Honesty Pack remaining-gate hub (Stage 557 I1: `test_stage557_index_i1.py`, `docs/ATTESTATION_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Attestation Honesty Pack blocker matrix (Stage 557 B1: `test_stage557_blockers_b1.py`, `docs/ATTESTATION_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
