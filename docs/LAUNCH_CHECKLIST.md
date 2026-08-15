@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+- [x] Stage 474 track opened (ADR-955: `test_stage474_open.py`, `docs/STAGE_474_PLAN.md`) — Offline Catalog Snapshot Honesty Pack Remaining-Gate Index; closed under ADR-956
+- [x] Offline Catalog Snapshot honesty pack remaining-gate hub (Stage 474 I1: `test_stage474_index_i1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline Catalog Snapshot honesty pack blocker matrix (Stage 474 B1: `test_stage474_blockers_b1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 473 / Stage 472 / Stage 392 / CHANGE_IMPACT pointers (Stage 474 P1: `test_stage474_pointers_p1.py`, `docs/OFFLINE_CATALOG_SNAPSHOT_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 474 fidelity sync (D1: `test_stage474_fidelity_d1.py`, `docs/STAGE_474_FIDELITY.md`)
+- [x] Stage 474 exit + freeze (H474x: `test_stage474_exit_h474x.py`, `docs/STAGE_474_EXIT_CRITERIA.md`, ADR-956)
 - [x] Stage 473 track opened (ADR-953: `test_stage473_open.py`, `docs/STAGE_473_PLAN.md`) — Offline Client Request ID Honesty Pack Remaining-Gate Index; closed under ADR-954
 - [x] Offline Client Request ID honesty pack remaining-gate hub (Stage 473 I1: `test_stage473_index_i1.py`, `docs/OFFLINE_CLIENT_REQUEST_ID_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline Client Request ID honesty pack blocker matrix (Stage 473 B1: `test_stage473_blockers_b1.py`, `docs/OFFLINE_CLIENT_REQUEST_ID_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
