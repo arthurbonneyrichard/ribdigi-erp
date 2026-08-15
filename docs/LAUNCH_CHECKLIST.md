@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 648 track opened (ADR-1303: `test_stage648_open.py`, `docs/STAGE_648_PLAN.md`) — Performance Budget Gate Honesty Pack Remaining-Gate Index; closed under ADR-1304
+- [x] Performance Budget Gate Honesty Pack remaining-gate hub (Stage 648 I1: `test_stage648_index_i1.py`, `docs/PERFORMANCE_BUDGET_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Performance Budget Gate Honesty Pack blocker matrix (Stage 648 B1: `test_stage648_blockers_b1.py`, `docs/PERFORMANCE_BUDGET_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 647 / Stage 646 / Stage 392 / CHANGE_IMPACT pointers (Stage 648 P1: `test_stage648_pointers_p1.py`, `docs/PERFORMANCE_BUDGET_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 648 fidelity sync (D1: `test_stage648_fidelity_d1.py`, `docs/STAGE_648_FIDELITY.md`)
+- [x] Stage 648 exit + freeze (H648x: `test_stage648_exit_h648x.py`, `docs/STAGE_648_EXIT_CRITERIA.md`, ADR-1304)
+
 Stage 647 track opened (ADR-1301: `test_stage647_open.py`, `docs/STAGE_647_PLAN.md`) — Accessibility A11y Gate Honesty Pack Remaining-Gate Index; closed under ADR-1302
 - [x] Accessibility A11y Gate Honesty Pack remaining-gate hub (Stage 647 I1: `test_stage647_index_i1.py`, `docs/ACCESSIBILITY_A11Y_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Accessibility A11y Gate Honesty Pack blocker matrix (Stage 647 B1: `test_stage647_blockers_b1.py`, `docs/ACCESSIBILITY_A11Y_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
