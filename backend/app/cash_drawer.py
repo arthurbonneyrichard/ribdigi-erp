@@ -131,9 +131,33 @@ async def open_drawer(
     reason: str,
     user_id: str | None = None,
     force: bool = False,
+    require_specific_reason: bool = False,
 ) -> dict:
-    """Pulse the cash drawer. force=True for manual opens even if mode is none? No — none stays off."""
-    reason_clean = (reason or "").strip() or "manual"
+    """Pulse the cash drawer. force=True for manual opens even if mode is none? No — none stays off.
+
+    When require_specific_reason=True (manual POS button), reject blank / placeholder reasons.
+    Auto-open on cash sale passes require_specific_reason=False with reason pos_sale:{id}.
+    """
+    reason_clean = (reason or "").strip()
+    if require_specific_reason:
+        if len(reason_clean) < 3:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "DRAWER_REASON_REQUIRED",
+                    "message": "Drawer open reason is required (min 3 characters)",
+                },
+            )
+        if reason_clean.lower() in {"manual", "n/a", "na", "none", "test"}:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "DRAWER_REASON_REQUIRED",
+                    "message": "Provide a specific reason (e.g. change request, no sale)",
+                },
+            )
+    elif not reason_clean:
+        reason_clean = "manual"
     if len(reason_clean) > 200:
         raise HTTPException(status_code=400, detail="reason too long")
     cfg = await resolve_config(db, tenant_id=tenant_id, store_id=store_id)
@@ -157,6 +181,7 @@ async def open_drawer(
         raise
     result["store_id"] = store_id
     result["user_id"] = user_id
+    result["reason"] = reason_clean
     return result
 
 

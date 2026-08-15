@@ -829,12 +829,26 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={async () => {
                     setError('');
+                    const reason = window.prompt(
+                      'Reason for opening the cash drawer (required)',
+                      ''
+                    );
+                    if (reason === null) return;
+                    const cleaned = (reason || '').trim();
+                    if (cleaned.length < 3 || ['manual', 'n/a', 'na', 'none', 'test'].includes(cleaned.toLowerCase())) {
+                      setError('Enter a specific drawer reason (min 3 characters)');
+                      return;
+                    }
                     try {
                       const r = await api(`/pos/sessions/${session.session_id}/drawer/open`, {
                         method: 'POST',
-                        body: JSON.stringify({ reason: 'manual' }),
+                        body: JSON.stringify({ reason: cleaned }),
                       });
-                      setMessage(r.data?.message || r.message || 'Drawer opened');
+                      setMessage(
+                        r.data?.message ||
+                          r.message ||
+                          `Drawer opened (${r.data?.reason || cleaned})`
+                      );
                     } catch (err: any) {
                       setError(err.message);
                     }

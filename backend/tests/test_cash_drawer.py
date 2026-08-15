@@ -34,6 +34,46 @@ async def _admin_headers(ac, seeded):
 
 
 @pytest.mark.asyncio
+async def test_manual_drawer_open_requires_specific_reason(client, monkeypatch):
+    monkeypatch.setattr("app.config.settings.POS_DRAWER_FALLBACK_MODE", "mock")
+    monkeypatch.setattr("app.cash_drawer.settings.POS_DRAWER_FALLBACK_MODE", "mock")
+
+    ac, seeded = client
+    headers = await _cashier_headers(ac)
+    opened = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"opening_cash": 20},
+    )
+    assert opened.status_code == 200, opened.text
+    session_id = opened.json()["data"]["session_id"]
+
+    blank = await ac.post(
+        f"/api/v1/pos/sessions/{session_id}/drawer/open",
+        headers=headers,
+        json={"reason": "  "},
+    )
+    assert blank.status_code == 400, blank.text
+
+    placeholder = await ac.post(
+        f"/api/v1/pos/sessions/{session_id}/drawer/open",
+        headers=headers,
+        json={"reason": "manual"},
+    )
+    assert placeholder.status_code == 400, placeholder.text
+    assert placeholder.json()["detail"]["code"] == "DRAWER_REASON_REQUIRED"
+
+    ok = await ac.post(
+        f"/api/v1/pos/sessions/{session_id}/drawer/open",
+        headers=headers,
+        json={"reason": "Customer change request"},
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["ok"] is True
+    assert ok.json()["data"]["reason"] == "Customer change request"
+
+
+@pytest.mark.asyncio
 async def test_manual_drawer_open_mock_fallback(client, monkeypatch):
     monkeypatch.setattr("app.config.settings.POS_DRAWER_FALLBACK_MODE", "mock")
     monkeypatch.setattr("app.cash_drawer.settings.POS_DRAWER_FALLBACK_MODE", "mock")
@@ -59,6 +99,7 @@ async def test_manual_drawer_open_mock_fallback(client, monkeypatch):
     assert body["ok"] is True
     assert body["mode"] == "mock"
     assert body["kick_base64"] == kick_base64()
+    assert body["reason"] == "no_sale"
 
     summary = await ac.get(f"/api/v1/pos/sessions/{session_id}/drawer", headers=headers)
     assert summary.status_code == 200
@@ -178,10 +219,11 @@ async def test_network_drawer_sends_socket(client, monkeypatch):
         r = await ac.post(
             f"/api/v1/pos/sessions/{session_id}/drawer/open",
             headers=cashier,
-            json={"reason": "test"},
+            json={"reason": "network pulse check"},
         )
     assert r.status_code == 200, r.text
     assert r.json()["data"]["ok"] is True
+    assert r.json()["data"]["reason"] == "network pulse check"
     send.assert_called_once()
     args = send.call_args[0]
     assert args[0] == "127.0.0.1"
