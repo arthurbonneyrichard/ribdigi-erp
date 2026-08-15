@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 623 track opened (ADR-1253: `test_stage623_open.py`, `docs/STAGE_623_PLAN.md`) — Alembic Migration Gate Honesty Pack Remaining-Gate Index; closed under ADR-1254
+- [x] Alembic Migration Gate Honesty Pack remaining-gate hub (Stage 623 I1: `test_stage623_index_i1.py`, `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Alembic Migration Gate Honesty Pack blocker matrix (Stage 623 B1: `test_stage623_blockers_b1.py`, `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 622 / Stage 621 / Stage 392 / CHANGE_IMPACT pointers (Stage 623 P1: `test_stage623_pointers_p1.py`, `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 623 fidelity sync (D1: `test_stage623_fidelity_d1.py`, `docs/STAGE_623_FIDELITY.md`)
+- [x] Stage 623 exit + freeze (H623x: `test_stage623_exit_h623x.py`, `docs/STAGE_623_EXIT_CRITERIA.md`, ADR-1254)
+
 Stage 622 track opened (ADR-1251: `test_stage622_open.py`, `docs/STAGE_622_PLAN.md`) — Secrets Config Gate Honesty Pack Remaining-Gate Index; closed under ADR-1252
 - [x] Secrets Config Gate Honesty Pack remaining-gate hub (Stage 622 I1: `test_stage622_index_i1.py`, `docs/SECRETS_CONFIG_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Secrets Config Gate Honesty Pack blocker matrix (Stage 622 B1: `test_stage622_blockers_b1.py`, `docs/SECRETS_CONFIG_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

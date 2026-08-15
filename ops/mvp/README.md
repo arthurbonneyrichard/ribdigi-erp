@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/alembic-migration-gate-honesty-pack-remaining-gate.json` — Stage 623 I1
+- `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/alembic-migration-gate-honesty-pack-rg-blockers.json` — Stage 623 B1
+- `docs/ALEMBIC_MIGRATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/alembic-migration-gate-honesty-pack-rg-pointers.json` — Stage 623 P1
 - `docs/SECRETS_CONFIG_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/secrets-config-gate-honesty-pack-remaining-gate.json` — Stage 622 I1
 - `docs/SECRETS_CONFIG_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/secrets-config-gate-honesty-pack-rg-blockers.json` — Stage 622 B1
 - `docs/SECRETS_CONFIG_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/secrets-config-gate-honesty-pack-rg-pointers.json` — Stage 622 P1

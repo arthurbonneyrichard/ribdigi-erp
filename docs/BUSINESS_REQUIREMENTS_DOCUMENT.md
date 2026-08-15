@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 623 D1 Alembic Migration Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_623_FIDELITY.md` (`test_stage623_fidelity_d1.py`); Offline Complete / Alembic Migration Gate honesty / go-live still MISSING.
 Stage 622 D1 Secrets Config Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_622_FIDELITY.md` (`test_stage622_fidelity_d1.py`); Offline Complete / Secrets Config Gate honesty / go-live still MISSING.
 Stage 621 D1 Session Auth Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_621_FIDELITY.md` (`test_stage621_fidelity_d1.py`); Offline Complete / Session Auth Gate honesty / go-live still MISSING.
 Stage 620 D1 Input Validation Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_620_FIDELITY.md` (`test_stage620_fidelity_d1.py`); Offline Complete / Input Validation Gate honesty / go-live still MISSING.
