@@ -31,3 +31,7 @@ Stage 919 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Boundary Gate, Transfer Boundary Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 919 opened under **ADR-1845** after CONTINUE/NEXT (Tenant MVP Transfer Jurisdiction Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1846**. Stage 918 feature scope remains frozen.
