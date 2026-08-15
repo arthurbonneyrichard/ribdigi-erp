@@ -837,6 +837,11 @@ class PurchaseOrderAmend(BaseModel):
     to: str | None = None
 
 
+class PurchaseOrderCancel(BaseModel):
+    """PO cancel — typed reason required (BR-6.3 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
 class PurchaseRequestItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)

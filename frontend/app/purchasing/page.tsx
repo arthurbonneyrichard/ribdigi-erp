@@ -201,6 +201,7 @@ export default function Page() {
   const [prNotes, setPrNotes] = useState('');
   const [prBusy, setPrBusy] = useState('');
   const [prRejectReason, setPrRejectReason] = useState('');
+  const [poCancelReason, setPoCancelReason] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
     { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
@@ -458,9 +459,18 @@ export default function Page() {
   async function cancelPo(po: PurchaseOrder) {
     setError('');
     setMessage('');
+    const reason = poCancelReason.trim();
+    if (!reason) {
+      setError('Enter a cancel reason before cancelling a purchase order');
+      return;
+    }
     try {
-      const r = await api(`/purchasing/orders/${po.id}/cancel`, { method: 'POST' });
+      const r = await api(`/purchasing/orders/${po.id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
       setMessage(r.message || `Cancelled ${r.data?.po_number || po.po_number}`);
+      setPoCancelReason('');
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
@@ -1626,6 +1636,21 @@ export default function Page() {
       </div>
           </div>
 
+          <div className="card" style={{ marginBottom: 16 }}>
+            <label>
+              Cancel reason{' '}
+              <input
+                value={poCancelReason}
+                onChange={(e) => setPoCancelReason(e.target.value)}
+                placeholder="Required before Cancel"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Appended to PO notes and audit (<code>POST .../cancel</code> {'{ reason }'}).
+            </p>
+          </div>
+
           <table className="table">
             <thead>
               <tr>
@@ -1633,6 +1658,7 @@ export default function Page() {
                 <th>Status</th>
                 <th>Rev</th>
                 <th>Total</th>
+                <th>Notes</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1650,6 +1676,9 @@ export default function Page() {
                   <td>{o.status}</td>
                   <td>{o.revision_no ?? 0}</td>
                   <td>{o.total_amount}</td>
+                  <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                    {o.notes || '—'}
+                  </td>
                   <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Email</button>}
                     {o.status === 'sent' && (
@@ -1686,8 +1715,13 @@ export default function Page() {
                     Cancel PO
                   </button>
                   <span className="muted" style={{ marginLeft: 8 }}>
-                    Allowed while draft/sent with no receipts (BR-6.3).
+                    Allowed while draft/sent with no receipts; cancel reason required (BR-6.3).
                   </span>
+                </p>
+              )}
+              {selected.notes && (
+                <p className="muted" style={{ marginTop: 0, whiteSpace: 'pre-wrap' }}>
+                  Notes: {selected.notes}
                 </p>
               )}
               {selected.emailed_to && (

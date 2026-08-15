@@ -810,7 +810,7 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 
 **Status Flow:** `draft` → `sent` → `partially_received` → `received` (Fully Received); branch to `cancelled`
 
-**Cancel:** `POST /purchasing/orders/{po_id}/cancel` — allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel`. Purchasing Orders UI Cancel button (BR-6.3).
+**Cancel:** `POST /purchasing/orders/{po_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to PO `notes` as `Cancel: …` and stored in audit `po_cancelled.details.reason`); allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel` + `notes`. Purchasing Orders **Cancel reason** UI (BR-6.3).
 
 ### 6.4 Goods Received Note (GRN)
 **List:** `GET /purchases/grn`  

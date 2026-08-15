@@ -123,7 +123,9 @@ async def test_create_purchase_invoice_from_po_and_rejects_cancelled(client, see
     assert po2.status_code == 200, po2.text
     po2_id = po2.json()["data"]["id"]
     cancelled = await ac.post(
-        f"/api/v1/purchasing/orders/{po2_id}/cancel", headers=admin
+        f"/api/v1/purchasing/orders/{po2_id}/cancel",
+        headers=admin,
+        json={"reason": "AI draft PI cancel source"},
     )
     assert cancelled.status_code == 200, cancelled.text
     blocked = await ac.post(
