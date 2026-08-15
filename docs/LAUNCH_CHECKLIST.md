@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 653 track opened (ADR-1313: `test_stage653_open.py`, `docs/STAGE_653_PLAN.md`) — Rollback Runbook Gate Honesty Pack Remaining-Gate Index; closed under ADR-1314
+- [x] Rollback Runbook Gate Honesty Pack remaining-gate hub (Stage 653 I1: `test_stage653_index_i1.py`, `docs/ROLLBACK_RUNBOOK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Rollback Runbook Gate Honesty Pack blocker matrix (Stage 653 B1: `test_stage653_blockers_b1.py`, `docs/ROLLBACK_RUNBOOK_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 652 / Stage 651 / Stage 392 / CHANGE_IMPACT pointers (Stage 653 P1: `test_stage653_pointers_p1.py`, `docs/ROLLBACK_RUNBOOK_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 653 fidelity sync (D1: `test_stage653_fidelity_d1.py`, `docs/STAGE_653_FIDELITY.md`)
+- [x] Stage 653 exit + freeze (H653x: `test_stage653_exit_h653x.py`, `docs/STAGE_653_EXIT_CRITERIA.md`, ADR-1314)
+
 Stage 652 track opened (ADR-1311: `test_stage652_open.py`, `docs/STAGE_652_PLAN.md`) — Blue Green Gate Honesty Pack Remaining-Gate Index; closed under ADR-1312
 - [x] Blue Green Gate Honesty Pack remaining-gate hub (Stage 652 I1: `test_stage652_index_i1.py`, `docs/BLUE_GREEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Blue Green Gate Honesty Pack blocker matrix (Stage 652 B1: `test_stage652_blockers_b1.py`, `docs/BLUE_GREEN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

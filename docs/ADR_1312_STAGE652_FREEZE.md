@@ -31,3 +31,7 @@ Stage 653 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Blue Green Gate, Blue Green Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 653 opened under **ADR-1313** after CONTINUE/NEXT (Tenant MVP Rollback Runbook Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1314**. Stage 652 feature scope remains frozen.
