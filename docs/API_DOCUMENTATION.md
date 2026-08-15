@@ -599,7 +599,7 @@ Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update
 }
 ```
 
-`reference_type` required ∈ `{sale, transfer, adjustment, damage, internal, other}`. Optional `reference_id`, `warehouse_id`, `variant_id`, `unit_id`, `batch_id` (otherwise FEFO). Persists `stock_movements.reference_type` / `reference_id` with `movement_type=stock_out`. Inventory UI **Stock Out** tab.
+`reference_type` required ∈ `{sale, transfer, adjustment, damage, internal, other}` (no silent default to `other`; Inventory UI **Select reference type**). Optional `reference_id`, `warehouse_id`, `variant_id`, `unit_id`, `batch_id` (otherwise FEFO). Persists `stock_movements.reference_type` / `reference_id` with `movement_type=stock_out`. Inventory UI **Stock Out** tab.
 
 **Warehouse Stock (BR-5.4):** `GET /inventory/warehouse-stock?warehouse_id=&include_zero=false` — per-warehouse on-hand + reorder policy (`inventory:read`). Response `items[]` include `quantity`, `reorder_level`, `reorder_qty`, `below_reorder`, `suggested_order_qty`, `consolidated_stock`. Inventory **Warehouse stock** tab.
 
@@ -627,7 +627,7 @@ Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory
 }
 ```
 
-`reason` required ∈ `{damage, theft, expiry, found, lost}`. Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements`.
+`reason` required ∈ `{damage, theft, expiry, found, lost}` (no silent default to `damage`; Inventory UI **Select reason**). Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements`.
 
 **Stock Transfer (BR-5.2 / BR-5.4):** `POST /inventory/stock-transfers` (also `POST /stores/transfers`)
 
