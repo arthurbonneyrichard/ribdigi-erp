@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 875 track opened (ADR-1757: `test_stage875_open.py`, `docs/STAGE_875_PLAN.md`) — Retention Schedule Gate Honesty Pack Remaining-Gate Index; closed under ADR-1758
+- [x] Retention Schedule Gate Honesty Pack remaining-gate hub (Stage 875 I1: `test_stage875_index_i1.py`, `docs/RETENTION_SCHEDULE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Retention Schedule Gate Honesty Pack blocker matrix (Stage 875 B1: `test_stage875_blockers_b1.py`, `docs/RETENTION_SCHEDULE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 874 / Stage 873 / Stage 392 / CHANGE_IMPACT pointers (Stage 875 P1: `test_stage875_pointers_p1.py`, `docs/RETENTION_SCHEDULE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 875 fidelity sync (D1: `test_stage875_fidelity_d1.py`, `docs/STAGE_875_FIDELITY.md`)
+- [x] Stage 875 exit + freeze (H875x: `test_stage875_exit_h875x.py`, `docs/STAGE_875_EXIT_CRITERIA.md`, ADR-1758)
+
 Stage 874 track opened (ADR-1755: `test_stage874_open.py`, `docs/STAGE_874_PLAN.md`) — DSR SLA Gate Honesty Pack Remaining-Gate Index; closed under ADR-1756
 - [x] DSR SLA Gate Honesty Pack remaining-gate hub (Stage 874 I1: `test_stage874_index_i1.py`, `docs/DSR_SLA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] DSR SLA Gate Honesty Pack blocker matrix (Stage 874 B1: `test_stage874_blockers_b1.py`, `docs/DSR_SLA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

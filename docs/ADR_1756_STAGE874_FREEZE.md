@@ -31,3 +31,7 @@ Stage 875 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, DSR SLA Gate, DSR SLA Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 875 opened under **ADR-1757** after CONTINUE/NEXT (Tenant MVP Retention Schedule Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1758**. Stage 874 feature scope remains frozen.
