@@ -31,3 +31,10 @@ Stage 446 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Residual, Commercial Residual honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 446 opened under **ADR-899** after CONTINUE/NEXT (Tenant MVP Commercial Packaging Archive Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-900**. Stage 445 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 445 runner-up outline was approved and opened (ADR-899); freeze ADR-900. Do not reopen Stage 445 scope.
+

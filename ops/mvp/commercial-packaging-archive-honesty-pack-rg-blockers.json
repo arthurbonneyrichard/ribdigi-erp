@@ -1,0 +1,77 @@
+{
+  "id": "commercial-packaging-archive-honesty-pack-rg-blockers",
+  "stage": 446,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_PACKAGING_ARCHIVE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_PACKAGING_ARCHIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "commercial_packaging_archive_pack_remaining_gate": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "commercial_packaging_archive_honesty_complete_claimed": false,
+  "commercial_packaging_archive_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "commercial_packaging_archive_honesty_complete_claimed": "REMAINING",
+    "commercial_packaging_archive_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_commercial_packaging_archive_honesty": "NON_CLAIM",
+    "commercial_packaging_archive_pack_as_commercial_packaging_archive_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "commercial_packaging_archive_honesty_complete_claimed_flag": "false",
+    "commercial_packaging_archive_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "cpahprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpahprb-honesty",
+      "title": "Mark Commercial Packaging Archive honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpahprb-as-golive",
+      "title": "Mark Commercial Packaging Archive as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpahprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpahprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpahprb-archive-nonclaim",
+      "title": "Mark COMMERCIAL_PACKAGING_ARCHIVE_PACK as non-claim for commercial-packaging-archive Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpahprb-checklist-remaining",
+      "title": "Offline Complete / Commercial Packaging Archive / Commercial Packaging Archive honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 446 B1 Commercial Packaging Archive Honesty Pack RG blocker matrix packaging only."
+}
