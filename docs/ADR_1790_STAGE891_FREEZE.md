@@ -31,3 +31,7 @@ Stage 892 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Consent Transfer Gate, Consent Transfer Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 892 opened under **ADR-1791** after CONTINUE/NEXT (Tenant MVP Contract Necessity Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1792**. Stage 891 feature scope remains frozen.
