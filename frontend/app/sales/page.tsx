@@ -1154,6 +1154,7 @@ export default function Page() {
                   {['draft', 'sent'].includes(q.status) && (
                     <>
                       <button onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
+                      <button onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}>Reject</button>
                       <button onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}>→ Order</button>
                       <button onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}>→ Invoice</button>
                     </>

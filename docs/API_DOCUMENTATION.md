@@ -912,7 +912,11 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 **List:** `GET /sales/quotations`  
 **Create:** `POST /sales/quotations`  
 **Get:** `GET /sales/quotations/{quote_id}`  
-**Convert to Order:** `POST /sales/quotations/{quote_id}/convert-to-order`
+**Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`  
+**Accept:** `POST /sales/quotations/{quote_id}/accept` — draft/sent only → `accepted`  
+**Reject:** `POST /sales/quotations/{quote_id}/reject` — draft/sent only → `rejected` (Sales UI **Reject**; 409 if already accepted/rejected/converted/expired)  
+**Convert to Order:** `POST /sales/quotations/{quote_id}/convert-order`  
+**Convert to Invoice:** `POST /sales/quotations/{quote_id}/convert-invoice`
 
 **Create Quotation:**
 ```json
