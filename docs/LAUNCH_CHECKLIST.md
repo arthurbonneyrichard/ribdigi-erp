@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 766 track opened (ADR-1539: `test_stage766_open.py`, `docs/STAGE_766_PLAN.md`) — Workload Identity Gate Honesty Pack Remaining-Gate Index; closed under ADR-1540
+- [x] Workload Identity Gate Honesty Pack remaining-gate hub (Stage 766 I1: `test_stage766_index_i1.py`, `docs/WORKLOAD_IDENTITY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Workload Identity Gate Honesty Pack blocker matrix (Stage 766 B1: `test_stage766_blockers_b1.py`, `docs/WORKLOAD_IDENTITY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 765 / Stage 764 / Stage 392 / CHANGE_IMPACT pointers (Stage 766 P1: `test_stage766_pointers_p1.py`, `docs/WORKLOAD_IDENTITY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 766 fidelity sync (D1: `test_stage766_fidelity_d1.py`, `docs/STAGE_766_FIDELITY.md`)
+- [x] Stage 766 exit + freeze (H766x: `test_stage766_exit_h766x.py`, `docs/STAGE_766_EXIT_CRITERIA.md`, ADR-1540)
+
 Stage 765 track opened (ADR-1537: `test_stage765_open.py`, `docs/STAGE_765_PLAN.md`) — Client Credential Gate Honesty Pack Remaining-Gate Index; closed under ADR-1538
 - [x] Client Credential Gate Honesty Pack remaining-gate hub (Stage 765 I1: `test_stage765_index_i1.py`, `docs/CLIENT_CREDENTIAL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Client Credential Gate Honesty Pack blocker matrix (Stage 765 B1: `test_stage765_blockers_b1.py`, `docs/CLIENT_CREDENTIAL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

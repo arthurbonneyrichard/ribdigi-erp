@@ -31,3 +31,7 @@ Stage 766 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Client Credential Gate, Client Credential Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 766 opened under **ADR-1539** after CONTINUE/NEXT (Tenant MVP Workload Identity Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1540**. Stage 765 feature scope remains frozen.
