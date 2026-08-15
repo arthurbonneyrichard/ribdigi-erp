@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/TENANT_COMPANY_CONSOLE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/tenant-company-console-honesty-pack-remaining-gate.json` — Stage 456 I1
+- `docs/TENANT_COMPANY_CONSOLE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/tenant-company-console-honesty-pack-rg-blockers.json` — Stage 456 B1
+- `docs/TENANT_COMPANY_CONSOLE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/tenant-company-console-honesty-pack-rg-pointers.json` — Stage 456 P1
 - `docs/RIBDIGI_HOUSE_CONSOLE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/ribdigi-house-console-honesty-pack-remaining-gate.json` — Stage 455 I1
 - `docs/RIBDIGI_HOUSE_CONSOLE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/ribdigi-house-console-honesty-pack-rg-blockers.json` — Stage 455 B1
 - `docs/RIBDIGI_HOUSE_CONSOLE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/ribdigi-house-console-honesty-pack-rg-pointers.json` — Stage 455 P1

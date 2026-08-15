@@ -31,3 +31,10 @@ Stage 456 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, RIBDIGI House Console, RIBDIGI House Console honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 456 opened under **ADR-919** after CONTINUE/NEXT (Tenant MVP Tenant Company Console Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-920**. Stage 455 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 455 runner-up outline was approved and opened (ADR-919); freeze ADR-920. Do not reopen Stage 455 scope.
+
