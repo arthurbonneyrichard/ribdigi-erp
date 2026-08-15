@@ -1010,6 +1010,12 @@ class SalesOrderConfirm(BaseModel):
     delivery_address: str | None = None
 
 
+class SalesOrderCancel(BaseModel):
+    """Sales order cancel — typed reason required (BR-7.3 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class SalesReturnItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)

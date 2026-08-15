@@ -89,7 +89,11 @@ async def test_confirm_reserves_blocks_second_order_cancel_releases(client, db_s
     detail = blocked.json()["detail"]
     assert detail["code"] == "INSUFFICIENT_AVAILABLE_STOCK"
 
-    cancelled = await ac.post(f"/api/v1/sales/orders/{oid1}/cancel", headers=admin)
+    cancelled = await ac.post(
+        f"/api/v1/sales/orders/{oid1}/cancel",
+        headers=admin,
+        json={"reason": "Free reserved stock — reservation test"},
+    )
     assert cancelled.status_code == 200
     assert cancelled.json()["data"]["status"] == "cancelled"
     assert cancelled.json()["data"]["reserved_qty"] == 0

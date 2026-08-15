@@ -75,7 +75,11 @@ async def test_order_fulfillment_lifecycle(client, db_session, seeded):
     assert shipped.json()["data"]["can_cancel"] is False
 
     # Cancel blocked after ship
-    blocked = await ac.post(f"/api/v1/sales/orders/{oid}/cancel", headers=admin)
+    blocked = await ac.post(
+        f"/api/v1/sales/orders/{oid}/cancel",
+        headers=admin,
+        json={"reason": "should fail after ship"},
+    )
     assert blocked.status_code == 409
 
     delivered = await ac.post(f"/api/v1/sales/orders/{oid}/deliver", headers=admin)
@@ -97,7 +101,14 @@ async def test_cancel_while_processing_releases_reservation(client, db_session, 
     admin = await _super(ac, seed)
     oid, _ = await _confirmed_order(ac, db_session, seed, admin, qty=3, code="FF2")
     await ac.post(f"/api/v1/sales/orders/{oid}/process", headers=admin)
-    cancelled = await ac.post(f"/api/v1/sales/orders/{oid}/cancel", headers=admin)
+    cancelled = await ac.post(
+        f"/api/v1/sales/orders/{oid}/cancel",
+        headers=admin,
+        json={"reason": "Customer changed mind — processing"},
+    )
     assert cancelled.status_code == 200, cancelled.text
     assert cancelled.json()["data"]["status"] == "cancelled"
     assert cancelled.json()["data"]["reserved_qty"] == 0
+    assert "Cancel: Customer changed mind — processing" in (
+        cancelled.json()["data"].get("notes") or ""
+    )
