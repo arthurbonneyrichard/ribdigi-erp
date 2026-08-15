@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 574 D1 (2026-08-14):** Store Open Health Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_574_FIDELITY.md` (`test_stage574_fidelity_d1.py`). Open ADR: `docs/ADR_1155_STAGE574_OPEN.md`; plan `docs/STAGE_574_PLAN.md`.
+
+**Stage 574 exit (2026-08-14):** I1, B1, P1, D1, H574x met — `docs/STAGE_574_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1156_STAGE574_FREEZE.md`. Fidelity: `docs/STAGE_574_FIDELITY.md`.
+
 **Stage 573 D1 (2026-08-14):** Store Close Checklist Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_573_FIDELITY.md` (`test_stage573_fidelity_d1.py`). Open ADR: `docs/ADR_1153_STAGE573_OPEN.md`; plan `docs/STAGE_573_PLAN.md`.
 
 **Stage 573 exit (2026-08-14):** I1, B1, P1, D1, H573x met — `docs/STAGE_573_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1154_STAGE573_FREEZE.md`. Fidelity: `docs/STAGE_573_FIDELITY.md`.
