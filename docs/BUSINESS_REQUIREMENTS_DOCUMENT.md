@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 578 D1 Shift Handover Checklist Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_578_FIDELITY.md` (`test_stage578_fidelity_d1.py`); Offline Complete / Shift Handover Checklist honesty / go-live still MISSING.
 Stage 577 D1 Store Close Triage Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_577_FIDELITY.md` (`test_stage577_fidelity_d1.py`); Offline Complete / Store Close Triage honesty / go-live still MISSING.
 Stage 576 D1 Store Close Drain Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_576_FIDELITY.md` (`test_stage576_fidelity_d1.py`); Offline Complete / Store Close Drain honesty / go-live still MISSING.
 Stage 575 D1 Store Open Lowstock Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_575_FIDELITY.md` (`test_stage575_fidelity_d1.py`); Offline Complete / Store Open Lowstock honesty / go-live still MISSING.

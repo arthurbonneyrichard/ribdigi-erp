@@ -31,3 +31,7 @@ Stage 578 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Store Close Triage, Store Close Triage honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 578 opened under **ADR-1163** after CONTINUE/NEXT (Tenant MVP Shift Handover Checklist Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1164**. Stage 577 feature scope remains frozen.

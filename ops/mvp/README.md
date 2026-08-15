@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/SHIFT_HANDOVER_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/shift-handover-checklist-honesty-pack-remaining-gate.json` — Stage 578 I1
+- `docs/SHIFT_HANDOVER_CHECKLIST_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/shift-handover-checklist-honesty-pack-rg-blockers.json` — Stage 578 B1
+- `docs/SHIFT_HANDOVER_CHECKLIST_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/shift-handover-checklist-honesty-pack-rg-pointers.json` — Stage 578 P1
 - `docs/STORE_CLOSE_TRIAGE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/store-close-triage-honesty-pack-remaining-gate.json` — Stage 577 I1
 - `docs/STORE_CLOSE_TRIAGE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/store-close-triage-honesty-pack-rg-blockers.json` — Stage 577 B1
 - `docs/STORE_CLOSE_TRIAGE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/store-close-triage-honesty-pack-rg-pointers.json` — Stage 577 P1
