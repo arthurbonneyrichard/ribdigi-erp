@@ -102,6 +102,66 @@ async def test_mock_bank_connection_sync_and_dedupe(client, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_bank_connection_soft_deactivate_blocks_sync(client, monkeypatch):
+    """PATCH is_active=false pauses sync (400) until reactivated; Remove still deletes."""
+    monkeypatch.setattr("app.config.settings.BANK_FEED_SYNC_ENABLED", True)
+    monkeypatch.setattr("app.bank_connectors.settings.BANK_FEED_SYNC_ENABLED", True)
+
+    ac, seeded = client
+    headers = await _admin_headers(ac, seeded)
+    accounts = (await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)).json()["data"]
+    bank = next((a for a in accounts if a.get("code") == "1010"), accounts[0])
+
+    created = await ac.post(
+        "/api/v1/accounting/bank-connections",
+        headers=headers,
+        json={
+            "account_id": bank["id"],
+            "provider": "mock",
+            "display_name": "Soft deactivate feed",
+            "external_account_id": "seed-soft-1",
+            "auto_sync": True,
+            "auto_match_after_sync": False,
+        },
+    )
+    assert created.status_code == 200, created.text
+    conn = created.json()["data"]
+    assert conn.get("is_active") is True
+
+    deactivated = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn['id']}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert deactivated.status_code == 200, deactivated.text
+    assert deactivated.json()["data"]["is_active"] is False
+
+    blocked = await ac.post(
+        f"/api/v1/accounting/bank-connections/{conn['id']}/sync",
+        headers=headers,
+        json={},
+    )
+    assert blocked.status_code == 400, blocked.text
+    assert "inactive" in blocked.json()["detail"].lower()
+
+    activated = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn['id']}",
+        headers=headers,
+        json={"is_active": True},
+    )
+    assert activated.status_code == 200, activated.text
+    assert activated.json()["data"]["is_active"] is True
+
+    ok = await ac.post(
+        f"/api/v1/accounting/bank-connections/{conn['id']}/sync",
+        headers=headers,
+        json={},
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["imported"] >= 1
+
+
+@pytest.mark.asyncio
 async def test_http_json_provider_sync(client, monkeypatch):
     monkeypatch.setattr("app.config.settings.BANK_FEED_SYNC_ENABLED", True)
     monkeypatch.setattr("app.bank_connectors.settings.BANK_FEED_SYNC_ENABLED", True)

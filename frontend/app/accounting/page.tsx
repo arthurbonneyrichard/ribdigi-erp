@@ -551,6 +551,21 @@ export default function Page() {
     }
   }
 
+  async function setConnectionActive(id: string, isActive: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/bank-connections/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      setMessage(isActive ? 'Bank connection activated' : 'Bank connection deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function openStatement(id: string) {
     setError('');
     try {
@@ -1291,7 +1306,8 @@ export default function Page() {
             <p className="muted">
               Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any
               aggregator that returns JSON transactions). Sync creates a reconcilable statement;
-              duplicates are skipped by external ref.
+              duplicates are skipped by external ref. Soft-deactivate pauses Sync / Celery auto-sync
+              without deleting the connection (use Remove to delete).
             </p>
             <input value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
             <select value={connProvider} onChange={(e) => setConnProvider(e.target.value)}>
@@ -1317,10 +1333,25 @@ export default function Page() {
               {connections.map((c) => (
                 <li key={c.id} style={{ marginBottom: 8 }}>
                   {c.display_name} · {c.provider}
+                  {c.is_active === false ? ' · inactive' : ' · active'}
                   {c.last_sync_status ? ` · last ${c.last_sync_status}` : ''}{' '}
-                  <button type="button" onClick={() => syncConnection(c.id)}>
+                  <button
+                    type="button"
+                    onClick={() => syncConnection(c.id)}
+                    disabled={c.is_active === false}
+                    title={c.is_active === false ? 'Activate connection before syncing' : undefined}
+                  >
                     Sync now
                   </button>{' '}
+                  {c.is_active === false ? (
+                    <button type="button" onClick={() => setConnectionActive(c.id, true)}>
+                      Activate
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => setConnectionActive(c.id, false)}>
+                      Deactivate
+                    </button>
+                  )}{' '}
                   <button type="button" onClick={() => removeConnection(c.id)}>
                     Remove
                   </button>

@@ -8055,7 +8055,7 @@ async def sync_bank_connection(
         tenant_id=claims["tenant_id"],
         connection_id=connection_id,
         user_id=claims.get("sub"),
-        force=True,
+        force=False,
     )
     await audit_svc.record_event(
         db,

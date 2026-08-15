@@ -1180,6 +1180,13 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 `transfer` requires two distinct liquid accounts (Dr destination / Cr source).  
 `deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.
 
+**Bank feed connections (reconcile):**  
+**List:** `GET /accounting/bank-connections`  
+**Create:** `POST /accounting/bank-connections` — `{ account_id, provider: mock|http_json, display_name?, external_account_id?, feed_url?, access_token?, auto_sync?, auto_match_after_sync?, sync_lookback_days? }` (`mock` blocked in production)  
+**Update:** `PATCH /accounting/bank-connections/{connection_id}` — partial fields include display/feed settings and soft-deactivate via `is_active` (Accounting Reconcile **Activate** / **Deactivate**; inactive connections skip Celery auto-sync and Sync returns **400**)  
+**Delete:** `DELETE /accounting/bank-connections/{connection_id}` — hard remove  
+**Sync:** `POST /accounting/bank-connections/{connection_id}/sync` — imports into a reconcilable bank statement (dedupe by external ref); rejected when connection is inactive
+
 ### 10.4 Financial Reports
 **Profit & Loss:** `GET /accounting/profit-loss` (also `/reports/profit-loss`) — returns `revenue`, `cogs` (account 5000), `gross_profit`, `operating_expenses`, `expense` (total), `net_profit`. COGS is posted automatically on sales invoice post / POS sale (Dr 5000 / Cr 1200 at standard `cost_price` × stock qty); restocked sales returns reverse COGS. Optional query params: `from_date`, `to_date`, `store_id`, `branch_id`. With no filters, response uses lifetime income/expense account balances (`mode=balances`). With any filter, aggregates posted journal lines (`mode=journals`); store/branch keep only attributable `sales_invoice` / `pos_sale` / `expense` / `sales_return` journals.
 
