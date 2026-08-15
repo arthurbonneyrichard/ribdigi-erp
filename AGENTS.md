@@ -10,6 +10,7 @@
 
 ### Non-obvious gotchas
 - **Cloud VM infra:** Docker is often unavailable here. Use host **Postgres / Redis / RabbitMQ** with `.env` URLs pointed at `localhost` (not compose hostnames). Start API with `cd backend && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`, frontend with `cd frontend && npm run dev`, Celery worker/beat from `backend` against the same `.env`.
+- **Sidebar default logo:** Shell brand area uses uploaded `GET /tenants/me/logo` when `has_logo`; otherwise falls back to transparent SVG `/brand/logo-sidebar.svg` (not the white-sticker PNG).
 - **Migrate after pull:** live Postgres can lag feature migrations. From `backend`: `PYTHONPATH=. .venv/bin/alembic upgrade head` (export `DATABASE_URL` from `.env` carefully — quote values with spaces like `WEBAUTHN_RP_NAME="RIBDIGI ERP"` before `source .env`).
 - **Login 2FA:** `LOGIN_2FA_ENABLED` (default `false`) controls whether enrolled TOTP/passkeys are challenged at `/auth/login` and whether `must_enroll_2fa` blocks APIs. Set `true` in production (see `.env.production.example`). Setup endpoints under `/auth/2fa` and `/auth/webauthn` remain available either way.
 - **Celery does not auto-reload.** After changing `backend/app/jobs.py`, `tasks.py`, or beat schedule, restart `celery_worker` and `celery_beat` or workers keep stale handler maps / crash on unknown jobs.
