@@ -31,3 +31,7 @@ Stage 644 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, License Compliance Gate, License Compliance Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 644 opened under **ADR-1295** after CONTINUE/NEXT (Tenant MVP Data Retention Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1296**. Stage 643 feature scope remains frozen.
