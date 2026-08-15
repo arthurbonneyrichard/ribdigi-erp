@@ -437,10 +437,16 @@ export default function Page() {
 
   async function reject(id: string) {
     setError('');
+    setMessage('');
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setError('Enter a reject reason before rejecting an expense');
+      return;
+    }
     try {
       await api(`/expenses/${id}/reject`, {
         method: 'POST',
-        body: JSON.stringify({ reason: rejectReason || 'Rejected' }),
+        body: JSON.stringify({ reason }),
       });
       setMessage('Expense rejected');
       setRejectReason('');
@@ -1198,8 +1204,16 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <label>
           Reject reason{' '}
-          <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+          <input
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Required before Reject"
+            style={{ minWidth: 280 }}
+          />
         </label>
+        <p className="muted" style={{ marginTop: 6 }}>
+          Used by Reject on pending expenses (stored as <code>rejection_reason</code>).
+        </p>
       </div>
 
       {ocrDraft && ocrFor && (
@@ -1321,6 +1335,7 @@ export default function Page() {
             <th>Amount</th>
             <th>Status</th>
             <th>Approval</th>
+            <th>Reject reason</th>
             <th>Receipt</th>
             <th>Actions</th>
           </tr>
@@ -1352,6 +1367,7 @@ export default function Page() {
                     ? `${r.approval_steps_required} level(s)`
                     : 'auto'}
               </td>
+              <td className="muted">{r.rejection_reason || '—'}</td>
               <td>
                 {r.has_attachment ? (
                   <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1398,9 +1414,6 @@ export default function Page() {
                     </button>
                     <button onClick={() => reject(r.id)}>Reject</button>
                   </>
-                )}
-                {r.status === 'rejected' && (
-                  <span className="muted">{r.rejection_reason}</span>
                 )}
               </td>
             </tr>
