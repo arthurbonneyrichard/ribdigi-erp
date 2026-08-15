@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 787 track opened (ADR-1581: `test_stage787_open.py`, `docs/STAGE_787_PLAN.md`) — Data Masking Gate Honesty Pack Remaining-Gate Index; closed under ADR-1582
+- [x] Data Masking Gate Honesty Pack remaining-gate hub (Stage 787 I1: `test_stage787_index_i1.py`, `docs/DATA_MASKING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Data Masking Gate Honesty Pack blocker matrix (Stage 787 B1: `test_stage787_blockers_b1.py`, `docs/DATA_MASKING_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 786 / Stage 785 / Stage 392 / CHANGE_IMPACT pointers (Stage 787 P1: `test_stage787_pointers_p1.py`, `docs/DATA_MASKING_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 787 fidelity sync (D1: `test_stage787_fidelity_d1.py`, `docs/STAGE_787_FIDELITY.md`)
+- [x] Stage 787 exit + freeze (H787x: `test_stage787_exit_h787x.py`, `docs/STAGE_787_EXIT_CRITERIA.md`, ADR-1582)
+
 Stage 786 track opened (ADR-1579: `test_stage786_open.py`, `docs/STAGE_786_PLAN.md`) — Tokenize Gate Honesty Pack Remaining-Gate Index; closed under ADR-1580
 - [x] Tokenize Gate Honesty Pack remaining-gate hub (Stage 786 I1: `test_stage786_index_i1.py`, `docs/TOKENIZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Tokenize Gate Honesty Pack blocker matrix (Stage 786 B1: `test_stage786_blockers_b1.py`, `docs/TOKENIZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
