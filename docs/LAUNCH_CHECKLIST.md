@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 491 track opened (ADR-989: `test_stage491_open.py`, `docs/STAGE_491_PLAN.md`) — Offline Synchronizing Status Honesty Pack Remaining-Gate Index; closed under ADR-990
+- [x] Offline Synchronizing Status Honesty Pack remaining-gate hub (Stage 491 I1: `test_stage491_index_i1.py`, `docs/OFFLINE_SYNCHRONIZING_STATUS_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Offline Synchronizing Status Honesty Pack blocker matrix (Stage 491 B1: `test_stage491_blockers_b1.py`, `docs/OFFLINE_SYNCHRONIZING_STATUS_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 490 / Stage 489 / Stage 392 / CHANGE_IMPACT pointers (Stage 491 P1: `test_stage491_pointers_p1.py`, `docs/OFFLINE_SYNCHRONIZING_STATUS_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 491 fidelity sync (D1: `test_stage491_fidelity_d1.py`, `docs/STAGE_491_FIDELITY.md`)
+- [x] Stage 491 exit + freeze (H491x: `test_stage491_exit_h491x.py`, `docs/STAGE_491_EXIT_CRITERIA.md`, ADR-990)
+
 Stage 490 track opened (ADR-987: `test_stage490_open.py`, `docs/STAGE_490_PLAN.md`) — Offline Sync Runbook Honesty Pack Remaining-Gate Index; closed under ADR-988
 - [x] Offline Sync Runbook Honesty Pack remaining-gate hub (Stage 490 I1: `test_stage490_index_i1.py`, `docs/OFFLINE_SYNC_RUNBOOK_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Offline Sync Runbook Honesty Pack blocker matrix (Stage 490 B1: `test_stage490_blockers_b1.py`, `docs/OFFLINE_SYNC_RUNBOOK_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
