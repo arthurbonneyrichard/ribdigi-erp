@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/DATA_RETENTION_RETURN_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/data-retention-return-honesty-pack-remaining-gate.json` — Stage 526 I1
+- `docs/DATA_RETENTION_RETURN_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/data-retention-return-honesty-pack-rg-blockers.json` — Stage 526 B1
+- `docs/DATA_RETENTION_RETURN_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/data-retention-return-honesty-pack-rg-pointers.json` — Stage 526 P1
 - `docs/DATA_RESIDENCY_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/data-residency-honesty-pack-remaining-gate.json` — Stage 525 I1
 - `docs/DATA_RESIDENCY_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/data-residency-honesty-pack-rg-blockers.json` — Stage 525 B1
 - `docs/DATA_RESIDENCY_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/data-residency-honesty-pack-rg-pointers.json` — Stage 525 P1
