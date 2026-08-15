@@ -247,6 +247,7 @@ export default function Page() {
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
+  const [drawerReason, setDrawerReason] = useState('');
   const [cartDiscount, setCartDiscount] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -829,18 +830,26 @@ export default function Page() {
                 >
                   {reportBusy ? 'Loading…' : shiftReport ? 'Hide report' : 'Shift report'}
                 </button>
+                <input
+                  className="tpos-input"
+                  value={drawerReason}
+                  onChange={(e) => setDrawerReason(e.target.value)}
+                  placeholder="Drawer reason (required)"
+                  maxLength={200}
+                  autoComplete="off"
+                  aria-label="Cash drawer open reason"
+                  style={{ minWidth: 200 }}
+                />
                 <button
                   type="button"
                   className="tpos-btn"
                   onClick={async () => {
                     setError('');
-                    const reason = window.prompt(
-                      'Reason for opening the cash drawer (required)',
-                      ''
-                    );
-                    if (reason === null) return;
-                    const cleaned = (reason || '').trim();
-                    if (cleaned.length < 3 || ['manual', 'n/a', 'na', 'none', 'test'].includes(cleaned.toLowerCase())) {
+                    const cleaned = drawerReason.trim();
+                    if (
+                      cleaned.length < 3 ||
+                      ['manual', 'n/a', 'na', 'none', 'test'].includes(cleaned.toLowerCase())
+                    ) {
                       setError('Enter a specific drawer reason (min 3 characters)');
                       return;
                     }
@@ -849,6 +858,7 @@ export default function Page() {
                         method: 'POST',
                         body: JSON.stringify({ reason: cleaned }),
                       });
+                      setDrawerReason('');
                       setMessage(
                         r.data?.message ||
                           r.message ||
