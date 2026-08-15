@@ -75,6 +75,7 @@ export default function Page() {
   const [customerLng, setCustomerLng] = useState('');
   const [customerGroupId, setCustomerGroupId] = useState('');
   const [creditLimit, setCreditLimit] = useState('0');
+  const [creditOverrideReason, setCreditOverrideReason] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
@@ -572,8 +573,11 @@ export default function Page() {
           setError(detail.message || err.message);
           return;
         }
-        const reason =
-          window.prompt('Override reason (optional)', 'Approved over-limit credit sale') || undefined;
+        const reason = creditOverrideReason.trim();
+        if (!reason) {
+          setError('Enter a credit override reason before posting over the limit');
+          return;
+        }
         try {
           const r = await api(`/sales/invoices/${inv.id}/post`, {
             method: 'POST',
@@ -582,6 +586,7 @@ export default function Page() {
               override_reason: reason,
             }),
           });
+          setCreditOverrideReason('');
           setMessage(
             r.data?.credit_limit_overridden
               ? `${r.message || 'Posted'} (credit limit overridden)`
@@ -1254,6 +1259,22 @@ export default function Page() {
       )}
 
       {tab === 'invoices' && (
+        <>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Credit override reason{' '}
+              <input
+                value={creditOverrideReason}
+                onChange={(e) => setCreditOverrideReason(e.target.value)}
+                placeholder="Required when posting over credit limit"
+                style={{ minWidth: 300 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Used when Post hits credit limit and you confirm manager override (sent as{' '}
+              <code>override_reason</code>).
+            </p>
+          </div>
         <table className="table">
           <thead>
             <tr>
@@ -1342,6 +1363,7 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </>
       )}
 
       {tab === 'returns' && (

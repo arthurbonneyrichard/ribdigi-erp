@@ -1211,7 +1211,7 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 ```json
 { "override_credit_limit": true, "override_reason": "Approved by store manager" }
 ```
-Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override`.
+Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override`. Sales Invoices + POS UIs require a typed **Credit override reason** (no canned `window.prompt` default).
 
 **Response:**
 ```json

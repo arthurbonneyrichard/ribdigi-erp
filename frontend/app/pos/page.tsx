@@ -246,6 +246,7 @@ export default function Page() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [creditOverrideReason, setCreditOverrideReason] = useState('');
   const [cartDiscount, setCartDiscount] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -690,14 +691,18 @@ export default function Page() {
               `Limit ${detail.credit_limit} · balance ${detail.current_balance}`,
           );
           if (!ok) throw err;
-          const reason =
-            window.prompt('Override reason (optional)', 'Approved over-limit POS credit') || undefined;
+          const reason = creditOverrideReason.trim();
+          if (!reason) {
+            setError('Enter a credit override reason before completing an over-limit credit sale');
+            return;
+          }
           body.override_credit_limit = true;
           body.override_reason = reason;
           r = await api('/pos/sales', {
             method: 'POST',
             body: JSON.stringify(body),
           });
+          setCreditOverrideReason('');
         } else {
           throw err;
         }
@@ -1339,6 +1344,17 @@ export default function Page() {
                 </div>
               )}
 
+              <label className="tpos-field">
+                <span>Credit override reason</span>
+                <input
+                  className="tpos-input"
+                  value={creditOverrideReason}
+                  onChange={(e) => setCreditOverrideReason(e.target.value)}
+                  placeholder="Required if credit sale exceeds limit"
+                  maxLength={500}
+                  autoComplete="off"
+                />
+              </label>
               <label className="tpos-field">
                 <span>Receipt</span>
                 <select value={paper} onChange={(e) => setPaper(e.target.value)}>
