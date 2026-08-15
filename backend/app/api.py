@@ -142,6 +142,7 @@ from app.schemas import (
     SalesInvoiceCreate,
     SalesOrderCreate,
     SalesOrderCancel,
+    SalesInvoiceCancel,
     SalesOrderConfirm,
     SalesQuotationCreate,
     SalesQuotationReject,
@@ -5409,13 +5410,18 @@ async def send_sales_invoice(
 @api.post("/sales/invoices/{invoice_id}/cancel")
 async def cancel_sales_invoice(
     invoice_id: str,
+    payload: SalesInvoiceCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     invoice = await sales_svc.cancel_sales_invoice(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        invoice_id=invoice_id,
+        reason=payload.reason,
     )
     await db.commit()
     return env(await sales_svc.serialize_invoice(db, invoice), "Draft invoice cancelled")

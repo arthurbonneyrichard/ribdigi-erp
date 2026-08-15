@@ -78,6 +78,7 @@ export default function Page() {
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
   const [quoteRejectReason, setQuoteRejectReason] = useState('');
   const [soCancelReason, setSoCancelReason] = useState('');
+  const [siCancelReason, setSiCancelReason] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
@@ -574,6 +575,14 @@ export default function Page() {
       }
       body = { ...body, reason };
     }
+    if (path.includes('/invoices/') && path.endsWith('/cancel')) {
+      const reason = siCancelReason.trim();
+      if (!reason) {
+        setError('Enter a cancel reason before cancelling a sales invoice');
+        return;
+      }
+      body = { ...body, reason };
+    }
     try {
       const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
       if (path.includes('/quotations/') && path.endsWith('/reject')) {
@@ -581,6 +590,9 @@ export default function Page() {
       }
       if (path.includes('/orders/') && path.endsWith('/cancel')) {
         setSoCancelReason('');
+      }
+      if (path.includes('/invoices/') && path.endsWith('/cancel')) {
+        setSiCancelReason('');
       }
       setMessage(r.message || label);
       setSelected(r.data);
@@ -1358,6 +1370,21 @@ export default function Page() {
               <code>override_reason</code>).
             </p>
           </div>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Cancel reason{' '}
+              <input
+                value={siCancelReason}
+                onChange={(e) => setSiCancelReason(e.target.value)}
+                placeholder="Required before Cancel"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Appended to draft invoice notes and audit (<code>POST .../invoices/.../cancel</code>{' '}
+              {'{ reason }'}). Draft only.
+            </p>
+          </div>
         <table className="table">
           <thead>
             <tr>
@@ -1366,6 +1393,7 @@ export default function Page() {
               <th>Store</th>
               <th>Total</th>
               <th>Paid</th>
+              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1380,6 +1408,9 @@ export default function Page() {
                 </td>
                 <td>{formatNumber(inv.total_amount, fmt)}</td>
                 <td>{formatNumber(inv.paid_amount, fmt)}</td>
+                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                  {inv.notes || '—'}
+                </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(inv)}>View</button>
                   {inv.status === 'draft' && (
