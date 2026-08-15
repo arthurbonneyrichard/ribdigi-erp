@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 807 track opened (ADR-1621: `test_stage807_open.py`, `docs/STAGE_807_PLAN.md`) — OCSP Staple Gate Honesty Pack Remaining-Gate Index; closed under ADR-1622
+- [x] OCSP Staple Gate Honesty Pack remaining-gate hub (Stage 807 I1: `test_stage807_index_i1.py`, `docs/OCSP_STAPLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] OCSP Staple Gate Honesty Pack blocker matrix (Stage 807 B1: `test_stage807_blockers_b1.py`, `docs/OCSP_STAPLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 806 / Stage 805 / Stage 392 / CHANGE_IMPACT pointers (Stage 807 P1: `test_stage807_pointers_p1.py`, `docs/OCSP_STAPLE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 807 fidelity sync (D1: `test_stage807_fidelity_d1.py`, `docs/STAGE_807_FIDELITY.md`)
+- [x] Stage 807 exit + freeze (H807x: `test_stage807_exit_h807x.py`, `docs/STAGE_807_EXIT_CRITERIA.md`, ADR-1622)
+
 Stage 806 track opened (ADR-1619: `test_stage806_open.py`, `docs/STAGE_806_PLAN.md`) — Certificate Transparency Gate Honesty Pack Remaining-Gate Index; closed under ADR-1620
 - [x] Certificate Transparency Gate Honesty Pack remaining-gate hub (Stage 806 I1: `test_stage806_index_i1.py`, `docs/CERTIFICATE_TRANSPARENCY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Certificate Transparency Gate Honesty Pack blocker matrix (Stage 806 B1: `test_stage806_blockers_b1.py`, `docs/CERTIFICATE_TRANSPARENCY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

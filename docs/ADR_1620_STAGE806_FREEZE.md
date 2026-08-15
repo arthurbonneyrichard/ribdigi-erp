@@ -31,3 +31,7 @@ Stage 807 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Certificate Transparency Gate, Certificate Transparency Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 807 opened under **ADR-1621** after CONTINUE/NEXT (Tenant MVP OCSP Staple Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1622**. Stage 806 feature scope remains frozen.

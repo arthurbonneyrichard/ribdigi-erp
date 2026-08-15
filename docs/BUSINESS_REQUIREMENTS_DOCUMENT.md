@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 807 D1 OCSP Staple Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_807_FIDELITY.md` (`test_stage807_fidelity_d1.py`); Offline Complete / OCSP Staple Gate honesty / go-live still MISSING.
 Stage 806 D1 Certificate Transparency Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_806_FIDELITY.md` (`test_stage806_fidelity_d1.py`); Offline Complete / Certificate Transparency Gate honesty / go-live still MISSING.
 Stage 805 D1 Timestamp Authority Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_805_FIDELITY.md` (`test_stage805_fidelity_d1.py`); Offline Complete / Timestamp Authority Gate honesty / go-live still MISSING.
 Stage 804 D1 Signed Audit Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_804_FIDELITY.md` (`test_stage804_fidelity_d1.py`); Offline Complete / Signed Audit Gate honesty / go-live still MISSING.
