@@ -640,7 +640,7 @@ Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory
 }
 ```
 
-Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab.
+Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). **Reject:** `POST /inventory/stock-transfers/{id}/reject` body `{ "reason" }` → status `cancelled` + `rejection_reason` (Inventory Transfers UI requires reason). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab.
 
 ### 5.6 Stock Count
 **Create:** `POST /inventory/stock-counts`  

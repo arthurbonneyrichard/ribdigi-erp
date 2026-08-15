@@ -240,6 +240,7 @@ export default function Page() {
   const [xferToWh, setXferToWh] = useState('');
   const [xferQty, setXferQty] = useState('1');
   const [xferNotes, setXferNotes] = useState('');
+  const [xferRejectReason, setXferRejectReason] = useState('');
   const [trPrefix, setTrPrefix] = useState('TR');
   const [trNext, setTrNext] = useState('1');
   const [trPreview, setTrPreview] = useState('');
@@ -518,8 +519,24 @@ export default function Page() {
   async function transferAct(id: string, action: string) {
     setError('');
     setMessage('');
+    if (action === 'reject') {
+      const reason = xferRejectReason.trim();
+      if (!reason) {
+        setError('Enter a reject reason before rejecting a stock transfer');
+        return;
+      }
+    }
     try {
-      const r = await api(`/inventory/stock-transfers/${id}/${action}`, { method: 'POST' });
+      const r = await api(`/inventory/stock-transfers/${id}/${action}`, {
+        method: 'POST',
+        body:
+          action === 'reject'
+            ? JSON.stringify({ reason: xferRejectReason.trim() })
+            : undefined,
+      });
+      if (action === 'reject') {
+        setXferRejectReason('');
+      }
       setMessage(r.message || `Transfer ${action} ok`);
       await loadTransfers();
     } catch (err: any) {
@@ -3334,6 +3351,21 @@ export default function Page() {
             Approve → ship (deducts source) → receive (credits destination). Cancel restores in-transit
             stock.
           </p>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <label>
+              Reject reason{' '}
+              <input
+                value={xferRejectReason}
+                onChange={(e) => setXferRejectReason(e.target.value)}
+                placeholder="Required before Reject"
+                style={{ minWidth: 280 }}
+              />
+            </label>
+            <p className="muted" style={{ marginTop: 6 }}>
+              Used by Reject on requested transfers (stored as <code>rejection_reason</code>; status →
+              cancelled).
+            </p>
+          </div>
           <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }}>
             Refresh
           </button>
@@ -3345,6 +3377,7 @@ export default function Page() {
                 <th>To WH</th>
                 <th>Status</th>
                 <th>Approval</th>
+                <th>Reject reason</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -3366,6 +3399,7 @@ export default function Page() {
                             : 'Awaiting source'
                       : '—'}
                   </td>
+                  <td className="muted">{t.rejection_reason || '—'}</td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {t.status === 'draft' && (
                       <button type="button" onClick={() => transferAct(t.id, 'submit')}>
@@ -3407,7 +3441,7 @@ export default function Page() {
               ))}
               {transfers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted">
+                  <td colSpan={7} className="muted">
                     No transfers yet
                   </td>
                 </tr>
