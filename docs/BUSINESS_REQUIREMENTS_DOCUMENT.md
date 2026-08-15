@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 584 D1 Operator Remaining Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_584_FIDELITY.md` (`test_stage584_fidelity_d1.py`); Offline Complete / Operator Remaining honesty / go-live still MISSING.
 Stage 583 D1 Troubleshooting Index Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_583_FIDELITY.md` (`test_stage583_fidelity_d1.py`); Offline Complete / Troubleshooting Index honesty / go-live still MISSING.
 Stage 582 D1 Sync Idempotency Replay Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_582_FIDELITY.md` (`test_stage582_fidelity_d1.py`); Offline Complete / Sync Idempotency Replay honesty / go-live still MISSING.
 Stage 581 D1 Sync Conflict UX Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_581_FIDELITY.md` (`test_stage581_fidelity_d1.py`); Offline Complete / Sync Conflict UX honesty / go-live still MISSING.

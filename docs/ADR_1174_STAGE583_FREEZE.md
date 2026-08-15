@@ -31,3 +31,7 @@ Stage 584 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Troubleshooting Index, Troubleshooting Index honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 584 opened under **ADR-1175** after CONTINUE/NEXT (Tenant MVP Operator Remaining Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1176**. Stage 583 feature scope remains frozen.
