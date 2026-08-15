@@ -1,0 +1,77 @@
+{
+  "id": "faq-offline-pos-honesty-pack-rg-blockers",
+  "stage": 495,
+  "pack": "B1",
+  "doc": "docs/FAQ_OFFLINE_POS_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FAQ_OFFLINE_POS_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "faq_offline_pos_pack_remaining_gate": "docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "faq_offline_pos_honesty_complete_claimed": false,
+  "faq_offline_pos_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "faq_offline_pos_honesty_complete_claimed": "REMAINING",
+    "faq_offline_pos_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_faq_offline_pos_honesty": "NON_CLAIM",
+    "faq_offline_pos_pack_as_faq_offline_pos_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "faq_offline_pos_honesty_complete_claimed_flag": "false",
+    "faq_offline_pos_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "fophprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fophprb-honesty",
+      "title": "Mark FAQ Offline POS honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fophprb-as-golive",
+      "title": "Mark FAQ Offline POS as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fophprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fophprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fophprb-prior-nonclaim",
+      "title": "Mark FAQ_OFFLINE_POS_PACK as non-claim for faq-offline-pos Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fophprb-checklist-remaining",
+      "title": "Offline Complete / FAQ Offline POS / FAQ Offline POS honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 495 B1 FAQ Offline POS Honesty Pack RG blocker matrix packaging only."
+}

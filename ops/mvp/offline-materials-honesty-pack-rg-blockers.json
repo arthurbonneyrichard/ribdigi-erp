@@ -1,0 +1,77 @@
+{
+  "id": "offline-materials-honesty-pack-rg-blockers",
+  "stage": 494,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_MATERIALS_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_MATERIALS_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_materials_pack_remaining_gate": "docs/OFFLINE_MATERIALS_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_materials_honesty_complete_claimed": false,
+  "offline_materials_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_materials_honesty_complete_claimed": "REMAINING",
+    "offline_materials_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_materials_honesty": "NON_CLAIM",
+    "offline_materials_pack_as_materials_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_materials_honesty_complete_claimed_flag": "false",
+    "offline_materials_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "omhprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omhprb-honesty",
+      "title": "Mark Materials honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omhprb-as-golive",
+      "title": "Mark Materials as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omhprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omhprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omhprb-prior-nonclaim",
+      "title": "Mark OFFLINE_MATERIALS_PACK as non-claim for materials Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omhprb-checklist-remaining",
+      "title": "Offline Complete / Materials / Materials honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 494 B1 Offline Materials Honesty Pack RG blocker matrix packaging only."
+}

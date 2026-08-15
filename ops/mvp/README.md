@@ -1129,6 +1129,12 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/FAQ_OFFLINE_POS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/faq-offline-pos-honesty-pack-remaining-gate.json` — Stage 495 I1
+- `docs/FAQ_OFFLINE_POS_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/faq-offline-pos-honesty-pack-rg-blockers.json` — Stage 495 B1
+- `docs/FAQ_OFFLINE_POS_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/faq-offline-pos-honesty-pack-rg-pointers.json` — Stage 495 P1
+- `docs/OFFLINE_MATERIALS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-materials-honesty-pack-remaining-gate.json` — Stage 494 I1
+- `docs/OFFLINE_MATERIALS_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-materials-honesty-pack-rg-blockers.json` — Stage 494 B1
+- `docs/OFFLINE_MATERIALS_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-materials-honesty-pack-rg-pointers.json` — Stage 494 P1
 - `docs/OFFLINE_OFFLINE_STATUS_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-offline-status-honesty-pack-remaining-gate.json` — Stage 493 I1
 - `docs/OFFLINE_OFFLINE_STATUS_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-offline-status-honesty-pack-rg-blockers.json` — Stage 493 B1
 - `docs/OFFLINE_OFFLINE_STATUS_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-offline-status-honesty-pack-rg-pointers.json` — Stage 493 P1
