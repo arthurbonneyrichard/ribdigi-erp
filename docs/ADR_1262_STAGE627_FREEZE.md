@@ -31,3 +31,7 @@ Stage 628 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, PostgreSQL Gate, PostgreSQL Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 628 opened under **ADR-1263** after CONTINUE/NEXT (Tenant MVP RabbitMQ Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1264**. Stage 627 feature scope remains frozen.
