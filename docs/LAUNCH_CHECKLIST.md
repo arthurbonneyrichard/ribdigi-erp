@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 867 track opened (ADR-1741: `test_stage867_open.py`, `docs/STAGE_867_PLAN.md`) — TIA Gate Honesty Pack Remaining-Gate Index; closed under ADR-1742
+- [x] TIA Gate Honesty Pack remaining-gate hub (Stage 867 I1: `test_stage867_index_i1.py`, `docs/TIA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] TIA Gate Honesty Pack blocker matrix (Stage 867 B1: `test_stage867_blockers_b1.py`, `docs/TIA_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 866 / Stage 865 / Stage 392 / CHANGE_IMPACT pointers (Stage 867 P1: `test_stage867_pointers_p1.py`, `docs/TIA_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 867 fidelity sync (D1: `test_stage867_fidelity_d1.py`, `docs/STAGE_867_FIDELITY.md`)
+- [x] Stage 867 exit + freeze (H867x: `test_stage867_exit_h867x.py`, `docs/STAGE_867_EXIT_CRITERIA.md`, ADR-1742)
+
 Stage 866 track opened (ADR-1739: `test_stage866_open.py`, `docs/STAGE_866_PLAN.md`) — SCC Gate Honesty Pack Remaining-Gate Index; closed under ADR-1740
 - [x] SCC Gate Honesty Pack remaining-gate hub (Stage 866 I1: `test_stage866_index_i1.py`, `docs/SCC_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] SCC Gate Honesty Pack blocker matrix (Stage 866 B1: `test_stage866_blockers_b1.py`, `docs/SCC_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

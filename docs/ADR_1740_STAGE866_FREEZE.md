@@ -31,3 +31,7 @@ Stage 867 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, SCC Gate, SCC Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 867 opened under **ADR-1741** after CONTINUE/NEXT (Tenant MVP TIA Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1742**. Stage 866 feature scope remains frozen.
