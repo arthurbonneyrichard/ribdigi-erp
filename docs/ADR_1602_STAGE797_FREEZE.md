@@ -31,3 +31,7 @@ Stage 798 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Chain Of Custody Gate, Chain Of Custody Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 798 opened under **ADR-1603** after CONTINUE/NEXT (Tenant MVP Forensic Hash Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1604**. Stage 797 feature scope remains frozen.

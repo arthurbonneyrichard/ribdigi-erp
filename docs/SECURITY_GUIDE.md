@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 798 D1 Forensic Hash Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_798_FIDELITY.md` (`test_stage798_fidelity_d1.py`); exit ADR-1604 / `test_stage798_exit_h798x.py`. Honesty: Offline Complete / Forensic Hash Gate honesty / go-live Completes remain MISSING.
 Stage 797 D1 Chain Of Custody Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_797_FIDELITY.md` (`test_stage797_fidelity_d1.py`); exit ADR-1602 / `test_stage797_exit_h797x.py`. Honesty: Offline Complete / Chain Of Custody Gate honesty / go-live Completes remain MISSING.
 Stage 796 D1 Litigation Export Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_796_FIDELITY.md` (`test_stage796_fidelity_d1.py`); exit ADR-1600 / `test_stage796_exit_h796x.py`. Honesty: Offline Complete / Litigation Export Gate honesty / go-live Completes remain MISSING.
 Stage 795 D1 E Discovery Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_795_FIDELITY.md` (`test_stage795_fidelity_d1.py`); exit ADR-1598 / `test_stage795_exit_h795x.py`. Honesty: Offline Complete / E Discovery Gate honesty / go-live Completes remain MISSING.

@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 798 D1 (2026-08-14):** Forensic Hash Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_798_FIDELITY.md` (`test_stage798_fidelity_d1.py`). Open ADR: `docs/ADR_1603_STAGE798_OPEN.md`; plan `docs/STAGE_798_PLAN.md`.
+
+**Stage 798 exit (2026-08-14):** I1, B1, P1, D1, H798x met — `docs/STAGE_798_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1604_STAGE798_FREEZE.md`. Fidelity: `docs/STAGE_798_FIDELITY.md`.
+
 **Stage 797 D1 (2026-08-14):** Chain Of Custody Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_797_FIDELITY.md` (`test_stage797_fidelity_d1.py`). Open ADR: `docs/ADR_1601_STAGE797_OPEN.md`; plan `docs/STAGE_797_PLAN.md`.
 
 **Stage 797 exit (2026-08-14):** I1, B1, P1, D1, H797x met — `docs/STAGE_797_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_1602_STAGE797_FREEZE.md`. Fidelity: `docs/STAGE_797_FIDELITY.md`.
