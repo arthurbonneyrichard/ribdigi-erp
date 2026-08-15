@@ -1129,7 +1129,17 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/OFFLINE_SYNC_ESCALATION_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sync-escalation-honesty-pack-remaining-gate.json` — Stage 487 I1
+- `docs/OFFLINE_SYNC_ESCALATION_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sync-escalation-honesty-pack-rg-blockers.json` — Stage 487 B1
+- `docs/OFFLINE_SYNC_ESCALATION_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sync-escalation-honesty-pack-rg-pointers.json` — Stage 487 P1
+- `docs/OFFLINE_SW_CACHE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-sw-cache-honesty-pack-remaining-gate.json` — Stage 486 I1
+- `docs/OFFLINE_SW_CACHE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-sw-cache-honesty-pack-rg-blockers.json` — Stage 486 B1
+- `docs/OFFLINE_SW_CACHE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-sw-cache-honesty-pack-rg-pointers.json` — Stage 486 P1
+- `docs/OFFLINE_PWA_INSTALL_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-pwa-install-honesty-pack-remaining-gate.json` — Stage 485 I1
+- `docs/OFFLINE_PWA_INSTALL_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-pwa-install-honesty-pack-rg-blockers.json` — Stage 485 B1
+- `docs/OFFLINE_PWA_INSTALL_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-pwa-install-honesty-pack-rg-pointers.json` — Stage 485 P1
 - `docs/OFFLINE_HOLD_EXPIRY_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-hold-expiry-honesty-pack-remaining-gate.json` — Stage 484 I1
+Stage 484 I1
 - `docs/OFFLINE_HOLD_EXPIRY_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/offline-hold-expiry-honesty-pack-rg-blockers.json` — Stage 484 B1
 - `docs/OFFLINE_HOLD_EXPIRY_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/offline-hold-expiry-honesty-pack-rg-pointers.json` — Stage 484 P1
 - `docs/OFFLINE_HOLD_RESERVE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/offline-hold-reserve-honesty-pack-remaining-gate.json` — Stage 483 I1

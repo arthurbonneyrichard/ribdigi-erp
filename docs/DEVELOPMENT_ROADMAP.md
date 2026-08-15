@@ -4400,7 +4400,19 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
-********************Stage 484 D1 (2026-08-14):** Offline Hold Expiry Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_484_FIDELITY.md` (`test_stage484_fidelity_d1.py`). Open ADR: `docs/ADR_975_STAGE484_OPEN.md`; plan `docs/STAGE_484_PLAN.md`.
+**Stage 487 D1 (2026-08-14):** Offline Sync Escalation Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_487_FIDELITY.md` (`test_stage487_fidelity_d1.py`). Open ADR: `docs/ADR_981_STAGE487_OPEN.md`; plan `docs/STAGE_487_PLAN.md`.
+
+**Stage 487 exit (2026-08-14):** I1, B1, P1, D1, H487x met — `docs/STAGE_487_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_982_STAGE487_FREEZE.md`. Fidelity: `docs/STAGE_487_FIDELITY.md`.
+
+**Stage 486 D1 (2026-08-14):** Offline SW Cache Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_486_FIDELITY.md` (`test_stage486_fidelity_d1.py`). Open ADR: `docs/ADR_979_STAGE486_OPEN.md`; plan `docs/STAGE_486_PLAN.md`.
+
+**Stage 486 exit (2026-08-14):** I1, B1, P1, D1, H486x met — `docs/STAGE_486_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_980_STAGE486_FREEZE.md`. Fidelity: `docs/STAGE_486_FIDELITY.md`.
+
+**Stage 485 D1 (2026-08-14):** Offline PWA Install Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_485_FIDELITY.md` (`test_stage485_fidelity_d1.py`). Open ADR: `docs/ADR_977_STAGE485_OPEN.md`; plan `docs/STAGE_485_PLAN.md`.
+
+**Stage 485 exit (2026-08-14):** I1, B1, P1, D1, H485x met — `docs/STAGE_485_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_978_STAGE485_FREEZE.md`. Fidelity: `docs/STAGE_485_FIDELITY.md`.
+
+**Stage 484 D1 (2026-08-14):** Offline Hold Expiry Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_484_FIDELITY.md` (`test_stage484_fidelity_d1.py`). Open ADR: `docs/ADR_975_STAGE484_OPEN.md`; plan `docs/STAGE_484_PLAN.md`.
 
 **Stage 484 exit (2026-08-14):** I1, B1, P1, D1, H484x met — `docs/STAGE_484_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_976_STAGE484_FREEZE.md`. Fidelity: `docs/STAGE_484_FIDELITY.md`.
 

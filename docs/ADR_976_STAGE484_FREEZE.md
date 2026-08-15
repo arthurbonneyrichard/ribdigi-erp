@@ -31,3 +31,10 @@ Stage 485 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Hold Expiry, Hold Expiry honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 485 opened under **ADR-977** after CONTINUE/NEXT (Tenant MVP Offline PWA Install Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-978**. Stage 484 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 484 runner-up outline was approved and opened (ADR-977); freeze ADR-978. Do not reopen Stage 484 scope.
+
