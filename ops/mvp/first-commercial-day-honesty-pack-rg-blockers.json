@@ -1,0 +1,77 @@
+{
+  "id": "first-commercial-day-honesty-pack-rg-blockers",
+  "stage": 448,
+  "pack": "B1",
+  "doc": "docs/FIRST_COMMERCIAL_DAY_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_COMMERCIAL_DAY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "first_commercial_day_pack_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "first_commercial_day_honesty_complete_claimed": false,
+  "first_commercial_day_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "first_commercial_day_honesty_complete_claimed": "REMAINING",
+    "first_commercial_day_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_first_commercial_day_honesty": "NON_CLAIM",
+    "first_commercial_day_pack_as_first_commercial_day_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "first_commercial_day_honesty_complete_claimed_flag": "false",
+    "first_commercial_day_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "fcdhprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdhprb-honesty",
+      "title": "Mark First Commercial Day honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdhprb-as-golive",
+      "title": "Mark First Commercial Day as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdhprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdhprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdhprb-fcd-nonclaim",
+      "title": "Mark FIRST_COMMERCIAL_DAY_PACK as non-claim for first-commercial-day Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdhprb-checklist-remaining",
+      "title": "Offline Complete / First Commercial Day / First Commercial Day honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 448 B1 First Commercial Day Honesty Pack RG blocker matrix packaging only."
+}

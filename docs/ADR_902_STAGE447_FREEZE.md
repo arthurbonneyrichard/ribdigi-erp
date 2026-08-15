@@ -31,3 +31,9 @@ Stage 448 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Commercial Billing Deferred, Commercial Billing Deferred honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 448 opened under **ADR-903** after CONTINUE/NEXT (Tenant MVP First Commercial Day Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-904**. Stage 447 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 447 runner-up outline was approved and opened (ADR-903); freeze ADR-904. Do not reopen Stage 447 scope.
