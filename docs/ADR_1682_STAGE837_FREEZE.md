@@ -31,3 +31,7 @@ Stage 838 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Email Opt Out Gate, Email Opt Out Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 838 opened under **ADR-1683** after CONTINUE/NEXT (Tenant MVP Push Opt Out Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1684**. Stage 837 feature scope remains frozen.
