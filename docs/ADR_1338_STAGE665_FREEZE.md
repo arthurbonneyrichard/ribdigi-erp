@@ -31,3 +31,7 @@ Stage 666 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Service Mesh Gate, Service Mesh Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 666 opened under **ADR-1339** after CONTINUE/NEXT (Tenant MVP Ingress Controller Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1340**. Stage 665 feature scope remains frozen.
