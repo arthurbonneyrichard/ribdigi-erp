@@ -31,3 +31,10 @@ Stage 454 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Production Hypercare, Production Hypercare honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 454 opened under **ADR-915** after CONTINUE/NEXT (Tenant MVP Post-Launch Continuity Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-916**. Stage 453 feature scope remains frozen.
+
+**Amendment (2026-08-14):** Stage 453 runner-up outline was approved and opened (ADR-915); freeze ADR-916. Do not reopen Stage 453 scope.
+
