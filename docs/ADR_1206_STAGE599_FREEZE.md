@@ -31,3 +31,7 @@ Stage 600 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Operator Runbook, Operator Runbook honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 600 opened under **ADR-1207** after CONTINUE/NEXT (Tenant MVP MVP Closeout Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1208**. Stage 599 feature scope remains frozen.
