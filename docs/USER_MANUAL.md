@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 755 Set Cookie Gate Honesty Pack remaining-gate index fidelity (ADR-1517/1518). Operators track packaging status via `docs/SET_COOKIE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 754 Cookie Expires Gate Honesty Pack remaining-gate index fidelity (ADR-1515/1516). Operators track packaging status via `docs/COOKIE_EXPIRES_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 753 Cookie Path Gate Honesty Pack remaining-gate index fidelity (ADR-1513/1514). Operators track packaging status via `docs/COOKIE_PATH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 752 Cookie Domain Gate Honesty Pack remaining-gate index fidelity (ADR-1511/1512). Operators track packaging status via `docs/COOKIE_DOMAIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
