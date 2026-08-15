@@ -31,3 +31,7 @@ Stage 577 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Store Close Drain, Store Close Drain honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 577 opened under **ADR-1161** after CONTINUE/NEXT (Tenant MVP Store Close Triage Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1162**. Stage 576 feature scope remains frozen.
