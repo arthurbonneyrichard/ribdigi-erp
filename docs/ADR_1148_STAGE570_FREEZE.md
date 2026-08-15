@@ -31,3 +31,7 @@ Stage 571 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Permission Alias Map, Permission Alias Map honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 571 opened under **ADR-1149** after CONTINUE/NEXT (Tenant MVP Store Membership Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1150**. Stage 570 feature scope remains frozen.
