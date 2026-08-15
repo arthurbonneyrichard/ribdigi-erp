@@ -31,3 +31,7 @@ Stage 626 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Celery Worker Gate, Celery Worker Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 626 opened under **ADR-1259** after CONTINUE/NEXT (Tenant MVP Redis Cache Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1260**. Stage 625 feature scope remains frozen.
