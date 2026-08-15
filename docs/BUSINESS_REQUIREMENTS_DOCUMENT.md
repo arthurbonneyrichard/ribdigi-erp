@@ -532,12 +532,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Fast, intuitive retail checkout experience.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Barcode Scanner:** Support USB and Bluetooth barcode scanners
-  - [ ] **Product Search:** Search by name, SKU, barcode with autocomplete
-  - [ ] **Cart Management:** Add, remove, update quantity, apply discounts
-  - [ ] **Discounts:** Percentage or fixed amount; per-item or cart-level
-  - [ ] **Customer Selection:** Quick customer lookup or walk-in default
-  - [ ] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers)
+  - [x] **Barcode Scanner:** Support USB and Bluetooth barcode scanners (wedge scan → Enter on POS search; `GET /pos/products/search?barcode=`)
+  - [x] **Product Search:** Search by name, SKU, barcode with autocomplete (POS search tiles + barcode exact match)
+  - [x] **Cart Management:** Add, remove, update quantity, apply discounts (POS cart UI)
+  - [x] **Discounts:** Percentage or fixed amount; per-item or cart-level (line `discount` + cart `discount_amount`; customer group %)
+  - [x] **Customer Selection:** Quick customer lookup or walk-in default (Walk-in / none; credit requires customer)
+  - [x] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers) (`cash`/`card`/`wallet`/`credit` + split cash+card; aliases `digital_wallet`/`mobile_money` → `wallet`)
   - [x] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
   - [x] Sale reference auto-generation (`Transaction.reference` via tenant series `GET|PATCH /pos/settings` → `pos_sale_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `POS`; POS Document numbering UI)
   - [x] **Cash Drawer:** Auto-open on cash payment; manual open with required specific reason (`POST /pos/sessions/{id}/drawer/open`; rejects blank/placeholder; POS Drawer prompt)
@@ -865,12 +865,12 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Description:** Immutable record of system activities.
 - **Priority:** Critical
 - **Acceptance Criteria:**
-  - [ ] **Login/Logout:** Timestamp, IP address, device, success/failure
-  - [ ] **Product Changes:** Create, update, delete with before/after values
-  - [ ] **Sales:** Invoice creation, modification, cancellation
-  - [ ] **Purchases:** PO, GRN, invoice changes
-  - [ ] **User Activity:** Permission changes, role assignments, deletions
-  - [ ] **Financial:** Journal entry posting, account modifications
+  - [x] **Login/Logout:** Timestamp, IP address, device, success/failure (`module=auth` login/logout (+ failed login); `user_agent` / `ip_address` on `AuditLog`)
+  - [x] **Product Changes:** Create, update, delete with before/after values (`inventory` domain events + HTTP mutation middleware; `product_update` details include `changes.{field}.{before,after}`)
+  - [x] **Sales:** Invoice creation, modification, cancellation (`module=sales` domain audits + middleware on `/sales/*`)
+  - [x] **Purchases:** PO, GRN, invoice changes (`module=purchasing` domain audits + middleware)
+  - [x] **User Activity:** Permission changes, role assignments, deletions (`module=users` role/permission/active audits)
+  - [x] **Financial:** Journal entry posting, account modifications (`module=accounting` journal/account audits + middleware)
 
 #### BR-17.2 Audit Log Management
 - **Description:** Search and retention of audit data.
