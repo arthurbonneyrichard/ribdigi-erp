@@ -481,7 +481,9 @@ async def tenant_me_suspend(
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     reason = payload.reason if payload else None
-    tenant = await tenants_svc.suspend_tenant(db, tenant, reason=reason)
+    tenant = await tenants_svc.suspend_tenant(
+        db, tenant, reason=reason, suspended_by=claims["sub"]
+    )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -619,7 +621,9 @@ async def tenant_suspend_by_ref(
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
     reason = payload.reason if payload else None
-    tenant = await tenants_svc.suspend_tenant(db, tenant, reason=reason)
+    tenant = await tenants_svc.suspend_tenant(
+        db, tenant, reason=reason, suspended_by=claims["sub"]
+    )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],

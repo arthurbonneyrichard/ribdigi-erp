@@ -326,3 +326,81 @@ async def test_pos_sale_webhooks_cash_and_credit(client, db_session, monkeypatch
     assert "sale.created" in names
     assert "sale.paid" not in names
     assert all(e["data"].get("source") == "pos" for e in events if e["event"] == "sale.created")
+
+
+@pytest.mark.asyncio
+async def test_tenant_suspended_webhook(client, db_session, monkeypatch):
+    """Platform suspend of beta fans out tenant.suspended to beta's webhook; then reactivate."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+    from app.security import hash_password
+
+    ac, seed = client
+    events: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = __import__("json").loads(request.content.decode())
+        events.append({"event": body.get("event"), "data": body.get("data") or {}})
+        return httpx.Response(200, json={"ok": True})
+
+    original = webhooks_svc._deliver_http
+
+    async def _mock(*, url, body, signature_header, timeout=10.0, transport=None):
+        return await original(
+            url=url,
+            body=body,
+            signature_header=signature_header,
+            timeout=timeout,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(webhooks_svc, "_deliver_http", _mock)
+
+    beta_admin = m.User(
+        tenant_id=seed["t2"].id,
+        email="admin@beta.example.com",
+        full_name="Beta Admin",
+        password_hash=hash_password("SecurePass123!"),
+        role="company_admin",
+        email_verified=True,
+        permissions=permissions_for_role("company_admin"),
+        totp_enabled=False,
+    )
+    db_session.add(beta_admin)
+    await db_session.commit()
+
+    beta_headers = await auth_headers(
+        ac, email="admin@beta.example.com", tenant_slug="beta"
+    )
+    hook = await ac.post(
+        "/api/v1/webhooks",
+        headers=beta_headers,
+        json={
+            "url": "https://hooks.example.com/suspend",
+            "events": ["tenant.suspended"],
+            "description": "suspend fan-out",
+        },
+    )
+    assert hook.status_code == 200, hook.text
+
+    super_headers = await _admin(ac, seed)
+    suspended = await ac.post(
+        f"/api/v1/tenants/{seed['t2'].slug}/suspend",
+        headers=super_headers,
+        json={"reason": "webhook emit proof"},
+    )
+    assert suspended.status_code == 200, suspended.text
+    assert suspended.json()["data"]["status"] == "suspended"
+    assert any(e["event"] == "tenant.suspended" for e in events)
+    payload = next(e["data"] for e in events if e["event"] == "tenant.suspended")
+    assert payload.get("slug") == seed["t2"].slug
+    assert payload.get("reason") == "webhook emit proof"
+    assert payload.get("tenant_id") == seed["t2"].id
+    assert payload.get("suspended_by")
+
+    activated = await ac.post(
+        f"/api/v1/tenants/{seed['t2'].slug}/activate",
+        headers=super_headers,
+    )
+    assert activated.status_code == 200, activated.text
+    assert activated.json()["data"]["status"] == "active"
