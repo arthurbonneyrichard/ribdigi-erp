@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 583 Troubleshooting Index Honesty Pack remaining-gate index fidelity (ADR-1173/1174). Operators track packaging status via `docs/TROUBLESHOOTING_INDEX_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 582 Sync Idempotency Replay Honesty Pack remaining-gate index fidelity (ADR-1171/1172). Operators track packaging status via `docs/SYNC_IDEMPOTENCY_REPLAY_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 581 Sync Conflict UX Honesty Pack remaining-gate index fidelity (ADR-1169/1170). Operators track packaging status via `docs/SYNC_CONFLICT_UX_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 580 Shift Handover Pointers Honesty Pack remaining-gate index fidelity (ADR-1167/1168). Operators track packaging status via `docs/SHIFT_HANDOVER_POINTERS_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.

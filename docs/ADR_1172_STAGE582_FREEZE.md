@@ -31,3 +31,7 @@ Stage 583 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Sync Idempotency Replay, Sync Idempotency Replay honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 583 opened under **ADR-1173** after CONTINUE/NEXT (Tenant MVP Troubleshooting Index Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1174**. Stage 582 feature scope remains frozen.
