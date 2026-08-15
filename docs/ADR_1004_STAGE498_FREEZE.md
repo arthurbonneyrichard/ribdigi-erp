@@ -31,3 +31,7 @@ Stage 499 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Cashier Bind Catalog, Cashier Bind Catalog honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 499 opened under **ADR-1005** after CONTINUE/NEXT (Tenant MVP Monthly POS Ops Review Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1006**. Stage 498 feature scope remains frozen.
