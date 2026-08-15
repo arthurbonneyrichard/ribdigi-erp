@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 434 D1 Assurance Evidence Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_434_FIDELITY.md` (`test_stage434_fidelity_d1.py`); Offline Complete / Assurance Evidence honesty / go-live still MISSING.
 Stage 433 D1 Commercial Acceptance Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_433_FIDELITY.md` (`test_stage433_fidelity_d1.py`); Offline Complete / Commercial Acceptance honesty / go-live still MISSING.
 Stage 432 D1 Commercial Go-Live Closeout Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_432_FIDELITY.md` (`test_stage432_fidelity_d1.py`); Offline Complete / Commercial Go-Live Closeout honesty / go-live still MISSING.
 Stage 431 D1 Attestation Workflow Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_431_FIDELITY.md` (`test_stage431_fidelity_d1.py`); Offline Complete / Attestation Workflow honesty / go-live still MISSING.
