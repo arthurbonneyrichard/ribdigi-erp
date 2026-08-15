@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 809 track opened (ADR-1625: `test_stage809_open.py`, `docs/STAGE_809_PLAN.md`) — CAA Record Gate Honesty Pack Remaining-Gate Index; closed under ADR-1626
+- [x] CAA Record Gate Honesty Pack remaining-gate hub (Stage 809 I1: `test_stage809_index_i1.py`, `docs/CAA_RECORD_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] CAA Record Gate Honesty Pack blocker matrix (Stage 809 B1: `test_stage809_blockers_b1.py`, `docs/CAA_RECORD_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 808 / Stage 807 / Stage 392 / CHANGE_IMPACT pointers (Stage 809 P1: `test_stage809_pointers_p1.py`, `docs/CAA_RECORD_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 809 fidelity sync (D1: `test_stage809_fidelity_d1.py`, `docs/STAGE_809_FIDELITY.md`)
+- [x] Stage 809 exit + freeze (H809x: `test_stage809_exit_h809x.py`, `docs/STAGE_809_EXIT_CRITERIA.md`, ADR-1626)
+
 Stage 808 track opened (ADR-1623: `test_stage808_open.py`, `docs/STAGE_808_PLAN.md`) — CRL Check Gate Honesty Pack Remaining-Gate Index; closed under ADR-1624
 - [x] CRL Check Gate Honesty Pack remaining-gate hub (Stage 808 I1: `test_stage808_index_i1.py`, `docs/CRL_CHECK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] CRL Check Gate Honesty Pack blocker matrix (Stage 808 B1: `test_stage808_blockers_b1.py`, `docs/CRL_CHECK_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
