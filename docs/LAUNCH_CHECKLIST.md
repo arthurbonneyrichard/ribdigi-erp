@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 823 track opened (ADR-1653: `test_stage823_open.py`, `docs/STAGE_823_PLAN.md`) — Outbound Relay Gate Honesty Pack Remaining-Gate Index; closed under ADR-1654
+- [x] Outbound Relay Gate Honesty Pack remaining-gate hub (Stage 823 I1: `test_stage823_index_i1.py`, `docs/OUTBOUND_RELAY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Outbound Relay Gate Honesty Pack blocker matrix (Stage 823 B1: `test_stage823_blockers_b1.py`, `docs/OUTBOUND_RELAY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 822 / Stage 821 / Stage 392 / CHANGE_IMPACT pointers (Stage 823 P1: `test_stage823_pointers_p1.py`, `docs/OUTBOUND_RELAY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 823 fidelity sync (D1: `test_stage823_fidelity_d1.py`, `docs/STAGE_823_FIDELITY.md`)
+- [x] Stage 823 exit + freeze (H823x: `test_stage823_exit_h823x.py`, `docs/STAGE_823_EXIT_CRITERIA.md`, ADR-1654)
+
 Stage 822 track opened (ADR-1651: `test_stage822_open.py`, `docs/STAGE_822_PLAN.md`) — Inbound Relay Gate Honesty Pack Remaining-Gate Index; closed under ADR-1652
 - [x] Inbound Relay Gate Honesty Pack remaining-gate hub (Stage 822 I1: `test_stage822_index_i1.py`, `docs/INBOUND_RELAY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Inbound Relay Gate Honesty Pack blocker matrix (Stage 822 B1: `test_stage822_blockers_b1.py`, `docs/INBOUND_RELAY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
