@@ -31,3 +31,7 @@ Stage 979 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shield Gate, Transfer Shield Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 979 opened under **ADR-1965** after CONTINUE/NEXT (Tenant MVP Transfer Bulwark Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1966**. Stage 978 feature scope remains frozen.
