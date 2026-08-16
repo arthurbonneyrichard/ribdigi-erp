@@ -31,3 +31,7 @@ Stage 1011 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Valve Gate, Transfer Valve Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1011 opened under **ADR-2029** after CONTINUE/NEXT (Tenant MVP Transfer Throttle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2030**. Stage 1010 feature scope remains frozen.

@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1011 D1 Transfer Throttle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1011_FIDELITY.md` (`test_stage1011_fidelity_d1.py`); Offline Complete / Transfer Throttle Gate honesty / go-live still MISSING.
 Stage 1010 D1 Transfer Valve Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1010_FIDELITY.md` (`test_stage1010_fidelity_d1.py`); Offline Complete / Transfer Valve Gate honesty / go-live still MISSING.
 Stage 1009 D1 Transfer Armor Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1009_FIDELITY.md` (`test_stage1009_fidelity_d1.py`); Offline Complete / Transfer Armor Gate honesty / go-live still MISSING.
 Stage 1008 D1 Transfer Warden Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1008_FIDELITY.md` (`test_stage1008_fidelity_d1.py`); Offline Complete / Transfer Warden Gate honesty / go-live still MISSING.
