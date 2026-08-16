@@ -5,6 +5,17 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
+def _require_credit_override_reason(model: BaseModel) -> BaseModel:
+    """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
+    if bool(getattr(model, "override_credit_limit", False)):
+        reason = (getattr(model, "override_reason", None) or "").strip()
+        if not reason:
+            raise ValueError(
+                "override_reason is required when override_credit_limit is true"
+            )
+    return model
+
+
 class ORMSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -488,12 +499,20 @@ class TransactionCreate(BaseModel):
     override_credit_limit: bool = False
     override_reason: str | None = Field(default=None, max_length=500)
 
+    @model_validator(mode="after")
+    def require_override_reason_when_flagged(self):
+        return _require_credit_override_reason(self)
+
 
 class CreditLimitOverrideBody(BaseModel):
     """Optional body for posting sales that may exceed credit limit (BR-11.1)."""
 
     override_credit_limit: bool = False
     override_reason: str | None = Field(default=None, max_length=500)
+
+    @model_validator(mode="after")
+    def require_override_reason_when_flagged(self):
+        return _require_credit_override_reason(self)
 
 
 class StockAdjust(BaseModel):
@@ -1297,3 +1316,7 @@ class PosSaleCreate(BaseModel):
     items: list[LineItem] = Field(min_length=1)
     override_credit_limit: bool = False
     override_reason: str | None = Field(default=None, max_length=500)
+
+    @model_validator(mode="after")
+    def require_override_reason_when_flagged(self):
+        return _require_credit_override_reason(self)
