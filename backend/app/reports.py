@@ -1791,8 +1791,23 @@ async def inventory_stock_counts(
     ) = await _resolve_purchase_location_filters(
         db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
     )
-    if status:
-        status = status.strip().lower() or None
+    # Schema StockCountReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    from app.stock_counts import COUNT_STATUSES
+
+    if status is not None:
+        status_key = (status or "").strip().lower()
+        if not status_key:
+            status = None
+        elif status_key not in COUNT_STATUSES:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=422,
+                detail=f"status must be one of: {', '.join(sorted(COUNT_STATUSES))}",
+            )
+        else:
+            status = status_key
 
     stmt = select(m.StockCount).where(m.StockCount.tenant_id == tenant_id)
     if status:

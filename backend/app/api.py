@@ -76,6 +76,7 @@ from app.schemas import (
     InventoryValuationMethodValue,
     ChequeDirectionValue,
     ChequeStatusValue,
+    StockCountReportStatusValue,
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
@@ -9564,7 +9565,7 @@ async def report_inventory_stock_counts(
     warehouse_id: str | None = None,
     store_id: str | None = None,
     variance_only: bool = True,
-    status: str | None = "completed",
+    status: Annotated[StockCountReportStatusValue, Query()] = "completed",
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9578,7 +9579,7 @@ async def report_inventory_stock_counts(
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
             variance_only=variance_only,
-            status=status or None,
+            status=status,
         )
     )
 
