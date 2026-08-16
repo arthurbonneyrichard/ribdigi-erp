@@ -94,6 +94,7 @@ from app.schemas import (
     GrnCreate,
     JournalCreate,
     JournalUnpost,
+    ChequeLifecycleReason,
     PeriodCloseBody,
     PeriodReopenBody,
     CreditLimitOverrideBody,
@@ -8548,7 +8549,7 @@ async def clear_cheque_api(
 @api.post("/accounting/cheques/{cheque_id}/bounce")
 async def bounce_cheque_api(
     cheque_id: str,
-    reason: str | None = None,
+    payload: ChequeLifecycleReason,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8557,7 +8558,7 @@ async def bounce_cheque_api(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         cheque_id=cheque_id,
-        reason=reason,
+        reason=payload.reason,
     )
     await db.commit()
     return env(cheques_svc.serialize_cheque(row), "Cheque bounced")
@@ -8566,7 +8567,7 @@ async def bounce_cheque_api(
 @api.post("/accounting/cheques/{cheque_id}/cancel")
 async def cancel_cheque_api(
     cheque_id: str,
-    reason: str | None = None,
+    payload: ChequeLifecycleReason,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8575,7 +8576,7 @@ async def cancel_cheque_api(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         cheque_id=cheque_id,
-        reason=reason,
+        reason=payload.reason,
     )
     await db.commit()
     return env(cheques_svc.serialize_cheque(row), "Cheque cancelled")

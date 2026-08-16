@@ -1,4 +1,4 @@
-"""Cheque bounce/cancel reason honesty (BR-10.4) — FE + API require reason."""
+"""Cheque bounce/cancel reason honesty (BR-10.4) — JSON body `{ reason }` required."""
 
 from __future__ import annotations
 
@@ -19,8 +19,9 @@ def test_cheque_bounce_cancel_reason_ui_wired():
     page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
     assert "chequeActionReason" in page
     assert "Required before Bounce or Cancel" in page
-    assert "encodeURIComponent(reason)" in page
-    assert "?reason=" in page
+    assert "JSON.stringify({ reason })" in page
+    assert "?reason=" not in page
+    assert "encodeURIComponent(reason)" not in page
     assert "Enter a reason before" in page
     assert "bouncing" in page
     assert "cancelling" in page
@@ -93,22 +94,37 @@ async def test_bounce_cheque_requires_reason_and_persists(client, db_session, se
     missing = await ac.post(
         f"/api/v1/accounting/cheques/{chq['id']}/bounce",
         headers=headers,
+        json={},
     )
-    assert missing.status_code == 400
-    assert "reason" in missing.json()["detail"].lower()
+    assert missing.status_code == 422
+
+    empty = await ac.post(
+        f"/api/v1/accounting/cheques/{chq['id']}/bounce",
+        headers=headers,
+        json={"reason": ""},
+    )
+    assert empty.status_code == 422
 
     blank = await ac.post(
         f"/api/v1/accounting/cheques/{chq['id']}/bounce",
         headers=headers,
-        params={"reason": "   "},
+        json={"reason": "   "},
     )
     assert blank.status_code == 400
     assert "reason" in blank.json()["detail"].lower()
 
+    # Query-string reason no longer accepted as the required body.
+    query_only = await ac.post(
+        f"/api/v1/accounting/cheques/{chq['id']}/bounce",
+        headers=headers,
+        params={"reason": "should not work as sole reason"},
+    )
+    assert query_only.status_code == 422
+
     bounced = await ac.post(
         f"/api/v1/accounting/cheques/{chq['id']}/bounce",
         headers=headers,
-        params={"reason": "NSF — insufficient funds"},
+        json={"reason": "NSF — insufficient funds"},
     )
     assert bounced.status_code == 200, bounced.text
     body = bounced.json()["data"]
@@ -165,14 +181,14 @@ async def test_cancel_issued_cheque_requires_reason(client, db_session, seeded):
     missing = await ac.post(
         f"/api/v1/accounting/cheques/{chq.id}/cancel",
         headers=headers,
+        json={},
     )
-    assert missing.status_code == 400
-    assert "reason" in missing.json()["detail"].lower()
+    assert missing.status_code == 422
 
     ok = await ac.post(
         f"/api/v1/accounting/cheques/{chq.id}/cancel",
         headers=headers,
-        params={"reason": "Stop payment — API hello-world"},
+        json={"reason": "Stop payment — API hello-world"},
     )
     assert ok.status_code == 200, ok.text
     body = ok.json()["data"]
