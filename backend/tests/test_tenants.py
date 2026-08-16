@@ -100,8 +100,8 @@ async def test_create_tenant_rejects_invalid_industry(client):
             "admin_password": "SecurePass123!",
         },
     )
-    assert bad.status_code == 400, bad.text
-    assert "industry must be one of" in bad.text
+    assert bad.status_code == 422, bad.text
+    assert "industry" in bad.text.lower() or "literal" in bad.text.lower() or "Input" in bad.text
 
     ok = await ac.post(
         "/api/v1/tenants",

@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, model_validator
 
 from app.pos import coerce_payment_method_value
+from app.tenants import coerce_industry_value
 
 PosTenderMethod = Annotated[
     Literal["cash", "card", "wallet", "credit", "other"],
@@ -14,6 +15,18 @@ PosTenderMethod = Annotated[
 PosSalePaymentMethod = Annotated[
     Literal["cash", "card", "wallet", "credit", "other", "split"],
     BeforeValidator(coerce_payment_method_value),
+]
+IndustryValue = Annotated[
+    Literal[
+        "retail",
+        "pharmacy",
+        "restaurant",
+        "bakery",
+        "wholesale",
+        "manufacturing",
+        "mart",
+    ],
+    BeforeValidator(coerce_industry_value),
 ]
 
 
@@ -106,7 +119,9 @@ class RefreshRequest(BaseModel):
 class TenantCreate(BaseModel):
     company_name: str
     slug: str
-    industry: str = "retail"
+    # BR-1.2 — schema Literal (+ case coerce via BeforeValidator); omit → retail;
+    # blank/invalid → 422 (no silent retail from garbage).
+    industry: IndustryValue = "retail"
     currency: str = "GHS"
     admin_email: EmailStr
     admin_password: str
@@ -114,7 +129,8 @@ class TenantCreate(BaseModel):
 
 class TenantProfileUpdate(BaseModel):
     company_name: str | None = None
-    industry: str | None = None
+    # omit = no change; blank/invalid → 422 (same IndustryValue Literal)
+    industry: IndustryValue | None = None
     currency: str | None = None
     phone: str | None = None
     email: EmailStr | None = None

@@ -23,8 +23,21 @@ VALID_TIME_FORMATS = frozenset({"12h", "24h"})
 TRIAL_REMINDER_DAYS = (7, 3, 1)
 
 
+def coerce_industry_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
 def normalize_industry(industry: str | None, *, required: bool = True) -> str | None:
-    """Normalize industry to a BR-1.2 / VALID_INDUSTRIES value (lowercase)."""
+    """Normalize industry to a BR-1.2 / VALID_INDUSTRIES value (lowercase).
+
+    Defense in depth: TenantCreate / TenantProfileUpdate schema Literals already
+    reject blank/unknown (after coerce) with 422.
+    """
     if industry is None:
         if required:
             raise HTTPException(
