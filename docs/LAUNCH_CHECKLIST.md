@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1040 track opened (ADR-2087: `test_stage1040_open.py`, `docs/STAGE_1040_PLAN.md`) — Transfer Clearance Gate Honesty Pack Remaining-Gate Index; closed under ADR-2088
+- [x] Transfer Clearance Gate Honesty Pack remaining-gate hub (Stage 1040 I1: `test_stage1040_index_i1.py`, `docs/TRANSFER_CLEARANCE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Clearance Gate Honesty Pack blocker matrix (Stage 1040 B1: `test_stage1040_blockers_b1.py`, `docs/TRANSFER_CLEARANCE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1039 / Stage 1038 / Stage 392 / CHANGE_IMPACT pointers (Stage 1040 P1: `test_stage1040_pointers_p1.py`, `docs/TRANSFER_CLEARANCE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1040 fidelity sync (D1: `test_stage1040_fidelity_d1.py`, `docs/STAGE_1040_FIDELITY.md`)
+- [x] Stage 1040 exit + freeze (H1040x: `test_stage1040_exit_h1040x.py`, `docs/STAGE_1040_EXIT_CRITERIA.md`, ADR-2088)
+
 Stage 1039 track opened (ADR-2085: `test_stage1039_open.py`, `docs/STAGE_1039_PLAN.md`) — Transfer License Gate Honesty Pack Remaining-Gate Index; closed under ADR-2086
 - [x] Transfer License Gate Honesty Pack remaining-gate hub (Stage 1039 I1: `test_stage1039_index_i1.py`, `docs/TRANSFER_LICENSE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer License Gate Honesty Pack blocker matrix (Stage 1039 B1: `test_stage1039_blockers_b1.py`, `docs/TRANSFER_LICENSE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
