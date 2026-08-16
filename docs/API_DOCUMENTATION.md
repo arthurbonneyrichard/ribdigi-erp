@@ -1181,11 +1181,12 @@ Posting a journal (`POST /accounting/journal-entries`) rejects `entry_date` (def
 
 ### 10.3 Cash & Bank Accounts
 **List liquid:** `GET /accounting/liquid-accounts`  
-**Create account:** `POST /accounting/accounts`  
+**Create account:** `POST /accounting/accounts` — `account_type` schema `Literal["asset","liability","equity","income","expense"]` (omit → `asset`; blank/invalid → **422**); `liquid_kind` schema `Literal["cash","bank"] | null` (omit/null = non-liquid; blank/invalid → **422**; when set, account is forced to `asset`)  
 ```json
 { "code": "1001", "name": "Petty Cash", "liquid_kind": "cash" }
 ```
-Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank_name": "Acme Bank", "account_number": "123", "bank_branch": "Main" }`
+Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank_name": "Acme Bank", "account_number": "123", "bank_branch": "Main" }`  
+Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "expense" }`
 
 **Transfers / deposits / withdrawals:**  
 - `GET /accounting/transfers`  

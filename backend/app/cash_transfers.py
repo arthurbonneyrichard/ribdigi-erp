@@ -124,6 +124,8 @@ async def create_account(
     name_key = (name or "").strip()
     if not code_key or not name_key:
         raise HTTPException(status_code=400, detail="code and name are required")
+    # Defense in depth: AccountCreate Literals reject blank/unknown with 422
+    # before this runs. Empty account_type used to coerce to "asset".
     atype = (account_type or "asset").strip().lower()
     if atype not in ACCOUNT_TYPES:
         raise HTTPException(
