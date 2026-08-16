@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1156 D1 Transfer Postern Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1156_FIDELITY.md` (`test_stage1156_fidelity_d1.py`); Offline Complete / Transfer Postern Gate honesty / go-live still MISSING.
 Stage 1155 D1 Transfer Redan Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1155_FIDELITY.md` (`test_stage1155_fidelity_d1.py`); Offline Complete / Transfer Redan Gate honesty / go-live still MISSING.
 Stage 1154 D1 Transfer Ravelin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1154_FIDELITY.md` (`test_stage1154_fidelity_d1.py`); Offline Complete / Transfer Ravelin Gate honesty / go-live still MISSING.
 Stage 1153 D1 Transfer Belfry Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1153_FIDELITY.md` (`test_stage1153_fidelity_d1.py`); Offline Complete / Transfer Belfry Gate honesty / go-live still MISSING.

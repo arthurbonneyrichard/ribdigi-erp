@@ -31,3 +31,7 @@ Stage 1156 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Redan Gate, Transfer Redan Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1156 opened under **ADR-2319** after CONTINUE/NEXT (Tenant MVP Transfer Postern Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2320**. Stage 1155 feature scope remains frozen.
