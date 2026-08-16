@@ -1480,13 +1480,49 @@ ReportExportFormatValue = Annotated[
     Literal["csv", "pdf", "xlsx"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
+ReportTypeValue = Annotated[
+    Literal[
+        "summary",
+        "sales_daily",
+        "sales_monthly",
+        "sales_products",
+        "sales_salesperson",
+        "sales_customers",
+        "sales_returns",
+        "sales_by_store",
+        "sales_by_department",
+        "inventory_balance",
+        "inventory_valuation",
+        "inventory_movements",
+        "inventory_low_stock",
+        "inventory_expiry",
+        "inventory_transfers",
+        "inventory_stock_counts",
+        "purchases_summary",
+        "purchases_suppliers",
+        "purchases_pending_orders",
+        "purchases_returns",
+        "expenses_summary",
+        "expenses_budget_vs_actual",
+        "cash_flow",
+        "trial_balance",
+        "profit_loss",
+        "balance_sheet",
+        "tax",
+        "tax_filing",
+        "tax_filing_gh",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 
 
 class ReportScheduleCreate(BaseModel):
     """Email report schedule create (BR-14)."""
 
     name: str = Field(min_length=2)
-    report_type: str
+    # Schema Literal; blank/unknown → 422 (was free str → service 400)
+    report_type: ReportTypeValue
     format: ReportExportFormatValue = "xlsx"
     # omit → daily; blank/invalid → 422 (was free dict; "" coerced to daily in service)
     frequency: ScheduleFrequencyValue = "daily"
@@ -1497,10 +1533,10 @@ class ReportScheduleCreate(BaseModel):
 
 
 class ReportScheduleUpdate(BaseModel):
-    """Email report schedule patch — omit = no change; blank frequency/format → 422."""
+    """Email report schedule patch — omit = no change; blank frequency/format/report_type → 422."""
 
     name: str | None = Field(default=None, min_length=2)
-    report_type: str | None = None
+    report_type: ReportTypeValue | None = None
     format: ReportExportFormatValue | None = None
     frequency: ScheduleFrequencyValue | None = None
     weekday: int | None = Field(default=None, ge=0, le=6)

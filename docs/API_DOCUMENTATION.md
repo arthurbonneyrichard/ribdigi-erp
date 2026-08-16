@@ -1423,6 +1423,16 @@ Tax UI (`/tax`) period controls include store picker.
 **Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=&branch_id=&department_id=&store_id=`  
 **Budget vs Actual:** `GET /reports/expenses/budget-vs-actual?from_date=&to_date=&category_id=&branch_id=&department_id=&store_id=` — scales each category's monthly `budget_amount` by `period_days/30` against approved spend (org filters apply to actuals); returns `rows`, `top_categories`, totals, echo `branch_name`/`department_name`/`store_name`, and status `over_budget|under_budget|on_budget|no_budget`. Export types `expenses_summary` / `expenses_budget_vs_actual` accept the same org params.
 
+### 14.5 Email report schedules (BR-14)
+**List:** `GET /reports/schedules`  
+**Create:** `POST /reports/schedules`  
+**Update:** `PATCH /reports/schedules/{schedule_id}`  
+**Delete:** `DELETE /reports/schedules/{schedule_id}`  
+**Run now:** `POST /reports/schedules/{schedule_id}/run?force=true`  
+**Run due (tenant):** `POST /reports/schedules/run-due`
+
+`report_type` ∈ `EXPORTABLE` (schema `Literal` + strip/lower; same set as export — e.g. `summary`, `sales_daily`, `profit_loss`, …). Blank/unknown → **422**. `frequency` ∈ `daily|weekly`; `format` ∈ `csv|pdf|xlsx` (same Literal honesty). Service checks remain defense-in-depth (**400**). Reports UI **Email schedules** select.
+
 ---
 
 ## 15. Notifications
