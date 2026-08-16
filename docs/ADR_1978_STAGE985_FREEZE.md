@@ -31,3 +31,7 @@ Stage 986 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Rampart Gate, Transfer Rampart Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 986 opened under **ADR-1979** after CONTINUE/NEXT (Tenant MVP Transfer Moat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1980**. Stage 985 feature scope remains frozen.
