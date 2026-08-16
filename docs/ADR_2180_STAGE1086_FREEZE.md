@@ -31,3 +31,7 @@ Stage 1087 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bearing Gate, Transfer Bearing Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1087 opened under **ADR-2181** after CONTINUE/NEXT (Tenant MVP Transfer Heading Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2182**. Stage 1086 feature scope remains frozen.
