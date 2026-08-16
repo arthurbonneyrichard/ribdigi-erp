@@ -75,6 +75,7 @@ from app.schemas import (
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
+    AiDocumentTypeValue,
     NotificationCategoryValue,
     NotificationStatusValue,
     CreditLimitUpdate,
@@ -12231,7 +12232,8 @@ async def ai_customer_assist(
 @api.post("/ai/documents/analyze")
 async def ai_documents_analyze(
     file: UploadFile = File(...),
-    document_type: str = Form("auto"),
+    # None default (not "auto"): empty Form "" must 422, not silently become auto.
+    document_type: Annotated[AiDocumentTypeValue | None, Form()] = None,
     expected_amount: float | None = Form(None),
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
@@ -12242,7 +12244,7 @@ async def ai_documents_analyze(
         tenant_id=claims["tenant_id"],
         actor_user_id=claims.get("sub"),
         upload=file,
-        document_type=document_type,
+        document_type=document_type or "auto",
         expected_amount=expected_amount,
     )
     return env(data, "Document analyzed — review before applying")
