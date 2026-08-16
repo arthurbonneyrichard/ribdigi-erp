@@ -233,6 +233,7 @@ async def analyze_upload(
     document_type: str = "auto",
     expected_amount: float | None = None,
 ) -> dict[str, Any]:
+    # Schema AiDocumentTypeValue rejects blank/invalid → 422; keep check defense-in-depth.
     doc_type = (document_type or "auto").strip().lower()
     if doc_type not in VALID_DOC_TYPES:
         raise HTTPException(

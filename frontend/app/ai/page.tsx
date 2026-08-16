@@ -17,6 +17,7 @@ export default function Page() {
   const [lastAtRisk, setLastAtRisk] = useState<any[]>([]);
   const [includeOpenPr, setIncludeOpenPr] = useState(false);
   const [lastDocExtract, setLastDocExtract] = useState<any | null>(null);
+  const [documentType, setDocumentType] = useState<'auto' | 'receipt' | 'invoice' | 'purchase_order'>('auto');
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
   const [draftPiBusy, setDraftPiBusy] = useState(false);
 
@@ -276,7 +277,7 @@ export default function Page() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('document_type', 'auto');
+      fd.append('document_type', documentType);
       const r = await api('/ai/documents/analyze', { method: 'POST', body: fd });
       const d = r.data || {};
       setLastDocExtract(d);
@@ -386,6 +387,21 @@ export default function Page() {
           <button onClick={go}>Ask</button>
           <button onClick={generateReport}>Generate report</button>
           <button onClick={customerAssist}>Customer assist</button>
+          <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+            Document type
+            <select
+              aria-label="Document type"
+              value={documentType}
+              onChange={(e) =>
+                setDocumentType(e.target.value as 'auto' | 'receipt' | 'invoice' | 'purchase_order')
+              }
+            >
+              <option value="auto">auto</option>
+              <option value="receipt">receipt</option>
+              <option value="invoice">invoice</option>
+              <option value="purchase_order">purchase_order</option>
+            </select>
+          </label>
           <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
             <span style={{ border: '1px solid #ccc', padding: '6px 10px', borderRadius: 4 }}>Analyze document</span>
             <input

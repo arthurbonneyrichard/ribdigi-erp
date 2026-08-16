@@ -136,6 +136,12 @@ BarcodeSymbologyValue = Annotated[
     BeforeValidator(coerce_package_code_value),
 ]
 
+# Keep aligned with app.ai_documents.VALID_DOC_TYPES (AI Analyze document select).
+AiDocumentTypeValue = Annotated[
+    Literal["receipt", "invoice", "purchase_order", "auto"],
+    BeforeValidator(coerce_package_code_value),
+]
+
 # Keep aligned with app.notifications.VALID_CATEGORIES / DEFAULT_PREFERENCES.
 NotificationCategoryValue = Annotated[
     Literal[
