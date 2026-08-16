@@ -200,7 +200,7 @@ export default function Page() {
             Trial ends {tenant.trial_ends_at ? String(tenant.trial_ends_at).slice(0, 10) : 'soon'}
             {tenant.days_remaining != null ? ` (${tenant.days_remaining} day(s) left)` : ''}.
           </p>
-          <button onClick={activate}>Activate now</button>
+          <button className="btn-ok" onClick={activate}>Activate now</button>
         </div>
       )}
       {tenant.read_only || tenant.status === 'grace' ? (
@@ -211,7 +211,7 @@ export default function Page() {
               ? ` Grace ends ${String(tenant.grace_ends_at).slice(0, 10)}.`
               : ''}
           </p>
-          <button onClick={activate}>Activate to restore access</button>
+          <button className="btn-ok" onClick={activate}>Activate to restore access</button>
         </div>
       ) : null}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -457,10 +457,10 @@ export default function Page() {
             Save profile
           </button>
           {(tenant.status === 'trial' || tenant.status === 'grace') && (
-            <button onClick={activate}>Activate</button>
+            <button className="btn-ok" onClick={activate}>Activate</button>
           )}
           {tenant.status !== 'suspended' && (
-            <button onClick={suspend} style={{ color: '#b91c1c' }} disabled={!!tenant.read_only}>
+            <button className="btn-danger" onClick={suspend} disabled={!!tenant.read_only}>
               Suspend
             </button>
           )}

@@ -2898,7 +2898,7 @@ export default function Page() {
                       Open
                     </button>
                     {(c.can_cancel || c.status === 'draft') && (
-                      <button type="button" onClick={() => cancelStockCount(c.id, c.count_number)}>
+                      <button type="button" className="btn-danger" onClick={() => cancelStockCount(c.id, c.count_number)}>
                         Cancel
                       </button>
                     )}
@@ -2964,6 +2964,7 @@ export default function Page() {
                   </button>
                   <button
                     type="button"
+                    className="btn-danger"
                     onClick={() => cancelStockCount(activeCount.id, activeCount.count_number)}
                   >
                     Cancel count
@@ -3467,7 +3468,7 @@ export default function Page() {
                     )}
                     {t.status === 'requested' && !t.fully_approved && (
                       <>
-                        <button type="button" onClick={() => transferAct(t.id, 'approve')}>
+                        <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'approve')}>
                           Approve
                           {t.approval_steps_required > 1
                             ? t.awaiting_approval === 'dest'
@@ -3475,7 +3476,7 @@ export default function Page() {
                               : ' source'
                             : ''}
                         </button>
-                        <button type="button" onClick={() => transferAct(t.id, 'reject')}>
+                        <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'reject')}>
                           Reject
                         </button>
                       </>
@@ -3491,7 +3492,7 @@ export default function Page() {
                       </button>
                     )}
                     {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                      <button type="button" onClick={() => transferAct(t.id, 'cancel')}>
+                      <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'cancel')}>
                         Cancel
                       </button>
                     )}

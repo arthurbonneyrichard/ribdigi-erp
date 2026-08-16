@@ -1435,6 +1435,7 @@ export default function Page() {
                       <>
                         <button
                           type="button"
+                          className="btn-ok"
                           disabled={prBusy === `approve:${r.id}`}
                           onClick={() => prAction(r.id, 'approve')}
                         >
@@ -1442,6 +1443,7 @@ export default function Page() {
                         </button>
                         <button
                           type="button"
+                          className="btn-danger"
                           disabled={prBusy === `reject:${r.id}`}
                           onClick={() => prAction(r.id, 'reject')}
                         >
@@ -1734,7 +1736,7 @@ export default function Page() {
                       <button onClick={() => receiveAll(o)}>Receive all</button>
                     )}
                     {o.can_cancel && (
-                      <button type="button" onClick={() => cancelPo(o)}>
+                      <button type="button" className="btn-danger" onClick={() => cancelPo(o)}>
                         Cancel
                       </button>
                     )}
@@ -1752,7 +1754,7 @@ export default function Page() {
               </h3>
               {selected.can_cancel && (
                 <p style={{ marginTop: 0 }}>
-                  <button type="button" onClick={() => cancelPo(selected)}>
+                  <button type="button" className="btn-danger" onClick={() => cancelPo(selected)}>
                     Cancel PO
                   </button>
                   <span className="muted" style={{ marginLeft: 8 }}>
@@ -2329,10 +2331,10 @@ export default function Page() {
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {inv.status === 'draft' && (
-                    <button onClick={() => approveInvoice(inv.id)}>Approve</button>
+                    <button className="btn-ok" onClick={() => approveInvoice(inv.id)}>Approve</button>
                   )}
                   {inv.can_cancel && (
-                    <button type="button" onClick={() => cancelInvoice(inv)}>
+                    <button type="button" className="btn-danger" onClick={() => cancelInvoice(inv)}>
                       Cancel
                     </button>
                   )}
@@ -2385,7 +2387,7 @@ export default function Page() {
             </h3>
             {selectedInvoice.can_cancel && (
               <p style={{ marginTop: 0 }}>
-                <button type="button" onClick={() => cancelInvoice(selectedInvoice)}>
+                <button type="button" className="btn-danger" onClick={() => cancelInvoice(selectedInvoice)}>
                   Cancel invoice
                 </button>
                 <span className="muted" style={{ marginLeft: 8 }}>
@@ -2562,7 +2564,7 @@ export default function Page() {
                   {r.status === 'draft' && (
                     <>
                       <button onClick={() => postReturn(r.id)}>Post</button>
-                      <button onClick={() => cancelReturn(r)}>Cancel</button>
+                      <button className="btn-danger" onClick={() => cancelReturn(r)}>Cancel</button>
                     </>
                   )}
                 </td>

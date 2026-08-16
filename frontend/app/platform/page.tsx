@@ -541,13 +541,13 @@ export default function PlatformConsole() {
                           Manage
                         </button>
                         {t.status === 'suspended' ? (
-                          <button type="button" disabled={busy === t.id} onClick={() => activateTenant(t)}>
+                          <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)}>
                             Activate
                           </button>
                         ) : (
                           <button
                             type="button"
-                            className="danger"
+                            className="btn-danger"
                             disabled={busy === t.id}
                             onClick={() => suspendTenant(t)}
                           >
