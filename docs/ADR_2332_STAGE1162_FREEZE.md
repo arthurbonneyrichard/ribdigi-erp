@@ -31,3 +31,7 @@ Stage 1163 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Embrasure Gate, Transfer Embrasure Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1163 opened under **ADR-2333** after CONTINUE/NEXT (Tenant MVP Transfer Merlon Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2334**. Stage 1162 feature scope remains frozen.
