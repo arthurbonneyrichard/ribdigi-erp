@@ -31,3 +31,7 @@ Stage 1122 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Piazza Gate, Transfer Piazza Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1122 opened under **ADR-2251** after CONTINUE/NEXT (Tenant MVP Transfer Veranda Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2252**. Stage 1121 feature scope remains frozen.
