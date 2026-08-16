@@ -842,7 +842,7 @@ Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`
 }
 ```
 
-`accepted_qty + rejected_qty` must equal `received_qty` (rejected may be inferred when omitted and accepted < received). `rejection_reason` is **required** when `rejected_qty > 0`. Only accepted qty is stocked; full `received_qty` reduces PO outstanding (BR-6.4).
+`accepted_qty + rejected_qty` must equal `received_qty` (rejected may be inferred when omitted and accepted < received). `rejection_reason` is **required** when `rejected_qty > 0` (or inferred reject) — schema `model_validator` → **422** on omit/blank; service still 400 if reached. Only accepted qty is stocked; full `received_qty` reduces PO outstanding (BR-6.4).
 
 ### 6.5 Purchase Invoice
 **List:** `GET /purchases/invoices`  
