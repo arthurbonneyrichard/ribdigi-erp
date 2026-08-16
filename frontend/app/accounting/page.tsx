@@ -882,11 +882,11 @@ export default function Page() {
                 style={{ minWidth: 280 }}
                 aria-label="Period close or reopen reason"
               />
-              <button type="button" onClick={closeBooks}>
+              <button type="button" className="btn-danger" onClick={closeBooks}>
                 Close books
               </button>
               {period?.books_closed_through && (
-                <button type="button" onClick={reopenBooks}>
+                <button type="button" className="btn-ok" onClick={reopenBooks}>
                   Reopen (clear)
                 </button>
               )}

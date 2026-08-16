@@ -1442,12 +1442,12 @@ export default function Page() {
                   </>
                 )}
                 {t.can_ship && (
-                  <button type="button" onClick={() => act(t.id, 'ship')}>
+                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'ship')}>
                     Ship
                   </button>
                 )}
                 {t.status === 'in_transit' && (
-                  <button type="button" onClick={() => act(t.id, 'receive')}>
+                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'receive')}>
                     Receive
                   </button>
                 )}

@@ -1742,7 +1742,9 @@ export default function Page() {
                       </button>
                     )}
                     {(o.status === 'sent' || o.status === 'partially_received') && (
-                      <button onClick={() => receiveAll(o)}>Receive all</button>
+                      <button type="button" className="btn-ok" onClick={() => receiveAll(o)}>
+                        Receive all
+                      </button>
                     )}
                     {o.can_cancel && (
                       <button type="button" className="btn-danger" onClick={() => cancelPo(o)}>
@@ -1957,10 +1959,14 @@ export default function Page() {
               {(selected.status === 'sent' || selected.status === 'partially_received') &&
                 selected.items.some((i) => i.outstanding_qty > 0) && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                    <button type="button" onClick={() => postPartialReceive(selected)}>
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => postPartialReceive(selected)}
+                    >
                       Post GRN (accept / reject)
                     </button>
-                    <button type="button" onClick={() => receiveAll(selected)}>
+                    <button type="button" className="btn-ok" onClick={() => receiveAll(selected)}>
                       Receive all accepted
                     </button>
                     <span className="muted">
@@ -2572,7 +2578,9 @@ export default function Page() {
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {r.status === 'draft' && (
                     <>
-                      <button onClick={() => postReturn(r.id)}>Post</button>
+                      <button type="button" className="btn-ok" onClick={() => postReturn(r.id)}>
+                        Post
+                      </button>
                       <button className="btn-danger" onClick={() => cancelReturn(r)}>Cancel</button>
                     </>
                   )}
