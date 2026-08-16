@@ -1681,6 +1681,17 @@ class BankConnectionUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class BankAutoClearBody(BaseModel):
+    """One-shot bank↔book auto-clear confidence floor (BR-10.3 reconcile)."""
+
+    # omit → high; blank/invalid → 422 (was free dict; ""/garbage silently coerced to high)
+    min_confidence: Annotated[
+        Literal["high", "medium", "low"],
+        BeforeValidator(coerce_package_code_value),
+    ] = "high"
+    date_window_days: int = Field(default=7, ge=1, le=90)
+
+
 class SupplierPaymentCreate(BaseModel):
     supplier_id: str
     amount: float = Field(gt=0)
