@@ -31,3 +31,7 @@ Stage 1193 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ossuary Gate, Transfer Ossuary Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1193 opened under **ADR-2393** after CONTINUE/NEXT (Tenant MVP Transfer Narthex Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2394**. Stage 1192 feature scope remains frozen.
