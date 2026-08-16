@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1084 track opened (ADR-2175: `test_stage1084_open.py`, `docs/STAGE_1084_PLAN.md`) — Transfer Coverage Gate Honesty Pack Remaining-Gate Index; closed under ADR-2176
+- [x] Transfer Coverage Gate Honesty Pack remaining-gate hub (Stage 1084 I1: `test_stage1084_index_i1.py`, `docs/TRANSFER_COVERAGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Coverage Gate Honesty Pack blocker matrix (Stage 1084 B1: `test_stage1084_blockers_b1.py`, `docs/TRANSFER_COVERAGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1083 / Stage 1082 / Stage 392 / CHANGE_IMPACT pointers (Stage 1084 P1: `test_stage1084_pointers_p1.py`, `docs/TRANSFER_COVERAGE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1084 fidelity sync (D1: `test_stage1084_fidelity_d1.py`, `docs/STAGE_1084_FIDELITY.md`)
+- [x] Stage 1084 exit + freeze (H1084x: `test_stage1084_exit_h1084x.py`, `docs/STAGE_1084_EXIT_CRITERIA.md`, ADR-2176)
+
 Stage 1083 track opened (ADR-2173: `test_stage1083_open.py`, `docs/STAGE_1083_PLAN.md`) — Transfer Sweep Gate Honesty Pack Remaining-Gate Index; closed under ADR-2174
 - [x] Transfer Sweep Gate Honesty Pack remaining-gate hub (Stage 1083 I1: `test_stage1083_index_i1.py`, `docs/TRANSFER_SWEEP_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Sweep Gate Honesty Pack blocker matrix (Stage 1083 B1: `test_stage1083_blockers_b1.py`, `docs/TRANSFER_SWEEP_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
