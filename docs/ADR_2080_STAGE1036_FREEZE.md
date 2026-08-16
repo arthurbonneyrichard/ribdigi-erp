@@ -31,3 +31,7 @@ Stage 1037 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Benefit Gate, Transfer Benefit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1037 opened under **ADR-2081** after CONTINUE/NEXT (Tenant MVP Transfer Privilege Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2082**. Stage 1036 feature scope remains frozen.
