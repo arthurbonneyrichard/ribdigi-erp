@@ -31,3 +31,7 @@ Stage 964 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Project Gate, Transfer Project Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 964 opened under **ADR-1935** after CONTINUE/NEXT (Tenant MVP Transfer Environment Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1936**. Stage 963 feature scope remains frozen.
