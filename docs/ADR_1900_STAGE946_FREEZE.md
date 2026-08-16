@@ -31,3 +31,7 @@ Stage 947 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Frontier Gate, Transfer Frontier Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 947 opened under **ADR-1901** after CONTINUE/NEXT (Tenant MVP Transfer Zone Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1902**. Stage 946 feature scope remains frozen.
