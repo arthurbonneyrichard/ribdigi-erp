@@ -31,3 +31,7 @@ Stage 1005 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Inspect Gate, Transfer Inspect Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1005 opened under **ADR-2017** after CONTINUE/NEXT (Tenant MVP Transfer Intercept Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2018**. Stage 1004 feature scope remains frozen.
