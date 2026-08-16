@@ -79,4 +79,4 @@ def test_report_schedule_frequency_ui_and_docs():
     assert 'value="weekly"' in page
     assert 'value="xlsx"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    assert "Report schedule frequency/format OpenAPI" in agents
+    assert "Report schedule frequency/format/report_type OpenAPI" in agents

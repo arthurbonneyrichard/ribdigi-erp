@@ -98,6 +98,7 @@ async def create_schedule(
     name = (name or "").strip()
     if len(name) < 2:
         raise HTTPException(status_code=400, detail="name is required")
+    # Defense in depth: ReportScheduleCreate.report_type Literal rejects blank/unknown with 422.
     if report_type not in EXPORTABLE:
         raise HTTPException(status_code=400, detail=f"report_type must be one of {sorted(EXPORTABLE)}")
     fmt = (format or "xlsx").lower()
@@ -157,6 +158,7 @@ async def update_schedule(
             raise HTTPException(status_code=400, detail="name is required")
         row.name = name
     if report_type is not None:
+        # Defense in depth: ReportScheduleUpdate.report_type Literal → 422 on blank/unknown.
         if report_type not in EXPORTABLE:
             raise HTTPException(status_code=400, detail=f"report_type must be one of {sorted(EXPORTABLE)}")
         row.report_type = report_type
