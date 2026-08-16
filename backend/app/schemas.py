@@ -1574,6 +1574,11 @@ ChequeStatusValue = Annotated[
     Literal["pending", "deposited", "cleared", "bounced", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with api._PARTY_STATUSES / PartyCreate.status (Sales/Purchasing manage filters).
+PartyStatusValue = Annotated[
+    Literal["active", "inactive"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.stock_counts.COUNT_STATUSES (Reports Inventory count variances).
 StockCountReportStatusValue = Annotated[
     Literal["draft", "completed", "cancelled"],
