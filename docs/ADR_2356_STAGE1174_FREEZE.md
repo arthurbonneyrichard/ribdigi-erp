@@ -31,3 +31,7 @@ Stage 1175 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Pillar Gate, Transfer Pillar Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1175 opened under **ADR-2357** after CONTINUE/NEXT (Tenant MVP Transfer Column Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2358**. Stage 1174 feature scope remains frozen.
