@@ -27,6 +27,61 @@ L2_ROLES = frozenset({"company_admin", "super_admin"})
 MAX_APPROVAL_LEVELS = 5
 DEFAULT_L1_ROLES = ("store_manager", "accountant", "company_admin", "super_admin")
 
+# BR-9.2 — OpenAPI Expense* / RecurringExpense* Literals; FE selects match.
+EXPENSE_PAYMENT_METHODS = frozenset({"cash", "bank_transfer", "card", "cheque"})
+EXPENSE_PAYMENT_METHOD_ALIASES = {
+    "check": "cheque",
+    "credit_card": "card",
+    "debit_card": "card",
+    "bank": "bank_transfer",
+    "transfer": "bank_transfer",
+}
+
+
+def coerce_expense_payment_method_value(value: object) -> object:
+    """Pydantic BeforeValidator: map aliases; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    text = value.strip().lower().replace("-", "_").replace(" ", "_")
+    if not text:
+        return ""
+    return EXPENSE_PAYMENT_METHOD_ALIASES.get(text, text)
+
+
+def normalize_expense_payment_method(
+    method: str | None,
+    *,
+    default: str = "cash",
+    required: bool = True,
+) -> str | None:
+    """Defense in depth: schema Literals already reject blank/unknown with 422."""
+    if method is None:
+        if required:
+            return default
+        return None
+    if not str(method).strip():
+        if required:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "payment_method must be one of: "
+                    f"{', '.join(sorted(EXPENSE_PAYMENT_METHODS))}"
+                ),
+            )
+        return None
+    value = coerce_expense_payment_method_value(method)
+    if value in EXPENSE_PAYMENT_METHODS:
+        return str(value)
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            "payment_method must be one of: "
+            f"{', '.join(sorted(EXPENSE_PAYMENT_METHODS))}"
+        ),
+    )
+
 
 def default_approval_levels(
     *,
@@ -588,13 +643,15 @@ async def create_expense(
     steps = steps_required_from_matrix(amount, levels)
     needs_approval = steps > 0
 
+    method = normalize_expense_payment_method(payment_method, default="cash")
+
     if liquid_account_id:
         from app.accounting import resolve_settlement_gl
 
         await resolve_settlement_gl(
             db,
             tenant_id,
-            payment_method or "cash",
+            method,
             liquid_account_id=liquid_account_id,
             outflow=True,
         )
@@ -610,7 +667,7 @@ async def create_expense(
         description=description or "",
         amount=round(float(amount), 2),
         expense_date=expense_date or datetime.utcnow(),
-        payment_method=payment_method or "cash",
+        payment_method=method,
         liquid_account_id=liquid_account_id,
         reference=ref,
         payee=payee,
@@ -845,7 +902,9 @@ async def update_expense(
     if expense_date is not None:
         expense.expense_date = expense_date
     if payment_method is not None:
-        expense.payment_method = payment_method.strip() or expense.payment_method
+        expense.payment_method = normalize_expense_payment_method(
+            payment_method, required=True
+        )
 
     if org_touch:
         from app import org_units as org_units_svc
@@ -979,6 +1038,9 @@ async def create_recurring(
         branch_id=branch_id,
         department_id=department_id,
     )
+    method = normalize_expense_payment_method(
+        payment_method, default="bank_transfer"
+    )
     start = start_date or datetime.utcnow()
     row = m.RecurringExpense(
         tenant_id=tenant_id,
@@ -987,7 +1049,7 @@ async def create_recurring(
         description=description or "",
         amount=round(float(amount), 2),
         frequency=freq,
-        payment_method=payment_method or "bank_transfer",
+        payment_method=method,
         payee=payee,
         branch_id=resolved_branch,
         department_id=resolved_dept,
@@ -1086,7 +1148,9 @@ async def update_recurring(
     if description is not None:
         row.description = description
     if payment_method is not None:
-        row.payment_method = payment_method.strip() or row.payment_method
+        row.payment_method = normalize_expense_payment_method(
+            payment_method, default="bank_transfer", required=True
+        )
     if frequency is not None:
         freq = frequency.strip().lower()
         if freq not in RECURRING_FREQUENCIES:
