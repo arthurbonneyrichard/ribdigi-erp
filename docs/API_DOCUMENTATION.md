@@ -509,9 +509,9 @@ Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.
 
 ### 5.4 Products
 **List:** `GET /products?category_id=&brand_id=&low_stock=true&is_active=true|false` — optional `is_active` filters soft-deactivated products (Inventory manage All / Active / Inactive UI; default returns all)  
-**Create:** `POST /products`  
+**Create:** `POST /products` — `tax_supply_class` schema `Literal["standard","zero_rated","exempt"]` (omit → `standard`; blank/invalid → **422**; no silent standard from garbage). `tax_exempt` is aligned to `exempt` class on write.  
 **Get:** `GET /products/{product_id}`  
-**Update:** `PATCH /products/{product_id}` — partial fields include `name`, `sku`, `barcode`, prices, physical dims, tax flags, and soft-deactivate via `is_active` (false hides from POS search and blocks new sale/PR/PO/PI lines; Inventory UI **Activate** / **Deactivate** + manage status filter; stock ops still allowed)  
+**Update:** `PATCH /products/{product_id}` — partial fields include `name`, `sku`, `barcode`, prices, physical dims, tax flags (`tax_supply_class` same `Literal`, omit = no change; blank/invalid → **422**), and soft-deactivate via `is_active` (false hides from POS search and blocks new sale/PR/PO/PI lines; Inventory UI **Activate** / **Deactivate** + manage status filter; stock ops still allowed)  
 **Delete:** `DELETE /products/{product_id}`
 
 **Create Product Request:**
