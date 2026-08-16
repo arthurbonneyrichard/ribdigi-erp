@@ -26,7 +26,7 @@ async def test_generate_ean13_and_png(client, db_session):
         f"/api/v1/products/{product.id}/barcode/generate?force=true&symbology=qr",
         headers=headers,
     )
-    assert bad.status_code == 400, bad.text
+    assert bad.status_code == 422, bad.text
 
     gen = await ac.post(
         f"/api/v1/products/{product.id}/barcode/generate?force=true&symbology=ean13",

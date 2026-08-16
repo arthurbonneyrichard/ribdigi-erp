@@ -117,6 +117,12 @@ PackageCodeValue = Annotated[
     BeforeValidator(coerce_package_code_value),
 ]
 
+# Keep aligned with app.barcodes.SYMBOLOGIES (Inventory barcode select).
+BarcodeSymbologyValue = Annotated[
+    Literal["code128", "ean13", "upca"],
+    BeforeValidator(coerce_package_code_value),
+]
+
 
 # Must stay aligned with app.packages.PACKAGEABLE_MODULES (excludes platform).
 PackageableModuleValue = Annotated[
