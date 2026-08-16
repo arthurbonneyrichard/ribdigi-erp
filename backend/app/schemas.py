@@ -535,8 +535,23 @@ class StockMove(BaseModel):
     batch_number: str | None = None
     manufacturing_date: datetime | None = None
     expiry_date: datetime | None = None
-    # Stock-out (BR-5.2): sale | transfer | adjustment | damage | internal | other
+    # Optional on stock-in; stock-out uses StockOut with required Literal
     reference_type: str | None = None
+    reference_id: str | None = None
+
+
+class StockOut(BaseModel):
+    """Manual stock-out (BR-5.2) — coded reference_type required at schema."""
+
+    product_id: str
+    quantity: float = Field(gt=0)
+    unit_id: str | None = None
+    notes: str | None = None
+    warehouse_id: str | None = None
+    variant_id: str | None = None
+    batch_id: str | None = None
+    # OpenAPI Literal → omit/blank/invalid → 422
+    reference_type: Literal["sale", "transfer", "adjustment", "damage", "internal", "other"]
     reference_id: str | None = None
 
 

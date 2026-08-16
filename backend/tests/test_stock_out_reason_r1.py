@@ -55,7 +55,7 @@ async def test_stock_out_explicit_reference_type(client, db_session, seeded):
         headers=headers,
         json={"product_id": product.id, "quantity": 1, "reference_type": "  "},
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
 
     ok = await ac.post(
         "/api/v1/inventory/stock-out",

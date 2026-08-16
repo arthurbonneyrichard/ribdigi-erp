@@ -29,15 +29,14 @@ async def test_stock_out_requires_reference_type(client, db_session):
         headers=headers,
         json={"product_id": product.id, "quantity": 1},
     )
-    assert missing.status_code == 400, missing.text
-    assert "reference_type must be one of" in missing.text
+    assert missing.status_code == 422, missing.text
 
     bad = await ac.post(
         "/api/v1/inventory/stock-out",
         headers=headers,
         json={"product_id": product.id, "quantity": 1, "reference_type": "sales"},
     )
-    assert bad.status_code == 400, bad.text
+    assert bad.status_code == 422, bad.text
 
 
 @pytest.mark.asyncio
