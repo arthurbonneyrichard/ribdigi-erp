@@ -84,6 +84,7 @@ def validate_url(url: str) -> str:
 
 
 def normalize_events(events: list | None) -> list[str]:
+    # Defense in depth: WebhookCreate/Update.events Literals reject blank/unknown with 422.
     if not events:
         raise HTTPException(status_code=400, detail="events must be a non-empty list")
     if not isinstance(events, list):

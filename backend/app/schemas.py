@@ -1509,6 +1509,57 @@ class ReportScheduleUpdate(BaseModel):
     enabled: bool | None = None
 
 
+def coerce_webhook_event_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+# Keep aligned with app.webhooks.VALID_EVENTS
+WebhookEventValue = Annotated[
+    Literal[
+        "sale.created",
+        "sale.paid",
+        "stock.low",
+        "stock.in",
+        "stock.out",
+        "purchase.order.created",
+        "purchase.grn.received",
+        "customer.created",
+        "supplier.created",
+        "expense.approved",
+        "user.login",
+        "tenant.suspended",
+        "webhook.test",
+    ],
+    BeforeValidator(coerce_webhook_event_value),
+]
+
+
+class WebhookCreate(BaseModel):
+    """Outbound webhook endpoint create."""
+
+    url: str = Field(min_length=1)
+    # Closed event catalog; blank/unknown item → 422; empty list → 422
+    events: list[WebhookEventValue] = Field(min_length=1)
+    secret: str | None = None
+    description: str | None = None
+    is_active: bool = True
+
+
+class WebhookUpdate(BaseModel):
+    """Outbound webhook endpoint patch — omit = no change."""
+
+    url: str | None = Field(default=None, min_length=1)
+    events: list[WebhookEventValue] | None = Field(default=None, min_length=1)
+    description: str | None = None
+    is_active: bool | None = None
+    rotate_secret: bool = False
+
+
 class ExchangeRateUpsert(BaseModel):
     currency_code: str
     rate_to_base: float = Field(gt=0)

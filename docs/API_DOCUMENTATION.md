@@ -1635,6 +1635,8 @@ Company admins can also manage endpoints in the **Integrations** UI (`/integrati
 **Deliveries:** `GET /webhooks/{webhook_id}/deliveries?limit=50`  
 **Retry delivery:** `POST /webhooks/{webhook_id}/deliveries/{delivery_id}/retry` (pending_retry or failed)
 
+`events` on create/update is OpenAPI `list[Literal[…]]` of known event names (aligned with Integrations checkboxes / `VALID_EVENTS`). Unknown or blank items → **422**; empty list → **422** (`min_length=1` on create). Case is coerced (e.g. `Sale.Created` → `sale.created`). Service `normalize_events` remains defense-in-depth (**400**). HTTPS required for remote URLs (localhost http allowed).
+
 **Create Webhook:**
 ```json
 {

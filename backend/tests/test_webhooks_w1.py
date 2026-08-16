@@ -163,7 +163,7 @@ async def test_webhook_unknown_event_rejected(client):
         headers=headers,
         json={"url": "https://hooks.example.com/x", "events": ["not.real"]},
     )
-    assert bad.status_code == 400
+    assert bad.status_code == 422
 
 
 @pytest.mark.asyncio

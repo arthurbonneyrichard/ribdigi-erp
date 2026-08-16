@@ -68,6 +68,8 @@ from app.schemas import (
     BackupSettingsUpdate,
     ReportScheduleCreate,
     ReportScheduleUpdate,
+    WebhookCreate,
+    WebhookUpdate,
     CreditLimitUpdate,
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
@@ -11736,21 +11738,20 @@ async def webhooks_list(
 @api.post("/webhooks")
 async def webhooks_create(
     request: Request,
-    payload: dict | None = None,
+    payload: WebhookCreate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     tenants_svc.assert_writable(claims)
-    body = payload or {}
     row, secret = await webhooks_svc.create_endpoint(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        url=str(body.get("url") or ""),
-        events=body.get("events"),
-        secret=body.get("secret"),
-        description=body.get("description"),
-        is_active=bool(body.get("is_active", True)),
+        url=payload.url,
+        events=payload.events,
+        secret=payload.secret,
+        description=payload.description,
+        is_active=payload.is_active,
     )
     await audit_svc.record_event(
         db,
@@ -11785,21 +11786,21 @@ async def webhooks_get(
 async def webhooks_patch(
     webhook_id: str,
     request: Request,
-    payload: dict | None = None,
+    payload: WebhookUpdate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     tenants_svc.assert_writable(claims)
-    body = payload or {}
+    data = payload.model_dump(exclude_unset=True)
     row, new_secret = await webhooks_svc.update_endpoint(
         db,
         claims["tenant_id"],
         webhook_id,
-        url=body.get("url"),
-        events=body.get("events"),
-        description=body.get("description"),
-        is_active=body.get("is_active"),
-        rotate_secret=bool(body.get("rotate_secret")),
+        url=data.get("url"),
+        events=data.get("events"),
+        description=data.get("description"),
+        is_active=data.get("is_active"),
+        rotate_secret=bool(data.get("rotate_secret")),
     )
     await audit_svc.record_event(
         db,
