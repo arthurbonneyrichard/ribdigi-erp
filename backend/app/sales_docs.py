@@ -942,6 +942,13 @@ async def post_return(
     excess = round(return_total - apply_to_invoice, 2)
 
     method = (settlement_method or "").strip().lower() or None
+    # Defense in depth: SalesReturnPost Literal rejects blank/unknown with 422.
+    # Invalid values used to persist as garbage when excess was 0 (method or "adjust").
+    if method is not None and method not in {"adjust", "refund"}:
+        raise HTTPException(
+            status_code=400,
+            detail="settlement_method must be adjust or refund",
+        )
     if excess > 1e-9:
         if method not in {"adjust", "refund"}:
             raise HTTPException(

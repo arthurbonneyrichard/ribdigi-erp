@@ -37,6 +37,21 @@ ExpensePaymentMethod = Annotated[
 SettlementPaymentMethod = ExpensePaymentMethod
 
 
+def coerce_sales_return_settlement_method_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+SalesReturnSettlementMethod = Annotated[
+    Literal["adjust", "refund"],
+    BeforeValidator(coerce_sales_return_settlement_method_value),
+]
+
+
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
     if bool(getattr(model, "override_credit_limit", False)):
@@ -1185,7 +1200,9 @@ class SalesReturnCancel(BaseModel):
 
 
 class SalesReturnPost(BaseModel):
-    settlement_method: str | None = None  # adjust | refund (required when return exceeds open AR)
+    # BR-7.5 — omit OK (service defaults adjust when no excess AR); blank/invalid → 422.
+    # When return exceeds open AR, service still requires adjust|refund (400 SETTLEMENT_REQUIRED).
+    settlement_method: SalesReturnSettlementMethod | None = None
     # BR-7.5 / BR-11 — same settlement Literal as AR payments; omit → cash; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "cash"
     liquid_account_id: str | None = None
