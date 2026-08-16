@@ -76,6 +76,7 @@ from app.schemas import (
     InventoryValuationMethodValue,
     ChequeDirectionValue,
     ChequeStatusValue,
+    PartyStatusValue,
     StockCountReportStatusValue,
     WebhookCreate,
     WebhookUpdate,
@@ -4526,7 +4527,7 @@ async def patch_customer_group(
 
 @api.get("/customers")
 async def customers(
-    status: str | None = None,
+    status: Annotated[PartyStatusValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4536,10 +4537,11 @@ async def customers(
     q = select(m.Party).where(
         m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer"
     )
+    # Schema PartyStatusValue rejects blank/invalid → 422; keep allow-list defense-in-depth.
     if status:
         st = status.strip().lower()
         if st not in _PARTY_STATUSES:
-            raise HTTPException(status_code=400, detail="Invalid status filter")
+            raise HTTPException(status_code=422, detail="Invalid status filter")
         q = q.where(m.Party.status == st)
     rows = (await db.execute(q)).scalars().all()
     group_ids = {r.customer_group_id for r in rows if r.customer_group_id}
@@ -4830,17 +4832,18 @@ async def product_price_for_customer(
 
 @api.get("/suppliers")
 async def suppliers(
-    status: str | None = None,
+    status: Annotated[PartyStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(m.Party).where(
         m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "supplier"
     )
+    # Schema PartyStatusValue rejects blank/invalid → 422; keep allow-list defense-in-depth.
     if status:
         st = status.strip().lower()
         if st not in _PARTY_STATUSES:
-            raise HTTPException(status_code=400, detail="Invalid status filter")
+            raise HTTPException(status_code=422, detail="Invalid status filter")
         q = q.where(m.Party.status == st)
     rows = (await db.execute(q)).scalars().all()
     await db.commit()

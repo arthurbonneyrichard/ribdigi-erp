@@ -69,7 +69,7 @@ async def test_customer_profile_create_get_patch_and_code_unique(client):
     assert any(c["id"] == cid for c in inactive_only.json()["data"])
 
     bad_status = await ac.get("/api/v1/customers?status=archived", headers=headers)
-    assert bad_status.status_code == 400
+    assert bad_status.status_code == 422
 
     dup = await ac.post(
         "/api/v1/customers",
@@ -134,4 +134,4 @@ async def test_supplier_profile_create_get_and_category(client):
     assert inactive_only.status_code == 200
     assert any(s["id"] == sid for s in inactive_only.json()["data"])
     bad_status = await ac.get("/api/v1/suppliers?status=gone", headers=headers)
-    assert bad_status.status_code == 400
+    assert bad_status.status_code == 422
