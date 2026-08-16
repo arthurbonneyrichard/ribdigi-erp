@@ -31,3 +31,7 @@ Stage 994 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Isolation Gate, Transfer Isolation Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 994 opened under **ADR-1995** after CONTINUE/NEXT (Tenant MVP Transfer Containment Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1996**. Stage 993 feature scope remains frozen.
