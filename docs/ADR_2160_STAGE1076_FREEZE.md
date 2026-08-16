@@ -31,3 +31,7 @@ Stage 1077 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Arc Gate, Transfer Arc Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1077 opened under **ADR-2161** after CONTINUE/NEXT (Tenant MVP Transfer Orbit Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2162**. Stage 1076 feature scope remains frozen.
