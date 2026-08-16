@@ -31,3 +31,7 @@ Stage 971 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gatekeeper Gate, Transfer Gatekeeper Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 971 opened under **ADR-1949** after CONTINUE/NEXT (Tenant MVP Transfer Sentinel Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1950**. Stage 970 feature scope remains frozen.
