@@ -20,17 +20,46 @@ def compute_variance(actual_cash: float, expected_cash: float) -> float:
     return round(float(actual_cash) - float(expected_cash), 2)
 
 
-def normalize_payment_method(method: str | None) -> str:
-    value = (method or "cash").strip().lower().replace("-", "_").replace(" ", "_")
-    aliases = {
-        "digital_wallet": "wallet",
-        "mobile_money": "wallet",
-        "momo": "wallet",
-        "mobilemoney": "wallet",
-    }
-    value = aliases.get(value, value)
-    if value in {"cash", "card", "wallet", "credit", "other"}:
+PAYMENT_METHODS = frozenset({"cash", "card", "wallet", "credit", "other"})
+PAYMENT_METHOD_ALIASES = {
+    "digital_wallet": "wallet",
+    "mobile_money": "wallet",
+    "momo": "wallet",
+    "mobilemoney": "wallet",
+}
+
+
+def coerce_payment_method_value(value: object) -> object:
+    """Pydantic BeforeValidator: map wallet aliases; blank stays blank for Literal 422."""
+    if value is None:
         return value
+    if not isinstance(value, str):
+        return value
+    text = value.strip().lower().replace("-", "_").replace(" ", "_")
+    if not text:
+        return ""
+    return PAYMENT_METHOD_ALIASES.get(text, text)
+
+
+def normalize_payment_method(method: str | None, *, strict: bool = True) -> str:
+    # Defense in depth: PosSaleCreate / PosPaymentLine Literals reject blank/
+    # unknown (after alias coerce) with 422. Unknown used to become silent "other".
+    if method is not None and not str(method).strip():
+        if strict:
+            raise HTTPException(
+                status_code=400,
+                detail=f"payment_method must be one of: {', '.join(sorted(PAYMENT_METHODS))}",
+            )
+        method = None
+    value = (method or "cash").strip().lower().replace("-", "_").replace(" ", "_")
+    value = PAYMENT_METHOD_ALIASES.get(value, value)
+    if value in PAYMENT_METHODS:
+        return value
+    if strict:
+        raise HTTPException(
+            status_code=400,
+            detail=f"payment_method must be one of: {', '.join(sorted(PAYMENT_METHODS))}",
+        )
     return "other"
 
 
