@@ -1,0 +1,77 @@
+{
+  "id": "transfer-org-gate-honesty-pack-rg-pointers",
+  "stage": 961,
+  "pack": "P1",
+  "doc": "docs/TRANSFER_ORG_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TRANSFER_ORG_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_workspace_gate_honesty_pack_remaining_gate": "docs/TRANSFER_WORKSPACE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_tenant_gate_honesty_pack_remaining_gate": "docs/TRANSFER_TENANT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_org_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_org_gate_honesty_complete_claimed": false,
+  "transfer_org_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_transfer_org_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_workspace_gate_honesty_pack_remaining_gate_stage960": "docs/TRANSFER_WORKSPACE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_tenant_gate_honesty_pack_remaining_gate_stage959": "docs/TRANSFER_TENANT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_org_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / transfer_org_gate / transfer_org_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "torgghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Transfer Org Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "torgghp-stage960",
+      "title": "Point to Stage 960 TRANSFER WORKSPACE GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "torgghp-stage959",
+      "title": "Point to Stage 959 TRANSFER TENANT GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "torgghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "torgghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "torgghp-prior-pack",
+      "title": "Point to Transfer Org Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "torgghp-checklist-remaining",
+      "title": "Offline Complete / Transfer Org Gate / Transfer Org Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 961 P1 Transfer Org Gate Honesty Pack RG pointers packaging only."
+}
