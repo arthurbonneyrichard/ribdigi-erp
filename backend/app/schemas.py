@@ -1092,8 +1092,8 @@ class SalesInvoiceCancel(BaseModel):
 class SalesReturnItemCreate(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
-    # Required coded condition (BR-7.5); no silent sellable/discard from restock
-    condition: str
+    # Required coded condition (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
+    condition: Literal["sellable", "discard"]
     variant_id: str | None = None
 
 
