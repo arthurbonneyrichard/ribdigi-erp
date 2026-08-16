@@ -1437,6 +1437,12 @@ Tax UI (`/tax`) period controls include store picker.
 
 `report_type` ∈ `EXPORTABLE` (schema `Literal` + strip/lower; same set as export — e.g. `summary`, `sales_daily`, `profit_loss`, …). Blank/unknown → **422**. `frequency` ∈ `daily|weekly`; `format` ∈ `csv|pdf|xlsx` (same Literal honesty). Service checks remain defense-in-depth (**400**). Reports UI **Email schedules** select.
 
+### 14.6 One-shot export (BR-14)
+**Export:** `GET /reports/export?report_type=&format=csv`  
+**Catalog:** `GET /reports/exportable`
+
+Query `report_type` ∈ `EXPORTABLE` (`Literal` + strip/lower; required). Query `format` ∈ csv|pdf|xlsx (`Literal` + strip/lower; omit → `csv`; blank/invalid → **422**; no silent csv from `""`). Same aliases as Email schedules. Reports Export CSV/Excel/PDF buttons.
+
 ---
 
 ## 15. Notifications

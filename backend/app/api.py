@@ -69,6 +69,8 @@ from app.schemas import (
     BackupSettingsUpdate,
     ReportScheduleCreate,
     ReportScheduleUpdate,
+    ReportTypeValue,
+    ReportExportFormatValue,
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
@@ -9096,8 +9098,10 @@ async def accounting_balance_sheet(
 
 @api.get("/reports/export")
 async def reports_export(
-    report_type: str,
-    format: str = "csv",
+    # required; blank/unknown → 422 (was free str → service 400)
+    report_type: Annotated[ReportTypeValue, Query()],
+    # omit → csv; blank/invalid → 422 (was `fmt or "csv"`)
+    format: Annotated[ReportExportFormatValue, Query()] = "csv",
     from_date: str | None = None,
     to_date: str | None = None,
     date: str | None = None,
