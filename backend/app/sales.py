@@ -710,9 +710,12 @@ async def record_customer_payment(
     currency: str | None = None,
     exchange_rate: float | None = None,
 ) -> m.CustomerPayment:
+    from app.expenses import normalize_expense_payment_method
+
     amount = float(amount)
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
+    payment_method = normalize_expense_payment_method(payment_method, default="cash")
 
     customer = await get_customer(db, tenant_id, customer_id)
     tenant = (
