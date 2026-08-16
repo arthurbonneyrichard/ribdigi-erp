@@ -145,6 +145,12 @@ async def create_store(
     branch_id: str | None = None,
     operating_hours: dict | None = None,
 ) -> m.Store:
+    from app import store_entitlements as store_ent_svc
+
+    # Lock tenant row so concurrent creates cannot both pass the quota check.
+    tenant = await store_ent_svc.lock_tenant_for_store_quota(db, tenant_id)
+    await store_ent_svc.assert_can_create_store(db, tenant)
+
     if branch_id:
         from app import org_units as org_units_svc
 
@@ -232,7 +238,13 @@ async def update_store(
             raise HTTPException(status_code=400, detail="Branch is inactive")
         store.branch_id = branch.id
     if is_active is not None:
-        store.is_active = bool(is_active)
+        from app import store_entitlements as store_ent_svc
+
+        new_active = bool(is_active)
+        if new_active and not bool(store.is_active):
+            tenant = await store_ent_svc.lock_tenant_for_store_quota(db, tenant_id)
+            await store_ent_svc.assert_can_activate_store(db, tenant, store)
+        store.is_active = new_active
     if set_operating_hours:
         store.operating_hours = normalize_operating_hours(operating_hours)
     await db.flush()

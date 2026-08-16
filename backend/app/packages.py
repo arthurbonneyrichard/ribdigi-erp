@@ -61,30 +61,40 @@ _PROFESSIONAL = _STARTER + (
 
 _ENTERPRISE = tuple(m for m in PACKAGEABLE_MODULES)
 
+# max_stores / max_companies: int or None (None = unlimited). Company == Tenant in this product,
+# so max_companies is informational (always 1 company profile per tenant).
 PACKAGES: dict[str, dict[str, Any]] = {
     "trial": {
         "code": "trial",
         "name": "Trial",
         "description": "Time-limited evaluation (Professional feature set)",
         "modules": list(_PROFESSIONAL),
+        "max_companies": 1,
+        "max_stores": 1,
     },
     "starter": {
         "code": "starter",
         "name": "Starter",
         "description": "Single-store core: inventory, sales, POS, expenses, basic accounting",
         "modules": list(_STARTER),
+        "max_companies": 1,
+        "max_stores": 1,
     },
     "professional": {
         "code": "professional",
         "name": "Professional",
         "description": "Multi-store + purchasing, credit, tax, reports, AI",
         "modules": list(_PROFESSIONAL),
+        "max_companies": 1,
+        "max_stores": 10,
     },
     "enterprise": {
         "code": "enterprise",
         "name": "Enterprise",
         "description": "All tenant modules",
         "modules": list(_ENTERPRISE),
+        "max_companies": 1,
+        "max_stores": None,
     },
 }
 
@@ -93,7 +103,14 @@ VALID_TERM_UNITS = frozenset({"months", "years"})
 
 
 def list_packages() -> list[dict[str, Any]]:
-    return [dict(p) for p in PACKAGES.values()]
+    return [
+        {
+            **dict(p),
+            "max_stores": p.get("max_stores"),
+            "max_companies": p.get("max_companies"),
+        }
+        for p in PACKAGES.values()
+    ]
 
 
 def package_modules(package_code: str | None) -> list[str]:
@@ -194,9 +211,12 @@ def usage_snapshot(tenant, *, now: datetime | None = None) -> dict[str, Any]:
         years_remaining = round(months_remaining / 12, 2)
 
     enabled = resolve_enabled_modules(tenant)
+    from app import store_entitlements as store_ent_svc
+
+    pkg = PACKAGES.get(package_code) or PACKAGES["trial"]
     return {
         "package_code": package_code,
-        "package_name": (PACKAGES.get(package_code) or PACKAGES["trial"])["name"],
+        "package_name": pkg["name"],
         "term_value": term_value,
         "term_unit": term_unit if term_value is not None else None,
         "months_assigned": months_assigned,
@@ -215,4 +235,11 @@ def usage_snapshot(tenant, *, now: datetime | None = None) -> dict[str, Any]:
             isinstance(getattr(tenant, "enabled_modules", None), list)
             and getattr(tenant, "enabled_modules", None)
         ),
+        # Store quotas (counts filled async via attach_store_usage / serialize paths)
+        "package_max_stores": store_ent_svc.package_max_stores(package_code),
+        "package_max_companies": store_ent_svc.package_max_companies(package_code),
+        "max_stores_override": getattr(tenant, "max_stores_override", None),
+        "store_limit": getattr(tenant, "store_limit", None),
+        "subscription_store_entitlement": store_ent_svc.subscription_store_entitlement(tenant),
+        "effective_store_limit": store_ent_svc.effective_store_limit(tenant),
     }

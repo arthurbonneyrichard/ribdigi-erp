@@ -98,6 +98,9 @@ class Tenant(Base):
     package_assigned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # Optional override list of module keys; null → package default
     enabled_modules: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Subscription store quotas (Company == Tenant): null override/limit → package / full entitlement
+    max_stores_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    store_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

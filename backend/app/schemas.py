@@ -310,11 +310,28 @@ class TenantSubscriptionAssign(BaseModel):
     start_at: datetime | None = None
     activate: bool = True
     enabled_modules: list[str] | None = None
+    # Platform store entitlement override; omit = no change; null clears to package default
+    max_stores_override: int | None = Field(default=None, ge=0)
+    clear_max_stores_override: bool = False
 
 
 class TenantModulesUpdate(BaseModel):
     enabled_modules: list[str] | None = None
     reset_to_package: bool = False
+
+
+class TenantStoreLimitUpdate(BaseModel):
+    """Company (== Tenant) store allocation within subscription entitlement."""
+
+    # null = use full subscription entitlement
+    store_limit: int | None = Field(default=None, ge=0)
+
+
+class TenantMaxStoresOverrideUpdate(BaseModel):
+    """Platform-owner per-tenant store entitlement override."""
+
+    max_stores_override: int | None = Field(default=None, ge=0)
+    clear: bool = False
 
 
 class UserCreate(BaseModel):
