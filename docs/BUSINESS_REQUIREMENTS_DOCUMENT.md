@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1136 D1 Transfer Cupola Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1136_FIDELITY.md` (`test_stage1136_fidelity_d1.py`); Offline Complete / Transfer Cupola Gate honesty / go-live still MISSING.
 Stage 1135 D1 Transfer Oriel Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1135_FIDELITY.md` (`test_stage1135_fidelity_d1.py`); Offline Complete / Transfer Oriel Gate honesty / go-live still MISSING.
 Stage 1134 D1 Transfer Lookout Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1134_FIDELITY.md` (`test_stage1134_fidelity_d1.py`); Offline Complete / Transfer Lookout Gate honesty / go-live still MISSING.
 Stage 1133 D1 Transfer Meander Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1133_FIDELITY.md` (`test_stage1133_fidelity_d1.py`); Offline Complete / Transfer Meander Gate honesty / go-live still MISSING.
