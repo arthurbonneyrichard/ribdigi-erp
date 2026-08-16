@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1082 D1 Transfer Purview Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1082_FIDELITY.md` (`test_stage1082_fidelity_d1.py`); Offline Complete / Transfer Purview Gate honesty / go-live still MISSING.
 Stage 1081 D1 Transfer Ambit Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1081_FIDELITY.md` (`test_stage1081_fidelity_d1.py`); Offline Complete / Transfer Ambit Gate honesty / go-live still MISSING.
 Stage 1080 D1 Transfer Longitude Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1080_FIDELITY.md` (`test_stage1080_fidelity_d1.py`); Offline Complete / Transfer Longitude Gate honesty / go-live still MISSING.
 Stage 1079 D1 Transfer Latitude Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1079_FIDELITY.md` (`test_stage1079_fidelity_d1.py`); Offline Complete / Transfer Latitude Gate honesty / go-live still MISSING.
