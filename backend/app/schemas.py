@@ -1224,7 +1224,8 @@ class FxAutoRefreshUpdate(BaseModel):
 
 class BankConnectionCreate(BaseModel):
     account_id: str
-    provider: str = "mock"
+    # BR-10.3 — schema Literal; omit defaults to mock; blank/invalid → 422
+    provider: Literal["mock", "http_json"] = "mock"
     display_name: str | None = None
     external_account_id: str | None = None
     feed_url: str | None = None
@@ -1235,7 +1236,8 @@ class BankConnectionCreate(BaseModel):
 
 
 class BankConnectionUpdate(BaseModel):
-    provider: str | None = None
+    # BR-10.3 — omit = no change; blank/invalid → 422 (no silent mock)
+    provider: Literal["mock", "http_json"] | None = None
     display_name: str | None = None
     external_account_id: str | None = None
     feed_url: str | None = None

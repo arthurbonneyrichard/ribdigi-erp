@@ -90,6 +90,9 @@ def _is_production() -> bool:
 
 
 def _normalize_provider(provider: str | None) -> str:
+    # Defense in depth: BankConnectionCreate/Update.provider Literal rejects
+    # blank/unknown with 422 before this runs. Empty used to coerce to "mock"
+    # via (provider or "mock") — schema honesty closes that gap (R1).
     value = (provider or "mock").strip().lower()
     if value not in PROVIDERS:
         raise HTTPException(
