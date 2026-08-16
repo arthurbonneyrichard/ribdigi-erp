@@ -89,6 +89,7 @@ export default function Page() {
   const [departmentId, setDepartmentId] = useState('');
   const [departments, setDepartments] = useState<any[]>([]);
   const [expiryDays, setExpiryDays] = useState('30');
+  const [valuationMethod, setValuationMethod] = useState<'standard'>('standard');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -183,7 +184,7 @@ export default function Page() {
         const [balance, valuation, movements, suggestions, transfers, expiry, stockCounts] =
           await Promise.all([
           api(`/reports/inventory/balance${qs()}`),
-          api(`/reports/inventory/valuation${qs({ method: 'standard' })}`),
+          api(`/reports/inventory/valuation${qs({ method: valuationMethod })}`),
           api(`/reports/inventory/movements${qs()}`),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs()}`),
@@ -1113,7 +1114,17 @@ export default function Page() {
           <div className="card" style={{ marginTop: 16 }}>
             <h3>Stock valuation (standard cost)</h3>
             <p className="muted">
-              Method: {data.valuation?.method || 'standard'}
+              Method:{' '}
+              <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                Valuation method
+                <select
+                  aria-label="Valuation method"
+                  value={valuationMethod}
+                  onChange={(e) => setValuationMethod(e.target.value as 'standard')}
+                >
+                  <option value="standard">standard</option>
+                </select>
+              </label>
               {data.valuation?.store_name
                 ? ` · ${data.valuation.store_name}`
                 : data.valuation?.warehouse_name

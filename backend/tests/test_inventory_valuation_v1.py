@@ -59,13 +59,12 @@ async def test_standard_valuation_and_warehouse_filter(client, db_session):
     assert abs(float(wdata["total_quantity"]) - 4) < 0.01
     assert abs(float(wdata["total_value"]) - 20) < 0.01
 
-    for method in ("fifo", "lifo", "weighted_average", "average"):
+    for method in ("fifo", "lifo", "weighted_average", "average", "", "  "):
         bad = await ac.get(
             f"/api/v1/reports/inventory/valuation?method={method}",
             headers=headers,
         )
-        assert bad.status_code == 400, bad.text
-        assert "not supported" in bad.text.lower() or "standard" in bad.text.lower()
+        assert bad.status_code == 422, bad.text
 
     missing = await ac.get(
         "/api/v1/reports/inventory/valuation?warehouse_id=does-not-exist",

@@ -73,6 +73,7 @@ from app.schemas import (
     ReportExportFormatValue,
     BalanceSheetCompareValue,
     CreditAgingKindValue,
+    InventoryValuationMethodValue,
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
@@ -9448,7 +9449,7 @@ async def report_inventory_balance(
 
 @api.get("/reports/inventory/valuation")
 async def report_inventory_valuation(
-    method: str = "standard",
+    method: Annotated[InventoryValuationMethodValue, Query()] = "standard",
     warehouse_id: str | None = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
