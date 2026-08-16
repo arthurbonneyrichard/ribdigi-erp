@@ -31,3 +31,7 @@ Stage 990 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Barricade Gate, Transfer Barricade Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 990 opened under **ADR-1987** after CONTINUE/NEXT (Tenant MVP Transfer Cordon Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1988**. Stage 989 feature scope remains frozen.
