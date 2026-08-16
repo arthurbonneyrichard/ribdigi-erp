@@ -666,7 +666,8 @@ class RecurringExpenseCreate(BaseModel):
     category_id: str | None = None
     description: str = ""
     amount: float = Field(gt=0)
-    frequency: str = "monthly"
+    # BR-9.5 — schema Literal; omit defaults to monthly; blank/invalid → 422
+    frequency: Literal["daily", "weekly", "monthly", "yearly"] = "monthly"
     payment_method: str = "bank_transfer"
     payee: str | None = None
     branch_id: str | None = None
@@ -680,7 +681,7 @@ class RecurringExpenseUpdate(BaseModel):
     clear_payee: bool = False
     description: str | None = None
     payment_method: str | None = None
-    frequency: str | None = None
+    frequency: Literal["daily", "weekly", "monthly", "yearly"] | None = None
     category_id: str | None = None
     category: str | None = None
     branch_id: str | None = None

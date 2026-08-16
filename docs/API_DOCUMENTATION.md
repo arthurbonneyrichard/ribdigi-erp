@@ -1135,7 +1135,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 }
 ```
 
-`frequency` ∈ `daily|weekly|monthly|yearly`. Org dims on templates are copied onto expenses generated from the schedule. Generated expenses omit a forced reference so `expense_numbering` allocates `{PREFIX}-{YYYY}-{NNNN}` (default `EXP`); description is tagged `(recurring)` when needed. Expenses UI: Recurring expenses card (BR-9.5 / BR-9.2 / BR-20.4) including **Skip next** (typed reason required) and manage status filter All / Active / Inactive (`recurringManageFilter`; Generate remains active-only).
+`frequency` ∈ `daily|weekly|monthly|yearly` (schema `Literal`; omit on create defaults to `monthly`; blank/invalid → **422**). Org dims on templates are copied onto expenses generated from the schedule. Generated expenses omit a forced reference so `expense_numbering` allocates `{PREFIX}-{YYYY}-{NNNN}` (default `EXP`); description is tagged `(recurring)` when needed. Expenses UI: Recurring expenses card (BR-9.5 / BR-9.2 / BR-20.4) including **Skip next** (typed reason required) and manage status filter All / Active / Inactive (`recurringManageFilter`; Generate remains active-only).
 
 ---
 
