@@ -31,3 +31,7 @@ Stage 984 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Stronghold Gate, Transfer Stronghold Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 984 opened under **ADR-1975** after CONTINUE/NEXT (Tenant MVP Transfer Redoubt Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1976**. Stage 983 feature scope remains frozen.
