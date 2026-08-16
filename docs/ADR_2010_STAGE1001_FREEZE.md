@@ -31,3 +31,7 @@ Stage 1002 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sieve Gate, Transfer Sieve Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1002 opened under **ADR-2011** after CONTINUE/NEXT (Tenant MVP Transfer Scrub Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2012**. Stage 1001 feature scope remains frozen.
