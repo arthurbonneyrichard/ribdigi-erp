@@ -31,3 +31,7 @@ Stage 1029 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Allotment Gate, Transfer Allotment Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1029 opened under **ADR-2065** after CONTINUE/NEXT (Tenant MVP Transfer Stipend Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2066**. Stage 1028 feature scope remains frozen.
