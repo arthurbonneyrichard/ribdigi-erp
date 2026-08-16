@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from app import models as m
 from app.db import get_db
@@ -70,6 +71,7 @@ from app.schemas import (
     ReportScheduleUpdate,
     WebhookCreate,
     WebhookUpdate,
+    BarcodeSymbologyValue,
     CreditLimitUpdate,
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
@@ -3589,7 +3591,8 @@ async def product_images_delete(
 async def product_barcode_generate(
     product_id: str,
     force: bool = False,
-    symbology: str = "code128",
+    # omit → code128; blank/invalid → 422 (was free str; "" coerced to code128)
+    symbology: Annotated[BarcodeSymbologyValue, Query()] = "code128",
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3638,7 +3641,7 @@ async def product_barcode_generate(
 @api.get("/products/{product_id}/barcode.png")
 async def product_barcode_png(
     product_id: str,
-    symbology: str | None = None,
+    symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3672,7 +3675,7 @@ async def product_barcode_png(
 async def product_barcode_label(
     product_id: str,
     copies: int = 1,
-    symbology: str | None = None,
+    symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4162,7 +4165,7 @@ async def variant_barcode_generate(
     product_id: str,
     variant_id: str,
     force: bool = False,
-    symbology: str = "code128",
+    symbology: Annotated[BarcodeSymbologyValue, Query()] = "code128",
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4212,7 +4215,7 @@ async def variant_barcode_generate(
 async def variant_barcode_png(
     product_id: str,
     variant_id: str,
-    symbology: str | None = None,
+    symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4241,7 +4244,7 @@ async def variant_barcode_label(
     product_id: str,
     variant_id: str,
     copies: int = 1,
-    symbology: str | None = None,
+    symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):

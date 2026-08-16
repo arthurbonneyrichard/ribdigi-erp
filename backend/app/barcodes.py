@@ -25,6 +25,8 @@ UPCA_INTERNAL_PREFIX = "2"
 
 
 def normalize_symbology(value: str | None) -> str:
+    # Defense in depth: barcode Query Literals reject blank/unknown with 422.
+    # Empty used to coerce to code128 via `value or "code128"`.
     key = (value or "code128").strip().lower()
     if key not in SYMBOLOGIES:
         raise HTTPException(
