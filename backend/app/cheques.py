@@ -334,6 +334,9 @@ async def bounce_cheque(
     reason: str | None = None,
 ) -> m.Cheque:
     """Dishonour cheque: reverse GL to AR/AP and restore document balances."""
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="bounce reason is required")
     cheque = await get_cheque(db, tenant_id, cheque_id)
     if cheque.status in {BOUNCED, CANCELLED}:
         raise HTTPException(status_code=409, detail=f"Cheque already {cheque.status}")
@@ -462,7 +465,7 @@ async def bounce_cheque(
         db,
         tenant_id=tenant_id,
         user_id=user_id,
-        description=f"Bounce cheque {cheque.cheque_number}" + (f": {reason}" if reason else ""),
+        description=f"Bounce cheque {cheque.cheque_number}: {reason_s}",
         reference=cheque.cheque_number,
         source_type="cheque_bounce",
         source_id=cheque.id,
@@ -470,8 +473,7 @@ async def bounce_cheque(
     )
     cheque.status = BOUNCED
     cheque.bounced_at = datetime.utcnow()
-    if reason:
-        cheque.notes = ((cheque.notes or "") + f"\nBounce: {reason}").strip()
+    cheque.notes = ((cheque.notes or "") + f"\nBounce: {reason_s}").strip()
     cheque.updated_at = datetime.utcnow()
     return cheque
 
@@ -485,6 +487,9 @@ async def cancel_cheque(
     reason: str | None = None,
 ) -> m.Cheque:
     """Cancel an issued pending cheque (stop payment) before bank clearing."""
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="cancel reason is required")
     cheque = await get_cheque(db, tenant_id, cheque_id)
     if cheque.direction != ISSUED:
         raise HTTPException(status_code=409, detail="Only issued cheques can be cancelled; use bounce for received")
@@ -497,7 +502,7 @@ async def cancel_cheque(
         db,
         tenant_id=tenant_id,
         user_id=user_id,
-        description=f"Cancel cheque {cheque.cheque_number}" + (f": {reason}" if reason else ""),
+        description=f"Cancel cheque {cheque.cheque_number}: {reason_s}",
         reference=cheque.cheque_number,
         source_type="cheque_cancel",
         source_id=cheque.id,
@@ -524,7 +529,6 @@ async def cancel_cheque(
             await _reverse_supplier_payment(db, tenant_id, payment)
 
     cheque.status = CANCELLED
-    if reason:
-        cheque.notes = ((cheque.notes or "") + f"\nCancel: {reason}").strip()
+    cheque.notes = ((cheque.notes or "") + f"\nCancel: {reason_s}").strip()
     cheque.updated_at = datetime.utcnow()
     return cheque
