@@ -628,6 +628,15 @@ export default function Page() {
           const received_qty = Number(d.received) || 0;
           const accepted_qty = Number(d.accepted) || 0;
           const rejected_qty = Number(d.rejected) || 0;
+          const effectiveRejected =
+            rejected_qty > 0
+              ? rejected_qty
+              : accepted_qty < received_qty
+                ? received_qty - accepted_qty
+                : 0;
+          if (effectiveRejected > 0 && !d.reason.trim()) {
+            throw new Error('Enter a rejection reason for lines with rejected qty');
+          }
           const product = products.find((p) => p.id === i.product_id);
           if (accepted_qty > 0 && product?.tracks_batches && !(d.batch || '').trim()) {
             throw new Error(`Batch number required for ${product.name || i.product_id}`);

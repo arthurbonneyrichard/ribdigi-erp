@@ -947,6 +947,18 @@ class GrnItemCreate(BaseModel):
     manufacturing_date: datetime | None = None
     expiry_date: datetime | None = None
 
+    @model_validator(mode="after")
+    def require_reason_when_rejected(self):
+        """OpenAPI honesty (BR-6.4): reason required when any qty is rejected."""
+        received = float(self.received_qty or 0)
+        rejected = float(self.rejected_qty or 0)
+        accepted = self.accepted_qty
+        if rejected <= 1e-9 and accepted is not None and float(accepted) < received - 1e-9:
+            rejected = round(received - float(accepted), 6)
+        if rejected > 1e-9 and not (self.rejection_reason or "").strip():
+            raise ValueError("rejection_reason is required when rejected_qty > 0")
+        return self
+
 
 class GrnCreate(BaseModel):
     purchase_order_id: str

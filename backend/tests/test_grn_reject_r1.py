@@ -84,8 +84,27 @@ async def test_grn_reject_requires_reason_and_stocks_accepted_only(client, db_se
             ],
         },
     )
-    assert missing_reason.status_code == 400
+    assert missing_reason.status_code == 422
     assert "rejection_reason" in missing_reason.text.lower()
+
+    blank_reason = await ac.post(
+        "/api/v1/purchasing/grn",
+        headers=io,
+        json={
+            "purchase_order_id": po_id,
+            "items": [
+                {
+                    "po_item_id": po_item_id,
+                    "received_qty": 10,
+                    "accepted_qty": 8,
+                    "rejected_qty": 2,
+                    "rejection_reason": "   ",
+                }
+            ],
+        },
+    )
+    assert blank_reason.status_code == 422
+    assert "rejection_reason" in blank_reason.text.lower()
 
     ok = await ac.post(
         "/api/v1/purchasing/grn",
@@ -139,7 +158,8 @@ async def test_grn_reject_inferred_from_accepted_shortfall(client, db_session):
             ],
         },
     )
-    assert missing.status_code == 400
+    assert missing.status_code == 422
+    assert "rejection_reason" in missing.text.lower()
 
     ok = await ac.post(
         "/api/v1/purchasing/grn",
