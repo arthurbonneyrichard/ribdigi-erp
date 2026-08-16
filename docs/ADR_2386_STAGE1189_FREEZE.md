@@ -31,3 +31,7 @@ Stage 1190 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Lockbox Gate, Transfer Lockbox Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1190 opened under **ADR-2387** after CONTINUE/NEXT (Tenant MVP Transfer Adytum Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2388**. Stage 1189 feature scope remains frozen.
