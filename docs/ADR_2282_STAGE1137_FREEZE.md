@@ -31,3 +31,7 @@ Stage 1138 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Torii Gate, Transfer Torii Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1138 opened under **ADR-2283** after CONTINUE/NEXT (Tenant MVP Transfer Lantern Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2284**. Stage 1137 feature scope remains frozen.
