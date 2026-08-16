@@ -82,6 +82,11 @@ from app.schemas import (
     PosSettingsUpdate,
     DocumentNumberingFields,
     PrintBrandingUpdate,
+    InvoiceTemplateValue,
+    ReceiptPaperValue,
+    InvoicePrintFormatValue,
+    ReceiptPrintFormatValue,
+    ReceiptChannelValue,
     EmailVerifyConfirm,
     ResendVerificationRequest,
     ExchangeRateRefresh,
@@ -5379,9 +5384,12 @@ async def get_sales_invoice(
 @api.get("/sales/invoices/{invoice_id}/print")
 async def print_sales_invoice(
     invoice_id: str,
-    template: str | None = None,
-    format: str = "pdf",
-    paper: str | None = None,
+    # omit → tenant print branding default; blank/invalid → 422
+    template: Annotated[InvoiceTemplateValue | None, Query()] = None,
+    # omit → pdf; blank/invalid → 422 (was `format or "pdf"`)
+    format: Annotated[InvoicePrintFormatValue, Query()] = "pdf",
+    # omit → branding default receipt paper; blank/invalid → 422 (was silent branding fallback)
+    paper: Annotated[ReceiptPaperValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5398,8 +5406,9 @@ async def print_sales_invoice(
         await tenants_svc.get_tenant(db, claims["tenant_id"])
     )
     tmpl = (template or branding["default_invoice_template"] or "a4").lower()
-    fmt = (format or "pdf").lower()
-    paper = paper if paper in {"58mm", "80mm"} else branding["default_receipt_paper"]
+    fmt = format
+    paper = paper if paper is not None else branding["default_receipt_paper"]
+    # Defense in depth: Query Literals reject blank/unknown with 422.
     if tmpl not in {"a4", "thermal"}:
         raise HTTPException(status_code=400, detail="template must be a4 or thermal")
     if fmt not in {"pdf", "text", "json"}:
@@ -7294,8 +7303,10 @@ async def pos_search(
 @api.get("/pos/sales/{sale_id}/receipt")
 async def pos_receipt(
     sale_id: str,
-    format: str = "json",
-    paper: str | None = None,
+    # omit → json; blank/invalid → 422 (was `format or "json"`)
+    format: Annotated[ReceiptPrintFormatValue, Query()] = "json",
+    # omit → branding default; blank/invalid → 422 (was silent branding fallback)
+    paper: Annotated[ReceiptPaperValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7311,8 +7322,8 @@ async def pos_receipt(
     branding = print_branding_settings(
         await tenants_svc.get_tenant(db, claims["tenant_id"])
     )
-    fmt = (format or "json").lower()
-    paper = paper if paper in {"58mm", "80mm"} else branding["default_receipt_paper"]
+    fmt = format
+    paper = paper if paper is not None else branding["default_receipt_paper"]
     if fmt == "json":
         public = {k: v for k, v in receipt.items() if k != "logo_key"}
         public["paper"] = paper
@@ -7333,15 +7344,18 @@ async def pos_receipt(
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
+    # Defense in depth: ReceiptPrintFormatValue Literal rejects unknown with 422.
     raise HTTPException(status_code=400, detail="format must be json, text, or pdf")
 
 
 @api.post("/pos/sales/{sale_id}/receipt/send")
 async def pos_receipt_send(
     sale_id: str,
-    channel: str = "email",
+    # omit → email; blank/invalid → 422 (was `channel or "email"`)
+    channel: Annotated[ReceiptChannelValue, Query()] = "email",
     to: str | None = None,
-    paper: str = "80mm",
+    # omit → 80mm; blank/invalid → 422 (was silent 80mm for garbage)
+    paper: Annotated[ReceiptPaperValue, Query()] = "80mm",
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7356,9 +7370,8 @@ async def pos_receipt_send(
         sale_id=sale_id,
         user_id=claims.get("sub"),
     )
-    paper = paper if paper in {"58mm", "80mm"} else "80mm"
     text = receipts_svc.render_thermal_text(receipt, paper=paper)
-    channel = (channel or "email").lower()
+    channel = channel.lower() if isinstance(channel, str) else channel
 
     if channel == "email":
         user = await db.get(m.User, claims["sub"])

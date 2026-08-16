@@ -65,6 +65,19 @@ ReceiptPaperValue = Annotated[
     Literal["58mm", "80mm"],
     BeforeValidator(coerce_receipt_paper_value),
 ]
+# Live print/receipt query params (BR-20.4 / BR-8) — same coerce as branding Literals.
+InvoicePrintFormatValue = Annotated[
+    Literal["pdf", "text", "json"],
+    BeforeValidator(coerce_invoice_template_value),
+]
+ReceiptPrintFormatValue = Annotated[
+    Literal["json", "text", "pdf"],
+    BeforeValidator(coerce_invoice_template_value),
+]
+ReceiptChannelValue = Annotated[
+    Literal["email", "sms"],
+    BeforeValidator(coerce_invoice_template_value),
+]
 ExpensePaymentMethod = Annotated[
     Literal["cash", "bank_transfer", "card", "cheque"],
     BeforeValidator(coerce_expense_payment_method_value),
