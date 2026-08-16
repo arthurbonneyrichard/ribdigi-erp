@@ -31,3 +31,7 @@ Stage 1125 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Parapet Gate, Transfer Parapet Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1125 opened under **ADR-2257** after CONTINUE/NEXT (Tenant MVP Transfer Gazebo Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2258**. Stage 1124 feature scope remains frozen.
