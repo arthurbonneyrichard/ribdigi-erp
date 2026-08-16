@@ -31,3 +31,7 @@ Stage 940 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bridge Gate, Transfer Bridge Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 940 opened under **ADR-1887** after CONTINUE/NEXT (Tenant MVP Transfer Gateway Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1888**. Stage 939 feature scope remains frozen.
