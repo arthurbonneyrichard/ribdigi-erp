@@ -31,3 +31,7 @@ Stage 1063 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Class Gate, Transfer Class Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1063 opened under **ADR-2133** after CONTINUE/NEXT (Tenant MVP Transfer Strata Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2134**. Stage 1062 feature scope remains frozen.
