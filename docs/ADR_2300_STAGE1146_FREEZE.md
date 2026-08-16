@@ -31,3 +31,7 @@ Stage 1147 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Donjon Gate, Transfer Donjon Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1147 opened under **ADR-2301** after CONTINUE/NEXT (Tenant MVP Transfer Tower Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2302**. Stage 1146 feature scope remains frozen.
