@@ -31,3 +31,7 @@ Stage 980 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bulwark Gate, Transfer Bulwark Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 980 opened under **ADR-1967** after CONTINUE/NEXT (Tenant MVP Transfer Bastion Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1968**. Stage 979 feature scope remains frozen.
