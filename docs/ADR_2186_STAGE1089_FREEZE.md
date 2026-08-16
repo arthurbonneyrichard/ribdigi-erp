@@ -31,3 +31,7 @@ Stage 1090 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Course Gate, Transfer Course Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1090 opened under **ADR-2187** after CONTINUE/NEXT (Tenant MVP Transfer Trajectory Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2188**. Stage 1089 feature scope remains frozen.
