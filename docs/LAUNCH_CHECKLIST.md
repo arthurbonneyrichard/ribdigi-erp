@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 993 track opened (ADR-1993: `test_stage993_open.py`, `docs/STAGE_993_PLAN.md`) — Transfer Isolation Gate Honesty Pack Remaining-Gate Index; closed under ADR-1994
+- [x] Transfer Isolation Gate Honesty Pack remaining-gate hub (Stage 993 I1: `test_stage993_index_i1.py`, `docs/TRANSFER_ISOLATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Isolation Gate Honesty Pack blocker matrix (Stage 993 B1: `test_stage993_blockers_b1.py`, `docs/TRANSFER_ISOLATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 992 / Stage 991 / Stage 392 / CHANGE_IMPACT pointers (Stage 993 P1: `test_stage993_pointers_p1.py`, `docs/TRANSFER_ISOLATION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 993 fidelity sync (D1: `test_stage993_fidelity_d1.py`, `docs/STAGE_993_FIDELITY.md`)
+- [x] Stage 993 exit + freeze (H993x: `test_stage993_exit_h993x.py`, `docs/STAGE_993_EXIT_CRITERIA.md`, ADR-1994)
+
 Stage 992 track opened (ADR-1991: `test_stage992_open.py`, `docs/STAGE_992_PLAN.md`) — Transfer Quarantine Zone Gate Honesty Pack Remaining-Gate Index; closed under ADR-1992
 - [x] Transfer Quarantine Zone Gate Honesty Pack remaining-gate hub (Stage 992 I1: `test_stage992_index_i1.py`, `docs/TRANSFER_QUARANTINE_ZONE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Quarantine Zone Gate Honesty Pack blocker matrix (Stage 992 B1: `test_stage992_blockers_b1.py`, `docs/TRANSFER_QUARANTINE_ZONE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
