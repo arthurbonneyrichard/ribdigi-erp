@@ -31,3 +31,7 @@ Stage 970 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Checkpoint Gate, Transfer Checkpoint Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 970 opened under **ADR-1947** after CONTINUE/NEXT (Tenant MVP Transfer Gatekeeper Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1948**. Stage 969 feature scope remains frozen.
