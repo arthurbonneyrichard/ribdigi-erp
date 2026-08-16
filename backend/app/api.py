@@ -71,6 +71,7 @@ from app.schemas import (
     ReportScheduleUpdate,
     ReportTypeValue,
     ReportExportFormatValue,
+    BalanceSheetCompareValue,
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
@@ -9057,7 +9058,8 @@ async def report_cash_flow(
 @api.get("/reports/balance-sheet")
 async def report_balance_sheet(
     as_of: str | None = None,
-    compare: str | None = None,
+    # omit → no compare; blank/invalid → 422 (was free str → service 400; "" → no compare)
+    compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
@@ -9078,7 +9080,7 @@ async def report_balance_sheet(
 @api.get("/accounting/balance-sheet")
 async def accounting_balance_sheet(
     as_of: str | None = None,
-    compare: str | None = None,
+    compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
@@ -9114,7 +9116,8 @@ async def reports_export(
     category_id: str | None = None,
     days: int | None = None,
     as_of: str | None = None,
-    compare: str | None = None,
+    # omit → no compare; blank/invalid → 422 (same Literal as balance-sheet routes)
+    compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     department_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
