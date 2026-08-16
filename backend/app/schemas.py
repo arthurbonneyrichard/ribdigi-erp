@@ -611,7 +611,8 @@ class TransactionCreate(BaseModel):
     subtotal: float = 0
     tax: float = 0
     total: float = 0
-    status: str = "completed"
+    # BR-8.1 / legacy sale — only completed create path; blank/invalid → 422 (no garbage persist)
+    status: Literal["completed"] = "completed"
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(default_factory=list)
     override_credit_limit: bool = False
@@ -1475,7 +1476,9 @@ class PosSaleCreate(BaseModel):
     tax: float = 0
     total: float = 0
     discount_amount: float = Field(default=0, ge=0)
-    status: str = "completed"
+    # BR-8.1 — only completed POS create; omit → completed; blank/invalid → 422
+    # (was free str; garbage persisted on transactions.status)
+    status: Literal["completed"] = "completed"
     # BR-8.1 — omit → cash; blank/invalid → 422; split allowed when payments[] present
     payment_method: PosSalePaymentMethod = "cash"
     payments: list[PosPaymentLine] | None = None

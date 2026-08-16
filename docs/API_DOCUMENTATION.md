@@ -1067,7 +1067,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **Shift Report:** `GET /pos/sessions/{session_id}/report` — sales list, `payment_breakdown`, `summary` (sale_count, subtotal, tax, discounts, net_sales, return_count, return_total, net_after_returns), and `returns[]` for the cashier/store during the shift window (BR-8.2).
 
 ### 8.2 POS Sale
-**Create Sale:** `POST /pos/sales` — `payment_method` schema `Literal["cash","card","wallet","credit","other","split"]` (omit → `cash`; blank/invalid → **422**; no silent `other`). Wallet aliases `digital_wallet` / `mobile_money` / `momo` coerce to `wallet` before Literal check. Tender lines use `PosPaymentLine.payment_method` without `split`. Service `normalize_payment_method` is strict by default (defense-in-depth **400**).
+**Create Sale:** `POST /pos/sales` — `payment_method` schema `Literal["cash","card","wallet","credit","other","split"]` (omit → `cash`; blank/invalid → **422**; no silent `other`). Wallet aliases `digital_wallet` / `mobile_money` / `momo` coerce to `wallet` before Literal check. Tender lines use `PosPaymentLine.payment_method` without `split`. Service `normalize_payment_method` is strict by default (defense-in-depth **400**). `status` schema `Literal["completed"]` (omit → `completed`; blank/invalid → **422**; no garbage persist on `transactions.status`).
 
 ```json
 {
