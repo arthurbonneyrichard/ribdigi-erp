@@ -59,7 +59,10 @@ async def test_po_delivery_address_create_amend_and_email_body(client, db_sessio
     amended = await ac.post(
         f"/api/v1/purchasing/orders/{po_id}/amend",
         headers=headers,
-        json={"delivery_address": "Warehouse 2, Spintex Road"},
+        json={
+            "reason": "Move delivery to Spintex",
+            "delivery_address": "Warehouse 2, Spintex Road",
+        },
     )
     assert amended.status_code == 200, amended.text
     assert amended.json()["data"]["delivery_address"] == "Warehouse 2, Spintex Road"

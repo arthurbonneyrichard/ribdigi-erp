@@ -515,6 +515,10 @@ async def amend_purchase_order(
     """
     from app import emailer
 
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="amend reason is required")
+
     po = await get_po(db, tenant_id, po_id)
     if po.status not in PO_AMENDABLE:
         raise HTTPException(status_code=409, detail=f"Cannot amend PO in status {po.status}")
@@ -693,7 +697,7 @@ async def amend_purchase_order(
         tenant_id=tenant_id,
         purchase_order_id=po.id,
         revision_no=revision,
-        reason=(reason or "").strip() or None,
+        reason=reason_s,
         actor_id=user_id,
         changes={"before": before, "after": after},
         notified_supplier=bool(notify_supplier),
