@@ -31,3 +31,7 @@ Stage 1154 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Belfry Gate, Transfer Belfry Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1154 opened under **ADR-2315** after CONTINUE/NEXT (Tenant MVP Transfer Ravelin Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2316**. Stage 1153 feature scope remains frozen.
