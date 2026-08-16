@@ -31,3 +31,7 @@ Stage 1025 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Budget Gate, Transfer Budget Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1025 opened under **ADR-2057** after CONTINUE/NEXT (Tenant MVP Transfer Allowance Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2058**. Stage 1024 feature scope remains frozen.
