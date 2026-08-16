@@ -31,3 +31,7 @@ Stage 982 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Citadel Gate, Transfer Citadel Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 982 opened under **ADR-1971** after CONTINUE/NEXT (Tenant MVP Transfer Keep Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1972**. Stage 981 feature scope remains frozen.
