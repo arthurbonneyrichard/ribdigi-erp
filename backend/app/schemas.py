@@ -7,6 +7,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, mo
 
 from app.pos import coerce_payment_method_value
 from app.tenants import coerce_industry_value
+from app.expenses import coerce_expense_payment_method_value
 
 PosTenderMethod = Annotated[
     Literal["cash", "card", "wallet", "credit", "other"],
@@ -27,6 +28,10 @@ IndustryValue = Annotated[
         "mart",
     ],
     BeforeValidator(coerce_industry_value),
+]
+ExpensePaymentMethod = Annotated[
+    Literal["cash", "bank_transfer", "card", "cheque"],
+    BeforeValidator(coerce_expense_payment_method_value),
 ]
 
 
@@ -620,7 +625,9 @@ class ExpenseCreate(BaseModel):
     category_id: str | None = None
     description: str = ""
     amount: float = Field(gt=0)
-    payment_method: str = "cash"
+    # BR-9.2 — schema Literal (+ aliases via BeforeValidator); omit → cash;
+    # blank/invalid → 422 (no silent cash from garbage).
+    payment_method: ExpensePaymentMethod = "cash"
     liquid_account_id: str | None = None
     reference: str | None = None
     payee: str | None = None
@@ -639,7 +646,7 @@ class AiDocumentExpenseCreate(BaseModel):
     reference: str | None = None
     category_id: str | None = None
     category: str | None = None
-    payment_method: str = "cash"
+    payment_method: ExpensePaymentMethod = "cash"
     expense_date: str | datetime | None = None
     store_id: str | None = None
     branch_id: str | None = None
@@ -662,7 +669,8 @@ class ExpenseUpdate(BaseModel):
     category_id: str | None = None
     description: str | None = None
     amount: float | None = Field(default=None, gt=0)
-    payment_method: str | None = None
+    # omit = no change; blank/invalid → 422
+    payment_method: ExpensePaymentMethod | None = None
     reference: str | None = None
     payee: str | None = None
     expense_date: datetime | None = None
@@ -708,7 +716,8 @@ class RecurringExpenseCreate(BaseModel):
     amount: float = Field(gt=0)
     # BR-9.5 — schema Literal; omit defaults to monthly; blank/invalid → 422
     frequency: Literal["daily", "weekly", "monthly", "yearly"] = "monthly"
-    payment_method: str = "bank_transfer"
+    # BR-9.2 / BR-9.5 — same ExpensePaymentMethod Literal; omit → bank_transfer
+    payment_method: ExpensePaymentMethod = "bank_transfer"
     payee: str | None = None
     branch_id: str | None = None
     department_id: str | None = None
@@ -720,7 +729,7 @@ class RecurringExpenseUpdate(BaseModel):
     payee: str | None = None
     clear_payee: bool = False
     description: str | None = None
-    payment_method: str | None = None
+    payment_method: ExpensePaymentMethod | None = None
     frequency: Literal["daily", "weekly", "monthly", "yearly"] | None = None
     category_id: str | None = None
     category: str | None = None

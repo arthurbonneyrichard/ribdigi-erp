@@ -1109,9 +1109,9 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 
 ### 9.2 Expenses
 **List:** `GET /expenses`  
-**Create:** `POST /expenses`  
+**Create:** `POST /expenses` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**; aliases `check`→`cheque`, `credit_card`/`debit_card`→`card`, `bank`/`transfer`→`bank_transfer`). Service `normalize_expense_payment_method` remains defense-in-depth **400**. Expenses UI payment Method select matches.  
 **Get:** `GET /expenses/{expense_id}`  
-**Update:** `PATCH /expenses/{expense_id}` — pending or rejected only (409 if approved). Body may include `amount`, `payee`, `description`, `reference`, `expense_date`, `payment_method`, `category_id` / `category`, org dims. Amount cannot change after a human approval step is recorded. Expenses UI **Edit** opens these fields (OCR **Apply to expense** uses the same PATCH).
+**Update:** `PATCH /expenses/{expense_id}` — pending or rejected only (409 if approved). Body may include `amount`, `payee`, `description`, `reference`, `expense_date`, `payment_method` (same `Literal`, omit = no change; blank/invalid → **422**), `category_id` / `category`, org dims. Amount cannot change after a human approval step is recorded. Expenses UI **Edit** opens these fields (OCR **Apply to expense** uses the same PATCH).
 
 Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong to the selected branch when both are set. `PATCH /expenses/{id}` accepts the same fields plus `clear_branch` / `clear_department`. Receipts use separate upload endpoints (not inline attachments on create).
 
@@ -1124,8 +1124,8 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 
 ### 9.3 Recurring Expenses
 **List:** `GET /expenses/recurring` — optional `?is_active=true|false` filters soft-deactivated schedules (omit = all; Expenses manage status filter).  
-**Create:** `POST /expenses/recurring`  
-**Update:** `PATCH /expenses/recurring/{id}` — activate/deactivate (`is_active`) and/or edit template fields: `amount`, `payee` (+ `clear_payee`), `description`, `payment_method`, `frequency`, `category_id` / `category`, org dims (`branch_id` / `department_id` + clear flags). Expenses UI **Edit schedule**. Existing generated expenses are unchanged; next Generate uses the updated template.  
+**Create:** `POST /expenses/recurring` — `payment_method` same expense `Literal` (omit → `bank_transfer`; blank/invalid → **422**).  
+**Update:** `PATCH /expenses/recurring/{id}` — activate/deactivate (`is_active`) and/or edit template fields: `amount`, `payee` (+ `clear_payee`), `description`, `payment_method` (same `Literal`, omit = no change; blank/invalid → **422**), `frequency`, `category_id` / `category`, org dims (`branch_id` / `department_id` + clear flags). Expenses UI **Edit schedule**. Existing generated expenses are unchanged; next Generate uses the updated template.  
 **Skip next:** `POST /expenses/recurring/{id}/skip-next` — body `{ "reason" }` **required** (non-empty) → advance `next_run_at` by one frequency period without creating an expense; audit `recurring_expense_skipped` with `details.reason` (+ previous/new `next_run_at`). Reason is audit-only (schedule `description` unchanged). Inactive → 400; past `end_date` after skip deactivates. Expenses UI **Skip next reason**.  
 **Generate due:** `POST /expenses/recurring/generate` — creates expenses for active schedules with `next_run_at <= now` (also Celery beat `generate_recurring_expenses`)
 
@@ -1578,7 +1578,7 @@ Also accepts structured `{ "report_type": "sales", "period": "last_month", "form
 
 Form fields: `file` (required), `document_type` (`receipt`|`invoice`|`purchase_order`|`auto`), optional `expected_amount`. Returns extracted fields, party/PO matches, and discrepancy flags. Analyze is suggest-only — see `docs/AI_DOCUMENT_MVP.md`.
 
-**Create draft expense:** `POST /ai/documents/create-expense` — JSON body `{ amount, payee?, description?, reference?, category_id?, category?, expense_date?, payment_method? }` (`expenses:write`). Creates a normal pending/auto-approved expense from reviewed OCR fields (defaults category to MISC when omitted); AI UI **Create draft expense**.
+**Create draft expense:** `POST /ai/documents/create-expense` — JSON body `{ amount, payee?, description?, reference?, category_id?, category?, expense_date?, payment_method? }` (`expenses:write`; `payment_method` same expense `Literal`, omit → `cash`; blank/invalid → **422**). Creates a normal pending/auto-approved expense from reviewed OCR fields (defaults category to MISC when omitted); AI UI **Create draft expense**.
 
 **Create draft purchase invoice (PO-matched):** `POST /ai/documents/create-purchase-invoice` — JSON body `{ purchase_order_id, supplier_id?, supplier_invoice_number?, notes?, invoice_date?, is_reverse_charge? }` (`purchasing:write`). Copies active PO lines into a draft PI; AI UI **Create draft purchase invoice** when Analyze returns a PO match. See `docs/AI_DOCUMENT_MVP.md`.
 
