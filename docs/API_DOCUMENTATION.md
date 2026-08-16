@@ -309,7 +309,7 @@ Service `apply_print_branding_update` remains defense-in-depth **400**. Read pat
 **Store entitlements:** Package catalog `max_stores` (`null` = unlimited). Platform `PATCH /tenants/{ref}/store-entitlement` `{ max_stores_override }` / `{ clear: true }`. Tenant admin `PATCH /tenants/me/store-limit` `{ store_limit }` (null = full entitlement; cannot exceed entitlement). `GET /stores/entitlement` returns usage. `POST /stores` and reactivate enforce active-store count (403 `STORE_LIMIT_REACHED`); downgrades never delete stores.
 
 **Feature modules:** `PATCH /tenants/{tenant_ref}/modules`  
-`{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`
+`{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`. `enabled_modules` items are schema `Literal` of `PACKAGEABLE_MODULES` (strip/lower; blank/unknown/`platform` → **422**). Always-on modules (`dashboard`, `notifications`, `security`) are merged by the service if omitted. Same item Literal applies on `POST /tenants/{ref}/subscription` when `enabled_modules` is sent.
 
 **Usage detail:** `GET /tenants/{tenant_ref}/usage`  
 Packages: `trial` | `starter` | `professional` | `enterprise`. Disabled modules return `403 PACKAGE_FEATURE_DISABLED`.

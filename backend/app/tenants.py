@@ -332,6 +332,8 @@ async def set_enabled_modules(
 ) -> m.Tenant:
     cleaned: list[str] = []
     seen: set[str] = set()
+    # Defense in depth: TenantModulesUpdate / TenantSubscriptionAssign.enabled_modules
+    # Literals reject blank/unknown/platform with 422 before this runs.
     for raw in modules or []:
         mod = str(raw).strip().lower()
         if not mod or mod in seen:
