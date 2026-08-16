@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1135 track opened (ADR-2277: `test_stage1135_open.py`, `docs/STAGE_1135_PLAN.md`) — Transfer Oriel Gate Honesty Pack Remaining-Gate Index; closed under ADR-2278
+- [x] Transfer Oriel Gate Honesty Pack remaining-gate hub (Stage 1135 I1: `test_stage1135_index_i1.py`, `docs/TRANSFER_ORIEL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Oriel Gate Honesty Pack blocker matrix (Stage 1135 B1: `test_stage1135_blockers_b1.py`, `docs/TRANSFER_ORIEL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1134 / Stage 1133 / Stage 392 / CHANGE_IMPACT pointers (Stage 1135 P1: `test_stage1135_pointers_p1.py`, `docs/TRANSFER_ORIEL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1135 fidelity sync (D1: `test_stage1135_fidelity_d1.py`, `docs/STAGE_1135_FIDELITY.md`)
+- [x] Stage 1135 exit + freeze (H1135x: `test_stage1135_exit_h1135x.py`, `docs/STAGE_1135_EXIT_CRITERIA.md`, ADR-2278)
+
 Stage 1134 track opened (ADR-2275: `test_stage1134_open.py`, `docs/STAGE_1134_PLAN.md`) — Transfer Lookout Gate Honesty Pack Remaining-Gate Index; closed under ADR-2276
 - [x] Transfer Lookout Gate Honesty Pack remaining-gate hub (Stage 1134 I1: `test_stage1134_index_i1.py`, `docs/TRANSFER_LOOKOUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Lookout Gate Honesty Pack blocker matrix (Stage 1134 B1: `test_stage1134_blockers_b1.py`, `docs/TRANSFER_LOOKOUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
