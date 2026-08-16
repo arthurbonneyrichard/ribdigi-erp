@@ -429,9 +429,13 @@ class ProductImagePrimaryUpdate(BaseModel):
 class PartyCreate(BaseModel):
     name: str
     code: str | None = None
-    profile_type: str | None = "registered"
+    # BR-6.1 / BR-7.1 — OpenAPI union Literal; kind-specific allow-list still enforced
+    # in _normalize_party_profile. Omit → registered; blank/invalid → 422.
+    profile_type: Literal[
+        "walk_in", "registered", "trade", "manufacturer", "service", "other"
+    ] = "registered"
     category: str | None = None
-    status: str = "active"
+    status: Literal["active", "inactive"] = "active"
     email: EmailStr | None = None
     phone: str | None = None
     address: str | None = None
@@ -445,9 +449,12 @@ class PartyCreate(BaseModel):
 class PartyUpdate(BaseModel):
     name: str | None = None
     code: str | None = None
-    profile_type: str | None = None
+    # omit = no change; blank/invalid → 422 (no silent registered)
+    profile_type: (
+        Literal["walk_in", "registered", "trade", "manufacturer", "service", "other"] | None
+    ) = None
     category: str | None = None
-    status: str | None = None
+    status: Literal["active", "inactive"] | None = None
     email: EmailStr | None = None
     phone: str | None = None
     address: str | None = None
