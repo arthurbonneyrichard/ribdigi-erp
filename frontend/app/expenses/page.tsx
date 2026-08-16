@@ -1235,7 +1235,9 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <button onClick={createExpense}>Submit expense</button>
+          <button type="button" className="btn-ok" onClick={createExpense}>
+            Submit expense
+          </button>
         </div>
       </div>
 
