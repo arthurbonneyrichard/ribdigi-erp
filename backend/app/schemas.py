@@ -1597,6 +1597,11 @@ MovementTypeValue = Annotated[
     ],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.inventory.STOCK_ADJUSTMENT_REASONS (Inventory Movements reason filter).
+StockAdjustReasonValue = Annotated[
+    Literal["damage", "theft", "expiry", "found", "lost"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
 ReportTypeValue = Annotated[
     Literal[

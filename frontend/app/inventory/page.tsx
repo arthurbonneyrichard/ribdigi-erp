@@ -3019,7 +3019,11 @@ export default function Page() {
                 <option value="transfer_in">transfer_in</option>
                 <option value="transfer_cancel">transfer_cancel</option>
               </select>
-              <select value={mvReason} onChange={(e) => setMvReason(e.target.value)}>
+              <select
+                aria-label="Movement reason filter"
+                value={mvReason}
+                onChange={(e) => setMvReason(e.target.value)}
+              >
                 <option value="">All reasons</option>
                 <option value="damage">damage</option>
                 <option value="theft">theft</option>
