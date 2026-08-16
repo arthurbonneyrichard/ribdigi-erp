@@ -31,3 +31,7 @@ Stage 978 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Wall Gate, Transfer Wall Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 978 opened under **ADR-1963** after CONTINUE/NEXT (Tenant MVP Transfer Shield Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1964**. Stage 977 feature scope remains frozen.
