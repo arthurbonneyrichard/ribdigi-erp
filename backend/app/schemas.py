@@ -52,6 +52,21 @@ SalesReturnSettlementMethod = Annotated[
 ]
 
 
+def coerce_record_scope_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+RecordScopeValue = Annotated[
+    Literal["own", "department", "branch", "all"],
+    BeforeValidator(coerce_record_scope_value),
+]
+
+
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
     if bool(getattr(model, "override_credit_limit", False)):
@@ -204,7 +219,8 @@ class UserCreate(BaseModel):
     phone: str | None = None
     branch_id: str | None = None
     department_id: str | None = None
-    record_scope: str | None = None
+    # BR-3.3 — omit = role default; blank/invalid → 422 (no silent all from "")
+    record_scope: RecordScopeValue | None = None
 
 
 class UserUpdate(BaseModel):
@@ -213,8 +229,8 @@ class UserUpdate(BaseModel):
     role: str | None = None
     is_active: bool | None = None
     password: str | None = None
-    # Record visibility: own | department | branch | all
-    record_scope: str | None = None
+    # Record visibility: own | department | branch | all (omit = no change; blank → 422)
+    record_scope: RecordScopeValue | None = None
     branch_id: str | None = None
     department_id: str | None = None
     clear_branch: bool = False
@@ -316,13 +332,14 @@ class CustomRoleCreate(BaseModel):
     label: str
     permissions: dict[str, list[str]] | None = None
     base_role: str | None = None
-    record_scope: str | None = None
+    # BR-3.3 — omit = base_role/own default; blank/invalid → 422
+    record_scope: RecordScopeValue | None = None
 
 
 class CustomRoleUpdate(BaseModel):
     label: str | None = None
     permissions: dict[str, list[str]] | None = None
-    record_scope: str | None = None
+    record_scope: RecordScopeValue | None = None
     is_active: bool | None = None
 
 

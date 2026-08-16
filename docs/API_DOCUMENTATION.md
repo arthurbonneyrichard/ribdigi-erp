@@ -440,7 +440,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 }
 ```
 
-`record_scope`: `own` | `department` | `branch` | `all` (optional; defaults from role). Response wraps `{ "user": {...}, ... }`.
+`record_scope` schema `Literal["own","department","branch","all"]` (omit = role default; blank/invalid → **422** — no silent `all` from `""`). Response wraps `{ "user": {...}, ... }`.
 
 ### 4.2 List Users
 **Endpoint:** `GET /users` — optional `?is_active=true|false` filters soft-deactivated users (omit = all; Users manage status filter All/Active/Inactive).
@@ -451,7 +451,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 ### 4.4 Update User
 **Endpoint:** `PATCH /users/{user_id}`
 
-Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope`.
+Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**).
 
 ### 4.5 Delete / Deactivate User
 **Endpoint:** `DELETE /users/{user_id}` (soft deactivate)
@@ -462,9 +462,9 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 
 **Get Role:** `GET /roles/{role}` — system catalog entry or custom role (inactive custom roles still resolve).
 
-**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope`. Clones system `base_role` permission map when provided.
+**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). Clones system `base_role` permission map when provided.
 
-**Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope?, is_active? }`. Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
+**Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope? (same Literal), is_active? }`. Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
 
 **Delete Custom Role:** `DELETE /roles/{role}` — hard delete; returns **409** while any user still has that role. Prefer soft-deactivate for retirement.
 
