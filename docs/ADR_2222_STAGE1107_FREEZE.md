@@ -31,3 +31,7 @@ Stage 1108 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Arcade Gate, Transfer Arcade Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1108 opened under **ADR-2223** after CONTINUE/NEXT (Tenant MVP Transfer Mezzanine Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2224**. Stage 1107 feature scope remains frozen.
