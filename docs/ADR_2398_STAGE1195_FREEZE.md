@@ -31,3 +31,7 @@ Stage 1196 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Refectory Gate, Transfer Refectory Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1196 opened under **ADR-2399** after CONTINUE/NEXT (Tenant MVP Transfer Mausoleum Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2400**. Stage 1195 feature scope remains frozen.
