@@ -31,3 +31,7 @@ Stage 995 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Containment Gate, Transfer Containment Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 995 opened under **ADR-1997** after CONTINUE/NEXT (Tenant MVP Transfer Segregation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1998**. Stage 994 feature scope remains frozen.
