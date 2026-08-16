@@ -112,6 +112,8 @@ from app.schemas import (
     CustomerGroupCreate,
     CustomerGroupUpdate,
     PlatformGrantAccess,
+    PlatformStaffCreate,
+    PlatformStaffUpdate,
     PlatformRevokeAccess,
     AccountCreate,
     CashTransferCreate,
@@ -915,7 +917,7 @@ async def platform_roles_catalog(
 
 @api.post("/platform/staff")
 async def platform_staff_create(
-    payload: dict,
+    payload: PlatformStaffCreate,
     claims=Depends(require_platform_permission("platform_staff", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -923,11 +925,11 @@ async def platform_staff_create(
         db,
         tenant_id=claims["tenant_id"],
         actor_role=claims.get("role") or "",
-        email=str(payload.get("email") or ""),
-        full_name=str(payload.get("full_name") or ""),
-        password=str(payload.get("password") or ""),
-        role=str(payload.get("role") or "platform_support"),
-        phone=payload.get("phone"),
+        email=payload.email,
+        full_name=payload.full_name,
+        password=payload.password,
+        role=payload.role,
+        phone=payload.phone,
     )
     await audit_svc.record_event(
         db,
@@ -1031,7 +1033,7 @@ async def platform_staff_revoke(
 @api.patch("/platform/staff/{user_id}")
 async def platform_staff_update(
     user_id: str,
-    payload: dict,
+    payload: PlatformStaffUpdate,
     claims=Depends(require_platform_permission("platform_staff", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -1041,12 +1043,12 @@ async def platform_staff_update(
         actor_id=claims["sub"],
         actor_role=claims.get("role") or "",
         user_id=user_id,
-        full_name=payload.get("full_name"),
-        role=payload.get("role"),
-        phone=payload.get("phone"),
-        is_active=payload.get("is_active"),
+        full_name=payload.full_name,
+        role=payload.role,
+        phone=payload.phone,
+        is_active=payload.is_active,
     )
-    if payload.get("is_active") is False:
+    if payload.is_active is False:
         rows = (
             await db.execute(
                 select(m.AuthSession).where(

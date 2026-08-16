@@ -318,6 +318,7 @@ Packages: `trial` | `starter` | `professional` | `enterprise`. Disabled modules 
 Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `platform_support`, `platform_finance`.
 
 **Staff:** `GET|POST /platform/staff`, `PATCH /platform/staff/{id}`, `GET /platform/roles`  
+Create/patch `role` uses the same platform-role schema `Literal` as grant (strip/lower; create omit → `platform_support`; blank/invalid → **422**; no silent support from `""` via former `role or "platform_support"`).  
 **App users (no dashboard yet):** `GET /platform/app-users`  
 **Grant dashboard:** `POST /platform/staff/grant` `{ "user_id", "role": "platform_support" }` — promotes an existing workspace app user so they can open the software-owner console. `role` schema `Literal["super_admin","platform_owner","platform_admin","platform_support","platform_finance"]` (strip/lower coerce; omit → `platform_support`; blank/invalid → **422**; no silent support from `""`).  
 **Revoke dashboard:** `POST /platform/staff/{id}/revoke` `{ "fallback_role": "company_admin" }` — removes platform role; account stays as an app user. `fallback_role` schema `Literal["company_admin","store_manager","sales_officer","inventory_officer","accountant","cashier"]` (strip/lower coerce; omit → `company_admin`; blank/invalid/platform → **422**; no silent company_admin from `""`).  

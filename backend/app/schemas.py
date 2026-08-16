@@ -399,6 +399,27 @@ class PlatformGrantAccess(BaseModel):
     role: PlatformRoleValue = "platform_support"
 
 
+class PlatformStaffCreate(BaseModel):
+    """Create a platform staff user on the software-owner workspace."""
+
+    email: str = Field(min_length=3)
+    full_name: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+    # Same Literal as grant; omit → platform_support; blank/invalid → 422
+    # (was free dict; API `role or "platform_support"` silently coerced "")
+    role: PlatformRoleValue = "platform_support"
+    phone: str | None = None
+
+
+class PlatformStaffUpdate(BaseModel):
+    """Patch platform staff — omit = no change; blank role → 422."""
+
+    full_name: str | None = Field(default=None, min_length=1)
+    role: PlatformRoleValue | None = None
+    phone: str | None = None
+    is_active: bool | None = None
+
+
 class PlatformRevokeAccess(BaseModel):
     """Revoke software-owner dashboard access; keep the account as an app user."""
 
