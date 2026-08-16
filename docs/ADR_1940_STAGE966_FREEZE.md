@@ -31,3 +31,7 @@ Stage 967 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Lifecycle Gate, Transfer Lifecycle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 967 opened under **ADR-1941** after CONTINUE/NEXT (Tenant MVP Transfer Phase Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1942**. Stage 966 feature scope remains frozen.
