@@ -31,3 +31,7 @@ Stage 1022 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bottleneck Gate, Transfer Bottleneck Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1022 opened under **ADR-2051** after CONTINUE/NEXT (Tenant MVP Transfer Rate Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2052**. Stage 1021 feature scope remains frozen.
