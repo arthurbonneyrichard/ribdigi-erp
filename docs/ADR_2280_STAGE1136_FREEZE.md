@@ -31,3 +31,7 @@ Stage 1137 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Cupola Gate, Transfer Cupola Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1137 opened under **ADR-2281** after CONTINUE/NEXT (Tenant MVP Transfer Torii Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2282**. Stage 1136 feature scope remains frozen.
