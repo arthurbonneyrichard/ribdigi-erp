@@ -31,3 +31,7 @@ Stage 1000 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Filter Gate, Transfer Filter Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1000 opened under **ADR-2007** after CONTINUE/NEXT (Tenant MVP Transfer Screen Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2008**. Stage 999 feature scope remains frozen.
