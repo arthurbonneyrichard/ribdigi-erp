@@ -31,3 +31,7 @@ Stage 992 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Lockdown Gate, Transfer Lockdown Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 992 opened under **ADR-1991** after CONTINUE/NEXT (Tenant MVP Transfer Quarantine Zone Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1992**. Stage 991 feature scope remains frozen.
