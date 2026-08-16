@@ -31,3 +31,7 @@ Stage 974 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Watchdog Gate, Transfer Watchdog Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 974 opened under **ADR-1955** after CONTINUE/NEXT (Tenant MVP Transfer Guard Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1956**. Stage 973 feature scope remains frozen.
