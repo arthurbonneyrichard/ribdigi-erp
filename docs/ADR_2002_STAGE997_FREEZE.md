@@ -31,3 +31,7 @@ Stage 998 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Firewall Gate, Transfer Firewall Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 998 opened under **ADR-2003** after CONTINUE/NEXT (Tenant MVP Transfer Proxy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2004**. Stage 997 feature scope remains frozen.
