@@ -31,3 +31,7 @@ Stage 969 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Milestone Gate, Transfer Milestone Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 969 opened under **ADR-1945** after CONTINUE/NEXT (Tenant MVP Transfer Checkpoint Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1946**. Stage 968 feature scope remains frozen.
