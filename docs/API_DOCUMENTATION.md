@@ -304,7 +304,7 @@ Service `apply_print_branding_update` remains defense-in-depth **400**. Read pat
 }
 ```
 
-`term_unit` schema `Literal["months","years"]` (omit → `months`; blank/invalid → **422**; no silent months from `""`). Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, and effective `enabled_modules`.
+`package_code` schema `Literal["trial","starter","professional","enterprise"]` (strip/lower coerce; blank/invalid → **422**; no free-string accept). `term_unit` schema `Literal["months","years"]` (omit → `months`; blank/invalid → **422**; no silent months from `""`). Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, and effective `enabled_modules`.
 
 **Feature modules:** `PATCH /tenants/{tenant_ref}/modules`  
 `{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`
