@@ -4400,6 +4400,14 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 1062 D1 (2026-08-14):** Transfer Class Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1062_FIDELITY.md` (`test_stage1062_fidelity_d1.py`). Open ADR: `docs/ADR_2131_STAGE1062_OPEN.md`; plan `docs/STAGE_1062_PLAN.md`.
+
+**Stage 1062 exit (2026-08-14):** I1, B1, P1, D1, H1062x met — `docs/STAGE_1062_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2132_STAGE1062_FREEZE.md`. Fidelity: `docs/STAGE_1062_FIDELITY.md`.
+
+**Stage 1061 D1 (2026-08-14):** Transfer Band Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1061_FIDELITY.md` (`test_stage1061_fidelity_d1.py`). Open ADR: `docs/ADR_2129_STAGE1061_OPEN.md`; plan `docs/STAGE_1061_PLAN.md`.
+
+**Stage 1061 exit (2026-08-14):** I1, B1, P1, D1, H1061x met — `docs/STAGE_1061_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2130_STAGE1061_FREEZE.md`. Fidelity: `docs/STAGE_1061_FIDELITY.md`.
+
 **Stage 1060 D1 (2026-08-14):** Transfer Level Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1060_FIDELITY.md` (`test_stage1060_fidelity_d1.py`). Open ADR: `docs/ADR_2127_STAGE1060_OPEN.md`; plan `docs/STAGE_1060_PLAN.md`.
 
 **Stage 1060 exit (2026-08-14):** I1, B1, P1, D1, H1060x met — `docs/STAGE_1060_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2128_STAGE1060_FREEZE.md`. Fidelity: `docs/STAGE_1060_FIDELITY.md`.

@@ -1677,6 +1677,20 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1062 track opened (ADR-2131: `test_stage1062_open.py`, `docs/STAGE_1062_PLAN.md`) — Transfer Class Gate Honesty Pack Remaining-Gate Index; closed under ADR-2132
+- [x] Transfer Class Gate Honesty Pack remaining-gate hub (Stage 1062 I1: `test_stage1062_index_i1.py`, `docs/TRANSFER_CLASS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Class Gate Honesty Pack blocker matrix (Stage 1062 B1: `test_stage1062_blockers_b1.py`, `docs/TRANSFER_CLASS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1061 / Stage 1060 / Stage 392 / CHANGE_IMPACT pointers (Stage 1062 P1: `test_stage1062_pointers_p1.py`, `docs/TRANSFER_CLASS_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1062 fidelity sync (D1: `test_stage1062_fidelity_d1.py`, `docs/STAGE_1062_FIDELITY.md`)
+- [x] Stage 1062 exit + freeze (H1062x: `test_stage1062_exit_h1062x.py`, `docs/STAGE_1062_EXIT_CRITERIA.md`, ADR-2132)
+
+Stage 1061 track opened (ADR-2129: `test_stage1061_open.py`, `docs/STAGE_1061_PLAN.md`) — Transfer Band Gate Honesty Pack Remaining-Gate Index; closed under ADR-2130
+- [x] Transfer Band Gate Honesty Pack remaining-gate hub (Stage 1061 I1: `test_stage1061_index_i1.py`, `docs/TRANSFER_BAND_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Band Gate Honesty Pack blocker matrix (Stage 1061 B1: `test_stage1061_blockers_b1.py`, `docs/TRANSFER_BAND_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1060 / Stage 1059 / Stage 392 / CHANGE_IMPACT pointers (Stage 1061 P1: `test_stage1061_pointers_p1.py`, `docs/TRANSFER_BAND_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1061 fidelity sync (D1: `test_stage1061_fidelity_d1.py`, `docs/STAGE_1061_FIDELITY.md`)
+- [x] Stage 1061 exit + freeze (H1061x: `test_stage1061_exit_h1061x.py`, `docs/STAGE_1061_EXIT_CRITERIA.md`, ADR-2130)
+
 Stage 1060 track opened (ADR-2127: `test_stage1060_open.py`, `docs/STAGE_1060_PLAN.md`) — Transfer Level Gate Honesty Pack Remaining-Gate Index; closed under ADR-2128
 - [x] Transfer Level Gate Honesty Pack remaining-gate hub (Stage 1060 I1: `test_stage1060_index_i1.py`, `docs/TRANSFER_LEVEL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Level Gate Honesty Pack blocker matrix (Stage 1060 B1: `test_stage1060_blockers_b1.py`, `docs/TRANSFER_LEVEL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
