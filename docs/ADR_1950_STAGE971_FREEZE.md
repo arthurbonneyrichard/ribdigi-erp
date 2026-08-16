@@ -31,3 +31,7 @@ Stage 972 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sentinel Gate, Transfer Sentinel Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 972 opened under **ADR-1951** after CONTINUE/NEXT (Tenant MVP Transfer Monitor Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1952**. Stage 971 feature scope remains frozen.
