@@ -421,7 +421,11 @@ export default function Page() {
                     Set default
                   </button>
                 )}
-                <button type="button" onClick={() => setRateActive(r, r.is_active === false)}>
+                <button
+                  type="button"
+                  className={r.is_active === false ? 'btn-ok' : 'btn-danger'}
+                  onClick={() => setRateActive(r, r.is_active === false)}
+                >
                   {r.is_active === false ? 'Activate' : 'Deactivate'}
                 </button>
               </td>

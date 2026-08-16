@@ -1153,11 +1153,15 @@ export default function Page() {
                   <td>{r.is_active === false ? 'no' : 'yes'}</td>
                   <td>
                     {r.is_active === false ? (
-                      <button type="button" onClick={() => setAccountActive(r.id, true)}>
+                      <button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)}>
                         Activate
                       </button>
                     ) : (
-                      <button type="button" onClick={() => setAccountActive(r.id, false)}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => setAccountActive(r.id, false)}
+                      >
                         Deactivate
                       </button>
                     )}
@@ -1609,11 +1613,15 @@ export default function Page() {
                     Sync now
                   </button>{' '}
                   {c.is_active === false ? (
-                    <button type="button" onClick={() => setConnectionActive(c.id, true)}>
+                    <button type="button" className="btn-ok" onClick={() => setConnectionActive(c.id, true)}>
                       Activate
                     </button>
                   ) : (
-                    <button type="button" onClick={() => setConnectionActive(c.id, false)}>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => setConnectionActive(c.id, false)}
+                    >
                       Deactivate
                     </button>
                   )}{' '}

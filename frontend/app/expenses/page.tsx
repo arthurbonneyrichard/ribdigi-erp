@@ -917,6 +917,7 @@ export default function Page() {
                   </button>
                   <button
                     type="button"
+                    className={c.is_active === false ? 'btn-ok' : 'btn-danger'}
                     onClick={() => setCategoryActive(c, c.is_active === false)}
                     title={
                       c.is_active === false

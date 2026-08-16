@@ -1607,6 +1607,11 @@ export default function Page() {
           {supplierId ? (
             <button
               type="button"
+              className={
+                (suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive'
+                  ? 'btn-ok'
+                  : 'btn-danger'
+              }
               onClick={() =>
                 setSupplierActive(
                   (suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive',

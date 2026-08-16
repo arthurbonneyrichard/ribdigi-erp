@@ -1684,11 +1684,11 @@ export default function Page() {
                 Save product
               </button>
               {selected?.is_active === false ? (
-                <button type="button" onClick={() => setProductActive(true)}>
+                <button type="button" className="btn-ok" onClick={() => setProductActive(true)}>
                   Activate
                 </button>
               ) : (
-                <button type="button" onClick={() => setProductActive(false)}>
+                <button type="button" className="btn-danger" onClick={() => setProductActive(false)}>
                   Deactivate
                 </button>
               )}
@@ -2132,6 +2132,7 @@ export default function Page() {
                     {c.is_active === false ? (
                       <button
                         type="button"
+                        className="btn-ok"
                         onClick={async () => {
                           setError('');
                           try {
@@ -2212,6 +2213,7 @@ export default function Page() {
                         </select>
                         <button
                           type="button"
+                          className="btn-danger"
                           onClick={async () => {
                             setError('');
                             try {
@@ -2306,6 +2308,7 @@ export default function Page() {
                   {b.is_active === false ? (
                     <button
                       type="button"
+                      className="btn-ok"
                       onClick={async () => {
                         setError('');
                         try {
@@ -2343,6 +2346,7 @@ export default function Page() {
                       )}
                       <button
                         type="button"
+                        className="btn-danger"
                         onClick={async () => {
                           setError('');
                           try {
@@ -2436,6 +2440,7 @@ export default function Page() {
                   {u.is_active === false ? (
                     <button
                       type="button"
+                      className="btn-ok"
                       onClick={async () => {
                         setError('');
                         try {
@@ -2455,6 +2460,7 @@ export default function Page() {
                   ) : (
                     <button
                       type="button"
+                      className="btn-danger"
                       onClick={async () => {
                         setError('');
                         try {
@@ -2586,11 +2592,15 @@ export default function Page() {
                       Label
                     </button>
                     {v.is_active === false ? (
-                      <button type="button" onClick={() => activateVariant(v.id)}>
+                      <button type="button" className="btn-ok" onClick={() => activateVariant(v.id)}>
                         Activate
                       </button>
                     ) : (
-                      <button type="button" onClick={() => deactivateVariant(v.id)}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => deactivateVariant(v.id)}
+                      >
                         Deactivate
                       </button>
                     )}

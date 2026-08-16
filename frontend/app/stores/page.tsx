@@ -1089,11 +1089,11 @@ export default function Page() {
                   Edit
                 </button>
                 {b.is_active === false ? (
-                  <button type="button" onClick={() => setBranchActive(b.id, true)}>
+                  <button type="button" className="btn-ok" onClick={() => setBranchActive(b.id, true)}>
                     Reactivate
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setBranchActive(b.id, false)}>
+                  <button type="button" className="btn-danger" onClick={() => setBranchActive(b.id, false)}>
                     Deactivate
                   </button>
                 )}
@@ -1140,11 +1140,19 @@ export default function Page() {
                   Edit
                 </button>
                 {d.is_active === false ? (
-                  <button type="button" onClick={() => setDepartmentActive(d.id, true)}>
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={() => setDepartmentActive(d.id, true)}
+                  >
                     Reactivate
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setDepartmentActive(d.id, false)}>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => setDepartmentActive(d.id, false)}
+                  >
                     Deactivate
                   </button>
                 )}
@@ -1199,11 +1207,11 @@ export default function Page() {
                 </button>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>
                 {s.is_active === false ? (
-                  <button type="button" onClick={() => setStoreActive(s.id, true)}>
+                  <button type="button" className="btn-ok" onClick={() => setStoreActive(s.id, true)}>
                     Activate
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setStoreActive(s.id, false)}>
+                  <button type="button" className="btn-danger" onClick={() => setStoreActive(s.id, false)}>
                     Deactivate
                   </button>
                 )}
@@ -1357,11 +1365,15 @@ export default function Page() {
                   Edit
                 </button>
                 {w.is_active === false ? (
-                  <button type="button" onClick={() => setWarehouseActive(w.id, true)}>
+                  <button type="button" className="btn-ok" onClick={() => setWarehouseActive(w.id, true)}>
                     Activate
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setWarehouseActive(w.id, false)}>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => setWarehouseActive(w.id, false)}
+                  >
                     Deactivate
                   </button>
                 )}
