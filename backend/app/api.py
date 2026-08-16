@@ -230,6 +230,10 @@ from app import totp as totp_svc
 
 api = APIRouter(prefix="/api/v1")
 
+from app.bi_api import router as business_insights_router
+
+api.include_router(business_insights_router)
+
 
 def env(data=None, message: str = "Operation completed successfully"):
     return {"success": True, "data": data, "message": message}

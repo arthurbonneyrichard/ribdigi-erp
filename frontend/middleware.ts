@@ -25,6 +25,7 @@ const TENANT_ERP_PREFIXES = [
   '/tax',
   '/stores',
   '/reports',
+  '/business-insights',
   '/notifications',
   '/audit',
   '/activity',

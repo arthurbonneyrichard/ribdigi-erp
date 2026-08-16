@@ -1885,3 +1885,46 @@ class WebhookDelivery(Base):
     next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class BusinessInsight(Base):
+    """Persisted important Smart BI alerts (Layer 1 — no external AI)."""
+
+    __tablename__ = "business_insights"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    branch_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    insight_type: Mapped[str] = mapped_column(String(60), index=True)
+    category: Mapped[str] = mapped_column(String(40), index=True)
+    priority: Mapped[str] = mapped_column(String(20), index=True)
+    title: Mapped[str] = mapped_column(String(200))
+    message: Mapped[str] = mapped_column(Text)
+    recommendation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metric_value: Mapped[float | None] = mapped_column(Numeric(18, 4), nullable=True)
+    comparison_value: Mapped[float | None] = mapped_column(Numeric(18, 4), nullable=True)
+    percentage_change: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
+    related_entity_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    related_entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    action_href: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    acknowledged_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class BusinessInsightSettings(Base):
+    """Per-tenant/company thresholds for Smart BI rules."""
+
+    __tablename__ = "business_insight_settings"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

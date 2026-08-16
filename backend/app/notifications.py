@@ -21,6 +21,7 @@ DEFAULT_PREFERENCES = {
     "quotation_expiry": {"dashboard": True, "email": True, "sms": False},
     "recurring_expense": {"dashboard": True, "email": True, "sms": False},
     "ai_insight": {"dashboard": True, "email": True, "sms": False},
+    "business_insight": {"dashboard": True, "email": False, "sms": False},
     "security": {"dashboard": True, "email": True, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
@@ -42,7 +43,7 @@ CATEGORY_GROUPS: dict[str, frozenset[str]] = {
         }
     ),
     "payments": frozenset({"payment_due", "credit_limit", "billing", "shift_variance"}),
-    "system": frozenset({"system", "security", "ai_insight"}),
+    "system": frozenset({"system", "security", "ai_insight", "business_insight"}),
 }
 VALID_CATEGORY_GROUPS = frozenset(CATEGORY_GROUPS.keys())
 HISTORY_DAYS = 90

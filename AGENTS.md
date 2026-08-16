@@ -65,3 +65,26 @@ store activation — never frontend-only.
 Offline Complete, paid billing Completes, ADR-005 membership Completes, go-live,
 and attestation Completes remain **MISSING** unless separately delivered with
 evidence.
+
+## Smart Business Intelligence (Layer 1)
+
+Deterministic, offline-capable insights engine. **No OpenAI / Gemini / Anthropic /
+external LLM.** Calculations use Ribdigi ERP DB data only (sales, inventory,
+purchases, expenses, credit, expiry, etc.) with tenant/company/store RBAC.
+
+| Concern | Module |
+|---------|--------|
+| Orchestrator | `backend/app/bi_service.py` (`BusinessIntelligenceService`) |
+| Metrics | `backend/app/bi_metrics.py` (`BusinessMetricsService`) |
+| Rules | `backend/app/bi_rules.py` (`InsightRulesService`) |
+| Priority | `backend/app/bi_priority.py` |
+| Recommendations | `backend/app/bi_recommendations.py` |
+| Defaults / formulas | `backend/app/bi_defaults.py` |
+| API | `backend/app/bi_api.py` → `/api/v1/business-insights/*` |
+| UI | `frontend/app/business-insights/page.tsx` |
+| Migration | `backend/alembic/versions/20260816_0105_business_insights.py` |
+| Tests | `backend/tests/test_business_intelligence.py` |
+
+RBAC module: `business_insights` (`read` / `write`). Financial/credit sections
+also require existing `accounting`/`reports`/`credit` permissions. Layer 2
+generative AI adapters are out of scope; Layer 1 must remain fully usable alone.

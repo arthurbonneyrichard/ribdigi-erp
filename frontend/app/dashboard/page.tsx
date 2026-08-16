@@ -573,6 +573,17 @@ export default function Page() {
         )}
       </div>
 
+      {view !== 'cashier' && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <h3>What Needs My Attention?</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Open{' '}
+            <Link href="/business-insights">Business Insights</Link> for Smart Business Intelligence
+            (Layer 1 — deterministic ERP analytics, no external AI).
+          </p>
+        </div>
+      )}
+
       {insightCards.length > 0 && view !== 'cashier' && (
         <div className="card" style={{ marginTop: 20 }}>
           <h3>AI insights</h3>

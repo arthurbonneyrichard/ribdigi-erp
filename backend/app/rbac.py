@@ -66,6 +66,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "users": ["read"],
         "audit": ["read"],
         "ai": ["read", "write"],
+        "business_insights": ["read", "write"],
         "security": ["read", "write"],
     },
     "sales_officer": {
@@ -78,6 +79,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
+        "business_insights": ["read"],
         "security": ["read", "write"],
     },
     "inventory_officer": {
@@ -88,6 +90,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
+        "business_insights": ["read"],
         "security": ["read", "write"],
     },
     "accountant": {
@@ -102,6 +105,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
+        "business_insights": ["read", "write"],
         "audit": ["read"],
         "security": ["read", "write"],
     },
@@ -162,6 +166,7 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/backup": "backup",
     "/security": "security",
     "/ai": "ai",
+    "/business-insights": "business_insights",
     "/users": "users",
     "/admin/roles": "users",
     "/admin/permissions": "users",
@@ -189,6 +194,7 @@ SYSTEM_MODULES = frozenset(
         "audit",
         "backup",
         "ai",
+        "business_insights",
         "security",
         "users",
         "customers",

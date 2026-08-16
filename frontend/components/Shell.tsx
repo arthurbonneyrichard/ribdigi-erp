@@ -153,7 +153,7 @@ function classifyNavLink(link: NavLink): NavGroupId | 'dashboard' {
     return 'finance';
   }
   if (link.label === 'Billers') return 'people';
-  if (path === '/reports' || path === '/ai' || path === '/audit' || path === '/activity') {
+  if (path === '/reports' || path === '/ai' || path === '/audit' || path === '/activity' || path === '/business-insights') {
     return 'report';
   }
   if (path === '/stores') {
@@ -1266,6 +1266,12 @@ const primaryNavSpec: NavEntry[] = [
     modules: ['sales'],
   },
   { kind: 'link', label: 'Reports', href: '/reports', modules: ['reports'] },
+  {
+    kind: 'link',
+    label: 'Business Insights',
+    href: '/business-insights',
+    modules: ['business_insights', 'reports', 'dashboard', 'ai'],
+  },
   {
     kind: 'link',
     label: 'Reports Summary',
