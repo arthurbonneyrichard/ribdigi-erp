@@ -65,6 +65,7 @@ from app.config import settings
 from app.schemas import (
     BrandCreate,
     BrandUpdate,
+    BackupSettingsUpdate,
     CreditLimitUpdate,
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
@@ -11406,17 +11407,18 @@ async def backup_settings_get(
 
 @api.patch("/backup/settings")
 async def backup_settings_patch(
-    payload: dict,
+    payload: BackupSettingsUpdate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    data = payload.model_dump(exclude_unset=True)
     row = await backup_svc.update_settings(
         db,
         claims["tenant_id"],
-        enabled=payload.get("enabled"),
-        frequency=payload.get("frequency"),
-        retention_count=payload.get("retention_count"),
-        hour_utc=payload.get("hour_utc"),
+        enabled=data.get("enabled"),
+        frequency=data.get("frequency"),
+        retention_count=data.get("retention_count"),
+        hour_utc=data.get("hour_utc"),
     )
     await db.commit()
     return env(backup_svc.serialize_settings(row), "Backup settings updated")

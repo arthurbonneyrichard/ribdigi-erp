@@ -1459,6 +1459,19 @@ class PrintBrandingUpdate(BaseModel):
     default_receipt_paper: ReceiptPaperValue | None = None
 
 
+class BackupSettingsUpdate(BaseModel):
+    """Logical backup schedule settings (BR-16)."""
+
+    enabled: bool | None = None
+    # Schema Literal; omit = no change; blank/invalid → 422 (was free dict str → service 400)
+    frequency: Annotated[
+        Literal["daily", "weekly"],
+        BeforeValidator(coerce_package_code_value),
+    ] | None = None
+    retention_count: int | None = Field(default=None, ge=1, le=365)
+    hour_utc: int | None = Field(default=None, ge=0, le=23)
+
+
 class ExchangeRateUpsert(BaseModel):
     currency_code: str
     rate_to_base: float = Field(gt=0)
