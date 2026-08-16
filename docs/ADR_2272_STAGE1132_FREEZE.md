@@ -31,3 +31,7 @@ Stage 1133 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Mews Gate, Transfer Mews Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1133 opened under **ADR-2273** after CONTINUE/NEXT (Tenant MVP Transfer Meander Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2274**. Stage 1132 feature scope remains frozen.
