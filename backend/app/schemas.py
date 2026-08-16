@@ -6,7 +6,14 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, model_validator
 
 from app.pos import coerce_payment_method_value
-from app.tenants import coerce_industry_value
+from app.tenants import (
+    coerce_date_format_value,
+    coerce_decimal_separator_value,
+    coerce_industry_value,
+    coerce_tax_filing_period_value,
+    coerce_thousand_separator_value,
+    coerce_time_format_value,
+)
 from app.expenses import coerce_expense_payment_method_value
 
 PosTenderMethod = Annotated[
@@ -28,6 +35,26 @@ IndustryValue = Annotated[
         "mart",
     ],
     BeforeValidator(coerce_industry_value),
+]
+TaxFilingPeriodValue = Annotated[
+    Literal["monthly", "quarterly"],
+    BeforeValidator(coerce_tax_filing_period_value),
+]
+DateFormatValue = Annotated[
+    Literal["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
+    BeforeValidator(coerce_date_format_value),
+]
+DecimalSeparatorValue = Annotated[
+    Literal[".", ","],
+    BeforeValidator(coerce_decimal_separator_value),
+]
+ThousandSeparatorValue = Annotated[
+    Literal[",", ".", " ", ""],
+    BeforeValidator(coerce_thousand_separator_value),
+]
+TimeFormatValue = Annotated[
+    Literal["12h", "24h"],
+    BeforeValidator(coerce_time_format_value),
 ]
 ExpensePaymentMethod = Annotated[
     Literal["cash", "bank_transfer", "card", "cheque"],
@@ -182,11 +209,13 @@ class TenantProfileUpdate(BaseModel):
     fiscal_year_start: str | None = None
     tax_jurisdiction: str | None = None
     tax_registration_number: str | None = None
-    tax_filing_period: str | None = None
-    date_format: str | None = None
-    decimal_separator: str | None = None
-    thousand_separator: str | None = None
-    time_format: str | None = None
+    # BR-20.2 / BR-12 — schema Literals; omit = no change; blank/invalid → 422
+    tax_filing_period: TaxFilingPeriodValue | None = None
+    date_format: DateFormatValue | None = None
+    decimal_separator: DecimalSeparatorValue | None = None
+    # "" / "none" = no thousand separator (valid)
+    thousand_separator: ThousandSeparatorValue | None = None
+    time_format: TimeFormatValue | None = None
     inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
 
 

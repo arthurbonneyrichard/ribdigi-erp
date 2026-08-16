@@ -32,6 +32,58 @@ def coerce_industry_value(value: object) -> object:
     return value.strip().lower()
 
 
+def coerce_tax_filing_period_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def coerce_date_format_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip only (patterns are case-sensitive)."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def coerce_decimal_separator_value(value: object) -> object:
+    """Pydantic BeforeValidator: allow '.'|',' without stripping meaningful chars."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    if value in {".", ","}:
+        return value
+    return value.strip()
+
+
+def coerce_thousand_separator_value(value: object) -> object:
+    """Pydantic BeforeValidator: map none→''; keep space; blank stays '' (valid none)."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    if value in {",", ".", " ", ""}:
+        return value
+    stripped = value.strip()
+    if stripped.lower() == "none":
+        return ""
+    return stripped
+
+
+def coerce_time_format_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
 def normalize_industry(industry: str | None, *, required: bool = True) -> str | None:
     """Normalize industry to a BR-1.2 / VALID_INDUSTRIES value (lowercase).
 
@@ -533,6 +585,7 @@ async def update_profile(
         tin = tax_registration_number.strip()
         tenant.tax_registration_number = tin or None
     if tax_filing_period is not None:
+        # Defense in depth: TenantProfileUpdate Literal rejects blank/unknown with 422.
         period = tax_filing_period.strip().lower()
         if period not in {"monthly", "quarterly"}:
             raise HTTPException(status_code=400, detail="tax_filing_period must be monthly or quarterly")
@@ -540,6 +593,7 @@ async def update_profile(
 
     # Apply formatting fields, then validate the resulting combination.
     if date_format is not None:
+        # Defense in depth: schema DateFormatValue Literal → 422 on blank/unknown.
         df = date_format.strip()
         if df not in VALID_DATE_FORMATS:
             raise HTTPException(

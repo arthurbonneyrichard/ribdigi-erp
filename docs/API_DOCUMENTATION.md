@@ -267,6 +267,15 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 
 `industry` (when sent) uses the same schema `Literal` as create (omit = no change; blank/invalid → **422**).
 
+Regional / tax format fields (BR-20.2) are schema Literals on this PATCH (omit = no change; blank/invalid → **422**):
+- `tax_filing_period` ∈ `monthly|quarterly`
+- `date_format` ∈ `DD/MM/YYYY|MM/DD/YYYY|YYYY-MM-DD`
+- `decimal_separator` ∈ `.|,`
+- `thousand_separator` ∈ `,|.|space|""` (`none` coerces to `""`)
+- `time_format` ∈ `12h|24h`
+
+Company UI selects match. Service validators remain defense-in-depth **400** (and still require decimal ≠ thousand).
+
 Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
 ### 3.4 Tenant Status Management
