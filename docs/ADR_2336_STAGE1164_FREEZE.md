@@ -31,3 +31,7 @@ Stage 1165 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Crenel Gate, Transfer Crenel Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1165 opened under **ADR-2337** after CONTINUE/NEXT (Tenant MVP Transfer Machicol Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2338**. Stage 1164 feature scope remains frozen.

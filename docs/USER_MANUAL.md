@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 1165 Transfer Machicol Gate Honesty Pack remaining-gate index fidelity (ADR-2337/2338). Operators track packaging status via `docs/TRANSFER_MACHICOL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1164 Transfer Crenel Gate Honesty Pack remaining-gate index fidelity (ADR-2335/2336). Operators track packaging status via `docs/TRANSFER_CRENEL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1163 Transfer Merlon Gate Honesty Pack remaining-gate index fidelity (ADR-2333/2334). Operators track packaging status via `docs/TRANSFER_MERLON_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1162 Transfer Embrasure Gate Honesty Pack remaining-gate index fidelity (ADR-2331/2332). Operators track packaging status via `docs/TRANSFER_EMBRASURE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
