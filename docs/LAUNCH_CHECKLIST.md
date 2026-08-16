@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 987 track opened (ADR-1981: `test_stage987_open.py`, `docs/STAGE_987_PLAN.md`) — Transfer Drawbridge Gate Honesty Pack Remaining-Gate Index; closed under ADR-1982
+- [x] Transfer Drawbridge Gate Honesty Pack remaining-gate hub (Stage 987 I1: `test_stage987_index_i1.py`, `docs/TRANSFER_DRAWBRIDGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Drawbridge Gate Honesty Pack blocker matrix (Stage 987 B1: `test_stage987_blockers_b1.py`, `docs/TRANSFER_DRAWBRIDGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 986 / Stage 985 / Stage 392 / CHANGE_IMPACT pointers (Stage 987 P1: `test_stage987_pointers_p1.py`, `docs/TRANSFER_DRAWBRIDGE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 987 fidelity sync (D1: `test_stage987_fidelity_d1.py`, `docs/STAGE_987_FIDELITY.md`)
+- [x] Stage 987 exit + freeze (H987x: `test_stage987_exit_h987x.py`, `docs/STAGE_987_EXIT_CRITERIA.md`, ADR-1982)
+
 Stage 986 track opened (ADR-1979: `test_stage986_open.py`, `docs/STAGE_986_PLAN.md`) — Transfer Moat Gate Honesty Pack Remaining-Gate Index; closed under ADR-1980
 - [x] Transfer Moat Gate Honesty Pack remaining-gate hub (Stage 986 I1: `test_stage986_index_i1.py`, `docs/TRANSFER_MOAT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Moat Gate Honesty Pack blocker matrix (Stage 986 B1: `test_stage986_blockers_b1.py`, `docs/TRANSFER_MOAT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
