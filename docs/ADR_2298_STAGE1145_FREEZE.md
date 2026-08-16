@@ -31,3 +31,7 @@ Stage 1146 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Barbican Gate, Transfer Barbican Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1146 opened under **ADR-2299** after CONTINUE/NEXT (Tenant MVP Transfer Donjon Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2300**. Stage 1145 feature scope remains frozen.

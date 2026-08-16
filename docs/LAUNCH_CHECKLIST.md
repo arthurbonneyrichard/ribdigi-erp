@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1146 track opened (ADR-2299: `test_stage1146_open.py`, `docs/STAGE_1146_PLAN.md`) — Transfer Donjon Gate Honesty Pack Remaining-Gate Index; closed under ADR-2300
+- [x] Transfer Donjon Gate Honesty Pack remaining-gate hub (Stage 1146 I1: `test_stage1146_index_i1.py`, `docs/TRANSFER_DONJON_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Donjon Gate Honesty Pack blocker matrix (Stage 1146 B1: `test_stage1146_blockers_b1.py`, `docs/TRANSFER_DONJON_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1145 / Stage 1144 / Stage 392 / CHANGE_IMPACT pointers (Stage 1146 P1: `test_stage1146_pointers_p1.py`, `docs/TRANSFER_DONJON_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1146 fidelity sync (D1: `test_stage1146_fidelity_d1.py`, `docs/STAGE_1146_FIDELITY.md`)
+- [x] Stage 1146 exit + freeze (H1146x: `test_stage1146_exit_h1146x.py`, `docs/STAGE_1146_EXIT_CRITERIA.md`, ADR-2300)
+
 Stage 1145 track opened (ADR-2297: `test_stage1145_open.py`, `docs/STAGE_1145_PLAN.md`) — Transfer Barbican Gate Honesty Pack Remaining-Gate Index; closed under ADR-2298
 - [x] Transfer Barbican Gate Honesty Pack remaining-gate hub (Stage 1145 I1: `test_stage1145_index_i1.py`, `docs/TRANSFER_BARBICAN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Barbican Gate Honesty Pack blocker matrix (Stage 1145 B1: `test_stage1145_blockers_b1.py`, `docs/TRANSFER_BARBICAN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
