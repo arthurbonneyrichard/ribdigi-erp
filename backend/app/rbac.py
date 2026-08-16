@@ -242,6 +242,11 @@ def permissions_for_role(role: str) -> dict[str, list[str]]:
 
 
 def normalize_record_scope(value: str | None, *, default: str = "all") -> str:
+    """Normalize record scope (BR-3.3).
+
+    Defense in depth: User*/CustomRole* schema Literals already reject blank/unknown
+    with 422. Blank used to become silent default ``all`` (most permissive).
+    """
     scope = (value or default).strip().lower()
     if scope not in RECORD_SCOPES:
         raise ValueError(f"record_scope must be one of {sorted(RECORD_SCOPES)}")
