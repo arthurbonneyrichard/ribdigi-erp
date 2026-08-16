@@ -31,3 +31,7 @@ Stage 1139 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Lantern Gate, Transfer Lantern Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1139 opened under **ADR-2285** after CONTINUE/NEXT (Tenant MVP Transfer Spire Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2286**. Stage 1138 feature scope remains frozen.
