@@ -6943,6 +6943,7 @@ async def pos_sale(
         subtotal=round(subtotal, 2),
         tax=round(tax_total, 2),
         total=total,
+        # Schema Literal["completed"] already rejects blank/unknown with 422.
         status=payload.status,
         payload=body["payload"],
     )
