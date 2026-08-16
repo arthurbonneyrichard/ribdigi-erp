@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 981 track opened (ADR-1969: `test_stage981_open.py`, `docs/STAGE_981_PLAN.md`) — Transfer Citadel Gate Honesty Pack Remaining-Gate Index; closed under ADR-1970
+- [x] Transfer Citadel Gate Honesty Pack remaining-gate hub (Stage 981 I1: `test_stage981_index_i1.py`, `docs/TRANSFER_CITADEL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Citadel Gate Honesty Pack blocker matrix (Stage 981 B1: `test_stage981_blockers_b1.py`, `docs/TRANSFER_CITADEL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 980 / Stage 979 / Stage 392 / CHANGE_IMPACT pointers (Stage 981 P1: `test_stage981_pointers_p1.py`, `docs/TRANSFER_CITADEL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 981 fidelity sync (D1: `test_stage981_fidelity_d1.py`, `docs/STAGE_981_FIDELITY.md`)
+- [x] Stage 981 exit + freeze (H981x: `test_stage981_exit_h981x.py`, `docs/STAGE_981_EXIT_CRITERIA.md`, ADR-1970)
+
 Stage 980 track opened (ADR-1967: `test_stage980_open.py`, `docs/STAGE_980_PLAN.md`) — Transfer Bastion Gate Honesty Pack Remaining-Gate Index; closed under ADR-1968
 - [x] Transfer Bastion Gate Honesty Pack remaining-gate hub (Stage 980 I1: `test_stage980_index_i1.py`, `docs/TRANSFER_BASTION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Bastion Gate Honesty Pack blocker matrix (Stage 980 B1: `test_stage980_blockers_b1.py`, `docs/TRANSFER_BASTION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
