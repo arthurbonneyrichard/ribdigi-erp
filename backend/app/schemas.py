@@ -155,6 +155,19 @@ CustomRoleBaseRoleValue = Annotated[
     BeforeValidator(coerce_platform_role_value),
 ]
 
+# Non-platform system roles for revoke fallback (excludes platform_* / super_admin).
+AppFallbackRoleValue = Annotated[
+    Literal[
+        "company_admin",
+        "store_manager",
+        "sales_officer",
+        "inventory_officer",
+        "accountant",
+        "cashier",
+    ],
+    BeforeValidator(coerce_platform_role_value),
+]
+
 
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
@@ -342,7 +355,9 @@ class PlatformGrantAccess(BaseModel):
 class PlatformRevokeAccess(BaseModel):
     """Revoke software-owner dashboard access; keep the account as an app user."""
 
-    fallback_role: str = "company_admin"
+    # Non-platform system roles Literal (+ strip/lower); omit → company_admin;
+    # blank/invalid/platform → 422 (was free str; "" silently coerced to company_admin)
+    fallback_role: AppFallbackRoleValue = "company_admin"
 
 
 class AccountCreate(BaseModel):
