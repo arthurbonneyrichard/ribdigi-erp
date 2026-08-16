@@ -308,7 +308,7 @@ export default function BusinessInsightsPage() {
             <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
               {(data.reorder_recommendations || []).slice(0, 8).map((row, idx) => (
                 <div className="card" key={`reorder-${idx}`}>
-                  <strong>{String(row.product_name || row.sku || 'Product')}</strong>
+                  <strong>{String(row.name || row.product_name || row.sku || 'Product')}</strong>
                   <p className="muted" style={{ marginTop: 6 }}>
                     Stock {String(row.current_stock ?? row.stock_qty ?? '—')} · Days left{' '}
                     {String(row.estimated_days_remaining ?? '—')} · Suggest qty{' '}
