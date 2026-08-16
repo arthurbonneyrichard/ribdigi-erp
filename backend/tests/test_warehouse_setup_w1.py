@@ -66,7 +66,7 @@ async def test_warehouse_create_get_patch_and_type_validation(client):
         headers=headers,
         json={"name": "Bad", "code": "WH-BAD", "warehouse_type": "vault"},
     )
-    assert bad.status_code == 400
+    assert bad.status_code == 422
 
     dup = await ac.post(
         "/api/v1/warehouses",
