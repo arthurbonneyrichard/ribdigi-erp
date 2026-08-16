@@ -1,0 +1,77 @@
+{
+  "id": "transfer-balcony-gate-honesty-pack-rg-blockers",
+  "stage": 1123,
+  "pack": "B1",
+  "doc": "docs/TRANSFER_BALCONY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TRANSFER_BALCONY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "transfer_balcony_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_balcony_gate_honesty_complete_claimed": false,
+  "transfer_balcony_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "transfer_balcony_gate_honesty_complete_claimed": "REMAINING",
+    "transfer_balcony_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_transfer_balcony_gate_honesty": "NON_CLAIM",
+    "transfer_balcony_gate_pack_as_transfer_balcony_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "transfer_balcony_gate_honesty_complete_claimed_flag": "false",
+    "transfer_balcony_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "tbalconyghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbalconyghb-honesty",
+      "title": "Mark Transfer Balcony Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbalconyghb-as-golive",
+      "title": "Mark Transfer Balcony Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbalconyghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbalconyghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbalconyghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for transfer-balcony-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbalconyghb-checklist-remaining",
+      "title": "Offline Complete / Transfer Balcony Gate / Transfer Balcony Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 1123 B1 Transfer Balcony Gate Honesty Pack RG blocker matrix packaging only."
+}
