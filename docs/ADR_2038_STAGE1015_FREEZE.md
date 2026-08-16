@@ -31,3 +31,7 @@ Stage 1016 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Floor Gate, Transfer Floor Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1016 opened under **ADR-2039** after CONTINUE/NEXT (Tenant MVP Transfer Threshold Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2040**. Stage 1015 feature scope remains frozen.
