@@ -1560,6 +1560,11 @@ CreditAgingKindValue = Annotated[
     Literal["receivable", "payable"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.reports.SUPPORTED_VALUATION_METHODS (Reports Inventory valuation).
+InventoryValuationMethodValue = Annotated[
+    Literal["standard"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
 ReportTypeValue = Annotated[
     Literal[

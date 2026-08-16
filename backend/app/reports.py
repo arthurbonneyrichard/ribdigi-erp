@@ -1264,10 +1264,13 @@ async def inventory_valuation(
 ) -> dict:
     """Stock valuation at standard (product) cost — BR-14.2 / BR-5.4.
 
-    FIFO / LIFO / weighted average are deferred; requesting them returns 400.
+    FIFO / LIFO / weighted average are deferred. API Query
+    ``InventoryValuationMethodValue`` rejects blank/unsupported → **422**;
+    this check remains defense-in-depth for direct service callers → **400**.
     """
     from fastapi import HTTPException
 
+    # Schema already rejects blank/invalid → 422; keep coerce + 400 defense-in-depth.
     method_key = (method or "standard").strip().lower() or "standard"
     if method_key not in SUPPORTED_VALUATION_METHODS:
         raise HTTPException(
