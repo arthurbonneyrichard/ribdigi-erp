@@ -1,0 +1,77 @@
+{
+  "id": "transfer-dormer-gate-honesty-pack-rg-pointers",
+  "stage": 1201,
+  "pack": "P1",
+  "doc": "docs/TRANSFER_DORMER_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TRANSFER_DORMER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_chapter_gate_honesty_pack_remaining_gate": "docs/TRANSFER_CHAPTER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_transept_gate_honesty_pack_remaining_gate": "docs/TRANSFER_TRANSEPT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_dormer_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_dormer_gate_honesty_complete_claimed": false,
+  "transfer_dormer_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_transfer_dormer_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_chapter_gate_honesty_pack_remaining_gate_stage1200": "docs/TRANSFER_CHAPTER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_transept_gate_honesty_pack_remaining_gate_stage1199": "docs/TRANSFER_TRANSEPT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_dormer_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / transfer_dormer_gate / transfer_dormer_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "tdormeghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Transfer Dormer Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tdormeghp-stage1200",
+      "title": "Point to Stage 1200 TRANSFER CHAPTER GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tdormeghp-stage1199",
+      "title": "Point to Stage 1199 TRANSFER TRANSEPT GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tdormeghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tdormeghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tdormeghp-prior-pack",
+      "title": "Point to Transfer Dormer Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tdormeghp-checklist-remaining",
+      "title": "Offline Complete / Transfer Dormer Gate / Transfer Dormer Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 1201 P1 Transfer Dormer Gate Honesty Pack RG pointers packaging only."
+}
