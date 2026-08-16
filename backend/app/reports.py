@@ -3186,6 +3186,7 @@ async def balance_sheet(
       When compare is set without ``as_of``, uses end of today.
     """
     compare_mode = (compare or "").strip().lower() or None
+    # Defense in depth: BalanceSheetCompareValue Query Literal rejects blank/unknown with 422.
     if compare_mode and compare_mode not in {"prior_period", "prior_year"}:
         from fastapi import HTTPException
 

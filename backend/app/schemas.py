@@ -1520,6 +1520,11 @@ ReportExportFormatValue = Annotated[
     Literal["csv", "pdf", "xlsx"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.reports.balance_sheet compare modes (Reports BS select).
+BalanceSheetCompareValue = Annotated[
+    Literal["prior_period", "prior_year"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
 ReportTypeValue = Annotated[
     Literal[
