@@ -476,7 +476,7 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 
 **Get Role:** `GET /roles/{role}` — system catalog entry or custom role (inactive custom roles still resolve).
 
-**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). Clones system `base_role` permission map when provided.
+**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). `base_role` schema `Literal` of clonable system roles (platform_* + company_admin|store_manager|sales_officer|inventory_officer|accountant|cashier; strip/lower; omit/null OK when `permissions` set; blank/unknown/`super_admin` → **422**). Clones system `base_role` permission map when provided.
 
 **Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope? (same Literal), is_active? }`. Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
 
