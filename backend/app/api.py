@@ -75,6 +75,8 @@ from app.schemas import (
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
+    NotificationCategoryValue,
+    NotificationStatusValue,
     CreditLimitUpdate,
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
@@ -11124,8 +11126,10 @@ async def report(claims=Depends(require_permission("reports", "read")), db: Asyn
 
 @api.get("/notifications")
 async def notifications(
-    status: str | None = None,
-    category: str | None = None,
+    # omit → all statuses; blank/invalid → 422 (was free str; garbage silently empty list)
+    status: Annotated[NotificationStatusValue | None, Query()] = None,
+    # omit → all categories; blank/invalid → 422
+    category: Annotated[NotificationCategoryValue | None, Query()] = None,
     limit: int = 100,
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),

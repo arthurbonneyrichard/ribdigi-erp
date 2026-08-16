@@ -1449,7 +1449,9 @@ Query `report_type` ∈ `EXPORTABLE` (`Literal` + strip/lower; required). Query 
 ## 15. Notifications
 
 ### 15.1 List Notifications
-**Endpoint:** `GET /notifications?status=unread`
+**Endpoint:** `GET /notifications?status=unread&category=&limit=100`  
+Query `status` ∈ unread|read (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**).  
+Query `category` ∈ `VALID_CATEGORIES` / preference keys (same Literal; omit → all; blank/invalid → **422**). Notifications UI Unread/All + category chips. Shell Alerts uses `status=unread`.
 
 ### 15.2 Mark as Read
 **Endpoint:** `PATCH /notifications/{notification_id}/read`

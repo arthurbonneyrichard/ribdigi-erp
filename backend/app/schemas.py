@@ -136,6 +136,30 @@ BarcodeSymbologyValue = Annotated[
     BeforeValidator(coerce_package_code_value),
 ]
 
+# Keep aligned with app.notifications.VALID_CATEGORIES / DEFAULT_PREFERENCES.
+NotificationCategoryValue = Annotated[
+    Literal[
+        "low_stock",
+        "expense_approval",
+        "shift_variance",
+        "credit_limit",
+        "purchase_received",
+        "payment_due",
+        "quotation_expiry",
+        "recurring_expense_due",
+        "new_order",
+        "transfer",
+        "billing",
+        "security",
+        "system",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
+NotificationStatusValue = Annotated[
+    Literal["unread", "read"],
+    BeforeValidator(coerce_package_code_value),
+]
+
 
 # Must stay aligned with app.packages.PACKAGEABLE_MODULES (excludes platform).
 PackageableModuleValue = Annotated[
