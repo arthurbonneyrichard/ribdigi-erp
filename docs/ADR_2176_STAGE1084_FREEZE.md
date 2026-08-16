@@ -31,3 +31,7 @@ Stage 1085 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Coverage Gate, Transfer Coverage Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1085 opened under **ADR-2177** after CONTINUE/NEXT (Tenant MVP Transfer Azimuth Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2178**. Stage 1084 feature scope remains frozen.
