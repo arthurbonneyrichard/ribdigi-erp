@@ -31,3 +31,7 @@ Stage 1114 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Quadrangle Gate, Transfer Quadrangle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1114 opened under **ADR-2235** after CONTINUE/NEXT (Tenant MVP Transfer Gallery Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2236**. Stage 1113 feature scope remains frozen.
