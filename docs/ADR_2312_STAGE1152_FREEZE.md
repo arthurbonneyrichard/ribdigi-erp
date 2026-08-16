@@ -31,3 +31,7 @@ Stage 1153 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Dolmen Gate, Transfer Dolmen Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1153 opened under **ADR-2313** after CONTINUE/NEXT (Tenant MVP Transfer Belfry Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2314**. Stage 1152 feature scope remains frozen.
