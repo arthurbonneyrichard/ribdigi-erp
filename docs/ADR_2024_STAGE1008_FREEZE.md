@@ -31,3 +31,7 @@ Stage 1009 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Warden Gate, Transfer Warden Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1009 opened under **ADR-2025** after CONTINUE/NEXT (Tenant MVP Transfer Armor Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2026**. Stage 1008 feature scope remains frozen.

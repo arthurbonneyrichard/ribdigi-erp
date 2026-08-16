@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 1009 D1 (2026-08-14):** Transfer Armor Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1009_FIDELITY.md` (`test_stage1009_fidelity_d1.py`). Open ADR: `docs/ADR_2025_STAGE1009_OPEN.md`; plan `docs/STAGE_1009_PLAN.md`.
+
+**Stage 1009 exit (2026-08-14):** I1, B1, P1, D1, H1009x met — `docs/STAGE_1009_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2026_STAGE1009_FREEZE.md`. Fidelity: `docs/STAGE_1009_FIDELITY.md`.
+
 **Stage 1008 D1 (2026-08-14):** Transfer Warden Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1008_FIDELITY.md` (`test_stage1008_fidelity_d1.py`). Open ADR: `docs/ADR_2023_STAGE1008_OPEN.md`; plan `docs/STAGE_1008_PLAN.md`.
 
 **Stage 1008 exit (2026-08-14):** I1, B1, P1, D1, H1008x met — `docs/STAGE_1008_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2024_STAGE1008_FREEZE.md`. Fidelity: `docs/STAGE_1008_FIDELITY.md`.
