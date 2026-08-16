@@ -31,3 +31,7 @@ Stage 1112 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Atrium Gate, Transfer Atrium Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1112 opened under **ADR-2231** after CONTINUE/NEXT (Tenant MVP Transfer Cloister Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2232**. Stage 1111 feature scope remains frozen.
