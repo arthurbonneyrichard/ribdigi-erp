@@ -1204,8 +1204,8 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 
 **Bank feed connections (reconcile):**  
 **List:** `GET /accounting/bank-connections` — optional `?is_active=true|false` filters soft-deactivated connections (omit = all; Accounting Reconcile manage status filter).  
-**Create:** `POST /accounting/bank-connections` — `{ account_id, provider: mock|http_json, display_name?, external_account_id?, feed_url?, access_token?, auto_sync?, auto_match_after_sync?, sync_lookback_days? }` (`mock` blocked in production)  
-**Update:** `PATCH /accounting/bank-connections/{connection_id}` — partial fields include display/feed settings and soft-deactivate via `is_active` (Accounting Reconcile **Activate** / **Deactivate** + manage status filter All/Active/Inactive; inactive connections skip Celery auto-sync and Sync returns **400**)  
+**Create:** `POST /accounting/bank-connections` — `{ account_id, provider: mock|http_json, display_name?, external_account_id?, feed_url?, access_token?, auto_sync?, auto_match_after_sync?, sync_lookback_days? }` — `provider` schema `Literal` (omit → `mock`; blank/invalid → **422**; `mock` blocked in production at service layer)  
+**Update:** `PATCH /accounting/bank-connections/{connection_id}` — partial fields include display/feed settings (`provider` same `Literal`, omit = no change; blank/invalid → **422**) and soft-deactivate via `is_active` (Accounting Reconcile **Activate** / **Deactivate** + manage status filter All/Active/Inactive; inactive connections skip Celery auto-sync and Sync returns **400**)  
 **Delete:** `DELETE /accounting/bank-connections/{connection_id}` — hard remove  
 **Sync:** `POST /accounting/bank-connections/{connection_id}/sync` — imports into a reconcilable bank statement (dedupe by external ref); rejected when connection is inactive
 
