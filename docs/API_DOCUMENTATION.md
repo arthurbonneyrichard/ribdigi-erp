@@ -215,6 +215,8 @@ Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, 
 }
 ```
 
+`industry` schema `Literal["retail","pharmacy","restaurant","bakery","wholesale","manufacturing","mart"]` (omit → `retail`; blank/invalid → **422**; case-insensitive coerce via `BeforeValidator`, e.g. `Wholesale` → `wholesale`). Service `normalize_industry` remains defense-in-depth **400**. Company page industry `<select>` matches the allow-list.
+
 **Response:**
 ```json
 {
@@ -262,6 +264,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
   "inactivity_timeout_minutes": 30
 }
 ```
+
+`industry` (when sent) uses the same schema `Literal` as create (omit = no change; blank/invalid → **422**).
 
 Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
