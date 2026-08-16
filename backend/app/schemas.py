@@ -734,7 +734,8 @@ class StoreUpdate(BaseModel):
 
 
 class StoreDrawerSettingsUpdate(BaseModel):
-    drawer_mode: str | None = None
+    # BR-8.1 — schema Literal; omit = no change; blank/invalid → 422 (no silent none)
+    drawer_mode: Literal["none", "mock", "network", "browser_bridge"] | None = None
     drawer_host: str | None = None
     drawer_port: int | None = Field(default=None, ge=1, le=65535)
     drawer_open_on_cash: bool | None = None

@@ -33,6 +33,9 @@ def kick_hex() -> str:
 
 
 def normalize_mode(mode: str | None) -> str:
+    # Defense in depth: StoreDrawerSettingsUpdate.drawer_mode Literal rejects
+    # blank/unknown with 422 before PATCH reaches here. Empty used to coerce to
+    # "none" via (mode or "none") — schema honesty closes that gap (R1).
     value = (mode or "none").strip().lower().replace("-", "_")
     if value not in DRAWER_MODES:
         raise HTTPException(

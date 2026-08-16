@@ -1089,6 +1089,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **Query Params:** `?template=thermal&format=pdf`
 
 ### 8.5 Cash Drawer
+**Store settings:** `PATCH /stores/{store_id}/drawer` — body `StoreDrawerSettingsUpdate` `{ drawer_mode?, drawer_host?, drawer_port?, drawer_open_on_cash? }`. `drawer_mode` schema `Literal["none","mock","network","browser_bridge"]` (omit = no change; blank/invalid → **422**; no silent `none` from `""`). Service `normalize_mode` remains defense-in-depth **400**. Multi-Store UI drawer Mode select.  
 **Get:** `GET /pos/sessions/{session_id}/drawer`  
 **Open (manual):** `POST /pos/sessions/{session_id}/drawer/open` — body `{ "reason" }` required (min 3 chars; rejects placeholders like `manual` / `n/a`); POS **Drawer reason** input (no `window.prompt`). Auto-open on cash sale uses internal `pos_sale:{id}` reason.
 
@@ -1334,6 +1335,8 @@ Tax UI (`/tax`) period controls include store picker.
 `operating_hours` keys: `mon`…`sun`. Open days need `open`/`close` as `HH:MM` (24h, open before close); closed days `{ "closed": true }`. Returned on list/GET; update via `PATCH /stores/{store_id}` (BR-2.3). Creating a store still auto-creates a linked warehouse.
 
 **Update fields:** `name`, `address`, `phone`, `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours`. Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
+
+**Cash drawer:** `PATCH /stores/{store_id}/drawer` — see §8.5 (`drawer_mode` OpenAPI `Literal`; blank/invalid → **422**).
 
 ### 13.2 Store Inventory
 **Endpoint:** `GET /stores/{store_id}/inventory`
