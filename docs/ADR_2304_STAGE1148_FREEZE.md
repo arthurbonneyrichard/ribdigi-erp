@@ -31,3 +31,7 @@ Stage 1149 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Stele Gate, Transfer Stele Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1149 opened under **ADR-2305** after CONTINUE/NEXT (Tenant MVP Transfer Monolith Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2306**. Stage 1148 feature scope remains frozen.
