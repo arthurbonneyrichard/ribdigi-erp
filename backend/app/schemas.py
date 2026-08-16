@@ -135,7 +135,8 @@ class TenantSuspendRequest(BaseModel):
 class TenantSubscriptionAssign(BaseModel):
     package_code: str
     term_value: int = Field(..., ge=1, le=120)
-    term_unit: str = "months"  # months | years
+    # BR-1.x / platform — schema Literal; omit → months; blank/invalid → 422
+    term_unit: Literal["months", "years"] = "months"
     start_at: datetime | None = None
     activate: bool = True
     enabled_modules: list[str] | None = None
