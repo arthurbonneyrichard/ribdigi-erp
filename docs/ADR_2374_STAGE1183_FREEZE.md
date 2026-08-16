@@ -31,3 +31,7 @@ Stage 1184 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Apse Gate, Transfer Apse Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1184 opened under **ADR-2375** after CONTINUE/NEXT (Tenant MVP Transfer Choir Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2376**. Stage 1183 feature scope remains frozen.
