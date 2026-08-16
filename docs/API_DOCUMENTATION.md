@@ -413,7 +413,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 }
 ```
 
-`warehouse_type`: `retail` | `bulk` | `cold_storage` | `other`. PATCH supports `clear_manager`, `clear_store`, `clear_capacity`, `is_active`.
+`warehouse_type`: `retail` | `bulk` | `cold_storage` | `other` (schema `Literal`; omit on create defaults to `retail`; blank/invalid → **422**). PATCH supports `clear_manager`, `clear_store`, `clear_capacity`, `is_active`.
 
 ---
 
