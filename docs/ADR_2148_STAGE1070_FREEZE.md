@@ -31,3 +31,7 @@ Stage 1071 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Breadth Gate, Transfer Breadth Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1071 opened under **ADR-2149** after CONTINUE/NEXT (Tenant MVP Transfer Width Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2150**. Stage 1070 feature scope remains frozen.
