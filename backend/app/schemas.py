@@ -15,6 +15,7 @@ from app.tenants import (
     coerce_time_format_value,
 )
 from app.expenses import coerce_expense_payment_method_value
+from app.print_branding import coerce_invoice_template_value, coerce_receipt_paper_value
 
 PosTenderMethod = Annotated[
     Literal["cash", "card", "wallet", "credit", "other"],
@@ -55,6 +56,14 @@ ThousandSeparatorValue = Annotated[
 TimeFormatValue = Annotated[
     Literal["12h", "24h"],
     BeforeValidator(coerce_time_format_value),
+]
+InvoiceTemplateValue = Annotated[
+    Literal["a4", "thermal"],
+    BeforeValidator(coerce_invoice_template_value),
+]
+ReceiptPaperValue = Annotated[
+    Literal["58mm", "80mm"],
+    BeforeValidator(coerce_receipt_paper_value),
 ]
 ExpensePaymentMethod = Annotated[
     Literal["cash", "bank_transfer", "card", "cheque"],
@@ -1323,8 +1332,10 @@ class PosSettingsUpdate(BaseModel):
 class PrintBrandingUpdate(BaseModel):
     header_text: str | None = Field(default=None, max_length=200)
     footer_text: str | None = Field(default=None, max_length=300)
-    default_invoice_template: str | None = None
-    default_receipt_paper: str | None = None
+    # BR-20.4 — schema Literals; omit = no change; blank/invalid → 422
+    # (read path still coerces stored garbage to a4/80mm defaults)
+    default_invoice_template: InvoiceTemplateValue | None = None
+    default_receipt_paper: ReceiptPaperValue | None = None
 
 
 class ExchangeRateUpsert(BaseModel):
