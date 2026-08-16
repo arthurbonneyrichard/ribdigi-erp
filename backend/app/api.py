@@ -74,6 +74,8 @@ from app.schemas import (
     BalanceSheetCompareValue,
     CreditAgingKindValue,
     InventoryValuationMethodValue,
+    ChequeDirectionValue,
+    ChequeStatusValue,
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
@@ -8618,8 +8620,8 @@ async def complete_bank_statement(
 
 @api.get("/accounting/cheques")
 async def list_cheques(
-    direction: str | None = None,
-    status: str | None = None,
+    direction: Annotated[ChequeDirectionValue | None, Query()] = None,
+    status: Annotated[ChequeStatusValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):

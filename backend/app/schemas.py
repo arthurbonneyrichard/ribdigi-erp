@@ -1565,6 +1565,15 @@ InventoryValuationMethodValue = Annotated[
     Literal["standard"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.cheques.DIRECTIONS / STATUSES (Accounting Cheques filters).
+ChequeDirectionValue = Annotated[
+    Literal["received", "issued"],
+    BeforeValidator(coerce_package_code_value),
+]
+ChequeStatusValue = Annotated[
+    Literal["pending", "deposited", "cleared", "bounced", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
 ReportTypeValue = Annotated[
     Literal[

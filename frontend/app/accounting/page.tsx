@@ -21,6 +21,8 @@ export default function Page() {
   const [statements, setStatements] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
+  const [chequeDirection, setChequeDirection] = useState('');
+  const [chequeStatus, setChequeStatus] = useState('');
   const [chequeActionReason, setChequeActionReason] = useState('');
   const [unpostReason, setUnpostReason] = useState('');
   const [error, setError] = useState('');
@@ -101,15 +103,23 @@ export default function Page() {
     setTrial(t.data);
   }
 
+  async function loadCheques(direction = chequeDirection, status = chequeStatus) {
+    const params = new URLSearchParams();
+    if (direction) params.set('direction', direction);
+    if (status) params.set('status', status);
+    const q = params.toString();
+    const chq = await api(`/accounting/cheques${q ? `?${q}` : ''}`);
+    setCheques(chq.data || []);
+  }
+
   async function refresh() {
-    const [a, j, t, p, liq, stmts, chq, conns, xfers, openSt, st, br, per, settings] = await Promise.all([
+    const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per, settings] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api('/accounting/trial-balance'),
       api(`/accounting/profit-loss${pnlQuery()}`),
       api('/accounting/liquid-accounts'),
       api('/accounting/bank-statements'),
-      api('/accounting/cheques'),
       api('/accounting/bank-connections').catch(() => ({ data: [] })),
       api('/accounting/transfers').catch(() => ({ data: [] })),
       api('/accounting/opening-balances').catch(() => ({ data: null })),
@@ -124,7 +134,7 @@ export default function Page() {
     setPnl(p.data);
     setLiquid(liq.data || []);
     setStatements(stmts.data || []);
-    setCheques(chq.data || []);
+    await loadCheques();
     setConnections(conns.data || []);
     setTransfers(xfers.data || []);
     setCoaOpenStatus(openSt.data || null);
@@ -1857,6 +1867,43 @@ export default function Page() {
             Received cheques post to 1020 then deposit/clear to Bank. Issued cheques post to 2015 until
             cleared against Bank.
           </p>
+          <div className="card" style={{ marginBottom: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+              Direction
+              <select
+                aria-label="Cheque direction filter"
+                value={chequeDirection}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setChequeDirection(v);
+                  void loadCheques(v, chequeStatus);
+                }}
+              >
+                <option value="">All</option>
+                <option value="received">received</option>
+                <option value="issued">issued</option>
+              </select>
+            </label>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+              Status
+              <select
+                aria-label="Cheque status filter"
+                value={chequeStatus}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setChequeStatus(v);
+                  void loadCheques(chequeDirection, v);
+                }}
+              >
+                <option value="">All</option>
+                <option value="pending">pending</option>
+                <option value="deposited">deposited</option>
+                <option value="cleared">cleared</option>
+                <option value="bounced">bounced</option>
+                <option value="cancelled">cancelled</option>
+              </select>
+            </label>
+          </div>
           <div className="card" style={{ marginBottom: 12 }}>
             <label>
               Bounce / Cancel reason{' '}

@@ -23,6 +23,9 @@ CLEARED = "cleared"
 BOUNCED = "bounced"
 CANCELLED = "cancelled"
 
+DIRECTIONS = frozenset({RECEIVED, ISSUED})
+STATUSES = frozenset({PENDING, DEPOSITED, CLEARED, BOUNCED, CANCELLED})
+
 
 def serialize_cheque(row: m.Cheque) -> dict:
     return {
@@ -63,11 +66,25 @@ async def list_cheques(
     direction: str | None = None,
     status: str | None = None,
 ) -> list[m.Cheque]:
+    # Schema ChequeDirectionValue / ChequeStatusValue reject blank/invalid → 422;
+    # keep allow-list checks defense-in-depth (no silent empty equality filter).
     stmt = select(m.Cheque).where(m.Cheque.tenant_id == tenant_id)
-    if direction:
-        stmt = stmt.where(m.Cheque.direction == direction)
-    if status:
-        stmt = stmt.where(m.Cheque.status == status)
+    if direction is not None:
+        d = (direction or "").strip().lower()
+        if d not in DIRECTIONS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"direction must be one of: {', '.join(sorted(DIRECTIONS))}",
+            )
+        stmt = stmt.where(m.Cheque.direction == d)
+    if status is not None:
+        s = (status or "").strip().lower()
+        if s not in STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=f"status must be one of: {', '.join(sorted(STATUSES))}",
+            )
+        stmt = stmt.where(m.Cheque.status == s)
     stmt = stmt.order_by(m.Cheque.created_at.desc())
     return list((await db.execute(stmt)).scalars().all())
 

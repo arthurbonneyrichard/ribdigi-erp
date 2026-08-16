@@ -1224,7 +1224,7 @@ Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "exp
 `deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.
 
 **Cheques (BR-10.4):**  
-**List:** `GET /accounting/cheques`  
+**List:** `GET /accounting/cheques` — optional Query `direction` ∈ `received`|`issued`; `status` ∈ `pending`|`deposited`|`cleared`|`bounced`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no silent empty list from garbage). Accounting Cheques **Direction** / **Status** filters.  
 **Deposit / Clear:** `POST /accounting/cheques/{id}/deposit|clear`  
 **Bounce / Cancel:** `POST /accounting/cheques/{id}/bounce|cancel` — body `{ "reason" }` **required** (`ChequeLifecycleReason`; omit/empty → 422; whitespace → 400). Appended to notes (`Bounce:` / `Cancel:`) + journal description. Accounting Cheques UI requires typed reason for Bounce/Cancel (BR-10.4).
 
