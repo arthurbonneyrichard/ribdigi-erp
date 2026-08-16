@@ -31,3 +31,7 @@ Stage 957 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Node Gate, Transfer Node Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 957 opened under **ADR-1921** after CONTINUE/NEXT (Tenant MVP Transfer Host Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1922**. Stage 956 feature scope remains frozen.
