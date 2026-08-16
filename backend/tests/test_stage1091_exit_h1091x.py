@@ -11,7 +11,7 @@ def test_stage1091_exit_criteria_and_freeze_adr():
     assert "Stage 1091" in freeze
     assert "frozen" in freeze.lower() or "Freeze" in freeze
     assert "Stage 1092" in freeze and "Stage 1090" in freeze and "Accepted" in freeze
-    assert "TRANSFER_ROUTE_GATE_HONESTY_PACK_" in freeze
+    assert "TRANSFER_LANE_GATE_HONESTY_PACK_" in freeze
     plan = (ROOT / "docs" / "STAGE_1091_PLAN.md").read_text(encoding="utf-8")
     assert "Closed" in plan or "exit met" in plan.lower() or "ADR-2190" in plan
     for ws in ("I1", "B1", "P1", "D1", "H1091x"):
