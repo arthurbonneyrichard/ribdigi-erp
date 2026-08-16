@@ -31,3 +31,7 @@ Stage 1045 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Validate Gate, Transfer Validate Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1045 opened under **ADR-2097** after CONTINUE/NEXT (Tenant MVP Transfer Verify Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2098**. Stage 1044 feature scope remains frozen.

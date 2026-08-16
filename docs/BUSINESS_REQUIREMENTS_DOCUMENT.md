@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1045 D1 Transfer Verify Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1045_FIDELITY.md` (`test_stage1045_fidelity_d1.py`); Offline Complete / Transfer Verify Gate honesty / go-live still MISSING.
 Stage 1044 D1 Transfer Validate Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1044_FIDELITY.md` (`test_stage1044_fidelity_d1.py`); Offline Complete / Transfer Validate Gate honesty / go-live still MISSING.
 Stage 1043 D1 Transfer Certify Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1043_FIDELITY.md` (`test_stage1043_fidelity_d1.py`); Offline Complete / Transfer Certify Gate honesty / go-live still MISSING.
 Stage 1042 D1 Transfer Accredit Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1042_FIDELITY.md` (`test_stage1042_fidelity_d1.py`); Offline Complete / Transfer Accredit Gate honesty / go-live still MISSING.
