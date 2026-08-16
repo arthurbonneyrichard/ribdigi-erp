@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1064 D1 Transfer Bracket Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1064_FIDELITY.md` (`test_stage1064_fidelity_d1.py`); Offline Complete / Transfer Bracket Gate honesty / go-live still MISSING.
 Stage 1063 D1 Transfer Strata Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1063_FIDELITY.md` (`test_stage1063_fidelity_d1.py`); Offline Complete / Transfer Strata Gate honesty / go-live still MISSING.
 Stage 1062 D1 Transfer Class Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1062_FIDELITY.md` (`test_stage1062_fidelity_d1.py`); Offline Complete / Transfer Class Gate honesty / go-live still MISSING.
 Stage 1061 D1 Transfer Band Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1061_FIDELITY.md` (`test_stage1061_fidelity_d1.py`); Offline Complete / Transfer Band Gate honesty / go-live still MISSING.
