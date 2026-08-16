@@ -31,3 +31,7 @@ Stage 1032 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Grant Gate, Transfer Grant Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1032 opened under **ADR-2071** after CONTINUE/NEXT (Tenant MVP Transfer Allocation Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2072**. Stage 1031 feature scope remains frozen.
