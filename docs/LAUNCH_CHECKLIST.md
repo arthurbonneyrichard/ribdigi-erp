@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1164 track opened (ADR-2335: `test_stage1164_open.py`, `docs/STAGE_1164_PLAN.md`) — Transfer Crenel Gate Honesty Pack Remaining-Gate Index; closed under ADR-2336
+- [x] Transfer Crenel Gate Honesty Pack remaining-gate hub (Stage 1164 I1: `test_stage1164_index_i1.py`, `docs/TRANSFER_CRENEL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Crenel Gate Honesty Pack blocker matrix (Stage 1164 B1: `test_stage1164_blockers_b1.py`, `docs/TRANSFER_CRENEL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1163 / Stage 1162 / Stage 392 / CHANGE_IMPACT pointers (Stage 1164 P1: `test_stage1164_pointers_p1.py`, `docs/TRANSFER_CRENEL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1164 fidelity sync (D1: `test_stage1164_fidelity_d1.py`, `docs/STAGE_1164_FIDELITY.md`)
+- [x] Stage 1164 exit + freeze (H1164x: `test_stage1164_exit_h1164x.py`, `docs/STAGE_1164_EXIT_CRITERIA.md`, ADR-2336)
+
 Stage 1163 track opened (ADR-2333: `test_stage1163_open.py`, `docs/STAGE_1163_PLAN.md`) — Transfer Merlon Gate Honesty Pack Remaining-Gate Index; closed under ADR-2334
 - [x] Transfer Merlon Gate Honesty Pack remaining-gate hub (Stage 1163 I1: `test_stage1163_index_i1.py`, `docs/TRANSFER_MERLON_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Merlon Gate Honesty Pack blocker matrix (Stage 1163 B1: `test_stage1163_blockers_b1.py`, `docs/TRANSFER_MERLON_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
