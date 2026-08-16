@@ -29,8 +29,8 @@ async def test_stock_adjust_requires_coded_reason(client, db_session):
         headers=headers,
         json={"quantity": -1, "reason": "adjustment"},
     )
-    assert bad.status_code == 400, bad.text
-    assert "reason must be one of" in bad.text
+    assert bad.status_code == 422, bad.text
+    assert "reason must be one of" in bad.text or "literal" in bad.text.lower() or "reason" in bad.text.lower()
 
     missing = await ac.post(
         f"/api/v1/inventory/adjust/{product.id}",

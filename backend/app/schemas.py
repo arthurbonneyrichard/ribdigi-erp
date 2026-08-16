@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
@@ -517,7 +518,8 @@ class CreditLimitOverrideBody(BaseModel):
 
 class StockAdjust(BaseModel):
     quantity: float
-    reason: str  # damage | theft | expiry | found | lost
+    # Coded reason (BR-5.2); OpenAPI Literal → omit/blank/invalid → 422
+    reason: Literal["damage", "theft", "expiry", "found", "lost"]
     notes: str | None = None
     warehouse_id: str | None = None
 
@@ -974,8 +976,8 @@ class PurchaseReturnItemCreate(BaseModel):
 
 class PurchaseReturnCreate(BaseModel):
     goods_receipt_id: str
-    # Required coded reason (BR-6.6); no silent default to "other"
-    reason: str
+    # Required coded reason (BR-6.6); OpenAPI Literal → omit/blank/invalid → 422
+    reason: Literal["damaged", "wrong_item", "expiry", "quality", "other"]
     notes: str | None = None
     items: list[PurchaseReturnItemCreate] = Field(min_length=1)
 
@@ -1097,8 +1099,8 @@ class SalesReturnItemCreate(BaseModel):
 
 class SalesReturnCreate(BaseModel):
     sales_invoice_id: str
-    # Required coded reason (BR-7.5); no silent default to "other"
-    reason: str
+    # Required coded reason (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
+    reason: Literal["damaged", "wrong_item", "defective", "customer_change", "other"]
     restock: bool = True
     notes: str | None = None
     items: list[SalesReturnItemCreate] = Field(min_length=1)
