@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1168 D1 Transfer Sallyport Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1168_FIDELITY.md` (`test_stage1168_fidelity_d1.py`); Offline Complete / Transfer Sallyport Gate honesty / go-live still MISSING.
 Stage 1167 D1 Transfer Bretasche Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1167_FIDELITY.md` (`test_stage1167_fidelity_d1.py`); Offline Complete / Transfer Bretasche Gate honesty / go-live still MISSING.
 Stage 1166 D1 Transfer Hoarding Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1166_FIDELITY.md` (`test_stage1166_fidelity_d1.py`); Offline Complete / Transfer Hoarding Gate honesty / go-live still MISSING.
 Stage 1165 D1 Transfer Machicol Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1165_FIDELITY.md` (`test_stage1165_fidelity_d1.py`); Offline Complete / Transfer Machicol Gate honesty / go-live still MISSING.

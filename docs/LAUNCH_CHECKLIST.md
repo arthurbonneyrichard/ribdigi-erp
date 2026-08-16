@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1168 track opened (ADR-2343: `test_stage1168_open.py`, `docs/STAGE_1168_PLAN.md`) — Transfer Sallyport Gate Honesty Pack Remaining-Gate Index; closed under ADR-2344
+- [x] Transfer Sallyport Gate Honesty Pack remaining-gate hub (Stage 1168 I1: `test_stage1168_index_i1.py`, `docs/TRANSFER_SALLYPORT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Sallyport Gate Honesty Pack blocker matrix (Stage 1168 B1: `test_stage1168_blockers_b1.py`, `docs/TRANSFER_SALLYPORT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1167 / Stage 1166 / Stage 392 / CHANGE_IMPACT pointers (Stage 1168 P1: `test_stage1168_pointers_p1.py`, `docs/TRANSFER_SALLYPORT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1168 fidelity sync (D1: `test_stage1168_fidelity_d1.py`, `docs/STAGE_1168_FIDELITY.md`)
+- [x] Stage 1168 exit + freeze (H1168x: `test_stage1168_exit_h1168x.py`, `docs/STAGE_1168_EXIT_CRITERIA.md`, ADR-2344)
+
 Stage 1167 track opened (ADR-2341: `test_stage1167_open.py`, `docs/STAGE_1167_PLAN.md`) — Transfer Bretasche Gate Honesty Pack Remaining-Gate Index; closed under ADR-2342
 - [x] Transfer Bretasche Gate Honesty Pack remaining-gate hub (Stage 1167 I1: `test_stage1167_index_i1.py`, `docs/TRANSFER_BRETASCHE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Bretasche Gate Honesty Pack blocker matrix (Stage 1167 B1: `test_stage1167_blockers_b1.py`, `docs/TRANSFER_BRETASCHE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
