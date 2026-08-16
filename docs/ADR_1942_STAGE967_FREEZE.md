@@ -31,3 +31,7 @@ Stage 968 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Phase Gate, Transfer Phase Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 968 opened under **ADR-1943** after CONTINUE/NEXT (Tenant MVP Transfer Milestone Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1944**. Stage 967 feature scope remains frozen.
