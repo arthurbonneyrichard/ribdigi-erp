@@ -3472,7 +3472,7 @@ export default function Page() {
                   <td className="muted">{t.rejection_reason || '—'}</td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {t.status === 'draft' && (
-                      <button type="button" onClick={() => transferAct(t.id, 'submit')}>
+                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'submit')}>
                         Submit
                       </button>
                     )}

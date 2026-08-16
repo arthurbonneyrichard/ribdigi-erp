@@ -65,3 +65,20 @@ def test_lifecycle_remainders_use_hover_classes():
     assert "act(t.id, 'ship')" in stores
     assert "act(t.id, 'receive')" in stores
     assert stores.count('className="btn-ok"') >= 3
+
+
+def test_sales_fulfillment_btn_ok_wired():
+    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    assert "/process" in sales and "btn-ok" in sales
+    assert "/ship" in sales
+    assert "/deliver" in sales
+    assert 'convert-order' in sales
+    assert 'convert-invoice' in sales
+    # Process / Ship / Deliver / convert use btn-ok
+    assert "Processing" in sales
+    assert sales.count('className="btn-ok"') >= 8
+
+    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-ok" onClick={() => transferAct(t.id, \'submit\')}' in inventory
+    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-ok" onClick={() => act(t.id, \'submit\')}' in stores

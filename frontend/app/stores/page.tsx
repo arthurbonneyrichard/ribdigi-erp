@@ -1439,7 +1439,7 @@ export default function Page() {
               <td>{t.rejection_reason || '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {t.status === 'draft' && (
-                  <button type="button" onClick={() => act(t.id, 'submit')}>
+                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'submit')}>
                     Submit
                   </button>
                 )}
