@@ -1199,7 +1199,7 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 **Cheques (BR-10.4):**  
 **List:** `GET /accounting/cheques`  
 **Deposit / Clear:** `POST /accounting/cheques/{id}/deposit|clear`  
-**Bounce / Cancel:** `POST /accounting/cheques/{id}/bounce|cancel?reason=` — **reason required** (non-empty query); blank/omit → 400. Appended to notes (`Bounce:` / `Cancel:`) + journal description. Accounting Cheques UI requires typed reason for Bounce/Cancel (BR-10.4).
+**Bounce / Cancel:** `POST /accounting/cheques/{id}/bounce|cancel` — body `{ "reason" }` **required** (`ChequeLifecycleReason`; omit/empty → 422; whitespace → 400). Appended to notes (`Bounce:` / `Cancel:`) + journal description. Accounting Cheques UI requires typed reason for Bounce/Cancel (BR-10.4).
 
 **Bank feed connections (reconcile):**  
 **List:** `GET /accounting/bank-connections` — optional `?is_active=true|false` filters soft-deactivated connections (omit = all; Accounting Reconcile manage status filter).  

@@ -709,11 +709,11 @@ export default function Page() {
     }
     try {
       const reason = chequeActionReason.trim();
-      const qs =
-        (action === 'bounce' || action === 'cancel') && reason
-          ? `?reason=${encodeURIComponent(reason)}`
-          : '';
-      await api(`/accounting/cheques/${id}/${action}${qs}`, { method: 'POST' });
+      const opts: RequestInit = { method: 'POST' };
+      if (action === 'bounce' || action === 'cancel') {
+        opts.body = JSON.stringify({ reason });
+      }
+      await api(`/accounting/cheques/${id}/${action}`, opts);
       if (action === 'bounce' || action === 'cancel') {
         setChequeActionReason('');
       }
@@ -1853,7 +1853,7 @@ export default function Page() {
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
-              Appended to cheque notes and journal description (`?reason=` on bounce/cancel).
+              Appended to cheque notes and journal description (`POST .../bounce|cancel` {'{ reason }'}).
             </p>
           </div>
           <table className="table">

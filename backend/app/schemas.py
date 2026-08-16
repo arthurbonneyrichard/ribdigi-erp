@@ -1242,6 +1242,12 @@ class JournalUnpost(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+class ChequeLifecycleReason(BaseModel):
+    """Cheque bounce / cancel — typed reason required (BR-10.4 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class PeriodCloseBody(BaseModel):
     """Close books through an inclusive calendar date (BR-10.2)."""
 
