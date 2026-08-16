@@ -31,3 +31,7 @@ Stage 988 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Drawbridge Gate, Transfer Drawbridge Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 988 opened under **ADR-1983** after CONTINUE/NEXT (Tenant MVP Transfer Portcullis Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1984**. Stage 987 feature scope remains frozen.
