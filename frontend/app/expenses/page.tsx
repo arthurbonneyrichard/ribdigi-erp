@@ -108,6 +108,7 @@ export default function Page() {
   const [recDepartmentId, setRecDepartmentId] = useState('');
   const [recEditId, setRecEditId] = useState<string | null>(null);
   const [recBusy, setRecBusy] = useState(false);
+  const [skipNextReason, setSkipNextReason] = useState('');
 
   async function refresh() {
     const [exp, cats, settings, liquid, st, br, dep, accounts, rec] = await Promise.all([
@@ -408,15 +409,21 @@ export default function Page() {
   async function skipNextRecurring(id: string) {
     setError('');
     setMessage('');
+    const reason = skipNextReason.trim();
+    if (!reason) {
+      setError('Enter a skip reason before skipping the next occurrence');
+      return;
+    }
     try {
       const r = await api(`/expenses/recurring/${id}/skip-next`, {
         method: 'POST',
-        body: '{}',
+        body: JSON.stringify({ reason }),
       });
       const next = r.data?.next_run_at
         ? String(r.data.next_run_at).replace('T', ' ').slice(0, 19)
         : '—';
       setMessage(r.message ? `${r.message} → next ${next}` : `Skipped; next run ${next}`);
+      setSkipNextReason('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -932,8 +939,22 @@ export default function Page() {
           Schedules auto-generate due expenses (Celery + manual Generate). Generated entries use the
           EXP-YYYY-NNNN series when reference is blank. Advance notify (T−1) uses category
           `recurring_expense_due` via Notifications scan-due / Celery. Use <strong>Skip next</strong>{' '}
-          to advance `next_run_at` by one period without creating an expense. Use{' '}
+          with a typed reason to advance `next_run_at` by one period without creating an expense
+          (reason is audit-only; schedule description is unchanged). Use{' '}
           <strong>Edit schedule</strong> to change template amount/payee for future generations.
+        </p>
+        <label style={{ display: 'block', marginBottom: 10 }}>
+          Skip next reason{' '}
+          <input
+            value={skipNextReason}
+            onChange={(e) => setSkipNextReason(e.target.value)}
+            placeholder="Required before Skip next"
+            style={{ minWidth: 280 }}
+          />
+        </label>
+        <p className="muted" style={{ marginTop: 0, marginBottom: 10 }}>
+          Used by Skip next on active schedules (stored on audit <code>recurring_expense_skipped</code>
+          , not the template description).
         </p>
         {recEditId ? (
           <p style={{ color: '#166534', marginTop: 0 }}>
@@ -1088,7 +1109,16 @@ export default function Page() {
                     Edit schedule
                   </button>
                   {r.is_active ? (
-                    <button type="button" onClick={() => skipNextRecurring(r.id)}>
+                    <button
+                      type="button"
+                      onClick={() => skipNextRecurring(r.id)}
+                      disabled={!skipNextReason.trim()}
+                      title={
+                        skipNextReason.trim()
+                          ? 'Skip next occurrence'
+                          : 'Enter a skip reason before skipping'
+                      }
+                    >
                       Skip next
                     </button>
                   ) : null}
