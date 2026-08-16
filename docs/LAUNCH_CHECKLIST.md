@@ -1677,6 +1677,27 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1036 track opened (ADR-2079: `test_stage1036_open.py`, `docs/STAGE_1036_PLAN.md`) — Transfer Benefit Gate Honesty Pack Remaining-Gate Index; closed under ADR-2080
+- [x] Transfer Benefit Gate Honesty Pack remaining-gate hub (Stage 1036 I1: `test_stage1036_index_i1.py`, `docs/TRANSFER_BENEFIT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Benefit Gate Honesty Pack blocker matrix (Stage 1036 B1: `test_stage1036_blockers_b1.py`, `docs/TRANSFER_BENEFIT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1035 / Stage 1034 / Stage 392 / CHANGE_IMPACT pointers (Stage 1036 P1: `test_stage1036_pointers_p1.py`, `docs/TRANSFER_BENEFIT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1036 fidelity sync (D1: `test_stage1036_fidelity_d1.py`, `docs/STAGE_1036_FIDELITY.md`)
+- [x] Stage 1036 exit + freeze (H1036x: `test_stage1036_exit_h1036x.py`, `docs/STAGE_1036_EXIT_CRITERIA.md`, ADR-2080)
+
+Stage 1035 track opened (ADR-2077: `test_stage1035_open.py`, `docs/STAGE_1035_PLAN.md`) — Transfer Voucher Gate Honesty Pack Remaining-Gate Index; closed under ADR-2078
+- [x] Transfer Voucher Gate Honesty Pack remaining-gate hub (Stage 1035 I1: `test_stage1035_index_i1.py`, `docs/TRANSFER_VOUCHER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Voucher Gate Honesty Pack blocker matrix (Stage 1035 B1: `test_stage1035_blockers_b1.py`, `docs/TRANSFER_VOUCHER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1034 / Stage 1033 / Stage 392 / CHANGE_IMPACT pointers (Stage 1035 P1: `test_stage1035_pointers_p1.py`, `docs/TRANSFER_VOUCHER_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1035 fidelity sync (D1: `test_stage1035_fidelity_d1.py`, `docs/STAGE_1035_FIDELITY.md`)
+- [x] Stage 1035 exit + freeze (H1035x: `test_stage1035_exit_h1035x.py`, `docs/STAGE_1035_EXIT_CRITERIA.md`, ADR-2078)
+
+Stage 1034 track opened (ADR-2075: `test_stage1034_open.py`, `docs/STAGE_1034_PLAN.md`) — Transfer Subsidy Gate Honesty Pack Remaining-Gate Index; closed under ADR-2076
+- [x] Transfer Subsidy Gate Honesty Pack remaining-gate hub (Stage 1034 I1: `test_stage1034_index_i1.py`, `docs/TRANSFER_SUBSIDY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Subsidy Gate Honesty Pack blocker matrix (Stage 1034 B1: `test_stage1034_blockers_b1.py`, `docs/TRANSFER_SUBSIDY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1033 / Stage 1032 / Stage 392 / CHANGE_IMPACT pointers (Stage 1034 P1: `test_stage1034_pointers_p1.py`, `docs/TRANSFER_SUBSIDY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1034 fidelity sync (D1: `test_stage1034_fidelity_d1.py`, `docs/STAGE_1034_FIDELITY.md`)
+- [x] Stage 1034 exit + freeze (H1034x: `test_stage1034_exit_h1034x.py`, `docs/STAGE_1034_EXIT_CRITERIA.md`, ADR-2076)
+
 Stage 1033 track opened (ADR-2073: `test_stage1033_open.py`, `docs/STAGE_1033_PLAN.md`) — Transfer Endowment Gate Honesty Pack Remaining-Gate Index; closed under ADR-2074
 - [x] Transfer Endowment Gate Honesty Pack remaining-gate hub (Stage 1033 I1: `test_stage1033_index_i1.py`, `docs/TRANSFER_ENDOWMENT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Endowment Gate Honesty Pack blocker matrix (Stage 1033 B1: `test_stage1033_blockers_b1.py`, `docs/TRANSFER_ENDOWMENT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

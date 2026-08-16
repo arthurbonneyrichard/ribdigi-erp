@@ -380,6 +380,9 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 1036 Transfer Benefit Gate Honesty Pack remaining-gate index fidelity (ADR-2079/2080). Operators track packaging status via `docs/TRANSFER_BENEFIT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
+Stage 1035 Transfer Voucher Gate Honesty Pack remaining-gate index fidelity (ADR-2077/2078). Operators track packaging status via `docs/TRANSFER_VOUCHER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
+Stage 1034 Transfer Subsidy Gate Honesty Pack remaining-gate index fidelity (ADR-2075/2076). Operators track packaging status via `docs/TRANSFER_SUBSIDY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1033 Transfer Endowment Gate Honesty Pack remaining-gate index fidelity (ADR-2073/2074). Operators track packaging status via `docs/TRANSFER_ENDOWMENT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1032 Transfer Allocation Gate Honesty Pack remaining-gate index fidelity (ADR-2071/2072). Operators track packaging status via `docs/TRANSFER_ALLOCATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1031 Transfer Grant Gate Honesty Pack remaining-gate index fidelity (ADR-2069/2070). Operators track packaging status via `docs/TRANSFER_GRANT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.

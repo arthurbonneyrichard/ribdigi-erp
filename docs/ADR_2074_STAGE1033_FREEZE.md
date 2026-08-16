@@ -31,3 +31,7 @@ Stage 1034 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Endowment Gate, Transfer Endowment Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1034 opened under **ADR-2075** after CONTINUE/NEXT (Tenant MVP Transfer Subsidy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2076**. Stage 1033 feature scope remains frozen.

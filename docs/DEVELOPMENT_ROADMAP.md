@@ -4400,6 +4400,18 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 1036 D1 (2026-08-14):** Transfer Benefit Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1036_FIDELITY.md` (`test_stage1036_fidelity_d1.py`). Open ADR: `docs/ADR_2079_STAGE1036_OPEN.md`; plan `docs/STAGE_1036_PLAN.md`.
+
+**Stage 1036 exit (2026-08-14):** I1, B1, P1, D1, H1036x met — `docs/STAGE_1036_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2080_STAGE1036_FREEZE.md`. Fidelity: `docs/STAGE_1036_FIDELITY.md`.
+
+**Stage 1035 D1 (2026-08-14):** Transfer Voucher Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1035_FIDELITY.md` (`test_stage1035_fidelity_d1.py`). Open ADR: `docs/ADR_2077_STAGE1035_OPEN.md`; plan `docs/STAGE_1035_PLAN.md`.
+
+**Stage 1035 exit (2026-08-14):** I1, B1, P1, D1, H1035x met — `docs/STAGE_1035_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2078_STAGE1035_FREEZE.md`. Fidelity: `docs/STAGE_1035_FIDELITY.md`.
+
+**Stage 1034 D1 (2026-08-14):** Transfer Subsidy Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1034_FIDELITY.md` (`test_stage1034_fidelity_d1.py`). Open ADR: `docs/ADR_2075_STAGE1034_OPEN.md`; plan `docs/STAGE_1034_PLAN.md`.
+
+**Stage 1034 exit (2026-08-14):** I1, B1, P1, D1, H1034x met — `docs/STAGE_1034_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2076_STAGE1034_FREEZE.md`. Fidelity: `docs/STAGE_1034_FIDELITY.md`.
+
 **Stage 1033 D1 (2026-08-14):** Transfer Endowment Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1033_FIDELITY.md` (`test_stage1033_fidelity_d1.py`). Open ADR: `docs/ADR_2073_STAGE1033_OPEN.md`; plan `docs/STAGE_1033_PLAN.md`.
 
 **Stage 1033 exit (2026-08-14):** I1, B1, P1, D1, H1033x met — `docs/STAGE_1033_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_2074_STAGE1033_FREEZE.md`. Fidelity: `docs/STAGE_1033_FIDELITY.md`.
