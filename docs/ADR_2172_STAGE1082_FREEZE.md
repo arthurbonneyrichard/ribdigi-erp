@@ -31,3 +31,7 @@ Stage 1083 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Purview Gate, Transfer Purview Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1083 opened under **ADR-2173** after CONTINUE/NEXT (Tenant MVP Transfer Sweep Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2174**. Stage 1082 feature scope remains frozen.
