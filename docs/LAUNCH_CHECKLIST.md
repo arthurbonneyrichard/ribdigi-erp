@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 946 track opened (ADR-1899: `test_stage946_open.py`, `docs/STAGE_946_PLAN.md`) — Transfer Frontier Gate Honesty Pack Remaining-Gate Index; closed under ADR-1900
+- [x] Transfer Frontier Gate Honesty Pack remaining-gate hub (Stage 946 I1: `test_stage946_index_i1.py`, `docs/TRANSFER_FRONTIER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Frontier Gate Honesty Pack blocker matrix (Stage 946 B1: `test_stage946_blockers_b1.py`, `docs/TRANSFER_FRONTIER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 945 / Stage 944 / Stage 392 / CHANGE_IMPACT pointers (Stage 946 P1: `test_stage946_pointers_p1.py`, `docs/TRANSFER_FRONTIER_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 946 fidelity sync (D1: `test_stage946_fidelity_d1.py`, `docs/STAGE_946_FIDELITY.md`)
+- [x] Stage 946 exit + freeze (H946x: `test_stage946_exit_h946x.py`, `docs/STAGE_946_EXIT_CRITERIA.md`, ADR-1900)
+
 Stage 945 track opened (ADR-1897: `test_stage945_open.py`, `docs/STAGE_945_PLAN.md`) — Transfer Border Gate Honesty Pack Remaining-Gate Index; closed under ADR-1898
 - [x] Transfer Border Gate Honesty Pack remaining-gate hub (Stage 945 I1: `test_stage945_index_i1.py`, `docs/TRANSFER_BORDER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Border Gate Honesty Pack blocker matrix (Stage 945 B1: `test_stage945_blockers_b1.py`, `docs/TRANSFER_BORDER_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
