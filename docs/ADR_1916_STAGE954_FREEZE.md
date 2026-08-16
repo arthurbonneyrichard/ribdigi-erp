@@ -31,3 +31,7 @@ Stage 955 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shard Gate, Transfer Shard Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 955 opened under **ADR-1917** after CONTINUE/NEXT (Tenant MVP Transfer Cluster Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1918**. Stage 954 feature scope remains frozen.
