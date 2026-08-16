@@ -181,6 +181,8 @@ async def create_custom_role(
         raise HTTPException(status_code=400, detail="label is required")
 
     base = (base_role or "").strip() or None
+    # Defense in depth: CustomRoleCreate.base_role Literal rejects blank/unknown/super_admin
+    # with 422 before this runs (was free str → 400 Unknown / Cannot clone).
     if base and base not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"Unknown base_role '{base}'")
     if base == "super_admin":

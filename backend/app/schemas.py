@@ -138,6 +138,23 @@ PlatformRoleValue = Annotated[
     BeforeValidator(coerce_platform_role_value),
 ]
 
+# System roles that may be cloned into a tenant custom role (excludes super_admin).
+CustomRoleBaseRoleValue = Annotated[
+    Literal[
+        "platform_owner",
+        "platform_admin",
+        "platform_support",
+        "platform_finance",
+        "company_admin",
+        "store_manager",
+        "sales_officer",
+        "inventory_officer",
+        "accountant",
+        "cashier",
+    ],
+    BeforeValidator(coerce_platform_role_value),
+]
+
 
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
@@ -409,7 +426,8 @@ class CustomRoleCreate(BaseModel):
     key: str
     label: str
     permissions: dict[str, list[str]] | None = None
-    base_role: str | None = None
+    # Clone-from system role; omit/null OK when permissions set; blank/unknown/super_admin → 422
+    base_role: CustomRoleBaseRoleValue | None = None
     # BR-3.3 — omit = base_role/own default; blank/invalid → 422
     record_scope: RecordScopeValue | None = None
 
