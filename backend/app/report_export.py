@@ -526,6 +526,7 @@ async def build_report_payload(
     compare: str | None = None,
     department_id: str | None = None,
 ) -> Any:
+    # Defense in depth: /reports/export report_type Query Literal → 422 on blank/unknown.
     if report_type not in EXPORTABLE:
         raise HTTPException(
             status_code=400,
@@ -797,6 +798,8 @@ async def export_report(
     fmt: str,
     **kwargs,
 ) -> tuple[bytes, str, str]:
+    # Defense in depth: /reports/export Query Literals reject blank/unknown with 422.
+    # Empty format used to coerce to csv via `fmt or "csv"`.
     fmt = (fmt or "csv").lower()
     if fmt not in EXPORT_FORMATS:
         raise HTTPException(
