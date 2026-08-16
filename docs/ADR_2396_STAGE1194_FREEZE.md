@@ -31,3 +31,7 @@ Stage 1195 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Scriptorium Gate, Transfer Scriptorium Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1195 opened under **ADR-2397** after CONTINUE/NEXT (Tenant MVP Transfer Refectory Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2398**. Stage 1194 feature scope remains frozen.
