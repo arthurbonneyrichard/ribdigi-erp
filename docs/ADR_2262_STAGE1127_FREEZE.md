@@ -31,3 +31,7 @@ Stage 1128 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Corso Gate, Transfer Corso Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1128 opened under **ADR-2263** after CONTINUE/NEXT (Tenant MVP Transfer Patio Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2264**. Stage 1127 feature scope remains frozen.
