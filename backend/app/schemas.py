@@ -1584,6 +1584,19 @@ StockCountReportStatusValue = Annotated[
     Literal["draft", "completed", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.inventory.MOVEMENT_TYPES (Inventory/Reports movements filter).
+MovementTypeValue = Annotated[
+    Literal[
+        "stock_in",
+        "stock_out",
+        "opening_stock",
+        "adjustment",
+        "transfer_out",
+        "transfer_in",
+        "transfer_cancel",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
 ReportTypeValue = Annotated[
     Literal[

@@ -13,6 +13,18 @@ STOCK_ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "los
 STOCK_OUT_REFERENCE_TYPES = frozenset(
     {"sale", "transfer", "adjustment", "damage", "internal", "other"}
 )
+# Written by stock_in/out, opening, adjust, WH/store transfers (+ cancel reverse).
+MOVEMENT_TYPES = frozenset(
+    {
+        "stock_in",
+        "stock_out",
+        "opening_stock",
+        "adjustment",
+        "transfer_out",
+        "transfer_in",
+        "transfer_cancel",
+    }
+)
 
 
 async def get_or_create_warehouse_stock(

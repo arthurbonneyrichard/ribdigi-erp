@@ -1339,8 +1339,23 @@ async def inventory_movements(
     ) = await _resolve_purchase_location_filters(
         db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
     )
-    if movement_type:
-        movement_type = movement_type.strip().lower()
+    # Schema MovementTypeValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter from garbage).
+    from app.inventory import MOVEMENT_TYPES
+
+    if movement_type is not None:
+        mt = (movement_type or "").strip().lower()
+        if not mt:
+            movement_type = None
+        elif mt not in MOVEMENT_TYPES:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=422,
+                detail=f"movement_type must be one of: {', '.join(sorted(MOVEMENT_TYPES))}",
+            )
+        else:
+            movement_type = mt
     if created_by:
         created_by = created_by.strip() or None
     if reason:

@@ -3005,7 +3005,11 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <select value={mvType} onChange={(e) => setMvType(e.target.value)}>
+              <select
+                aria-label="Movement type filter"
+                value={mvType}
+                onChange={(e) => setMvType(e.target.value)}
+              >
                 <option value="">All types</option>
                 <option value="stock_in">stock_in</option>
                 <option value="stock_out">stock_out</option>
@@ -3013,6 +3017,7 @@ export default function Page() {
                 <option value="adjustment">adjustment</option>
                 <option value="transfer_out">transfer_out</option>
                 <option value="transfer_in">transfer_in</option>
+                <option value="transfer_cancel">transfer_cancel</option>
               </select>
               <select value={mvReason} onChange={(e) => setMvReason(e.target.value)}>
                 <option value="">All reasons</option>
