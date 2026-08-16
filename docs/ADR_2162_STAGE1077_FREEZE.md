@@ -31,3 +31,7 @@ Stage 1078 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Orbit Gate, Transfer Orbit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1078 opened under **ADR-2163** after CONTINUE/NEXT (Tenant MVP Transfer Compass Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2164**. Stage 1077 feature scope remains frozen.
