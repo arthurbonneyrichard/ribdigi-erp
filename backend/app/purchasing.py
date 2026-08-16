@@ -999,9 +999,14 @@ async def record_supplier_payment(
     currency: str | None = None,
     exchange_rate: float | None = None,
 ) -> m.SupplierPayment:
+    from app.expenses import normalize_expense_payment_method
+
     amount = float(amount)
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
+    payment_method = normalize_expense_payment_method(
+        payment_method, default="bank_transfer"
+    )
 
     supplier = (
         await db.execute(

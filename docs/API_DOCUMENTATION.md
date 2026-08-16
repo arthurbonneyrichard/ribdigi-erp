@@ -1002,7 +1002,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **List:** `GET /sales/returns`  
 **Create:** `POST /sales/returns` — body requires `sales_invoice_id`, coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (schema `Literal`; no silent default to `other`; omit/blank/invalid → **422**), `items[]` each with required `condition` ∈ `sellable` | `discard` (schema `Literal`; no silent default from `restock`; omit/blank/invalid → **422**), optional `restock` / `notes`. Restock on post only when `restock` and line `condition=sellable`. Sales UI uses **Select reason** + **Select condition** (BR-7.5).  
 **Get:** `GET /sales/returns/{return_id}`  
-**Post:** `POST /sales/returns/{return_id}/post` — draft only; body optional `settlement_method` (`adjust`|`refund`), `payment_method`, `liquid_account_id`.  
+**Post:** `POST /sales/returns/{return_id}/post` — draft only; body optional `settlement_method` (`adjust`|`refund`), `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**), `liquid_account_id`.  
 **Cancel:** `POST /sales/returns/{return_id}/cancel` — body `{ "reason" }` **required** (non-empty). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `sales_return_cancelled.details.reason`. Serialize includes `can_cancel`. Sales **Cancel reason** input (BR-7.5).
 
 **Numbering:** `GET|PATCH /sales/settings` exposes `sales_return_numbering` and `credit_note_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` for `return_number` (default `SR`); post allocates series `credit_note_number` (default `CN`, unique per tenant). Sales Document numbering UI (BR-7.5 / BR-20.4).
@@ -1255,7 +1255,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 }
 ```
 
-**Record Payment:** `POST /customers/{customer_id}/payments`  
+**Record Payment:** `POST /customers/{customer_id}/payments` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**; same aliases as expenses). Also `POST /sales/payments` with the same `CustomerPaymentCreate` body. Credit UI Method select matches. Service `normalize_expense_payment_method` remains defense-in-depth **400**.  
 **Customer History:** `GET /customers/{customer_id}/history?from_date=&to_date=` — purchase history (sales invoices + POS), returns, and payments with `summary` totals (BR-7.1).
 
 ```json
@@ -1277,7 +1277,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 **Due notifications:** Celery / `POST /notifications/scan-due` runs `scan_payment_due` for both AR sales invoices and AP purchase invoices within the horizon (default 3 days), creating `payment_due` notifications (`entity_type=purchase_invoice` for bills), `scan_quotation_expiry` for draft/sent quotations with `valid_until` within 1 day (category `quotation_expiry`, `entity_type=sales_quotation`; past-due rows are flipped to `status=expired`), and `scan_recurring_expense_due` for active recurring schedules with `next_run_at` within 1 day (category `recurring_expense_due`, `entity_type=recurring_expense`; BR-9.5).
 
-**Record Payment:** `POST /suppliers/{supplier_id}/payments`
+**Record Payment:** `POST /suppliers/{supplier_id}/payments` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `bank_transfer`; blank/invalid → **422**; same aliases). Credit UI Method select matches.
 
 ---
 

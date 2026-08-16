@@ -33,6 +33,8 @@ ExpensePaymentMethod = Annotated[
     Literal["cash", "bank_transfer", "card", "cheque"],
     BeforeValidator(coerce_expense_payment_method_value),
 ]
+# Shared settlement allow-list for AR/AP (same as expenses).
+SettlementPaymentMethod = ExpensePaymentMethod
 
 
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
@@ -1184,7 +1186,8 @@ class SalesReturnCancel(BaseModel):
 
 class SalesReturnPost(BaseModel):
     settlement_method: str | None = None  # adjust | refund (required when return exceeds open AR)
-    payment_method: str = "cash"
+    # BR-7.5 / BR-11 — same settlement Literal as AR payments; omit → cash; blank/invalid → 422
+    payment_method: SettlementPaymentMethod = "cash"
     liquid_account_id: str | None = None
 
 
@@ -1192,7 +1195,8 @@ class CustomerPaymentCreate(BaseModel):
     customer_id: str
     amount: float = Field(gt=0)
     sales_invoice_id: str | None = None
-    payment_method: str = "cash"
+    # BR-11.1 — schema Literal (+ aliases); omit → cash; blank/invalid → 422
+    payment_method: SettlementPaymentMethod = "cash"
     reference: str | None = None
     notes: str | None = None
     cheque_number: str | None = None
@@ -1305,7 +1309,8 @@ class SupplierPaymentCreate(BaseModel):
     amount: float = Field(gt=0)
     purchase_order_id: str | None = None
     purchase_invoice_id: str | None = None
-    payment_method: str = "bank_transfer"
+    # BR-11.2 — same settlement Literal; omit → bank_transfer; blank/invalid → 422
+    payment_method: SettlementPaymentMethod = "bank_transfer"
     reference: str | None = None
     notes: str | None = None
     cheque_number: str | None = None
