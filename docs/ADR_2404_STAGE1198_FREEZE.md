@@ -31,3 +31,7 @@ Stage 1199 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tabernacle Gate, Transfer Tabernacle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1199 opened under **ADR-2405** after CONTINUE/NEXT (Tenant MVP Transfer Transept Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2406**. Stage 1198 feature scope remains frozen.
