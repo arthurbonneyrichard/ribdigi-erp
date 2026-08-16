@@ -45,8 +45,15 @@ def normalize_supply_class(
     value: str | None,
     *,
     tax_exempt: bool | None = None,
+    strict: bool = False,
 ) -> str:
-    """Return standard | zero_rated | exempt."""
+    """Return standard | zero_rated | exempt.
+
+    Soft mode (default) keeps legacy aliases and coerces unknown/blank for
+    internal reads. API ProductCreate/Update use OpenAPI Literals so blank/
+    invalid request bodies already 422 before create/PATCH (R1 honesty).
+    Pass strict=True to raise HTTP 400 instead of silent standard.
+    """
     text = (value or "").strip().lower().replace("-", "_").replace(" ", "_")
     aliases = {
         "zero": "zero_rated",
@@ -59,6 +66,16 @@ def normalize_supply_class(
     text = aliases.get(text, text)
     if text in SUPPLY_CLASSES:
         return text
+    if strict and (value or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"tax_supply_class must be one of: {', '.join(sorted(SUPPLY_CLASSES))}",
+        )
+    if strict and not (value or "").strip() and not tax_exempt:
+        raise HTTPException(
+            status_code=400,
+            detail=f"tax_supply_class must be one of: {', '.join(sorted(SUPPLY_CLASSES))}",
+        )
     if tax_exempt:
         return "exempt"
     return "standard"

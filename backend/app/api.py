@@ -2739,6 +2739,7 @@ async def add_product(
     supply = normalize_supply_class(
         data.get("tax_supply_class"),
         tax_exempt=bool(data.get("tax_exempt")),
+        strict=True,
     )
     data["tax_supply_class"] = supply
     data["tax_exempt"] = supply == "exempt"

@@ -295,7 +295,8 @@ class ProductCreate(BaseModel):
     reorder_level: float = 0
     tax_rate_id: str | None = None
     tax_exempt: bool = False
-    tax_supply_class: str = "standard"
+    # BR-12.1 / BR-5.1 — schema Literal; omit → standard; blank/invalid → 422
+    tax_supply_class: Literal["standard", "zero_rated", "exempt"] = "standard"
     tracks_batches: bool = False
 
 
@@ -317,7 +318,8 @@ class ProductUpdate(BaseModel):
     reorder_level: float | None = None
     tax_rate_id: str | None = None
     tax_exempt: bool | None = None
-    tax_supply_class: str | None = None
+    # BR-12.1 — omit = no change; blank/invalid → 422 (no silent standard)
+    tax_supply_class: Literal["standard", "zero_rated", "exempt"] | None = None
     tracks_batches: bool | None = None
     is_active: bool | None = None
 
