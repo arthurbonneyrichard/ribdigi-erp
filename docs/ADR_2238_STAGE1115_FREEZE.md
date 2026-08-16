@@ -31,3 +31,7 @@ Stage 1116 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Foyer Gate, Transfer Foyer Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1116 opened under **ADR-2239** after CONTINUE/NEXT (Tenant MVP Transfer Loggia Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2240**. Stage 1115 feature scope remains frozen.
