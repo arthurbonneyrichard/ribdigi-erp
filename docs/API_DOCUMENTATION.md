@@ -1226,7 +1226,7 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 ```json
 { "override_credit_limit": true, "override_reason": "Approved by store manager" }
 ```
-Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override`. Sales Invoices + POS UIs require a typed **Credit override reason** (no canned `window.prompt` default).
+Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. When `override_credit_limit` is true, **`override_reason` is required** (non-empty); blank/omit → `400` `CREDIT_OVERRIDE_REASON_REQUIRED`. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override` with `details.reason`. Sales Invoices + POS UIs require a typed **Credit override reason** (no canned `window.prompt` default).
 
 **Response:**
 ```json
@@ -1798,8 +1798,9 @@ X-RateLimit-Reset: 1691415060
 | `TENANT_SUSPENDED` | Tenant account is suspended |
 | `RESOURCE_NOT_FOUND` | Requested resource not found |
 | `INSUFFICIENT_STOCK` | Not enough stock for operation |
-| `CREDIT_LIMIT_EXCEEDED` | Customer credit limit reached (override via `override_credit_limit` + `credit:approve`) |
+| `CREDIT_LIMIT_EXCEEDED` | Customer credit limit reached (override via `override_credit_limit` + required `override_reason` + `credit:approve`) |
 | `CREDIT_OVERRIDE_FORBIDDEN` | Credit limit override attempted without `credit:approve` |
+| `CREDIT_OVERRIDE_REASON_REQUIRED` | `override_credit_limit=true` without a non-empty `override_reason` |
 | `DUPLICATE_ENTRY` | Resource already exists |
 | `RATE_LIMIT_EXCEEDED` | Too many requests |
 

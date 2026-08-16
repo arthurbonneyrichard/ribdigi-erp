@@ -74,7 +74,16 @@ def enforce_customer_credit_limit(
             },
         )
 
-    reason = (override_reason or "").strip() or None
+    reason = (override_reason or "").strip()
+    if not reason:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                **detail,
+                "code": "CREDIT_OVERRIDE_REASON_REQUIRED",
+                "message": "override_reason is required when override_credit_limit is true",
+            },
+        )
     return {
         "customer_id": customer.id,
         "customer_name": customer.name,
