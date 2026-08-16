@@ -103,6 +103,21 @@ RecordScopeValue = Annotated[
 ]
 
 
+def coerce_package_code_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+PackageCodeValue = Annotated[
+    Literal["trial", "starter", "professional", "enterprise"],
+    BeforeValidator(coerce_package_code_value),
+]
+
+
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
     if bool(getattr(model, "override_credit_limit", False)):
@@ -235,7 +250,9 @@ class TenantSuspendRequest(BaseModel):
 
 
 class TenantSubscriptionAssign(BaseModel):
-    package_code: str
+    # BR-1.x / platform — schema Literal (+ strip/lower); blank/invalid → 422
+    # (was free str; service still defense-in-depth vs VALID_PACKAGE_CODES)
+    package_code: PackageCodeValue
     term_value: int = Field(..., ge=1, le=120)
     # BR-1.x / platform — schema Literal; omit → months; blank/invalid → 422
     term_unit: Literal["months", "years"] = "months"

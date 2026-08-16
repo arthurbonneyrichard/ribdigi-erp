@@ -215,6 +215,8 @@ async def assign_subscription(
     enabled_modules: list[str] | None = None,
 ) -> m.Tenant:
     code = (package_code or "").strip().lower()
+    # Defense in depth: TenantSubscriptionAssign.package_code Literal rejects
+    # blank/unknown with 422 before this runs.
     if code not in packages_svc.VALID_PACKAGE_CODES:
         raise HTTPException(
             status_code=422,
