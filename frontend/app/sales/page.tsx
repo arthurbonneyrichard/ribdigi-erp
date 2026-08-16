@@ -1251,8 +1251,20 @@ export default function Page() {
                     <>
                       <button className="btn-ok" onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
                       <button className="btn-danger" onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}>Reject</button>
-                      <button onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}>→ Order</button>
-                      <button onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}>→ Invoice</button>
+                      <button
+                        type="button"
+                        className="btn-ok"
+                        onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}
+                      >
+                        → Order
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-ok"
+                        onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}
+                      >
+                        → Invoice
+                      </button>
                     </>
                   )}
                 </td>
@@ -1321,6 +1333,8 @@ export default function Page() {
                   <button onClick={() => setSelected(o)}>View</button>
                   {o.status === 'draft' && (
                     <button
+                      type="button"
+                      className="btn-ok"
                       onClick={() =>
                         act(
                           `/sales/orders/${o.id}/confirm`,
@@ -1341,20 +1355,38 @@ export default function Page() {
                     </button>
                   )}
                   {o.can_process && (
-                    <button onClick={() => act(`/sales/orders/${o.id}/process`, 'Processing')}>
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => act(`/sales/orders/${o.id}/process`, 'Processing')}
+                    >
                       Process
                     </button>
                   )}
                   {o.can_ship && (
-                    <button onClick={() => act(`/sales/orders/${o.id}/ship`, 'Shipped')}>Ship</button>
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => act(`/sales/orders/${o.id}/ship`, 'Shipped')}
+                    >
+                      Ship
+                    </button>
                   )}
                   {o.can_deliver && (
-                    <button onClick={() => act(`/sales/orders/${o.id}/deliver`, 'Delivered')}>
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => act(`/sales/orders/${o.id}/deliver`, 'Delivered')}
+                    >
                       Deliver
                     </button>
                   )}
                   {o.can_invoice && (
-                    <button onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}>
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}
+                    >
                       → Invoice
                     </button>
                   )}
