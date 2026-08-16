@@ -1303,7 +1303,7 @@ export default function Page() {
                   <td>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {j.can_unpost && j.status === 'posted' && (
-                        <button type="button" onClick={() => unpostJournal(j.id)}>
+                        <button type="button" className="btn-danger" onClick={() => unpostJournal(j.id)}>
                           Unpost
                         </button>
                       )}
@@ -1881,16 +1881,16 @@ export default function Page() {
                   </td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {c.direction === 'received' && c.status === 'pending' && (
-                      <button onClick={() => chequeAction(c.id, 'deposit')}>Deposit</button>
+                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'deposit')}>Deposit</button>
                     )}
                     {(c.status === 'pending' || c.status === 'deposited') && (
-                      <button onClick={() => chequeAction(c.id, 'clear')}>Clear</button>
+                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'clear')}>Clear</button>
                     )}
                     {c.status !== 'bounced' && c.status !== 'cancelled' && (
-                      <button onClick={() => chequeAction(c.id, 'bounce')}>Bounce</button>
+                      <button className="btn-danger" onClick={() => chequeAction(c.id, 'bounce')}>Bounce</button>
                     )}
                     {c.direction === 'issued' && c.status === 'pending' && (
-                      <button onClick={() => chequeAction(c.id, 'cancel')}>Cancel</button>
+                      <button className="btn-danger" onClick={() => chequeAction(c.id, 'cancel')}>Cancel</button>
                     )}
                   </td>
                 </tr>

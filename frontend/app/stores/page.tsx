@@ -1433,10 +1433,10 @@ export default function Page() {
                 )}
                 {t.status === 'requested' && !t.fully_approved && (
                   <>
-                    <button type="button" onClick={() => act(t.id, 'approve')}>
+                    <button type="button" className="btn-ok" onClick={() => act(t.id, 'approve')}>
                       Approve {t.awaiting_approval === 'dest' ? 'dest' : 'source'}
                     </button>
-                    <button type="button" onClick={() => act(t.id, 'reject')}>
+                    <button type="button" className="btn-danger" onClick={() => act(t.id, 'reject')}>
                       Reject
                     </button>
                   </>
@@ -1452,7 +1452,7 @@ export default function Page() {
                   </button>
                 )}
                 {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                  <button type="button" onClick={() => act(t.id, 'cancel')}>
+                  <button type="button" className="btn-danger" onClick={() => act(t.id, 'cancel')}>
                     Cancel
                   </button>
                 )}

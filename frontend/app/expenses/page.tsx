@@ -1124,6 +1124,7 @@ export default function Page() {
                   ) : null}
                   <button
                     type="button"
+                    className={r.is_active ? 'btn-danger' : 'btn-ok'}
                     onClick={() => setRecurringActive(r.id, !r.is_active)}
                   >
                     {r.is_active ? 'Deactivate' : 'Activate'}
@@ -1458,10 +1459,10 @@ export default function Page() {
                 )}
                 {r.status === 'pending' && (
                   <>
-                    <button onClick={() => approve(r.id)} style={{ marginRight: 8 }}>
+                    <button className="btn-ok" onClick={() => approve(r.id)} style={{ marginRight: 8 }}>
                       Approve
                     </button>
-                    <button onClick={() => reject(r.id)}>Reject</button>
+                    <button className="btn-danger" onClick={() => reject(r.id)}>Reject</button>
                   </>
                 )}
               </td>

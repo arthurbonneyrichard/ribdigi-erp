@@ -1243,8 +1243,8 @@ export default function Page() {
                   )}
                   {['draft', 'sent'].includes(q.status) && (
                     <>
-                      <button onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
-                      <button onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}>Reject</button>
+                      <button className="btn-ok" onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
+                      <button className="btn-danger" onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}>Reject</button>
                       <button onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}>→ Order</button>
                       <button onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}>→ Invoice</button>
                     </>
@@ -1353,7 +1353,7 @@ export default function Page() {
                     </button>
                   )}
                   {o.can_cancel && (
-                    <button onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>
+                    <button className="btn-danger" onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>
                       Cancel
                     </button>
                   )}
@@ -1428,7 +1428,7 @@ export default function Page() {
                   {inv.status === 'draft' && (
                     <>
                       <button onClick={() => postInvoice(inv)}>Post</button>
-                      <button onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
+                      <button className="btn-danger" onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
                     </>
                   )}
                   {inv.can_print && (
@@ -1607,7 +1607,7 @@ export default function Page() {
                       >
                         Post + refund
                       </button>
-                      <button onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}>
+                      <button className="btn-danger" onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}>
                         Cancel
                       </button>
                     </>
