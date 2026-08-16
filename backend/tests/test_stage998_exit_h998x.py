@@ -11,7 +11,7 @@ def test_stage998_exit_criteria_and_freeze_adr():
     assert "Stage 998" in freeze
     assert "frozen" in freeze.lower() or "Freeze" in freeze
     assert "Stage 999" in freeze and "Stage 997" in freeze and "Accepted" in freeze
-    assert "TRANSFER_RELAY_GATE_HONESTY_PACK_" in freeze
+    assert "TRANSFER_FILTER_GATE_HONESTY_PACK_" in freeze
     plan = (ROOT / "docs" / "STAGE_998_PLAN.md").read_text(encoding="utf-8")
     assert "Closed" in plan or "exit met" in plan.lower() or "ADR-2004" in plan
     for ws in ("I1", "B1", "P1", "D1", "H998x"):
