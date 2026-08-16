@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1161 track opened (ADR-2329: `test_stage1161_open.py`, `docs/STAGE_1161_PLAN.md`) — Transfer Parados Gate Honesty Pack Remaining-Gate Index; closed under ADR-2330
+- [x] Transfer Parados Gate Honesty Pack remaining-gate hub (Stage 1161 I1: `test_stage1161_index_i1.py`, `docs/TRANSFER_PARADOS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Parados Gate Honesty Pack blocker matrix (Stage 1161 B1: `test_stage1161_blockers_b1.py`, `docs/TRANSFER_PARADOS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1160 / Stage 1159 / Stage 392 / CHANGE_IMPACT pointers (Stage 1161 P1: `test_stage1161_pointers_p1.py`, `docs/TRANSFER_PARADOS_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1161 fidelity sync (D1: `test_stage1161_fidelity_d1.py`, `docs/STAGE_1161_FIDELITY.md`)
+- [x] Stage 1161 exit + freeze (H1161x: `test_stage1161_exit_h1161x.py`, `docs/STAGE_1161_EXIT_CRITERIA.md`, ADR-2330)
+
 Stage 1160 track opened (ADR-2327: `test_stage1160_open.py`, `docs/STAGE_1160_PLAN.md`) — Transfer Glacis Gate Honesty Pack Remaining-Gate Index; closed under ADR-2328
 - [x] Transfer Glacis Gate Honesty Pack remaining-gate hub (Stage 1160 I1: `test_stage1160_index_i1.py`, `docs/TRANSFER_GLACIS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Glacis Gate Honesty Pack blocker matrix (Stage 1160 B1: `test_stage1160_blockers_b1.py`, `docs/TRANSFER_GLACIS_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
