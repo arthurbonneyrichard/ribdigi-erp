@@ -31,3 +31,7 @@ Stage 1144 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Obelisk Gate, Transfer Obelisk Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1144 opened under **ADR-2295** after CONTINUE/NEXT (Tenant MVP Transfer Pylon Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2296**. Stage 1143 feature scope remains frozen.
