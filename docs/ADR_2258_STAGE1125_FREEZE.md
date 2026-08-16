@@ -31,3 +31,7 @@ Stage 1126 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gazebo Gate, Transfer Gazebo Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1126 opened under **ADR-2259** after CONTINUE/NEXT (Tenant MVP Transfer Pavilion Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2260**. Stage 1125 feature scope remains frozen.
