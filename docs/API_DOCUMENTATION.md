@@ -812,6 +812,8 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 
 **Cancel:** `POST /purchasing/orders/{po_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to PO `notes` as `Cancel: …` and stored in audit `po_cancelled.details.reason`); allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel` + `notes`. Purchasing Orders **Cancel reason** UI (BR-6.3).
 
+**Amend:** `POST /purchasing/orders/{po_id}/amend` — body may include `items` / `notes` / `delivery_address` / `due_date` / `notify_supplier`; **`reason` required** (non-empty) → stored on `purchase_order_amendments.reason` + audit `po_amended.details.reason`. Purchasing Orders **Required amendment reason** UI (BR-6.3). Omit/blank → 422/400.
+
 ### 6.4 Goods Received Note (GRN)
 **List:** `GET /purchases/grn`  
 **Create:** `POST /purchases/grn`  

@@ -525,12 +525,17 @@ export default function Page() {
     if (!selected?.id || !selected.items?.length) return;
     setError('');
     setMessage('');
+    const reason = amendReason.trim();
+    if (!reason) {
+      setError('Enter an amendment reason before saving');
+      return;
+    }
     try {
       const line = selected.items[0];
       const r = await api(`/purchasing/orders/${selected.id}/amend`, {
         method: 'POST',
         body: JSON.stringify({
-          reason: amendReason.trim() || null,
+          reason,
           notes: amendNotes,
           delivery_address: amendDeliveryAddress,
           notify_supplier: amendNotify,
@@ -548,6 +553,7 @@ export default function Page() {
       });
       const rev = r.data?.revision_no ?? r.data?.amendment?.revision_no;
       setMessage(r.message || `Amended ${r.data.po_number} (rev.${rev})`);
+      setAmendReason('');
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
@@ -1994,8 +2000,11 @@ export default function Page() {
                   <input
                     value={amendReason}
                     onChange={(e) => setAmendReason(e.target.value)}
-                    placeholder="Amendment reason"
+                    placeholder="Required amendment reason"
                   />
+                  <p className="muted" style={{ margin: 0 }}>
+                    Required — stored on amendment history and audit (<code>po_amended.details.reason</code>).
+                  </p>
                   <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
                       type="checkbox"

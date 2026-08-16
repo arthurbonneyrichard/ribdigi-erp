@@ -838,7 +838,8 @@ class PurchaseOrderAmend(BaseModel):
     delivery_address: str | None = None
     due_date: datetime | None = None
     clear_due_date: bool = False
-    reason: str | None = None
+    # Required typed reason (BR-6.3 honesty); no silent amend
+    reason: str = Field(min_length=1, max_length=500)
     notify_supplier: bool = False
     to: str | None = None
 

@@ -181,7 +181,10 @@ async def test_amend_blocked_after_receipt(client, db_session):
     blocked = await ac.post(
         f"/api/v1/purchasing/orders/{po_id}/amend",
         headers=io,
-        json={"items": [{"product_id": seed["p1"].id, "quantity": 8, "unit_price": 2}]},
+        json={
+            "reason": "should fail after receipt",
+            "items": [{"product_id": seed["p1"].id, "quantity": 8, "unit_price": 2}],
+        },
     )
     assert blocked.status_code == 409
     assert "received" in blocked.json()["detail"].lower()
@@ -213,11 +216,12 @@ async def test_amend_noop_rejected(client, db_session):
         headers=io,
         json={},
     )
-    assert empty.status_code == 400
+    assert empty.status_code == 422
     same = await ac.post(
         f"/api/v1/purchasing/orders/{po_id}/amend",
         headers=io,
         json={
+            "reason": "noop attempt",
             "notes": "Same",
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
         },
