@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1003 track opened (ADR-2013: `test_stage1003_open.py`, `docs/STAGE_1003_PLAN.md`) — Transfer Sanitize Gate Honesty Pack Remaining-Gate Index; closed under ADR-2014
+- [x] Transfer Sanitize Gate Honesty Pack remaining-gate hub (Stage 1003 I1: `test_stage1003_index_i1.py`, `docs/TRANSFER_SANITIZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Sanitize Gate Honesty Pack blocker matrix (Stage 1003 B1: `test_stage1003_blockers_b1.py`, `docs/TRANSFER_SANITIZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1002 / Stage 1001 / Stage 392 / CHANGE_IMPACT pointers (Stage 1003 P1: `test_stage1003_pointers_p1.py`, `docs/TRANSFER_SANITIZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1003 fidelity sync (D1: `test_stage1003_fidelity_d1.py`, `docs/STAGE_1003_FIDELITY.md`)
+- [x] Stage 1003 exit + freeze (H1003x: `test_stage1003_exit_h1003x.py`, `docs/STAGE_1003_EXIT_CRITERIA.md`, ADR-2014)
+
 Stage 1002 track opened (ADR-2011: `test_stage1002_open.py`, `docs/STAGE_1002_PLAN.md`) — Transfer Scrub Gate Honesty Pack Remaining-Gate Index; closed under ADR-2012
 - [x] Transfer Scrub Gate Honesty Pack remaining-gate hub (Stage 1002 I1: `test_stage1002_index_i1.py`, `docs/TRANSFER_SCRUB_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Scrub Gate Honesty Pack blocker matrix (Stage 1002 B1: `test_stage1002_blockers_b1.py`, `docs/TRANSFER_SCRUB_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

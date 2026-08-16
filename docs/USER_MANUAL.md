@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 1003 Transfer Sanitize Gate Honesty Pack remaining-gate index fidelity (ADR-2013/2014). Operators track packaging status via `docs/TRANSFER_SANITIZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1002 Transfer Scrub Gate Honesty Pack remaining-gate index fidelity (ADR-2011/2012). Operators track packaging status via `docs/TRANSFER_SCRUB_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1001 Transfer Sieve Gate Honesty Pack remaining-gate index fidelity (ADR-2009/2010). Operators track packaging status via `docs/TRANSFER_SIEVE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
 Stage 1000 Transfer Screen Gate Honesty Pack remaining-gate index fidelity (ADR-2007/2008). Operators track packaging status via `docs/TRANSFER_SCREEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` — not product Offline Complete.
