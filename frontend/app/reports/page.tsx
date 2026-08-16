@@ -90,6 +90,7 @@ export default function Page() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [expiryDays, setExpiryDays] = useState('30');
   const [valuationMethod, setValuationMethod] = useState<'standard'>('standard');
+  const [stockCountStatus, setStockCountStatus] = useState<'draft' | 'completed' | 'cancelled'>('completed');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -189,7 +190,7 @@ export default function Page() {
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs()}`),
           api(`/reports/inventory/expiry${qs({ days: expiryDays || '30' })}`),
-          api(`/reports/inventory/stock-counts${qs({ variance_only: 'true' })}`),
+          api(`/reports/inventory/stock-counts${qs({ variance_only: 'true', status: stockCountStatus })}`),
         ]);
         setData({
           lowStock: r.data,
@@ -1355,7 +1356,21 @@ export default function Page() {
           <div className="card" style={{ marginTop: 16 }}>
             <h3>Stock count variances</h3>
             <p className="muted">
-              {data.stockCounts?.count_sessions ?? 0} completed count
+              <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
+                Count status
+                <select
+                  aria-label="Count status"
+                  value={stockCountStatus}
+                  onChange={(e) =>
+                    setStockCountStatus(e.target.value as 'draft' | 'completed' | 'cancelled')
+                  }
+                >
+                  <option value="completed">completed</option>
+                  <option value="draft">draft</option>
+                  <option value="cancelled">cancelled</option>
+                </select>
+              </label>
+              {data.stockCounts?.count_sessions ?? 0} count
               {(data.stockCounts?.count_sessions ?? 0) === 1 ? '' : 's'} ·{' '}
               {data.stockCounts?.lines_with_variance ?? 0} variance line
               {(data.stockCounts?.lines_with_variance ?? 0) === 1 ? '' : 's'} · net qty{' '}

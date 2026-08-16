@@ -1574,6 +1574,11 @@ ChequeStatusValue = Annotated[
     Literal["pending", "deposited", "cleared", "bounced", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.stock_counts.COUNT_STATUSES (Reports Inventory count variances).
+StockCountReportStatusValue = Annotated[
+    Literal["draft", "completed", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
 ReportTypeValue = Annotated[
     Literal[

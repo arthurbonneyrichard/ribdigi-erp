@@ -12,6 +12,9 @@ from app import models as m
 from app.doc_numbers import next_stock_count_number
 from app.inventory import allocate_unlocated_stock, apply_stock_change, get_or_create_warehouse_stock
 
+# Lifecycle statuses for StockCount (create → draft; complete → completed; cancel → cancelled).
+COUNT_STATUSES = frozenset({"draft", "completed", "cancelled"})
+
 
 async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> m.Warehouse:
     wh = (
