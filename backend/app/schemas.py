@@ -187,8 +187,10 @@ class PlatformRevokeAccess(BaseModel):
 class AccountCreate(BaseModel):
     code: str
     name: str
-    account_type: str = "asset"
-    liquid_kind: str | None = None  # cash | bank
+    # BR-10.3 / COA — schema Literal; omit → asset; blank/invalid → 422
+    account_type: Literal["asset", "liability", "equity", "income", "expense"] = "asset"
+    # omit/null = non-liquid; blank/invalid → 422 (no silent None from "")
+    liquid_kind: Literal["cash", "bank"] | None = None
     bank_name: str | None = None
     account_number: str | None = None
     bank_branch: str | None = None
