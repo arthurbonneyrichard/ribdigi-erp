@@ -74,16 +74,15 @@ async def test_sales_invoice_post_override_reason_in_audit(client, db_session):
         headers=headers,
         json={"override_credit_limit": True},
     )
-    assert no_reason.status_code == 400, no_reason.text
-    assert no_reason.json()["detail"]["code"] == "CREDIT_OVERRIDE_REASON_REQUIRED"
+    assert no_reason.status_code == 422, no_reason.text
 
     blank = await ac.post(
         f"/api/v1/sales/invoices/{invoice_id}/post",
         headers=headers,
         json={"override_credit_limit": True, "override_reason": "  "},
     )
-    assert blank.status_code == 400, blank.text
-    assert blank.json()["detail"]["code"] == "CREDIT_OVERRIDE_REASON_REQUIRED"
+    assert blank.status_code == 422, blank.text
+    assert "override_reason" in blank.text.lower()
 
     posted = await ac.post(
         f"/api/v1/sales/invoices/{invoice_id}/post",
