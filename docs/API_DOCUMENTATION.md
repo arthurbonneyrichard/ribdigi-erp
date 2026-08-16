@@ -286,7 +286,7 @@ Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a
 }
 ```
 
-`term_unit` is `months` or `years`. Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, and effective `enabled_modules`.
+`term_unit` schema `Literal["months","years"]` (omit → `months`; blank/invalid → **422**; no silent months from `""`). Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, and effective `enabled_modules`.
 
 **Feature modules:** `PATCH /tenants/{tenant_ref}/modules`  
 `{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`

@@ -156,6 +156,8 @@ async def assign_subscription(
             detail=f"package_code must be one of: {', '.join(sorted(packages_svc.VALID_PACKAGE_CODES))}",
         )
     unit = (term_unit or "months").strip().lower()
+    # Defense in depth: TenantSubscriptionAssign.term_unit Literal rejects
+    # blank/unknown with 422 before this runs. Empty used to coerce to months.
     if unit not in packages_svc.VALID_TERM_UNITS:
         raise HTTPException(status_code=422, detail="term_unit must be months or years")
     value = int(term_value)
