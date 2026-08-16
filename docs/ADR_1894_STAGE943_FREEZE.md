@@ -31,3 +31,7 @@ Stage 944 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Egress Gate, Transfer Egress Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 944 opened under **ADR-1895** after CONTINUE/NEXT (Tenant MVP Transfer Perimeter Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1896**. Stage 943 feature scope remains frozen.
