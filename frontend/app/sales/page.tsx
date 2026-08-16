@@ -1427,7 +1427,9 @@ export default function Page() {
                   <button onClick={() => setSelected(inv)}>View</button>
                   {inv.status === 'draft' && (
                     <>
-                      <button onClick={() => postInvoice(inv)}>Post</button>
+                      <button type="button" className="btn-ok" onClick={() => postInvoice(inv)}>
+                        Post
+                      </button>
                       <button className="btn-danger" onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
                     </>
                   )}
@@ -1589,6 +1591,8 @@ export default function Page() {
                   {r.status === 'draft' && (
                     <>
                       <button
+                        type="button"
+                        className="btn-ok"
                         onClick={() =>
                           act(`/sales/returns/${r.id}/post`, 'Posted (credit)', {
                             settlement_method: 'adjust',
@@ -1598,6 +1602,8 @@ export default function Page() {
                         Post credit
                       </button>
                       <button
+                        type="button"
+                        className="btn-ok"
                         onClick={() =>
                           act(`/sales/returns/${r.id}/post`, 'Posted (refund)', {
                             settlement_method: 'refund',

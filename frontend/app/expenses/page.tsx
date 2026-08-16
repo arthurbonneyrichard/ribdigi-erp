@@ -1111,6 +1111,7 @@ export default function Page() {
                   {r.is_active ? (
                     <button
                       type="button"
+                      className="btn-danger"
                       onClick={() => skipNextRecurring(r.id)}
                       disabled={!skipNextReason.trim()}
                       title={

@@ -32,3 +32,36 @@ def test_expenses_approve_reject_use_hover_classes():
     expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'className="btn-ok" onClick={() => approve(r.id)' in expenses
     assert 'className="btn-danger" onClick={() => reject(r.id)' in expenses
+
+
+def test_lifecycle_remainders_use_hover_classes():
+    """Post GRN / Close books / Skip next / Post / Receive / Ship remainders."""
+    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-ok"' in purchasing
+    assert "Post GRN (accept / reject)" in purchasing
+    assert purchasing.index('className="btn-ok"') < purchasing.index("Post GRN (accept / reject)")
+    assert "Receive all accepted" in purchasing
+    assert 'className="btn-ok" onClick={() => postReturn(r.id)' in purchasing
+
+    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-danger" onClick={closeBooks}' in accounting
+    assert 'className="btn-ok" onClick={reopenBooks}' in accounting
+
+    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-danger"' in expenses
+    assert "Skip next" in expenses
+    assert 'onClick={() => skipNextRecurring(r.id)' in expenses
+
+    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-ok" onClick={() => postInvoice(inv)' in sales
+    assert 'Post credit' in sales and 'className="btn-ok"' in sales
+
+    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    assert "transferAct(t.id, 'ship')" in inventory
+    assert "transferAct(t.id, 'receive')" in inventory
+    assert inventory.count('className="btn-ok"') >= 3  # approve + ship + receive
+
+    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    assert "act(t.id, 'ship')" in stores
+    assert "act(t.id, 'receive')" in stores
+    assert stores.count('className="btn-ok"') >= 3
