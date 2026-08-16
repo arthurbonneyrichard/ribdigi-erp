@@ -638,7 +638,15 @@ async def apply_auto_matches(
 ) -> dict:
     """Persist suggestions at or above min_confidence (high > medium > low)."""
     order = {"high": 3, "medium": 2, "low": 1}
-    floor = order.get((min_confidence or "high").lower(), 3)
+    # Defense in depth: BankAutoClearBody.min_confidence Literal rejects blank/unknown with 422.
+    # Empty/garbage used to coerce to high via `or "high"` / order.get(..., 3).
+    key = (min_confidence or "").strip().lower()
+    if key not in order:
+        raise HTTPException(
+            status_code=400,
+            detail="min_confidence must be high, medium, or low",
+        )
+    floor = order[key]
     suggestions = await auto_match_suggestions(
         db,
         tenant_id=tenant_id,

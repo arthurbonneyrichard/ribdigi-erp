@@ -97,6 +97,7 @@ from app.schemas import (
     FxAutoRefreshUpdate,
     BankConnectionCreate,
     BankConnectionUpdate,
+    BankAutoClearBody,
     ExpenseCategoryCreate,
     ExpenseCategoryUpdate,
     ExpenseCreate,
@@ -8511,20 +8512,20 @@ async def dissolve_bank_clearing_group(
 @api.post("/accounting/bank-statements/{statement_id}/auto-clear")
 async def auto_clear_bank_statement(
     statement_id: str,
-    payload: dict | None = None,
+    payload: BankAutoClearBody | None = None,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Apply high-confidence (default) bank↔book matches in one shot."""
     from app import bank_recon as bank_recon_svc
 
-    body = payload or {}
+    body = payload or BankAutoClearBody()
     result = await bank_recon_svc.apply_auto_matches(
         db,
         tenant_id=claims["tenant_id"],
         statement_id=statement_id,
-        min_confidence=str(body.get("min_confidence") or "high"),
-        date_window_days=int(body.get("date_window_days") or 7),
+        min_confidence=body.min_confidence,
+        date_window_days=body.date_window_days,
     )
     await db.commit()
     stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)

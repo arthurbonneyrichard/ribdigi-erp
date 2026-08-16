@@ -681,7 +681,7 @@ export default function Page() {
     }
   }
 
-  async function autoClear(minConfidence: 'high' | 'medium' = 'high') {
+  async function autoClear(minConfidence: 'high' | 'medium' | 'low' = 'high') {
     if (!selected?.id) return;
     setError('');
     try {
@@ -1688,9 +1688,16 @@ export default function Page() {
               <button
                 onClick={() => autoClear('medium')}
                 disabled={selected.status === 'reconciled'}
-                style={{ marginBottom: 12 }}
+                style={{ marginBottom: 12, marginRight: 8 }}
               >
                 Auto-clear medium+
+              </button>
+              <button
+                onClick={() => autoClear('low')}
+                disabled={selected.status === 'reconciled'}
+                style={{ marginBottom: 12 }}
+              >
+                Auto-clear low+
               </button>
 
               {(selected.suggestions || []).length > 0 && (
