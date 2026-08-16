@@ -31,3 +31,7 @@ Stage 1166 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Machicol Gate, Transfer Machicol Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1166 opened under **ADR-2339** after CONTINUE/NEXT (Tenant MVP Transfer Hoarding Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2340**. Stage 1165 feature scope remains frozen.
