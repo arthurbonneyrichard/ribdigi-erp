@@ -31,3 +31,7 @@ Stage 1097 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Thoroughfare Gate, Transfer Thoroughfare Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1097 opened under **ADR-2201** after CONTINUE/NEXT (Tenant MVP Transfer Arterial Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2202**. Stage 1096 feature scope remains frozen.
