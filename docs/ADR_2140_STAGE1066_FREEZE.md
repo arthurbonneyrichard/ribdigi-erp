@@ -31,3 +31,7 @@ Stage 1067 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Span Gate, Transfer Span Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1067 opened under **ADR-2141** after CONTINUE/NEXT (Tenant MVP Transfer Interval Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2142**. Stage 1066 feature scope remains frozen.
