@@ -4306,17 +4306,22 @@ def _normalize_party_profile(data: dict, *, kind: str) -> dict:
         data["code"] = code
     if "profile_type" in data:
         pt = data["profile_type"]
+        # Defense in depth: PartyCreate/Update Literals reject blank/unknown with
+        # 422 first. Empty used to coerce to "registered" — schema honesty closes
+        # that gap (R1). Kind-specific allow-list remains here.
         if pt is None or str(pt).strip() == "":
-            data["profile_type"] = "registered"
-        else:
-            pt = str(pt).strip().lower()
-            allowed = _PARTY_PROFILE_TYPES[kind]
-            if pt not in allowed:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid profile_type; expected one of {sorted(allowed)}",
-                )
-            data["profile_type"] = pt
+            raise HTTPException(
+                status_code=400,
+                detail=f"profile_type must be one of {sorted(_PARTY_PROFILE_TYPES[kind])}",
+            )
+        pt = str(pt).strip().lower()
+        allowed = _PARTY_PROFILE_TYPES[kind]
+        if pt not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid profile_type; expected one of {sorted(allowed)}",
+            )
+        data["profile_type"] = pt
     if "status" in data and data["status"] is not None:
         st = str(data["status"]).strip().lower()
         if st not in _PARTY_STATUSES:

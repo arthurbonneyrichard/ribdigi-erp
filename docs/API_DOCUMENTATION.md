@@ -715,9 +715,9 @@ Product + warehouse policy scans create `low_stock` notifications (`scan_low_sto
 
 ### 6.1 Suppliers
 **List:** `GET /suppliers`  
-**Create:** `POST /suppliers`  
+**Create:** `POST /suppliers` — `profile_type` schema `Literal` union (`registered|trade|manufacturer|service|other` for suppliers; blank/invalid → **422**; omit → `registered`). Kind allow-list still enforces supplier set (e.g. `walk_in` → **400**). `status` schema `Literal["active","inactive"]` (omit → `active`; blank/invalid → **422**).  
 **Get:** `GET /suppliers/{supplier_id}`  
-**Update:** `PATCH /suppliers/{supplier_id}` — partial fields include `name`, `status` (`active`|`inactive`), contacts profile; soft-deactivate via `status=inactive` (Purchasing **Activate** / **Deactivate**; inactive blocked on new PO / preferred-supplier PR / standalone PI; GRN/PO-linked invoices may still settle)  
+**Update:** `PATCH /suppliers/{supplier_id}` — partial fields include `name`, `status` (`active`|`inactive`), contacts profile (`profile_type` / `status` same Literals, omit = no change; blank → **422**; no silent `registered`); soft-deactivate via `status=inactive` (Purchasing **Activate** / **Deactivate**; inactive blocked on new PO / preferred-supplier PR / standalone PI; GRN/PO-linked invoices may still settle)  
 **Delete:** `DELETE /suppliers/{supplier_id}`
 
 List supports optional `?status=active|inactive` (Purchasing Manage supplier filters All / Active / Inactive; PO/PR/PI pickers stay active-only). Party `code` is unique per tenant when set.
@@ -878,9 +878,9 @@ Line credits inherit proportional PO line discount (`return_qty / ordered_qty ×
 
 ### 7.1 Customers
 **List:** `GET /customers`  
-**Create:** `POST /customers`  
+**Create:** `POST /customers` — `profile_type` schema `Literal` union (`walk_in|registered` for customers; blank/invalid → **422**; omit → `registered`). Kind allow-list still enforces customer set (e.g. `trade` → **400**). `status` schema `Literal["active","inactive"]` (omit → `active`; blank/invalid → **422**).  
 **Get:** `GET /customers/{customer_id}`  
-**Update:** `PATCH /customers/{customer_id}` — partial fields include profile + `status` (`active`|`inactive`); soft-deactivate via `status=inactive` (Sales **Activate** / **Deactivate**; inactive blocked on new QT/SO/INV/POS; existing docs can still settle)  
+**Update:** `PATCH /customers/{customer_id}` — partial fields include profile + `status` (`active`|`inactive`) (`profile_type` / `status` same Literals, omit = no change; blank → **422**; no silent `registered`); soft-deactivate via `status=inactive` (Sales **Activate** / **Deactivate**; inactive blocked on new QT/SO/INV/POS; existing docs can still settle)  
 **Delete:** `DELETE /customers/{customer_id}`
 
 **Create Customer:**
