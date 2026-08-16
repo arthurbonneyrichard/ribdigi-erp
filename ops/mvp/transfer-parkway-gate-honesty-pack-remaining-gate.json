@@ -1,0 +1,63 @@
+{
+  "id": "transfer-parkway-gate-honesty-pack-remaining-gate",
+  "stage": 1103,
+  "pack": "I1",
+  "doc": "docs/TRANSFER_PARKWAY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/TRANSFER_PARKWAY_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/TRANSFER_PARKWAY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "transfer_promenade_gate_honesty_pack_remaining_gate": "docs/TRANSFER_PROMENADE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_causeway_gate_honesty_pack_remaining_gate": "docs/TRANSFER_CAUSEWAY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_parkway_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_parkway_gate_honesty_complete_claimed": false,
+  "transfer_parkway_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage1102_transfer_promenade_gate_honesty_pack_remaining_gate": true,
+  "distinct_from_stage1101_transfer_causeway_gate_honesty_pack_remaining_gate": true,
+  "distinct_from_stage408_golive_honesty_pack_remaining_gate": true,
+  "distinct_from_transfer_parkway_gate_pack_remaining_gate": true,
+  "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "tparkwaygh-read-blockers",
+      "title": "Read B1 Transfer Parkway Gate Honesty Pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tparkwaygh-follow-pointers",
+      "title": "Follow P1 Stage 1102 / Stage 1101 / Stage 392 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tparkwaygh-checklist-missing",
+      "title": "Reaffirm Offline Complete / Transfer Parkway Gate / Transfer Parkway Gate honesty / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tparkwaygh-no-packaging-as-live",
+      "title": "Do not treat Stage 392 / MVP_PRODUCT_UPDATE_PACK as Offline Complete or go-live Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tparkwaygh-checklist-remaining",
+      "title": "Offline Complete / Transfer Parkway Gate / Transfer Parkway Gate honesty / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 1103 I1 Transfer Parkway Gate Honesty Pack remaining-gate index packaging only. Do not claim Offline Complete or go-live Completes."
+}
