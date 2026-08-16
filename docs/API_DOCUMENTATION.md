@@ -304,7 +304,9 @@ Service `apply_print_branding_update` remains defense-in-depth **400**. Read pat
 }
 ```
 
-`package_code` schema `Literal["trial","starter","professional","enterprise"]` (strip/lower coerce; blank/invalid → **422**; no free-string accept). `term_unit` schema `Literal["months","years"]` (omit → `months`; blank/invalid → **422**; no silent months from `""`). Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, and effective `enabled_modules`.
+`package_code` schema `Literal["trial","starter","professional","enterprise"]` (strip/lower coerce; blank/invalid → **422**; no free-string accept). `term_unit` schema `Literal["months","years"]` (omit → `months`; blank/invalid → **422**; no silent months from `""`). Optional `max_stores_override` (int ≥ 0) sets a per-tenant store entitlement override; `clear_max_stores_override` clears it. Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, effective `enabled_modules`, and store quota fields (`package_max_stores`, `effective_store_limit`, `stores_active`, …).
+
+**Store entitlements:** Package catalog `max_stores` (`null` = unlimited). Platform `PATCH /tenants/{ref}/store-entitlement` `{ max_stores_override }` / `{ clear: true }`. Tenant admin `PATCH /tenants/me/store-limit` `{ store_limit }` (null = full entitlement; cannot exceed entitlement). `GET /stores/entitlement` returns usage. `POST /stores` and reactivate enforce active-store count (403 `STORE_LIMIT_REACHED`); downgrades never delete stores.
 
 **Feature modules:** `PATCH /tenants/{tenant_ref}/modules`  
 `{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`

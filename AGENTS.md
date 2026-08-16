@@ -18,6 +18,7 @@
 - Deep readiness: `GET /api/v1/health/ready` (and `?deep=true`) probes DB + Redis + Celery broker; shallow `/health` stays liveness-only.
 - Admin job triggers: `GET /api/v1/jobs` (company_admin / super_admin / platform_owner) and `POST /jobs/{name}/run` (**super_admin** / **platform_owner** only). UI: Shell **Jobs** (`/jobs`). Pass `X-Tenant-ID` as the JWT `tenant_id` UUID (slug mismatch → cross-tenant 403).
 - **Platform subscriptions:** `GET /packages`, `POST /tenants/{slug}/subscription` (package + months/years), `PATCH /tenants/{slug}/modules`, `GET /tenants/{slug}/usage`. Sidebar hides modules not in `enabled_modules` from `/me`. Run Alembic `20260812_0070` after pull.
+- **Subscription-based store limits:** Company == Tenant in this product (no child Company table). Package catalog `max_stores` (`NULL`=unlimited) + tenant `max_stores_override` (platform) + tenant `store_limit` (company_admin allocation ≤ entitlement). Enforce on `POST /stores` and activate (`PATCH is_active=true`) via `store_entitlements` (active count; tenant `FOR UPDATE`). Downgrade never deletes stores; sets `over_entitlement`. APIs: `GET /stores/entitlement`, `PATCH /tenants/me/store-limit`, `PATCH /tenants/{ref}/store-entitlement`. Migration `20260816_0104`. UI: Multi-Store usage banner + Platform override.
 - **Sales UI needs `stores` module:** Sales page `storeContext` calls `GET /stores` on load; if `stores` is not in the tenant `enabled_modules`, the page surfaces that error and lists (invoices/returns) stay empty. For idle2021 starter demos, enable `stores` (and usually `credit` for Credit page) via platform `PATCH /tenants/{id}/modules`.
 - **Subscription term_unit OpenAPI:** `TenantSubscriptionAssign.term_unit` ∈ months|years (`Literal`); omit → `months`; blank/invalid → **422** (no silent months from `""`). Service `assign_subscription` remains defense-in-depth. Platform UI Term unit select.
 - **Subscription package_code OpenAPI:** `TenantSubscriptionAssign.package_code` ∈ trial|starter|professional|enterprise (`Literal` + strip/lower); blank/invalid → **422**. Service `VALID_PACKAGE_CODES` remains defense-in-depth. Platform UI Package select.
@@ -102,3 +103,23 @@
 - **Action button hover colors:** Lifecycle clicks use `.btn-ok` (green Accept/Approve/Activate/Deposit/Clear/Post/Receive/Ship/Reopen/Confirm/Process/Deliver/Submit/→ Order/→ Invoice) and `.btn-danger` (red Reject/Cancel/Suspend/Bounce/Unpost/Deactivate/Close books/Skip next). Styled in `frontend/app/globals.css` (table + card; light/dark). Soft Activate/Deactivate on Users, Inventory (product/variant/catalog), Stores (branch/dept/store/WH), Accounting COA + bank connections, Tax rates, Sales customer/group, Purchasing supplier, Expenses category match the same classes (recurring expenses already did). Residual **Post** actions also use `btn-ok`: Accounting Post balanced entry / Post opening balances / cash-transfer Post; Inventory Post opening stock / Post adjustment / Post stock out. Expenses **Submit expense** also uses `btn-ok`.
 - **POS drawer reason (BR-8.1):** POS shift header **Drawer reason** input (required, min 3, rejects placeholders) → `POST /pos/sessions/{id}/drawer/open` `{ reason }`. Replaces `window.prompt`. Auto-open on cash sale unchanged.
 - **Custom role soft-deactivate (BR-3.2):** Users **Activate** / **Deactivate** call `PATCH /roles/{key}` `{ is_active }`. Manage list uses `GET /roles?include_inactive=true`. Default catalog hides inactive; new assignment returns 400; existing assignees keep the role until reassigned. **Delete** still 409 while any user is assigned.
+
+## Subscription-Based Multi-Store Architecture
+
+```
+RIBDIGI HOUSE
+      ↓
+Subscription Package (max_stores; NULL = unlimited)
+      ↓
+Tenant (= Company in this product)
+      ↓
+Store / Branch / Warehouse
+```
+
+- **Company == Tenant.** There is no child Company entity; `tenants.company_name` is the company profile. Multi-company-under-tenant allocation is N/A until that model exists.
+- **RIBDIGI HOUSE** sets package catalog limits and optional per-tenant `max_stores_override`.
+- **Tenant Admin (`company_admin`)** may set `store_limit` ≤ subscription entitlement (company allocation).
+- **Effective limit** = `min(store_limit, entitlement)` when both finite; `NULL` means unlimited.
+- **Counts** use **active** stores for create/activate. Downgrades never delete stores; `over_entitlement` is surfaced and create/activate is blocked until resolved.
+- Enforcement is backend-only (`store_entitlements` + tenant row lock). Do not rely on frontend button disable alone.
+- Reuse existing `stores:read|write` RBAC + package `stores` module gate; do not invent parallel permission strings unless product expands RBAC verbs.

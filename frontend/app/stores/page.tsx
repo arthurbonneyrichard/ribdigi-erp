@@ -162,6 +162,17 @@ export default function Page() {
   const [warehouseManageFilter, setWarehouseManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [branchManageFilter, setBranchManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [departmentManageFilter, setDepartmentManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [entitlement, setEntitlement] = useState<{
+    stores_active?: number;
+    stores_total?: number;
+    stores_remaining?: number | null;
+    effective_store_limit?: number | null;
+    subscription_store_entitlement?: number | null;
+    store_limit?: number | null;
+    over_entitlement?: boolean;
+    unlimited?: boolean;
+  } | null>(null);
+  const [storeLimitDraft, setStoreLimitDraft] = useState('');
 
   type StatusFilter = 'all' | 'active' | 'inactive';
   const byStatus = <T extends { is_active?: boolean }>(rows: T[], filter: StatusFilter) =>
@@ -176,7 +187,7 @@ export default function Page() {
   const managedDepartments = byStatus(departments, departmentManageFilter);
 
   async function refresh() {
-    const [s, p, t, settings, wh, u, br, dep] = await Promise.all([
+    const [s, p, t, settings, wh, u, br, dep, ent] = await Promise.all([
       api('/stores'),
       api('/products'),
       api('/stores/transfers'),
@@ -185,6 +196,7 @@ export default function Page() {
       api('/users').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
+      api('/stores/entitlement').catch(() => ({ data: null })),
     ]);
     setStores(s.data || []);
     setProducts(p.data || []);
@@ -194,6 +206,12 @@ export default function Page() {
     setBranches(br.data || []);
     setDepartments(dep.data || []);
     setFefoStrict(!!settings.data?.fefo_strict_warehouse);
+    setEntitlement(ent.data || null);
+    if (ent.data?.store_limit != null) {
+      setStoreLimitDraft(String(ent.data.store_limit));
+    } else if (ent.data?.effective_store_limit != null) {
+      setStoreLimitDraft('');
+    }
     if (!fromStore && s.data?.length) setFromStore(s.data[0].id);
     if (!toStore && s.data?.length > 1) setToStore(s.data[1].id);
     if (!productId && p.data?.length) setProductId(p.data[0].id);
@@ -234,7 +252,30 @@ export default function Page() {
       setMessage('Store created');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      const detail = err?.detail || err?.data?.detail;
+      if (detail && typeof detail === 'object' && detail.message) {
+        setError(detail.message);
+      } else {
+        setError(err.message);
+      }
+    }
+  }
+
+  async function saveStoreLimit() {
+    setError('');
+    setMessage('');
+    try {
+      const raw = storeLimitDraft.trim();
+      await api('/tenants/me/store-limit', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          store_limit: raw === '' ? null : Number(raw),
+        }),
+      });
+      setMessage('Store allocation updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update store allocation');
     }
   }
 
@@ -1164,6 +1205,56 @@ export default function Page() {
 
       <h3 style={{ marginTop: 16 }}>Stores</h3>
       <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3). Soft-deactivate hides the store from POS and new sales without deleting history.</p>
+      {entitlement && (
+        <div
+          className="plat-stat"
+          style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            border: '1px solid var(--border, #ddd)',
+            borderRadius: 8,
+          }}
+        >
+          <strong>
+            {entitlement.unlimited
+              ? `${entitlement.stores_active ?? 0} active Stores Used (unlimited entitlement)`
+              : `${entitlement.stores_active ?? 0} of ${entitlement.effective_store_limit} Stores Used`}
+          </strong>
+          {!entitlement.unlimited && (
+            <span className="muted" style={{ marginLeft: 8 }}>
+              {entitlement.stores_remaining ?? 0} Stores Remaining
+            </span>
+          )}
+          {entitlement.over_entitlement ? (
+            <p className="login-error" style={{ marginTop: 6 }} role="status">
+              Over subscription entitlement — existing stores are kept; create/activate blocked until
+              resolved.
+            </p>
+          ) : null}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span>Company store allocation</span>
+              <input
+                type="number"
+                min={0}
+                placeholder="Full entitlement"
+                value={storeLimitDraft}
+                onChange={(e) => setStoreLimitDraft(e.target.value)}
+                style={{ width: 120 }}
+              />
+            </label>
+            <button type="button" onClick={saveStoreLimit}>
+              Save allocation
+            </button>
+            <span className="muted" style={{ fontSize: 12 }}>
+              Blank = use full subscription entitlement
+              {entitlement.subscription_store_entitlement != null
+                ? ` (${entitlement.subscription_store_entitlement})`
+                : ' (unlimited)'}
+            </span>
+          </div>
+        </div>
+      )}
       <select
         value={storeManageFilter}
         onChange={(e) => setStoreManageFilter(e.target.value as 'all' | 'active' | 'inactive')}

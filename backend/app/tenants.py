@@ -197,10 +197,63 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "package_code": getattr(tenant, "package_code", None) or "trial",
+        "max_stores_override": getattr(tenant, "max_stores_override", None),
+        "store_limit": getattr(tenant, "store_limit", None),
         "subscription": usage,
         "enabled_modules": usage["enabled_modules"],
         "created_at": tenant.created_at,
     }
+
+
+async def serialize_tenant_with_store_usage(db: AsyncSession, tenant: m.Tenant) -> dict:
+    """Tenant serialize + live store usage counts (for /usage and entitlement UIs)."""
+    from app import store_entitlements as store_ent_svc
+
+    data = serialize_tenant(tenant)
+    store_usage = await store_ent_svc.get_store_usage(db, tenant)
+    data["store_usage"] = store_usage
+    sub = dict(data.get("subscription") or {})
+    sub.update(
+        {
+            "stores_active": store_usage["stores_active"],
+            "stores_total": store_usage["stores_total"],
+            "stores_remaining": store_usage["stores_remaining"],
+            "effective_store_limit": store_usage["effective_store_limit"],
+            "over_entitlement": store_usage["over_entitlement"],
+            "unlimited_stores": store_usage["unlimited"],
+        }
+    )
+    data["subscription"] = sub
+    return data
+
+
+async def set_max_stores_override(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    max_stores_override: int | None,
+) -> m.Tenant:
+    from app import store_entitlements as store_ent_svc
+
+    tenant.max_stores_override = store_ent_svc.validate_max_stores_override(max_stores_override)
+    # If company allocation now exceeds new entitlement, clamp is enforced at effective_*;
+    # leave store_limit as-is so admins can see intent; effective uses min().
+    await db.flush()
+    return tenant
+
+
+async def set_store_limit(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    store_limit: int | None,
+) -> m.Tenant:
+    from app import store_entitlements as store_ent_svc
+
+    entitlement = store_ent_svc.subscription_store_entitlement(tenant)
+    tenant.store_limit = store_ent_svc.validate_store_limit_value(
+        store_limit, entitlement=entitlement
+    )
+    await db.flush()
+    return tenant
 
 
 async def assign_subscription(
@@ -213,6 +266,9 @@ async def assign_subscription(
     start_at: datetime | None = None,
     activate: bool = True,
     enabled_modules: list[str] | None = None,
+    max_stores_override: int | None = None,
+    apply_max_stores_override: bool = False,
+    clear_max_stores_override: bool = False,
 ) -> m.Tenant:
     code = (package_code or "").strip().lower()
     # Defense in depth: TenantSubscriptionAssign.package_code Literal rejects
@@ -242,6 +298,11 @@ async def assign_subscription(
     tenant.subscription_starts_at = starts
     tenant.subscription_ends_at = ends
     tenant.package_assigned_at = now
+
+    if clear_max_stores_override:
+        await set_max_stores_override(db, tenant, None)
+    elif apply_max_stores_override:
+        await set_max_stores_override(db, tenant, max_stores_override)
 
     if enabled_modules is not None:
         await set_enabled_modules(db, tenant, enabled_modules, commit=False)

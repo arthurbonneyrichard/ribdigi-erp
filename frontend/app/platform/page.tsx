@@ -21,6 +21,13 @@ type SubscriptionInfo = {
   subscription_ends_at?: string | null;
   enabled_modules?: string[];
   modules_customized?: boolean;
+  max_stores_override?: number | null;
+  package_max_stores?: number | null;
+  effective_store_limit?: number | null;
+  stores_active?: number | null;
+  stores_remaining?: number | null;
+  over_entitlement?: boolean;
+  unlimited_stores?: boolean;
 };
 
 type TenantRow = {
@@ -38,8 +45,15 @@ type TenantRow = {
   suspended_reason?: string | null;
   created_at?: string | null;
   package_code?: string;
-  enabled_modules?: string[];
+  max_stores_override?: number | null;
+  store_limit?: number | null;
+  store_usage?: {
+    stores_active?: number;
+    effective_store_limit?: number | null;
+    over_entitlement?: boolean;
+  };
   subscription?: SubscriptionInfo;
+  enabled_modules?: string[];
 };
 
 type PackageInfo = {
@@ -47,6 +61,8 @@ type PackageInfo = {
   name: string;
   description: string;
   modules: string[];
+  max_stores?: number | null;
+  max_companies?: number | null;
 };
 
 const emptyCreate = {
@@ -107,9 +123,11 @@ export default function PlatformConsole() {
     package_code: 'professional',
     term_value: 12,
     term_unit: 'months',
+    max_stores_override: '' as string,
   });
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState('');
+  const [overrideDraft, setOverrideDraft] = useState('');
 
   const selected = useMemo(
     () => tenants.find((t) => t.id === selectedId) || null,
@@ -143,17 +161,39 @@ export default function PlatformConsole() {
   }, []);
 
   useEffect(() => {
-    if (!selected) {
+    if (!selectedId) {
       setModuleDraft([]);
       return;
     }
+    const sel = tenants.find((t) => t.id === selectedId);
+    if (!sel) return;
     setSubForm({
-      package_code: selected.package_code || selected.subscription?.package_code || 'professional',
-      term_value: selected.subscription?.term_value || 12,
-      term_unit: selected.subscription?.term_unit || 'months',
+      package_code: sel.package_code || sel.subscription?.package_code || 'professional',
+      term_value: sel.subscription?.term_value || 12,
+      term_unit: sel.subscription?.term_unit || 'months',
+      max_stores_override:
+        sel.max_stores_override != null
+          ? String(sel.max_stores_override)
+          : sel.subscription?.max_stores_override != null
+            ? String(sel.subscription.max_stores_override)
+            : '',
     });
-    setModuleDraft(selected.enabled_modules || selected.subscription?.enabled_modules || []);
-  }, [selected]);
+    setOverrideDraft(
+      sel.max_stores_override != null
+        ? String(sel.max_stores_override)
+        : sel.subscription?.max_stores_override != null
+          ? String(sel.subscription.max_stores_override)
+          : ''
+    );
+    setModuleDraft(sel.enabled_modules || sel.subscription?.enabled_modules || []);
+    api(`/tenants/${sel.slug || sel.id}/usage`)
+      .then((r) => {
+        const row = r.data as TenantRow;
+        setTenants((prev) => prev.map((t) => (t.id === sel.id ? { ...t, ...row } : t)));
+      })
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   const stats = useMemo(() => {
     const count = (s: string) => tenants.filter((t) => t.status === s).length;
@@ -249,14 +289,18 @@ export default function PlatformConsole() {
     setError('');
     setMessage('');
     try {
+      const body: Record<string, unknown> = {
+        package_code: subForm.package_code,
+        term_value: Number(subForm.term_value),
+        term_unit: subForm.term_unit,
+        activate: true,
+      };
+      if (subForm.max_stores_override.trim() !== '') {
+        body.max_stores_override = Number(subForm.max_stores_override);
+      }
       const r = await api(`/tenants/${selected.slug || selected.id}/subscription`, {
         method: 'POST',
-        body: JSON.stringify({
-          package_code: subForm.package_code,
-          term_value: Number(subForm.term_value),
-          term_unit: subForm.term_unit,
-          activate: true,
-        }),
+        body: JSON.stringify(body),
       });
       setMessage(
         `Assigned ${r.data?.subscription?.package_name || subForm.package_code} for ${subForm.term_value} ${subForm.term_unit} to ${selected.company_name}`
@@ -644,10 +688,74 @@ export default function PlatformConsole() {
                   <option value="years">Years</option>
                 </select>
               </label>
+              <label>
+                <span>Store entitlement override</span>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Package default"
+                  value={subForm.max_stores_override}
+                  onChange={(e) =>
+                    setSubForm((f) => ({ ...f, max_stores_override: e.target.value }))
+                  }
+                />
+              </label>
               <button type="submit" disabled={busy === selected.id}>
                 {busy === selected.id ? 'Saving…' : 'Assign package & term'}
               </button>
             </form>
+            <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+              Package max stores:{' '}
+              {packages.find((p) => p.code === subForm.package_code)?.max_stores ?? '—'}{' '}
+              (blank override = catalog / unlimited for Enterprise). Active stores:{' '}
+              {selected.subscription?.stores_active ?? selected.store_usage?.stores_active ?? '—'} /{' '}
+              {selected.subscription?.effective_store_limit ??
+                selected.store_usage?.effective_store_limit ??
+                '∞'}
+              {selected.subscription?.over_entitlement || selected.store_usage?.over_entitlement
+                ? ' · over entitlement'
+                : ''}
+            </p>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <span>max_stores_override</span>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Clear / package"
+                  value={overrideDraft}
+                  onChange={(e) => setOverrideDraft(e.target.value)}
+                  style={{ width: 120 }}
+                />
+              </label>
+              <button
+                type="button"
+                disabled={busy === selected.id}
+                onClick={async () => {
+                  setBusy(selected.id);
+                  setError('');
+                  try {
+                    const raw = overrideDraft.trim();
+                    await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
+                      method: 'PATCH',
+                      body: JSON.stringify(
+                        raw === ''
+                          ? { clear: true }
+                          : { max_stores_override: Number(raw) }
+                      ),
+                    });
+                    setMessage('Store entitlement override updated');
+                    await refresh();
+                  } catch (err: any) {
+                    setError(err.message || 'Override failed');
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+              >
+                Save store override
+              </button>
+            </div>
 
             <h3 style={{ marginTop: 20, fontSize: 15 }}>Feature modules (package control)</h3>
             <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>

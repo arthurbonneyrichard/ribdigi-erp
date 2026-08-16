@@ -177,6 +177,8 @@ from app.schemas import (
     TenantSuspendRequest,
     TenantSubscriptionAssign,
     TenantModulesUpdate,
+    TenantStoreLimitUpdate,
+    TenantMaxStoresOverrideUpdate,
     TransactionCreate,
     EmailTestRequest,
     EmailSettingsUpdate,
@@ -450,7 +452,7 @@ async def tenant_me(
     if tenant.status == "suspended":
         raise HTTPException(status_code=403, detail="Tenant is suspended")
     await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant))
+    return env(await tenants_svc.serialize_tenant_with_store_usage(db, tenant))
 
 
 @api.patch("/tenants/me")
@@ -716,6 +718,8 @@ async def tenant_assign_subscription(
 ):
     """Assign package + term (months/years); calculates usage and renewal window."""
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    data = payload.model_dump(exclude_unset=True)
+    prev_override = getattr(tenant, "max_stores_override", None)
     tenant = await tenants_svc.assign_subscription(
         db,
         tenant,
@@ -725,6 +729,9 @@ async def tenant_assign_subscription(
         start_at=payload.start_at,
         activate=payload.activate,
         enabled_modules=payload.enabled_modules,
+        max_stores_override=data.get("max_stores_override"),
+        apply_max_stores_override="max_stores_override" in data,
+        clear_max_stores_override=bool(data.get("clear_max_stores_override")),
     )
     await audit_svc.record_event(
         db,
@@ -739,10 +746,15 @@ async def tenant_assign_subscription(
             "package_code": payload.package_code,
             "term_value": payload.term_value,
             "term_unit": payload.term_unit,
+            "max_stores_override": getattr(tenant, "max_stores_override", None),
+            "max_stores_override_prev": prev_override,
         },
     )
     await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant), "Subscription assigned")
+    return env(
+        await tenants_svc.serialize_tenant_with_store_usage(db, tenant),
+        "Subscription assigned",
+    )
 
 
 @api.patch("/tenants/{tenant_ref}/modules")
@@ -790,7 +802,73 @@ async def tenant_usage(
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
-    return env(tenants_svc.serialize_tenant(tenant))
+    return env(await tenants_svc.serialize_tenant_with_store_usage(db, tenant))
+
+
+@api.patch("/tenants/{tenant_ref}/store-entitlement")
+async def tenant_store_entitlement_override(
+    tenant_ref: str,
+    payload: TenantMaxStoresOverrideUpdate,
+    claims=Depends(require_platform_permission("platform_packages", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform override for max stores (null/clear → package catalog default / unlimited)."""
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    prev = getattr(tenant, "max_stores_override", None)
+    new_val = None if payload.clear else payload.max_stores_override
+    if payload.clear:
+        new_val = None
+    elif payload.max_stores_override is None and not payload.clear:
+        # explicit null without clear flag also clears
+        new_val = None
+    tenant = await tenants_svc.set_max_stores_override(db, tenant, new_val)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="set_max_stores_override",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "target_tenant": tenant.id,
+            "old": prev,
+            "new": getattr(tenant, "max_stores_override", None),
+        },
+    )
+    await db.commit()
+    return env(
+        await tenants_svc.serialize_tenant_with_store_usage(db, tenant),
+        "Store entitlement override updated",
+    )
+
+
+@api.patch("/tenants/me/store-limit")
+async def tenant_me_store_limit(
+    payload: TenantStoreLimitUpdate,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Company (== Tenant) store allocation cap within subscription entitlement."""
+    tenants_svc.assert_writable(claims)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    prev = getattr(tenant, "store_limit", None)
+    tenant = await tenants_svc.set_store_limit(db, tenant, payload.store_limit)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="stores",
+        action="set_store_limit",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={"old": prev, "new": getattr(tenant, "store_limit", None)},
+    )
+    await db.commit()
+    return env(
+        await tenants_svc.serialize_tenant_with_store_usage(db, tenant),
+        "Store allocation updated",
+    )
 
 
 @api.get("/platform/staff")
@@ -10300,6 +10378,18 @@ async def taxes_alias(
     return await taxes(is_active=is_active, claims=claims, db=db)
 
 
+@api.get("/stores/entitlement")
+async def stores_entitlement(
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Store usage + subscription entitlement for Multi-Store UI."""
+    from app import store_entitlements as store_ent_svc
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env(await store_ent_svc.get_store_usage(db, tenant))
+
+
 @api.get("/stores")
 async def stores(
     is_active: bool | None = None,
@@ -10331,17 +10421,46 @@ async def add_store(
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
+    from app import store_entitlements as store_ent_svc
 
-    store = await stores_svc.create_store(
+    try:
+        store = await stores_svc.create_store(
+            db,
+            tenant_id=claims["tenant_id"],
+            name=payload.name,
+            code=payload.code,
+            address=payload.address,
+            phone=payload.phone,
+            manager_id=payload.manager_id,
+            branch_id=payload.branch_id,
+            operating_hours=payload.operating_hours,
+        )
+    except HTTPException as exc:
+        if (
+            isinstance(exc.detail, dict)
+            and exc.detail.get("code") == store_ent_svc.STORE_LIMIT_REACHED
+        ):
+            await audit_svc.record_event(
+                db,
+                tenant_id=claims["tenant_id"],
+                user_id=claims["sub"],
+                module="stores",
+                action="create_rejected_limit",
+                entity="store",
+                entity_id=None,
+                details=dict(exc.detail),
+            )
+            await db.commit()
+        raise
+    await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
-        name=payload.name,
-        code=payload.code,
-        address=payload.address,
-        phone=payload.phone,
-        manager_id=payload.manager_id,
-        branch_id=payload.branch_id,
-        operating_hours=payload.operating_hours,
+        user_id=claims["sub"],
+        module="stores",
+        action="create",
+        entity="store",
+        entity_id=store.id,
+        details={"code": store.code, "name": store.name},
     )
     await db.commit()
     await db.refresh(store)
@@ -10364,6 +10483,8 @@ async def patch_store(
     from app import cash_drawer as cash_drawer_svc
 
     data = payload.model_dump(exclude_unset=True)
+    prev = await stores_svc.get_store(db, claims["tenant_id"], store_id)
+    prev_active = bool(prev.is_active)
     store = await stores_svc.update_store(
         db,
         tenant_id=claims["tenant_id"],
@@ -10379,6 +10500,17 @@ async def patch_store(
         operating_hours=data.get("operating_hours"),
         set_operating_hours="operating_hours" in data,
     )
+    if "is_active" in data and bool(store.is_active) != prev_active:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="stores",
+            action="activate" if store.is_active else "deactivate",
+            entity="store",
+            entity_id=store.id,
+            details={"code": store.code, "old": prev_active, "new": bool(store.is_active)},
+        )
     await db.commit()
     await db.refresh(store)
     return env(

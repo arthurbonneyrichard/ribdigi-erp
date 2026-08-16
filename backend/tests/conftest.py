@@ -55,8 +55,20 @@ async def db_session(db_engine):
 
 
 async def _seed_two_tenants(db: AsyncSession) -> dict:
-    t1 = m.Tenant(slug="alpha", company_name="Alpha Co", status="active", industry="retail")
-    t2 = m.Tenant(slug="beta", company_name="Beta Co", status="active", industry="retail")
+    t1 = m.Tenant(
+        slug="alpha",
+        company_name="Alpha Co",
+        status="active",
+        industry="retail",
+        package_code="professional",
+    )
+    t2 = m.Tenant(
+        slug="beta",
+        company_name="Beta Co",
+        status="active",
+        industry="retail",
+        package_code="professional",
+    )
     db.add_all([t1, t2])
     await db.flush()
 
