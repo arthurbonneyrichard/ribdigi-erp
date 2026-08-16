@@ -31,3 +31,7 @@ Stage 942 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Endpoint Gate, Transfer Endpoint Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 942 opened under **ADR-1891** after CONTINUE/NEXT (Tenant MVP Transfer Ingress Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1892**. Stage 941 feature scope remains frozen.
