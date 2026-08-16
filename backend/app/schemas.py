@@ -1555,6 +1555,11 @@ BalanceSheetCompareValue = Annotated[
     Literal["prior_period", "prior_year"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with GET /credit/aging kind (Credit Receivables/Payables toggle).
+CreditAgingKindValue = Annotated[
+    Literal["receivable", "payable"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.report_export.EXPORTABLE (+ Reports Email schedules select)
 ReportTypeValue = Annotated[
     Literal[

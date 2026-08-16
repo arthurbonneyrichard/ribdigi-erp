@@ -72,6 +72,7 @@ from app.schemas import (
     ReportTypeValue,
     ReportExportFormatValue,
     BalanceSheetCompareValue,
+    CreditAgingKindValue,
     WebhookCreate,
     WebhookUpdate,
     BarcodeSymbologyValue,
@@ -9729,10 +9730,11 @@ async def report_expenses_budget_vs_actual(
 
 @api.get("/credit/aging")
 async def credit_aging(
-    kind: str = "receivable",
+    kind: Annotated[CreditAgingKindValue, Query()] = "receivable",
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Schema CreditAgingKindValue rejects blank/invalid → 422 (no silent AR for "Payable"/garbage).
     if kind == "payable":
         return env(await credit_svc.ap_aging(db, claims["tenant_id"]))
     return env(await credit_svc.ar_aging(db, claims["tenant_id"]))

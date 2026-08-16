@@ -1247,6 +1247,8 @@ Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "exp
 
 ## 11. Credit Management
 
+**Aging:** `GET /credit/aging` — Query `kind` ∈ `receivable`|`payable` (schema Query `Literal` + strip/lower; omit → `receivable`; blank/invalid → **422** — no silent AR aging for `Payable`/`""`/garbage). Returns bucketed totals + rows for AR or AP. Credit UI **Receivables** / **Payables** toggle. Requires `credit:read`.
+
 ### 11.1 Customer Credit
 **Get Credit Info:** `GET /customers/{customer_id}/credit` — `credit_limit`, `outstanding_balance`, `available_credit` (`null` when unlimited/`credit_limit<=0`), `is_over_limit`, `credit_sales[]` open invoices. Requires `credit:read`.
 
