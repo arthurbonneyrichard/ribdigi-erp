@@ -31,3 +31,7 @@ Stage 1173 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Outpost Gate, Transfer Outpost Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1173 opened under **ADR-2353** after CONTINUE/NEXT (Tenant MVP Transfer Campanile Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2354**. Stage 1172 feature scope remains frozen.
