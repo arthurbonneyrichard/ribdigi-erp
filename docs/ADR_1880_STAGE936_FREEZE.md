@@ -31,3 +31,7 @@ Stage 937 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Corridor Gate, Transfer Corridor Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 937 opened under **ADR-1881** after CONTINUE/NEXT (Tenant MVP Transfer Hop Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1882**. Stage 936 feature scope remains frozen.
