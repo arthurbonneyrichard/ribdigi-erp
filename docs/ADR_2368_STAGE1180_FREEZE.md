@@ -31,3 +31,7 @@ Stage 1181 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gorge Gate, Transfer Gorge Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1181 opened under **ADR-2369** after CONTINUE/NEXT (Tenant MVP Transfer Shell Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2370**. Stage 1180 feature scope remains frozen.
