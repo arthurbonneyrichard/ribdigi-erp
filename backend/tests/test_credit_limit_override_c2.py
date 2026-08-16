@@ -60,6 +60,32 @@ def test_enforce_override_returns_audit_payload():
     assert abs(float(info["over_by"]) - 10) < 0.01
 
 
+def test_enforce_override_requires_reason():
+    party = m.Party(name="A", kind="customer", credit_limit=100, balance=80)
+    party.id = "c1"
+    with pytest.raises(HTTPException) as ei:
+        enforce_customer_credit_limit(
+            party,
+            amount=30,
+            override=True,
+            override_allowed=True,
+            override_reason="   ",
+        )
+    assert ei.value.status_code == 400
+    assert ei.value.detail["code"] == "CREDIT_OVERRIDE_REASON_REQUIRED"
+
+    with pytest.raises(HTTPException) as ei2:
+        enforce_customer_credit_limit(
+            party,
+            amount=30,
+            override=True,
+            override_allowed=True,
+            override_reason=None,
+        )
+    assert ei2.value.status_code == 400
+    assert ei2.value.detail["code"] == "CREDIT_OVERRIDE_REASON_REQUIRED"
+
+
 def test_claims_may_override_credit_roles():
     assert claims_may_override_credit({"role": "store_manager", "permissions": permissions_for_role("store_manager")})
     assert claims_may_override_credit({"role": "accountant", "permissions": permissions_for_role("accountant")})
