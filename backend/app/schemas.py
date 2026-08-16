@@ -1472,6 +1472,43 @@ class BackupSettingsUpdate(BaseModel):
     hour_utc: int | None = Field(default=None, ge=0, le=23)
 
 
+ScheduleFrequencyValue = Annotated[
+    Literal["daily", "weekly"],
+    BeforeValidator(coerce_package_code_value),
+]
+ReportExportFormatValue = Annotated[
+    Literal["csv", "pdf", "xlsx"],
+    BeforeValidator(coerce_package_code_value),
+]
+
+
+class ReportScheduleCreate(BaseModel):
+    """Email report schedule create (BR-14)."""
+
+    name: str = Field(min_length=2)
+    report_type: str
+    format: ReportExportFormatValue = "xlsx"
+    # omit → daily; blank/invalid → 422 (was free dict; "" coerced to daily in service)
+    frequency: ScheduleFrequencyValue = "daily"
+    weekday: int | None = Field(default=None, ge=0, le=6)
+    hour_utc: int = Field(default=6, ge=0, le=23)
+    recipients: list[str] | str | None = None
+    enabled: bool = True
+
+
+class ReportScheduleUpdate(BaseModel):
+    """Email report schedule patch — omit = no change; blank frequency/format → 422."""
+
+    name: str | None = Field(default=None, min_length=2)
+    report_type: str | None = None
+    format: ReportExportFormatValue | None = None
+    frequency: ScheduleFrequencyValue | None = None
+    weekday: int | None = Field(default=None, ge=0, le=6)
+    hour_utc: int | None = Field(default=None, ge=0, le=23)
+    recipients: list[str] | str | None = None
+    enabled: bool | None = None
+
+
 class ExchangeRateUpsert(BaseModel):
     currency_code: str
     rate_to_base: float = Field(gt=0)
