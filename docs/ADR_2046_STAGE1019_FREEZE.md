@@ -31,3 +31,7 @@ Stage 1020 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Damper Gate, Transfer Damper Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1020 opened under **ADR-2047** after CONTINUE/NEXT (Tenant MVP Transfer Chokepoint Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2048**. Stage 1019 feature scope remains frozen.
