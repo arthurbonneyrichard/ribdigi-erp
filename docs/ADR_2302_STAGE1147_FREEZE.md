@@ -31,3 +31,7 @@ Stage 1148 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tower Gate, Transfer Tower Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1148 opened under **ADR-2303** after CONTINUE/NEXT (Tenant MVP Transfer Stele Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2304**. Stage 1147 feature scope remains frozen.
