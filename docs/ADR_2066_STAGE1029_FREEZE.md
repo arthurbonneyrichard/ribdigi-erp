@@ -31,3 +31,7 @@ Stage 1030 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Stipend Gate, Transfer Stipend Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1030 opened under **ADR-2067** after CONTINUE/NEXT (Tenant MVP Transfer Provision Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2068**. Stage 1029 feature scope remains frozen.
