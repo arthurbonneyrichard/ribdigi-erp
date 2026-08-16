@@ -1358,8 +1358,25 @@ async def inventory_movements(
             movement_type = mt
     if created_by:
         created_by = created_by.strip() or None
-    if reason:
-        reason = reason.strip().lower() or None
+    # Schema StockAdjustReasonValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter from garbage).
+    from app.inventory import STOCK_ADJUSTMENT_REASONS
+
+    if reason is not None:
+        rk = (reason or "").strip().lower()
+        if not rk:
+            reason = None
+        elif rk not in STOCK_ADJUSTMENT_REASONS:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"reason must be one of: {', '.join(sorted(STOCK_ADJUSTMENT_REASONS))}"
+                ),
+            )
+        else:
+            reason = rk
 
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
     if product_id:
