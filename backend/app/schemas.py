@@ -115,7 +115,9 @@ class TenantProfileUpdate(BaseModel):
 
 
 class TenantSuspendRequest(BaseModel):
-    reason: str | None = None
+    """Tenant suspend — typed reason required (honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class TenantSubscriptionAssign(BaseModel):
@@ -612,8 +614,15 @@ class ExpenseCategoryUpdate(BaseModel):
 
 
 class ExpenseDecision(BaseModel):
+    """Approve path — optional typed comment (BR-9.3)."""
+
     comment: str | None = None
-    reason: str | None = None
+
+
+class ExpenseReject(BaseModel):
+    """Expense reject — typed reason required (BR-9.3 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class RecurringExpenseCreate(BaseModel):
@@ -768,7 +777,9 @@ class StockTransferCreate(BaseModel):
 
 
 class StockTransferReject(BaseModel):
-    reason: str | None = None
+    """Stock / store transfer reject or cancel — typed reason required (BR-5.2/5.4 / BR-13.2)."""
+
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class TaxCreate(BaseModel):
@@ -1011,7 +1022,9 @@ class SalesQuotationCreate(BaseModel):
 
 
 class SalesQuotationReject(BaseModel):
-    reason: str | None = None
+    """Quotation reject — typed reason required (BR-7.2 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class SalesOrderCreate(BaseModel):

@@ -36,7 +36,7 @@ async def test_company_me_suspend_requires_and_persists_reason(client):
     headers = await _admin(ac, seed)
 
     missing = await ac.post("/api/v1/tenants/me/suspend", headers=headers, json={})
-    assert missing.status_code == 400, missing.text
+    assert missing.status_code == 422, missing.text
     assert "reason" in missing.text.lower()
 
     blank = await ac.post(

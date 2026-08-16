@@ -88,6 +88,7 @@ from app.schemas import (
     AiDocumentExpenseCreate,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
+    ExpenseReject,
     ExpenseThresholdUpdate,
     ExpenseUpdate,
     GrnCreate,
@@ -500,13 +501,13 @@ async def tenant_me_update(
 
 @api.post("/tenants/me/suspend")
 async def tenant_me_suspend(
-    payload: TenantSuspendRequest | None = None,
+    payload: TenantSuspendRequest,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    reason_s = ((payload.reason if payload else None) or "").strip()
+    reason_s = (payload.reason or "").strip()
     if not reason_s:
         raise HTTPException(status_code=400, detail="suspension reason is required")
     tenant = await tenants_svc.suspend_tenant(
@@ -643,13 +644,12 @@ async def tenants_list(
 @api.post("/tenants/{tenant_ref}/suspend")
 async def tenant_suspend_by_ref(
     tenant_ref: str,
-    payload: TenantSuspendRequest | None = None,
+    payload: TenantSuspendRequest,
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
-    reason = (payload.reason if payload else None)
-    reason_s = (reason or "").strip()
+    reason_s = (payload.reason or "").strip()
     if not reason_s:
         raise HTTPException(status_code=400, detail="suspension reason is required")
     tenant = await tenants_svc.suspend_tenant(
@@ -5526,7 +5526,7 @@ async def accept_quotation(
 @api.post("/sales/quotations/{quotation_id}/reject")
 async def reject_quotation(
     quotation_id: str,
-    payload: SalesQuotationReject | None = None,
+    payload: SalesQuotationReject,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5536,7 +5536,7 @@ async def reject_quotation(
         db,
         claims["tenant_id"],
         quotation_id,
-        reason=(payload.reason if payload else None),
+        reason=payload.reason,
     )
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation rejected")
@@ -7831,7 +7831,7 @@ async def approve_expense(
 @api.post("/expenses/{expense_id}/reject")
 async def reject_expense(
     expense_id: str,
-    payload: ExpenseDecision,
+    payload: ExpenseReject,
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7840,7 +7840,7 @@ async def reject_expense(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         expense_id=expense_id,
-        reason=payload.reason or payload.comment or "",
+        reason=payload.reason,
         actor_role=claims.get("role"),
     )
     await db.commit()
@@ -10609,7 +10609,7 @@ async def approve_transfer(
 @api.post("/stores/transfers/{transfer_id}/reject")
 async def reject_transfer(
     transfer_id: str,
-    payload: StockTransferReject | None = None,
+    payload: StockTransferReject,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10618,7 +10618,7 @@ async def reject_transfer(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         transfer_id=transfer_id,
-        reason=(payload.reason if payload else None),
+        reason=payload.reason,
         actor_role=claims.get("role"),
     )
     await db.commit()
@@ -10654,7 +10654,7 @@ async def receive_transfer(
 @api.post("/stores/transfers/{transfer_id}/cancel")
 async def cancel_transfer(
     transfer_id: str,
-    payload: StockTransferReject | None = None,
+    payload: StockTransferReject,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10663,7 +10663,7 @@ async def cancel_transfer(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         transfer_id=transfer_id,
-        reason=(payload.reason if payload else None),
+        reason=payload.reason,
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")
@@ -10760,7 +10760,7 @@ async def inventory_approve_transfer(
 @api.post("/inventory/stock-transfers/{transfer_id}/reject")
 async def inventory_reject_transfer(
     transfer_id: str,
-    payload: StockTransferReject | None = None,
+    payload: StockTransferReject,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10769,7 +10769,7 @@ async def inventory_reject_transfer(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         transfer_id=transfer_id,
-        reason=(payload.reason if payload else None),
+        reason=payload.reason,
         actor_role=claims.get("role"),
     )
     await db.commit()
@@ -10805,7 +10805,7 @@ async def inventory_receive_transfer(
 @api.post("/inventory/stock-transfers/{transfer_id}/cancel")
 async def inventory_cancel_transfer(
     transfer_id: str,
-    payload: StockTransferReject | None = None,
+    payload: StockTransferReject,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10814,7 +10814,7 @@ async def inventory_cancel_transfer(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         transfer_id=transfer_id,
-        reason=(payload.reason if payload else None),
+        reason=payload.reason,
     )
     await db.commit()
     return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")

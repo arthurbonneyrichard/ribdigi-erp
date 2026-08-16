@@ -266,8 +266,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
 ### 3.4 Tenant Status Management
-**Self-suspend:** `POST /tenants/me/suspend` — body `{ "reason" }` **required** (non-empty) for company_admin/super_admin; stores `suspended_reason`, revokes sessions, emits `tenant.suspended`. Company page **Suspend reason** input (no hardcoded `"Admin requested"`).  
-**Suspend:** `POST /tenants/{tenant_ref}/suspend` — body `{ "reason" }` **required** (non-empty) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Suspend reason** input (no `window.prompt`).  
+**Self-suspend:** `POST /tenants/me/suspend` — body `{ "reason" }` **required** (`TenantSuspendRequest`; omit/empty → 422; whitespace → 400) for company_admin/super_admin; stores `suspended_reason`, revokes sessions, emits `tenant.suspended`. Company page **Suspend reason** input (no hardcoded `"Admin requested"`).  
+**Suspend:** `POST /tenants/{tenant_ref}/suspend` — body `{ "reason" }` **required** (same schema) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Suspend reason** input (no `window.prompt`).  
 **Activate:** `POST /tenants/{tenant_ref}/activate`  
 (`tenant_ref` = id or slug; platform `platform_tenants:write` / legacy **super_admin** for cross-tenant)
 
@@ -920,7 +920,7 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 **Get:** `GET /sales/quotations/{quote_id}`  
 **Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`  
 **Accept:** `POST /sales/quotations/{quote_id}/accept` — draft/sent only → `accepted`  
-**Reject:** `POST /sales/quotations/{quote_id}/reject` — body `{ "reason" }` **required** → `rejected` + `rejection_reason` (Sales Quotations **Reject reason** input; 409 if already accepted/rejected/converted/expired)  
+**Reject:** `POST /sales/quotations/{quote_id}/reject` — body `{ "reason" }` **required** (`SalesQuotationReject`; omit/empty → 422) → `rejected` + `rejection_reason` (Sales Quotations **Reject reason** input; 409 if already accepted/rejected/converted/expired)  
 **Convert to Order:** `POST /sales/quotations/{quote_id}/convert-order`  
 **Convert to Invoice:** `POST /sales/quotations/{quote_id}/convert-invoice`
 
@@ -1114,7 +1114,7 @@ Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong
 Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_approval` plus email (default on; opt out via notification preferences). Creator is excluded from the email fan-out. Advancing a level re-notifies the next step's roles.
 
 **Approve:** `POST /expenses/{expense_id}/approve` — body `{ "comment"? }` (optional typed comment → `approval_comment`; Expenses UI **Approve comment** — no hardcoded `"Approved"`) → advances approval step or final `approved` + journal; no self-approve (except `super_admin`).  
-**Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }` **required** (non-empty) → `rejected` + `rejection_reason` (Expenses UI requires typed reason; no hardcoded `"Rejected"`). Role-gated to the awaiting matrix step.
+**Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }` **required** (`ExpenseReject`; omit/empty → 422; no `comment` fallback) → `rejected` + `rejection_reason` (Expenses UI requires typed reason; no hardcoded `"Rejected"`). Role-gated to the awaiting matrix step.
 
 ### 9.3 Recurring Expenses
 **List:** `GET /expenses/recurring` — optional `?is_active=true|false` filters soft-deactivated schedules (omit = all; Expenses manage status filter).  
