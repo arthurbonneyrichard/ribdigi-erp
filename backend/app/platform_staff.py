@@ -143,6 +143,8 @@ async def create_platform_staff(
     role: str,
     phone: str | None = None,
 ) -> m.User:
+    # Defense in depth: PlatformStaffCreate.role Literal rejects blank/unknown with 422.
+    # Empty used to coerce to platform_support via API `role or "platform_support"`.
     role_key = (role or "").strip().lower()
     if not is_platform_role(role_key):
         raise HTTPException(
@@ -204,6 +206,7 @@ async def update_platform_staff(
         raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
 
     if role is not None:
+        # Defense in depth: PlatformStaffUpdate.role Literal → 422 on blank/unknown.
         role_key = role.strip().lower()
         if not is_platform_role(role_key):
             raise HTTPException(status_code=422, detail="Invalid platform role")
