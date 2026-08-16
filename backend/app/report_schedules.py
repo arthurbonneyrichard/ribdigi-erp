@@ -101,9 +101,12 @@ async def create_schedule(
     if report_type not in EXPORTABLE:
         raise HTTPException(status_code=400, detail=f"report_type must be one of {sorted(EXPORTABLE)}")
     fmt = (format or "xlsx").lower()
+    # Defense in depth: ReportScheduleCreate.format Literal rejects blank/unknown with 422.
     if fmt not in EXPORT_FORMATS:
         raise HTTPException(status_code=400, detail=f"format must be one of {sorted(EXPORT_FORMATS)}")
     freq = (frequency or "daily").lower()
+    # Defense in depth: ReportScheduleCreate.frequency Literal rejects blank/unknown with 422.
+    # Empty used to coerce to daily via `frequency or "daily"`.
     if freq not in FREQUENCIES:
         raise HTTPException(status_code=400, detail="frequency must be daily or weekly")
     if freq == "weekly":
@@ -159,11 +162,13 @@ async def update_schedule(
         row.report_type = report_type
     if format is not None:
         fmt = format.lower()
+        # Defense in depth: ReportScheduleUpdate.format Literal → 422 on blank/unknown.
         if fmt not in EXPORT_FORMATS:
             raise HTTPException(status_code=400, detail=f"format must be one of {sorted(EXPORT_FORMATS)}")
         row.format = fmt
     if frequency is not None:
         freq = frequency.lower()
+        # Defense in depth: ReportScheduleUpdate.frequency Literal → 422 on blank/unknown.
         if freq not in FREQUENCIES:
             raise HTTPException(status_code=400, detail="frequency must be daily or weekly")
         row.frequency = freq

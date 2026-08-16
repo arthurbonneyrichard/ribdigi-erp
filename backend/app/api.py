@@ -66,6 +66,8 @@ from app.schemas import (
     BrandCreate,
     BrandUpdate,
     BackupSettingsUpdate,
+    ReportScheduleCreate,
+    ReportScheduleUpdate,
     CreditLimitUpdate,
     CustomerPaymentCreate,
     EarlyPaySettingsUpdate,
@@ -9141,7 +9143,7 @@ async def report_schedules_list(
 
 @api.post("/reports/schedules")
 async def report_schedules_create(
-    payload: dict,
+    payload: ReportScheduleCreate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9149,14 +9151,14 @@ async def report_schedules_create(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        name=payload.get("name") or "",
-        report_type=payload.get("report_type") or "",
-        format=payload.get("format") or "xlsx",
-        frequency=payload.get("frequency") or "daily",
-        weekday=payload.get("weekday"),
-        hour_utc=int(payload.get("hour_utc", 6)),
-        recipients=payload.get("recipients"),
-        enabled=bool(payload.get("enabled", True)),
+        name=payload.name,
+        report_type=payload.report_type,
+        format=payload.format,
+        frequency=payload.frequency,
+        weekday=payload.weekday,
+        hour_utc=payload.hour_utc,
+        recipients=payload.recipients,
+        enabled=payload.enabled,
     )
     await db.commit()
     return env(report_schedules_svc.serialize_schedule(row), "Report schedule created")
@@ -9165,22 +9167,23 @@ async def report_schedules_create(
 @api.patch("/reports/schedules/{schedule_id}")
 async def report_schedules_patch(
     schedule_id: str,
-    payload: dict,
+    payload: ReportScheduleUpdate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    data = payload.model_dump(exclude_unset=True)
     row = await report_schedules_svc.update_schedule(
         db,
         claims["tenant_id"],
         schedule_id,
-        name=payload.get("name"),
-        report_type=payload.get("report_type"),
-        format=payload.get("format"),
-        frequency=payload.get("frequency"),
-        weekday=payload.get("weekday"),
-        hour_utc=payload.get("hour_utc"),
-        recipients=payload.get("recipients"),
-        enabled=payload.get("enabled"),
+        name=data.get("name"),
+        report_type=data.get("report_type"),
+        format=data.get("format"),
+        frequency=data.get("frequency"),
+        weekday=data.get("weekday"),
+        hour_utc=data.get("hour_utc"),
+        recipients=data.get("recipients"),
+        enabled=data.get("enabled"),
     )
     await db.commit()
     return env(report_schedules_svc.serialize_schedule(row), "Report schedule updated")
