@@ -215,7 +215,8 @@ class OpeningBalanceCreate(BaseModel):
 
 
 class CashTransferCreate(BaseModel):
-    kind: str = "transfer"  # transfer | deposit | withdrawal
+    # BR-10.3 — schema Literal; omit defaults to transfer; blank/invalid → 422
+    kind: Literal["transfer", "deposit", "withdrawal"] = "transfer"
     from_account_id: str | None = None
     to_account_id: str | None = None
     amount: float = Field(gt=0)

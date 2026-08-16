@@ -206,6 +206,7 @@ async def create_transfer(
 ) -> m.CashTransfer:
     await ensure_default_accounts(db, tenant_id)
     kind_key = (kind or "transfer").strip().lower()
+    # Defense in depth — CashTransferCreate.kind Literal already 422s blank/invalid
     if kind_key not in TRANSFER_KINDS:
         raise HTTPException(
             status_code=422,
