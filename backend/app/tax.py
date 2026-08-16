@@ -13,6 +13,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 SUPPLY_CLASSES = frozenset({"standard", "zero_rated", "exempt"})
+TAX_TYPES = frozenset({"vat", "gst", "sales_tax", "custom"})
+PRICING_MODES = frozenset({"exclusive", "inclusive"})
+
+
+def normalize_tax_type(value: str | None, *, default: str = "vat") -> str:
+    # Defense in depth: TaxCreate/Update Literals reject blank/unknown with 422
+    # before create/patch. Empty used to store as-is / omit → vat.
+    text = (value or default).strip().lower().replace("-", "_").replace(" ", "_")
+    if text not in TAX_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"tax_type must be one of: {', '.join(sorted(TAX_TYPES))}",
+        )
+    return text
+
+
+def normalize_pricing_mode(value: str | None, *, default: str = "exclusive") -> str:
+    # Defense in depth: schema Literal rejects blank/unknown with 422 first.
+    # compute_tax_breakdown used to treat any non-inclusive string as exclusive.
+    text = (value or default).strip().lower()
+    if text not in PRICING_MODES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"pricing_mode must be one of: {', '.join(sorted(PRICING_MODES))}",
+        )
+    return text
 
 
 def normalize_supply_class(
@@ -121,7 +147,7 @@ def compute_tax_breakdown(
 ) -> dict[str, Any]:
     """Detailed tax calc including optional compound component lines."""
     amount = float(amount or 0)
-    mode = (pricing_mode or "exclusive").lower()
+    mode = normalize_pricing_mode(pricing_mode)
     comps = normalize_components(components) if components else None
     rate = effective_rate_from_components(comps, rate_pct) if comps else float(rate_pct or 0)
 
@@ -316,9 +342,9 @@ async def update_tax_rate(
     if rate is not None:
         row.rate = float(rate)
     if tax_type is not None:
-        row.tax_type = tax_type
+        row.tax_type = normalize_tax_type(tax_type)
     if pricing_mode is not None:
-        row.pricing_mode = pricing_mode
+        row.pricing_mode = normalize_pricing_mode(pricing_mode)
     if clear_components:
         row.components = None
     elif components is not None:

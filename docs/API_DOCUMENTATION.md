@@ -1279,10 +1279,11 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 12.1 Tax Rates
 **List:** `GET /tax/rates` (`is_active=true|false` optional — Tax manage All/Active/Inactive; default returns all)  
-**Create:** `POST /tax/rates`  
+**Create:** `POST /tax/rates` — `tax_type` schema `Literal["vat","gst","sales_tax","custom"]` (omit → `vat`; blank/invalid → **422**); `pricing_mode` schema `Literal["exclusive","inclusive"]` (omit → `exclusive`; blank/invalid → **422**; no silent exclusive for unknown modes)  
 **Get:** `GET /tax/rates/{rate_id}`  
-**Update:** `PATCH /tax/rates/{rate_id}` — `{ name?, rate?, tax_type?, pricing_mode?, components?, is_reverse_charge?, is_active? }` (soft-deactivate via `is_active=false` clears `is_default`; Tax UI **Activate** / **Deactivate**)  
-**Set default:** `POST /tax/rates/{rate_id}/default` (rejects inactive rates)
+**Update:** `PATCH /tax/rates/{rate_id}` — `{ name?, rate?, tax_type?, pricing_mode?, components?, is_reverse_charge?, is_active? }` (`tax_type` / `pricing_mode` same Literals, omit = no change; blank/invalid → **422**; soft-deactivate via `is_active=false` clears `is_default`; Tax UI **Activate** / **Deactivate**)  
+**Set default:** `POST /tax/rates/{rate_id}/default` (rejects inactive rates)  
+**Calculate:** `POST /tax/calculate` — `pricing_mode` same `Literal` (omit → exclusive; blank/invalid → **422**)
 
 **Create Tax Rate:**
 ```json

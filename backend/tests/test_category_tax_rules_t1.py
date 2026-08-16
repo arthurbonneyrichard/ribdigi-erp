@@ -127,7 +127,7 @@ async def test_category_api_assign_and_clear_tax_rate(client, db_session):
     rate = await ac.post(
         "/api/v1/tax/rates",
         headers=headers,
-        json={"name": "Cat VAT 8", "rate": 8, "tax_type": "VAT"},
+        json={"name": "Cat VAT 8", "rate": 8, "tax_type": "vat"},
     )
     assert rate.status_code == 200, rate.text
     rate_id = rate.json()["data"]["id"]
