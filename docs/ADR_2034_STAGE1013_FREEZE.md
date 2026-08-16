@@ -31,3 +31,7 @@ Stage 1014 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Cap Gate, Transfer Cap Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1014 opened under **ADR-2035** after CONTINUE/NEXT (Tenant MVP Transfer Ceiling Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2036**. Stage 1013 feature scope remains frozen.
