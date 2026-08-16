@@ -118,6 +118,27 @@ PackageCodeValue = Annotated[
 ]
 
 
+def coerce_platform_role_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+PlatformRoleValue = Annotated[
+    Literal[
+        "super_admin",
+        "platform_owner",
+        "platform_admin",
+        "platform_support",
+        "platform_finance",
+    ],
+    BeforeValidator(coerce_platform_role_value),
+]
+
+
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
     if bool(getattr(model, "override_credit_limit", False)):
@@ -296,7 +317,9 @@ class PlatformGrantAccess(BaseModel):
     """Grant an existing app user access to the software-owner dashboard."""
 
     user_id: str
-    role: str = "platform_support"
+    # Platform roles Literal (+ strip/lower); omit → platform_support; blank/invalid → 422
+    # (was free str; "" used to silently coerce to platform_support in service)
+    role: PlatformRoleValue = "platform_support"
 
 
 class PlatformRevokeAccess(BaseModel):

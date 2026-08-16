@@ -64,7 +64,9 @@ async def grant_dashboard_access(
     role: str = "platform_support",
 ) -> m.User:
     """Promote an existing app user so they can open the software-owner dashboard."""
-    role_key = (role or "platform_support").strip().lower()
+    # Defense in depth: PlatformGrantAccess.role Literal rejects blank/unknown with 422.
+    # Empty used to coerce to platform_support via `role or "platform_support"`.
+    role_key = (role or "").strip().lower()
     if not is_platform_role(role_key):
         raise HTTPException(
             status_code=422,
