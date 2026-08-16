@@ -31,3 +31,7 @@ Stage 1182 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shell Gate, Transfer Shell Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1182 opened under **ADR-2371** after CONTINUE/NEXT (Tenant MVP Transfer Curtain Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2372**. Stage 1181 feature scope remains frozen.

@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1182 D1 Transfer Curtain Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1182_FIDELITY.md` (`test_stage1182_fidelity_d1.py`); Offline Complete / Transfer Curtain Gate honesty / go-live still MISSING.
 Stage 1181 D1 Transfer Shell Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1181_FIDELITY.md` (`test_stage1181_fidelity_d1.py`); Offline Complete / Transfer Shell Gate honesty / go-live still MISSING.
 Stage 1180 D1 Transfer Gorge Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1180_FIDELITY.md` (`test_stage1180_fidelity_d1.py`); Offline Complete / Transfer Gorge Gate honesty / go-live still MISSING.
 Stage 1179 D1 Transfer Ringwork Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1179_FIDELITY.md` (`test_stage1179_fidelity_d1.py`); Offline Complete / Transfer Ringwork Gate honesty / go-live still MISSING.
