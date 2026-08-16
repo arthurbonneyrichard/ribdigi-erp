@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 950 D1 Transfer Realm Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_950_FIDELITY.md` (`test_stage950_fidelity_d1.py`); Offline Complete / Transfer Realm Gate honesty / go-live still MISSING.
 Stage 949 D1 Transfer Domain Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_949_FIDELITY.md` (`test_stage949_fidelity_d1.py`); Offline Complete / Transfer Domain Gate honesty / go-live still MISSING.
 Stage 948 D1 Transfer Sector Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_948_FIDELITY.md` (`test_stage948_fidelity_d1.py`); Offline Complete / Transfer Sector Gate honesty / go-live still MISSING.
 Stage 947 D1 Transfer Zone Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_947_FIDELITY.md` (`test_stage947_fidelity_d1.py`); Offline Complete / Transfer Zone Gate honesty / go-live still MISSING.
