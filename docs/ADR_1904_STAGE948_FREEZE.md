@@ -31,3 +31,7 @@ Stage 949 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sector Gate, Transfer Sector Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 949 opened under **ADR-1905** after CONTINUE/NEXT (Tenant MVP Transfer Domain Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1906**. Stage 948 feature scope remains frozen.
