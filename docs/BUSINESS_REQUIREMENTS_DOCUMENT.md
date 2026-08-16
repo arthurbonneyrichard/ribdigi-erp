@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 962 D1 Transfer Account Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_962_FIDELITY.md` (`test_stage962_fidelity_d1.py`); Offline Complete / Transfer Account Gate honesty / go-live still MISSING.
 Stage 961 D1 Transfer Org Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_961_FIDELITY.md` (`test_stage961_fidelity_d1.py`); Offline Complete / Transfer Org Gate honesty / go-live still MISSING.
 Stage 960 D1 Transfer Workspace Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_960_FIDELITY.md` (`test_stage960_fidelity_d1.py`); Offline Complete / Transfer Workspace Gate honesty / go-live still MISSING.
 Stage 959 D1 Transfer Tenant Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_959_FIDELITY.md` (`test_stage959_fidelity_d1.py`); Offline Complete / Transfer Tenant Gate honesty / go-live still MISSING.
