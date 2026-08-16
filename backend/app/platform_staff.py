@@ -110,8 +110,14 @@ async def revoke_dashboard_access(
             status_code=403,
             detail="You cannot revoke access for this staff role",
         )
-    fallback = (fallback_role or DEFAULT_APP_ROLE).strip().lower()
-    if is_platform_role(fallback) or fallback == "super_admin":
+    # Defense in depth: PlatformRevokeAccess.fallback_role Literal rejects
+    # blank/platform/unknown with 422. Empty used to coerce to company_admin.
+    fallback = (fallback_role or "").strip().lower()
+    if (
+        not fallback
+        or is_platform_role(fallback)
+        or fallback == "super_admin"
+    ):
         raise HTTPException(status_code=422, detail="fallback_role must be a non-platform app role")
     from app import custom_roles as custom_roles_svc
 
