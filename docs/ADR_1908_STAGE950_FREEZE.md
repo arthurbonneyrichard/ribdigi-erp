@@ -31,3 +31,7 @@ Stage 951 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Realm Gate, Transfer Realm Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 951 opened under **ADR-1909** after CONTINUE/NEXT (Tenant MVP Transfer Partition Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1910**. Stage 950 feature scope remains frozen.

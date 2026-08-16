@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 951 track opened (ADR-1909: `test_stage951_open.py`, `docs/STAGE_951_PLAN.md`) — Transfer Partition Gate Honesty Pack Remaining-Gate Index; closed under ADR-1910
+- [x] Transfer Partition Gate Honesty Pack remaining-gate hub (Stage 951 I1: `test_stage951_index_i1.py`, `docs/TRANSFER_PARTITION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Partition Gate Honesty Pack blocker matrix (Stage 951 B1: `test_stage951_blockers_b1.py`, `docs/TRANSFER_PARTITION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 950 / Stage 949 / Stage 392 / CHANGE_IMPACT pointers (Stage 951 P1: `test_stage951_pointers_p1.py`, `docs/TRANSFER_PARTITION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 951 fidelity sync (D1: `test_stage951_fidelity_d1.py`, `docs/STAGE_951_FIDELITY.md`)
+- [x] Stage 951 exit + freeze (H951x: `test_stage951_exit_h951x.py`, `docs/STAGE_951_EXIT_CRITERIA.md`, ADR-1910)
+
 Stage 950 track opened (ADR-1907: `test_stage950_open.py`, `docs/STAGE_950_PLAN.md`) — Transfer Realm Gate Honesty Pack Remaining-Gate Index; closed under ADR-1908
 - [x] Transfer Realm Gate Honesty Pack remaining-gate hub (Stage 950 I1: `test_stage950_index_i1.py`, `docs/TRANSFER_REALM_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Realm Gate Honesty Pack blocker matrix (Stage 950 B1: `test_stage950_blockers_b1.py`, `docs/TRANSFER_REALM_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
