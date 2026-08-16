@@ -627,7 +627,7 @@ Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory
 }
 ```
 
-`reason` required ∈ `{damage, theft, expiry, found, lost}` (no silent default to `damage`; Inventory UI **Select reason**). Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements`.
+`reason` required ∈ `{damage, theft, expiry, found, lost}` (schema `Literal`; no silent default to `damage`; omit/blank/invalid → **422**). Inventory UI **Select reason**. Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements`.
 
 **Stock Transfer (BR-5.2 / BR-5.4):** `POST /inventory/stock-transfers` (also `POST /stores/transfers`)
 
@@ -866,7 +866,7 @@ Response lines include `line_subtotal`, `line_tax`, and optional `tax_components
 **Post:** `POST /purchasing/returns/{return_id}/post` — draft only; stock/AP/journal on post.  
 **Cancel:** `POST /purchasing/returns/{return_id}/cancel` — body `{ "reason" }` **required** (non-empty). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `purchase_return_cancelled.details.reason`. Serialize includes `can_cancel`. Purchasing **Cancel reason** input (BR-6.6). No stock/AP on cancel.
 
-**Create** requires `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (no silent default to `other`). Omit/blank → 422/400. Purchasing UI uses Select reason (BR-6.6).
+**Create** requires `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (schema `Literal`; no silent default to `other`). Omit/blank/invalid → **422**; service still rejects unknown codes as defense in depth. Purchasing UI uses Select reason (BR-6.6).
 
 **Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_return_numbering` and `debit_note_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` for `return_number` (default `PR`); post allocates series `debit_note_number` (default `DN`, unique per tenant). Alembic `20260814_0097` (BR-6.6 / BR-20.4).
 
@@ -996,7 +996,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 
 ### 7.6 Sales Return
 **List:** `GET /sales/returns`  
-**Create:** `POST /sales/returns` — body requires `sales_invoice_id`, coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (no silent default to `other`; omit → 422, blank → 400), `items[]` each with required `condition` ∈ `sellable` | `discard` (no silent default from `restock`; omit → 422, blank/invalid → 400), optional `restock` / `notes`. Restock on post only when `restock` and line `condition=sellable`. Sales UI uses **Select reason** + **Select condition** (BR-7.5).  
+**Create:** `POST /sales/returns` — body requires `sales_invoice_id`, coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (schema `Literal`; no silent default to `other`; omit/blank/invalid → **422**), `items[]` each with required `condition` ∈ `sellable` | `discard` (no silent default from `restock`; omit → 422, blank/invalid → 400), optional `restock` / `notes`. Restock on post only when `restock` and line `condition=sellable`. Sales UI uses **Select reason** + **Select condition** (BR-7.5).  
 **Get:** `GET /sales/returns/{return_id}`  
 **Post:** `POST /sales/returns/{return_id}/post` — draft only; body optional `settlement_method` (`adjust`|`refund`), `payment_method`, `liquid_account_id`.  
 **Cancel:** `POST /sales/returns/{return_id}/cancel` — body `{ "reason" }` **required** (non-empty). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `sales_return_cancelled.details.reason`. Serialize includes `can_cancel`. Sales **Cancel reason** input (BR-7.5).

@@ -108,7 +108,7 @@ async def test_purchase_return_reason_required(client, db_session):
             "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
         },
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
     assert "reason" in blank.text.lower()
 
 
@@ -155,5 +155,5 @@ async def test_purchase_return_invalid_reason_rejected(client, db_session):
             "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
         },
     )
-    assert bad.status_code == 400, bad.text
+    assert bad.status_code == 422, bad.text
     assert "reason" in bad.text.lower()

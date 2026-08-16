@@ -79,7 +79,7 @@ async def test_sales_return_reason_required(client, seeded):
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "discard"}],
         },
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
     assert "reason" in blank.text.lower()
 
     bad = await ac.post(
@@ -92,7 +92,7 @@ async def test_sales_return_reason_required(client, seeded):
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "discard"}],
         },
     )
-    assert bad.status_code == 400, bad.text
+    assert bad.status_code == 422, bad.text
 
     ok = await ac.post(
         "/api/v1/sales/returns",
