@@ -31,3 +31,7 @@ Stage 1048 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Check Gate, Transfer Check Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1048 opened under **ADR-2103** after CONTINUE/NEXT (Tenant MVP Transfer Review Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2104**. Stage 1047 feature scope remains frozen.
