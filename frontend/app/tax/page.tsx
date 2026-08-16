@@ -243,6 +243,7 @@ export default function Page() {
               <option value="vat">VAT</option>
               <option value="gst">GST</option>
               <option value="sales_tax">Sales tax</option>
+              <option value="custom">Custom</option>
             </select>
             <select value={pricingMode} onChange={(e) => setPricingMode(e.target.value)}>
               <option value="exclusive">Exclusive</option>

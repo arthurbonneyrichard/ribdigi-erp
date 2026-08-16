@@ -825,8 +825,9 @@ class StockTransferReject(BaseModel):
 class TaxCreate(BaseModel):
     name: str
     rate: float = Field(ge=0)
-    tax_type: str = "vat"
-    pricing_mode: str = "exclusive"
+    # BR-12.1 — schema Literal; omit defaults; blank/invalid → 422
+    tax_type: Literal["vat", "gst", "sales_tax", "custom"] = "vat"
+    pricing_mode: Literal["exclusive", "inclusive"] = "exclusive"
     components: list[dict] | None = None
     is_reverse_charge: bool = False
     is_default: bool = False
@@ -836,8 +837,9 @@ class TaxCreate(BaseModel):
 class TaxUpdate(BaseModel):
     name: str | None = None
     rate: float | None = Field(default=None, ge=0)
-    tax_type: str | None = None
-    pricing_mode: str | None = None
+    # BR-12.1 — omit = no change; blank/invalid → 422
+    tax_type: Literal["vat", "gst", "sales_tax", "custom"] | None = None
+    pricing_mode: Literal["exclusive", "inclusive"] | None = None
     components: list[dict] | None = None
     is_reverse_charge: bool | None = None
     is_active: bool | None = None
@@ -847,7 +849,8 @@ class TaxCalculateRequest(BaseModel):
     amount: float = Field(gt=0)
     rate: float | None = None
     tax_rate_id: str | None = None
-    pricing_mode: str | None = None
+    # BR-12.1 — omit → exclusive at calc; blank/invalid → 422
+    pricing_mode: Literal["exclusive", "inclusive"] | None = None
     components: list[dict] | None = None
     is_reverse_charge: bool | None = None
 

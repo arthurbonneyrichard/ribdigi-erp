@@ -10088,6 +10088,8 @@ async def add_tax(
     if payload.is_default:
         await tax_svc.clear_default_flags(db, claims["tenant_id"])
     data = payload.model_dump()
+    data["tax_type"] = tax_svc.normalize_tax_type(data.get("tax_type"))
+    data["pricing_mode"] = tax_svc.normalize_pricing_mode(data.get("pricing_mode"))
     comps = tax_svc.normalize_components(data.pop("components", None))
     if comps:
         data["components"] = comps
@@ -10162,7 +10164,7 @@ async def calculate_tax(
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    mode = payload.pricing_mode or "exclusive"
+    mode = payload.pricing_mode
     rate_pct = payload.rate
     components = payload.components
     is_rc = bool(payload.is_reverse_charge) if payload.is_reverse_charge is not None else False
@@ -10188,6 +10190,7 @@ async def calculate_tax(
         rate_pct = tax_svc.effective_rate_from_components(
             tax_svc.normalize_components(components), 0
         )
+    mode = tax_svc.normalize_pricing_mode(mode)
     detail = tax_svc.compute_tax_breakdown(
         payload.amount,
         rate_pct,
