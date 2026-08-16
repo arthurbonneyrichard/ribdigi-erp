@@ -984,7 +984,7 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 **Create:** `POST /sales/invoices`  
 **Get:** `GET /sales/invoices/{invoice_id}`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
-**Print:** `GET /sales/invoices/{invoice_id}/print`
+**Print:** `GET /sales/invoices/{invoice_id}/print` — query `template` ∈ a4|thermal (omit → company print branding default; blank/invalid → **422**); `format` ∈ pdf|text|json (omit → `pdf`; blank/invalid → **422**); `paper` ∈ 58mm|80mm for thermal (omit → branding default; blank/invalid → **422**, no silent branding fallback for garbage). Sales Print A4 / thermal controls.
 
 **Create Invoice:**
 ```json
@@ -1106,9 +1106,12 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **Endpoint:** `GET /pos/products/search?q=flour&barcode=8901234567890`
 
 ### 8.4 Receipt Printing
-**Endpoint:** `GET /pos/sales/{sale_id}/receipt`
+**Endpoint:** `GET /pos/sales/{sale_id}/receipt`  
+Query `format` ∈ json|text|pdf (omit → `json`; blank/invalid → **422**); `paper` ∈ 58mm|80mm (omit → company print branding default; blank/invalid → **422**). POS paper select.
 
-**Query Params:** `?template=thermal&format=pdf`
+**Send:** `POST /pos/sales/{sale_id}/receipt/send` — query `channel` ∈ email|sms (omit → `email`; blank/invalid → **422**; no silent email from `""`); `paper` ∈ 58mm|80mm (omit → `80mm`; blank/invalid → **422**); optional `to`. POS Email / SMS buttons.
+
+**Query Params (legacy note):** `?format=pdf&paper=80mm`
 
 ### 8.5 Cash Drawer
 **Store settings:** `PATCH /stores/{store_id}/drawer` — body `StoreDrawerSettingsUpdate` `{ drawer_mode?, drawer_host?, drawer_port?, drawer_open_on_cash? }`. `drawer_mode` schema `Literal["none","mock","network","browser_bridge"]` (omit = no change; blank/invalid → **422**; no silent `none` from `""`). Service `normalize_mode` remains defense-in-depth **400**. Multi-Store UI drawer Mode select.  
