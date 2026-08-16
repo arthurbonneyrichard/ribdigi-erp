@@ -31,3 +31,7 @@ Stage 1101 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Boulevard Gate, Transfer Boulevard Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1101 opened under **ADR-2209** after CONTINUE/NEXT (Tenant MVP Transfer Causeway Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2210**. Stage 1100 feature scope remains frozen.
