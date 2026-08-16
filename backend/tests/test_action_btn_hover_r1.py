@@ -82,3 +82,22 @@ def test_sales_fulfillment_btn_ok_wired():
     assert 'className="btn-ok" onClick={() => transferAct(t.id, \'submit\')}' in inventory
     stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
     assert 'className="btn-ok" onClick={() => act(t.id, \'submit\')}' in stores
+
+
+def test_residual_post_actions_use_btn_ok():
+    """Journal / COA open / cash transfer / stock Post actions use btn-ok."""
+    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-ok" onClick={postManual}' in accounting
+    assert "Post balanced entry" in accounting
+    assert 'className="btn-ok" onClick={postCoaOpening}' in accounting
+    assert "Post opening balances" in accounting
+    assert 'className="btn-ok" onClick={postTransfer}' in accounting
+
+    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-ok" onClick={postOpeningStock}' in inventory
+    assert "Post opening stock" in inventory
+    assert 'className="btn-ok" onClick={postStockAdjust}' in inventory
+    assert "Post adjustment" in inventory
+    assert 'className="btn-ok" onClick={postStockOut}' in inventory
+    assert "Post stock out" in inventory
+    assert inventory.count('className="btn-ok"') >= 6

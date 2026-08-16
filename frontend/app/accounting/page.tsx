@@ -1005,7 +1005,7 @@ export default function Page() {
                   {manualBalanced ? ' · balanced' : ' · unbalanced'}
                 </span>
               </div>
-              <button type="button" onClick={postManual} disabled={!manualBalanced}>
+              <button type="button" className="btn-ok" onClick={postManual} disabled={!manualBalanced}>
                 Post balanced entry
               </button>
             </div>
@@ -1064,7 +1064,7 @@ export default function Page() {
                     ))}
                   </ul>
                 )}
-                <button type="button" onClick={postCoaOpening} disabled={!coaOpenLines.length}>
+                <button type="button" className="btn-ok" onClick={postCoaOpening} disabled={!coaOpenLines.length}>
                   Post opening balances
                 </button>
               </>
@@ -1451,7 +1451,7 @@ export default function Page() {
                 onChange={(e) => setXferNotes(e.target.value)}
                 placeholder="Notes"
               />
-              <button type="button" onClick={postTransfer}>
+              <button type="button" className="btn-ok" onClick={postTransfer}>
                 Post
               </button>
             </div>

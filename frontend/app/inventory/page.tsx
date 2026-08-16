@@ -2784,7 +2784,7 @@ export default function Page() {
               />
               Post inventory / equity journal
             </label>
-            <button type="button" onClick={postOpeningStock} disabled={!selectedId}>
+            <button type="button" className="btn-ok" onClick={postOpeningStock} disabled={!selectedId}>
               Post opening stock
             </button>
           </div>
@@ -3141,7 +3141,7 @@ export default function Page() {
             onChange={(e) => setAdjNotes(e.target.value)}
             placeholder="Details"
           />
-          <button type="button" onClick={postStockAdjust} disabled={!selectedId || !adjReason}>
+          <button type="button" className="btn-ok" onClick={postStockAdjust} disabled={!selectedId || !adjReason}>
             Post adjustment
           </button>
         </div>
@@ -3237,7 +3237,7 @@ export default function Page() {
             onChange={(e) => setOutNotes(e.target.value)}
             placeholder="Details"
           />
-          <button type="button" onClick={postStockOut} disabled={!selectedId || !outRefType}>
+          <button type="button" className="btn-ok" onClick={postStockOut} disabled={!selectedId || !outRefType}>
             Post stock out
           </button>
         </div>
