@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 933 track opened (ADR-1873: `test_stage933_open.py`, `docs/STAGE_933_PLAN.md`) — Transfer Channel Gate Honesty Pack Remaining-Gate Index; closed under ADR-1874
+- [x] Transfer Channel Gate Honesty Pack remaining-gate hub (Stage 933 I1: `test_stage933_index_i1.py`, `docs/TRANSFER_CHANNEL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Channel Gate Honesty Pack blocker matrix (Stage 933 B1: `test_stage933_blockers_b1.py`, `docs/TRANSFER_CHANNEL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 932 / Stage 931 / Stage 392 / CHANGE_IMPACT pointers (Stage 933 P1: `test_stage933_pointers_p1.py`, `docs/TRANSFER_CHANNEL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 933 fidelity sync (D1: `test_stage933_fidelity_d1.py`, `docs/STAGE_933_FIDELITY.md`)
+- [x] Stage 933 exit + freeze (H933x: `test_stage933_exit_h933x.py`, `docs/STAGE_933_EXIT_CRITERIA.md`, ADR-1874)
+
 Stage 932 track opened (ADR-1871: `test_stage932_open.py`, `docs/STAGE_932_PLAN.md`) — Transfer Transit Gate Honesty Pack Remaining-Gate Index; closed under ADR-1872
 - [x] Transfer Transit Gate Honesty Pack remaining-gate hub (Stage 932 I1: `test_stage932_index_i1.py`, `docs/TRANSFER_TRANSIT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Transit Gate Honesty Pack blocker matrix (Stage 932 B1: `test_stage932_blockers_b1.py`, `docs/TRANSFER_TRANSIT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

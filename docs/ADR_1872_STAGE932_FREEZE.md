@@ -31,3 +31,7 @@ Stage 933 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Transit Gate, Transfer Transit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 933 opened under **ADR-1873** after CONTINUE/NEXT (Tenant MVP Transfer Channel Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1874**. Stage 932 feature scope remains frozen.
