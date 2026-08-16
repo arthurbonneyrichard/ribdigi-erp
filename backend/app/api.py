@@ -6023,7 +6023,7 @@ async def approve_purchase_request(
 @api.post("/purchasing/requests/{request_id}/reject")
 async def reject_purchase_request(
     request_id: str,
-    payload: PurchaseRequestReject | None = None,
+    payload: PurchaseRequestReject,
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6032,7 +6032,7 @@ async def reject_purchase_request(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         request_id=request_id,
-        reason=(payload.reason if payload else None),
+        reason=payload.reason,
         actor_role=claims.get("role"),
     )
     await db.commit()

@@ -521,7 +521,9 @@ async def reject_request(
     settings = await get_approval_settings(db, tenant_id)
     assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    reason_s = (reason or "").strip() or None
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="rejection reason is required")
     await _record_action(
         db,
         tenant_id=tenant_id,
@@ -544,7 +546,7 @@ async def reject_request(
             entity_id=row.id,
             details={
                 "request_number": row.request_number,
-                "reason": row.rejection_reason,
+                "reason": reason_s,
                 "step": step,
             },
         )

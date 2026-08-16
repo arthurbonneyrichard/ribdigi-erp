@@ -1,4 +1,4 @@
-"""Purchase request Reject reason honesty (BR-6.2) — no hardcoded UI reason."""
+"""Purchase request Reject reason honesty (BR-6.2) — FE + API require reason."""
 
 from __future__ import annotations
 
@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pyotp
 import pytest
+from sqlalchemy import select
 
+from app import models as m
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,7 +31,7 @@ async def _admin(ac, seed):
 
 
 @pytest.mark.asyncio
-async def test_purchase_request_reject_persists_reason(client):
+async def test_purchase_request_reject_requires_reason_and_persists(client, db_session):
     ac, seed = client
     headers = await _admin(ac, seed)
     created = await ac.post(
@@ -47,12 +49,45 @@ async def test_purchase_request_reject_persists_reason(client):
     assert submitted.status_code == 200, submitted.text
     assert submitted.json()["data"]["status"] == "pending"
 
+    missing = await ac.post(
+        f"/api/v1/purchasing/requests/{rid}/reject",
+        headers=headers,
+        json={},
+    )
+    assert missing.status_code == 422
+
+    empty = await ac.post(
+        f"/api/v1/purchasing/requests/{rid}/reject",
+        headers=headers,
+        json={"reason": ""},
+    )
+    assert empty.status_code == 422
+
+    blank = await ac.post(
+        f"/api/v1/purchasing/requests/{rid}/reject",
+        headers=headers,
+        json={"reason": "   "},
+    )
+    assert blank.status_code == 400
+    assert "reason" in blank.json()["detail"].lower()
+
     rejected = await ac.post(
         f"/api/v1/purchasing/requests/{rid}/reject",
         headers=headers,
-        json={"reason": "Budget freeze Q3"},
+        json={"reason": "Budget freeze Q3 — API hello-world"},
     )
     assert rejected.status_code == 200, rejected.text
     body = rejected.json()["data"]
     assert body["status"] == "rejected"
-    assert body["rejection_reason"] == "Budget freeze Q3"
+    assert body["rejection_reason"] == "Budget freeze Q3 — API hello-world"
+
+    audit = (
+        await db_session.execute(
+            select(m.AuditLog).where(
+                m.AuditLog.tenant_id == seed["t1"].id,
+                m.AuditLog.action == "pr_rejected",
+                m.AuditLog.entity_id == rid,
+            )
+        )
+    ).scalar_one()
+    assert audit.details.get("reason") == "Budget freeze Q3 — API hello-world"

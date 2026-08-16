@@ -866,7 +866,9 @@ class PurchaseRequestCreate(BaseModel):
 
 
 class PurchaseRequestReject(BaseModel):
-    reason: str | None = None
+    """Purchase request reject — typed reason required (BR-6.2 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class PurchaseRequestConvert(BaseModel):
