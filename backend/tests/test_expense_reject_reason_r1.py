@@ -53,7 +53,7 @@ async def test_expense_reject_requires_and_persists_reason(client):
     eid = body["id"]
 
     missing = await ac.post(f"/api/v1/expenses/{eid}/reject", headers=headers, json={})
-    assert missing.status_code == 400, missing.text
+    assert missing.status_code == 422, missing.text
 
     blank = await ac.post(
         f"/api/v1/expenses/{eid}/reject",

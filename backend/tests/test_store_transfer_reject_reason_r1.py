@@ -67,7 +67,7 @@ async def test_stores_transfer_reject_requires_and_persists_reason(client, db_se
         headers=headers,
         json={},
     )
-    assert missing.status_code == 400, missing.text
+    assert missing.status_code == 422, missing.text
 
     blank = await ac.post(
         f"/api/v1/stores/transfers/{tid}/reject",

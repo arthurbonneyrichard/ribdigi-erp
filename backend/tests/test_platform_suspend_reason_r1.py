@@ -39,7 +39,7 @@ async def test_platform_suspend_requires_and_persists_reason(client):
     slug = seed["t2"].slug
 
     missing = await ac.post(f"/api/v1/tenants/{slug}/suspend", headers=headers, json={})
-    assert missing.status_code == 400, missing.text
+    assert missing.status_code == 422, missing.text
     assert "reason" in missing.text.lower()
 
     blank = await ac.post(
