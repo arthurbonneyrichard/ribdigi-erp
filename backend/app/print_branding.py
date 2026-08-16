@@ -13,6 +13,26 @@ DEFAULT_INVOICE_TEMPLATE = "a4"
 DEFAULT_RECEIPT_PAPER = "80mm"
 DEFAULT_FOOTER_INVOICE = "Thank you for your business."
 DEFAULT_FOOTER_RECEIPT = "Thank you"
+INVOICE_TEMPLATES = frozenset({"a4", "thermal"})
+RECEIPT_PAPERS = frozenset({"58mm", "80mm"})
+
+
+def coerce_invoice_template_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def coerce_receipt_paper_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
 
 
 def print_branding_settings(tenant: m.Tenant | None) -> dict[str, Any]:
@@ -22,10 +42,10 @@ def print_branding_settings(tenant: m.Tenant | None) -> dict[str, Any]:
     header = str(raw.get("header_text") or "").strip()
     footer = str(raw.get("footer_text") or "").strip()
     inv = str(raw.get("default_invoice_template") or DEFAULT_INVOICE_TEMPLATE).lower()
-    if inv not in {"a4", "thermal"}:
+    if inv not in INVOICE_TEMPLATES:
         inv = DEFAULT_INVOICE_TEMPLATE
     paper = str(raw.get("default_receipt_paper") or DEFAULT_RECEIPT_PAPER).lower()
-    if paper not in {"58mm", "80mm"}:
+    if paper not in RECEIPT_PAPERS:
         paper = DEFAULT_RECEIPT_PAPER
     return {
         "header_text": header,
@@ -43,13 +63,15 @@ def apply_print_branding_update(tenant: m.Tenant, payload: dict[str, Any]) -> di
     if "footer_text" in payload and payload["footer_text"] is not None:
         current["footer_text"] = str(payload["footer_text"]).strip()[:300]
     if payload.get("default_invoice_template") is not None:
+        # Defense in depth: PrintBrandingUpdate Literal rejects blank/unknown with 422.
+        # Read path still coerces garbage to a4 silently.
         inv = str(payload["default_invoice_template"]).lower().strip()
-        if inv not in {"a4", "thermal"}:
+        if inv not in INVOICE_TEMPLATES:
             raise HTTPException(status_code=400, detail="default_invoice_template must be a4 or thermal")
         current["default_invoice_template"] = inv
     if payload.get("default_receipt_paper") is not None:
         paper = str(payload["default_receipt_paper"]).lower().strip()
-        if paper not in {"58mm", "80mm"}:
+        if paper not in RECEIPT_PAPERS:
             raise HTTPException(status_code=400, detail="default_receipt_paper must be 58mm or 80mm")
         current["default_receipt_paper"] = paper
     tenant.print_branding = current

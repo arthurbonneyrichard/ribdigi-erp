@@ -278,6 +278,11 @@ Company UI selects match. Service validators remain defense-in-depth **400** (an
 
 Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
+**Print branding (BR-20.4):** `GET|PATCH /settings/print` — `{ header_text?, footer_text?, default_invoice_template?, default_receipt_paper? }`.  
+`default_invoice_template` schema `Literal["a4","thermal"]` (omit = no change; blank/invalid → **422**).  
+`default_receipt_paper` schema `Literal["58mm","80mm"]` (omit = no change; blank/invalid → **422**).  
+Service `apply_print_branding_update` remains defense-in-depth **400**. Read path still coerces stored garbage to `a4` / `80mm`. Company page Invoice template / Receipt paper selects match.
+
 ### 3.4 Tenant Status Management
 **Self-suspend:** `POST /tenants/me/suspend` — body `{ "reason" }` **required** (`TenantSuspendRequest`; omit/empty → 422; whitespace → 400) for company_admin/super_admin; stores `suspended_reason`, revokes sessions, emits `tenant.suspended`. Company page **Suspend reason** input (no hardcoded `"Admin requested"`).  
 **Suspend:** `POST /tenants/{tenant_ref}/suspend` — body `{ "reason" }` **required** (same schema) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Suspend reason** input (no `window.prompt`).  
