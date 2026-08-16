@@ -118,6 +118,34 @@ PackageCodeValue = Annotated[
 ]
 
 
+# Must stay aligned with app.packages.PACKAGEABLE_MODULES (excludes platform).
+PackageableModuleValue = Annotated[
+    Literal[
+        "dashboard",
+        "company",
+        "inventory",
+        "sales",
+        "pos",
+        "purchasing",
+        "expenses",
+        "accounting",
+        "credit",
+        "tax",
+        "stores",
+        "reports",
+        "notifications",
+        "audit",
+        "backup",
+        "ai",
+        "users",
+        "security",
+        "customers",
+        "suppliers",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
+
+
 def coerce_platform_role_value(value: object) -> object:
     """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
     if value is None:
@@ -309,14 +337,16 @@ class TenantSubscriptionAssign(BaseModel):
     term_unit: Literal["months", "years"] = "months"
     start_at: datetime | None = None
     activate: bool = True
-    enabled_modules: list[str] | None = None
+    # Packageable modules Literal list; omit/null OK; blank/unknown/platform item → 422
+    enabled_modules: list[PackageableModuleValue] | None = None
     # Platform store entitlement override; omit = no change; null clears to package default
     max_stores_override: int | None = Field(default=None, ge=0)
     clear_max_stores_override: bool = False
 
 
 class TenantModulesUpdate(BaseModel):
-    enabled_modules: list[str] | None = None
+    # Same Literal list as subscription assign; omit when reset_to_package
+    enabled_modules: list[PackageableModuleValue] | None = None
     reset_to_package: bool = False
 
 
