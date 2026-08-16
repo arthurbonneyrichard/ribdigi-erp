@@ -101,3 +101,10 @@ def test_residual_post_actions_use_btn_ok():
     assert 'className="btn-ok" onClick={postStockOut}' in inventory
     assert "Post stock out" in inventory
     assert inventory.count('className="btn-ok"') >= 6
+
+
+def test_expense_submit_uses_btn_ok():
+    """New expense Submit uses green lifecycle hover class."""
+    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    assert 'className="btn-ok" onClick={createExpense}' in expenses
+    assert "Submit expense" in expenses
