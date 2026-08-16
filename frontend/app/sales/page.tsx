@@ -870,6 +870,7 @@ export default function Page() {
                 </button>
                 <button
                   type="button"
+                  className={g.is_active === false ? 'btn-ok' : 'btn-danger'}
                   onClick={() => setGroupActive(g, g.is_active === false)}
                 >
                   {g.is_active === false ? 'Activate' : 'Deactivate'}
@@ -941,6 +942,11 @@ export default function Page() {
           {customerId ? (
             <button
               type="button"
+              className={
+                (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
+                  ? 'btn-ok'
+                  : 'btn-danger'
+              }
               onClick={() =>
                 setCustomerActive(
                   (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive',

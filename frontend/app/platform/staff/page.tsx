@@ -316,13 +316,18 @@ export default function PlatformStaffPage() {
                   <td>
                     <div className="plat-actions">
                       {u.is_active === false ? (
-                        <button type="button" disabled={busy} onClick={() => setActive(u, true)}>
+                        <button
+                          type="button"
+                          className="btn-ok"
+                          disabled={busy}
+                          onClick={() => setActive(u, true)}
+                        >
                           Activate
                         </button>
                       ) : (
                         <button
                           type="button"
-                          className="danger"
+                          className="btn-danger"
                           disabled={busy}
                           onClick={() => setActive(u, false)}
                         >

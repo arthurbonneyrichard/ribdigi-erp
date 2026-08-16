@@ -436,6 +436,7 @@ export default function Page() {
                 {r.is_active === false ? (
                   <button
                     type="button"
+                    className="btn-ok"
                     style={{ marginLeft: 8 }}
                     onClick={() => setCustomRoleActive(r.role, true)}
                   >
@@ -444,6 +445,7 @@ export default function Page() {
                 ) : (
                   <button
                     type="button"
+                    className="btn-danger"
                     style={{ marginLeft: 8 }}
                     onClick={() => setCustomRoleActive(r.role, false)}
                   >
@@ -728,11 +730,11 @@ export default function Page() {
               {canWrite && (
                 <td>
                   {r.is_active ? (
-                    <button type="button" onClick={() => setActive(r.id, false)}>
+                    <button type="button" className="btn-danger" onClick={() => setActive(r.id, false)}>
                       Deactivate
                     </button>
                   ) : (
-                    <button type="button" onClick={() => setActive(r.id, true)}>
+                    <button type="button" className="btn-ok" onClick={() => setActive(r.id, true)}>
                       Activate
                     </button>
                   )}
