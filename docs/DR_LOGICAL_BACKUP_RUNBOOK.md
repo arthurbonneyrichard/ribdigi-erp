@@ -46,7 +46,7 @@ Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/te
 
 ## Schedule, retention, and failure alerts (Stage 18 B1)
 
-1. **Configure** — `PATCH /api/v1/backup/settings` with `enabled`, `frequency` (`daily`|`weekly`), `retention_count` (1–365), `hour_utc` (0–23).
+1. **Configure** — `PATCH /api/v1/backup/settings` with `enabled`, `frequency` schema `Literal["daily","weekly"]` (omit = no change; blank/invalid → **422**), `retention_count` (1–365), `hour_utc` (0–23).
 2. **Due runner** — `POST /api/v1/backup/run-due` (admin) or Celery beat `run-due-backups`. Returns `ran`/`reason` (`schedule_disabled` | `already_ran` | `before_hour` | `created` | `failed` | `dir_not_writable`). A failed schedule run returns `ran=false` — never a fake success.
 3. **Retention** — after each successful backup, older completed jobs beyond `retention_count` are deleted (files + rows).
 4. **Failure notify** — failed create persists `BackupJob.status=failed` and creates a tenant `system` notification titled **Backup failed** (visible to admins). Disk-not-writable on schedule also notifies.

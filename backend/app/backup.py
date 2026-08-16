@@ -181,6 +181,8 @@ async def update_settings(
     if enabled is not None:
         row.enabled = enabled
     if frequency is not None:
+        # Defense in depth: BackupSettingsUpdate.frequency Literal rejects
+        # blank/unknown with 422 before this runs.
         if frequency not in {"daily", "weekly"}:
             raise HTTPException(status_code=400, detail="frequency must be daily or weekly")
         row.frequency = frequency
