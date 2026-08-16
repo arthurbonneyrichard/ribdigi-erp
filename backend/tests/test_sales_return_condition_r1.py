@@ -29,6 +29,18 @@ def test_sales_return_condition_ui_wired():
 def test_sales_return_item_schema_requires_condition():
     field = SalesReturnItemCreate.model_fields["condition"]
     assert field.default is PydanticUndefined
+    ok = SalesReturnItemCreate.model_validate(
+        {"product_id": "p1", "quantity": 1, "condition": "sellable"}
+    )
+    assert ok.condition == "sellable"
+    with pytest.raises(Exception):
+        SalesReturnItemCreate.model_validate(
+            {"product_id": "p1", "quantity": 1, "condition": "broken"}
+        )
+    with pytest.raises(Exception):
+        SalesReturnItemCreate.model_validate(
+            {"product_id": "p1", "quantity": 1, "condition": "  "}
+        )
 
 
 async def _super(ac, seed):
@@ -82,7 +94,7 @@ async def test_sales_return_condition_required_and_persisted(client, seeded):
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "  "}],
         },
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
     assert "condition" in blank.text.lower()
 
     bad = await ac.post(
@@ -95,7 +107,7 @@ async def test_sales_return_condition_required_and_persisted(client, seeded):
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "broken"}],
         },
     )
-    assert bad.status_code == 400, bad.text
+    assert bad.status_code == 422, bad.text
 
     # Restock checked but condition discard — must not silently become sellable
     discard = await ac.post(

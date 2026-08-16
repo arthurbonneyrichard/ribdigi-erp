@@ -996,7 +996,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 
 ### 7.6 Sales Return
 **List:** `GET /sales/returns`  
-**Create:** `POST /sales/returns` — body requires `sales_invoice_id`, coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (schema `Literal`; no silent default to `other`; omit/blank/invalid → **422**), `items[]` each with required `condition` ∈ `sellable` | `discard` (no silent default from `restock`; omit → 422, blank/invalid → 400), optional `restock` / `notes`. Restock on post only when `restock` and line `condition=sellable`. Sales UI uses **Select reason** + **Select condition** (BR-7.5).  
+**Create:** `POST /sales/returns` — body requires `sales_invoice_id`, coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (schema `Literal`; no silent default to `other`; omit/blank/invalid → **422**), `items[]` each with required `condition` ∈ `sellable` | `discard` (schema `Literal`; no silent default from `restock`; omit/blank/invalid → **422**), optional `restock` / `notes`. Restock on post only when `restock` and line `condition=sellable`. Sales UI uses **Select reason** + **Select condition** (BR-7.5).  
 **Get:** `GET /sales/returns/{return_id}`  
 **Post:** `POST /sales/returns/{return_id}/post` — draft only; body optional `settlement_method` (`adjust`|`refund`), `payment_method`, `liquid_account_id`.  
 **Cancel:** `POST /sales/returns/{return_id}/cancel` — body `{ "reason" }` **required** (non-empty). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `sales_return_cancelled.details.reason`. Serialize includes `can_cancel`. Sales **Cancel reason** input (BR-7.5).
