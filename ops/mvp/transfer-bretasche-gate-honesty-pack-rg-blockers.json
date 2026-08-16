@@ -1,0 +1,77 @@
+{
+  "id": "transfer-bretasche-gate-honesty-pack-rg-blockers",
+  "stage": 1167,
+  "pack": "B1",
+  "doc": "docs/TRANSFER_BRETASCHE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TRANSFER_BRETASCHE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "transfer_bretasche_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_bretasche_gate_honesty_complete_claimed": false,
+  "transfer_bretasche_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "transfer_bretasche_gate_honesty_complete_claimed": "REMAINING",
+    "transfer_bretasche_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_transfer_bretasche_gate_honesty": "NON_CLAIM",
+    "transfer_bretasche_gate_pack_as_transfer_bretasche_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "transfer_bretasche_gate_honesty_complete_claimed_flag": "false",
+    "transfer_bretasche_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "tbretaghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbretaghb-honesty",
+      "title": "Mark Transfer Bretasche Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbretaghb-as-golive",
+      "title": "Mark Transfer Bretasche Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbretaghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbretaghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbretaghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for transfer-bretasche-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tbretaghb-checklist-remaining",
+      "title": "Offline Complete / Transfer Bretasche Gate / Transfer Bretasche Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 1167 B1 Transfer Bretasche Gate Honesty Pack RG blocker matrix packaging only."
+}

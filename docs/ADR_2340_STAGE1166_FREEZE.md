@@ -31,3 +31,7 @@ Stage 1167 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hoarding Gate, Transfer Hoarding Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1167 opened under **ADR-2341** after CONTINUE/NEXT (Tenant MVP Transfer Bretasche Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2342**. Stage 1166 feature scope remains frozen.

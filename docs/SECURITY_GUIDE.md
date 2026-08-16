@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 1167 D1 Transfer Bretasche Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1167_FIDELITY.md` (`test_stage1167_fidelity_d1.py`); exit ADR-2342 / `test_stage1167_exit_h1167x.py`. Honesty: Offline Complete / Transfer Bretasche Gate honesty / go-live Completes remain MISSING.
 Stage 1166 D1 Transfer Hoarding Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1166_FIDELITY.md` (`test_stage1166_fidelity_d1.py`); exit ADR-2340 / `test_stage1166_exit_h1166x.py`. Honesty: Offline Complete / Transfer Hoarding Gate honesty / go-live Completes remain MISSING.
 Stage 1165 D1 Transfer Machicol Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1165_FIDELITY.md` (`test_stage1165_fidelity_d1.py`); exit ADR-2338 / `test_stage1165_exit_h1165x.py`. Honesty: Offline Complete / Transfer Machicol Gate honesty / go-live Completes remain MISSING.
 Stage 1164 D1 Transfer Crenel Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1164_FIDELITY.md` (`test_stage1164_fidelity_d1.py`); exit ADR-2336 / `test_stage1164_exit_h1164x.py`. Honesty: Offline Complete / Transfer Crenel Gate honesty / go-live Completes remain MISSING.
