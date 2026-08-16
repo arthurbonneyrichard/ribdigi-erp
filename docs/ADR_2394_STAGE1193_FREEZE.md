@@ -31,3 +31,7 @@ Stage 1194 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Narthex Gate, Transfer Narthex Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1194 opened under **ADR-2395** after CONTINUE/NEXT (Tenant MVP Transfer Scriptorium Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2396**. Stage 1193 feature scope remains frozen.
