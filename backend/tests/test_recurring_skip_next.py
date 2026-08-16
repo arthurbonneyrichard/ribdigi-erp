@@ -58,7 +58,7 @@ async def test_skip_next_advances_without_generating(client, seeded):
     skipped = await ac.post(
         f"/api/v1/expenses/recurring/{rid}/skip-next",
         headers=admin,
-        json={},
+        json={"reason": "Skip me rent — unit test"},
     )
     assert skipped.status_code == 200, skipped.text
     after = skipped.json()["data"]["next_run_at"]
@@ -96,14 +96,14 @@ async def test_skip_next_inactive_and_missing(client, seeded):
     bad = await ac.post(
         f"/api/v1/expenses/recurring/{rid}/skip-next",
         headers=admin,
-        json={},
+        json={"reason": "should fail inactive"},
     )
     assert bad.status_code == 400
 
     missing = await ac.post(
         "/api/v1/expenses/recurring/00000000-0000-0000-0000-000000000000/skip-next",
         headers=admin,
-        json={},
+        json={"reason": "should fail missing"},
     )
     assert missing.status_code == 404
 
@@ -138,7 +138,7 @@ async def test_skip_next_from_overdue_next_run(client, seeded, db_session):
     skipped = await ac.post(
         f"/api/v1/expenses/recurring/{rid}/skip-next",
         headers=admin,
-        json={},
+        json={"reason": "Catch up overdue — unit test"},
     )
     assert skipped.status_code == 200, skipped.text
     after = skipped.json()["data"]["next_run_at"]

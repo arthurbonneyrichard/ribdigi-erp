@@ -644,6 +644,12 @@ class RecurringExpenseUpdate(BaseModel):
     clear_department: bool = False
 
 
+class RecurringSkipNext(BaseModel):
+    """Skip next recurring occurrence — typed reason required (BR-9.5 honesty)."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class ApprovalLevelUpdate(BaseModel):
     min_amount: float = Field(gt=0)
     roles: list[str] = Field(min_length=1)

@@ -139,6 +139,7 @@ from app.schemas import (
     PurchaseReturnCancel,
     RecurringExpenseCreate,
     RecurringExpenseUpdate,
+    RecurringSkipNext,
     RefreshRequest,
     SalesInvoiceCreate,
     SalesOrderCreate,
@@ -7563,6 +7564,7 @@ async def update_recurring_expense(
 @api.post("/expenses/recurring/{recurring_id}/skip-next")
 async def skip_next_recurring_expense(
     recurring_id: str,
+    payload: RecurringSkipNext,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7571,6 +7573,8 @@ async def skip_next_recurring_expense(
         db,
         tenant_id=claims["tenant_id"],
         recurring_id=recurring_id,
+        user_id=claims["sub"],
+        reason=payload.reason,
     )
     await db.commit()
     msg = "Next occurrence skipped"

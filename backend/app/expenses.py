@@ -1126,8 +1126,16 @@ async def skip_next_recurring(
     *,
     tenant_id: str,
     recurring_id: str,
+    user_id: str | None = None,
+    reason: str | None = None,
 ) -> m.RecurringExpense:
-    """Advance next_run_at by one frequency period without creating an expense (BR-9.5)."""
+    """Advance next_run_at by one frequency period without creating an expense (BR-9.5).
+
+    Reason is audit-only — do not mutate ``description`` (that is the generate template).
+    """
+    reason_s = (reason or "").strip()
+    if not reason_s:
+        raise HTTPException(status_code=400, detail="skip reason is required")
     row = (
         await db.execute(
             select(m.RecurringExpense).where(
@@ -1140,11 +1148,28 @@ async def skip_next_recurring(
         raise HTTPException(status_code=404, detail="Recurring expense not found")
     if not row.is_active:
         raise HTTPException(status_code=400, detail="Cannot skip inactive recurring expense")
-    base = row.next_run_at or datetime.utcnow()
+    previous = row.next_run_at
+    base = previous or datetime.utcnow()
     new_next = next_run_date(base, row.frequency)
     row.next_run_at = new_next
     if row.end_date and new_next > row.end_date:
         row.is_active = False
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="recurring_expense_skipped",
+            entity="recurring_expense",
+            entity_id=row.id,
+            details={
+                "reason": reason_s,
+                "previous_next_run_at": previous.isoformat() if previous else None,
+                "next_run_at": new_next.isoformat() if new_next else None,
+                "frequency": row.frequency,
+                "is_active": row.is_active,
+            },
+        )
+    )
     await db.flush()
     return row
 

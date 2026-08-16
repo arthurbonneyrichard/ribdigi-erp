@@ -1120,7 +1120,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 **List:** `GET /expenses/recurring` — optional `?is_active=true|false` filters soft-deactivated schedules (omit = all; Expenses manage status filter).  
 **Create:** `POST /expenses/recurring`  
 **Update:** `PATCH /expenses/recurring/{id}` — activate/deactivate (`is_active`) and/or edit template fields: `amount`, `payee` (+ `clear_payee`), `description`, `payment_method`, `frequency`, `category_id` / `category`, org dims (`branch_id` / `department_id` + clear flags). Expenses UI **Edit schedule**. Existing generated expenses are unchanged; next Generate uses the updated template.  
-**Skip next:** `POST /expenses/recurring/{id}/skip-next` — advance `next_run_at` by one frequency period without creating an expense (inactive → 400; past `end_date` after skip deactivates)  
+**Skip next:** `POST /expenses/recurring/{id}/skip-next` — body `{ "reason" }` **required** (non-empty) → advance `next_run_at` by one frequency period without creating an expense; audit `recurring_expense_skipped` with `details.reason` (+ previous/new `next_run_at`). Reason is audit-only (schedule `description` unchanged). Inactive → 400; past `end_date` after skip deactivates. Expenses UI **Skip next reason**.  
 **Generate due:** `POST /expenses/recurring/generate` — creates expenses for active schedules with `next_run_at <= now` (also Celery beat `generate_recurring_expenses`)
 
 **Create Recurring:**
@@ -1135,7 +1135,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 }
 ```
 
-`frequency` ∈ `daily|weekly|monthly|yearly`. Org dims on templates are copied onto expenses generated from the schedule. Generated expenses omit a forced reference so `expense_numbering` allocates `{PREFIX}-{YYYY}-{NNNN}` (default `EXP`); description is tagged `(recurring)` when needed. Expenses UI: Recurring expenses card (BR-9.5 / BR-9.2 / BR-20.4) including **Skip next** and manage status filter All / Active / Inactive (`recurringManageFilter`; Generate remains active-only).
+`frequency` ∈ `daily|weekly|monthly|yearly`. Org dims on templates are copied onto expenses generated from the schedule. Generated expenses omit a forced reference so `expense_numbering` allocates `{PREFIX}-{YYYY}-{NNNN}` (default `EXP`); description is tagged `(recurring)` when needed. Expenses UI: Recurring expenses card (BR-9.5 / BR-9.2 / BR-20.4) including **Skip next** (typed reason required) and manage status filter All / Active / Inactive (`recurringManageFilter`; Generate remains active-only).
 
 ---
 
