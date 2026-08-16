@@ -156,6 +156,7 @@ from app.schemas import (
     SmsTestRequest,
     StockAdjust,
     StockMove,
+    StockOut,
     OpeningStockCreate,
     OpeningBalanceCreate,
     AccountUpdate,
@@ -3886,12 +3887,13 @@ async def opening_stock_list(
 
 @api.post("/inventory/stock-out")
 async def stock_out(
-    payload: StockMove,
+    payload: StockOut,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app.inventory import STOCK_OUT_REFERENCE_TYPES
 
+    # Defense in depth — schema Literal already rejects omit/blank/invalid
     ref = (payload.reference_type or "").strip().lower()
     if ref not in STOCK_OUT_REFERENCE_TYPES:
         raise HTTPException(
