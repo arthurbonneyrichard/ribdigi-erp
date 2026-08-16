@@ -1,4 +1,4 @@
-"""Cheque bounce/cancel reason honesty (BR-10.4) — FE sends ?reason=."""
+"""Cheque bounce/cancel reason honesty (BR-10.4) — FE + API require reason."""
 
 from __future__ import annotations
 
@@ -33,31 +33,28 @@ async def _admin(ac, seed):
     )
 
 
-@pytest.mark.asyncio
-async def test_bounce_cheque_reason_query_persists_notes(client, db_session, seeded):
-    ac, seed = client
-    headers = await _admin(ac, seed)
+async def _pending_received_cheque(ac, db_session, seed, headers, *, number: str, amount: float = 50):
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 
     party = m.Party(
         tenant_id=tenant_id,
-        name="Cheque Reason Customer",
+        name=f"Cheque Customer {number}",
         kind="customer",
         credit_limit=0,
-        balance=50,
+        balance=amount,
     )
     db_session.add(party)
     await db_session.flush()
 
     inv = m.SalesInvoice(
         tenant_id=tenant_id,
-        invoice_number="INV-CHQ-REASON-1",
+        invoice_number=f"INV-{number}",
         customer_id=party.id,
         status="posted",
-        subtotal=50,
+        subtotal=amount,
         tax_amount=0,
-        total_amount=50,
+        total_amount=amount,
         paid_amount=0,
         posted_at=__import__("datetime").datetime.utcnow(),
         created_by=seed["admin1"].id,
@@ -70,19 +67,43 @@ async def test_bounce_cheque_reason_query_persists_notes(client, db_session, see
         tenant_id=tenant_id,
         user_id=seed["admin1"].id,
         customer_id=party.id,
-        amount=50,
+        amount=amount,
         sales_invoice_id=inv.id,
         payment_method="cheque",
-        reference="CHQ-REASON-1",
-        cheque_number="CHQ-REASON-1",
+        reference=number,
+        cheque_number=number,
         bank_name="First National",
     )
     await db_session.commit()
 
     listed = await ac.get("/api/v1/accounting/cheques", headers=headers)
     assert listed.status_code == 200, listed.text
-    chq = next(c for c in listed.json()["data"] if c["cheque_number"] == "CHQ-REASON-1")
+    return next(c for c in listed.json()["data"] if c["cheque_number"] == number)
+
+
+@pytest.mark.asyncio
+async def test_bounce_cheque_requires_reason_and_persists(client, db_session, seeded):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    chq = await _pending_received_cheque(
+        ac, db_session, seed, headers, number="CHQ-REASON-1"
+    )
     assert chq["status"] == "pending"
+
+    missing = await ac.post(
+        f"/api/v1/accounting/cheques/{chq['id']}/bounce",
+        headers=headers,
+    )
+    assert missing.status_code == 400
+    assert "reason" in missing.json()["detail"].lower()
+
+    blank = await ac.post(
+        f"/api/v1/accounting/cheques/{chq['id']}/bounce",
+        headers=headers,
+        params={"reason": "   "},
+    )
+    assert blank.status_code == 400
+    assert "reason" in blank.json()["detail"].lower()
 
     bounced = await ac.post(
         f"/api/v1/accounting/cheques/{chq['id']}/bounce",
@@ -93,3 +114,68 @@ async def test_bounce_cheque_reason_query_persists_notes(client, db_session, see
     body = bounced.json()["data"]
     assert body["status"] == "bounced"
     assert "NSF — insufficient funds" in (body.get("notes") or "")
+    assert "Bounce:" in (body.get("notes") or "")
+
+
+@pytest.mark.asyncio
+async def test_cancel_issued_cheque_requires_reason(client, db_session, seeded):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    tenant_id = seed["t1"].id
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+
+    from app import cheques as cheques_svc
+
+    supplier = m.Party(
+        tenant_id=tenant_id,
+        name="Cheque Cancel Supplier",
+        kind="supplier",
+        credit_limit=0,
+        balance=200,
+    )
+    db_session.add(supplier)
+    await db_session.flush()
+
+    pay = m.SupplierPayment(
+        tenant_id=tenant_id,
+        payment_number="SPY-CHQ-CANCEL-1",
+        supplier_id=supplier.id,
+        amount=25,
+        payment_method="cheque",
+        reference="CHQ-CANCEL-1",
+        created_by=seed["admin1"].id,
+    )
+    db_session.add(pay)
+    await db_session.flush()
+    await accounting_svc.post_supplier_payment_journal(
+        db_session,
+        tenant_id=tenant_id,
+        user_id=seed["admin1"].id,
+        payment=pay,
+    )
+    chq = await cheques_svc.create_from_supplier_payment(
+        db_session,
+        tenant_id=tenant_id,
+        user_id=seed["admin1"].id,
+        payment=pay,
+        cheque_number="CHQ-CANCEL-1",
+    )
+    await db_session.commit()
+
+    missing = await ac.post(
+        f"/api/v1/accounting/cheques/{chq.id}/cancel",
+        headers=headers,
+    )
+    assert missing.status_code == 400
+    assert "reason" in missing.json()["detail"].lower()
+
+    ok = await ac.post(
+        f"/api/v1/accounting/cheques/{chq.id}/cancel",
+        headers=headers,
+        params={"reason": "Stop payment — API hello-world"},
+    )
+    assert ok.status_code == 200, ok.text
+    body = ok.json()["data"]
+    assert body["status"] == "cancelled"
+    assert "Stop payment — API hello-world" in (body.get("notes") or "")
+    assert "Cancel:" in (body.get("notes") or "")
