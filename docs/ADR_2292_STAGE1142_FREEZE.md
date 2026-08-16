@@ -31,3 +31,7 @@ Stage 1143 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Minaret Gate, Transfer Minaret Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1143 opened under **ADR-2293** after CONTINUE/NEXT (Tenant MVP Transfer Obelisk Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2294**. Stage 1142 feature scope remains frozen.
