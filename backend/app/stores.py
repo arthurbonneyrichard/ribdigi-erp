@@ -88,16 +88,35 @@ async def create_store(
     operating_hours: dict | None = None,
     company_id: str | None = None,
 ) -> m.Store:
-    if manager_id:
-        manager = (
-            await db.execute(
-                select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
-            )
-        ).scalar_one_or_none()
-        if not manager:
-            raise HTTPException(status_code=404, detail="Manager user not found")
-    code_clean = code.strip().upper()
-    if company_id:
+    from app import store_entitlements as store_ent_svc
+
+    if not company_id:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "COMPANY_WORKSPACE_REQUIRED",
+                "message": "Store creation requires an active company workspace.",
+            },
+        )
+    tenant = await db.get(m.Tenant, tenant_id)
+    company = await db.get(m.Company, company_id)
+    if not tenant or not company or company.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    async with store_ent_svc.store_capacity_lock(tenant_id, company_id):
+        await store_ent_svc.assert_can_create_store(
+            db, tenant=tenant, company=company, lock=True
+        )
+
+        if manager_id:
+            manager = (
+                await db.execute(
+                    select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
+                )
+            ).scalar_one_or_none()
+            if not manager:
+                raise HTTPException(status_code=404, detail="Manager user not found")
+        code_clean = code.strip().upper()
         clash = (
             await db.execute(
                 select(m.Store).where(
@@ -109,33 +128,39 @@ async def create_store(
         ).scalar_one_or_none()
         if clash:
             raise HTTPException(status_code=409, detail="Store code already exists")
-    store = m.Store(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        name=name,
-        code=code_clean,
-        address=address,
-        phone=phone,
-        manager_id=manager_id,
-        branch_id=branch_id,
-        operating_hours=operating_hours,
-        is_active=True,
-    )
-    db.add(store)
-    await db.flush()
-    db.add(
-        m.Warehouse(
+        store = m.Store(
             tenant_id=tenant_id,
             company_id=company_id,
-            store_id=store.id,
-            name=f"{store.name} Warehouse",
-            code=f"WH-{store.code}",
-            warehouse_type="retail",
+            name=name,
+            code=code_clean,
+            address=address,
+            phone=phone,
+            manager_id=manager_id,
+            branch_id=branch_id,
+            operating_hours=operating_hours,
             is_active=True,
         )
-    )
-    await db.flush()
-    return store
+        db.add(store)
+        await db.flush()
+        db.add(
+            m.Warehouse(
+                tenant_id=tenant_id,
+                company_id=company_id,
+                store_id=store.id,
+                name=f"{store.name} Warehouse",
+                code=f"WH-{store.code}",
+                warehouse_type="retail",
+                is_active=True,
+            )
+        )
+        await db.flush()
+        # Refresh after lock + re-check so concurrent creates cannot both commit.
+        tenant = await db.get(m.Tenant, tenant_id) or tenant
+        company = await db.get(m.Company, company_id) or company
+        await store_ent_svc.assert_store_counts_not_exceeded(
+            db, tenant=tenant, company=company
+        )
+        return store
 
 
 def serialize_store(store: m.Store) -> dict:
@@ -216,7 +241,28 @@ async def update_store(
             raise HTTPException(status_code=400, detail="operating_hours must be an object")
         store.operating_hours = operating_hours or None
     if is_active is not None:
-        store.is_active = bool(is_active)
+        new_active = bool(is_active)
+        if new_active and not store.is_active:
+            from app import store_entitlements as store_ent_svc
+
+            tenant = await db.get(m.Tenant, tenant_id)
+            cid = company_id or store.company_id
+            company = await db.get(m.Company, cid) if cid else None
+            if not tenant or not company:
+                raise HTTPException(status_code=404, detail="Company not found")
+            async with store_ent_svc.store_capacity_lock(tenant_id, company.id):
+                await store_ent_svc.assert_can_activate_store(
+                    db, tenant=tenant, company=company, store=store
+                )
+                store.is_active = True
+                await db.flush()
+                tenant = await db.get(m.Tenant, tenant_id) or tenant
+                company = await db.get(m.Company, company.id) or company
+                await store_ent_svc.assert_store_counts_not_exceeded(
+                    db, tenant=tenant, company=company
+                )
+        else:
+            store.is_active = new_active
     await db.flush()
     return store
 

@@ -178,6 +178,7 @@ from app.schemas import (
     LowStockReorderPoCreate,
     StoreCreate,
     StoreUpdate,
+    CompanyStoreLimitUpdate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
     InventoryFefoSettingsUpdate,
@@ -2219,6 +2220,108 @@ async def patch_company(
     )
     await db.commit()
     return env(await companies_svc.serialize_company_async(db, co), "Company updated")
+
+
+@api.get("/tenant/store-entitlement")
+async def tenant_store_entitlement(
+    claims=Depends(require_permission("companies", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tenant Admin view of subscription store allowance + per-company allocations."""
+    from app import store_entitlements as store_ent_svc
+
+    if claims.get("workspace_kind") not in {None, "tenant"} and not claims.get("tenant_admin"):
+        # Allow tenant admins even if header omitted; company workspace still OK for read of own tenant.
+        pass
+    user = await db.get(m.User, claims["sub"])
+    if not workspace_svc.is_tenant_admin_role(user.role if user else None):
+        raise HTTPException(status_code=403, detail="Tenant administrator required")
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    entitlement = await store_ent_svc.get_tenant_store_entitlement(db, tenant)
+    allocations = await store_ent_svc.store_usage_by_company(db, tenant_id=tenant.id)
+    return env(
+        {"entitlement": entitlement, "companies": allocations},
+        "Store entitlement",
+    )
+
+
+@api.get("/companies/{company_id}/store-entitlement")
+async def company_store_entitlement(
+    company_id: str,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import store_entitlements as store_ent_svc
+
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    co = await companies_svc.get_company(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    user = await db.get(m.User, claims["sub"])
+    if not workspace_svc.is_tenant_admin_role(user.role if user else None):
+        if claims.get("company_id") and claims.get("company_id") != company_id:
+            raise HTTPException(status_code=404, detail="Company not found")
+        mems = await workspace_svc.list_user_memberships(
+            db, tenant_id=claims["tenant_id"], user_id=user.id
+        )
+        if not any(mrow.company_id == company_id for mrow in mems):
+            raise HTTPException(status_code=404, detail="Company not found")
+    data = await store_ent_svc.get_company_store_entitlement(
+        db, tenant=tenant, company=co
+    )
+    return env(data, "Company store entitlement")
+
+
+@api.patch("/companies/{company_id}/store-limit")
+async def patch_company_store_limit(
+    company_id: str,
+    payload: CompanyStoreLimitUpdate,
+    claims=Depends(require_permission("companies", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tenant Admin allocates Store capacity to a Company (never exceeds tenant entitlement)."""
+    from app import store_entitlements as store_ent_svc
+
+    if claims.get("workspace_kind") != "tenant":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "TENANT_WORKSPACE_REQUIRED",
+                "message": "Manage store allocations from the tenant workspace.",
+            },
+        )
+    user = await db.get(m.User, claims["sub"])
+    if not workspace_svc.is_tenant_admin_role(user.role if user else None):
+        raise HTTPException(status_code=403, detail="Tenant administrator required")
+    tenants_svc.assert_writable(claims)
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    co = await companies_svc.get_company(
+        db, tenant_id=claims["tenant_id"], company_id=company_id
+    )
+    prev = getattr(co, "store_limit", None)
+    co = await store_ent_svc.set_company_store_limit(
+        db, tenant=tenant, company=co, store_limit=payload.store_limit
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="companies",
+        action="store_allocation_updated",
+        entity="company",
+        entity_id=co.id,
+        details={
+            "company_id": co.id,
+            "from": prev,
+            "to": co.store_limit,
+        },
+        company_id=co.id,
+    )
+    await db.commit()
+    entitlement = await store_ent_svc.get_company_store_entitlement(
+        db, tenant=tenant, company=co
+    )
+    return env(entitlement, "Company store allocation updated")
 
 
 @api.post("/companies/{company_id}/logo")
@@ -13162,17 +13265,55 @@ async def add_store(
             department_id=None,
             company_id=claims.get("company_id"),
         )
-    store = await stores_svc.create_store(
+    try:
+        store = await stores_svc.create_store(
+            db,
+            tenant_id=claims["tenant_id"],
+            name=payload.name,
+            code=payload.code,
+            address=payload.address,
+            phone=payload.phone,
+            manager_id=payload.manager_id,
+            branch_id=branch_id,
+            operating_hours=payload.operating_hours,
+            company_id=claims.get("company_id"),
+        )
+    except HTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, dict) else {}
+        if detail.get("code") == "STORE_LIMIT_REACHED":
+            await audit_svc.record_event(
+                db,
+                tenant_id=claims["tenant_id"],
+                user_id=claims.get("sub"),
+                module="stores",
+                action="create_rejected_limit",
+                entity="store",
+                entity_id=None,
+                details={
+                    "name": payload.name,
+                    "code": payload.code,
+                    "company_id": claims.get("company_id"),
+                    "rejection": detail,
+                },
+                company_id=claims.get("company_id"),
+            )
+            await db.commit()
+        raise
+    await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
-        name=payload.name,
-        code=payload.code,
-        address=payload.address,
-        phone=payload.phone,
-        manager_id=payload.manager_id,
-        branch_id=branch_id,
-        operating_hours=payload.operating_hours,
-        company_id=claims.get("company_id"),
+        user_id=claims.get("sub"),
+        module="stores",
+        action="create",
+        entity="store",
+        entity_id=store.id,
+        details={
+            "name": store.name,
+            "code": store.code,
+            "company_id": store.company_id,
+            "is_active": True,
+        },
+        company_id=store.company_id,
     )
     await db.commit()
     return env(

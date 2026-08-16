@@ -88,6 +88,7 @@ async def ensure_default_company(db: AsyncSession, tenant: m.Tenant) -> m.Compan
         logo_url=tenant.logo_url,
         is_active=True,
         is_default=True,
+        store_limit=int(getattr(tenant, "max_stores", 5) or 5),
     )
     db.add(co)
     await db.flush()

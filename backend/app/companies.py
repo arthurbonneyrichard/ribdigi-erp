@@ -64,6 +64,7 @@ def serialize_company(
         "has_logo": bool(co.logo_url),
         "is_active": co.is_active,
         "is_default": co.is_default,
+        "store_limit": int(co.store_limit) if getattr(co, "store_limit", None) is not None else None,
         "created_at": co.created_at.isoformat() if co.created_at else None,
     }
 
@@ -171,6 +172,8 @@ async def create_company(
     payload: dict,
 ) -> m.Company:
     await workspace_svc.assert_can_create_company(db, tenant)
+    from app import store_entitlements as store_ent_svc
+
     code = (payload.get("code") or "CO").strip().upper()[:40]
     name = (payload.get("name") or "").strip()
     if not name:
@@ -191,6 +194,18 @@ async def create_company(
         ).scalar_one_or_none()
         if bt:
             business_type_id = bt.id
+
+    # Initial store allocation: honor payload, else 1 if tenant has unallocated capacity.
+    requested_limit = payload.get("store_limit", None)
+    if requested_limit is not None:
+        initial_store_limit = int(requested_limit)
+    else:
+        ent = await store_ent_svc.get_tenant_store_entitlement(db, tenant)
+        if ent["max_stores_unlimited"]:
+            initial_store_limit = 1
+        else:
+            unalloc = int(ent.get("unallocated") or 0)
+            initial_store_limit = 1 if unalloc >= 1 else 0
 
     co = m.Company(
         tenant_id=tenant.id,
@@ -217,10 +232,17 @@ async def create_company(
         document_footer=getattr(tenant, "document_footer", None),
         is_active=True,
         is_default=False,
+        store_limit=initial_store_limit,
         updated_at=datetime.utcnow(),
     )
     db.add(co)
     await db.flush()
+
+    # If caller requested an explicit allocation, validate against tenant entitlement.
+    if requested_limit is not None:
+        await store_ent_svc.set_company_store_limit(
+            db, tenant=tenant, company=co, store_limit=initial_store_limit
+        )
 
     # Creator gets company_admin membership
     db.add(
@@ -308,6 +330,7 @@ async def tenant_dashboard_payload(
     db: AsyncSession, *, tenant: m.Tenant, user: m.User
 ) -> dict:
     from sqlalchemy import func
+    from app import store_entitlements as store_ent_svc
 
     companies = await count(db, m.Company, tenant.id, active_only=True)
     branches = await count(db, m.Branch, tenant.id, active_only=True)
@@ -317,6 +340,8 @@ async def tenant_dashboard_payload(
     company_rows = await list_companies_for_user(
         db, tenant_id=tenant.id, user=user, tenant_admin=True
     )
+    store_ent = await store_ent_svc.get_tenant_store_entitlement(db, tenant)
+    store_by_company = await store_ent_svc.store_usage_by_company(db, tenant_id=tenant.id)
     return {
         "tenant": {
             "id": tenant.id,
@@ -334,7 +359,9 @@ async def tenant_dashboard_payload(
                 "max_companies": int(getattr(tenant, "max_companies", 1) or 1),
                 "max_users": int(getattr(tenant, "max_users", 25) or 25),
                 "max_branches": int(getattr(tenant, "max_branches", 5) or 5),
-                "max_stores": int(getattr(tenant, "max_stores", 5) or 5),
+                "max_stores": store_ent["max_stores"],
+                "max_stores_unlimited": store_ent["max_stores_unlimited"],
+                "max_stores_override": store_ent["max_stores_override"],
                 "max_warehouses": int(getattr(tenant, "max_warehouses", 5) or 5),
             },
             "usage": {
@@ -344,6 +371,8 @@ async def tenant_dashboard_payload(
                 "stores": stores,
                 "warehouses": warehouses,
             },
+            "store_entitlement": store_ent,
+            "store_allocations": store_by_company,
             "billing_deferred": True,
         },
         "counts": {

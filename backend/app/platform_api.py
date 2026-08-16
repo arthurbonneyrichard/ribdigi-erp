@@ -78,6 +78,14 @@ class PlatformTenantCreate(BaseModel):
 
 class PlatformPlanUpdate(BaseModel):
     plan_code: str
+    # When true (default), sync Tenant.max_stores from PLAN_CATALOG unless override is set.
+    sync_store_limits: bool = True
+
+
+class PlatformStoreEntitlementUpdate(BaseModel):
+    max_stores: int | None = Field(default=None, ge=-1)
+    max_stores_override: int | None = Field(default=None, ge=-1)
+    clear_override: bool = False
 
 
 class PlatformTenantNotesUpdate(BaseModel):
@@ -746,6 +754,11 @@ async def platform_set_tenant_plan(
         )
     prev = (getattr(row, "plan_code", None) or "trial").strip().lower()
     row.plan_code = plan
+    from app import store_entitlements as store_ent_svc
+
+    sync_info = {"synced": False}
+    if payload.sync_store_limits:
+        sync_info = store_ent_svc.apply_plan_store_defaults(row, plan)
     ip, ua = _client_meta(request)
     await audit.record_event(
         db,
@@ -759,6 +772,7 @@ async def platform_set_tenant_plan(
             "from": prev,
             "to": plan,
             "billing_deferred": True,
+            "store_limit_sync": sync_info,
         },
         ip_address=ip,
         user_agent=ua,
@@ -767,6 +781,65 @@ async def platform_set_tenant_plan(
     await db.commit()
     data = await platform_svc.get_customer_tenant(db, tenant_id)
     return env(data, message="plan_code updated (billing deferred)")
+
+
+@router.patch("/tenants/{tenant_id}/store-entitlement")
+async def platform_set_tenant_store_entitlement(
+    tenant_id: str,
+    payload: PlatformStoreEntitlementUpdate,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """RIBDIGI HOUSE override / base max_stores for a customer tenant (does not delete stores)."""
+    from app import store_entitlements as store_ent_svc
+
+    if tenant_id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=400, detail="Cannot change platform tenant entitlements here")
+    row = await db.get(m.Tenant, tenant_id)
+    if not row or row.id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    prev = {
+        "max_stores": getattr(row, "max_stores", None),
+        "max_stores_override": getattr(row, "max_stores_override", None),
+    }
+    if payload.clear_override:
+        row.max_stores_override = None
+    elif payload.max_stores_override is not None:
+        row.max_stores_override = int(payload.max_stores_override)
+    if payload.max_stores is not None:
+        row.max_stores = int(payload.max_stores)
+
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.tenant.store_entitlement_updated",
+        entity="tenant",
+        entity_id=tenant_id,
+        details={
+            "target_tenant_id": tenant_id,
+            "from": prev,
+            "to": {
+                "max_stores": row.max_stores,
+                "max_stores_override": row.max_stores_override,
+            },
+            "effective": store_ent_svc.effective_tenant_store_limit(row),
+        },
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_tenants",
+    )
+    await db.commit()
+    data = await platform_svc.get_customer_tenant(db, tenant_id)
+    data["store_entitlement"] = {
+        "max_stores": row.max_stores,
+        "max_stores_override": row.max_stores_override,
+        "effective": store_ent_svc.effective_tenant_store_limit(row),
+    }
+    return env(data, message="Store entitlement updated")
 
 
 @router.patch("/tenants/{tenant_id}/notes")

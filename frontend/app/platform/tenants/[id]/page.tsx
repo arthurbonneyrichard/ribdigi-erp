@@ -18,6 +18,8 @@ export default function PlatformTenantDetailPage() {
   const [notes, setNotes] = useState('');
   const [extendDays, setExtendDays] = useState(14);
   const [suspendReason, setSuspendReason] = useState('');
+  const [storeOverride, setStoreOverride] = useState('');
+  const [baseMaxStores, setBaseMaxStores] = useState('');
 
   async function load() {
     setError('');
@@ -30,6 +32,16 @@ export default function PlatformTenantDetailPage() {
       setPlanCode(r.data?.plan_code || 'trial');
       setNotes(r.data?.platform_notes || '');
       setCatalog(plans.data?.catalog || []);
+      setStoreOverride(
+        r.data?.max_stores_override != null && r.data?.max_stores_override !== undefined
+          ? String(r.data.max_stores_override)
+          : ''
+      );
+      setBaseMaxStores(
+        r.data?.max_stores != null && r.data?.max_stores !== undefined
+          ? String(r.data.max_stores)
+          : ''
+      );
     } catch (err: any) {
       setError(err.message || 'Not found');
     }
@@ -84,11 +96,41 @@ export default function PlatformTenantDetailPage() {
     try {
       await api(`/platform/tenants/${id}/plan`, {
         method: 'PATCH',
-        body: JSON.stringify({ plan_code: planCode }),
+        body: JSON.stringify({ plan_code: planCode, sync_store_limits: true }),
       });
+      setMsg('Plan updated (store limits synced when no override is set)');
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to update plan');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveStoreEntitlement(opts?: { clearOverride?: boolean }) {
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      const body: Record<string, unknown> = {};
+      if (opts?.clearOverride) {
+        body.clear_override = true;
+      } else if (storeOverride.trim() !== '') {
+        body.max_stores_override = Number(storeOverride);
+      }
+      if (baseMaxStores.trim() !== '') {
+        body.max_stores = Number(baseMaxStores);
+      }
+      const r = await api(`/platform/tenants/${id}/store-entitlement`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      setMsg(
+        `Store entitlement updated · effective=${r.data?.store_entitlement?.effective ?? r.data?.max_stores_effective ?? '—'}`
+      );
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update store entitlement');
     } finally {
       setBusy(false);
     }
@@ -265,6 +307,65 @@ export default function PlatformTenantDetailPage() {
               </p>
             )}
           </div>
+
+          <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+            <div className="muted">Store entitlement (subscription multi-store)</div>
+            <p style={{ marginTop: 8 }}>
+              Active stores: {row.store_count ?? '—'} · Effective max:{' '}
+              {row.max_stores_effective ?? row.max_stores ?? '—'}
+              {row.max_stores_override != null
+                ? ` (override ${row.max_stores_override})`
+                : ' (plan/base)'}
+            </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Base max_stores (−1 = unlimited)
+              <input
+                value={baseMaxStores}
+                onChange={(e) => setBaseMaxStores(e.target.value)}
+                placeholder="e.g. 5"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginTop: 4,
+                  padding: 10,
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                }}
+              />
+            </label>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Tenant override (optional; wins over plan/base)
+              <input
+                value={storeOverride}
+                onChange={(e) => setStoreOverride(e.target.value)}
+                placeholder="blank = no override"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginTop: 4,
+                  padding: 10,
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                }}
+              />
+            </label>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <button type="button" disabled={busy} onClick={() => saveStoreEntitlement()}>
+                Save store entitlement
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => saveStoreEntitlement({ clearOverride: true })}
+              >
+                Clear override
+              </button>
+            </div>
+            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+              Downgrades never delete stores. Override is for special customer agreements.
+            </p>
+          </div>
+
           <div className="card" style={{ marginTop: 16, maxWidth: 640 }}>
             <div className="muted">House operator notes (not visible on tenant Company profile)</div>
             <textarea

@@ -498,11 +498,17 @@ async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
     ).scalar_one()
     admin = await get_customer_tenant_admin(db, t.id)
     base = tenants_svc.serialize_tenant(t)
+    from app import store_entitlements as store_ent_svc
+
+    effective_stores = store_ent_svc.effective_tenant_store_limit(t)
     base.update(
         {
             "user_count": user_count,
             "store_count": store_count,
             "branch_count": branch_count,
+            "max_stores": getattr(t, "max_stores", None),
+            "max_stores_override": getattr(t, "max_stores_override", None),
+            "max_stores_effective": effective_stores,
             "last_activity_at": last_activity.isoformat() + "Z" if last_activity else None,
             "platform_notes": getattr(t, "platform_notes", None),
             "tenant_admin": (

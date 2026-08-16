@@ -8,6 +8,7 @@ import {
   setSelectedStoreId,
   subscribeStoreContext,
 } from '../../lib/storeContext';
+import { getCompanyId } from '../../lib/workspaceContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -79,6 +80,12 @@ function hoursPayload(hours: Record<(typeof WEEKDAYS)[number], string>, note: st
 
 export default function Page() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [storeEntitlement, setStoreEntitlement] = useState<{
+    used: number;
+    store_limit: number;
+    remaining: number | null;
+    can_create_store?: boolean;
+  } | null>(null);
   const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
   const [users, setUsers] = useState<{ id: string; full_name?: string; email?: string }[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -188,7 +195,8 @@ export default function Page() {
     const transferQs = transferStatus
       ? `?status=${encodeURIComponent(transferStatus)}`
       : '';
-    const [s, p, t, settings, b, u, w, meRes] = await Promise.all([
+    const companyId = getCompanyId();
+    const [s, p, t, settings, b, u, w, meRes, ent] = await Promise.all([
       api(`/stores${storeQs}`),
       api('/products'),
       api(`/stores/transfers${transferQs}`),
@@ -197,8 +205,12 @@ export default function Page() {
       api('/users').catch(() => ({ data: [] })),
       api(`/warehouses${warehouseQs}`).catch(() => ({ data: [] })),
       api('/me').catch(() => ({ data: null })),
+      companyId
+        ? api(`/companies/${companyId}/store-entitlement`).catch(() => ({ data: null }))
+        : Promise.resolve({ data: null }),
     ]);
     setStores(s.data || []);
+    setStoreEntitlement(ent.data || null);
     setProducts(p.data || []);
     setTransfers(t.data || []);
     setBranches(b.data || []);
@@ -495,6 +507,19 @@ export default function Page() {
         Stores &amp; warehouses — reorder policies, FEFO mode, and transfers (MVP Navigation:
         Stores / Warehouse).
       </p>
+      {storeEntitlement && (
+        <p>
+          <strong>
+            {storeEntitlement.used} of {storeEntitlement.store_limit} Stores Used
+          </strong>
+          {storeEntitlement.remaining != null ? (
+            <span className="muted"> · {storeEntitlement.remaining} Stores Remaining</span>
+          ) : null}
+          {storeEntitlement.can_create_store === false ? (
+            <span className="error"> · Store limit reached</span>
+          ) : null}
+        </p>
+      )}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 

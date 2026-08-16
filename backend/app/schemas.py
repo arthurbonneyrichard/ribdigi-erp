@@ -661,6 +661,20 @@ class StoreUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class CompanyStoreLimitUpdate(BaseModel):
+    """Tenant Admin allocation of Store capacity to a Company."""
+
+    store_limit: int = Field(..., ge=-1, description="-1 = unlimited (only if tenant is unlimited)")
+
+
+class PlatformStoreEntitlementUpdate(BaseModel):
+    """RIBDIGI HOUSE override / base store entitlement for a customer tenant."""
+
+    max_stores: int | None = Field(default=None, ge=-1)
+    max_stores_override: int | None = Field(default=None, ge=-1)
+    clear_override: bool = False
+
+
 class StoreDrawerSettingsUpdate(BaseModel):
     drawer_mode: str | None = None
     drawer_host: str | None = None

@@ -14,6 +14,26 @@ type Company = {
   has_logo?: boolean;
   is_active: boolean;
   is_default: boolean;
+  store_limit?: number | null;
+};
+
+type StoreAllocation = {
+  company_id: string;
+  company_name: string;
+  store_limit: number;
+  used: number;
+  remaining: number | null;
+  store_limit_unlimited?: boolean;
+};
+
+type StoreEntitlement = {
+  max_stores: number;
+  max_stores_unlimited?: boolean;
+  used: number;
+  remaining: number | null;
+  allocated_to_companies?: number;
+  unallocated?: number | null;
+  over_entitlement?: boolean;
 };
 
 type BusinessType = { id: string; code: string; label: string };
@@ -23,6 +43,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v
 export default function CompaniesPage() {
   const [rows, setRows] = useState<Company[]>([]);
   const [types, setTypes] = useState<BusinessType[]>([]);
+  const [storeEnt, setStoreEnt] = useState<StoreEntitlement | null>(null);
+  const [allocations, setAllocations] = useState<Record<string, StoreAllocation>>({});
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -39,9 +61,26 @@ export default function CompaniesPage() {
 
   async function load() {
     setWorkspaceContext('tenant');
-    const [list, bt] = await Promise.all([api('/companies'), api('/business-types')]);
+    const [list, bt, dash, tenantStores] = await Promise.all([
+      api('/companies'),
+      api('/business-types'),
+      api('/tenant/dashboard').catch(() => ({ data: null })),
+      api('/tenant/store-entitlement').catch(() => ({ data: null })),
+    ]);
     setRows(list.data || []);
     setTypes(bt.data || []);
+    const ent =
+      tenantStores?.data ||
+      dash?.data?.subscription?.store_entitlement ||
+      null;
+    setStoreEnt(ent);
+    const allocRows: StoreAllocation[] =
+      dash?.data?.subscription?.store_allocations || [];
+    const map: Record<string, StoreAllocation> = {};
+    for (const row of allocRows) {
+      map[row.company_id] = row;
+    }
+    setAllocations(map);
   }
 
   useEffect(() => {
@@ -110,32 +149,78 @@ export default function CompaniesPage() {
     }
   }
 
+  const storeLimitLabel = storeEnt?.max_stores_unlimited
+    ? 'Unlimited'
+    : String(storeEnt?.max_stores ?? '—');
+
   return (
     <Shell>
       <div className="page">
         <h1>Companies</h1>
         <p className="muted">
           Operating businesses under this tenant. Creating a company consumes a subscription slot.
+          Store capacity is allocated per company under the tenant subscription entitlement.
         </p>
         {error && <p className="error">{error}</p>}
+
+        {storeEnt && (
+          <div className="card" style={{ marginBottom: 16, maxWidth: 640 }}>
+            <strong>Subscription store allowance</strong>
+            <p style={{ marginTop: 8 }}>
+              Stores: {storeEnt.used} / {storeLimitLabel}
+              {storeEnt.remaining != null ? ` · Remaining: ${storeEnt.remaining}` : ''}
+              {storeEnt.unallocated != null
+                ? ` · Unallocated to companies: ${storeEnt.unallocated}`
+                : ''}
+            </p>
+            {storeEnt.over_entitlement && (
+              <p className="error" style={{ marginTop: 8 }}>
+                Over entitlement — existing stores are preserved; new creates are blocked until
+                capacity is resolved.
+              </p>
+            )}
+            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+              Manage per-company allocations on the{' '}
+              <a href="/tenant">Tenant dashboard</a>.
+            </p>
+          </div>
+        )}
+
         <ul>
-          {rows.map((c) => (
-            <li key={c.id}>
-              <strong>{c.name}</strong> ({c.code}) — {c.business_type_label || c.industry}
-              {c.has_logo ? ' · logo' : ''}
-              {c.is_default ? ' · default' : ''}
-              {' · '}
-              <button
-                type="button"
-                onClick={() => {
-                  setWorkspaceContext('company', c.id);
-                  window.location.assign('/dashboard');
-                }}
-              >
-                Switch to company
-              </button>
-            </li>
-          ))}
+          {rows.map((c) => {
+            const alloc = allocations[c.id];
+            const limit =
+              alloc?.store_limit_unlimited
+                ? 'Unlimited'
+                : alloc
+                  ? String(alloc.store_limit)
+                  : c.store_limit != null
+                    ? String(c.store_limit)
+                    : '—';
+            const used = alloc?.used;
+            const remaining = alloc?.remaining;
+            return (
+              <li key={c.id}>
+                <strong>{c.name}</strong> ({c.code}) — {c.business_type_label || c.industry}
+                {c.has_logo ? ' · logo' : ''}
+                {c.is_default ? ' · default' : ''}
+                {' · '}
+                Stores allocated: {limit}
+                {used != null ? ` · Used: ${used}` : ''}
+                {remaining != null ? ` · Remaining: ${remaining}` : ''}
+                {' · '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWorkspaceContext('company', c.id);
+                    window.location.assign('/dashboard');
+                  }}
+                >
+                  Switch to company
+                </button>
+              </li>
+            );
+          })}
         </ul>
         <form onSubmit={onCreate} style={{ marginTop: 24, maxWidth: 480 }}>
           <h2>Add company</h2>

@@ -102,6 +102,8 @@ class Tenant(Base):
     max_users: Mapped[int] = mapped_column(Integer, default=25)
     max_branches: Mapped[int] = mapped_column(Integer, default=5)
     max_stores: Mapped[int] = mapped_column(Integer, default=5)
+    # Platform Owner override for store entitlement (-1 = unlimited). NULL = use max_stores.
+    max_stores_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_warehouses: Mapped[int] = mapped_column(Integer, default=5)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -147,6 +149,8 @@ class Company(Base):
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Tenant Admin store allocation under subscription entitlement (NULL=0; -1=unlimited).
+    store_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # ADR-490 phase 16 — per-company document number series (falls back to tenant JSON).
     document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # ADR-490 phase 17 — per-company print templates (falls back to tenant columns).

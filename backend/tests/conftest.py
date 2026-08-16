@@ -56,6 +56,7 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
         industry="retail",
         is_active=True,
         is_default=True,
+        store_limit=5,
     )
     c2 = m.Company(
         tenant_id=t2.id,
@@ -64,6 +65,7 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
         industry="retail",
         is_active=True,
         is_default=True,
+        store_limit=5,
     )
     db.add_all([c1, c2])
     await db.flush()
