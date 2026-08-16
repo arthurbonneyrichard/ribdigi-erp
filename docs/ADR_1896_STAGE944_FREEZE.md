@@ -31,3 +31,7 @@ Stage 945 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Perimeter Gate, Transfer Perimeter Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 945 opened under **ADR-1897** after CONTINUE/NEXT (Tenant MVP Transfer Border Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1898**. Stage 944 feature scope remains frozen.
