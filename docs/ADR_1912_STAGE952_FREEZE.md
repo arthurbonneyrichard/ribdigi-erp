@@ -31,3 +31,7 @@ Stage 953 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Segment Gate, Transfer Segment Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 953 opened under **ADR-1913** after CONTINUE/NEXT (Tenant MVP Transfer Slice Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1914**. Stage 952 feature scope remains frozen.
