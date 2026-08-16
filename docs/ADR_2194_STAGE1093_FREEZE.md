@@ -31,3 +31,7 @@ Stage 1094 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Track Gate, Transfer Track Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1094 opened under **ADR-2195** after CONTINUE/NEXT (Tenant MVP Transfer Trail Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2196**. Stage 1093 feature scope remains frozen.
