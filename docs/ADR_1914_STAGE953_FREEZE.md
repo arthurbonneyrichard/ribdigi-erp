@@ -31,3 +31,7 @@ Stage 954 requires CONTINUE/NEXT with a distinct product outline after this free
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Slice Gate, Transfer Slice Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 954 opened under **ADR-1915** after CONTINUE/NEXT (Tenant MVP Transfer Shard Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-1916**. Stage 953 feature scope remains frozen.
