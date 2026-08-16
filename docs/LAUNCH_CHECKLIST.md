@@ -1677,6 +1677,13 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 997 track opened (ADR-2001: `test_stage997_open.py`, `docs/STAGE_997_PLAN.md`) — Transfer Firewall Gate Honesty Pack Remaining-Gate Index; closed under ADR-2002
+- [x] Transfer Firewall Gate Honesty Pack remaining-gate hub (Stage 997 I1: `test_stage997_index_i1.py`, `docs/TRANSFER_FIREWALL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Firewall Gate Honesty Pack blocker matrix (Stage 997 B1: `test_stage997_blockers_b1.py`, `docs/TRANSFER_FIREWALL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 996 / Stage 995 / Stage 392 / CHANGE_IMPACT pointers (Stage 997 P1: `test_stage997_pointers_p1.py`, `docs/TRANSFER_FIREWALL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 997 fidelity sync (D1: `test_stage997_fidelity_d1.py`, `docs/STAGE_997_FIDELITY.md`)
+- [x] Stage 997 exit + freeze (H997x: `test_stage997_exit_h997x.py`, `docs/STAGE_997_EXIT_CRITERIA.md`, ADR-2002)
+
 Stage 996 track opened (ADR-1999: `test_stage996_open.py`, `docs/STAGE_996_PLAN.md`) — Transfer Separation Gate Honesty Pack Remaining-Gate Index; closed under ADR-2000
 - [x] Transfer Separation Gate Honesty Pack remaining-gate hub (Stage 996 I1: `test_stage996_index_i1.py`, `docs/TRANSFER_SEPARATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Separation Gate Honesty Pack blocker matrix (Stage 996 B1: `test_stage996_blockers_b1.py`, `docs/TRANSFER_SEPARATION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
