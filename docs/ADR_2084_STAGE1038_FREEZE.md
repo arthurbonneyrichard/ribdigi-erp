@@ -31,3 +31,7 @@ Stage 1039 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Permit Gate, Transfer Permit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1039 opened under **ADR-2085** after CONTINUE/NEXT (Tenant MVP Transfer License Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2086**. Stage 1038 feature scope remains frozen.
