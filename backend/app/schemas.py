@@ -1,9 +1,20 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, model_validator
+
+from app.pos import coerce_payment_method_value
+
+PosTenderMethod = Annotated[
+    Literal["cash", "card", "wallet", "credit", "other"],
+    BeforeValidator(coerce_payment_method_value),
+]
+PosSalePaymentMethod = Annotated[
+    Literal["cash", "card", "wallet", "credit", "other", "split"],
+    BeforeValidator(coerce_payment_method_value),
+]
 
 
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
@@ -1345,7 +1356,8 @@ class PosSessionClose(BaseModel):
 class PosPaymentLine(BaseModel):
     """One tender toward a POS sale total (supports split payments)."""
 
-    payment_method: str = "cash"
+    # BR-8.1 — schema Literal (+ wallet aliases via BeforeValidator); blank/invalid → 422
+    payment_method: PosTenderMethod = "cash"
     amount: float = Field(gt=0)
     reference: str | None = None
     liquid_account_id: str | None = None
@@ -1360,7 +1372,8 @@ class PosSaleCreate(BaseModel):
     total: float = 0
     discount_amount: float = Field(default=0, ge=0)
     status: str = "completed"
-    payment_method: str = "cash"
+    # BR-8.1 — omit → cash; blank/invalid → 422; split allowed when payments[] present
+    payment_method: PosSalePaymentMethod = "cash"
     payments: list[PosPaymentLine] | None = None
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(min_length=1)

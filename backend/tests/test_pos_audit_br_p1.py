@@ -20,7 +20,9 @@ def test_normalize_payment_method_aliases():
     assert normalize_payment_method("mobile_money") == "wallet"
     assert normalize_payment_method("MoMo") == "wallet"
     assert normalize_payment_method("credit") == "credit"
-    assert normalize_payment_method("weird") == "other"
+    with pytest.raises(Exception):
+        normalize_payment_method("weird")
+    assert normalize_payment_method("weird", strict=False) == "other"
 
 
 async def _admin(ac, seed):
