@@ -246,9 +246,20 @@ async def list_notifications(
             or_(m.Notification.user_id == user_id, m.Notification.user_id.is_(None))
         )
     if status:
-        stmt = stmt.where(m.Notification.status == status)
+        # Defense in depth: NotificationStatusValue Query Literal → 422 on blank/unknown.
+        key = (status or "").strip().lower()
+        if key not in {"unread", "read"}:
+            raise HTTPException(status_code=400, detail="status must be unread or read")
+        stmt = stmt.where(m.Notification.status == key)
     if category:
-        stmt = stmt.where(m.Notification.category == category)
+        # Defense in depth: NotificationCategoryValue Query Literal → 422 on blank/unknown.
+        cat = (category or "").strip().lower()
+        if cat not in VALID_CATEGORIES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"category must be one of {sorted(VALID_CATEGORIES)}",
+            )
+        stmt = stmt.where(m.Notification.category == cat)
     # Keep last ~90 days
     cutoff = datetime.utcnow() - timedelta(days=90)
     stmt = stmt.where(m.Notification.created_at >= cutoff)
