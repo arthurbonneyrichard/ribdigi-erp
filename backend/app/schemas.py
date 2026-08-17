@@ -1334,19 +1334,63 @@ class LowStockSuggestionsCreate(BaseModel):
     include_open: bool = False
 
 
+class AiLowStockPredictionLine(BaseModel):
+    """One at-risk prediction row for draft PR creation (BR-21.4).
+
+    Unknown keys → **422** (`extra=forbid`). Required non-blank `product_id`.
+    Optional confidence 0–1 and order qty ≥0. Aligns with fields read by
+    `create_requests_from_predictions` (not the full GET prediction shape).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: str
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    suggested_order_qty: float | None = Field(default=None, ge=0)
+    recommended_order_qty: float | None = Field(default=None, ge=0)
+    warehouse_id: str | None = None
+    preferred_supplier_id: str | None = None
+    notes: str | None = None
+    risk_reason: str | None = None
+
+    @field_validator(
+        "product_id",
+        "warehouse_id",
+        "preferred_supplier_id",
+        "notes",
+        "risk_reason",
+        mode="before",
+    )
+    @classmethod
+    def _strip_optional_text(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            return text or None
+        return value
+
+    @field_validator("product_id")
+    @classmethod
+    def _require_product_id(cls, value: str | None) -> str:
+        if not value:
+            raise ValueError("product_id is required")
+        return value
+
+
 class AiLowStockPredictionRequestsBody(BaseModel):
     """POST /ai/inventory/low-stock-prediction/requests (BR-21.4).
 
     Unknown keys → **422** (`extra=forbid`). `days_ahead` ∈ 1–365 (omit → 14;
     blank/non-int → **422** — was `int(... or 14)` which silently defaulted
     blanks and could **500** on garbage). `min_confidence` ∈ 0–1 (omit → 0;
-    garbage → **422**). Omit/`null`/`[]` `lines` re-runs prediction. Service
-    `create_requests_from_predictions` remains defense-in-depth.
+    garbage → **422**). Nested `lines` are `AiLowStockPredictionLine`
+    (`extra=forbid`; blank `product_id` / unknown line keys / bad qty|confidence
+    → **422** — was free `list[dict]`). Omit/`null`/`[]` `lines` re-runs
+    prediction. Service `create_requests_from_predictions` remains defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    lines: list[dict[str, Any]] | None = None
+    lines: list[AiLowStockPredictionLine] | None = None
     days_ahead: int = Field(default=14, ge=1, le=365)
     min_confidence: float = Field(default=0, ge=0, le=1)
     notes: str | None = None

@@ -57,7 +57,7 @@ def test_ai_low_stock_requests_ui_and_docs():
     page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create draft purchase requests from predictions"' in page
     assert 'aria-label="Include open purchase requests"' in page
-    assert "AiLowStockPredictionRequestsBody hello-world" in page
+    assert "AiLowStockPredictionLine hello-world" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI low-stock prediction requests body OpenAPI" in agents
     assert "AiLowStockPredictionRequestsBody" in agents
@@ -65,6 +65,7 @@ def test_ai_low_stock_requests_ui_and_docs():
     assert "AiLowStockPredictionRequestsBody" in docs
     assert "POST /ai/inventory/low-stock-prediction/requests" in docs
     assert "extra=forbid" in docs
+    assert "AiLowStockPredictionLine" in docs
 
 
 @pytest.mark.asyncio
@@ -107,7 +108,7 @@ async def test_ai_low_stock_requests_api_unknown_422(client):
         json={
             "days_ahead": 14,
             "min_confidence": 0,
-            "notes": "AiLowStockPredictionRequestsBody hello-world",
+            "notes": "AiLowStockPredictionLine hello-world",
             "include_open": True,
             "lines": [
                 {

@@ -1583,7 +1583,7 @@ Rule-based velocity forecasts (7/30/90), reorder qty, dead stock, seasonality hi
 
 ### 16.4 AI Low Stock Prediction
 **List:** `GET /ai/inventory/low-stock-prediction?days_ahead=14`  
-**Create draft PRs:** `POST /ai/inventory/low-stock-prediction/requests` — typed body `AiLowStockPredictionRequestsBody` `{ "lines"?, "days_ahead"?, "min_confidence"?, "notes"?, "include_open"? }` (`extra=forbid`; `days_ahead` 1–365 omit→14; `min_confidence` 0–1 omit→0; blank/non-numeric days/confidence / unknown keys → **422** — was free `dict` with silent blank→default and possible **500** on garbage). Omit/`null`/`[]` `lines` re-runs prediction. AI UI **Create draft purchase requests from predictions** + **Include open purchase requests** (`aria-label`s).
+**Create draft PRs:** `POST /ai/inventory/low-stock-prediction/requests` — typed body `AiLowStockPredictionRequestsBody` `{ "lines"?, "days_ahead"?, "min_confidence"?, "notes"?, "include_open"? }` (`extra=forbid`; `days_ahead` 1–365 omit→14; `min_confidence` 0–1 omit→0; blank/non-numeric days/confidence / unknown keys → **422** — was free `dict` with silent blank→default and possible **500** on garbage). Nested `lines[]` are `AiLowStockPredictionLine` (`extra=forbid`; required non-blank `product_id`; optional `confidence` 0–1, `suggested_order_qty`/`recommended_order_qty` ≥0, `warehouse_id`/`preferred_supplier_id`/`notes`/`risk_reason`; unknown line keys / blank `product_id` / bad qty|confidence → **422** — was free `list[dict]`). Omit/`null`/`[]` `lines` re-runs prediction. AI UI **Create draft purchase requests from predictions** slims loaded prediction rows to the allow-list + **Include open purchase requests** (`aria-label`s).
 
 ```json
 { "days_ahead": 14, "min_confidence": 0.3, "lines": null }

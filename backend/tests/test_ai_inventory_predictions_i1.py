@@ -135,13 +135,31 @@ async def test_low_stock_prediction_and_pr_generation(client, db_session):
     assert "confidence" in hit
 
     admin = await _super(ac, seed)
+    slim = {
+        "product_id": hit["product_id"],
+        "confidence": hit.get("confidence"),
+        "suggested_order_qty": hit.get("suggested_order_qty"),
+        "recommended_order_qty": hit.get("recommended_order_qty"),
+        "warehouse_id": hit.get("warehouse_id"),
+        "preferred_supplier_id": hit.get("preferred_supplier_id"),
+        "notes": hit.get("notes"),
+        "risk_reason": hit.get("risk_reason"),
+    }
     created = await ac.post(
         "/api/v1/ai/inventory/low-stock-prediction/requests",
         headers=admin,
-        json={"lines": [hit], "notes": "From AI prediction test"},
+        json={"lines": [slim], "notes": "From AI prediction test"},
     )
     assert created.status_code == 200, created.text
     assert created.json()["data"]["created_count"] >= 1
+
+    # Full prediction blobs with extras must 422 under AiLowStockPredictionLine.
+    bloated = await ac.post(
+        "/api/v1/ai/inventory/low-stock-prediction/requests",
+        headers=admin,
+        json={"lines": [hit], "notes": "should reject extras"},
+    )
+    assert bloated.status_code == 422, bloated.text
 
     prs = (
         await db_session.execute(

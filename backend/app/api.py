@@ -12402,9 +12402,10 @@ async def ai_low_stock_prediction_requests(
 ):
     """Auto-generate draft purchase requests from prediction rows (BR-21.4)."""
     # Schema AiLowStockPredictionRequestsBody rejects unknown keys /
-    # bad days_ahead|min_confidence → 422.
+    # bad days_ahead|min_confidence → 422. Nested AiLowStockPredictionLine
+    # rejects unknown line keys / blank product_id / bad qty|confidence → 422.
     body = payload or AiLowStockPredictionRequestsBody()
-    lines = body.lines
+    lines: list = body.lines or []
     if not lines:
         pred = await ai_inventory_svc.low_stock_prediction(
             db,
@@ -12413,6 +12414,8 @@ async def ai_low_stock_prediction_requests(
             actor_user_id=claims.get("sub"),
         )
         lines = pred.get("at_risk") or []
+    else:
+        lines = [ln.model_dump() for ln in lines]
     from app import purchase_suggestions as purchase_suggestions_svc
 
     result = await purchase_suggestions_svc.create_requests_from_predictions(

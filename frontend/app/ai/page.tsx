@@ -134,12 +134,22 @@ export default function Page() {
     try {
       const body: Record<string, unknown> = {
         days_ahead: 14,
-        notes: 'AiLowStockPredictionRequestsBody hello-world',
+        notes: 'AiLowStockPredictionLine hello-world',
         include_open: includeOpenPr,
       };
-      // Prefer lines already loaded so the UI matches what the user saw
+      // Prefer lines already loaded so the UI matches what the user saw.
+      // Slim to AiLowStockPredictionLine allow-list (extra=forbid on API).
       if (lastAtRisk.length) {
-        body.lines = lastAtRisk;
+        body.lines = lastAtRisk.map((x: any) => ({
+          product_id: x.product_id,
+          confidence: x.confidence,
+          suggested_order_qty: x.suggested_order_qty,
+          recommended_order_qty: x.recommended_order_qty,
+          warehouse_id: x.warehouse_id,
+          preferred_supplier_id: x.preferred_supplier_id,
+          notes: x.notes,
+          risk_reason: x.risk_reason,
+        }));
       }
       const r = await api('/ai/inventory/low-stock-prediction/requests', {
         method: 'POST',
