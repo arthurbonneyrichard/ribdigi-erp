@@ -1252,8 +1252,20 @@ export default function Page() {
             <div className="card">
               <h3>Profit &amp; Loss</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                <input type="date" value={pnlFrom} onChange={(e) => setPnlFrom(e.target.value)} />
-                <input type="date" value={pnlTo} onChange={(e) => setPnlTo(e.target.value)} />
+                <input
+                  type="date"
+                  value={pnlFrom}
+                  onChange={(e) => setPnlFrom(e.target.value)}
+                  title="From date (YYYY-MM-DD)"
+                  aria-label="P&L from date"
+                />
+                <input
+                  type="date"
+                  value={pnlTo}
+                  onChange={(e) => setPnlTo(e.target.value)}
+                  title="To date (YYYY-MM-DD)"
+                  aria-label="P&L to date"
+                />
                 <select value={pnlBranchId} onChange={(e) => setPnlBranchId(e.target.value)}>
                   <option value="">All branches</option>
                   {branches.map((b) => (

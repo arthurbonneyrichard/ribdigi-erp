@@ -9231,8 +9231,8 @@ async def get_trial_balance(
 
 @api.get("/accounting/profit-loss")
 async def get_profit_loss(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
@@ -9256,8 +9256,8 @@ async def get_profit_loss(
 
 @api.get("/reports/profit-loss")
 async def report_profit_loss(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),

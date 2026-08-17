@@ -507,8 +507,20 @@ export default function Page() {
 
       {tab !== 'schedules' && (
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          title="From date (YYYY-MM-DD)"
+          aria-label="Report from date"
+        />
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          title="To date (YYYY-MM-DD)"
+          aria-label="Report to date"
+        />
         {(tab === 'balancesheet' || tab === 'trialbalance') && (
           <>
             <input
