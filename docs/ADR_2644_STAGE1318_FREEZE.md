@@ -31,3 +31,7 @@ Stage 1319 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kingpin Gate, Transfer Kingpin Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1319 opened under **ADR-2645** after CONTINUE/NEXT (Tenant MVP Transfer Gudgeon Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2646**. Stage 1318 feature scope remains frozen.
