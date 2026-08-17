@@ -63,6 +63,9 @@ export default function Page() {
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
   const [hooks, setHooks] = useState<WebhookRow[]>([]);
   const [webhookManageFilter, setWebhookManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [apiKeyManageFilter, setApiKeyManageFilter] = useState<
+    'all' | 'active' | 'revoked' | 'expired'
+  >('all');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [revealedKey, setRevealedKey] = useState('');
@@ -275,6 +278,10 @@ export default function Page() {
     const active = h.is_active !== false;
     return webhookManageFilter === 'inactive' ? !active : active;
   });
+  const managedKeys = keys.filter((k) => {
+    if (apiKeyManageFilter === 'all') return true;
+    return (k.status || 'active') === apiKeyManageFilter;
+  });
 
   return (
     <Shell>
@@ -348,6 +355,20 @@ export default function Page() {
             Create API key
           </button>
         </div>
+        <select
+          value={apiKeyManageFilter}
+          onChange={(e) =>
+            setApiKeyManageFilter(e.target.value as 'all' | 'active' | 'revoked' | 'expired')
+          }
+          title="Filter manage API key list by status"
+          aria-label="API key status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active only</option>
+          <option value="revoked">Revoked only</option>
+          <option value="expired">Expired only</option>
+        </select>
         <table>
           <thead>
             <tr>
@@ -359,7 +380,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {keys.map((k) => (
+            {managedKeys.map((k) => (
               <tr key={k.id}>
                 <td>{k.name}</td>
                 <td>
@@ -379,10 +400,10 @@ export default function Page() {
                 </td>
               </tr>
             ))}
-            {!keys.length && (
+            {!managedKeys.length && (
               <tr>
                 <td colSpan={5} className="muted">
-                  No API keys yet
+                  No API keys for this filter
                 </td>
               </tr>
             )}

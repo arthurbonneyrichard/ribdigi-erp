@@ -99,13 +99,18 @@ async def list_keys(
         .all()
     )
     if status is not None:
-        wanted = str(status).strip().lower()
-        if wanted not in {"active", "revoked", "expired"}:
+        # Schema ApiKeyStatusFilterValue rejects blank/invalid → 422; keep allow-list
+        # defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"active", "revoked", "expired"}:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail="status must be active, revoked, or expired",
             )
-        rows = [r for r in rows if serialize_key(r)["status"] == wanted]
+        else:
+            rows = [r for r in rows if serialize_key(r)["status"] == wanted]
     elif active_only:
         rows = [r for r in rows if serialize_key(r)["status"] == "active"]
     return rows

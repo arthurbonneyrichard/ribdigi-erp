@@ -82,6 +82,7 @@ from app.schemas import (
     PendingPoReportStatusValue,
     ReturnReportStatusValue,
     TenantStatusFilterValue,
+    ApiKeyStatusFilterValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
     MovementTypeValue,
@@ -11663,7 +11664,7 @@ async def backup_restore(
 
 @api.get("/api-keys")
 async def api_keys_list(
-    status: str | None = None,
+    status: Annotated[ApiKeyStatusFilterValue | None, Query()] = None,
     active_only: bool = False,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),

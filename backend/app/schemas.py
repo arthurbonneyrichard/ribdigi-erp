@@ -1604,6 +1604,11 @@ TenantStatusFilterValue = Annotated[
     Literal["trial", "active", "grace", "suspended"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.api_keys.list_keys status filter (Integrations API keys).
+ApiKeyStatusFilterValue = Annotated[
+    Literal["active", "revoked", "expired"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.sales_docs.RETURN_REASONS (Reports sales returns reason filter).
 SalesReturnReportReasonValue = Annotated[
     Literal["damaged", "wrong_item", "defective", "customer_change", "other"],
