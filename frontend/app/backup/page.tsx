@@ -162,7 +162,7 @@ export default function Page() {
               style={{ width: 100 }}
             />
             <button onClick={saveSettings}>Save settings</button>
-            <button disabled={busy} onClick={createBackup}>
+            <button disabled={busy} onClick={createBackup} aria-label="Create backup now">
               {busy ? 'Working…' : 'Create backup now'}
             </button>
           </div>
@@ -201,8 +201,14 @@ export default function Page() {
               <td>{r.checksum_sha256 ? String(r.checksum_sha256).slice(0, 12) : '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button onClick={() => downloadBackup(r.id, r.filename)}>Download</button>
-                <button onClick={() => dryRun(r.id)}>Dry-run</button>
-                <button disabled={busy} onClick={() => applyRestore(r.id)}>
+                <button onClick={() => dryRun(r.id)} aria-label="Backup dry-run restore">
+                  Dry-run
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => applyRestore(r.id)}
+                  aria-label="Apply backup restore"
+                >
                   Restore
                 </button>
               </td>

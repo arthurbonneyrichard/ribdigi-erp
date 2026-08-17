@@ -67,6 +67,9 @@ from app.schemas import (
     BrandCreate,
     BrandUpdate,
     BackupSettingsUpdate,
+    BackupCreateBody,
+    BackupVerifyBody,
+    BackupRestoreBody,
     ReportScheduleCreate,
     ReportScheduleUpdate,
     ReportTypeValue,
@@ -11521,17 +11524,18 @@ async def backup_list(
 @api.post("/backup")
 async def backup_create(
     request: Request,
-    payload: dict | None = None,
+    payload: BackupCreateBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     backup_svc.ensure_backup_dir_writable()
-    notes = (payload or {}).get("notes")
+    # Schema BackupCreateBody rejects unknown keys → 422.
+    body = payload or BackupCreateBody()
     job = await backup_svc.create_backup(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        notes=notes,
+        notes=body.notes,
     )
     await audit_svc.record_event(
         db,
@@ -11610,19 +11614,18 @@ async def backup_download(
 async def backup_verify(
     backup_id: str,
     request: Request,
-    payload: dict | None = None,
+    payload: BackupVerifyBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Decrypt backup and prove field match against live tenant data."""
-    body = payload or {}
-    sample_limit = int(body.get("sample_limit") or 100)
-    sample_limit = max(1, min(sample_limit, 500))
+    # Schema BackupVerifyBody rejects unknown keys / bad sample_limit → 422.
+    body = payload or BackupVerifyBody()
     report = await backup_svc.verify_backup(
         db,
         tenant_id=claims["tenant_id"],
         backup_id=backup_id,
-        sample_limit=sample_limit,
+        sample_limit=body.sample_limit,
     )
     await audit_svc.record_event(
         db,
@@ -11653,18 +11656,15 @@ async def backup_verify(
 async def backup_restore(
     backup_id: str,
     request: Request,
-    payload: dict | None = None,
+    payload: BackupRestoreBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    body = payload or {}
-    dry_run = bool(body.get("dry_run", True))
-    confirm = bool(body.get("confirm", False))
-    if confirm and not dry_run and body.get("confirm_text") != "RESTORE":
-        raise HTTPException(
-            status_code=400,
-            detail='Destructive restore requires confirm=true, dry_run=false, and confirm_text="RESTORE"',
-        )
+    # Schema BackupRestoreBody rejects unknown keys / bad confirm_text → 422
+    # (destructive apply without confirm_text="RESTORE" was late route 400).
+    body = payload or BackupRestoreBody()
+    dry_run = bool(body.dry_run)
+    confirm = bool(body.confirm)
     report = await backup_svc.restore_backup(
         db,
         tenant_id=claims["tenant_id"],

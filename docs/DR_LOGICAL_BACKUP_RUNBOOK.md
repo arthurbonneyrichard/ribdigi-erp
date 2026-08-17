@@ -29,15 +29,16 @@ Infrastructure PITR targets are documented under Stage 26 W1 (`docs/DR_WAL_PITR_
 
 ## Drill procedure (quarterly)
 
-1. **Create backup** — `POST /api/v1/backup` (or rely on schedule). Record `backup_id`, filename, and `checksum_sha256`.
+1. **Create backup** — `POST /api/v1/backup` typed body `BackupCreateBody` `{ "notes"? }` (`extra=forbid`; unknown keys → **422**). Or rely on schedule. Record `backup_id`, filename, and `checksum_sha256`.
 2. **Download** (optional) — `GET /api/v1/backup/{id}/download`; confirm `X-Checksum-SHA256`.
 3. **Simulate loss** (staging only) — mutate or delete a known product/party field that exists in the backup.
-4. **Dry-run** — `POST /api/v1/backup/{id}/restore` with `{"dry_run": true}`. Confirm `valid`, `record_counts`, tenant match.
+4. **Dry-run** — `POST /api/v1/backup/{id}/restore` with typed `BackupRestoreBody` `{"dry_run": true}` (`extra=forbid`). Confirm `valid`, `record_counts`, tenant match.
 5. **Apply restore** — `POST /api/v1/backup/{id}/restore` with:
    ```json
    {"dry_run": false, "confirm": true, "confirm_text": "RESTORE"}
    ```
-6. **Integrity proof** — response includes `proof.ok`, `proof.checked`, `proof.mismatches`. Also run:
+   Omit/wrong `confirm_text` / unknown keys → **422** (was late **400** via free `dict`).
+6. **Integrity proof** — response includes `proof.ok`, `proof.checked`, `proof.mismatches`. Also run typed `BackupVerifyBody` `{ "sample_limit"? }` (1–500; omit → 100; out of range / unknown keys → **422** — was silent clamp):
    `POST /api/v1/backup/{id}/verify`
 7. **Audit** — confirm `restore_dry_run` / `restore_apply` / `restore_verify` events under `module=backup`.
 8. **Pass criteria** — `proof.ok == true`, spot-check UI (catalog / customer), no cross-tenant leakage.

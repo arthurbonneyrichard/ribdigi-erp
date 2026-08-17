@@ -1551,6 +1551,47 @@ class BackupSettingsUpdate(BaseModel):
     hour_utc: int | None = Field(default=None, ge=0, le=23)
 
 
+class BackupCreateBody(BaseModel):
+    """POST /backup — typed create body (BR-16)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    notes: str | None = Field(default=None, max_length=500)
+
+
+class BackupVerifyBody(BaseModel):
+    """POST /backup/{id}/verify — typed sample limit (BR-16).
+
+    Unknown keys → **422**. `sample_limit` outside 1–500 → **422** (was silent clamp).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    sample_limit: int = Field(default=100, ge=1, le=500)
+
+
+class BackupRestoreBody(BaseModel):
+    """POST /backup/{id}/restore — typed dry-run / apply guard (BR-16).
+
+    Unknown keys → **422**. Destructive apply requires `confirm_text="RESTORE"`
+    (schema **422**; was late route **400** via free `dict`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    dry_run: bool = True
+    confirm: bool = False
+    confirm_text: Literal["RESTORE"] | None = None
+
+    @model_validator(mode="after")
+    def _require_restore_confirm_text(self) -> BackupRestoreBody:
+        if self.confirm and not self.dry_run and self.confirm_text != "RESTORE":
+            raise ValueError(
+                'Destructive restore requires confirm=true, dry_run=false, and confirm_text="RESTORE"'
+            )
+        return self
+
+
 ScheduleFrequencyValue = Annotated[
     Literal["daily", "weekly"],
     BeforeValidator(coerce_package_code_value),
