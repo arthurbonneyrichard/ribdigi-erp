@@ -31,3 +31,7 @@ Stage 1308 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ferrule Gate, Transfer Ferrule Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1308 opened under **ADR-2623** after CONTINUE/NEXT (Tenant MVP Transfer Clevis Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2624**. Stage 1307 feature scope remains frozen.
