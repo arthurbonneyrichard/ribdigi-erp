@@ -31,3 +31,7 @@ Stage 1219 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Mullion Gate, Transfer Mullion Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1219 opened under **ADR-2445** after CONTINUE/NEXT (Tenant MVP Transfer Oculus Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2446**. Stage 1218 feature scope remains frozen.
