@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1285 track opened (ADR-2577: `test_stage1285_open.py`, `docs/STAGE_1285_PLAN.md`) — Transfer Hub Gate Honesty Pack Remaining-Gate Index; closed under ADR-2578
+- [x] Transfer Hub Gate Honesty Pack remaining-gate hub (Stage 1285 I1: `test_stage1285_index_i1.py`, `docs/TRANSFER_HUB_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Hub Gate Honesty Pack blocker matrix (Stage 1285 B1: `test_stage1285_blockers_b1.py`, `docs/TRANSFER_HUB_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1284 / Stage 1283 / Stage 392 / CHANGE_IMPACT pointers (Stage 1285 P1: `test_stage1285_pointers_p1.py`, `docs/TRANSFER_HUB_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1285 fidelity sync (D1: `test_stage1285_fidelity_d1.py`, `docs/STAGE_1285_FIDELITY.md`)
+- [x] Stage 1285 exit + freeze (H1285x: `test_stage1285_exit_h1285x.py`, `docs/STAGE_1285_EXIT_CRITERIA.md`, ADR-2578)
 Stage 1284 track opened (ADR-2575: `test_stage1284_open.py`, `docs/STAGE_1284_PLAN.md`) — Transfer Flange Gate Honesty Pack Remaining-Gate Index; closed under ADR-2576
 - [x] Transfer Flange Gate Honesty Pack remaining-gate hub (Stage 1284 I1: `test_stage1284_index_i1.py`, `docs/TRANSFER_FLANGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Flange Gate Honesty Pack blocker matrix (Stage 1284 B1: `test_stage1284_blockers_b1.py`, `docs/TRANSFER_FLANGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
