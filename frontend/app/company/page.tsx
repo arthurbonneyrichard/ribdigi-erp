@@ -351,19 +351,23 @@ export default function Page() {
           onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
           placeholder="Fiscal year start MM-DD"
         />
-        <input
+        <select
           value={tenant.tax_jurisdiction || 'GH'}
-          onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value.toUpperCase() })}
-          placeholder="Tax jurisdiction (e.g. GH)"
-        />
+          onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value })}
+          aria-label="Tax jurisdiction"
+        >
+          <option value="GH">Tax jurisdiction: GH — Ghana</option>
+        </select>
         <input
           value={tenant.tax_registration_number || ''}
           onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
           placeholder="TIN / VAT registration number (tax ID)"
+          aria-label="TIN / VAT registration number"
         />
         <select
           value={tenant.tax_filing_period || 'monthly'}
           onChange={(e) => setTenant({ ...tenant, tax_filing_period: e.target.value })}
+          aria-label="Tax filing period"
         >
           <option value="monthly">Filing period: monthly</option>
           <option value="quarterly">Filing period: quarterly</option>
@@ -453,7 +457,7 @@ export default function Page() {
               />
             </label>
           )}
-          <button onClick={save} disabled={!!tenant.read_only}>
+          <button onClick={save} disabled={!!tenant.read_only} aria-label="Save company profile">
             Save profile
           </button>
           {(tenant.status === 'trial' || tenant.status === 'grace') && (

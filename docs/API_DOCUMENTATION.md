@@ -268,6 +268,7 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 `industry` (when sent) uses the same schema `Literal` as create (omit = no change; blank/invalid → **422**).
 
 Regional / tax format fields (BR-20.2) are schema Literals on this PATCH (omit = no change; blank/invalid → **422**):
+- `tax_jurisdiction` ∈ `GH` (same `TaxFilingJurisdictionValue` / `tax_filings.SUPPORTED` as filing Query; blank/unsupported → **422** — was free `str` with length-only late service **400**; unsupported codes could persist then fail later on filing). Company **Tax jurisdiction** select.
 - `tax_filing_period` ∈ `monthly|quarterly`
 - `date_format` ∈ `DD/MM/YYYY|MM/DD/YYYY|YYYY-MM-DD`
 - `decimal_separator` ∈ `.|,`

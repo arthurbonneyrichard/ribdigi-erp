@@ -642,9 +642,15 @@ async def update_profile(
             raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
         tenant.fiscal_year_start = fys
     if tax_jurisdiction is not None:
+        # Defense in depth: TenantProfileUpdate TaxFilingJurisdictionValue → 422 on blank/unknown.
+        from app.tax_filings import SUPPORTED
+
         juris = tax_jurisdiction.strip().upper()
-        if len(juris) < 2 or len(juris) > 10:
-            raise HTTPException(status_code=400, detail="Invalid tax_jurisdiction")
+        if juris not in SUPPORTED:
+            raise HTTPException(
+                status_code=400,
+                detail=f"tax_jurisdiction must be one of: {sorted(SUPPORTED)}",
+            )
         tenant.tax_jurisdiction = juris
     if tax_registration_number is not None:
         tin = tax_registration_number.strip()

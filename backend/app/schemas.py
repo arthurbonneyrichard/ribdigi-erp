@@ -51,6 +51,11 @@ TaxFilingPeriodValue = Annotated[
     Literal["monthly", "quarterly"],
     BeforeValidator(coerce_tax_filing_period_value),
 ]
+# Keep aligned with app.tax_filings.SUPPORTED (Company profile + Tax filing Query/export).
+TaxFilingJurisdictionValue = Annotated[
+    Literal["GH"],
+    BeforeValidator(coerce_tax_filing_jurisdiction_value),
+]
 DateFormatValue = Annotated[
     Literal["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
     BeforeValidator(coerce_date_format_value),
@@ -371,7 +376,9 @@ class TenantProfileUpdate(BaseModel):
     shipping_address: str | None = None
     timezone: str | None = None
     fiscal_year_start: str | None = None
-    tax_jurisdiction: str | None = None
+    # Keep aligned with tax_filings.SUPPORTED / TaxFilingJurisdictionValue (Company select).
+    # omit = no change; blank/unsupported → 422 (was free str; length-only late **400**).
+    tax_jurisdiction: TaxFilingJurisdictionValue | None = None
     tax_registration_number: str | None = None
     # BR-20.2 / BR-12 — schema Literals; omit = no change; blank/invalid → 422
     tax_filing_period: TaxFilingPeriodValue | None = None
@@ -1959,11 +1966,6 @@ CashTransferKindFilterValue = Annotated[
 PosSessionStatusFilterValue = Annotated[
     Literal["open", "closed"],
     BeforeValidator(coerce_package_code_value),
-]
-# Keep aligned with app.tax_filings.SUPPORTED (Tax Filing pack / export).
-TaxFilingJurisdictionValue = Annotated[
-    Literal["GH"],
-    BeforeValidator(coerce_tax_filing_jurisdiction_value),
 ]
 # Keep aligned with BankStatement.status (Accounting Reconcile statements filter).
 BankStatementStatusFilterValue = Annotated[
