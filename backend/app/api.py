@@ -97,6 +97,7 @@ from app.schemas import (
     ExpenseStatusFilterValue,
     JournalStatusFilterValue,
     CashTransferKindFilterValue,
+    PosSessionStatusFilterValue,
     BankStatementStatusFilterValue,
     WebhookDeliveryStatusFilterValue,
     SalesReturnReportReasonValue,
@@ -6966,17 +6967,30 @@ async def pos_current_session(
 
 @api.get("/pos/sessions")
 async def pos_list_sessions(
+    status: Annotated[PosSessionStatusFilterValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.PosSession)
-            .where(m.PosSession.tenant_id == claims["tenant_id"])
-            .order_by(m.PosSession.opened_at.desc())
-            .limit(50)
-        )
-    ).scalars().all()
+    # Schema PosSessionStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all). Runtime statuses: open|closed.
+    stmt = (
+        select(m.PosSession)
+        .where(m.PosSession.tenant_id == claims["tenant_id"])
+        .order_by(m.PosSession.opened_at.desc())
+        .limit(50)
+    )
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"open", "closed"}:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be open or closed",
+            )
+        else:
+            stmt = stmt.where(m.PosSession.status == wanted)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await pos_svc.serialize_session(db, s) for s in rows])
 
 

@@ -263,6 +263,8 @@ export default function Page() {
   const [shiftPrefix, setShiftPrefix] = useState('SHIFT');
   const [shiftNext, setShiftNext] = useState('1');
   const [shiftPreview, setShiftPreview] = useState('');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
 
   const groupDiscountPct = useMemo(() => {
     const match = customers.find((c) => c.id === customerId);
@@ -308,6 +310,20 @@ export default function Page() {
     setSession(r.data || null);
   }
 
+  async function loadSessions() {
+    try {
+      const r = await api('/pos/sessions');
+      setSessions(r.data || []);
+    } catch {
+      setSessions([]);
+    }
+  }
+
+  const managedShifts = sessions.filter((s) => {
+    if (shiftManageFilter === 'all') return true;
+    return (s.status || '') === shiftManageFilter;
+  });
+
 
   const browse = useCallback(async (query = '') => {
     const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
@@ -319,6 +335,7 @@ export default function Page() {
     refreshSession()
       .then(() => browse(''))
       .catch((err) => setError(err.message));
+    loadSessions().catch(() => setSessions([]));
     api('/customers')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
@@ -395,6 +412,7 @@ export default function Page() {
       setSession(r.data);
       setMessage('Shift opened');
       await browse(q);
+      await loadSessions();
     } catch (err: any) {
       setError(err.message);
     }
@@ -455,6 +473,7 @@ export default function Page() {
       );
       setActualCash('');
       setCart([]);
+      await loadSessions();
     } catch (err: any) {
       setError(err.message);
     }
@@ -920,6 +939,60 @@ export default function Page() {
               Save numbering
             </button>
           </div>
+        </div>
+
+        <div className="card" style={{ margin: '12px 0' }}>
+          <strong>Recent shifts</strong>
+          <p className="muted" style={{ marginTop: 4 }}>
+            Open vs closed POS sessions for this tenant (BR-8.2). Filter is client-side over the
+            full list cache; API also accepts `?status=open|closed`.
+          </p>
+          <select
+            className="tpos-input"
+            value={shiftManageFilter}
+            onChange={(e) =>
+              setShiftManageFilter(e.target.value as 'all' | 'open' | 'closed')
+            }
+            title="Filter POS shifts by status"
+            aria-label="POS shift status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="open">Open only</option>
+            <option value="closed">Closed only</option>
+          </select>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Shift</th>
+                <th>Store</th>
+                <th>Status</th>
+                <th>Sales</th>
+                <th>Variance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {managedShifts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No shifts for this filter
+                  </td>
+                </tr>
+              ) : (
+                managedShifts.map((s) => (
+                  <tr key={s.session_id}>
+                    <td>{s.session_number}</td>
+                    <td>{s.store_name || '—'}</td>
+                    <td>{s.status}</td>
+                    <td>
+                      {s.sale_count} · {money(Number(s.total_sales || 0))}
+                    </td>
+                    <td>{s.variance == null ? '—' : s.variance}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
         {shiftReport && session && (

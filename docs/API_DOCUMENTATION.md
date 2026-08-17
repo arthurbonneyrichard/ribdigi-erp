@@ -1068,6 +1068,8 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 
 **Get Current Session:** `GET /pos/sessions/current`
 
+**List Sessions:** `GET /pos/sessions` — optional Query `status` ∈ `open`|`closed` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). POS **POS shift status filter** All / Open / Closed (`shiftManageFilter`; client filter over full list cache).
+
 **Shift Report:** `GET /pos/sessions/{session_id}/report` — sales list, `payment_breakdown`, `summary` (sale_count, subtotal, tax, discounts, net_sales, return_count, return_total, net_after_returns), and `returns[]` for the cashier/store during the shift window (BR-8.2).
 
 ### 8.2 POS Sale

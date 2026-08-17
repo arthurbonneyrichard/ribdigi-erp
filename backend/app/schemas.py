@@ -1793,6 +1793,11 @@ CashTransferKindFilterValue = Annotated[
     Literal["transfer", "deposit", "withdrawal"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with PosSession.status (POS Recent shifts filter). Runtime open|closed only.
+PosSessionStatusFilterValue = Annotated[
+    Literal["open", "closed"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with BankStatement.status (Accounting Reconcile statements filter).
 BankStatementStatusFilterValue = Annotated[
     Literal["draft", "in_progress", "reconciled"],
