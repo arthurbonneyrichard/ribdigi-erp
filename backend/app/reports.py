@@ -2144,20 +2144,25 @@ async def purchases_pending_orders(
     ) = await _resolve_purchase_location_filters(
         db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
     )
+    # Schema PendingPoReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all pending statuses).
     statuses = PENDING_PO_STATUSES
-    if status:
-        key = status.strip().lower()
-        if key not in PENDING_PO_STATUSES:
+    if status is not None:
+        key = (status or "").strip().lower()
+        if not key:
+            statuses = PENDING_PO_STATUSES
+        elif key not in PENDING_PO_STATUSES:
             from fastapi import HTTPException
 
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail=(
                     f"Invalid pending status '{key}'. "
                     f"Allowed: {sorted(PENDING_PO_STATUSES)}"
                 ),
             )
-        statuses = frozenset({key})
+        else:
+            statuses = frozenset({key})
 
     stmt = (
         select(m.PurchaseOrder, m.Party)

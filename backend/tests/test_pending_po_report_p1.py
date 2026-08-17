@@ -105,7 +105,7 @@ async def test_pending_orders_excludes_received_and_cancelled(client, db_session
         "/api/v1/reports/purchases/pending-orders?status=received",
         headers=headers,
     )
-    assert bad.status_code == 400
+    assert bad.status_code == 422
 
 
 def test_flatten_pending_orders_export():

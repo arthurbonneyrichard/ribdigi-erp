@@ -94,6 +94,9 @@ export default function Page() {
   const [transferStatus, setTransferStatus] = useState<
     '' | 'draft' | 'requested' | 'in_transit' | 'received' | 'cancelled'
   >('');
+  const [pendingPoStatus, setPendingPoStatus] = useState<
+    '' | 'draft' | 'sent' | 'partially_received'
+  >('');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -209,7 +212,11 @@ export default function Page() {
       } else if (nextTab === 'purchases') {
         const [suppliers, pending, returns] = await Promise.all([
           api(`/reports/purchases/suppliers${qs()}`),
-          api(`/reports/purchases/pending-orders${qs()}`),
+          api(
+            `/reports/purchases/pending-orders${qs(
+              pendingPoStatus ? { status: pendingPoStatus } : {}
+            )}`
+          ),
           api(`/reports/purchases/returns${qs()}`),
         ]);
         setData({
@@ -1551,6 +1558,28 @@ export default function Page() {
             </>
           )}
           <h3 style={{ marginTop: 16 }}>Pending orders (not fully received)</h3>
+          <p className="muted">
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
+              Pending status
+              <select
+                aria-label="Pending status"
+                value={pendingPoStatus}
+                onChange={(e) =>
+                  setPendingPoStatus(
+                    e.target.value as '' | 'draft' | 'sent' | 'partially_received'
+                  )
+                }
+              >
+                <option value="">all pending</option>
+                <option value="draft">draft</option>
+                <option value="sent">sent</option>
+                <option value="partially_received">partially_received</option>
+              </select>
+            </label>
+            {data.pending?.order_count ?? 0}{' '}
+            {(data.pending?.order_count ?? 0) === 1 ? 'order' : 'orders'} · qty open{' '}
+            {data.pending?.total_outstanding_qty ?? 0}
+          </p>
           <table className="table">
             <thead>
               <tr>

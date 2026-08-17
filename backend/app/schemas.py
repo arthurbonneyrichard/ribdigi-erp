@@ -1589,6 +1589,11 @@ TransferReportStatusValue = Annotated[
     Literal["draft", "requested", "in_transit", "received", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.reports.PENDING_PO_STATUSES (Reports Purchases pending orders).
+PendingPoReportStatusValue = Annotated[
+    Literal["draft", "sent", "partially_received"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.inventory.MOVEMENT_TYPES (Inventory/Reports movements filter).
 MovementTypeValue = Annotated[
     Literal[
