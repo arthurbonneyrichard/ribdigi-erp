@@ -1644,6 +1644,11 @@ PendingPoReportStatusValue = Annotated[
     Literal["draft", "sent", "partially_received"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.purchasing.PO_MANAGE_STATUSES (Purchasing Orders manage list).
+PurchaseOrderStatusValue = Annotated[
+    Literal["draft", "sent", "partially_received", "received", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.reports.RETURN_REPORT_STATUSES (Reports sales/purchase returns).
 ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],

@@ -56,6 +56,10 @@ async def _purchase_line_tax(
 PO_EDITABLE = {"draft"}
 PO_AMENDABLE = frozenset({"draft", "sent"})
 PO_RECEIVABLE = {"sent", "partially_received"}
+# Manage list + lifecycle statuses (superset of reports.PENDING_PO_STATUSES).
+PO_MANAGE_STATUSES = frozenset(
+    {"draft", "sent", "partially_received", "received", "cancelled"}
+)
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
 

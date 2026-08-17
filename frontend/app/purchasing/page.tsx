@@ -147,6 +147,9 @@ type PurchaseInvoice = {
 export default function Page() {
   const [tab, setTab] = useState<Tab>('orders');
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [poManageFilter, setPoManageFilter] = useState<
+    'all' | 'draft' | 'sent' | 'partially_received' | 'received' | 'cancelled'
+  >('all');
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
@@ -1149,6 +1152,10 @@ export default function Page() {
     if (returnManageFilter === 'all') return true;
     return (r.status || 'draft') === returnManageFilter;
   });
+  const managedOrders = orders.filter((o) => {
+    if (poManageFilter === 'all') return true;
+    return (o.status || 'draft') === poManageFilter;
+  });
 
   return (
     <Shell>
@@ -1715,6 +1722,31 @@ export default function Page() {
             </p>
           </div>
 
+          <select
+            value={poManageFilter}
+            onChange={(e) =>
+              setPoManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'sent'
+                  | 'partially_received'
+                  | 'received'
+                  | 'cancelled'
+              )
+            }
+            title="Filter purchase order list by status"
+            aria-label="Purchase order status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="sent">Sent only</option>
+            <option value="partially_received">Partially received only</option>
+            <option value="received">Received only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
+
           <table className="table">
             <thead>
               <tr>
@@ -1727,7 +1759,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
+              {managedOrders.map((o) => (
                 <tr key={o.id}>
                   <td>
                     <button
@@ -1766,6 +1798,15 @@ export default function Page() {
                   </td>
                 </tr>
               ))}
+              {managedOrders.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    {orders.length === 0
+                      ? 'No purchase orders yet'
+                      : 'No purchase orders for this filter'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           {selected && (

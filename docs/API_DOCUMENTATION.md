@@ -800,10 +800,10 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 ```
 
 ### 6.3 Purchase Order
-**List:** `GET /purchases/orders`  
-**Create:** `POST /purchases/orders`  
-**Get:** `GET /purchases/orders/{order_id}`  
-**Update Status:** `PATCH /purchases/orders/{order_id}/status`
+**List:** `GET /purchasing/orders` — optional Query `status` ∈ `draft`|`sent`|`partially_received`|`received`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Orders **Purchase order status filter** (`poManageFilter`; client filter over full cache).  
+**Create:** `POST /purchasing/orders`  
+**Get:** `GET /purchasing/orders/{order_id}`  
+**Update Status:** `PATCH /purchasing/orders/{order_id}/status`
 
 **Create PO** (`POST /purchasing/orders`):
 ```json

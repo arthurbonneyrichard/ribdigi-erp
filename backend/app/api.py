@@ -84,6 +84,7 @@ from app.schemas import (
     StockCountReportStatusValue,
     TransferReportStatusValue,
     PendingPoReportStatusValue,
+    PurchaseOrderStatusValue,
     ReturnReportStatusValue,
     TenantStatusFilterValue,
     ApiKeyStatusFilterValue,
@@ -6226,15 +6227,34 @@ async def convert_purchase_request(
 
 @api.get("/purchasing/orders")
 async def list_purchase_orders(
+    status: Annotated[PurchaseOrderStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.purchasing import PO_MANAGE_STATUSES
+
     stmt = (
         select(m.PurchaseOrder)
         .where(m.PurchaseOrder.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseOrder.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.PurchaseOrder, claims)
+    # Schema PurchaseOrderStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in PO_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid purchase order status '{wanted}'. "
+                    f"Allowed: {sorted(PO_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.PurchaseOrder.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_po(db, po) for po in rows])
 
