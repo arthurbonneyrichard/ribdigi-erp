@@ -53,18 +53,32 @@ def _normalize_recipients(raw: list[str] | str | None) -> list[str]:
     return unique
 
 
-async def list_schedules(db: AsyncSession, tenant_id: str) -> list[m.ReportSchedule]:
-    return list(
-        (
-            await db.execute(
-                select(m.ReportSchedule)
-                .where(m.ReportSchedule.tenant_id == tenant_id)
-                .order_by(m.ReportSchedule.created_at.desc())
-            )
-        )
-        .scalars()
-        .all()
+async def list_schedules(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    enabled: bool | None = None,
+    frequency: str | None = None,
+) -> list[m.ReportSchedule]:
+    stmt = (
+        select(m.ReportSchedule)
+        .where(m.ReportSchedule.tenant_id == tenant_id)
+        .order_by(m.ReportSchedule.created_at.desc())
     )
+    if enabled is not None:
+        stmt = stmt.where(m.ReportSchedule.enabled.is_(bool(enabled)))
+    if frequency is not None:
+        wanted = (frequency or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"daily", "weekly"}:
+            raise HTTPException(
+                status_code=422,
+                detail="frequency must be daily or weekly",
+            )
+        else:
+            stmt = stmt.where(m.ReportSchedule.frequency == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def get_schedule(db: AsyncSession, tenant_id: str, schedule_id: str) -> m.ReportSchedule:

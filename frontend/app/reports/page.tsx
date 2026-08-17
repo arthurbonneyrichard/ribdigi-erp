@@ -114,6 +114,20 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [scheduleManageFilter, setScheduleManageFilter] = useState<
+    'all' | 'enabled' | 'disabled'
+  >('all');
+  const [scheduleFrequencyFilter, setScheduleFrequencyFilter] = useState<
+    'all' | 'daily' | 'weekly'
+  >('all');
+  const managedSchedules = schedules.filter((s) => {
+    if (scheduleManageFilter === 'enabled' && !s.enabled) return false;
+    if (scheduleManageFilter === 'disabled' && s.enabled) return false;
+    if (scheduleFrequencyFilter !== 'all' && (s.frequency || '') !== scheduleFrequencyFilter) {
+      return false;
+    }
+    return true;
+  });
   const [schedForm, setSchedForm] = useState({
     name: 'Daily sales summary',
     report_type: 'summary',
@@ -2120,6 +2134,32 @@ export default function Page() {
             </label>
             <button onClick={createSchedule}>Create schedule</button>
           </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            <select
+              value={scheduleManageFilter}
+              onChange={(e) =>
+                setScheduleManageFilter(e.target.value as 'all' | 'enabled' | 'disabled')
+              }
+              title="Filter schedules by enabled flag"
+              aria-label="Report schedule enabled filter"
+            >
+              <option value="all">All enabled/disabled</option>
+              <option value="enabled">Enabled only</option>
+              <option value="disabled">Disabled only</option>
+            </select>
+            <select
+              value={scheduleFrequencyFilter}
+              onChange={(e) =>
+                setScheduleFrequencyFilter(e.target.value as 'all' | 'daily' | 'weekly')
+              }
+              title="Filter schedules by frequency"
+              aria-label="Report schedule frequency filter"
+            >
+              <option value="all">All frequencies</option>
+              <option value="daily">Daily only</option>
+              <option value="weekly">Weekly only</option>
+            </select>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -2132,32 +2172,42 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {schedules.map((s) => (
-                <tr key={s.id}>
-                  <td>
-                    {s.name} {!s.enabled && <span className="muted">(off)</span>}
-                  </td>
-                  <td>
-                    {s.report_type} / {s.format}
-                  </td>
-                  <td>
-                    {s.frequency}
-                    {s.frequency === 'weekly' ? ` dow=${s.weekday}` : ''} @ {s.hour_utc}:00 UTC
-                  </td>
-                  <td>{(s.recipients || []).join(', ')}</td>
-                  <td>
-                    {s.last_run_at ? String(s.last_run_at).slice(0, 19) : '—'}
-                    {s.last_error ? (
-                      <div style={{ color: '#b91c1c', fontSize: 12 }}>{s.last_error}</div>
-                    ) : null}
-                  </td>
-                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button onClick={() => runSchedule(s.id)}>Run now</button>
-                    <button onClick={() => toggleSchedule(s)}>{s.enabled ? 'Disable' : 'Enable'}</button>
-                    <button onClick={() => deleteSchedule(s.id)}>Delete</button>
+              {managedSchedules.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No schedules for this filter
                   </td>
                 </tr>
-              ))}
+              ) : (
+                managedSchedules.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      {s.name} {!s.enabled && <span className="muted">(off)</span>}
+                    </td>
+                    <td>
+                      {s.report_type} / {s.format}
+                    </td>
+                    <td>
+                      {s.frequency}
+                      {s.frequency === 'weekly' ? ` dow=${s.weekday}` : ''} @ {s.hour_utc}:00 UTC
+                    </td>
+                    <td>{(s.recipients || []).join(', ')}</td>
+                    <td>
+                      {s.last_run_at ? String(s.last_run_at).slice(0, 19) : '—'}
+                      {s.last_error ? (
+                        <div style={{ color: '#b91c1c', fontSize: 12 }}>{s.last_error}</div>
+                      ) : null}
+                    </td>
+                    <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => runSchedule(s.id)}>Run now</button>
+                      <button onClick={() => toggleSchedule(s)}>
+                        {s.enabled ? 'Disable' : 'Enable'}
+                      </button>
+                      <button onClick={() => deleteSchedule(s.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}

@@ -75,6 +75,7 @@ from app.schemas import (
     ReportScheduleUpdate,
     ReportTypeValue,
     ReportExportFormatValue,
+    ScheduleFrequencyValue,
     BalanceSheetCompareValue,
     CreditAgingKindValue,
     InventoryValuationMethodValue,
@@ -9416,10 +9417,20 @@ async def reports_exportable(claims=Depends(require_permission("reports", "read"
 
 @api.get("/reports/schedules")
 async def report_schedules_list(
+    enabled: bool | None = None,
+    frequency: Annotated[ScheduleFrequencyValue | None, Query()] = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await report_schedules_svc.list_schedules(db, claims["tenant_id"])
+    # enabled: FastAPI bool Query (omit → all; invalid → 422).
+    # frequency: ScheduleFrequencyValue rejects blank/invalid → 422; service allow-list
+    # remains defense-in-depth.
+    rows = await report_schedules_svc.list_schedules(
+        db,
+        claims["tenant_id"],
+        enabled=enabled,
+        frequency=frequency,
+    )
     return env([report_schedules_svc.serialize_schedule(r) for r in rows])
 
 

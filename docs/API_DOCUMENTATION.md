@@ -1438,7 +1438,7 @@ Tax UI (`/tax`) period controls include store picker.
 **Budget vs Actual:** `GET /reports/expenses/budget-vs-actual?from_date=&to_date=&category_id=&branch_id=&department_id=&store_id=` — scales each category's monthly `budget_amount` by `period_days/30` against approved spend (org filters apply to actuals); returns `rows`, `top_categories`, totals, echo `branch_name`/`department_name`/`store_name`, and status `over_budget|under_budget|on_budget|no_budget`. Export types `expenses_summary` / `expenses_budget_vs_actual` accept the same org params.
 
 ### 14.5 Email report schedules (BR-14)
-**List:** `GET /reports/schedules`  
+**List:** `GET /reports/schedules` — optional Query `enabled` ∈ `true`|`false` (omit → all; invalid → **422**); optional Query `frequency` ∈ `daily`|`weekly` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Reports Email schedules **Report schedule enabled filter** / **frequency filter** (`scheduleManageFilter` / `scheduleFrequencyFilter`; client filter over full list cache).  
 **Create:** `POST /reports/schedules`  
 **Update:** `PATCH /reports/schedules/{schedule_id}`  
 **Delete:** `DELETE /reports/schedules/{schedule_id}`  
