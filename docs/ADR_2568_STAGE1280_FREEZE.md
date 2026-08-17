@@ -31,3 +31,7 @@ Stage 1281 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Comb Gate, Transfer Comb Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1281 opened under **ADR-2569** after CONTINUE/NEXT (Tenant MVP Transfer Keyway Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2570**. Stage 1280 feature scope remains frozen.
