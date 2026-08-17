@@ -31,3 +31,7 @@ Stage 1332 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Broach Gate, Transfer Broach Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1332 opened under **ADR-2671** after CONTINUE/NEXT (Tenant MVP Transfer Taper Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2672**. Stage 1331 feature scope remains frozen.
