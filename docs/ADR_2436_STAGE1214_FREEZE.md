@@ -31,3 +31,7 @@ Stage 1215 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Clerestory Gate, Transfer Clerestory Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1215 opened under **ADR-2437** after CONTINUE/NEXT (Tenant MVP Transfer Quire Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2438**. Stage 1214 feature scope remains frozen.
