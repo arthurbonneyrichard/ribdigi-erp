@@ -31,3 +31,7 @@ Stage 1220 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Oculus Gate, Transfer Oculus Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1220 opened under **ADR-2447** after CONTINUE/NEXT (Tenant MVP Transfer Finial Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2448**. Stage 1219 feature scope remains frozen.
