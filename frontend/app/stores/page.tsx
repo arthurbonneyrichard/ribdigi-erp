@@ -371,6 +371,7 @@ export default function Page() {
                   type="checkbox"
                   checked={closed}
                   onChange={(e) => onDay(key, { closed: e.target.checked })}
+                  aria-label={`Store ${label} closed`}
                 />
                 Closed
               </label>
@@ -380,12 +381,14 @@ export default function Page() {
                     type="time"
                     value={d.open || '09:00'}
                     onChange={(e) => onDay(key, { open: e.target.value, closed: false })}
+                    aria-label={`Store ${label} open time`}
                   />
                   <span className="muted">–</span>
                   <input
                     type="time"
                     value={d.close || '18:00'}
                     onChange={(e) => onDay(key, { close: e.target.value, closed: false })}
+                    aria-label={`Store ${label} close time`}
                   />
                 </>
               )}
@@ -921,7 +924,11 @@ export default function Page() {
             </select>
             <label className="muted">Operating hours</label>
             <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
-            <button onClick={createStore} disabled={!code.trim() || !name.trim()}>
+            <button
+              onClick={createStore}
+              disabled={!code.trim() || !name.trim()}
+              aria-label="Create store"
+            >
               Create store
             </button>
           </div>
@@ -1350,7 +1357,12 @@ export default function Page() {
             <label className="muted">Operating hours</label>
             <HoursEditor value={editHours} onDay={(day, patch) => setDayHours('edit', day, patch)} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={saveStoreEdit} disabled={!editName.trim()}>
+              <button
+                type="button"
+                onClick={saveStoreEdit}
+                disabled={!editName.trim()}
+                aria-label="Save store"
+              >
                 Save store
               </button>
               <button type="button" onClick={() => setEditStoreId('')}>

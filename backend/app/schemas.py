@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
@@ -1220,6 +1221,61 @@ class ExpenseThresholdUpdate(BaseModel):
     expense_numbering: DocumentNumberingFields | None = None
 
 
+# Keep aligned with app.stores._TIME_RE / WEEKDAYS (Multi-Store operating hours).
+_STORE_HHMM_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+
+
+class StoreDayHours(BaseModel):
+    """One weekday entry for store operating_hours (BR-2.3).
+
+    Unknown keys → **422** (`extra=forbid`). When not `closed`, `open`/`close`
+    must be HH:MM (24h) with open before close → **422** (was late service **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    open: str | None = None
+    close: str | None = None
+    closed: bool | None = None
+
+    @field_validator("open", "close", mode="before")
+    @classmethod
+    def _strip_hhmm(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    @model_validator(mode="after")
+    def _require_times_when_open(self) -> StoreDayHours:
+        if self.closed:
+            return self
+        open_t = self.open or ""
+        close_t = self.close or ""
+        # Keep aligned with app.stores._TIME_RE
+        if not _STORE_HHMM_RE.fullmatch(open_t) or not _STORE_HHMM_RE.fullmatch(close_t):
+            raise ValueError("open/close required as HH:MM (24h) when not closed")
+        if open_t >= close_t:
+            raise ValueError("open must be before close")
+        return self
+
+
+class StoreOperatingHours(BaseModel):
+    """Weekly operating_hours map (BR-2.3).
+
+    Unknown day keys → **422** (`extra=forbid`). Keys ∈ mon…sun only.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    mon: StoreDayHours | None = None
+    tue: StoreDayHours | None = None
+    wed: StoreDayHours | None = None
+    thu: StoreDayHours | None = None
+    fri: StoreDayHours | None = None
+    sat: StoreDayHours | None = None
+    sun: StoreDayHours | None = None
+
+
 class StoreCreate(BaseModel):
     name: str
     code: str
@@ -1227,7 +1283,7 @@ class StoreCreate(BaseModel):
     phone: str | None = None
     manager_id: str | None = None
     branch_id: str | None = None
-    operating_hours: dict | None = None
+    operating_hours: StoreOperatingHours | None = None
 
 
 class StoreUpdate(BaseModel):
@@ -1239,7 +1295,7 @@ class StoreUpdate(BaseModel):
     branch_id: str | None = None
     clear_branch: bool = False
     is_active: bool | None = None
-    operating_hours: dict | None = None
+    operating_hours: StoreOperatingHours | None = None
 
 
 class StoreDrawerSettingsUpdate(BaseModel):

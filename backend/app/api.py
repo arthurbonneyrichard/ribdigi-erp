@@ -10739,7 +10739,11 @@ async def add_store(
             phone=payload.phone,
             manager_id=payload.manager_id,
             branch_id=payload.branch_id,
-            operating_hours=payload.operating_hours,
+            operating_hours=(
+                payload.operating_hours.model_dump(exclude_none=True)
+                if payload.operating_hours is not None
+                else None
+            ),
         )
     except HTTPException as exc:
         if (

@@ -26,7 +26,11 @@ _TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 
 def normalize_operating_hours(value: dict | None) -> dict | None:
-    """Validate weekly hours map; return normalized dict or None."""
+    """Validate weekly hours map; return normalized dict or None.
+
+    Schema StoreOperatingHours / StoreDayHours rejects unknown days and bad
+    HH:MM → 422; keep allow-list + time defense-in-depth here.
+    """
     if value is None:
         return None
     if not isinstance(value, dict):
