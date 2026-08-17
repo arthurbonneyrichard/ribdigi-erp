@@ -91,6 +91,9 @@ export default function Page() {
   const [expiryDays, setExpiryDays] = useState('30');
   const [valuationMethod, setValuationMethod] = useState<'standard'>('standard');
   const [stockCountStatus, setStockCountStatus] = useState<'draft' | 'completed' | 'cancelled'>('completed');
+  const [transferStatus, setTransferStatus] = useState<
+    '' | 'draft' | 'requested' | 'in_transit' | 'received' | 'cancelled'
+  >('');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -188,7 +191,7 @@ export default function Page() {
           api(`/reports/inventory/valuation${qs({ method: valuationMethod })}`),
           api(`/reports/inventory/movements${qs()}`),
           api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
-          api(`/reports/inventory/transfers${qs()}`),
+          api(`/reports/inventory/transfers${qs(transferStatus ? { status: transferStatus } : {})}`),
           api(`/reports/inventory/expiry${qs({ days: expiryDays || '30' })}`),
           api(`/reports/inventory/stock-counts${qs({ variance_only: 'true', status: stockCountStatus })}`),
         ]);
@@ -1293,6 +1296,31 @@ export default function Page() {
           </table>
           <h3 style={{ marginTop: 16 }}>Inter-store transfers</h3>
           <p className="muted">
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
+              Transfer status
+              <select
+                aria-label="Transfer status"
+                value={transferStatus}
+                onChange={(e) =>
+                  setTransferStatus(
+                    e.target.value as
+                      | ''
+                      | 'draft'
+                      | 'requested'
+                      | 'in_transit'
+                      | 'received'
+                      | 'cancelled'
+                  )
+                }
+              >
+                <option value="">all</option>
+                <option value="draft">draft</option>
+                <option value="requested">requested</option>
+                <option value="in_transit">in_transit</option>
+                <option value="received">received</option>
+                <option value="cancelled">cancelled</option>
+              </select>
+            </label>
             {data.transfers?.transfer_count ?? 0}{' '}
             {(data.transfers?.transfer_count ?? 0) === 1 ? 'transfer' : 'transfers'} · qty{' '}
             {data.transfers?.total_quantity ?? 0}

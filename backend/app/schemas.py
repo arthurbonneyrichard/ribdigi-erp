@@ -1584,6 +1584,11 @@ StockCountReportStatusValue = Annotated[
     Literal["draft", "completed", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.reports.TRANSFER_REPORT_STATUSES (Reports Inventory transfers).
+TransferReportStatusValue = Annotated[
+    Literal["draft", "requested", "in_transit", "received", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.inventory.MOVEMENT_TYPES (Inventory/Reports movements filter).
 MovementTypeValue = Annotated[
     Literal[
