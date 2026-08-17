@@ -9614,8 +9614,8 @@ async def report_sales_customers(
 
 @api.get("/reports/sales/returns")
 async def report_sales_returns(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     customer_id: str | None = None,
     reason: Annotated[SalesReturnReportReasonValue | None, Query()] = None,
     status: Annotated[ReturnReportStatusValue | None, Query()] = None,
@@ -9640,8 +9640,8 @@ async def report_sales_returns(
 
 @api.get("/reports/sales/salesperson")
 async def report_sales_salesperson(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     department_id: str | None = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
