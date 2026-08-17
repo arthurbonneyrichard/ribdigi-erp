@@ -31,3 +31,7 @@ Stage 1263 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bit Gate, Transfer Bit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1263 opened under **ADR-2533** after CONTINUE/NEXT (Tenant MVP Transfer Shackle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2534**. Stage 1262 feature scope remains frozen.
