@@ -146,18 +146,32 @@ async def list_statement_lines(
     )
 
 
-async def list_statements(db: AsyncSession, tenant_id: str) -> list[m.BankStatement]:
-    return list(
-        (
-            await db.execute(
-                select(m.BankStatement)
-                .where(m.BankStatement.tenant_id == tenant_id)
-                .order_by(m.BankStatement.created_at.desc())
-            )
-        )
-        .scalars()
-        .all()
+async def list_statements(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+) -> list[m.BankStatement]:
+    stmt = (
+        select(m.BankStatement)
+        .where(m.BankStatement.tenant_id == tenant_id)
+        .order_by(m.BankStatement.created_at.desc())
     )
+    if status is not None:
+        # Schema BankStatementStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {"draft", "in_progress", "reconciled"}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be draft, in_progress, or reconciled",
+            )
+        else:
+            stmt = stmt.where(m.BankStatement.status == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 def _parse_dt(value: str | datetime | None) -> datetime:

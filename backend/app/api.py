@@ -85,6 +85,7 @@ from app.schemas import (
     ApiKeyStatusFilterValue,
     ApiKeyCreate,
     ExpenseStatusFilterValue,
+    BankStatementStatusFilterValue,
     WebhookDeliveryStatusFilterValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
@@ -8387,12 +8388,15 @@ async def sync_bank_connection(
 
 @api.get("/accounting/bank-statements")
 async def list_bank_statements(
+    status: Annotated[BankStatementStatusFilterValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
 
-    rows = await bank_recon_svc.list_statements(db, claims["tenant_id"])
+    rows = await bank_recon_svc.list_statements(
+        db, claims["tenant_id"], status=status
+    )
     out = []
     for row in rows:
         lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], row.id)

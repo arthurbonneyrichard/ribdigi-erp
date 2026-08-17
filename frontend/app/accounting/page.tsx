@@ -19,6 +19,9 @@ export default function Page() {
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
+  const [statementManageFilter, setStatementManageFilter] = useState<
+    'all' | 'draft' | 'in_progress' | 'reconciled'
+  >('all');
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
   const [chequeDirection, setChequeDirection] = useState('');
@@ -787,6 +790,10 @@ export default function Page() {
     if (connectionManageFilter === 'all') return true;
     const active = c.is_active !== false;
     return connectionManageFilter === 'inactive' ? !active : active;
+  });
+  const managedStatements = statements.filter((s) => {
+    if (statementManageFilter === 'all') return true;
+    return (s.status || 'draft') === statementManageFilter;
   });
 
   const manualDebitTotal = manualLines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
@@ -1649,6 +1656,22 @@ export default function Page() {
           </div>
 
           <h3>Statements</h3>
+          <select
+            value={statementManageFilter}
+            onChange={(e) =>
+              setStatementManageFilter(
+                e.target.value as 'all' | 'draft' | 'in_progress' | 'reconciled'
+              )
+            }
+            title="Filter bank statement list by status"
+            aria-label="Bank statement status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="in_progress">In progress only</option>
+            <option value="reconciled">Reconciled only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -1661,7 +1684,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {statements.map((s) => (
+              {managedStatements.map((s) => (
                 <tr key={s.id}>
                   <td>{String(s.statement_date).slice(0, 10)}</td>
                   <td>{s.status}</td>
@@ -1673,6 +1696,13 @@ export default function Page() {
                   </td>
                 </tr>
               ))}
+              {!managedStatements.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No statements for this filter
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
