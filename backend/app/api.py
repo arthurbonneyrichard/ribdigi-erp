@@ -10605,8 +10605,8 @@ async def calculate_tax(
 
 @api.get("/reports/tax")
 async def reports_tax(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -10624,8 +10624,8 @@ async def reports_tax(
 
 @api.get("/reports/tax/filing")
 async def reports_tax_filing(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → tenant tax_jurisdiction (neutral pack if unsupported); blank/unsupported → 422
     jurisdiction: Annotated[TaxFilingJurisdictionValue | None, Query()] = None,
     store_id: str | None = None,
