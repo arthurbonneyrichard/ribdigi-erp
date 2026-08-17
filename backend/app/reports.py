@@ -533,16 +533,21 @@ async def sales_returns_summary(
 
     store_id, store_name = await _resolve_sales_store(db, tenant_id, store_id)
 
-    if reason:
-        key = reason.strip().lower()
-        if key not in RETURN_REASONS:
+    # Schema SalesReturnReportReasonValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    if reason is not None:
+        key = (reason or "").strip().lower()
+        if not key:
+            reason = None
+        elif key not in RETURN_REASONS:
             from fastapi import HTTPException
 
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail=f"reason must be one of {sorted(RETURN_REASONS)}",
             )
-        reason = key
+        else:
+            reason = key
     # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
     # defense-in-depth (no silent empty equality filter / blank→all).
     if status is not None:
@@ -2280,16 +2285,21 @@ async def purchases_returns_summary(
         db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
     )
 
-    if reason:
-        key = reason.strip().lower()
-        if key not in PURCHASE_RETURN_REASONS:
+    # Schema PurchaseReturnReportReasonValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    if reason is not None:
+        key = (reason or "").strip().lower()
+        if not key:
+            reason = None
+        elif key not in PURCHASE_RETURN_REASONS:
             from fastapi import HTTPException
 
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail=f"reason must be one of {sorted(PURCHASE_RETURN_REASONS)}",
             )
-        reason = key
+        else:
+            reason = key
     # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
     # defense-in-depth (no silent empty equality filter / blank→all).
     if status is not None:

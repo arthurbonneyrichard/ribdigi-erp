@@ -1599,6 +1599,16 @@ ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.sales_docs.RETURN_REASONS (Reports sales returns reason filter).
+SalesReturnReportReasonValue = Annotated[
+    Literal["damaged", "wrong_item", "defective", "customer_change", "other"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.purchasing.PURCHASE_RETURN_REASONS (Reports purchase returns reason).
+PurchaseReturnReportReasonValue = Annotated[
+    Literal["damaged", "wrong_item", "expiry", "quality", "other"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.inventory.MOVEMENT_TYPES (Inventory/Reports movements filter).
 MovementTypeValue = Annotated[
     Literal[

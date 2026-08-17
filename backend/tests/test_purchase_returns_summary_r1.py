@@ -143,7 +143,7 @@ async def test_returns_summary_by_reason_and_filters(client, db_session):
         "/api/v1/reports/purchases/returns?reason=not-a-reason",
         headers=headers,
     )
-    assert bad.status_code == 400
+    assert bad.status_code == 422
 
 
 def test_flatten_returns_export():
