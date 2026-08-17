@@ -10755,17 +10755,13 @@ async def update_inventory_settings(
 
 @api.get("/stores/transfers")
 async def list_transfers(
+    status: Annotated[TransferReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.StockTransfer)
-            .where(m.StockTransfer.tenant_id == claims["tenant_id"])
-            .order_by(m.StockTransfer.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    rows = await stores_svc.list_transfers(
+        db, claims["tenant_id"], status=status
+    )
     return env([await stores_svc.serialize_transfer(db, t) for t in rows])
 
 
@@ -10907,17 +10903,13 @@ async def cancel_transfer(
 
 @api.get("/inventory/stock-transfers")
 async def inventory_list_transfers(
+    status: Annotated[TransferReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.StockTransfer)
-            .where(m.StockTransfer.tenant_id == claims["tenant_id"])
-            .order_by(m.StockTransfer.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    rows = await stores_svc.list_transfers(
+        db, claims["tenant_id"], status=status
+    )
     return env([await stores_svc.serialize_transfer(db, t) for t in rows])
 
 

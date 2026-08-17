@@ -663,7 +663,7 @@ Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory
 }
 ```
 
-Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). **Reject / Cancel:** `POST /inventory/stock-transfers/{id}/reject|cancel` (and `/stores/transfers/{id}/…`) body `{ "reason" }` **required** → status `cancelled` + `rejection_reason` (Inventory + Multi-Store UIs require typed reason for both). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab.
+Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). **Reject / Cancel:** `POST /inventory/stock-transfers/{id}/reject|cancel` (and `/stores/transfers/{id}/…`) body `{ "reason" }` **required** → status `cancelled` + `rejection_reason` (Inventory + Multi-Store UIs require typed reason for both). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab. **Manage list status:** `GET /inventory/stock-transfers` + `GET /stores/transfers` optional Query `status` ∈ `draft`|`requested`|`in_transit`|`received`|`cancelled` (same `TransferReportStatusValue` as transfer report; omit → all; blank/invalid → **422**). Inventory + Multi-Store **Stock transfer status filter** (`transferManageFilter`; client filter over full cache).
 
 ### 5.6 Stock Count
 **Create:** `POST /inventory/stock-counts`  
@@ -1379,7 +1379,7 @@ Tax UI (`/tax`) period controls include store picker.
 **Endpoint:** `GET /stores/{store_id}/sales`
 
 ### 13.4 Inter-Store Transfers
-**List:** `GET /stores/transfers`  
+**List:** `GET /stores/transfers` — optional Query `status` ∈ `draft`|`requested`|`in_transit`|`received`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Same filter on Inventory alias `GET /inventory/stock-transfers`. Inventory + Multi-Store **Stock transfer status filter** All / Draft / Requested / In transit / Received / Cancelled (`transferManageFilter`; client filter over full cache).  
 **Create:** `POST /stores/transfers`  
 **Get:** `GET /stores/transfers/{transfer_id}`  
 **Update Status:** `PATCH /stores/transfers/{transfer_id}/status`  

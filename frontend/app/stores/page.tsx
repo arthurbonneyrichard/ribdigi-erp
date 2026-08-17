@@ -162,6 +162,9 @@ export default function Page() {
   const [warehouseManageFilter, setWarehouseManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [branchManageFilter, setBranchManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [departmentManageFilter, setDepartmentManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [transferManageFilter, setTransferManageFilter] = useState<
+    'all' | 'draft' | 'requested' | 'in_transit' | 'received' | 'cancelled'
+  >('all');
   const [entitlement, setEntitlement] = useState<{
     stores_active?: number;
     stores_total?: number;
@@ -185,6 +188,10 @@ export default function Page() {
   const managedWarehouses = byStatus(warehouses, warehouseManageFilter);
   const managedBranches = byStatus(branches, branchManageFilter);
   const managedDepartments = byStatus(departments, departmentManageFilter);
+  const managedTransfers = transfers.filter((t) => {
+    if (transferManageFilter === 'all') return true;
+    return (t.status || 'draft') === transferManageFilter;
+  });
 
   async function refresh() {
     const [s, p, t, settings, wh, u, br, dep, ent] = await Promise.all([
@@ -1499,6 +1506,30 @@ export default function Page() {
           Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
         </p>
       </div>
+      <select
+        value={transferManageFilter}
+        onChange={(e) =>
+          setTransferManageFilter(
+            e.target.value as
+              | 'all'
+              | 'draft'
+              | 'requested'
+              | 'in_transit'
+              | 'received'
+              | 'cancelled'
+          )
+        }
+        title="Filter stock transfer list by status"
+        aria-label="Stock transfer status filter"
+        style={{ marginBottom: 12 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="draft">Draft only</option>
+        <option value="requested">Requested only</option>
+        <option value="in_transit">In transit only</option>
+        <option value="received">Received only</option>
+        <option value="cancelled">Cancelled only</option>
+      </select>
       <table className="table">
         <thead>
           <tr>
@@ -1512,7 +1543,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {transfers.map((t) => (
+          {managedTransfers.map((t) => (
             <tr key={t.id}>
               <td>{t.transfer_number}</td>
               <td>{storeName(t.from_store_id)}</td>
@@ -1562,6 +1593,15 @@ export default function Page() {
               </td>
             </tr>
           ))}
+          {managedTransfers.length === 0 && (
+            <tr>
+              <td colSpan={7} className="muted">
+                {transfers.length === 0
+                  ? 'No transfers yet'
+                  : 'No stock transfers for this filter'}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </Shell>

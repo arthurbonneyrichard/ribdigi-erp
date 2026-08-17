@@ -124,6 +124,9 @@ export default function Page() {
   const [countManageFilter, setCountManageFilter] = useState<
     'all' | 'draft' | 'completed' | 'cancelled'
   >('all');
+  const [transferManageFilter, setTransferManageFilter] = useState<
+    'all' | 'draft' | 'requested' | 'in_transit' | 'received' | 'cancelled'
+  >('all');
   const [activeCount, setActiveCount] = useState<any | null>(null);
   const [countWarehouseId, setCountWarehouseId] = useState('');
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
@@ -1446,6 +1449,10 @@ export default function Page() {
   const managedCounts = counts.filter((c) => {
     if (countManageFilter === 'all') return true;
     return (c.status || 'draft') === countManageFilter;
+  });
+  const managedTransfers = transfers.filter((t) => {
+    if (transferManageFilter === 'all') return true;
+    return (t.status || 'draft') === transferManageFilter;
   });
 
   return (
@@ -3478,6 +3485,30 @@ export default function Page() {
           <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }}>
             Refresh
           </button>
+          <select
+            value={transferManageFilter}
+            onChange={(e) =>
+              setTransferManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'requested'
+                  | 'in_transit'
+                  | 'received'
+                  | 'cancelled'
+              )
+            }
+            title="Filter stock transfer list by status"
+            aria-label="Stock transfer status filter"
+            style={{ marginBottom: 12, marginLeft: 8 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="requested">Requested only</option>
+            <option value="in_transit">In transit only</option>
+            <option value="received">Received only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -3491,7 +3522,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {transfers.map((t) => (
+              {managedTransfers.map((t) => (
                 <tr key={t.id}>
                   <td>{t.transfer_number}</td>
                   <td>{warehouseLabel(t.from_warehouse_id)}</td>
@@ -3548,10 +3579,12 @@ export default function Page() {
                   </td>
                 </tr>
               ))}
-              {transfers.length === 0 && (
+              {managedTransfers.length === 0 && (
                 <tr>
                   <td colSpan={7} className="muted">
-                    No transfers yet
+                    {transfers.length === 0
+                      ? 'No transfers yet'
+                      : 'No stock transfers for this filter'}
                   </td>
                 </tr>
               )}

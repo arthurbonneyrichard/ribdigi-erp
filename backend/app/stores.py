@@ -352,6 +352,41 @@ async def get_transfer(db: AsyncSession, tenant_id: str, transfer_id: str) -> m.
     return row
 
 
+async def list_transfers(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[m.StockTransfer]:
+    """Manage list for Inventory / Multi-Store transfer tabs (BR-5.2 / BR-13.2)."""
+    from app.reports import TRANSFER_REPORT_STATUSES
+
+    stmt = (
+        select(m.StockTransfer)
+        .where(m.StockTransfer.tenant_id == tenant_id)
+        .order_by(m.StockTransfer.created_at.desc())
+        .limit(limit)
+    )
+    if status is not None:
+        # Schema TransferReportStatusValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in TRANSFER_REPORT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid transfer status '{wanted}'. "
+                    f"Allowed: {sorted(TRANSFER_REPORT_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.StockTransfer.status == wanted)
+    return list((await db.execute(stmt)).scalars().all())
+
+
 async def list_transfer_items(
     db: AsyncSession, tenant_id: str, transfer_id: str
 ) -> list[m.StockTransferItem]:
