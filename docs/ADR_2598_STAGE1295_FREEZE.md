@@ -31,3 +31,7 @@ Stage 1296 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Race Gate, Transfer Race Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1296 opened under **ADR-2599** after CONTINUE/NEXT (Tenant MVP Transfer Spring Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2600**. Stage 1295 feature scope remains frozen.
