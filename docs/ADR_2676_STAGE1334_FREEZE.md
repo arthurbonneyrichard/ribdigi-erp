@@ -31,3 +31,7 @@ Stage 1335 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Countersink Gate, Transfer Countersink Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1335 opened under **ADR-2677** after CONTINUE/NEXT (Tenant MVP Transfer Counterbore Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2678**. Stage 1334 feature scope remains frozen.
