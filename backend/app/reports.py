@@ -511,6 +511,9 @@ async def sales_by_customer(
     }
 
 
+RETURN_REPORT_STATUSES = frozenset({"draft", "posted", "cancelled"})
+
+
 async def sales_returns_summary(
     db: AsyncSession,
     tenant_id: str,
@@ -540,15 +543,21 @@ async def sales_returns_summary(
                 detail=f"reason must be one of {sorted(RETURN_REASONS)}",
             )
         reason = key
-    if status:
-        status = status.strip().lower()
-        if status not in {"draft", "posted", "cancelled"}:
+    # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    if status is not None:
+        key = (status or "").strip().lower()
+        if not key:
+            status = None
+        elif key not in RETURN_REPORT_STATUSES:
             from fastapi import HTTPException
 
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail="status must be draft, posted, or cancelled",
             )
+        else:
+            status = key
 
     stmt = (
         select(m.SalesReturn, m.Party)
@@ -2281,15 +2290,21 @@ async def purchases_returns_summary(
                 detail=f"reason must be one of {sorted(PURCHASE_RETURN_REASONS)}",
             )
         reason = key
-    if status:
-        status = status.strip().lower()
-        if status not in {"draft", "posted", "cancelled"}:
+    # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    if status is not None:
+        key = (status or "").strip().lower()
+        if not key:
+            status = None
+        elif key not in RETURN_REPORT_STATUSES:
             from fastapi import HTTPException
 
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail="status must be draft, posted, or cancelled",
             )
+        else:
+            status = key
 
     stmt = (
         select(m.PurchaseReturn, m.Party)
