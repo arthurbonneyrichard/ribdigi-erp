@@ -31,3 +31,7 @@ Stage 1212 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Chancel Gate, Transfer Chancel Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1212 opened under **ADR-2431** after CONTINUE/NEXT (Tenant MVP Transfer Pulpit Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2432**. Stage 1211 feature scope remains frozen.
