@@ -49,6 +49,7 @@ export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
+  const [appliedAction, setAppliedAction] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [verify, setVerify] = useState<any>(null);
@@ -62,14 +63,15 @@ export default function Page() {
   const refreshLogs = useCallback(async () => {
     const params = new URLSearchParams();
     if (module) params.set('module', module);
-    const actionQ = auditActionQueryValue(action);
+    const actionQ = auditActionQueryValue(appliedAction);
     if (actionQ) params.set('action', actionQ);
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
     const q = params.toString() ? `?${params}` : '';
     const r = await api(`/audit-logs${q}`);
     setRows(r.data || []);
-  }, [module, action, fromDate, toDate]);
+    setError('');
+  }, [module, appliedAction, fromDate, toDate]);
 
   const refreshPolicy = useCallback(async () => {
     const [policy, me] = await Promise.all([api('/audit-logs/retention'), api('/me')]);
@@ -289,7 +291,7 @@ export default function Page() {
               return;
             }
             setError('');
-            refreshLogs().catch((e) => setError(e.message));
+            setAppliedAction(auditActionQueryValue(action) || '');
           }}
         >
           Filter

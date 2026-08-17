@@ -28,6 +28,7 @@ def test_audit_action_ui_and_docs():
     page = (ROOT / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Audit action filter"' in page
     assert "auditActionQueryValue" in page
+    assert "appliedAction" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Audit action Query OpenAPI" in agents
     assert "AuditActionValue" in agents
