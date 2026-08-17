@@ -1657,17 +1657,22 @@ async def inventory_transfers(
     """
     from fastapi import HTTPException
 
-    if status:
-        key = status.strip().lower()
-        if key not in TRANSFER_REPORT_STATUSES:
+    # Schema TransferReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    if status is not None:
+        key = (status or "").strip().lower()
+        if not key:
+            status = None
+        elif key not in TRANSFER_REPORT_STATUSES:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail=(
                     f"Invalid transfer status '{key}'. "
                     f"Allowed: {sorted(TRANSFER_REPORT_STATUSES)}"
                 ),
             )
-        status = key
+        else:
+            status = key
 
     store_name = None
     if store_id:

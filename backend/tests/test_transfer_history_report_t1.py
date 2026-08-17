@@ -135,7 +135,7 @@ async def test_transfer_history_filters_and_aggregates(client, db_session, seede
         "/api/v1/reports/inventory/transfers?status=bogus",
         headers=headers,
     )
-    assert bad.status_code == 400
+    assert bad.status_code == 422
 
     # cashier cannot read reports
     cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
