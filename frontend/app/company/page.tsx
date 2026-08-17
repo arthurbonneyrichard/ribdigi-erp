@@ -306,11 +306,21 @@ export default function Page() {
             </option>
           ))}
         </select>
-        <input
-          value={tenant.currency || ''}
+        <select
+          value={tenant.currency || 'GHS'}
           onChange={(e) => setTenant({ ...tenant, currency: e.target.value })}
-          placeholder="Currency"
-        />
+          aria-label="Company currency"
+        >
+          {Array.from(
+            new Set(
+              [tenant.currency || 'GHS', 'GHS', 'USD', 'EUR', 'GBP', 'NGN', 'XOF', 'CAD'].filter(Boolean),
+            ),
+          ).map((c) => (
+            <option key={c} value={c}>
+              Currency: {c}
+            </option>
+          ))}
+        </select>
         <input
           value={tenant.phone || ''}
           onChange={(e) => setTenant({ ...tenant, phone: e.target.value })}

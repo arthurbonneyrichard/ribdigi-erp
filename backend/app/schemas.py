@@ -380,7 +380,8 @@ class TenantCreate(BaseModel):
     # BR-1.2 — schema Literal (+ case coerce via BeforeValidator); omit → retail;
     # blank/invalid → 422 (no silent retail from garbage).
     industry: IndustryValue = "retail"
-    currency: str = "GHS"
+    # BR-2.6 — same CurrencyCodeValue as FX rates; omit → GHS; blank/non-ISO → 422
+    currency: CurrencyCodeValue = "GHS"
     admin_email: EmailStr
     admin_password: str
 
@@ -389,7 +390,8 @@ class TenantProfileUpdate(BaseModel):
     company_name: str | None = None
     # omit = no change; blank/invalid → 422 (same IndustryValue Literal)
     industry: IndustryValue | None = None
-    currency: str | None = None
+    # omit = no change; blank/non-ISO → 422 (was free str; length-only late **400**)
+    currency: CurrencyCodeValue | None = None
     phone: str | None = None
     email: EmailStr | None = None
     website: str | None = None

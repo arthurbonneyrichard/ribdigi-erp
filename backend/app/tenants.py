@@ -598,10 +598,10 @@ async def update_profile(
     if industry is not None:
         tenant.industry = normalize_industry(industry)
     if currency is not None:
-        cur = currency.strip().upper()
-        if len(cur) < 3 or len(cur) > 10:
-            raise HTTPException(status_code=400, detail="Invalid currency")
-        tenant.currency = cur
+        # Defense in depth: TenantProfileUpdate CurrencyCodeValue → 422 on blank/non-ISO.
+        from app.fx import normalize_currency
+
+        tenant.currency = normalize_currency(currency)
     if phone is not None:
         tenant.phone = phone.strip() or None
     if email is not None:

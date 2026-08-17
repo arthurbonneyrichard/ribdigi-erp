@@ -217,6 +217,8 @@ Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, 
 
 `industry` schema `Literal["retail","pharmacy","restaurant","bakery","wholesale","manufacturing","mart"]` (omit → `retail`; blank/invalid → **422**; case-insensitive coerce via `BeforeValidator`, e.g. `Wholesale` → `wholesale`). Service `normalize_industry` remains defense-in-depth **400**. Company page industry `<select>` matches the allow-list.
 
+`currency` ∈ 3-letter ISO (`CurrencyCodeValue`; strip/upper; omit → `GHS`; blank/non-ISO → **422** — was free `str` with no create-path check). Same honesty on `PATCH /tenants/me`. Company **Currency** select.
+
 **Response:**
 ```json
 {
@@ -266,6 +268,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 ```
 
 `industry` (when sent) uses the same schema `Literal` as create (omit = no change; blank/invalid → **422**).
+
+`currency` (when sent) same `CurrencyCodeValue` as create / FX rates (omit = no change; blank/non-ISO → **422** — was free `str` with length-only late service **400**; non-ISO could persist). Company **Currency** select.
 
 Regional / tax format fields (BR-20.2) are schema Literals on this PATCH (omit = no change; blank/invalid → **422**):
 - `tax_jurisdiction` ∈ `GH` (same `TaxFilingJurisdictionValue` / `tax_filings.SUPPORTED` as filing Query; blank/unsupported → **422** — was free `str` with length-only late service **400**; unsupported codes could persist then fail later on filing). Company **Tax jurisdiction** select.
