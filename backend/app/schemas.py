@@ -909,6 +909,37 @@ class ExpenseCreate(BaseModel):
     expense_date: datetime | None = None
 
 
+class AiChatBody(BaseModel):
+    """POST /ai/chat — typed chat body (BR-21.1).
+
+    Unknown keys → **422** (`extra=forbid`). Blank/omit `message` (and `prompt`
+    alias) → **422** (blank was late service **400**). Optional `context` /
+    `conversation_id` accepted for documented clients (unused by mock path).
+    Service `parse_chat_message` / injection checks remain defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: str | None = None
+    prompt: str | None = None
+    context: str | None = None
+    conversation_id: str | None = None
+
+    @field_validator("message", "prompt", "context", "conversation_id", mode="before")
+    @classmethod
+    def _strip_optional(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            return text or None
+        return value
+
+    @model_validator(mode="after")
+    def _require_message_or_prompt(self) -> AiChatBody:
+        if not (self.message or self.prompt):
+            raise ValueError("message is required")
+        return self
+
+
 class AiDocumentExpenseCreate(BaseModel):
     """Explicit Create draft expense from reviewed OCR fields (BR-21.8)."""
 

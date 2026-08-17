@@ -137,6 +137,7 @@ from app.schemas import (
     ExpenseCategoryUpdate,
     ExpenseCreate,
     AiDocumentExpenseCreate,
+    AiChatBody,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseReject,
@@ -12281,8 +12282,13 @@ async def ai_security_scan(
 
 
 @api.post("/ai/chat")
-async def ai_chat(payload: dict, claims=Depends(require_permission("ai", "write")), db: AsyncSession = Depends(get_db)):
-    data = await ai_svc.handle_chat(db, claims=claims, payload=payload)
+async def ai_chat(
+    payload: AiChatBody,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    # Schema AiChatBody rejects unknown keys / blank message|prompt → 422.
+    data = await ai_svc.handle_chat(db, claims=claims, payload=payload.model_dump())
     return env(data)
 
 

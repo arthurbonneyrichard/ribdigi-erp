@@ -1547,6 +1547,8 @@ Append-only hash-chained audit trail (BR-17.1–17.2).
 ### 16.1 AI ERP Chat Assistant
 **Endpoint:** `POST /ai/chat`
 
+Typed body `AiChatBody` `{ "message" | "prompt", "context"?, "conversation_id"? }` (`extra=forbid`; blank/omit message+prompt / unknown keys → **422** — blank was late service **400**). Service `parse_chat_message` / injection checks remain defense-in-depth. AI UI **Ask AI chat** (`aria-label` message + Ask).
+
 **Request:**
 ```json
 {

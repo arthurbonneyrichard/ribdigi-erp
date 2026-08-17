@@ -382,9 +382,12 @@ export default function Page() {
           onChange={(e) => setQ(e.target.value)}
           style={{ width: '100%', minHeight: 100 }}
           placeholder="Ask a business question, report prompt, or customer query e.g. best customers / outstanding balance"
+          aria-label="AI chat message"
         />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={go}>Ask</button>
+          <button onClick={go} aria-label="Ask AI chat">
+            Ask
+          </button>
           <button onClick={generateReport}>Generate report</button>
           <button onClick={customerAssist}>Customer assist</button>
           <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
