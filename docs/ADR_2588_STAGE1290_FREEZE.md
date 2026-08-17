@@ -31,3 +31,7 @@ Stage 1291 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Spacer Gate, Transfer Spacer Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1291 opened under **ADR-2589** after CONTINUE/NEXT (Tenant MVP Transfer Retainer Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2590**. Stage 1290 feature scope remains frozen.
