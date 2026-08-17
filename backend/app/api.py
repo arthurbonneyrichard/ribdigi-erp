@@ -9851,8 +9851,8 @@ async def report_inventory_stock_counts(
 
 @api.get("/reports/purchases/summary")
 async def report_purchases_summary(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     warehouse_id: str | None = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
@@ -9873,8 +9873,8 @@ async def report_purchases_summary(
 @api.get("/reports/purchases/suppliers")
 async def report_purchases_suppliers(
     supplier_id: str | None = None,
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     warehouse_id: str | None = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
