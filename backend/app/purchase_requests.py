@@ -43,7 +43,11 @@ def default_approval_levels() -> list[dict]:
 
 
 def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
-    """Validate/normalize PR role-chain levels (no amount thresholds)."""
+    """Validate/normalize PR role-chain levels (no amount thresholds).
+
+    Schema PurchaseApprovalLevelUpdate.roles rejects blank/unknown → 422; keep
+    VALID_ROLES allow-list defense-in-depth here.
+    """
     from app.rbac import VALID_ROLES
 
     if raw is None:

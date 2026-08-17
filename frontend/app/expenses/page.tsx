@@ -8,6 +8,21 @@ import { useStoreContext } from '../../lib/storeContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+/** Keep aligned with backend SystemRoleValue / rbac.VALID_ROLES (approval matrix). */
+const SYSTEM_ROLES = [
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+  'company_admin',
+  'store_manager',
+  'sales_officer',
+  'inventory_officer',
+  'accountant',
+  'cashier',
+] as const;
+
 type Category = {
   id: string;
   code: string;
@@ -777,12 +792,14 @@ export default function Page() {
               onChange={(e) => updateLevel(idx, { min_amount: Number(e.target.value) || 0 })}
               placeholder="Min amount"
               style={{ width: 100 }}
+              aria-label={`Expense approval level ${idx + 1} min amount`}
             />
             <input
               value={lvl.label || ''}
               onChange={(e) => updateLevel(idx, { label: e.target.value })}
               placeholder="Label"
               style={{ width: 140 }}
+              aria-label={`Expense approval level ${idx + 1} label`}
             />
             <input
               value={(lvl.roles || []).join(', ')}
@@ -794,19 +811,31 @@ export default function Page() {
                     .filter(Boolean),
                 })
               }
-              placeholder="roles"
+              placeholder="roles (comma-separated system roles)"
+              list="expense-approval-system-roles"
               style={{ minWidth: 220, flex: 1 }}
+              aria-label={`Expense approval level ${idx + 1} roles`}
             />
-            <button type="button" onClick={() => removeLevel(idx)} disabled={levels.length <= 1}>
+            <button
+              type="button"
+              onClick={() => removeLevel(idx)}
+              disabled={levels.length <= 1}
+              aria-label={`Remove expense approval level ${idx + 1}`}
+            >
               Remove
             </button>
           </div>
         ))}
+        <datalist id="expense-approval-system-roles">
+          {SYSTEM_ROLES.map((r) => (
+            <option key={r} value={r} />
+          ))}
+        </datalist>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={addLevel} disabled={levels.length >= 5}>
+          <button type="button" onClick={addLevel} disabled={levels.length >= 5} aria-label="Add expense approval level">
             Add level
           </button>
-          <button type="button" onClick={saveApprovalMatrix}>
+          <button type="button" onClick={saveApprovalMatrix} aria-label="Save expense approval matrix">
             Save matrix
           </button>
         </div>

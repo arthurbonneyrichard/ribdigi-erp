@@ -268,6 +268,23 @@ AppFallbackRoleValue = Annotated[
     ],
     BeforeValidator(coerce_platform_role_value),
 ]
+# Keep aligned with app.rbac.VALID_ROLES / SYSTEM_ROLES (approval matrix roles[]).
+SystemRoleValue = Annotated[
+    Literal[
+        "super_admin",
+        "platform_owner",
+        "platform_admin",
+        "platform_support",
+        "platform_finance",
+        "company_admin",
+        "store_manager",
+        "sales_officer",
+        "inventory_officer",
+        "accountant",
+        "cashier",
+    ],
+    BeforeValidator(coerce_platform_role_value),
+]
 
 
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
@@ -1173,13 +1190,30 @@ class RecurringSkipNext(BaseModel):
 
 
 class ApprovalLevelUpdate(BaseModel):
+    """One expense approval matrix level (BR-9.3).
+
+    Unknown keys → **422** (`extra=forbid`). `roles[]` ∈ system roles
+    (`SystemRoleValue` / `rbac.VALID_ROLES`); blank/unknown role → **422**
+    (was late service **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     min_amount: float = Field(gt=0)
-    roles: list[str] = Field(min_length=1)
+    roles: list[SystemRoleValue] = Field(min_length=1)
     label: str | None = None
     step: int | None = None
 
 
 class ExpenseThresholdUpdate(BaseModel):
+    """PATCH /expenses/settings — thresholds + approval matrix (BR-9.3).
+
+    Unknown keys → **422**. When `levels` is sent, each level uses
+    `ApprovalLevelUpdate` honesty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     expense_approval_threshold: float | None = Field(default=None, gt=0)
     expense_l2_threshold: float | None = Field(default=None, gt=0)
     levels: list[ApprovalLevelUpdate] | None = None
@@ -1411,12 +1445,27 @@ class PurchaseRequestConvert(BaseModel):
 
 
 class PurchaseApprovalLevelUpdate(BaseModel):
-    roles: list[str] = Field(min_length=1)
+    """One PR approval matrix level (role chain; BR-6.x).
+
+    Unknown keys → **422** (`extra=forbid`). Same `roles[]` honesty as expense
+    matrix (`SystemRoleValue`); blank/unknown → **422** (was late **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    roles: list[SystemRoleValue] = Field(min_length=1)
     label: str | None = None
     step: int | None = None
 
 
 class PurchaseApprovalSettingsUpdate(BaseModel):
+    """PATCH /purchasing/requests/settings — PR approval matrix.
+
+    Unknown keys → **422**. `levels` required non-empty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     levels: list[PurchaseApprovalLevelUpdate] = Field(min_length=1)
 
 

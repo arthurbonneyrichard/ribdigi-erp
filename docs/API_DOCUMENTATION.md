@@ -1142,6 +1142,8 @@ Optional org dims (`branch_id`, `department_id`; BR-9.2). Department must belong
 
 Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_approval` plus email (default on; opt out via notification preferences). Creator is excluded from the email fan-out. Advancing a level re-notifies the next step's roles.
 
+**Approval settings:** `GET|PATCH /expenses/settings` — thresholds + `levels[]` (`ApprovalLevelUpdate`: `min_amount`, `roles[]`, `label?`). `roles[]` items ∈ system roles (`SystemRoleValue` / `rbac.VALID_ROLES`; strip/lower; blank/unknown → **422** — was late service **400**). Body `extra=forbid`. Expenses **Approval matrix** roles inputs (`aria-label`s + system-role datalist). Same `SystemRoleValue` honesty on `PATCH /purchasing/requests/settings` PR matrix (`PurchaseApprovalLevelUpdate`).
+
 **Approve:** `POST /expenses/{expense_id}/approve` — body `{ "comment"? }` (optional typed comment → `approval_comment`; Expenses UI **Approve comment** — no hardcoded `"Approved"`) → advances approval step or final `approved` + journal; no self-approve (except `super_admin`).  
 **Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }` **required** (`ExpenseReject`; omit/empty → 422; no `comment` fallback) → `rejected` + `rejection_reason` (Expenses UI requires typed reason; no hardcoded `"Rejected"`). Role-gated to the awaiting matrix step.
 

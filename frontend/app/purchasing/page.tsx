@@ -7,6 +7,22 @@ import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
 
 type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
+
+/** Keep aligned with backend SystemRoleValue / rbac.VALID_ROLES (PR approval matrix). */
+const SYSTEM_ROLES = [
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+  'company_admin',
+  'store_manager',
+  'sales_officer',
+  'inventory_officer',
+  'accountant',
+  'cashier',
+] as const;
+
 type Supplier = {
   id: string;
   name: string;
@@ -1335,6 +1351,7 @@ export default function Page() {
                   onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
                   placeholder="Label"
                   style={{ width: 160 }}
+                  aria-label={`PR approval level ${idx + 1} label`}
                 />
                 <input
                   value={(lvl.roles || []).join(', ')}
@@ -1346,18 +1363,26 @@ export default function Page() {
                         .filter(Boolean),
                     })
                   }
-                  placeholder="Roles"
+                  placeholder="Roles (comma-separated system roles)"
+                  list="pr-approval-system-roles"
                   style={{ minWidth: 280, flex: 1 }}
+                  aria-label={`PR approval level ${idx + 1} roles`}
                 />
                 <button
                   type="button"
                   onClick={() => setPrLevels((prev) => prev.filter((_, i) => i !== idx))}
                   disabled={prLevels.length <= 1}
+                  aria-label={`Remove PR approval level ${idx + 1}`}
                 >
                   Remove
                 </button>
               </div>
             ))}
+            <datalist id="pr-approval-system-roles">
+              {SYSTEM_ROLES.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -1365,10 +1390,11 @@ export default function Page() {
                   setPrLevels((prev) => [...prev, { roles: ['company_admin'], label: `Level ${prev.length + 1}` }])
                 }
                 disabled={prLevels.length >= 5}
+                aria-label="Add PR approval level"
               >
                 Add level
               </button>
-              <button type="button" onClick={savePrSettings}>
+              <button type="button" onClick={savePrSettings} aria-label="Save PR approval matrix">
                 Save matrix
               </button>
             </div>

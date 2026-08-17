@@ -107,7 +107,11 @@ def default_approval_levels(
 
 
 def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
-    """Validate/normalize levels. Raises HTTPException on bad input."""
+    """Validate/normalize levels. Raises HTTPException on bad input.
+
+    Schema ApprovalLevelUpdate.roles rejects blank/unknown → 422; keep
+    VALID_ROLES allow-list defense-in-depth here.
+    """
     from app.rbac import VALID_ROLES
 
     if raw is None:
