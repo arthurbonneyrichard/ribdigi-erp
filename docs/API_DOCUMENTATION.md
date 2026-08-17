@@ -1633,6 +1633,8 @@ Form fields: `file` (required), `document_type` ∈ `receipt`|`invoice`|`purchas
 ### 16.9 AI Customer Assistant
 **Endpoint:** `POST /ai/customer/assist`
 
+Typed body `AiCustomerAssistBody` `{ "customer_id"?, "query"? | "message"? }` (`extra=forbid`; unknown keys → **422**; omit/`{}` → overview). Blank strings coerce to omit. AI UI **Customer assist** (`aria-label`).
+
 ```json
 {
   "customer_id": "cust_001",

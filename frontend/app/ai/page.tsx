@@ -389,7 +389,9 @@ export default function Page() {
             Ask
           </button>
           <button onClick={generateReport}>Generate report</button>
-          <button onClick={customerAssist}>Customer assist</button>
+          <button onClick={customerAssist} aria-label="Customer assist">
+            Customer assist
+          </button>
           <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
             Document type
             <select

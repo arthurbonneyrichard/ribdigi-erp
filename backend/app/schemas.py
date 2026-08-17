@@ -940,6 +940,29 @@ class AiChatBody(BaseModel):
         return self
 
 
+class AiCustomerAssistBody(BaseModel):
+    """POST /ai/customer/assist — typed customer assistant body (BR-21.9).
+
+    Unknown keys → **422** (`extra=forbid`). Omit/`{}` still allowed (overview).
+    Blank `customer_id` / `query` / `message` coerce to omit. `message` is an
+    accepted alias for `query` (historical free-dict clients).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    customer_id: str | None = None
+    query: str | None = None
+    message: str | None = None
+
+    @field_validator("customer_id", "query", "message", mode="before")
+    @classmethod
+    def _strip_optional(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            return text or None
+        return value
+
+
 class AiDocumentExpenseCreate(BaseModel):
     """Explicit Create draft expense from reviewed OCR fields (BR-21.8)."""
 

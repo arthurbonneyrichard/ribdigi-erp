@@ -138,6 +138,7 @@ from app.schemas import (
     ExpenseCreate,
     AiDocumentExpenseCreate,
     AiChatBody,
+    AiCustomerAssistBody,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseReject,
@@ -12418,18 +12419,19 @@ async def ai_expenses_analysis(
 
 @api.post("/ai/customer/assist")
 async def ai_customer_assist(
-    payload: dict | None = None,
+    payload: AiCustomerAssistBody | None = None,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     """BR-21.9 rule-based customer assistant (churn, best, promos, balance)."""
-    body = payload or {}
+    # Schema AiCustomerAssistBody rejects unknown keys → 422.
+    body = payload or AiCustomerAssistBody()
     data = await ai_customer_svc.customer_assist(
         db,
         tenant_id=claims["tenant_id"],
         actor_user_id=claims.get("sub"),
-        customer_id=body.get("customer_id"),
-        query=body.get("query") or body.get("message"),
+        customer_id=body.customer_id,
+        query=body.query or body.message,
     )
     return env(data)
 
