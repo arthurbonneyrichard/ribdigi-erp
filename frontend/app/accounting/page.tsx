@@ -509,6 +509,7 @@ export default function Page() {
           statement_date: new Date().toISOString().slice(0, 10),
           opening_balance: Number(opening),
           closing_balance: Number(closing),
+          notes: lineDesc.trim() || undefined,
           lines: [
             {
               txn_date: new Date().toISOString().slice(0, 10),
@@ -1532,7 +1533,11 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>New statement</h3>
-            <select value={reconAccountId} onChange={(e) => setReconAccountId(e.target.value)}>
+            <select
+              value={reconAccountId}
+              onChange={(e) => setReconAccountId(e.target.value)}
+              aria-label="Reconcile liquid account"
+            >
               {liquid.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.code} — {a.name} ({a.balance})
@@ -1540,16 +1545,36 @@ export default function Page() {
               ))}
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input value={opening} onChange={(e) => setOpening(e.target.value)} placeholder="Opening" />
-              <input value={closing} onChange={(e) => setClosing(e.target.value)} placeholder="Closing" />
+              <input
+                value={opening}
+                onChange={(e) => setOpening(e.target.value)}
+                placeholder="Opening"
+                aria-label="Statement opening balance"
+              />
+              <input
+                value={closing}
+                onChange={(e) => setClosing(e.target.value)}
+                placeholder="Closing"
+                aria-label="Statement closing balance"
+              />
               <input
                 value={lineAmount}
                 onChange={(e) => setLineAmount(e.target.value)}
                 placeholder="Line amount (+in/−out)"
+                aria-label="Statement line amount"
               />
-              <input value={lineDesc} onChange={(e) => setLineDesc(e.target.value)} placeholder="Line desc" />
+              <input
+                value={lineDesc}
+                onChange={(e) => setLineDesc(e.target.value)}
+                placeholder="Line desc"
+                aria-label="Statement line description"
+              />
             </div>
-            <button onClick={createStatement} disabled={!reconAccountId}>
+            <button
+              onClick={createStatement}
+              disabled={!reconAccountId}
+              aria-label="Create bank statement"
+            >
               Create statement with one line
             </button>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>

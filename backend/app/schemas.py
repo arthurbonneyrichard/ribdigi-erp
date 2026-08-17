@@ -1979,6 +1979,68 @@ class BankAutoClearBody(BaseModel):
     date_window_days: int = Field(default=7, ge=1, le=90)
 
 
+class BankStatementLineCreate(BaseModel):
+    """Nested line on `BankStatementCreateBody` (BR-10.3).
+
+    Unknown keys → **422**. Zero / missing amount → **422** (was late service **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    amount: float
+    txn_date: str | None = None
+    description: str | None = None
+    external_ref: str | None = None
+
+    @field_validator("amount")
+    @classmethod
+    def _nonzero_amount(cls, value: float) -> float:
+        if abs(float(value)) < 1e-9:
+            raise ValueError("Statement line amount cannot be zero")
+        return float(value)
+
+    @field_validator("description", "external_ref", "txn_date", mode="before")
+    @classmethod
+    def _strip_optional_strs(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            return text or None
+        return value
+
+
+class BankStatementCreateBody(BaseModel):
+    """POST /accounting/bank-statements (BR-10.3).
+
+    Unknown keys → **422** (`extra=forbid`). Blank/omit `account_id` → **422**
+    (was free `dict` that turned omit/`""` into a late **404**). Zero line amounts
+    → **422**. Service `create_statement` remains defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    account_id: str = Field(min_length=1)
+    statement_date: str | None = None
+    opening_balance: float = 0
+    closing_balance: float = 0
+    notes: str | None = None
+    lines: list[BankStatementLineCreate] = Field(default_factory=list)
+
+    @field_validator("account_id", mode="before")
+    @classmethod
+    def _strip_account_id(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    @field_validator("notes", "statement_date", mode="before")
+    @classmethod
+    def _strip_optional_header(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            return text or None
+        return value
+
+
 class BankStatementMatchBody(BaseModel):
     """POST .../bank-statements/{id}/lines/{line_id}/match (BR-10.3).
 

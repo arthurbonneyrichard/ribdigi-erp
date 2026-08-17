@@ -130,6 +130,7 @@ from app.schemas import (
     BankConnectionCreate,
     BankConnectionUpdate,
     BankAutoClearBody,
+    BankStatementCreateBody,
     BankStatementMatchBody,
     BankClearGroupBody,
     ExpenseCategoryCreate,
@@ -8571,24 +8572,26 @@ async def list_bank_statements(
 
 @api.post("/accounting/bank-statements")
 async def create_bank_statement(
-    payload: dict,
+    payload: BankStatementCreateBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
 
+    # Schema BankStatementCreateBody rejects unknown keys / blank account_id /
+    # zero line amounts → 422.
     await ensure_default_accounts(db, claims["tenant_id"])
     stmt = await bank_recon_svc.create_statement(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        account_id=payload.get("account_id") or "",
-        statement_date=payload.get("statement_date"),
-        opening_balance=float(payload.get("opening_balance") or 0),
-        closing_balance=float(payload.get("closing_balance") or 0),
-        notes=payload.get("notes"),
-        lines=payload.get("lines") or [],
+        account_id=payload.account_id,
+        statement_date=payload.statement_date,
+        opening_balance=float(payload.opening_balance or 0),
+        closing_balance=float(payload.closing_balance or 0),
+        notes=payload.notes,
+        lines=[ln.model_dump() for ln in payload.lines],
     )
     await db.commit()
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], stmt.id)
