@@ -365,6 +365,10 @@ async def match_line(
     line_id: str,
     journal_line_id: str,
 ) -> m.BankStatementLine:
+    # Schema BankStatementMatchBody rejects blank journal_line_id → 422; keep defense.
+    jid = (journal_line_id or "").strip()
+    if not jid:
+        raise HTTPException(status_code=422, detail="journal_line_id is required")
     line = (
         await db.execute(
             select(m.BankStatementLine).where(
@@ -387,7 +391,7 @@ async def match_line(
     jl = (
         await db.execute(
             select(m.JournalEntryLine).where(
-                m.JournalEntryLine.id == journal_line_id,
+                m.JournalEntryLine.id == jid,
                 m.JournalEntryLine.tenant_id == tenant_id,
             )
         )
@@ -401,7 +405,7 @@ async def match_line(
         await db.execute(
             select(m.BankStatementLine.id).where(
                 m.BankStatementLine.tenant_id == tenant_id,
-                m.BankStatementLine.matched_journal_line_id == journal_line_id,
+                m.BankStatementLine.matched_journal_line_id == jid,
             )
         )
     ).scalar_one_or_none()
@@ -411,7 +415,7 @@ async def match_line(
         await db.execute(
             select(m.BankClearingBookLink.id).where(
                 m.BankClearingBookLink.tenant_id == tenant_id,
-                m.BankClearingBookLink.journal_line_id == journal_line_id,
+                m.BankClearingBookLink.journal_line_id == jid,
             )
         )
     ).scalar_one_or_none()
@@ -792,9 +796,10 @@ async def create_clearing_group(
 
     bank_ids = list(dict.fromkeys([str(x) for x in (statement_line_ids or []) if x]))
     book_ids = list(dict.fromkeys([str(x) for x in (journal_line_ids or []) if x]))
+    # Schema BankClearGroupBody rejects empty id lists → 422; keep defense-in-depth.
     if not bank_ids or not book_ids:
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail="clearing group requires at least one statement line and one journal line",
         )
     if len(bank_ids) == 1 and len(book_ids) == 1:

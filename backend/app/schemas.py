@@ -1890,6 +1890,53 @@ class BankAutoClearBody(BaseModel):
     date_window_days: int = Field(default=7, ge=1, le=90)
 
 
+class BankStatementMatchBody(BaseModel):
+    """POST .../bank-statements/{id}/lines/{line_id}/match (BR-10.3).
+
+    Unknown keys → **422** (`extra=forbid`). Blank/omit `journal_line_id` → **422**
+    (was free `dict` that coerced omit/`""` into a late **404**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    journal_line_id: str = Field(min_length=1)
+
+    @field_validator("journal_line_id", mode="before")
+    @classmethod
+    def _strip_journal_line_id(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+
+class BankClearGroupBody(BaseModel):
+    """POST .../bank-statements/{id}/clear-group (BR-10.3).
+
+    Unknown keys → **422**. Empty either id list (after stripping blanks) → **422**
+    (was free `dict` with late **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    statement_line_ids: list[str] = Field(min_length=1)
+    journal_line_ids: list[str] = Field(min_length=1)
+    notes: str | None = None
+
+    @field_validator("statement_line_ids", "journal_line_ids", mode="before")
+    @classmethod
+    def _clean_id_lists(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        cleaned: list[str] = []
+        for item in value:
+            if item is None:
+                continue
+            text = str(item).strip()
+            if text:
+                cleaned.append(text)
+        return cleaned
+
+
 class SupplierPaymentCreate(BaseModel):
     supplier_id: str
     amount: float = Field(gt=0)

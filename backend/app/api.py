@@ -119,6 +119,8 @@ from app.schemas import (
     BankConnectionCreate,
     BankConnectionUpdate,
     BankAutoClearBody,
+    BankStatementMatchBody,
+    BankClearGroupBody,
     ExpenseCategoryCreate,
     ExpenseCategoryUpdate,
     ExpenseCreate,
@@ -8493,21 +8495,22 @@ async def get_bank_statement(
 @api.post("/accounting/bank-statements/{statement_id}/clear-group")
 async def clear_bank_statement_group(
     statement_id: str,
-    payload: dict,
+    payload: BankClearGroupBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Clear N bank lines against M book lines when totals match."""
     from app import bank_recon as bank_recon_svc
 
+    # Schema BankClearGroupBody rejects unknown keys / empty id lists → 422.
     result = await bank_recon_svc.create_clearing_group(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         statement_id=statement_id,
-        statement_line_ids=list(payload.get("statement_line_ids") or []),
-        journal_line_ids=list(payload.get("journal_line_ids") or []),
-        notes=payload.get("notes"),
+        statement_line_ids=payload.statement_line_ids,
+        journal_line_ids=payload.journal_line_ids,
+        notes=payload.notes,
     )
     await db.commit()
     stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
@@ -8582,18 +8585,19 @@ async def auto_clear_bank_statement(
 async def match_bank_statement_line(
     statement_id: str,
     line_id: str,
-    payload: dict,
+    payload: BankStatementMatchBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
 
+    # Schema BankStatementMatchBody rejects unknown keys / blank journal_line_id → 422.
     stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
     line = await bank_recon_svc.match_line(
         db,
         tenant_id=claims["tenant_id"],
         line_id=line_id,
-        journal_line_id=payload.get("journal_line_id") or "",
+        journal_line_id=payload.journal_line_id,
     )
     if line.statement_id != stmt.id:
         raise HTTPException(status_code=404, detail="Statement line not found")

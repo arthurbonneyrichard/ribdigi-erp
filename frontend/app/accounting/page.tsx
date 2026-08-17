@@ -1749,7 +1749,11 @@ export default function Page() {
                 <p>
                   Bank picked: {pickBank.length} · Book picked: {pickBook.length}
                 </p>
-                <button onClick={clearGroup} disabled={!pickBank.length || !pickBook.length}>
+                <button
+                  onClick={clearGroup}
+                  disabled={!pickBank.length || !pickBook.length}
+                  aria-label="Clear selected as group"
+                >
                   Clear selected as group
                 </button>
               </div>
@@ -1845,6 +1849,7 @@ export default function Page() {
                                 <button
                                   key={ln.id}
                                   onClick={() => matchLine(ln.id, jl.journal_line_id)}
+                                  aria-label="Match bank line to journal line"
                                 >
                                   Match first open
                                 </button>
