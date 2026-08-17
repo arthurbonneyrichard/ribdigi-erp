@@ -31,3 +31,7 @@ Stage 1312 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Capstan Gate, Transfer Capstan Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1312 opened under **ADR-2631** after CONTINUE/NEXT (Tenant MVP Transfer Yoke Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2632**. Stage 1311 feature scope remains frozen.
