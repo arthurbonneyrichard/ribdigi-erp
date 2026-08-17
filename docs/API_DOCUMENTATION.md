@@ -1215,7 +1215,7 @@ Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank
 Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "expense" }`
 
 **Transfers / deposits / withdrawals:**  
-- `GET /accounting/transfers`  
+- `GET /accounting/transfers` — optional Query `kind` ∈ `transfer`|`deposit`|`withdrawal` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Accounting Cash & Bank **Cash transfer kind filter** All / Transfer / Deposit / Withdrawal (`xferKindManageFilter`; client filter over full cache).  
 - `POST /accounting/transfers` `{ "kind": "transfer|deposit|withdrawal", "from_account_id", "to_account_id", "amount", "reference", "notes" }` — `kind` schema `Literal` (omit → `transfer`; blank/invalid → **422**)  
 - `GET /accounting/transfers/{id}`  
 

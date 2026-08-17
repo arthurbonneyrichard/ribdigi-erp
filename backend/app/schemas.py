@@ -1788,6 +1788,11 @@ JournalStatusFilterValue = Annotated[
     Literal["posted", "unposted"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with CashTransfer.kind / CashTransferCreate.kind (Cash & Bank movements filter).
+CashTransferKindFilterValue = Annotated[
+    Literal["transfer", "deposit", "withdrawal"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with BankStatement.status (Accounting Reconcile statements filter).
 BankStatementStatusFilterValue = Annotated[
     Literal["draft", "in_progress", "reconciled"],

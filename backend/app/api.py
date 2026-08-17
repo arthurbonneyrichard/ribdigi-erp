@@ -96,6 +96,7 @@ from app.schemas import (
     ApiKeyCreate,
     ExpenseStatusFilterValue,
     JournalStatusFilterValue,
+    CashTransferKindFilterValue,
     BankStatementStatusFilterValue,
     WebhookDeliveryStatusFilterValue,
     SalesReturnReportReasonValue,
@@ -8352,12 +8353,15 @@ async def liquid_accounts(
 
 @api.get("/accounting/transfers")
 async def list_cash_transfers(
+    kind: Annotated[CashTransferKindFilterValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_transfers as cash_xfer_svc
 
-    rows = await cash_xfer_svc.list_transfers(db, claims["tenant_id"])
+    # Schema CashTransferKindFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    rows = await cash_xfer_svc.list_transfers(db, claims["tenant_id"], kind=kind)
     amap = await cash_xfer_svc.accounts_map_for_transfers(db, claims["tenant_id"], rows)
     return env([cash_xfer_svc.serialize_transfer(r, accounts=amap) for r in rows])
 

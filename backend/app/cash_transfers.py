@@ -167,17 +167,31 @@ async def create_account(
     return row
 
 
-async def list_transfers(db: AsyncSession, tenant_id: str, *, limit: int = 100) -> list[m.CashTransfer]:
-    return list(
-        (
-            await db.execute(
-                select(m.CashTransfer)
-                .where(m.CashTransfer.tenant_id == tenant_id)
-                .order_by(m.CashTransfer.created_at.desc())
-                .limit(max(1, min(limit, 500)))
-            )
-        ).scalars().all()
+async def list_transfers(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    kind: str | None = None,
+    limit: int = 100,
+) -> list[m.CashTransfer]:
+    stmt = (
+        select(m.CashTransfer)
+        .where(m.CashTransfer.tenant_id == tenant_id)
+        .order_by(m.CashTransfer.created_at.desc())
+        .limit(max(1, min(limit, 500)))
     )
+    if kind is not None:
+        wanted = (kind or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in TRANSFER_KINDS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"kind must be one of: {', '.join(sorted(TRANSFER_KINDS))}",
+            )
+        else:
+            stmt = stmt.where(m.CashTransfer.kind == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def get_transfer(db: AsyncSession, tenant_id: str, transfer_id: str) -> m.CashTransfer:

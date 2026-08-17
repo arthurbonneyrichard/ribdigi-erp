@@ -53,6 +53,9 @@ export default function Page() {
   const [connFeedUrl, setConnFeedUrl] = useState('');
   const [connExtId, setConnExtId] = useState('demo-acct-1');
   const [xferKind, setXferKind] = useState('transfer');
+  const [xferKindManageFilter, setXferKindManageFilter] = useState<
+    'all' | 'transfer' | 'deposit' | 'withdrawal'
+  >('all');
   const [xferFrom, setXferFrom] = useState('');
   const [xferTo, setXferTo] = useState('');
   const [xferAmount, setXferAmount] = useState('100');
@@ -803,6 +806,10 @@ export default function Page() {
     if (journalManageFilter === 'all') return true;
     return (j.status || 'posted') === journalManageFilter;
   });
+  const managedTransfers = transfers.filter((t) => {
+    if (xferKindManageFilter === 'all') return true;
+    return (t.kind || 'transfer') === xferKindManageFilter;
+  });
 
   const manualDebitTotal = manualLines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
   const manualCreditTotal = manualLines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
@@ -1534,6 +1541,22 @@ export default function Page() {
           </table>
 
           <h3 style={{ marginTop: 16 }}>Recent movements</h3>
+          <select
+            value={xferKindManageFilter}
+            onChange={(e) =>
+              setXferKindManageFilter(
+                e.target.value as 'all' | 'transfer' | 'deposit' | 'withdrawal',
+              )
+            }
+            title="Filter cash movements by kind"
+            aria-label="Cash transfer kind filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All kinds</option>
+            <option value="transfer">Transfer only</option>
+            <option value="deposit">Deposit only</option>
+            <option value="withdrawal">Withdrawal only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -1545,15 +1568,23 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {transfers.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.kind}</td>
-                  <td>{t.from_account ? `${t.from_account.code} ${t.from_account.name}` : '—'}</td>
-                  <td>{t.to_account ? `${t.to_account.code} ${t.to_account.name}` : '—'}</td>
-                  <td>{t.amount}</td>
-                  <td>{t.reference || '—'}</td>
+              {managedTransfers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No transfers for this filter
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                managedTransfers.map((t) => (
+                  <tr key={t.id}>
+                    <td>{t.kind}</td>
+                    <td>{t.from_account ? `${t.from_account.code} ${t.from_account.name}` : '—'}</td>
+                    <td>{t.to_account ? `${t.to_account.code} ${t.to_account.name}` : '—'}</td>
+                    <td>{t.amount}</td>
+                    <td>{t.reference || '—'}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </>
