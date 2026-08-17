@@ -409,16 +409,19 @@ export default function Page() {
             onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
             placeholder="Role key (e.g. warehouse_lead)"
             required
+            aria-label="Custom role key"
           />
           <input
             value={roleForm.label}
             onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
             placeholder="Display label"
             required
+            aria-label="Custom role label"
           />
           <select
             value={roleForm.base_role}
             onChange={(e) => setRoleForm({ ...roleForm, base_role: e.target.value })}
+            aria-label="Clone from system role"
           >
             {roles
               .filter((r) => !isCustomRole(r) && r.role !== 'super_admin')
@@ -428,7 +431,7 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy} aria-label="Create custom role">
             {busy ? 'Saving…' : 'Create custom role'}
           </button>
           <select

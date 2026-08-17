@@ -480,10 +480,9 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 
 **Get Role:** `GET /roles/{role}` — system catalog entry or custom role (inactive custom roles still resolve).
 
-**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). `base_role` schema `Literal` of clonable system roles (platform_* + company_admin|store_manager|sales_officer|inventory_officer|accountant|cashier; strip/lower; omit/null OK when `permissions` set; blank/unknown/`super_admin` → **422**). Clones system `base_role` permission map when provided.
+**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). `base_role` schema `Literal` of clonable system roles (platform_* + company_admin|store_manager|sales_officer|inventory_officer|accountant|cashier; strip/lower; omit/null OK when `permissions` set; blank/unknown/`super_admin` → **422**). Clones system `base_role` permission map when provided. `permissions` map modules ∈ assignable modules with actions ∈ `read`|`write`|`approve`|`*` (`ApiKeyPermissionAction`; strip/lower; unknown module|action / empty map / `*:*` / unknown top-level keys → **422** — was late service **400**). Body `extra=forbid`. Users **Create custom role** controls (`aria-label`s).
 
-**Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope? (same Literal), is_active? }`. Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
-
+**Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope? (same Literal), is_active? }` (`extra=forbid`; same `permissions` honesty when sent). Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
 **Delete Custom Role:** `DELETE /roles/{role}` — hard delete; returns **409** while any user still has that role. Prefer soft-deactivate for retirement.
 
 **Available system roles:**

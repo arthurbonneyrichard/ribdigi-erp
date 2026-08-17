@@ -240,6 +240,8 @@ CustomRoleBaseRoleValue = Annotated[
     ],
     BeforeValidator(coerce_platform_role_value),
 ]
+# Keep aligned with app.custom_roles.ALLOWED_ACTIONS / ApiKeyCreate actions.
+ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
 
 # Non-platform system roles for revoke fallback (excludes platform_* / super_admin).
 AppFallbackRoleValue = Annotated[
@@ -564,20 +566,104 @@ class DepartmentUpdate(BaseModel):
 
 
 class CustomRoleCreate(BaseModel):
+    """POST /roles — typed custom role create (BR-3.2).
+
+    Unknown top-level keys → **422** (`extra=forbid`). `permissions` map modules ∈
+    ASSIGNABLE_MODULES with actions ∈ read|write|approve|*; empty map / unknown
+    module|action / `*:*` → **422** (was late service **400**). Omit `permissions`
+    when cloning via `base_role`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     key: str
     label: str
-    permissions: dict[str, list[str]] | None = None
+    permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     # Clone-from system role; omit/null OK when permissions set; blank/unknown/super_admin → 422
     base_role: CustomRoleBaseRoleValue | None = None
     # BR-3.3 — omit = base_role/own default; blank/invalid → 422
     record_scope: RecordScopeValue | None = None
 
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def _normalize_permissions_input(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        out: dict[str, list[object]] = {}
+        for module, actions in value.items():
+            mod = str(module).strip().lower() if module is not None else module
+            if isinstance(actions, (list, tuple)):
+                out[mod] = [
+                    a.strip().lower() if isinstance(a, str) else a for a in actions
+                ]
+            else:
+                out[mod] = actions  # type: ignore[assignment]
+        return out
+
+    @model_validator(mode="after")
+    def _permissions_modules(self) -> CustomRoleCreate:
+        if self.permissions is None:
+            return self
+        from app.custom_roles import ASSIGNABLE_MODULES
+
+        if not self.permissions:
+            raise ValueError("permissions must include at least one module")
+        if self.permissions.get("*") == ["*"] or "*" in (self.permissions.get("*") or []):
+            raise ValueError("Custom roles cannot grant wildcard *:*")
+        for module, actions in self.permissions.items():
+            if module not in ASSIGNABLE_MODULES:
+                raise ValueError(f"Unknown or disallowed module '{module}'")
+            if not actions:
+                raise ValueError(f"Module '{module}' actions must be a non-empty list")
+        return self
+
 
 class CustomRoleUpdate(BaseModel):
+    """PATCH /roles/{role} — typed custom role update (BR-3.2).
+
+    Unknown top-level keys → **422** (`extra=forbid`). Same `permissions` honesty as
+    create when the map is sent (omit = no change).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     label: str | None = None
-    permissions: dict[str, list[str]] | None = None
+    permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     record_scope: RecordScopeValue | None = None
     is_active: bool | None = None
+
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def _normalize_permissions_input(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        out: dict[str, list[object]] = {}
+        for module, actions in value.items():
+            mod = str(module).strip().lower() if module is not None else module
+            if isinstance(actions, (list, tuple)):
+                out[mod] = [
+                    a.strip().lower() if isinstance(a, str) else a for a in actions
+                ]
+            else:
+                out[mod] = actions  # type: ignore[assignment]
+        return out
+
+    @model_validator(mode="after")
+    def _permissions_modules(self) -> CustomRoleUpdate:
+        if self.permissions is None:
+            return self
+        from app.custom_roles import ASSIGNABLE_MODULES
+
+        if not self.permissions:
+            raise ValueError("permissions must include at least one module")
+        if self.permissions.get("*") == ["*"] or "*" in (self.permissions.get("*") or []):
+            raise ValueError("Custom roles cannot grant wildcard *:*")
+        for module, actions in self.permissions.items():
+            if module not in ASSIGNABLE_MODULES:
+                raise ValueError(f"Unknown or disallowed module '{module}'")
+            if not actions:
+                raise ValueError(f"Module '{module}' actions must be a non-empty list")
+        return self
 
 
 class ProductCreate(BaseModel):
@@ -1888,7 +1974,6 @@ WebhookDeliveryStatusFilterValue = Annotated[
     Literal["pending", "pending_retry", "delivered", "failed"],
     BeforeValidator(coerce_package_code_value),
 ]
-ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
 
 
 class ApiKeyCreate(BaseModel):

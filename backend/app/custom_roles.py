@@ -63,29 +63,31 @@ def validate_role_key(key: str) -> str:
 
 
 def normalize_permissions(raw: dict | None) -> dict:
+    # Schema CustomRoleCreate/Update.permissions rejects blank/unknown/bad actions
+    # → 422; keep allow-list defense-in-depth (same codes as schema).
     if not isinstance(raw, dict) or not raw:
-        raise HTTPException(status_code=400, detail="permissions must be a non-empty object")
+        raise HTTPException(status_code=422, detail="permissions must be a non-empty object")
     if raw.get("*") == ["*"] or "*" in (raw.get("*") or []):
-        raise HTTPException(status_code=400, detail="Custom roles cannot grant wildcard *:*")
+        raise HTTPException(status_code=422, detail="Custom roles cannot grant wildcard *:*")
     out: dict[str, list[str]] = {}
     for module, actions in raw.items():
         mod = str(module or "").strip()
         if mod == RECORD_SCOPE_KEY:
             continue
         if mod not in ASSIGNABLE_MODULES:
-            raise HTTPException(status_code=400, detail=f"Unknown or disallowed module '{mod}'")
+            raise HTTPException(status_code=422, detail=f"Unknown or disallowed module '{mod}'")
         if not isinstance(actions, list) or not actions:
-            raise HTTPException(status_code=400, detail=f"Module '{mod}' actions must be a non-empty list")
+            raise HTTPException(status_code=422, detail=f"Module '{mod}' actions must be a non-empty list")
         cleaned: list[str] = []
         for a in actions:
             act = str(a or "").strip()
             if act not in ALLOWED_ACTIONS:
-                raise HTTPException(status_code=400, detail=f"Invalid action '{act}' for module '{mod}'")
+                raise HTTPException(status_code=422, detail=f"Invalid action '{act}' for module '{mod}'")
             if act not in cleaned:
                 cleaned.append(act)
         out[mod] = cleaned
     if not out:
-        raise HTTPException(status_code=400, detail="permissions must include at least one module")
+        raise HTTPException(status_code=422, detail="permissions must include at least one module")
     return out
 
 
