@@ -9298,8 +9298,8 @@ async def report_trial_balance(
 
 @api.get("/reports/cash-flow")
 async def report_cash_flow(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
