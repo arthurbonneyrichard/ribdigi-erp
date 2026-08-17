@@ -31,3 +31,7 @@ Stage 1214 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reredos Gate, Transfer Reredos Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1214 opened under **ADR-2435** after CONTINUE/NEXT (Tenant MVP Transfer Clerestory Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2436**. Stage 1213 feature scope remains frozen.
