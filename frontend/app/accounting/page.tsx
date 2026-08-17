@@ -1212,6 +1212,7 @@ export default function Page() {
                   value={tbAsOf}
                   onChange={(e) => setTbAsOf(e.target.value)}
                   title="As of (empty = live balances)"
+                  aria-label="Trial balance as of date"
                 />
                 <button
                   type="button"

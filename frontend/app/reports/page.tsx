@@ -528,6 +528,7 @@ export default function Page() {
               value={asOf}
               onChange={(e) => setAsOf(e.target.value)}
               title="As of date (defaults to To date)"
+              aria-label="Report as of date"
             />
             {tab === 'balancesheet' && (
               <select value={compare} onChange={(e) => setCompare(e.target.value)}>

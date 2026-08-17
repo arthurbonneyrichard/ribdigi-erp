@@ -9208,7 +9208,7 @@ async def delete_journal_attachment(
 
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
-    as_of: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
@@ -9281,7 +9281,7 @@ async def report_profit_loss(
 
 @api.get("/reports/trial-balance")
 async def report_trial_balance(
-    as_of: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
@@ -9319,7 +9319,7 @@ async def report_cash_flow(
 
 @api.get("/reports/balance-sheet")
 async def report_balance_sheet(
-    as_of: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → no compare; blank/invalid → 422 (was free str → service 400; "" → no compare)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     store_id: str | None = None,
@@ -9341,7 +9341,7 @@ async def report_balance_sheet(
 
 @api.get("/accounting/balance-sheet")
 async def accounting_balance_sheet(
-    as_of: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
