@@ -1516,11 +1516,11 @@ Celery reliability admin surface (see `docs/CELERY_RELIABILITY_RUNBOOK.md`).
 Returns `celery_enabled`, broker/result URLs, `task_always_eager`, sorted handler names in `jobs`, and beat interval map in `beat`.
 
 ### 15B.2 Run job
-**Endpoint:** `POST /jobs/{job_name}/run`  
+**Endpoint:** `POST /jobs/{job_name}/run` — Path `job_name` schema `Literal` of `JOB_HANDLERS` keys (`JobNameValue` + strip/lower; blank/unknown → **422** — was late **404**). Allow-list defense-in-depth if Literal and handlers drift.  
 **Query:** `enqueue=true` to push to Celery (requires `CELERY_ENABLED`)  
 **Roles:** `super_admin`, `platform_owner`
 
-Unknown `job_name` → 404. Sync run returns handler result payload.
+Sync run returns handler result payload. Jobs UI **Run sync** / **Enqueue** (`aria-label`s per job).
 
 **UI:** Shell → **Jobs** (`/jobs`).
 

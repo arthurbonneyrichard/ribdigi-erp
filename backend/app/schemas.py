@@ -1721,6 +1721,26 @@ ScheduleFrequencyValue = Annotated[
     Literal["daily", "weekly"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.jobs.JOB_HANDLERS keys (Jobs console Run sync / Enqueue).
+JobNameValue = Annotated[
+    Literal[
+        "scan_low_stock",
+        "scan_payment_due",
+        "scan_quotation_expiry",
+        "scan_recurring_expense_due",
+        "generate_recurring_expenses",
+        "run_due_backups",
+        "scan_trial_lifecycle",
+        "run_due_report_emails",
+        "refresh_fx_rates",
+        "sync_bank_feeds",
+        "archive_cold_audit_logs",
+        "retry_due_webhooks",
+        "scan_ai_security_alerts",
+        "send_weekly_ai_insight_digest",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 ReportExportFormatValue = Annotated[
     Literal["csv", "pdf", "xlsx"],
     BeforeValidator(coerce_package_code_value),

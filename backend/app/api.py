@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,6 +76,7 @@ from app.schemas import (
     ReportTypeValue,
     ReportExportFormatValue,
     ScheduleFrequencyValue,
+    JobNameValue,
     BalanceSheetCompareValue,
     CreditAgingKindValue,
     InventoryValuationMethodValue,
@@ -11533,7 +11534,7 @@ async def list_jobs(
 
 @api.post("/jobs/{job_name}/run")
 async def run_job_now(
-    job_name: str,
+    job_name: Annotated[JobNameValue, Path()],
     enqueue: bool = False,
     claims=Depends(require_roles("super_admin", "platform_owner")),
 ):
@@ -11541,8 +11542,10 @@ async def run_job_now(
     from app import jobs as jobs_svc
     from app.config import settings as app_settings
 
+    # Schema JobNameValue rejects unknown/blank path → 422 (was late **404**).
+    # Keep allow-list defense-in-depth if Literal and JOB_HANDLERS drift.
     if job_name not in jobs_svc.JOB_HANDLERS:
-        raise HTTPException(status_code=404, detail=f"Unknown job: {job_name}")
+        raise HTTPException(status_code=422, detail=f"Unknown job: {job_name}")
 
     if enqueue:
         if not app_settings.CELERY_ENABLED:

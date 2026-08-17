@@ -139,6 +139,7 @@ export default function Page() {
                         type="button"
                         disabled={!!busy}
                         onClick={() => runJob(name, false)}
+                        aria-label={`Run sync ${name}`}
                       >
                         {busy === `${name}:run` ? 'Running…' : 'Run sync'}
                       </button>
@@ -147,6 +148,7 @@ export default function Page() {
                         disabled={!!busy || !info?.celery_enabled}
                         title={!info?.celery_enabled ? 'CELERY_ENABLED is false' : undefined}
                         onClick={() => runJob(name, true)}
+                        aria-label={`Enqueue ${name}`}
                       >
                         {busy === `${name}:enqueue` ? 'Enqueue…' : 'Enqueue'}
                       </button>
