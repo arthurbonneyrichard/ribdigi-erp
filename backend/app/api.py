@@ -9895,8 +9895,8 @@ async def report_purchases_suppliers(
 
 @api.get("/reports/purchases/pending-orders")
 async def report_purchases_pending_orders(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     supplier_id: str | None = None,
     status: Annotated[PendingPoReportStatusValue | None, Query()] = None,
     warehouse_id: str | None = None,
@@ -9921,8 +9921,8 @@ async def report_purchases_pending_orders(
 
 @api.get("/reports/purchases/returns")
 async def report_purchases_returns(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     supplier_id: str | None = None,
     reason: Annotated[PurchaseReturnReportReasonValue | None, Query()] = None,
     status: Annotated[ReturnReportStatusValue | None, Query()] = None,
