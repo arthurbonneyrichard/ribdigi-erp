@@ -31,3 +31,7 @@ Stage 1235 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tympanum Gate, Transfer Tympanum Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1235 opened under **ADR-2477** after CONTINUE/NEXT (Tenant MVP Transfer Jamb Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2478**. Stage 1234 feature scope remains frozen.
