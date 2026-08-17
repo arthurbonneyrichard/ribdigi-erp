@@ -282,6 +282,8 @@ export default function Page() {
               onChange={(e) => setComponentsJson(e.target.value)}
               rows={3}
               placeholder='[{"code":"cgst","name":"CGST","rate":9,"basis":"net"},{"code":"sgst","name":"SGST","rate":9,"basis":"net"}]'
+              aria-label="Tax rate components JSON"
+              title='JSON array of {code,name,rate,basis} with basis net|compound'
             />
             <button onClick={createRate}>Add rate</button>
           </div>

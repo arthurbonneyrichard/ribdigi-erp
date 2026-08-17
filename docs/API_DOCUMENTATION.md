@@ -1333,11 +1333,11 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 12.1 Tax Rates
 **List:** `GET /tax/rates` (`is_active=true|false` optional — Tax manage All/Active/Inactive; default returns all)  
-**Create:** `POST /tax/rates` — `tax_type` schema `Literal["vat","gst","sales_tax","custom"]` (omit → `vat`; blank/invalid → **422**); `pricing_mode` schema `Literal["exclusive","inclusive"]` (omit → `exclusive`; blank/invalid → **422**; no silent exclusive for unknown modes)  
+**Create:** `POST /tax/rates` — `tax_type` schema `Literal["vat","gst","sales_tax","custom"]` (omit → `vat`; blank/invalid → **422**); `pricing_mode` schema `Literal["exclusive","inclusive"]` (omit → `exclusive`; blank/invalid → **422**; no silent exclusive for unknown modes). Optional `components[]` typed `TaxComponent` (`extra=forbid`; `rate` ≥0; `basis` ∈ `net`|`compound` strip/lower, omit→`net`; optional `code`/`name`; blank/invalid basis / unknown keys → **422** — was free `list[dict]`; blank basis silently `net`; bad basis late **400**). Tax **Tax rate components JSON** textarea.  
 **Get:** `GET /tax/rates/{rate_id}`  
-**Update:** `PATCH /tax/rates/{rate_id}` — `{ name?, rate?, tax_type?, pricing_mode?, components?, is_reverse_charge?, is_active? }` (`tax_type` / `pricing_mode` same Literals, omit = no change; blank/invalid → **422**; soft-deactivate via `is_active=false` clears `is_default`; Tax UI **Activate** / **Deactivate**)  
+**Update:** `PATCH /tax/rates/{rate_id}` — `{ name?, rate?, tax_type?, pricing_mode?, components?, is_reverse_charge?, is_active? }` (`tax_type` / `pricing_mode` same Literals, omit = no change; blank/invalid → **422**; same `TaxComponent` honesty when `components` sent; soft-deactivate via `is_active=false` clears `is_default`; Tax UI **Activate** / **Deactivate**)  
 **Set default:** `POST /tax/rates/{rate_id}/default` (rejects inactive rates)  
-**Calculate:** `POST /tax/calculate` — `pricing_mode` same `Literal` (omit → exclusive; blank/invalid → **422**)
+**Calculate:** `POST /tax/calculate` — `pricing_mode` same `Literal` (omit → exclusive; blank/invalid → **422**); optional `components[]` same `TaxComponent` honesty.
 
 **Create Tax Rate:**
 ```json

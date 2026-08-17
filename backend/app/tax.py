@@ -104,16 +104,25 @@ def sync_product_tax_flags(product: m.Product, *, supply_class: str | None = Non
 
 
 def normalize_components(raw: list | None) -> list[dict[str, Any]] | None:
+    # Schema TaxComponent rejects blank/invalid basis + unknown keys → 422; keep defense-in-depth.
     if not raw:
         return None
     out: list[dict[str, Any]] = []
     for item in raw:
+        if hasattr(item, "model_dump"):
+            item = item.model_dump()
         if not isinstance(item, dict):
-            continue
+            raise HTTPException(status_code=400, detail="Each tax component must be an object")
         rate = float(item.get("rate") or 0)
         if rate < 0:
             raise HTTPException(status_code=400, detail="Component rate must be >= 0")
-        basis = (item.get("basis") or "net").lower()
+        if "basis" in item and item.get("basis") is not None:
+            basis_raw = item.get("basis")
+            if isinstance(basis_raw, str) and not basis_raw.strip():
+                raise HTTPException(status_code=400, detail="Component basis must be net or compound")
+            basis = str(basis_raw).strip().lower()
+        else:
+            basis = "net"
         if basis not in {"net", "compound"}:
             raise HTTPException(status_code=400, detail="Component basis must be net or compound")
         code = (item.get("code") or item.get("name") or f"c{len(out)+1}").strip()[:40]

@@ -1484,13 +1484,40 @@ class StockTransferReject(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+def coerce_tax_component_basis_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+TaxComponentBasisValue = Annotated[
+    Literal["net", "compound"],
+    BeforeValidator(coerce_tax_component_basis_value),
+]
+
+
+class TaxComponent(BaseModel):
+    """Compound tax leg (BR-12.1) — unknown keys → 422; blank/invalid basis → 422."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rate: float = Field(ge=0)
+    # omit → net; blank/invalid → 422 (was free dict; blank silently net; bad late **400**)
+    basis: TaxComponentBasisValue = "net"
+    code: str | None = None
+    name: str | None = None
+
+
 class TaxCreate(BaseModel):
     name: str
     rate: float = Field(ge=0)
     # BR-12.1 — schema Literal; omit defaults; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] = "vat"
     pricing_mode: Literal["exclusive", "inclusive"] = "exclusive"
-    components: list[dict] | None = None
+    components: list[TaxComponent] | None = None
     is_reverse_charge: bool = False
     is_default: bool = False
     is_active: bool = True
@@ -1502,7 +1529,7 @@ class TaxUpdate(BaseModel):
     # BR-12.1 — omit = no change; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] | None = None
     pricing_mode: Literal["exclusive", "inclusive"] | None = None
-    components: list[dict] | None = None
+    components: list[TaxComponent] | None = None
     is_reverse_charge: bool | None = None
     is_active: bool | None = None
 
@@ -1513,7 +1540,7 @@ class TaxCalculateRequest(BaseModel):
     tax_rate_id: str | None = None
     # BR-12.1 — omit → exclusive at calc; blank/invalid → 422
     pricing_mode: Literal["exclusive", "inclusive"] | None = None
-    components: list[dict] | None = None
+    components: list[TaxComponent] | None = None
     is_reverse_charge: bool | None = None
 
 
