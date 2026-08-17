@@ -31,3 +31,7 @@ Stage 1257 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Padlock Gate, Transfer Padlock Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1257 opened under **ADR-2521** after CONTINUE/NEXT (Tenant MVP Transfer Keyhole Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2522**. Stage 1256 feature scope remains frozen.
