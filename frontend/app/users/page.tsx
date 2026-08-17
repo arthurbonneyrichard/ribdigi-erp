@@ -74,6 +74,7 @@ type ImportReport = {
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [userManageFilter, setUserManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [roleManageFilter, setRoleManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [branches, setBranches] = useState<BranchRow[]>([]);
   const [departments, setDepartments] = useState<DepartmentRow[]>([]);
@@ -145,6 +146,12 @@ export default function Page() {
     if (userManageFilter === 'all') return true;
     const active = r.is_active !== false;
     return userManageFilter === 'inactive' ? !active : active;
+  });
+  const managedCustomRoles = roles.filter((r) => {
+    if (!isCustomRole(r)) return false;
+    if (roleManageFilter === 'all') return true;
+    const active = r.is_active !== false;
+    return roleManageFilter === 'inactive' ? !active : active;
   });
   const activeDepartments = (branchId?: string) =>
     departments.filter(
@@ -424,8 +431,20 @@ export default function Page() {
           <button type="submit" disabled={busy}>
             {busy ? 'Saving…' : 'Create custom role'}
           </button>
+          <select
+            value={roleManageFilter}
+            onChange={(e) =>
+              setRoleManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+            }
+            title="Filter manage custom role list by status"
+            aria-label="Custom role status filter"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {roles.filter(isCustomRole).map((r) => (
+            {managedCustomRoles.map((r) => (
               <li key={r.role}>
                 {r.label} <code>{r.role}</code>
                 {r.is_active === false ? (
@@ -461,6 +480,9 @@ export default function Page() {
                 </button>
               </li>
             ))}
+            {!managedCustomRoles.length && (
+              <li className="muted">No custom roles for this filter</li>
+            )}
           </ul>
         </form>
       )}

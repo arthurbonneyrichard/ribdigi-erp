@@ -476,7 +476,7 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 
 ### 4.6 Roles & Permissions
 
-**List Roles:** `GET /roles` — system roles + **active** tenant custom roles (default `record_scope` on each row). Pass `?include_inactive=true` to include soft-deactivated custom roles (Users manage UI). Custom rows include `system: false`, `is_active`, `base_role`, and `id`.
+**List Roles:** `GET /roles` — system roles + **active** tenant custom roles (default `record_scope` on each row). Pass `?include_inactive=true` to include soft-deactivated custom roles (Users manage UI). Custom rows include `system: false`, `is_active`, `base_role`, and `id`. Users manage **Custom role status filter** All / Active / Inactive (`roleManageFilter`; client filter over full `include_inactive` cache). Assignment pickers stay active-only (except current role).
 
 **Get Role:** `GET /roles/{role}` — system catalog entry or custom role (inactive custom roles still resolve).
 
