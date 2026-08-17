@@ -31,3 +31,7 @@ Stage 1266 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Stem Gate, Transfer Stem Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1266 opened under **ADR-2539** after CONTINUE/NEXT (Tenant MVP Transfer Barrel Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2540**. Stage 1265 feature scope remains frozen.
