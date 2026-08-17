@@ -31,3 +31,7 @@ Stage 1299 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Cotter Gate, Transfer Cotter Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1299 opened under **ADR-2605** after CONTINUE/NEXT (Tenant MVP Transfer Dowel Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2606**. Stage 1298 feature scope remains frozen.
