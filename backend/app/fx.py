@@ -14,7 +14,17 @@ from app import models as m
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 
 
+def coerce_currency_code_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/uppercase; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().upper()
+
+
 def normalize_currency(code: str | None) -> str:
+    # Schema CurrencyCodeValue rejects blank/non-ISO → 422 on Path/body; keep defense-in-depth.
     cur = (code or "").strip().upper()
     if not cur or not _CURRENCY_RE.match(cur):
         raise HTTPException(status_code=400, detail="currency must be a 3-letter ISO code")

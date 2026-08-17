@@ -369,16 +369,21 @@ export default function Page() {
               value={fxCode}
               onChange={(e) => setFxCode(e.target.value.toUpperCase())}
               placeholder="USD"
+              maxLength={3}
               style={{ width: 70 }}
+              aria-label="FX currency code"
             />
             <input
               value={fxRate}
               onChange={(e) => setFxRate(e.target.value)}
               placeholder="Rate to base"
               style={{ width: 100 }}
+              aria-label="FX rate to base"
             />
-            <button onClick={saveFxRate}>Save rate</button>
-            <button type="button" onClick={refreshFxFromFeed}>
+            <button onClick={saveFxRate} aria-label="Save FX rate">
+              Save rate
+            </button>
+            <button type="button" onClick={refreshFxFromFeed} aria-label="Refresh FX rates from feed">
               Refresh from feed
             </button>
           </div>

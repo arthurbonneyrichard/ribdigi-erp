@@ -133,6 +133,7 @@ from app.schemas import (
     ResendVerificationRequest,
     ExchangeRateRefresh,
     ExchangeRateUpsert,
+    CurrencyCodeValue,
     FxAutoRefreshUpdate,
     BankConnectionCreate,
     BankConnectionUpdate,
@@ -10086,7 +10087,8 @@ async def update_fx_auto_refresh(
 
 @api.put("/credit/exchange-rates/{currency_code}")
 async def upsert_exchange_rate(
-    currency_code: str,
+    # Path + body CurrencyCodeValue → 422 on blank/non-ISO (was late service **400**)
+    currency_code: Annotated[CurrencyCodeValue, Path()],
     payload: ExchangeRateUpsert,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10106,7 +10108,7 @@ async def upsert_exchange_rate(
 
 @api.delete("/credit/exchange-rates/{currency_code}")
 async def delete_exchange_rate(
-    currency_code: str,
+    currency_code: Annotated[CurrencyCodeValue, Path()],
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):

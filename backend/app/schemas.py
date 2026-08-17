@@ -26,6 +26,7 @@ from app.tenants import (
 from app.tax_filings import coerce_tax_filing_jurisdiction_value
 from app.expenses import coerce_expense_payment_method_value
 from app.print_branding import coerce_invoice_template_value, coerce_receipt_paper_value
+from app.fx import coerce_currency_code_value
 
 PosTenderMethod = Annotated[
     Literal["cash", "card", "wallet", "credit", "other"],
@@ -55,6 +56,12 @@ TaxFilingPeriodValue = Annotated[
 TaxFilingJurisdictionValue = Annotated[
     Literal["GH"],
     BeforeValidator(coerce_tax_filing_jurisdiction_value),
+]
+# Keep aligned with app.fx.normalize_currency (Credit FX rates — 3-letter ISO).
+CurrencyCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_currency_code_value),
+    Field(min_length=3, max_length=3, pattern=r"^[A-Z]{3}$"),
 ]
 DateFormatValue = Annotated[
     Literal["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
@@ -2284,12 +2291,27 @@ class WebhookUpdate(BaseModel):
 
 
 class ExchangeRateUpsert(BaseModel):
-    currency_code: str
+    """PUT /credit/exchange-rates/{currency_code} — typed FX upsert (BR-2.6).
+
+    Unknown keys → **422** (`extra=forbid`). `currency_code` ∈ 3-letter ISO
+    (strip/upper); blank/invalid → **422** (was late service **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    currency_code: CurrencyCodeValue
     rate_to_base: float = Field(gt=0)
 
 
 class ExchangeRateRefresh(BaseModel):
-    currencies: list[str] | None = None
+    """POST /credit/exchange-rates/refresh — optional currency watch list (BR-2.6).
+
+    Unknown keys → **422**. Each `currencies[]` item same ISO honesty as upsert.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    currencies: list[CurrencyCodeValue] | None = None
 
 
 class FxAutoRefreshUpdate(BaseModel):

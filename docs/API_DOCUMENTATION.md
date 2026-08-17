@@ -1256,6 +1256,8 @@ Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "exp
 
 **Aging:** `GET /credit/aging` — Query `kind` ∈ `receivable`|`payable` (schema Query `Literal` + strip/lower; omit → `receivable`; blank/invalid → **422** — no silent AR aging for `Payable`/`""`/garbage). Returns bucketed totals + rows for AR or AP. Credit UI **Receivables** / **Payables** toggle. Requires `credit:read`.
 
+**Exchange rates (BR-2.6):** `GET /credit/exchange-rates`; `PUT /credit/exchange-rates/{currency_code}` body `{ currency_code, rate_to_base }` (`extra=forbid`); `DELETE /credit/exchange-rates/{currency_code}`; `POST /credit/exchange-rates/refresh` optional `{ currencies[] }`; `PATCH /credit/exchange-rates/settings`. Path + body `currency_code` (and refresh list items) ∈ 3-letter ISO (`CurrencyCodeValue`; strip/upper; blank/non-ISO → **422** — was late service **400**). Credit **Exchange rates** controls (`aria-label`s).
+
 ### 11.1 Customer Credit
 **Get Credit Info:** `GET /customers/{customer_id}/credit` — `credit_limit`, `outstanding_balance`, `available_credit` (`null` when unlimited/`credit_limit<=0`), `is_over_limit`, `credit_sales[]` open invoices. Requires `credit:read`.
 
