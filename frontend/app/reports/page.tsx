@@ -100,8 +100,14 @@ export default function Page() {
   const [salesReturnStatus, setSalesReturnStatus] = useState<
     '' | 'draft' | 'posted' | 'cancelled'
   >('');
+  const [salesReturnReason, setSalesReturnReason] = useState<
+    '' | 'damaged' | 'wrong_item' | 'defective' | 'customer_change' | 'other'
+  >('');
   const [purchaseReturnStatus, setPurchaseReturnStatus] = useState<
     '' | 'draft' | 'posted' | 'cancelled'
+  >('');
+  const [purchaseReturnReason, setPurchaseReturnReason] = useState<
+    '' | 'damaged' | 'wrong_item' | 'expiry' | 'quality' | 'other'
   >('');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
@@ -186,9 +192,10 @@ export default function Page() {
           api(`/reports/sales/daily${qs()}`),
           api(`/reports/sales/monthly${qs()}`),
           api(
-            `/reports/sales/returns${qs(
-              salesReturnStatus ? { status: salesReturnStatus } : {}
-            )}`
+            `/reports/sales/returns${qs({
+              ...(salesReturnStatus ? { status: salesReturnStatus } : {}),
+              ...(salesReturnReason ? { reason: salesReturnReason } : {}),
+            })}`
           ),
         ]);
         setData({
@@ -228,9 +235,10 @@ export default function Page() {
             )}`
           ),
           api(
-            `/reports/purchases/returns${qs(
-              purchaseReturnStatus ? { status: purchaseReturnStatus } : {}
-            )}`
+            `/reports/purchases/returns${qs({
+              ...(purchaseReturnStatus ? { status: purchaseReturnStatus } : {}),
+              ...(purchaseReturnReason ? { reason: purchaseReturnReason } : {}),
+            })}`
           ),
         ]);
         setData({
@@ -773,6 +781,31 @@ export default function Page() {
                 <option value="draft">draft</option>
                 <option value="posted">posted</option>
                 <option value="cancelled">cancelled</option>
+              </select>
+            </label>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
+              Return reason
+              <select
+                aria-label="Sales return reason"
+                value={salesReturnReason}
+                onChange={(e) =>
+                  setSalesReturnReason(
+                    e.target.value as
+                      | ''
+                      | 'damaged'
+                      | 'wrong_item'
+                      | 'defective'
+                      | 'customer_change'
+                      | 'other'
+                  )
+                }
+              >
+                <option value="">all</option>
+                <option value="damaged">damaged</option>
+                <option value="wrong_item">wrong_item</option>
+                <option value="defective">defective</option>
+                <option value="customer_change">customer_change</option>
+                <option value="other">other</option>
               </select>
             </label>
             {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
@@ -1548,6 +1581,31 @@ export default function Page() {
                 <option value="draft">draft</option>
                 <option value="posted">posted</option>
                 <option value="cancelled">cancelled</option>
+              </select>
+            </label>
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
+              Return reason
+              <select
+                aria-label="Purchase return reason"
+                value={purchaseReturnReason}
+                onChange={(e) =>
+                  setPurchaseReturnReason(
+                    e.target.value as
+                      | ''
+                      | 'damaged'
+                      | 'wrong_item'
+                      | 'expiry'
+                      | 'quality'
+                      | 'other'
+                  )
+                }
+              >
+                <option value="">all</option>
+                <option value="damaged">damaged</option>
+                <option value="wrong_item">wrong_item</option>
+                <option value="expiry">expiry</option>
+                <option value="quality">quality</option>
+                <option value="other">other</option>
               </select>
             </label>
             {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
