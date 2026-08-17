@@ -31,3 +31,7 @@ Stage 1326 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Quill Gate, Transfer Quill Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1326 opened under **ADR-2659** after CONTINUE/NEXT (Tenant MVP Transfer Arbor Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2660**. Stage 1325 feature scope remains frozen.
