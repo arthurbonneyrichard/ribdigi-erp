@@ -1844,6 +1844,7 @@ RIBDIGI ERP MVP uses **shared-schema + `tenant_id`** isolation (ADR-001). Schema
 | **Stage 395 I1** | Offline SYNC ERROR surface pack remaining-gate index hub (`test_stage395_index_i1.py`) |
 | **Stage 395 B1** | Offline SYNC ERROR surface pack blocker matrix (`test_stage395_blockers_b1.py`) |
 | **Stage 395 P1** | Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers (`test_stage395_pointers_p1.py`) |
+Stage 1255 D1 Transfer Hasp Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1255_FIDELITY.md` (`test_stage1255_fidelity_d1.py`); exit ADR-2518 / `test_stage1255_exit_h1255x.py`. Honesty: Offline Complete / Transfer Hasp Gate honesty / go-live Completes remain MISSING.
 Stage 1254 D1 Transfer Keeper Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1254_FIDELITY.md` (`test_stage1254_fidelity_d1.py`); exit ADR-2516 / `test_stage1254_exit_h1254x.py`. Honesty: Offline Complete / Transfer Keeper Gate honesty / go-live Completes remain MISSING.
 Stage 1253 D1 Transfer Strike Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1253_FIDELITY.md` (`test_stage1253_fidelity_d1.py`); exit ADR-2514 / `test_stage1253_exit_h1253x.py`. Honesty: Offline Complete / Transfer Strike Gate honesty / go-live Completes remain MISSING.
 Stage 1252 D1 Transfer Handle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1252_FIDELITY.md` (`test_stage1252_fidelity_d1.py`); exit ADR-2512 / `test_stage1252_exit_h1252x.py`. Honesty: Offline Complete / Transfer Handle Gate honesty / go-live Completes remain MISSING.

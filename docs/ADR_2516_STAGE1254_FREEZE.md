@@ -31,3 +31,7 @@ Stage 1255 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keeper Gate, Transfer Keeper Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1255 opened under **ADR-2517** after CONTINUE/NEXT (Tenant MVP Transfer Hasp Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2518**. Stage 1254 feature scope remains frozen.
