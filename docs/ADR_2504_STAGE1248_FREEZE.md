@@ -31,3 +31,7 @@ Stage 1249 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Glazing Gate, Transfer Glazing Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1249 opened under **ADR-2505** after CONTINUE/NEXT (Tenant MVP Transfer Hinge Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2506**. Stage 1248 feature scope remains frozen.
