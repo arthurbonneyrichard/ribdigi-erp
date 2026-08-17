@@ -31,3 +31,7 @@ Stage 1338 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Deburr Gate, Transfer Deburr Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1338 opened under **ADR-2683** after CONTINUE/NEXT (Tenant MVP Transfer Chamfer Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2684**. Stage 1337 feature scope remains frozen.
