@@ -52,6 +52,9 @@ export default function Page() {
     'all' | 'draft' | 'posted' | 'sent' | 'partial' | 'paid' | 'overdue' | 'cancelled'
   >('all');
   const [quotations, setQuotations] = useState<any[]>([]);
+  const [quotationManageFilter, setQuotationManageFilter] = useState<
+    'all' | 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted'
+  >('all');
   const [orders, setOrders] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
   const [returnManageFilter, setReturnManageFilter] = useState<
@@ -710,6 +713,10 @@ export default function Page() {
     if (invoiceManageFilter === 'all') return true;
     return (inv.status || 'draft') === invoiceManageFilter;
   });
+  const managedQuotations = quotations.filter((q) => {
+    if (quotationManageFilter === 'all') return true;
+    return (q.status || 'draft') === quotationManageFilter;
+  });
 
   return (
     <Shell>
@@ -1230,6 +1237,32 @@ export default function Page() {
               Used by Reject on draft/sent quotations (stored as <code>rejection_reason</code>).
             </p>
           </div>
+        <select
+          value={quotationManageFilter}
+          onChange={(e) =>
+            setQuotationManageFilter(
+              e.target.value as
+                | 'all'
+                | 'draft'
+                | 'sent'
+                | 'accepted'
+                | 'rejected'
+                | 'expired'
+                | 'converted'
+            )
+          }
+          title="Filter quotation list by status"
+          aria-label="Quotation status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="sent">Sent only</option>
+          <option value="accepted">Accepted only</option>
+          <option value="rejected">Rejected only</option>
+          <option value="expired">Expired only</option>
+          <option value="converted">Converted only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -1242,7 +1275,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {quotations.map((q) => (
+            {managedQuotations.map((q) => (
               <tr key={q.id}>
                 <td>{q.quotation_number}</td>
                 <td>{q.status}</td>
@@ -1284,6 +1317,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedQuotations.length === 0 && (
+              <tr>
+                <td colSpan={6} className="muted">
+                  {quotations.length === 0
+                    ? 'No quotations yet'
+                    : 'No quotations for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>

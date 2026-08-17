@@ -1659,6 +1659,11 @@ PurchaseRequestStatusValue = Annotated[
     Literal["draft", "pending", "approved", "rejected", "converted"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.sales_docs.QT_MANAGE_STATUSES (Sales Quotations manage list).
+SalesQuotationStatusValue = Annotated[
+    Literal["draft", "sent", "accepted", "rejected", "expired", "converted"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.reports.RETURN_REPORT_STATUSES (Reports sales/purchase returns).
 ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],

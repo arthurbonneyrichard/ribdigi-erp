@@ -937,7 +937,7 @@ List supports optional `?status=active|inactive` (schema Query `Literal` + strip
 When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is used and the customer group's `discount_percent` is applied (active groups only). An explicit `unit_price` is treated as a cashier override.
 
 ### 7.3 Quotations
-**List:** `GET /sales/quotations`  
+**List:** `GET /sales/quotations` — optional Query `status` ∈ `draft`|`sent`|`accepted`|`rejected`|`expired`|`converted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Quotations **Quotation status filter** (`quotationManageFilter`; client filter over full cache).  
 **Create:** `POST /sales/quotations`  
 **Get:** `GET /sales/quotations/{quote_id}`  
 **Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`  

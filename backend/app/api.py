@@ -87,6 +87,7 @@ from app.schemas import (
     PurchaseOrderStatusValue,
     SalesInvoiceStatusValue,
     PurchaseRequestStatusValue,
+    SalesQuotationStatusValue,
     ReturnReportStatusValue,
     TenantStatusFilterValue,
     ApiKeyStatusFilterValue,
@@ -5603,15 +5604,34 @@ async def cancel_sales_invoice(
 
 @api.get("/sales/quotations")
 async def list_quotations(
+    status: Annotated[SalesQuotationStatusValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.sales_docs import QT_MANAGE_STATUSES
+
     stmt = (
         select(m.SalesQuotation)
         .where(m.SalesQuotation.tenant_id == claims["tenant_id"])
         .order_by(m.SalesQuotation.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.SalesQuotation, claims)
+    # Schema SalesQuotationStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in QT_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid quotation status '{wanted}'. "
+                    f"Allowed: {sorted(QT_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.SalesQuotation.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
 

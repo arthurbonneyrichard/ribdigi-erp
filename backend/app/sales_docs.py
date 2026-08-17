@@ -22,6 +22,10 @@ from app.catalog import get_variant, resolve_sale_line
 
 RETURN_REASONS = frozenset({"damaged", "wrong_item", "defective", "customer_change", "other"})
 RETURN_CONDITIONS = frozenset({"sellable", "discard"})
+# Manage list statuses (full quotation lifecycle).
+QT_MANAGE_STATUSES = frozenset(
+    {"draft", "sent", "accepted", "rejected", "expired", "converted"}
+)
 
 
 async def _prepare_lines(
