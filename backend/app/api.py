@@ -9799,8 +9799,8 @@ async def report_inventory_expiry(
 
 @api.get("/reports/inventory/transfers")
 async def report_inventory_transfers(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     status: Annotated[TransferReportStatusValue | None, Query()] = None,
     from_store_id: str | None = None,
     to_store_id: str | None = None,
@@ -9825,8 +9825,8 @@ async def report_inventory_transfers(
 
 @api.get("/reports/inventory/stock-counts")
 async def report_inventory_stock_counts(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     warehouse_id: str | None = None,
     store_id: str | None = None,
     variance_only: bool = True,
