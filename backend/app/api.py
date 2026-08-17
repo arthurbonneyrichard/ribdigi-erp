@@ -9949,8 +9949,8 @@ async def report_purchases_returns(
 
 @api.get("/reports/expenses/summary")
 async def report_expenses_summary(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     category_id: str | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
@@ -9974,8 +9974,8 @@ async def report_expenses_summary(
 
 @api.get("/reports/expenses/budget-vs-actual")
 async def report_expenses_budget_vs_actual(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     category_id: str | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
