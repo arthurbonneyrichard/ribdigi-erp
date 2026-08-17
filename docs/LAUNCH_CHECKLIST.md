@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1225 track opened (ADR-2457: `test_stage1225_open.py`, `docs/STAGE_1225_PLAN.md`) — Transfer Keystone Gate Honesty Pack Remaining-Gate Index; closed under ADR-2458
+- [x] Transfer Keystone Gate Honesty Pack remaining-gate hub (Stage 1225 I1: `test_stage1225_index_i1.py`, `docs/TRANSFER_KEYSTONE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Keystone Gate Honesty Pack blocker matrix (Stage 1225 B1: `test_stage1225_blockers_b1.py`, `docs/TRANSFER_KEYSTONE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1224 / Stage 1223 / Stage 392 / CHANGE_IMPACT pointers (Stage 1225 P1: `test_stage1225_pointers_p1.py`, `docs/TRANSFER_KEYSTONE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1225 fidelity sync (D1: `test_stage1225_fidelity_d1.py`, `docs/STAGE_1225_FIDELITY.md`)
+- [x] Stage 1225 exit + freeze (H1225x: `test_stage1225_exit_h1225x.py`, `docs/STAGE_1225_EXIT_CRITERIA.md`, ADR-2458)
 Stage 1224 track opened (ADR-2455: `test_stage1224_open.py`, `docs/STAGE_1224_PLAN.md`) — Transfer Corbel Gate Honesty Pack Remaining-Gate Index; closed under ADR-2456
 - [x] Transfer Corbel Gate Honesty Pack remaining-gate hub (Stage 1224 I1: `test_stage1224_index_i1.py`, `docs/TRANSFER_CORBEL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Corbel Gate Honesty Pack blocker matrix (Stage 1224 B1: `test_stage1224_blockers_b1.py`, `docs/TRANSFER_CORBEL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
