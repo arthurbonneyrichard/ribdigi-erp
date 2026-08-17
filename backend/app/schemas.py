@@ -1938,6 +1938,39 @@ class AiReportsGenerateBody(BaseModel):
         return self
 
 
+class AiReportsExportBody(BaseModel):
+    """POST /ai/reports/export — typed export body (BR-21.7).
+
+    Unknown keys → **422** (`extra=forbid`). Must provide `prompt`, `template_id`,
+    or `report_type`. `format` ∈ csv|pdf|xlsx (omit → **csv**; blank/invalid →
+    **422** — was free `dict` with `or "csv"`). Invalid `report_type` → **422**.
+    Service `export_from_intent` remains defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    prompt: str | None = None
+    format: ReportExportFormatValue = "csv"
+    template_id: str | None = None
+    report_type: ReportTypeValue | None = None
+    filters: dict[str, Any] | None = None
+    params: dict[str, Any] | None = None
+
+    @field_validator("prompt", "template_id", mode="before")
+    @classmethod
+    def _strip_optional(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            return text or None
+        return value
+
+    @model_validator(mode="after")
+    def _require_prompt_template_or_type(self) -> AiReportsExportBody:
+        if not (self.prompt or self.template_id or self.report_type):
+            raise ValueError("Provide prompt, template_id, or report_type")
+        return self
+
+
 class ReportScheduleCreate(BaseModel):
     """Email report schedule create (BR-14)."""
 

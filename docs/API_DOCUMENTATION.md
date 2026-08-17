@@ -1603,7 +1603,7 @@ Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR
 
 ### 16.7 AI Report Generator
 **Generate (JSON preview):** `POST /ai/reports/generate` — typed body `AiReportsGenerateBody` `{ "prompt"? | "template_id"? | "report_type"?, "format"?, "period"?, "filters"?|"params"? }` (`extra=forbid`; must provide prompt/template_id/report_type; invalid `format` ∈ csv|pdf|xlsx or `report_type` ∈ EXPORTABLE → **422** — format garbage was silently remapped to csv; unknown report_type was late **400**). AI UI **Generate AI report** (`aria-label`).  
-**Export file:** `POST /ai/reports/export`  
+**Export file:** `POST /ai/reports/export` — typed body `AiReportsExportBody` `{ "prompt"? | "template_id"? | "report_type"?, "format"?, "filters"?|"params"? }` (`extra=forbid`; must provide prompt/template_id/report_type; `format` omit → **csv**; blank/invalid format|type / unknown keys → **422** — was free `dict` with `or "csv"`). AI UI **Export AI report** (`aria-label` Export CSV).  
 **Templates:** `GET|POST /ai/reports/templates`, `DELETE /ai/reports/templates/{id}`
 
 ```json

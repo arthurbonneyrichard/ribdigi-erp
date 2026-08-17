@@ -247,6 +247,52 @@ export default function Page() {
     }
   }
 
+  async function exportReport() {
+    setError('');
+    setMessage('');
+    try {
+      const prompt = q.trim() || 'monthly sales for this month';
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const res = await fetch(`${base}/ai/reports/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+        body: JSON.stringify({ prompt, format: 'csv' }),
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const detail = body.detail;
+        throw new Error(
+          typeof detail === 'string'
+            ? detail
+            : Array.isArray(detail)
+              ? detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ')
+              : body.message || 'Export failed'
+        );
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      const filename = match?.[1] || 'ai-report.csv';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage(`AI report CSV downloaded (${filename})`);
+      setA(`exported=${filename} prompt=${prompt}`);
+    } catch (err: any) {
+      setError(err.message || 'Unable to export AI report');
+    }
+  }
+
   async function customerAssist() {
     setError('');
     setMessage('');
@@ -390,6 +436,9 @@ export default function Page() {
           </button>
           <button onClick={generateReport} aria-label="Generate AI report">
             Generate report
+          </button>
+          <button onClick={exportReport} aria-label="Export AI report">
+            Export CSV
           </button>
           <button onClick={customerAssist} aria-label="Customer assist">
             Customer assist

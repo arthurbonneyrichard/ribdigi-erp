@@ -140,6 +140,7 @@ from app.schemas import (
     AiChatBody,
     AiCustomerAssistBody,
     AiReportsGenerateBody,
+    AiReportsExportBody,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseReject,
@@ -12532,21 +12533,22 @@ async def ai_reports_generate(
 
 @api.post("/ai/reports/export")
 async def ai_reports_export(
-    payload: dict | None = None,
+    payload: AiReportsExportBody,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Export a generated AI report as csv/pdf/xlsx."""
-    body = payload or {}
+    # Schema AiReportsExportBody rejects unknown keys / bad format|type /
+    # missing prompt|template_id|report_type → 422.
     content, media, filename, _meta = await ai_reports_svc.export_from_intent(
         db,
         tenant_id=claims["tenant_id"],
         actor_user_id=claims.get("sub"),
-        prompt=body.get("prompt"),
-        format=body.get("format") or "csv",
-        template_id=body.get("template_id"),
-        report_type=body.get("report_type"),
-        params=body.get("params") or body.get("filters"),
+        prompt=payload.prompt,
+        format=payload.format,
+        template_id=payload.template_id,
+        report_type=payload.report_type,
+        params=payload.params or payload.filters,
     )
     return Response(
         content=content,
