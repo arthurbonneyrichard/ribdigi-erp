@@ -31,3 +31,7 @@ Stage 1323 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Pintle Gate, Transfer Pintle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1323 opened under **ADR-2653** after CONTINUE/NEXT (Tenant MVP Transfer Fulcrum Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2654**. Stage 1322 feature scope remains frozen.
