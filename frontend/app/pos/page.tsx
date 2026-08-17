@@ -315,7 +315,8 @@ export default function Page() {
       const r = await api('/pos/sessions');
       setSessions(r.data || []);
     } catch {
-      setSessions([]);
+      // Keep prior cache on transient failures (e.g. rate limit) so the
+      // Recent shifts filter does not flash empty.
     }
   }
 
