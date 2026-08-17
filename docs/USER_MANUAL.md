@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 1286 Transfer Axle Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_AXLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_AXLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 1285 Transfer Hub Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_HUB_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_HUB_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 1284 Transfer Flange Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_FLANGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_FLANGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 1283 Transfer Collar Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_COLLAR_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_COLLAR_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
