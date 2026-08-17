@@ -141,6 +141,7 @@ from app.schemas import (
     AiCustomerAssistBody,
     AiReportsGenerateBody,
     AiReportsExportBody,
+    AiReportTemplateCreateBody,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseReject,
@@ -12571,17 +12572,19 @@ async def ai_report_templates_list(
 
 @api.post("/ai/reports/templates")
 async def ai_report_templates_create(
-    payload: dict,
+    payload: AiReportTemplateCreateBody,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Schema AiReportTemplateCreateBody rejects unknown keys / blank name|prompt /
+    # bad format → 422.
     row = await ai_reports_svc.create_template(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        name=str(payload.get("name") or ""),
-        prompt=str(payload.get("prompt") or ""),
-        format=payload.get("format"),
+        name=payload.name,
+        prompt=payload.prompt,
+        format=payload.format,
     )
     await db.commit()
     return env(ai_reports_svc.serialize_template(row), "Report template saved")

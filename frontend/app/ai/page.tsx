@@ -20,6 +20,7 @@ export default function Page() {
   const [documentType, setDocumentType] = useState<'auto' | 'receipt' | 'invoice' | 'purchase_order'>('auto');
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
   const [draftPiBusy, setDraftPiBusy] = useState(false);
+  const [tmplName, setTmplName] = useState('');
 
   async function go() {
     setError('');
@@ -293,6 +294,32 @@ export default function Page() {
     }
   }
 
+  async function saveReportTemplate() {
+    setError('');
+    setMessage('');
+    try {
+      const prompt = q.trim() || 'monthly sales for this month';
+      const name = tmplName.trim() || 'Saved report';
+      const r = await api('/ai/reports/templates', {
+        method: 'POST',
+        body: JSON.stringify({ name, prompt, format: 'csv' }),
+      });
+      const d = r.data || {};
+      setMessage(`Template saved: ${d.name} (${d.report_type})`);
+      setA(
+        [
+          `template_id=${d.id}`,
+          `name=${d.name}`,
+          `report_type=${d.report_type}`,
+          `format=${d.format}`,
+          `prompt=${d.prompt}`,
+        ].join('\n')
+      );
+    } catch (err: any) {
+      setError(err.message || 'Unable to save report template');
+    }
+  }
+
   async function customerAssist() {
     setError('');
     setMessage('');
@@ -439,6 +466,16 @@ export default function Page() {
           </button>
           <button onClick={exportReport} aria-label="Export AI report">
             Export CSV
+          </button>
+          <input
+            value={tmplName}
+            onChange={(e) => setTmplName(e.target.value)}
+            placeholder="Template name"
+            aria-label="AI report template name"
+            style={{ minWidth: 140 }}
+          />
+          <button onClick={saveReportTemplate} aria-label="Save AI report template">
+            Save template
           </button>
           <button onClick={customerAssist} aria-label="Customer assist">
             Customer assist

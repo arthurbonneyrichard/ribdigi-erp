@@ -1971,6 +1971,29 @@ class AiReportsExportBody(BaseModel):
         return self
 
 
+class AiReportTemplateCreateBody(BaseModel):
+    """POST /ai/reports/templates — typed template create body (BR-21.7).
+
+    Unknown keys → **422** (`extra=forbid`). Blank/omit `name` or `prompt` →
+    **422** (name blank was late service **400**). `format` ∈ csv|pdf|xlsx
+    (omit → derived from prompt; blank/invalid → **422** — was late **400**).
+    Service `create_template` / `parse_prompt` remain defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=120)
+    prompt: str = Field(min_length=1)
+    format: ReportExportFormatValue | None = None
+
+    @field_validator("name", "prompt", mode="before")
+    @classmethod
+    def _strip_required(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+
 class ReportScheduleCreate(BaseModel):
     """Email report schedule create (BR-14)."""
 
