@@ -31,3 +31,7 @@ Stage 1301 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Rivet Gate, Transfer Rivet Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1301 opened under **ADR-2609** after CONTINUE/NEXT (Tenant MVP Transfer Stud Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2610**. Stage 1300 feature scope remains frozen.
