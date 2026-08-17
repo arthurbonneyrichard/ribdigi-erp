@@ -193,7 +193,7 @@ export default function Page() {
       {prefs && (
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Channel preferences</h3>
-          <table className="table">
+          <table className="table" aria-label="Channel preferences">
             <thead>
               <tr>
                 <th>Type</th>
@@ -208,7 +208,11 @@ export default function Page() {
                   <td>{cat}</td>
                   {(['dashboard', 'email', 'sms'] as const).map((ch) => (
                     <td key={ch}>
-                      <button onClick={() => togglePref(cat, ch)}>
+                      <button
+                        type="button"
+                        aria-label={`${cat} ${ch}`}
+                        onClick={() => togglePref(cat, ch)}
+                      >
                         {channels[ch] ? 'On' : 'Off'}
                       </button>
                     </td>

@@ -1827,8 +1827,43 @@ class CreditLimitUpdate(BaseModel):
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
 
 
+class NotificationChannelPrefs(BaseModel):
+    """Per-category dashboard/email/sms toggles — unknown channels → 422."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dashboard: bool | None = None
+    email: bool | None = None
+    sms: bool | None = None
+
+
+class NotificationPreferencesMap(BaseModel):
+    """Preference categories aligned with app.notifications.DEFAULT_PREFERENCES."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    low_stock: NotificationChannelPrefs | None = None
+    expense_approval: NotificationChannelPrefs | None = None
+    shift_variance: NotificationChannelPrefs | None = None
+    credit_limit: NotificationChannelPrefs | None = None
+    purchase_received: NotificationChannelPrefs | None = None
+    payment_due: NotificationChannelPrefs | None = None
+    quotation_expiry: NotificationChannelPrefs | None = None
+    recurring_expense_due: NotificationChannelPrefs | None = None
+    new_order: NotificationChannelPrefs | None = None
+    transfer: NotificationChannelPrefs | None = None
+    billing: NotificationChannelPrefs | None = None
+    security: NotificationChannelPrefs | None = None
+    system: NotificationChannelPrefs | None = None
+
+
 class NotificationPreferencesUpdate(BaseModel):
-    preferences: dict
+    """PATCH /notifications/settings — typed preference map (BR-4.4 / BR-15.2).
+
+    Unknown category keys or channel keys → **422** (no silent drop via merge).
+    """
+
+    preferences: NotificationPreferencesMap
 
 
 class JournalLineCreate(BaseModel):

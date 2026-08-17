@@ -11228,7 +11228,10 @@ async def update_notification_settings(
     db: AsyncSession = Depends(get_db),
 ):
     prefs = await notifications_svc.update_preferences(
-        db, claims["tenant_id"], claims["sub"], payload.preferences
+        db,
+        claims["tenant_id"],
+        claims["sub"],
+        payload.preferences.model_dump(exclude_none=True),
     )
     await db.commit()
     return env(prefs, "Notification preferences updated")

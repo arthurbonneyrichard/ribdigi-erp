@@ -75,6 +75,34 @@ async def get_preferences(db: AsyncSession, tenant_id: str, user_id: str) -> dic
 async def update_preferences(
     db: AsyncSession, tenant_id: str, user_id: str, preferences: dict
 ) -> dict:
+    # Schema NotificationPreferencesMap rejects unknown category/channel → 422;
+    # keep allow-list defense-in-depth (no silent drop of garbage keys).
+    if preferences is None or not isinstance(preferences, dict):
+        raise HTTPException(status_code=422, detail="preferences must be an object")
+    for key, channels in preferences.items():
+        if key not in VALID_CATEGORIES:
+            raise HTTPException(
+                status_code=422,
+                detail=f"unknown preference category: {key}",
+            )
+        if channels is None:
+            continue
+        if not isinstance(channels, dict):
+            raise HTTPException(
+                status_code=422,
+                detail=f"channels for {key} must be an object",
+            )
+        for ch, val in channels.items():
+            if ch not in {"dashboard", "email", "sms"}:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"unknown channel '{ch}' for category {key}",
+                )
+            if val is not None and not isinstance(val, bool):
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"channel '{ch}' for {key} must be a boolean",
+                )
     merged = merge_preferences(preferences)
     row = (
         await db.execute(
@@ -249,14 +277,14 @@ async def list_notifications(
         # Defense in depth: NotificationStatusValue Query Literal → 422 on blank/unknown.
         key = (status or "").strip().lower()
         if key not in {"unread", "read"}:
-            raise HTTPException(status_code=400, detail="status must be unread or read")
+            raise HTTPException(status_code=422, detail="status must be unread or read")
         stmt = stmt.where(m.Notification.status == key)
     if category:
         # Defense in depth: NotificationCategoryValue Query Literal → 422 on blank/unknown.
         cat = (category or "").strip().lower()
         if cat not in VALID_CATEGORIES:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail=f"category must be one of {sorted(VALID_CATEGORIES)}",
             )
         stmt = stmt.where(m.Notification.category == cat)

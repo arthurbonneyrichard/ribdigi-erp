@@ -1461,7 +1461,7 @@ Query `category` ∈ `VALID_CATEGORIES` / preference keys (same Literal; omit �
 
 ### 15.3 Notification Settings
 **Endpoint:** `GET /notifications/settings`  
-**Update:** `PATCH /notifications/settings`
+**Update:** `PATCH /notifications/settings` — body `{ "preferences": { "<category>": { "dashboard"?, "email"?, "sms"? } } }`. Schema `NotificationPreferencesMap` (`extra=forbid` on known categories) + `NotificationChannelPrefs` (`extra=forbid` on dashboard|email|sms). Unknown category/channel → **422** (was silent ignore via merge). Service `update_preferences` remains defense-in-depth. Notifications **Channel preferences** toggles.
 
 Categories include `low_stock` (BR-5.5 — default email **on**; emails `inventory_officer` + `store_manager` + admins via `roles`), `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`; past-due draft/sent auto-`expired`), `recurring_expense_due` (BR-9.5 — T−1 day before recurring `next_run_at`; default email **on**), `purchase_received`, `expense_approval` (BR-9.3 — default email **on**; role-targeted when expense notify passes `roles`), `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
 
