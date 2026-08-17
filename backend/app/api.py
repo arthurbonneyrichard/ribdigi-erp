@@ -83,6 +83,7 @@ from app.schemas import (
     ReturnReportStatusValue,
     TenantStatusFilterValue,
     ApiKeyStatusFilterValue,
+    ApiKeyCreate,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
     MovementTypeValue,
@@ -11681,30 +11682,21 @@ async def api_keys_list(
 @api.post("/api-keys")
 async def api_keys_create(
     request: Request,
-    payload: dict | None = None,
+    payload: ApiKeyCreate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import tenants as tenants_svc
 
     tenants_svc.assert_writable(claims)
-    body = payload or {}
-    expires_at = None
-    raw_exp = body.get("expires_at")
-    if raw_exp:
-        try:
-            expires_at = datetime.fromisoformat(str(raw_exp).replace("Z", "+00:00")).replace(
-                tzinfo=None
-            )
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail="expires_at must be ISO-8601") from exc
+    # Schema ApiKeyCreate rejects unknown keys / bad name / expires_at / modules → 422.
     row, raw = await api_keys_svc.create_key(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        name=str(body.get("name") or ""),
-        permissions=body.get("permissions"),
-        expires_at=expires_at,
+        name=payload.name,
+        permissions=payload.permissions,
+        expires_at=payload.expires_at,
     )
     await audit_svc.record_event(
         db,

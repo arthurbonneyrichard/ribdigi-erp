@@ -1778,7 +1778,7 @@ See also Integrations UI **Verify signature** panel and `docs/SECURITY_GUIDE.md`
 Service integrations authenticate with tenant API keys (BR-18.1). Manage via `GET|POST|DELETE /api-keys` or the **Integrations** UI.
 
 **List:** `GET /api-keys` — optional Query `status` ∈ `active`|`revoked`|`expired` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Optional `active_only=true` keeps active keys only. Integrations **API key status filter** All / Active / Revoked / Expired (`apiKeyManageFilter`; client filter over full cache).  
-**Create:** `POST /api-keys` — body `{ "name", "permissions"?, "expires_at"? }`; returns `api_key` once (`rdk_…`)  
+**Create:** `POST /api-keys` — typed body `ApiKeyCreate` `{ "name", "permissions"?, "expires_at"? }` (`extra=forbid`; unknown keys / bad name / invalid `expires_at` / unknown permission module|action → **422** — was late **400** via free `dict`). Omit/`{}` `permissions` → default read map. Returns `api_key` once (`rdk_…`).  
 **Get / usage:** `GET /api-keys/{id}`, `GET /api-keys/{id}/usage`  
 **Revoke:** `DELETE /api-keys/{id}`
 

@@ -25,24 +25,26 @@ DEFAULT_PERMISSIONS: dict[str, list[str]] = {
 
 
 def normalize_permissions(raw: dict | None) -> dict[str, list[str]]:
+    # Schema ApiKeyCreate rejects unknown modules/actions → 422; keep allow-list
+    # defense-in-depth (no silent drop of bad keys).
     source = raw if isinstance(raw, dict) and raw else DEFAULT_PERMISSIONS
     out: dict[str, list[str]] = {}
     for module, actions in source.items():
         mod = str(module).strip().lower()
         if mod not in SYSTEM_MODULES:
-            raise HTTPException(status_code=400, detail=f"Invalid permission module: {module}")
+            raise HTTPException(status_code=422, detail=f"Invalid permission module: {module}")
         if not isinstance(actions, (list, tuple)) or not actions:
-            raise HTTPException(status_code=400, detail=f"Invalid actions for module: {module}")
+            raise HTTPException(status_code=422, detail=f"Invalid actions for module: {module}")
         cleaned: list[str] = []
         for action in actions:
             act = str(action).strip().lower()
             if act not in ALLOWED_ACTIONS:
-                raise HTTPException(status_code=400, detail=f"Invalid action: {action}")
+                raise HTTPException(status_code=422, detail=f"Invalid action: {action}")
             if act not in cleaned:
                 cleaned.append(act)
         out[mod] = cleaned
     if not out:
-        raise HTTPException(status_code=400, detail="permissions must include at least one module")
+        raise HTTPException(status_code=422, detail="permissions must include at least one module")
     return out
 
 
@@ -126,10 +128,11 @@ async def create_key(
     expires_at: datetime | None = None,
 ) -> tuple[m.ApiKey, str]:
     cleaned_name = (name or "").strip()
+    # Schema ApiKeyCreate enforces name length → 422; keep defense-in-depth.
     if len(cleaned_name) < 2:
-        raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+        raise HTTPException(status_code=422, detail="name must be at least 2 characters")
     if len(cleaned_name) > 120:
-        raise HTTPException(status_code=400, detail="name must be at most 120 characters")
+        raise HTTPException(status_code=422, detail="name must be at most 120 characters")
     perms = normalize_permissions(permissions)
     raw, prefix, key_hash = generate_raw_key()
     row = m.ApiKey(

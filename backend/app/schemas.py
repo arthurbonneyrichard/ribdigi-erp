@@ -3,9 +3,18 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.pos import coerce_payment_method_value
+from app.rbac import SYSTEM_MODULES
 from app.tenants import (
     coerce_date_format_value,
     coerce_decimal_separator_value,
@@ -1609,6 +1618,73 @@ ApiKeyStatusFilterValue = Annotated[
     Literal["active", "revoked", "expired"],
     BeforeValidator(coerce_package_code_value),
 ]
+ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
+
+
+class ApiKeyCreate(BaseModel):
+    """POST /api-keys — typed create body (BR-18.1).
+
+    Unknown top-level keys → **422** (`extra=forbid`). Name omit/too short/too long,
+    invalid `expires_at`, unknown permission module/action → **422** (was late **400**
+    via free `dict`). Omit/null/`{}` `permissions` → service default read map.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=2, max_length=120)
+    permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
+    expires_at: datetime | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def _strip_name(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    @field_validator("expires_at", mode="after")
+    @classmethod
+    def _naive_expires_at(cls, value: datetime | None) -> datetime | None:
+        # Persist naive UTC wall-clock like the prior ISO parse path.
+        if value is None:
+            return None
+        if value.tzinfo is not None:
+            return value.replace(tzinfo=None)
+        return value
+
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def _normalize_permissions_input(cls, value: object) -> object:
+        # Preserve historical create_key behavior: falsy/empty map → defaults.
+        if value == {} or value is False:
+            return None
+        if not isinstance(value, dict):
+            return value
+        out: dict[str, list[object]] = {}
+        for module, actions in value.items():
+            mod = str(module).strip().lower() if module is not None else module
+            if isinstance(actions, (list, tuple)):
+                out[mod] = [
+                    a.strip().lower() if isinstance(a, str) else a for a in actions
+                ]
+            else:
+                out[mod] = actions  # type: ignore[assignment]
+        return out
+
+    @model_validator(mode="after")
+    def _permissions_modules(self) -> ApiKeyCreate:
+        if self.permissions is None:
+            return self
+        if not self.permissions:
+            raise ValueError("permissions must include at least one module")
+        for module, actions in self.permissions.items():
+            if module not in SYSTEM_MODULES:
+                raise ValueError(f"Invalid permission module: {module}")
+            if not actions:
+                raise ValueError(f"Invalid actions for module: {module}")
+        return self
+
+
 # Keep aligned with app.sales_docs.RETURN_REASONS (Reports sales returns reason filter).
 SalesReturnReportReasonValue = Annotated[
     Literal["damaged", "wrong_item", "defective", "customer_change", "other"],

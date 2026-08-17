@@ -343,6 +343,7 @@ export default function Page() {
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}
             placeholder="Key name"
+            aria-label="API key name"
             style={{ minWidth: 160 }}
           />
           <input
@@ -350,8 +351,14 @@ export default function Page() {
             value={keyExpires}
             onChange={(e) => setKeyExpires(e.target.value)}
             title="Optional expiry"
+            aria-label="API key expiry"
           />
-          <button type="button" onClick={createKey} disabled={busy}>
+          <button
+            type="button"
+            onClick={createKey}
+            disabled={busy}
+            aria-label="Create API key"
+          >
             Create API key
           </button>
         </div>
