@@ -81,6 +81,7 @@ from app.schemas import (
     TransferReportStatusValue,
     PendingPoReportStatusValue,
     ReturnReportStatusValue,
+    TenantStatusFilterValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
     MovementTypeValue,
@@ -671,7 +672,7 @@ async def tenant_me_logo_delete(
 
 @api.get("/tenants")
 async def tenants_list(
-    status: str | None = None,
+    status: Annotated[TenantStatusFilterValue | None, Query()] = None,
     claims=Depends(require_platform_permission("platform_tenants", "read")),
     db: AsyncSession = Depends(get_db),
 ):

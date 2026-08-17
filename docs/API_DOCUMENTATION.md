@@ -284,6 +284,7 @@ Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a
 Service `apply_print_branding_update` remains defense-in-depth **400**. Read path still coerces stored garbage to `a4` / `80mm`. Company page Invoice template / Receipt paper selects match.
 
 ### 3.4 Tenant Status Management
+**List (platform):** `GET /tenants?status=` — Query `status` ∈ `trial`|`active`|`grace`|`suspended` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Service `list_tenants` remains defense-in-depth. Platform console **Tenant status** chips (client filter over full cache; API also supports `?status=`).  
 **Self-suspend:** `POST /tenants/me/suspend` — body `{ "reason" }` **required** (`TenantSuspendRequest`; omit/empty → 422; whitespace → 400) for company_admin/super_admin; stores `suspended_reason`, revokes sessions, emits `tenant.suspended`. Company page **Suspend reason** input (no hardcoded `"Admin requested"`).  
 **Suspend:** `POST /tenants/{tenant_ref}/suspend` — body `{ "reason" }` **required** (same schema) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Suspend reason** input (no `window.prompt`).  
 **Activate:** `POST /tenants/{tenant_ref}/activate`  

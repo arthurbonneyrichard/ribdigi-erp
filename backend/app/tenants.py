@@ -706,9 +706,17 @@ async def update_profile(
 
 async def list_tenants(db: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[m.Tenant]:
     q = select(m.Tenant).order_by(m.Tenant.created_at.desc()).limit(min(max(limit, 1), 500))
+    # Schema TenantStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    if status is not None:
+        key = (status or "").strip().lower()
+        if not key:
+            status = None
+        elif key not in VALID_STATUSES:
+            raise HTTPException(status_code=422, detail="Invalid status filter")
+        else:
+            status = key
     if status:
-        if status not in VALID_STATUSES:
-            raise HTTPException(status_code=400, detail="Invalid status filter")
         q = q.where(m.Tenant.status == status)
     return list((await db.execute(q)).scalars().all())
 

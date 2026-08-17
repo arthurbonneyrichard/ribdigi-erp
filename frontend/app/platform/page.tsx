@@ -387,12 +387,14 @@ export default function PlatformConsole() {
               and control package features per tenant.
             </p>
           </div>
-          <div className="plat-filters">
+          <div className="plat-filters" role="group" aria-label="Tenant status">
             {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
               <button
                 key={s}
                 type="button"
                 className={filter === s ? 'plat-chip active' : 'plat-chip'}
+                aria-pressed={filter === s}
+                aria-label={s === 'all' ? 'Tenant status all' : `Tenant status ${s}`}
                 onClick={() => setFilter(s)}
               >
                 {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}

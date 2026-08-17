@@ -1599,6 +1599,11 @@ ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.tenants.VALID_STATUSES (Platform tenants list filter).
+TenantStatusFilterValue = Annotated[
+    Literal["trial", "active", "grace", "suspended"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.sales_docs.RETURN_REASONS (Reports sales returns reason filter).
 SalesReturnReportReasonValue = Annotated[
     Literal["damaged", "wrong_item", "defective", "customer_change", "other"],
