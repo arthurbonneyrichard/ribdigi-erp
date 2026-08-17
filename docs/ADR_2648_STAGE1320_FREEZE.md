@@ -31,3 +31,7 @@ Stage 1321 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nipple Gate, Transfer Nipple Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1321 opened under **ADR-2649** after CONTINUE/NEXT (Tenant MVP Transfer Tenon Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2650**. Stage 1320 feature scope remains frozen.
