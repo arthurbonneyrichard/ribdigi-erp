@@ -31,3 +31,7 @@ Stage 1248 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muntin Gate, Transfer Muntin Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1248 opened under **ADR-2503** after CONTINUE/NEXT (Tenant MVP Transfer Glazing Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2504**. Stage 1247 feature scope remains frozen.
