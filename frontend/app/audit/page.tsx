@@ -246,7 +246,13 @@ export default function Page() {
             </option>
           ))}
         </select>
-        <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="Action" />
+        <input
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          placeholder="Action"
+          title="Filter by audit action (snake_case; 2fa_* allowed)"
+          aria-label="Audit action filter"
+        />
         <input
           type="date"
           value={fromDate}

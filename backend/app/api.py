@@ -105,6 +105,7 @@ from app.schemas import (
     BankStatementStatusFilterValue,
     WebhookDeliveryStatusFilterValue,
     AuditModuleValue,
+    AuditActionValue,
     IsoDateQueryValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
@@ -11579,7 +11580,7 @@ async def run_job_now(
 async def audit_logs(
     user_id: str | None = None,
     module: Annotated[AuditModuleValue | None, Query()] = None,
-    action: str | None = None,
+    action: Annotated[AuditActionValue | None, Query()] = None,
     entity: str | None = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
@@ -11652,7 +11653,7 @@ async def audit_logs_archive_cold(
 async def audit_logs_export(
     user_id: str | None = None,
     module: Annotated[AuditModuleValue | None, Query()] = None,
-    action: str | None = None,
+    action: Annotated[AuditActionValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("audit", "read")),

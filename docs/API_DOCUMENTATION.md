@@ -1547,9 +1547,9 @@ Sync run returns handler result payload. Jobs UI **Run sync** / **Enqueue** (`ar
 Append-only hash-chained audit trail (BR-17.1–17.2).
 
 ### 15C.1 Query / verify / export
-**List:** `GET /audit-logs?module=&action=&user_id=&entity=&from_date=&to_date=&limit=` — optional Query `module` ∈ `AuditModuleValue` / `audit.AUDIT_MODULES` (strip/lower; omit → all; blank/unknown → **422** — blank was silent omit; unknown returned empty). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was **500**). Audit **Audit module filter** + **From/To date** controls.  
+**List:** `GET /audit-logs?module=&action=&user_id=&entity=&from_date=&to_date=&limit=` — optional Query `module` ∈ `AuditModuleValue` / `audit.AUDIT_MODULES` (strip/lower; omit → all; blank/unknown → **422** — blank was silent omit; unknown returned empty). Optional Query `action` ∈ `AuditActionValue` (strip/lower; snake_case shape; digit-start OK for `2fa_*`; omit → all; blank/`login!`/`A` → **422** — blank was silent omit; malformed returned empty). Unknown well-shaped actions still return empty. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was **500**). Audit **Audit module filter** + **Audit action filter** + **From/To date** controls.  
 **Verify chain:** `GET /audit-logs/verify`  
-**Export CSV:** `GET /audit-logs/export` (same filters; same `module` / date honesty)
+**Export CSV:** `GET /audit-logs/export` (same filters; same `module` / `action` / date honesty)
 
 ### 15C.2 Retention & cold archive
 **Policy:** `GET /audit-logs/retention` — `retention_years` (≥7), `cold_archive_after_days`, `purge_allowed=false`  

@@ -2254,6 +2254,36 @@ AuditModuleValue = Annotated[
 ]
 
 
+def coerce_audit_action_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for shape 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_audit_action_value(value: str) -> str:
+    """AfterValidator: snake_case action shape; digit-start OK for 2fa_* (not RoleKeyValue)."""
+    import re
+
+    # Allow digit start so recorded actions like 2fa_failed / 2fa_enabled stay filterable.
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_]{1,62}", value or ""):
+        raise ValueError(
+            "action must be lowercase letters/numbers/underscore, 2–63 chars "
+            "(may start with a digit)"
+        )
+    return value
+
+
+# Shape-only Audit Logs action Query (not a closed Literal — ~120 growing writers).
+AuditActionValue = Annotated[
+    str,
+    BeforeValidator(coerce_audit_action_value),
+    AfterValidator(validate_audit_action_value),
+]
+
+
 def coerce_iso_date_query_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for date 422."""
     if value is None:
