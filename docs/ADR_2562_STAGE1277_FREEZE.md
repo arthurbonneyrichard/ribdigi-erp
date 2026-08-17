@@ -31,3 +31,7 @@ Stage 1278 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shear Gate, Transfer Shear Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1278 opened under **ADR-2563** after CONTINUE/NEXT (Tenant MVP Transfer Groove Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2564**. Stage 1277 feature scope remains frozen.
