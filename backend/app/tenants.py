@@ -632,9 +632,19 @@ async def update_profile(
     if shipping_address is not None:
         tenant.shipping_address = shipping_address.strip() or None
     if timezone is not None:
+        # Defense in depth: TenantProfileUpdate TimezoneValue → 422 on blank/non-IANA.
+        from zoneinfo import ZoneInfo
+
         tz = timezone.strip()
         if not tz:
             raise HTTPException(status_code=400, detail="timezone is required")
+        try:
+            ZoneInfo(tz)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="timezone must be a valid IANA timezone",
+            ) from exc
         tenant.timezone = tz
     if fiscal_year_start is not None:
         # Defense in depth: TenantProfileUpdate FiscalYearStartValue → 422 on blank/bad MM-DD.

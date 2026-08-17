@@ -351,11 +351,32 @@ export default function Page() {
           onChange={(e) => setTenant({ ...tenant, shipping_address: e.target.value })}
           placeholder="Shipping address"
         />
-        <input
-          value={tenant.timezone || ''}
+        <select
+          value={tenant.timezone || 'Africa/Accra'}
           onChange={(e) => setTenant({ ...tenant, timezone: e.target.value })}
-          placeholder="Timezone"
-        />
+          aria-label="Company timezone"
+        >
+          {Array.from(
+            new Set(
+              [
+                tenant.timezone || 'Africa/Accra',
+                'Africa/Accra',
+                'Africa/Lagos',
+                'Africa/Abidjan',
+                'Africa/Nairobi',
+                'Africa/Johannesburg',
+                'UTC',
+                'Europe/London',
+                'America/New_York',
+                'Asia/Dubai',
+              ].filter(Boolean),
+            ),
+          ).map((z) => (
+            <option key={z} value={z}>
+              Timezone: {z}
+            </option>
+          ))}
+        </select>
         <input
           value={tenant.fiscal_year_start || '01-01'}
           onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}

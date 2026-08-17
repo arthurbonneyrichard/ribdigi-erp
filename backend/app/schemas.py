@@ -96,6 +96,36 @@ FiscalYearStartValue = Annotated[
     BeforeValidator(coerce_fiscal_year_start_value),
     AfterValidator(validate_fiscal_year_start_value),
 ]
+
+
+def coerce_timezone_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_timezone_value(value: str) -> str:
+    """AfterValidator: IANA timezone key via zoneinfo (Company profile)."""
+    if not value:
+        raise ValueError("timezone is required")
+    try:
+        from zoneinfo import ZoneInfo
+
+        ZoneInfo(value)
+    except Exception as exc:  # ZoneInfoNotFoundError / ValueError
+        raise ValueError("timezone must be a valid IANA timezone") from exc
+    return value
+
+
+# Keep aligned with tenants.update_profile defense-in-depth ZoneInfo check.
+TimezoneValue = Annotated[
+    str,
+    BeforeValidator(coerce_timezone_value),
+    AfterValidator(validate_timezone_value),
+]
 DateFormatValue = Annotated[
     Literal["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
     BeforeValidator(coerce_date_format_value),
@@ -433,7 +463,8 @@ class TenantProfileUpdate(BaseModel):
     contact_person: str | None = None
     billing_address: str | None = None
     shipping_address: str | None = None
-    timezone: str | None = None
+    # omit = no change; blank/non-IANA → 422 (was free str; blank late **400**; garbage could persist)
+    timezone: TimezoneValue | None = None
     # omit = no change; blank/invalid MM-DD → 422 (was free str; length-only late **400**)
     fiscal_year_start: FiscalYearStartValue | None = None
     # Keep aligned with tax_filings.SUPPORTED / TaxFilingJurisdictionValue (Company select).

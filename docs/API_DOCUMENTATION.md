@@ -273,6 +273,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 
 `fiscal_year_start` (when sent) ∈ valid calendar `MM-DD` (`FiscalYearStartValue`; strip; blank/invalid/`13-01`/`02-30` → **422** — was free `str` with length-only late service **400**; garbage could persist). Company **Fiscal year start** input.
 
+`timezone` (when sent) ∈ valid IANA key (`TimezoneValue`; strip + `ZoneInfo`; blank/`Foo/Bar`/`UTC+0` → **422** — was free `str`; blank late **400**; garbage could persist). Company **Timezone** select.
+
 Regional / tax format fields (BR-20.2) are schema Literals on this PATCH (omit = no change; blank/invalid → **422**):
 - `tax_jurisdiction` ∈ `GH` (same `TaxFilingJurisdictionValue` / `tax_filings.SUPPORTED` as filing Query; blank/unsupported → **422** — was free `str` with length-only late service **400**; unsupported codes could persist then fail later on filing). Company **Tax jurisdiction** select.
 - `tax_filing_period` ∈ `monthly|quarterly`
