@@ -95,6 +95,7 @@ from app.schemas import (
     ApiKeyStatusFilterValue,
     ApiKeyCreate,
     ExpenseStatusFilterValue,
+    JournalStatusFilterValue,
     BankStatementStatusFilterValue,
     WebhookDeliveryStatusFilterValue,
     SalesReturnReportReasonValue,
@@ -8971,19 +8972,32 @@ async def update_accounting_settings(
 
 @api.get("/accounting/journal-entries")
 async def list_journals(
+    status: Annotated[JournalStatusFilterValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
 
-    rows = (
-        await db.execute(
-            select(m.JournalEntry)
-            .where(m.JournalEntry.tenant_id == claims["tenant_id"])
-            .order_by(m.JournalEntry.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    # Schema JournalStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    stmt = (
+        select(m.JournalEntry)
+        .where(m.JournalEntry.tenant_id == claims["tenant_id"])
+        .order_by(m.JournalEntry.created_at.desc())
+        .limit(100)
+    )
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"posted", "unposted"}:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be posted or unposted",
+            )
+        else:
+            stmt = stmt.where(m.JournalEntry.status == wanted)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await accounting_svc.serialize_journal(db, e) for e in rows])
 
 

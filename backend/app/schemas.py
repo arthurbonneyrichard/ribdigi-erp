@@ -1783,6 +1783,11 @@ ExpenseStatusFilterValue = Annotated[
     Literal["pending", "approved", "rejected"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with JournalEntry.status (Accounting Ledger Recent journals filter).
+JournalStatusFilterValue = Annotated[
+    Literal["posted", "unposted"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with BankStatement.status (Accounting Reconcile statements filter).
 BankStatementStatusFilterValue = Annotated[
     Literal["draft", "in_progress", "reconciled"],

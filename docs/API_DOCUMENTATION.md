@@ -1177,7 +1177,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 **Account Types:** `asset`, `liability`, `equity`, `income`, `expense`
 
 ### 10.2 Journal Entries
-**List:** `GET /accounting/journal-entries`  
+**List:** `GET /accounting/journal-entries` — optional Query `status` ∈ `posted`|`unposted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Accounting Ledger **Journal status filter** All / Posted / Unposted (`journalManageFilter`; client filter over full cache).  
 **Create:** `POST /accounting/journal-entries`  
 **Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` `{ "reason": "..." }` — manual journals only; reverses account balances; **reason required** (appended to journal `description` as `Unpost: …` and stored in audit `journal_unposted.details.reason`); allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD) **and** not on/before `books_closed_through`. Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected.  
 **Attachment:** `POST|GET|DELETE /accounting/journal-entries/{entry_id}/attachment` — multipart `file` upload (PDF/image); tenant-scoped media key on `journal_entries.attachment_url`.

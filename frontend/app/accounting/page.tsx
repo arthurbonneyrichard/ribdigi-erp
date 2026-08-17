@@ -15,6 +15,9 @@ export default function Page() {
   const [accountManageFilter, setAccountManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
+  const [journalManageFilter, setJournalManageFilter] = useState<'all' | 'posted' | 'unposted'>(
+    'all'
+  );
   const [transfers, setTransfers] = useState<any[]>([]);
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
@@ -796,6 +799,10 @@ export default function Page() {
     if (statementManageFilter === 'all') return true;
     return (s.status || 'draft') === statementManageFilter;
   });
+  const managedJournals = journals.filter((j) => {
+    if (journalManageFilter === 'all') return true;
+    return (j.status || 'posted') === journalManageFilter;
+  });
 
   const manualDebitTotal = manualLines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
   const manualCreditTotal = manualLines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
@@ -1289,6 +1296,19 @@ export default function Page() {
             that date. Attach supporting
             documents on any entry (BR-10.2).
           </p>
+          <select
+            value={journalManageFilter}
+            onChange={(e) =>
+              setJournalManageFilter(e.target.value as 'all' | 'posted' | 'unposted')
+            }
+            title="Filter journal list by status"
+            aria-label="Journal status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="posted">Posted only</option>
+            <option value="unposted">Unposted only</option>
+          </select>
           <label style={{ display: 'block', marginBottom: 8 }}>
             Unpost reason{' '}
             <input
@@ -1314,7 +1334,16 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {journals.map((j) => (
+              {managedJournals.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    {journals.length === 0
+                      ? 'No journals yet'
+                      : 'No journals for this filter'}
+                  </td>
+                </tr>
+              ) : (
+                managedJournals.map((j) => (
                 <tr key={j.id}>
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
@@ -1367,7 +1396,8 @@ export default function Page() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </>
