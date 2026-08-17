@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1325 track opened (ADR-2657: `test_stage1325_open.py`, `docs/STAGE_1325_PLAN.md`) — Transfer Quill Gate Honesty Pack Remaining-Gate Index; closed under ADR-2658
+- [x] Transfer Quill Gate Honesty Pack remaining-gate hub (Stage 1325 I1: `test_stage1325_index_i1.py`, `docs/TRANSFER_QUILL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Quill Gate Honesty Pack blocker matrix (Stage 1325 B1: `test_stage1325_blockers_b1.py`, `docs/TRANSFER_QUILL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1324 / Stage 1323 / Stage 392 / CHANGE_IMPACT pointers (Stage 1325 P1: `test_stage1325_pointers_p1.py`, `docs/TRANSFER_QUILL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1325 fidelity sync (D1: `test_stage1325_fidelity_d1.py`, `docs/STAGE_1325_FIDELITY.md`)
+- [x] Stage 1325 exit + freeze (H1325x: `test_stage1325_exit_h1325x.py`, `docs/STAGE_1325_EXIT_CRITERIA.md`, ADR-2658)
 Stage 1324 track opened (ADR-2655: `test_stage1324_open.py`, `docs/STAGE_1324_PLAN.md`) — Transfer Socket Gate Honesty Pack Remaining-Gate Index; closed under ADR-2656
 - [x] Transfer Socket Gate Honesty Pack remaining-gate hub (Stage 1324 I1: `test_stage1324_index_i1.py`, `docs/TRANSFER_SOCKET_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Socket Gate Honesty Pack blocker matrix (Stage 1324 B1: `test_stage1324_blockers_b1.py`, `docs/TRANSFER_SOCKET_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
