@@ -2591,6 +2591,7 @@ def validate_webhook_url_value(value: str) -> str:
 
 
 # Keep aligned with app.webhooks.validate_url (Integrations endpoint URL).
+# Also reused for BankConnectionCreate/Update.feed_url (Accounting Reconcile).
 WebhookUrlValue = Annotated[
     str,
     BeforeValidator(coerce_webhook_url_value),
@@ -2655,7 +2656,8 @@ class BankConnectionCreate(BaseModel):
     provider: Literal["mock", "http_json"] = "mock"
     display_name: str | None = None
     external_account_id: str | None = None
-    feed_url: str | None = None
+    # omit/null OK (mock); blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
+    feed_url: WebhookUrlValue | None = None
     access_token: str | None = None
     auto_sync: bool = True
     auto_match_after_sync: bool = True
@@ -2667,7 +2669,8 @@ class BankConnectionUpdate(BaseModel):
     provider: Literal["mock", "http_json"] | None = None
     display_name: str | None = None
     external_account_id: str | None = None
-    feed_url: str | None = None
+    # omit/null = no change; blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
+    feed_url: WebhookUrlValue | None = None
     access_token: str | None = None
     clear_credentials: bool | None = None
     auto_sync: bool | None = None

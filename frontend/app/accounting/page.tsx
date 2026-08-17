@@ -1677,6 +1677,8 @@ export default function Page() {
                 value={connFeedUrl}
                 onChange={(e) => setConnFeedUrl(e.target.value)}
                 placeholder="https://…/transactions"
+                title="Absolute https feed URL (http only for localhost)"
+                aria-label="Bank feed URL"
               />
             )}
             <button onClick={createConnection} disabled={!reconAccountId}>
