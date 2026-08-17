@@ -37,6 +37,14 @@ const AUDIT_MODULES = [
   'webhooks',
 ] as const;
 
+/** Keep aligned with backend AuditActionValue (strip/lower; digit-start OK for 2fa_*). */
+function auditActionQueryValue(raw: string): string | null {
+  const v = raw.trim().toLowerCase();
+  if (!v) return null;
+  if (!/^[a-z0-9][a-z0-9_]{1,62}$/.test(v)) return null;
+  return v;
+}
+
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState('');
@@ -54,7 +62,8 @@ export default function Page() {
   const refreshLogs = useCallback(async () => {
     const params = new URLSearchParams();
     if (module) params.set('module', module);
-    if (action) params.set('action', action);
+    const actionQ = auditActionQueryValue(action);
+    if (actionQ) params.set('action', actionQ);
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
     const q = params.toString() ? `?${params}` : '';
@@ -98,11 +107,16 @@ export default function Page() {
   async function exportCsv() {
     setError('');
     try {
+      if (action.trim() && !auditActionQueryValue(action)) {
+        setError('Action must be snake_case (2+ chars; 2fa_* OK)');
+        return;
+      }
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (module) params.set('module', module);
-      if (action) params.set('action', action);
+      const actionQ = auditActionQueryValue(action);
+      if (actionQ) params.set('action', actionQ);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       const res = await fetch(`${base}/audit-logs/export?${params}`, {
@@ -267,7 +281,17 @@ export default function Page() {
           title="To date (YYYY-MM-DD)"
           aria-label="Audit to date"
         />
-        <button type="button" onClick={() => refreshLogs().catch((e) => setError(e.message))}>
+        <button
+          type="button"
+          onClick={() => {
+            if (action.trim() && !auditActionQueryValue(action)) {
+              setError('Action must be snake_case (2+ chars; 2fa_* OK)');
+              return;
+            }
+            setError('');
+            refreshLogs().catch((e) => setError(e.message));
+          }}
+        >
           Filter
         </button>
         <button type="button" onClick={runVerify}>
