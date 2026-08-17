@@ -86,6 +86,7 @@ from app.schemas import (
     PendingPoReportStatusValue,
     PurchaseOrderStatusValue,
     SalesInvoiceStatusValue,
+    PurchaseRequestStatusValue,
     ReturnReportStatusValue,
     TenantStatusFilterValue,
     ApiKeyStatusFilterValue,
@@ -6054,15 +6055,34 @@ async def purchase(
 
 @api.get("/purchasing/requests")
 async def list_purchase_requests(
+    status: Annotated[PurchaseRequestStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.purchase_requests import PR_MANAGE_STATUSES
+
     stmt = (
         select(m.PurchaseRequest)
         .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseRequest.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.PurchaseRequest, claims)
+    # Schema PurchaseRequestStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in PR_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid purchase request status '{wanted}'. "
+                    f"Allowed: {sorted(PR_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.PurchaseRequest.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchase_requests_svc.serialize_request(db, r) for r in rows])
 

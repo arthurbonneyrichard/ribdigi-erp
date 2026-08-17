@@ -774,10 +774,10 @@ List supports optional `?status=active|inactive` (schema Query `Literal` + strip
 First contact becomes primary; setting `is_primary` clears other primaries and syncs party `email`/`phone`. `GET /suppliers/{id}` includes `contacts`.
 
 ### 6.2 Purchase Request
-**List:** `GET /purchases/requests`  
-**Create:** `POST /purchases/requests`  
-**Get:** `GET /purchases/requests/{request_id}`  
-**Approve:** `POST /purchases/requests/{request_id}/approve`  
+**List:** `GET /purchasing/requests` — optional Query `status` ∈ `draft`|`pending`|`approved`|`rejected`|`converted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Requests **Purchase request status filter** (`prManageFilter`; client filter over full cache).  
+**Create:** `POST /purchasing/requests`  
+**Get:** `GET /purchasing/requests/{request_id}`  
+**Approve:** `POST /purchasing/requests/{request_id}/approve`  
 **Reject:** `POST /purchasing/requests/{request_id}/reject` — body `{ "reason" }` **required** (non-empty) → `rejection_reason` + audit `pr_rejected.details.reason`; blank/omit → 422/400. Purchasing UI requires typed reason (no hardcoded string) (BR-6.2).
 
 **Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_request_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PREQ`) — not a daily `R{yymmdd}-NNN` stamp (BR-6.2 / BR-20.4).

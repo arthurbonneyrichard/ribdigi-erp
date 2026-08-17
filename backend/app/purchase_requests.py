@@ -19,6 +19,10 @@ from app.doc_numbers import next_purchase_request_number
 PR_EDITABLE = frozenset({"draft"})
 PR_APPROVABLE = frozenset({"pending"})
 PR_CONVERTIBLE = frozenset({"approved"})
+# Manage list statuses (full PR lifecycle).
+PR_MANAGE_STATUSES = frozenset(
+    {"draft", "pending", "approved", "rejected", "converted"}
+)
 MAX_APPROVAL_LEVELS = 5
 
 

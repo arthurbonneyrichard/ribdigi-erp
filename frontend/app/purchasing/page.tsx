@@ -151,6 +151,9 @@ export default function Page() {
     'all' | 'draft' | 'sent' | 'partially_received' | 'received' | 'cancelled'
   >('all');
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
+  const [prManageFilter, setPrManageFilter] = useState<
+    'all' | 'draft' | 'pending' | 'approved' | 'rejected' | 'converted'
+  >('all');
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
@@ -1156,6 +1159,10 @@ export default function Page() {
     if (poManageFilter === 'all') return true;
     return (o.status || 'draft') === poManageFilter;
   });
+  const managedRequests = requests.filter((r) => {
+    if (prManageFilter === 'all') return true;
+    return (r.status || 'draft') === prManageFilter;
+  });
 
   return (
     <Shell>
@@ -1413,6 +1420,30 @@ export default function Page() {
               Used by Reject on pending requests (stored as <code>rejection_reason</code>).
             </p>
           </div>
+          <select
+            value={prManageFilter}
+            onChange={(e) =>
+              setPrManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'pending'
+                  | 'approved'
+                  | 'rejected'
+                  | 'converted'
+              )
+            }
+            title="Filter purchase request list by status"
+            aria-label="Purchase request status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="pending">Pending only</option>
+            <option value="approved">Approved only</option>
+            <option value="rejected">Rejected only</option>
+            <option value="converted">Converted only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -1426,7 +1457,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {requests.map((r) => (
+              {managedRequests.map((r) => (
                 <tr key={r.id}>
                   <td>{r.request_number}</td>
                   <td>{r.status}</td>
@@ -1489,10 +1520,12 @@ export default function Page() {
                   </td>
                 </tr>
               ))}
-              {requests.length === 0 && (
+              {managedRequests.length === 0 && (
                 <tr>
                   <td colSpan={7} className="muted">
-                    No purchase requests yet
+                    {requests.length === 0
+                      ? 'No purchase requests yet'
+                      : 'No purchase requests for this filter'}
                   </td>
                 </tr>
               )}

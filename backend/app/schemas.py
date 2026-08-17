@@ -1654,6 +1654,11 @@ SalesInvoiceStatusValue = Annotated[
     Literal["draft", "posted", "sent", "partial", "paid", "overdue", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.purchase_requests.PR_MANAGE_STATUSES (Purchasing Requests manage list).
+PurchaseRequestStatusValue = Annotated[
+    Literal["draft", "pending", "approved", "rejected", "converted"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.reports.RETURN_REPORT_STATUSES (Reports sales/purchase returns).
 ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],
