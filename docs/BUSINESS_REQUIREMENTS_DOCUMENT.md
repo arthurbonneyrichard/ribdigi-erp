@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1345 D1 Transfer Land Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1345_FIDELITY.md` (`test_stage1345_fidelity_d1.py`); Offline Complete / Transfer Land Gate honesty / go-live still MISSING.
 Stage 1344 D1 Transfer Undercut Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1344_FIDELITY.md` (`test_stage1344_fidelity_d1.py`); Offline Complete / Transfer Undercut Gate honesty / go-live still MISSING.
 Stage 1343 D1 Transfer Relief Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1343_FIDELITY.md` (`test_stage1343_fidelity_d1.py`); Offline Complete / Transfer Relief Gate honesty / go-live still MISSING.
 Stage 1342 D1 Transfer Keyseat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1342_FIDELITY.md` (`test_stage1342_fidelity_d1.py`); Offline Complete / Transfer Keyseat Gate honesty / go-live still MISSING.
