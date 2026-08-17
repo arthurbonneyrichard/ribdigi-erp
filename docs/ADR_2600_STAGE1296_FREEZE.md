@@ -31,3 +31,7 @@ Stage 1297 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Spring Gate, Transfer Spring Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1297 opened under **ADR-2601** after CONTINUE/NEXT (Tenant MVP Transfer Clip Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2602**. Stage 1296 feature scope remains frozen.
