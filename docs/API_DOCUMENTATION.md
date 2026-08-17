@@ -968,7 +968,7 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 Create accepts header `discount_amount` and per-line `items[].discount` (≥0). Line tax is computed on qty×unit_price before line discount; document `total_amount` subtracts header discount. Sales **Create sale** UI exposes Line discount + Header discount for quotations, orders, and invoices; detail shows Discount column + KPI (BR-7.2 / BR-7.3 / BR-7.4).
 
 ### 7.4 Sales Orders
-**List:** `GET /sales/orders`  
+**List:** `GET /sales/orders` — optional Query `status` ∈ `draft`|`confirmed`|`processing`|`shipped`|`delivered`|`invoiced`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Orders **Sales order status filter** (`orderManageFilter`; client filter over full cache).  
 **Create:** `POST /sales/orders`  
 **Get:** `GET /sales/orders/{order_id}`  
 **Update Status:** `PATCH /sales/orders/{order_id}/status`  
@@ -978,7 +978,7 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 
 **Cancel:** `POST /sales/orders/{order_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to order `notes` as `Cancel: …` and stored in audit `so_cancelled.details.reason`); allowed for `draft` / `confirmed` / `processing` (`can_cancel`); releases soft reservations; blocked after ship/deliver/invoiced. Sales Orders **Cancel reason** UI (BR-7.3).
 
-**Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `cancelled`
+**Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `invoiced`; branch to `cancelled`
 
 ### 7.5 Invoices
 **List:** `GET /sales/invoices` — optional Query `status` ∈ `draft`|`posted`|`sent`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Invoices **Sales invoice status filter** (`invoiceManageFilter`; client filter over full cache).  

@@ -56,6 +56,16 @@ export default function Page() {
     'all' | 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted'
   >('all');
   const [orders, setOrders] = useState<any[]>([]);
+  const [orderManageFilter, setOrderManageFilter] = useState<
+    | 'all'
+    | 'draft'
+    | 'confirmed'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'invoiced'
+    | 'cancelled'
+  >('all');
   const [returns, setReturns] = useState<any[]>([]);
   const [returnManageFilter, setReturnManageFilter] = useState<
     'all' | 'draft' | 'posted' | 'cancelled'
@@ -717,6 +727,10 @@ export default function Page() {
     if (quotationManageFilter === 'all') return true;
     return (q.status || 'draft') === quotationManageFilter;
   });
+  const managedOrders = orders.filter((o) => {
+    if (orderManageFilter === 'all') return true;
+    return (o.status || 'draft') === orderManageFilter;
+  });
 
   return (
     <Shell>
@@ -1348,6 +1362,34 @@ export default function Page() {
               {'{ reason }'}).
             </p>
           </div>
+          <select
+            value={orderManageFilter}
+            onChange={(e) =>
+              setOrderManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'confirmed'
+                  | 'processing'
+                  | 'shipped'
+                  | 'delivered'
+                  | 'invoiced'
+                  | 'cancelled'
+              )
+            }
+            title="Filter sales order list by status"
+            aria-label="Sales order status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="confirmed">Confirmed only</option>
+            <option value="processing">Processing only</option>
+            <option value="shipped">Shipped only</option>
+            <option value="delivered">Delivered only</option>
+            <option value="invoiced">Invoiced only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
           <table className="table">
           <thead>
             <tr>
@@ -1362,7 +1404,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {managedOrders.map((o) => (
               <tr key={o.id}>
                 <td>{o.order_number}</td>
                 <td>{o.status}</td>
@@ -1454,6 +1496,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedOrders.length === 0 && (
+              <tr>
+                <td colSpan={8} className="muted">
+                  {orders.length === 0
+                    ? 'No sales orders yet'
+                    : 'No sales orders for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>

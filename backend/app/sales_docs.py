@@ -26,6 +26,18 @@ RETURN_CONDITIONS = frozenset({"sellable", "discard"})
 QT_MANAGE_STATUSES = frozenset(
     {"draft", "sent", "accepted", "rejected", "expired", "converted"}
 )
+# Manage list statuses (full sales order fulfillment lifecycle).
+SO_MANAGE_STATUSES = frozenset(
+    {
+        "draft",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "invoiced",
+        "cancelled",
+    }
+)
 
 
 async def _prepare_lines(
