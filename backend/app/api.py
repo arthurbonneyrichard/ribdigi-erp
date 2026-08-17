@@ -84,6 +84,7 @@ from app.schemas import (
     TenantStatusFilterValue,
     ApiKeyStatusFilterValue,
     ApiKeyCreate,
+    ExpenseStatusFilterValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
     MovementTypeValue,
@@ -7735,13 +7736,30 @@ async def generate_recurring_expenses(
 
 
 @api.get("/expenses")
-async def expenses(claims=Depends(require_permission("expenses", "read")), db: AsyncSession = Depends(get_db)):
+async def expenses(
+    status: Annotated[ExpenseStatusFilterValue | None, Query()] = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
     stmt = (
         select(m.Expense)
         .where(m.Expense.tenant_id == claims["tenant_id"])
         .order_by(m.Expense.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.Expense, claims)
+    # Schema ExpenseStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"pending", "approved", "rejected"}:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, approved, or rejected",
+            )
+        else:
+            stmt = stmt.where(m.Expense.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])
 

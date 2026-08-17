@@ -1618,6 +1618,11 @@ ApiKeyStatusFilterValue = Annotated[
     Literal["active", "revoked", "expired"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with expense.status (Expenses list manage filter).
+ExpenseStatusFilterValue = Annotated[
+    Literal["pending", "approved", "rejected"],
+    BeforeValidator(coerce_package_code_value),
+]
 ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
 
 

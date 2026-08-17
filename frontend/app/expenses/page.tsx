@@ -41,6 +41,9 @@ type Expense = {
 
 export default function Page() {
   const [rows, setRows] = useState<Expense[]>([]);
+  const [expenseManageFilter, setExpenseManageFilter] = useState<
+    'all' | 'pending' | 'approved' | 'rejected'
+  >('all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [threshold, setThreshold] = useState(100);
@@ -713,6 +716,10 @@ export default function Page() {
     const active = r.is_active !== false;
     return recurringManageFilter === 'inactive' ? !active : active;
   });
+  const managedExpenses = rows.filter((r) => {
+    if (expenseManageFilter === 'all') return true;
+    return (r.status || 'pending') === expenseManageFilter;
+  });
 
   return (
     <Shell>
@@ -1375,6 +1382,23 @@ export default function Page() {
         </div>
       )}
 
+      <div style={{ marginBottom: 12 }}>
+        <select
+          value={expenseManageFilter}
+          onChange={(e) =>
+            setExpenseManageFilter(
+              e.target.value as 'all' | 'pending' | 'approved' | 'rejected'
+            )
+          }
+          title="Filter expense list by status"
+          aria-label="Expense status filter"
+        >
+          <option value="all">All statuses</option>
+          <option value="pending">Pending only</option>
+          <option value="approved">Approved only</option>
+          <option value="rejected">Rejected only</option>
+        </select>
+      </div>
       <table className="table">
         <thead>
           <tr>
@@ -1394,7 +1418,14 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {managedExpenses.length === 0 ? (
+            <tr>
+              <td colSpan={13} className="muted">
+                No expenses for this filter
+              </td>
+            </tr>
+          ) : (
+            managedExpenses.map((r) => (
             <tr key={r.id}>
               <td>{r.category}</td>
               <td>
@@ -1471,7 +1502,8 @@ export default function Page() {
                 )}
               </td>
             </tr>
-          ))}
+          ))
+          )}
         </tbody>
       </table>
       {attachPreview && (
