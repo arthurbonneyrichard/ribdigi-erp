@@ -30,6 +30,7 @@ Infrastructure PITR targets are documented under Stage 26 W1 (`docs/DR_WAL_PITR_
 ## Drill procedure (quarterly)
 
 1. **Create backup** — `POST /api/v1/backup` typed body `BackupCreateBody` `{ "notes"? }` (`extra=forbid`; unknown keys → **422**). Or rely on schedule. Record `backup_id`, filename, and `checksum_sha256`.
+1b. **List backups** — `GET /api/v1/backup` optional Query `status` ∈ `pending`|`completed`|`failed`|`restoring` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Backup UI **Backup job status filter** (`backupManageFilter`).
 2. **Download** (optional) — `GET /api/v1/backup/{id}/download`; confirm `X-Checksum-SHA256`.
 3. **Simulate loss** (staging only) — mutate or delete a known product/party field that exists in the backup.
 4. **Dry-run** — `POST /api/v1/backup/{id}/restore` with typed `BackupRestoreBody` `{"dry_run": true}` (`extra=forbid`). Confirm `valid`, `record_counts`, tenant match.

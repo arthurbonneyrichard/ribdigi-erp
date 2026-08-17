@@ -360,13 +360,34 @@ async def create_backup(
         raise HTTPException(status_code=500, detail=f"Backup failed: {exc}") from exc
 
 
-async def list_backups(db: AsyncSession, tenant_id: str, limit: int = 50) -> list[m.BackupJob]:
-    result = await db.execute(
+async def list_backups(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 50,
+) -> list[m.BackupJob]:
+    stmt = (
         select(m.BackupJob)
         .where(m.BackupJob.tenant_id == tenant_id)
         .order_by(m.BackupJob.created_at.desc())
         .limit(min(max(limit, 1), 200))
     )
+    if status is not None:
+        # Schema BackupJobStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {"pending", "completed", "failed", "restoring"}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, completed, failed, or restoring",
+            )
+        else:
+            stmt = stmt.where(m.BackupJob.status == wanted)
+    result = await db.execute(stmt)
     return list(result.scalars().all())
 
 

@@ -8,6 +8,9 @@ const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
+  const [backupManageFilter, setBackupManageFilter] = useState<
+    'all' | 'pending' | 'completed' | 'failed' | 'restoring'
+  >('all');
   const [settings, setSettings] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -23,6 +26,11 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  const managedBackups = rows.filter((r) => {
+    if (backupManageFilter === 'all') return true;
+    return (r.status || 'pending') === backupManageFilter;
+  });
 
   async function createBackup() {
     setError('');
@@ -180,6 +188,23 @@ export default function Page() {
         </div>
       )}
 
+      <select
+        value={backupManageFilter}
+        onChange={(e) =>
+          setBackupManageFilter(
+            e.target.value as 'all' | 'pending' | 'completed' | 'failed' | 'restoring'
+          )
+        }
+        title="Filter backup job list by status"
+        aria-label="Backup job status filter"
+        style={{ marginBottom: 12 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="pending">Pending only</option>
+        <option value="completed">Completed only</option>
+        <option value="failed">Failed only</option>
+        <option value="restoring">Restoring only</option>
+      </select>
       <table className="table">
         <thead>
           <tr>
@@ -192,7 +217,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {managedBackups.map((r) => (
             <tr key={r.id}>
               <td>{String(r.created_at)}</td>
               <td>{r.filename}</td>
@@ -214,6 +239,13 @@ export default function Page() {
               </td>
             </tr>
           ))}
+          {!managedBackups.length && (
+            <tr>
+              <td colSpan={6} className="muted">
+                No backups for this filter
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </Shell>

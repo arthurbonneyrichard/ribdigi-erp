@@ -1669,6 +1669,11 @@ BankStatementStatusFilterValue = Annotated[
     Literal["draft", "in_progress", "reconciled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with BackupJob.status (Backup jobs list filter).
+BackupJobStatusFilterValue = Annotated[
+    Literal["pending", "completed", "failed", "restoring"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.webhooks STATUS_* (Integrations delivery history filter).
 WebhookDeliveryStatusFilterValue = Annotated[
     Literal["pending", "pending_retry", "delivered", "failed"],

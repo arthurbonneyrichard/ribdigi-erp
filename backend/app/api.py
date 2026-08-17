@@ -70,6 +70,7 @@ from app.schemas import (
     BackupCreateBody,
     BackupVerifyBody,
     BackupRestoreBody,
+    BackupJobStatusFilterValue,
     ReportScheduleCreate,
     ReportScheduleUpdate,
     ReportTypeValue,
@@ -11514,10 +11515,11 @@ async def backup_settings_patch(
 
 @api.get("/backup")
 async def backup_list(
+    status: Annotated[BackupJobStatusFilterValue | None, Query()] = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await backup_svc.list_backups(db, claims["tenant_id"])
+    rows = await backup_svc.list_backups(db, claims["tenant_id"], status=status)
     return env([backup_svc.serialize_job(r) for r in rows])
 
 
