@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1239 D1 Transfer Reveal Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1239_FIDELITY.md` (`test_stage1239_fidelity_d1.py`); Offline Complete / Transfer Reveal Gate honesty / go-live still MISSING.
 Stage 1238 D1 Transfer Sill Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1238_FIDELITY.md` (`test_stage1238_fidelity_d1.py`); Offline Complete / Transfer Sill Gate honesty / go-live still MISSING.
 Stage 1237 D1 Transfer Transom Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1237_FIDELITY.md` (`test_stage1237_fidelity_d1.py`); Offline Complete / Transfer Transom Gate honesty / go-live still MISSING.
 Stage 1236 D1 Transfer Lintel Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1236_FIDELITY.md` (`test_stage1236_fidelity_d1.py`); Offline Complete / Transfer Lintel Gate honesty / go-live still MISSING.
