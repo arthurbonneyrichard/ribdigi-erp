@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1303 track opened (ADR-2613: `test_stage1303_open.py`, `docs/STAGE_1303_PLAN.md`) — Transfer Pinion Gate Honesty Pack Remaining-Gate Index; closed under ADR-2614
+- [x] Transfer Pinion Gate Honesty Pack remaining-gate hub (Stage 1303 I1: `test_stage1303_index_i1.py`, `docs/TRANSFER_PINION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Pinion Gate Honesty Pack blocker matrix (Stage 1303 B1: `test_stage1303_blockers_b1.py`, `docs/TRANSFER_PINION_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1302 / Stage 1301 / Stage 392 / CHANGE_IMPACT pointers (Stage 1303 P1: `test_stage1303_pointers_p1.py`, `docs/TRANSFER_PINION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1303 fidelity sync (D1: `test_stage1303_fidelity_d1.py`, `docs/STAGE_1303_FIDELITY.md`)
+- [x] Stage 1303 exit + freeze (H1303x: `test_stage1303_exit_h1303x.py`, `docs/STAGE_1303_EXIT_CRITERIA.md`, ADR-2614)
 Stage 1302 track opened (ADR-2611: `test_stage1302_open.py`, `docs/STAGE_1302_PLAN.md`) — Transfer Snapring Gate Honesty Pack Remaining-Gate Index; closed under ADR-2612
 - [x] Transfer Snapring Gate Honesty Pack remaining-gate hub (Stage 1302 I1: `test_stage1302_index_i1.py`, `docs/TRANSFER_SNAPRING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Snapring Gate Honesty Pack blocker matrix (Stage 1302 B1: `test_stage1302_blockers_b1.py`, `docs/TRANSFER_SNAPRING_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
