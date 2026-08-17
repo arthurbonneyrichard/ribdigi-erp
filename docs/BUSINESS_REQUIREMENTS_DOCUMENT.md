@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1292 D1 Transfer Washer Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1292_FIDELITY.md` (`test_stage1292_fidelity_d1.py`); Offline Complete / Transfer Washer Gate honesty / go-live still MISSING.
 Stage 1291 D1 Transfer Retainer Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1291_FIDELITY.md` (`test_stage1291_fidelity_d1.py`); Offline Complete / Transfer Retainer Gate honesty / go-live still MISSING.
 Stage 1290 D1 Transfer Spacer Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1290_FIDELITY.md` (`test_stage1290_fidelity_d1.py`); Offline Complete / Transfer Spacer Gate honesty / go-live still MISSING.
 Stage 1289 D1 Transfer Coupling Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1289_FIDELITY.md` (`test_stage1289_fidelity_d1.py`); Offline Complete / Transfer Coupling Gate honesty / go-live still MISSING.
