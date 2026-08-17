@@ -104,6 +104,7 @@ from app.schemas import (
     TaxFilingJurisdictionValue,
     BankStatementStatusFilterValue,
     WebhookDeliveryStatusFilterValue,
+    AuditModuleValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
     MovementTypeValue,
@@ -11576,7 +11577,7 @@ async def run_job_now(
 @api.get("/audit-logs")
 async def audit_logs(
     user_id: str | None = None,
-    module: str | None = None,
+    module: Annotated[AuditModuleValue | None, Query()] = None,
     action: str | None = None,
     entity: str | None = None,
     from_date: str | None = None,
@@ -11649,7 +11650,7 @@ async def audit_logs_archive_cold(
 @api.get("/audit-logs/export")
 async def audit_logs_export(
     user_id: str | None = None,
-    module: str | None = None,
+    module: Annotated[AuditModuleValue | None, Query()] = None,
     action: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,

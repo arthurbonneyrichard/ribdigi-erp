@@ -2221,6 +2221,37 @@ WebhookDeliveryStatusFilterValue = Annotated[
     Literal["pending", "pending_retry", "delivered", "failed"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.audit.AUDIT_MODULES (Audit Logs module filter).
+AuditModuleValue = Annotated[
+    Literal[
+        "accounting",
+        "ai",
+        "audit",
+        "auth",
+        "backup",
+        "company",
+        "credit",
+        "dashboard",
+        "expenses",
+        "inventory",
+        "notifications",
+        "onboarding",
+        "platform_staff",
+        "pos",
+        "purchasing",
+        "reports",
+        "sales",
+        "security",
+        "settings",
+        "stores",
+        "system",
+        "tax",
+        "tenants",
+        "users",
+        "webhooks",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 
 
 class ApiKeyCreate(BaseModel):

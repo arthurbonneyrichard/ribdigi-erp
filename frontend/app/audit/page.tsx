@@ -8,6 +8,35 @@ const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const ARCHIVE_ROLES = new Set(['company_admin', 'super_admin']);
 
+const AUDIT_MODULES = [
+  '',
+  'accounting',
+  'ai',
+  'audit',
+  'auth',
+  'backup',
+  'company',
+  'credit',
+  'dashboard',
+  'expenses',
+  'inventory',
+  'notifications',
+  'onboarding',
+  'platform_staff',
+  'pos',
+  'purchasing',
+  'reports',
+  'sales',
+  'security',
+  'settings',
+  'stores',
+  'system',
+  'tax',
+  'tenants',
+  'users',
+  'webhooks',
+] as const;
+
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState('');
@@ -205,11 +234,18 @@ export default function Page() {
       )}
 
       <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <input
+        <select
           value={module}
           onChange={(e) => setModule(e.target.value)}
-          placeholder="Module (auth, users…)"
-        />
+          aria-label="Audit module filter"
+          title="Filter audit logs by module"
+        >
+          {AUDIT_MODULES.map((m) => (
+            <option key={m || 'all'} value={m}>
+              {m ? `Module: ${m}` : 'All modules'}
+            </option>
+          ))}
+        </select>
         <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="Action" />
         <input
           type="date"

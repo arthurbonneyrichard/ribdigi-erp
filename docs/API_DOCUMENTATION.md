@@ -1547,9 +1547,9 @@ Sync run returns handler result payload. Jobs UI **Run sync** / **Enqueue** (`ar
 Append-only hash-chained audit trail (BR-17.1–17.2).
 
 ### 15C.1 Query / verify / export
-**List:** `GET /audit-logs?module=&action=&user_id=&entity=&from_date=&to_date=&limit=`  
+**List:** `GET /audit-logs?module=&action=&user_id=&entity=&from_date=&to_date=&limit=` — optional Query `module` ∈ `AuditModuleValue` / `audit.AUDIT_MODULES` (strip/lower; omit → all; blank/unknown → **422** — blank was silent omit; unknown returned empty). Audit **Audit module filter** select.  
 **Verify chain:** `GET /audit-logs/verify`  
-**Export CSV:** `GET /audit-logs/export` (same filters)
+**Export CSV:** `GET /audit-logs/export` (same filters; same `module` honesty)
 
 ### 15C.2 Retention & cold archive
 **Policy:** `GET /audit-logs/retention` — `retention_years` (≥7), `cold_archive_after_days`, `purge_allowed=false`  
