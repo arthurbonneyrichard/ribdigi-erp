@@ -9570,8 +9570,8 @@ async def report_sales_monthly(
 
 @api.get("/reports/sales/products")
 async def report_sales_products(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     category_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
@@ -9592,8 +9592,8 @@ async def report_sales_products(
 
 @api.get("/reports/sales/customers")
 async def report_sales_customers(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     limit: int | None = None,
     claims=Depends(require_permission("reports", "read")),
