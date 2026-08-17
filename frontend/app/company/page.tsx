@@ -357,9 +357,13 @@ export default function Page() {
           placeholder="Timezone"
         />
         <input
-          value={tenant.fiscal_year_start || ''}
+          value={tenant.fiscal_year_start || '01-01'}
           onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
           placeholder="Fiscal year start MM-DD"
+          pattern="(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])"
+          maxLength={5}
+          aria-label="Fiscal year start"
+          title="MM-DD (e.g. 01-01)"
         />
         <select
           value={tenant.tax_jurisdiction || 'GH'}

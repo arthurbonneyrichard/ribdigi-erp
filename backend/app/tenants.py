@@ -637,9 +637,11 @@ async def update_profile(
             raise HTTPException(status_code=400, detail="timezone is required")
         tenant.timezone = tz
     if fiscal_year_start is not None:
+        # Defense in depth: TenantProfileUpdate FiscalYearStartValue → 422 on blank/bad MM-DD.
+        from app.accounting import parse_fiscal_mmdd
+
         fys = fiscal_year_start.strip()
-        if len(fys) != 5 or fys[2] != "-":
-            raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
+        parse_fiscal_mmdd(fys)
         tenant.fiscal_year_start = fys
     if tax_jurisdiction is not None:
         # Defense in depth: TenantProfileUpdate TaxFilingJurisdictionValue → 422 on blank/unknown.

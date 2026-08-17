@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     BaseModel,
+    AfterValidator,
     BeforeValidator,
     ConfigDict,
     EmailStr,
@@ -63,6 +64,37 @@ CurrencyCodeValue = Annotated[
     str,
     BeforeValidator(coerce_currency_code_value),
     Field(min_length=3, max_length=3, pattern=r"^[A-Z]{3}$"),
+]
+
+
+def coerce_fiscal_year_start_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_fiscal_year_start_value(value: str) -> str:
+    """AfterValidator: MM-DD with real calendar day (BR-10 / company profile)."""
+    if not re.fullmatch(r"(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])", value):
+        raise ValueError("fiscal_year_start must be MM-DD")
+    mm, dd = int(value[0:2]), int(value[3:5])
+    # Prefer leap year so 02-29 is allowed; other invalid days still fail.
+    year = 2024 if mm == 2 and dd == 29 else 2023
+    try:
+        date(year, mm, dd)
+    except ValueError as exc:
+        raise ValueError("fiscal_year_start must be a valid calendar MM-DD") from exc
+    return value
+
+
+# Keep aligned with app.accounting.parse_fiscal_mmdd (Company fiscal year start).
+FiscalYearStartValue = Annotated[
+    str,
+    BeforeValidator(coerce_fiscal_year_start_value),
+    AfterValidator(validate_fiscal_year_start_value),
 ]
 DateFormatValue = Annotated[
     Literal["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
@@ -402,7 +434,8 @@ class TenantProfileUpdate(BaseModel):
     billing_address: str | None = None
     shipping_address: str | None = None
     timezone: str | None = None
-    fiscal_year_start: str | None = None
+    # omit = no change; blank/invalid MM-DD → 422 (was free str; length-only late **400**)
+    fiscal_year_start: FiscalYearStartValue | None = None
     # Keep aligned with tax_filings.SUPPORTED / TaxFilingJurisdictionValue (Company select).
     # omit = no change; blank/unsupported → 422 (was free str; length-only late **400**).
     tax_jurisdiction: TaxFilingJurisdictionValue | None = None
