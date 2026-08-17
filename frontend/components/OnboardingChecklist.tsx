@@ -176,6 +176,11 @@ export default function OnboardingChecklist({
                 <button
                   type="button"
                   disabled={busy}
+                  aria-label={
+                    step.skipped
+                      ? `Onboarding unskip ${step.id}`
+                      : `Onboarding skip ${step.id}`
+                  }
                   onClick={() =>
                     run(
                       step.skipped

@@ -1493,10 +1493,9 @@ First-run tenant checklist (Stage 6 N2). Auto-detects company profile, products,
 
 ### 15A.2 Skip / unskip step
 **Endpoint:** `POST /onboarding/checklist/steps/{step_id}/skip`  
-**Endpoint:** `POST /onboarding/checklist/steps/{step_id}/unskip`
+**Endpoint:** `POST /onboarding/checklist/steps/{step_id}/unskip`  
 
-Valid `step_id`: `setup_company` | `add_products` | `create_supplier` | `stock_ready` | `first_sale`.
-
+Path `step_id` schema `Literal` of checklist steps (`OnboardingStepIdValue` + strip/lower): `setup_company` | `add_products` | `create_supplier` | `stock_ready` | `first_sale`. Blank/unknown → **422** (was late service **400**). Service `VALID_STEP_IDS` remains defense-in-depth. Shell Getting started **Skip** / **Undo skip** (`aria-label`s per step).
 ### 15A.3 Dismiss / restore
 **Endpoint:** `POST /onboarding/checklist/dismiss` — requires `progress_pct >= 80` (or all complete).  
 **Endpoint:** `POST /onboarding/checklist/restore` — clears dismiss so the Shell banner returns.

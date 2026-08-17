@@ -1741,6 +1741,17 @@ JobNameValue = Annotated[
     ],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.onboarding.VALID_STEP_IDS / STEP_DEFS (Getting started Skip).
+OnboardingStepIdValue = Annotated[
+    Literal[
+        "setup_company",
+        "add_products",
+        "create_supplier",
+        "stock_ready",
+        "first_sale",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 ReportExportFormatValue = Annotated[
     Literal["csv", "pdf", "xlsx"],
     BeforeValidator(coerce_package_code_value),

@@ -77,6 +77,7 @@ from app.schemas import (
     ReportExportFormatValue,
     ScheduleFrequencyValue,
     JobNameValue,
+    OnboardingStepIdValue,
     BalanceSheetCompareValue,
     CreditAgingKindValue,
     InventoryValuationMethodValue,
@@ -12221,10 +12222,11 @@ async def onboarding_checklist_get(
 
 @api.post("/onboarding/checklist/steps/{step_id}/skip")
 async def onboarding_checklist_skip(
-    step_id: str,
+    step_id: Annotated[OnboardingStepIdValue, Path()],
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Schema OnboardingStepIdValue rejects blank/unknown → 422 (was late service **400**).
     tenants_svc.assert_writable(claims)
     data = await onboarding_svc.skip_step(db, claims["tenant_id"], step_id)
     await db.commit()
@@ -12233,7 +12235,7 @@ async def onboarding_checklist_skip(
 
 @api.post("/onboarding/checklist/steps/{step_id}/unskip")
 async def onboarding_checklist_unskip(
-    step_id: str,
+    step_id: Annotated[OnboardingStepIdValue, Path()],
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
