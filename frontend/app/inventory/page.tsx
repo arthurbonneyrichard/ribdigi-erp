@@ -3069,9 +3069,21 @@ export default function Page() {
                 <option value="lost">lost</option>
               </select>
               <label className="muted">From</label>
-              <input type="date" value={mvFrom} onChange={(e) => setMvFrom(e.target.value)} />
+              <input
+                type="date"
+                value={mvFrom}
+                onChange={(e) => setMvFrom(e.target.value)}
+                title="From date (YYYY-MM-DD)"
+                aria-label="Movement from date"
+              />
               <label className="muted">To</label>
-              <input type="date" value={mvTo} onChange={(e) => setMvTo(e.target.value)} />
+              <input
+                type="date"
+                value={mvTo}
+                onChange={(e) => setMvTo(e.target.value)}
+                title="To date (YYYY-MM-DD)"
+                aria-label="Movement to date"
+              />
               <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input
                   type="checkbox"
