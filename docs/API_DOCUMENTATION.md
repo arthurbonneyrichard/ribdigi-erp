@@ -882,7 +882,7 @@ Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced 
 Response lines include `line_subtotal`, `line_tax`, and optional `tax_components`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Purchasing → Invoices UI shows per-line tax and by-rate totals when an invoice number is selected.
 
 ### 6.6 Purchase Return
-**List:** `GET /purchasing/returns`  
+**List:** `GET /purchasing/returns` — optional Query `status` ∈ `draft`|`posted`|`cancelled` (same `ReturnReportStatusValue` as return report; omit → all; blank/invalid → **422**). Purchasing **Purchase return status filter** (`returnManageFilter`; client filter over full cache).  
 **Create:** `POST /purchasing/returns`  
 **Get:** `GET /purchasing/returns/{return_id}`  
 **Post:** `POST /purchasing/returns/{return_id}/post` — draft only; stock/AP/journal on post.  
@@ -1017,7 +1017,7 @@ Optional header `is_reverse_charge: true` forces reverse-charge memo for all lin
 Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, and `is_reverse_charge`. Header includes `tax_amount`, `reverse_charge_tax`, `is_reverse_charge`, plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Print JSON/PDF includes per-line tax amounts.
 
 ### 7.6 Sales Return
-**List:** `GET /sales/returns`  
+**List:** `GET /sales/returns` — optional Query `status` ∈ `draft`|`posted`|`cancelled` (same `ReturnReportStatusValue` as return report; omit → all; blank/invalid → **422**). Sales **Sales return status filter** (`returnManageFilter`; client filter over full cache).  
 **Create:** `POST /sales/returns` — body requires `sales_invoice_id`, coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (schema `Literal`; no silent default to `other`; omit/blank/invalid → **422**), `items[]` each with required `condition` ∈ `sellable` | `discard` (schema `Literal`; no silent default from `restock`; omit/blank/invalid → **422**), optional `restock` / `notes`. Restock on post only when `restock` and line `condition=sellable`. Sales UI uses **Select reason** + **Select condition** (BR-7.5).  
 **Get:** `GET /sales/returns/{return_id}`  
 **Post:** `POST /sales/returns/{return_id}/post` — draft only; body optional `settlement_method` schema `Literal["adjust","refund"]` (omit OK — defaults to `adjust` when return ≤ open AR; blank/invalid → **422**; when return exceeds open AR, service still requires one of these → **400** `SETTLEMENT_REQUIRED`), `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**), `liquid_account_id`. Sales UI **Post credit** / **Post + refund**.  

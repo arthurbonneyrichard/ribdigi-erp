@@ -51,6 +51,9 @@ export default function Page() {
   const [quotations, setQuotations] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
+  const [returnManageFilter, setReturnManageFilter] = useState<
+    'all' | 'draft' | 'posted' | 'cancelled'
+  >('all');
   const [customers, setCustomers] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [groupManageFilter, setGroupManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -695,6 +698,10 @@ export default function Page() {
     if (groupManageFilter === 'all') return true;
     const active = g.is_active !== false;
     return groupManageFilter === 'inactive' ? !active : active;
+  });
+  const managedReturns = returns.filter((r) => {
+    if (returnManageFilter === 'all') return true;
+    return (r.status || 'draft') === returnManageFilter;
   });
 
   return (
@@ -1596,6 +1603,22 @@ export default function Page() {
               {'{ reason }'}). Draft only.
             </p>
           </div>
+        <select
+          value={returnManageFilter}
+          onChange={(e) =>
+            setReturnManageFilter(
+              e.target.value as 'all' | 'draft' | 'posted' | 'cancelled'
+            )
+          }
+          title="Filter sales return list by status"
+          aria-label="Sales return status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="posted">Posted only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -1610,7 +1633,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {returns.map((r) => (
+            {managedReturns.map((r) => (
               <tr key={r.id}>
                 <td>{r.return_number}</td>
                 <td>{r.credit_note_number || '—'}</td>
@@ -1659,6 +1682,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedReturns.length === 0 && (
+              <tr>
+                <td colSpan={8} className="muted">
+                  {returns.length === 0
+                    ? 'No returns yet'
+                    : 'No sales returns for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>

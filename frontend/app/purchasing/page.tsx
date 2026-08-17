@@ -152,6 +152,9 @@ export default function Page() {
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
+  const [returnManageFilter, setReturnManageFilter] = useState<
+    'all' | 'draft' | 'posted' | 'cancelled'
+  >('all');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -1142,6 +1145,10 @@ export default function Page() {
 
   const selectedGrn = grns.find((g) => g.id === grnId);
   const productName = (id: string) => products.find((p) => p.id === id)?.name || id.slice(0, 8);
+  const managedReturns = returns.filter((r) => {
+    if (returnManageFilter === 'all') return true;
+    return (r.status || 'draft') === returnManageFilter;
+  });
 
   return (
     <Shell>
@@ -2555,6 +2562,22 @@ export default function Page() {
           {'{ reason }'}). Draft only; no stock/AP.
         </p>
       </div>
+        <select
+          value={returnManageFilter}
+          onChange={(e) =>
+            setReturnManageFilter(
+              e.target.value as 'all' | 'draft' | 'posted' | 'cancelled'
+            )
+          }
+          title="Filter purchase return list by status"
+          aria-label="Purchase return status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="posted">Posted only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -2569,7 +2592,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {returns.map((r) => (
+            {managedReturns.map((r) => (
               <tr key={r.id}>
                 <td>{r.return_number}</td>
                 <td>{r.debit_note_number || '—'}</td>
@@ -2592,6 +2615,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedReturns.length === 0 && (
+              <tr>
+                <td colSpan={8} className="muted">
+                  {returns.length === 0
+                    ? 'No returns yet'
+                    : 'No purchase returns for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>

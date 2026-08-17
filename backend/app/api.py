@@ -5861,15 +5861,34 @@ async def convert_order_invoice(
 
 @api.get("/sales/returns")
 async def list_sales_returns(
+    status: Annotated[ReturnReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.reports import RETURN_REPORT_STATUSES
+
     stmt = (
         select(m.SalesReturn)
         .where(m.SalesReturn.tenant_id == claims["tenant_id"])
         .order_by(m.SalesReturn.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
+    # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in RETURN_REPORT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid return status '{wanted}'. "
+                    f"Allowed: {sorted(RETURN_REPORT_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.SalesReturn.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_return(db, r) for r in rows])
 
@@ -6434,15 +6453,34 @@ async def get_grn(
 
 @api.get("/purchasing/returns")
 async def list_purchase_returns(
+    status: Annotated[ReturnReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.reports import RETURN_REPORT_STATUSES
+
     stmt = (
         select(m.PurchaseReturn)
         .where(m.PurchaseReturn.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseReturn.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.PurchaseReturn, claims)
+    # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in RETURN_REPORT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid return status '{wanted}'. "
+                    f"Allowed: {sorted(RETURN_REPORT_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.PurchaseReturn.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_return(db, r) for r in rows])
 
