@@ -981,7 +981,7 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 **Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `cancelled`
 
 ### 7.5 Invoices
-**List:** `GET /sales/invoices`  
+**List:** `GET /sales/invoices` — optional Query `status` ∈ `draft`|`posted`|`sent`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Invoices **Sales invoice status filter** (`invoiceManageFilter`; client filter over full cache).  
 **Create:** `POST /sales/invoices`  
 **Get:** `GET /sales/invoices/{invoice_id}`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  

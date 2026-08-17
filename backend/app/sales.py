@@ -17,6 +17,10 @@ from app.doc_numbers import next_customer_payment_number, next_sales_invoice_num
 
 SALES_INVOICE_OPEN = frozenset({"posted", "sent", "partial", "overdue"})
 SALES_INVOICE_BILLED = frozenset({"posted", "sent", "partial", "paid", "overdue"})
+# Manage list statuses (draft + billed + cancelled).
+SI_MANAGE_STATUSES = frozenset(
+    {"draft", "posted", "sent", "partial", "paid", "overdue", "cancelled"}
+)
 
 
 def invoice_payment_status(

@@ -48,6 +48,9 @@ async function downloadInvoicePdf(
 export default function Page() {
   const [tab, setTab] = useState<Tab>('invoices');
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoiceManageFilter, setInvoiceManageFilter] = useState<
+    'all' | 'draft' | 'posted' | 'sent' | 'partial' | 'paid' | 'overdue' | 'cancelled'
+  >('all');
   const [quotations, setQuotations] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
@@ -702,6 +705,10 @@ export default function Page() {
   const managedReturns = returns.filter((r) => {
     if (returnManageFilter === 'all') return true;
     return (r.status || 'draft') === returnManageFilter;
+  });
+  const managedInvoices = invoices.filter((inv) => {
+    if (invoiceManageFilter === 'all') return true;
+    return (inv.status || 'draft') === invoiceManageFilter;
   });
 
   return (
@@ -1442,6 +1449,34 @@ export default function Page() {
               {'{ reason }'}). Draft only.
             </p>
           </div>
+        <select
+          value={invoiceManageFilter}
+          onChange={(e) =>
+            setInvoiceManageFilter(
+              e.target.value as
+                | 'all'
+                | 'draft'
+                | 'posted'
+                | 'sent'
+                | 'partial'
+                | 'paid'
+                | 'overdue'
+                | 'cancelled'
+            )
+          }
+          title="Filter sales invoice list by status"
+          aria-label="Sales invoice status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="posted">Posted only</option>
+          <option value="sent">Sent only</option>
+          <option value="partial">Partial only</option>
+          <option value="paid">Paid only</option>
+          <option value="overdue">Overdue only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -1455,7 +1490,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
+            {managedInvoices.map((inv) => (
               <tr key={inv.id}>
                 <td>{inv.invoice_number}</td>
                 <td>{inv.status}</td>
@@ -1534,6 +1569,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedInvoices.length === 0 && (
+              <tr>
+                <td colSpan={7} className="muted">
+                  {invoices.length === 0
+                    ? 'No invoices yet'
+                    : 'No sales invoices for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>
