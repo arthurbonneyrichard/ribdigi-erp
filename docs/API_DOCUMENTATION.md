@@ -867,10 +867,10 @@ Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`
 `accepted_qty + rejected_qty` must equal `received_qty` (rejected may be inferred when omitted and accepted < received). `rejection_reason` is **required** when `rejected_qty > 0` (or inferred reject) — schema `model_validator` → **422** on omit/blank; service still 400 if reached. Only accepted qty is stocked; full `received_qty` reduces PO outstanding (BR-6.4).
 
 ### 6.5 Purchase Invoice
-**List:** `GET /purchases/invoices`  
-**Create:** `POST /purchases/invoices`  
-**Get:** `GET /purchases/invoices/{invoice_id}`  
-**Pay:** `POST /purchases/invoices/{invoice_id}/payments`  
+**List:** `GET /purchasing/invoices` — optional Query `status` ∈ `draft`|`unpaid`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Invoices **Purchase invoice status filter** (`piManageFilter`; client filter over full cache).  
+**Create:** `POST /purchasing/invoices`  
+**Get:** `GET /purchasing/invoices/{invoice_id}`  
+**Pay:** `POST /purchasing/invoices/{invoice_id}/payments`  
 **Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to invoice `notes` as `Cancel: …` and stored in audit `pi_cancelled.details.reason`; already-cancelled is idempotent); allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted. Serialize includes `can_cancel` + `notes`. Purchasing Invoices **Cancel reason** UI (BR-6.5).
 
 **Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_invoice_numbering` (`prefix`, `next_number`, `preview`) alongside PO/GRN. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PINV`) — not a timestamp (BR-6.5 / BR-20.4).

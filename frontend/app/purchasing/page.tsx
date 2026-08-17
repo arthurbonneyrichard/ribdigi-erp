@@ -156,6 +156,9 @@ export default function Page() {
   >('all');
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
+  const [piManageFilter, setPiManageFilter] = useState<
+    'all' | 'draft' | 'unpaid' | 'partial' | 'paid' | 'overdue' | 'cancelled'
+  >('all');
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
   const [returnManageFilter, setReturnManageFilter] = useState<
@@ -1162,6 +1165,10 @@ export default function Page() {
   const managedRequests = requests.filter((r) => {
     if (prManageFilter === 'all') return true;
     return (r.status || 'draft') === prManageFilter;
+  });
+  const managedInvoices = invoices.filter((inv) => {
+    if (piManageFilter === 'all') return true;
+    return (inv.status || 'draft') === piManageFilter;
   });
 
   return (
@@ -2376,6 +2383,32 @@ export default function Page() {
             {'{ reason }'}).
           </p>
         </div>
+        <select
+          value={piManageFilter}
+          onChange={(e) =>
+            setPiManageFilter(
+              e.target.value as
+                | 'all'
+                | 'draft'
+                | 'unpaid'
+                | 'partial'
+                | 'paid'
+                | 'overdue'
+                | 'cancelled'
+            )
+          }
+          title="Filter purchase invoice list by status"
+          aria-label="Purchase invoice status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="unpaid">Unpaid only</option>
+          <option value="partial">Partial only</option>
+          <option value="paid">Paid only</option>
+          <option value="overdue">Overdue only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -2393,7 +2426,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
+            {managedInvoices.map((inv) => (
               <tr key={inv.id}>
                 <td>
                   <button
@@ -2476,6 +2509,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedInvoices.length === 0 && (
+              <tr>
+                <td colSpan={11} className="muted">
+                  {invoices.length === 0
+                    ? 'No purchase invoices yet'
+                    : 'No purchase invoices for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         {selectedInvoice && (

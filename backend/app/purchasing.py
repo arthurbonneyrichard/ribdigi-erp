@@ -62,6 +62,10 @@ PO_MANAGE_STATUSES = frozenset(
 )
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
+# Manage list statuses (full purchase invoice lifecycle).
+PI_MANAGE_STATUSES = frozenset(
+    {"draft", "unpaid", "partial", "paid", "overdue", "cancelled"}
+)
 
 
 def purchase_invoice_status(

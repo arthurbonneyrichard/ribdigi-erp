@@ -1649,6 +1649,11 @@ PurchaseOrderStatusValue = Annotated[
     Literal["draft", "sent", "partially_received", "received", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.purchasing.PI_MANAGE_STATUSES (Purchasing Invoices manage list).
+PurchaseInvoiceStatusValue = Annotated[
+    Literal["draft", "unpaid", "partial", "paid", "overdue", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.sales.SI_MANAGE_STATUSES (Sales Invoices manage list).
 SalesInvoiceStatusValue = Annotated[
     Literal["draft", "posted", "sent", "partial", "paid", "overdue", "cancelled"],
