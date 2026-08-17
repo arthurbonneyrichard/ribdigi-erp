@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1223 D1 Transfer Boss Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1223_FIDELITY.md` (`test_stage1223_fidelity_d1.py`); Offline Complete / Transfer Boss Gate honesty / go-live still MISSING.
 Stage 1222 D1 Transfer Gargoyle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1222_FIDELITY.md` (`test_stage1222_fidelity_d1.py`); Offline Complete / Transfer Gargoyle Gate honesty / go-live still MISSING.
 Stage 1221 D1 Transfer Crocket Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1221_FIDELITY.md` (`test_stage1221_fidelity_d1.py`); Offline Complete / Transfer Crocket Gate honesty / go-live still MISSING.
 Stage 1220 D1 Transfer Finial Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1220_FIDELITY.md` (`test_stage1220_fidelity_d1.py`); Offline Complete / Transfer Finial Gate honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 1223 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gargoyle Gate, Transfer Gargoyle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1223 opened under **ADR-2453** after CONTINUE/NEXT (Tenant MVP Transfer Boss Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2454**. Stage 1222 feature scope remains frozen.
