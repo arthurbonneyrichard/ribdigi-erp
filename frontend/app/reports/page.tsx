@@ -97,6 +97,12 @@ export default function Page() {
   const [pendingPoStatus, setPendingPoStatus] = useState<
     '' | 'draft' | 'sent' | 'partially_received'
   >('');
+  const [salesReturnStatus, setSalesReturnStatus] = useState<
+    '' | 'draft' | 'posted' | 'cancelled'
+  >('');
+  const [purchaseReturnStatus, setPurchaseReturnStatus] = useState<
+    '' | 'draft' | 'posted' | 'cancelled'
+  >('');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -179,7 +185,11 @@ export default function Page() {
         const [daily, monthly, returns] = await Promise.all([
           api(`/reports/sales/daily${qs()}`),
           api(`/reports/sales/monthly${qs()}`),
-          api(`/reports/sales/returns${qs()}`),
+          api(
+            `/reports/sales/returns${qs(
+              salesReturnStatus ? { status: salesReturnStatus } : {}
+            )}`
+          ),
         ]);
         setData({
           products: r.data,
@@ -217,7 +227,11 @@ export default function Page() {
               pendingPoStatus ? { status: pendingPoStatus } : {}
             )}`
           ),
-          api(`/reports/purchases/returns${qs()}`),
+          api(
+            `/reports/purchases/returns${qs(
+              purchaseReturnStatus ? { status: purchaseReturnStatus } : {}
+            )}`
+          ),
         ]);
         setData({
           summary: r.data,
@@ -746,6 +760,21 @@ export default function Page() {
           </div>
           <h3 style={{ marginTop: 16 }}>Sales returns</h3>
           <p className="muted">
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
+              Return status
+              <select
+                aria-label="Sales return status"
+                value={salesReturnStatus}
+                onChange={(e) =>
+                  setSalesReturnStatus(e.target.value as '' | 'draft' | 'posted' | 'cancelled')
+                }
+              >
+                <option value="">all</option>
+                <option value="draft">draft</option>
+                <option value="posted">posted</option>
+                <option value="cancelled">cancelled</option>
+              </select>
+            </label>
             {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
             posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0} ·
             refunded {data.returns?.refunded_amount ?? 0}
@@ -1506,6 +1535,21 @@ export default function Page() {
           </div>
           <h3 style={{ marginTop: 16 }}>Purchase returns</h3>
           <p className="muted">
+            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
+              Return status
+              <select
+                aria-label="Purchase return status"
+                value={purchaseReturnStatus}
+                onChange={(e) =>
+                  setPurchaseReturnStatus(e.target.value as '' | 'draft' | 'posted' | 'cancelled')
+                }
+              >
+                <option value="">all</option>
+                <option value="draft">draft</option>
+                <option value="posted">posted</option>
+                <option value="cancelled">cancelled</option>
+              </select>
+            </label>
             {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
             posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0}
             {data.returns?.store_name

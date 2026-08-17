@@ -80,6 +80,7 @@ from app.schemas import (
     StockCountReportStatusValue,
     TransferReportStatusValue,
     PendingPoReportStatusValue,
+    ReturnReportStatusValue,
     MovementTypeValue,
     StockAdjustReasonValue,
     WebhookCreate,
@@ -9360,7 +9361,7 @@ async def report_sales_returns(
     to_date: str | None = None,
     customer_id: str | None = None,
     reason: str | None = None,
-    status: str | None = None,
+    status: Annotated[ReturnReportStatusValue | None, Query()] = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -9374,7 +9375,7 @@ async def report_sales_returns(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             customer_id=customer_id or None,
             reason=reason or None,
-            status=status or None,
+            status=status,
             store_id=store_id or None,
         )
     )
@@ -9667,7 +9668,7 @@ async def report_purchases_returns(
     to_date: str | None = None,
     supplier_id: str | None = None,
     reason: str | None = None,
-    status: str | None = None,
+    status: Annotated[ReturnReportStatusValue | None, Query()] = None,
     warehouse_id: str | None = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
@@ -9682,7 +9683,7 @@ async def report_purchases_returns(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             supplier_id=supplier_id or None,
             reason=reason or None,
-            status=status or None,
+            status=status,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
         )
