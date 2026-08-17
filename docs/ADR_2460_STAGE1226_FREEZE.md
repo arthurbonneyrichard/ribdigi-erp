@@ -31,3 +31,7 @@ Stage 1227 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Voussoir Gate, Transfer Voussoir Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1227 opened under **ADR-2461** after CONTINUE/NEXT (Tenant MVP Transfer Impost Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2462**. Stage 1226 feature scope remains frozen.
