@@ -31,3 +31,7 @@ Stage 1251 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Latch Gate, Transfer Latch Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1251 opened under **ADR-2509** after CONTINUE/NEXT (Tenant MVP Transfer Bolt Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2510**. Stage 1250 feature scope remains frozen.
