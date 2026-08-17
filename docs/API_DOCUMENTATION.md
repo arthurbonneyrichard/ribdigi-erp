@@ -1468,7 +1468,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 **Export:** `GET /reports/export?report_type=&format=csv`  
 **Catalog:** `GET /reports/exportable`
 
-Query `report_type` ∈ `EXPORTABLE` (`Literal` + strip/lower; required). Query `format` ∈ csv|pdf|xlsx (`Literal` + strip/lower; omit → `csv`; blank/invalid → **422**; no silent csv from `""`). Same aliases as Email schedules. Reports Export CSV/Excel/PDF buttons.
+Query `report_type` ∈ `EXPORTABLE` (`Literal` + strip/lower; required). Query `format` ∈ csv|pdf|xlsx (`Literal` + strip/lower; omit → `csv`; blank/invalid → **422**; no silent csv from `""`). Optional `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound / live as_of fallbacks; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Same aliases as Email schedules. Reports Export CSV/Excel/PDF buttons + shared **Report From/To/as of date** controls.
 
 ---
 

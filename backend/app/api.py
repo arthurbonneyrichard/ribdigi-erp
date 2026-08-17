@@ -9367,9 +9367,9 @@ async def reports_export(
     report_type: Annotated[ReportTypeValue, Query()],
     # omit → csv; blank/invalid → 422 (was `fmt or "csv"`)
     format: Annotated[ReportExportFormatValue, Query()] = "csv",
-    from_date: str | None = None,
-    to_date: str | None = None,
-    date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    date: Annotated[IsoDateQueryValue | None, Query()] = None,
     year: int | None = None,
     month: int | None = None,
     warehouse_id: str | None = None,
@@ -9379,7 +9379,7 @@ async def reports_export(
     branch_id: str | None = None,
     category_id: str | None = None,
     days: int | None = None,
-    as_of: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → no compare; blank/invalid → 422 (same Literal as balance-sheet routes)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     department_id: str | None = None,
