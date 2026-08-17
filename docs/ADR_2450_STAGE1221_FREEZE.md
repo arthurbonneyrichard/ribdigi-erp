@@ -31,3 +31,7 @@ Stage 1222 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Crocket Gate, Transfer Crocket Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1222 opened under **ADR-2451** after CONTINUE/NEXT (Tenant MVP Transfer Gargoyle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2452**. Stage 1221 feature scope remains frozen.
