@@ -31,3 +31,7 @@ Stage 1210 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Triforium Gate, Transfer Triforium Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1210 opened under **ADR-2427** after CONTINUE/NEXT (Tenant MVP Transfer Presbytery Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2428**. Stage 1209 feature scope remains frozen.
