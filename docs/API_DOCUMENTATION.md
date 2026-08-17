@@ -883,6 +883,8 @@ Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`
 
 Create accepts header `discount_amount` and per-line `discount` (≥0). Line tax is computed on qty×unit_price before line discount; invoice `total_amount` subtracts header discount from gross (or from subtotal when reverse charge). Purchasing create forms + invoice detail show discounts (BR-6.5). PATCH does not update discounts.
 
+Optional create `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; strip/upper) — omit/`null` → tenant base via `resolve_rate`; blank/`EURO`/`gh` → **422** (was free `str`; blank silently became base). Optional `exchange_rate` (>0) pairs with non-base currency. Purchasing Invoices **Currency** input (`aria-label="Purchase invoice currency"`).
+
 Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced invoices copy the PO line snapshot including proportional `items[].discount` (`accepted_qty / ordered_qty × PO line discount`). When header `discount_amount` is omitted/0 on from-GRN create, it defaults to the sum of those line discounts so `total_amount` matches negotiated PO economics; an explicit header discount overrides that default while line discounts still appear on lines (BR-6.5 / BR-6.3).
 
 Response lines include `line_subtotal`, `line_tax`, and optional `tax_components`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Purchasing → Invoices UI shows per-line tax and by-rate totals when an invoice number is selected.
@@ -1015,6 +1017,8 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 ```
 
 Create accepts header `discount_amount` and per-line `items[].discount` (≥0) with the same tax-before-line-discount order as quotations/orders. Sales UI Create sale + invoice detail show discounts (BR-7.4).
+
+Optional create `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; strip/upper) — omit/`null` → tenant base via `resolve_rate`; blank/`EURO`/`gh` → **422** (was free `str`; blank silently became base). Optional `exchange_rate` (>0) pairs with non-base currency. Sales **Currency** input (`aria-label="Sales invoice currency"`).
 
 **Cancel:** `POST /sales/invoices/{invoice_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to invoice `notes` as `Cancel: …` and stored in audit `invoice_cancelled.details.reason`); **draft only** (posted/sent/paid → 409). Sales Invoices **Cancel reason** UI (BR-7.4).
 
@@ -1295,7 +1299,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 }
 ```
 
-**Record Payment:** `POST /customers/{customer_id}/payments` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**; same aliases as expenses). Also `POST /sales/payments` with the same `CustomerPaymentCreate` body. Credit UI Method select matches. Service `normalize_expense_payment_method` remains defense-in-depth **400**.  
+**Record Payment:** `POST /customers/{customer_id}/payments` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**; same aliases as expenses). Optional `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; omit/`null` → invoice/base via `resolve_rate`; blank/non-ISO → **422** — was free `str`; blank silently base). Also `POST /sales/payments` with the same `CustomerPaymentCreate` body. Credit UI Method select matches. Service `normalize_expense_payment_method` / `normalize_currency` remain defense-in-depth **400**.  
 **Customer History:** `GET /customers/{customer_id}/history?from_date=&to_date=` — purchase history (sales invoices + POS), returns, and payments with `summary` totals (BR-7.1).
 
 ```json
@@ -1317,7 +1321,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 **Due notifications:** Celery / `POST /notifications/scan-due` runs `scan_payment_due` for both AR sales invoices and AP purchase invoices within the horizon (default 3 days), creating `payment_due` notifications (`entity_type=purchase_invoice` for bills), `scan_quotation_expiry` for draft/sent quotations with `valid_until` within 1 day (category `quotation_expiry`, `entity_type=sales_quotation`; past-due rows are flipped to `status=expired`), and `scan_recurring_expense_due` for active recurring schedules with `next_run_at` within 1 day (category `recurring_expense_due`, `entity_type=recurring_expense`; BR-9.5).
 
-**Record Payment:** `POST /suppliers/{supplier_id}/payments` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `bank_transfer`; blank/invalid → **422**; same aliases). Credit UI Method select matches.
+**Record Payment:** `POST /suppliers/{supplier_id}/payments` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `bank_transfer`; blank/invalid → **422**; same aliases). Optional `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; omit/`null` → invoice/base; blank/non-ISO → **422** — was free `str`; blank silently base). Credit UI Method select matches.
 
 ---
 

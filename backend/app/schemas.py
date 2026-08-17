@@ -1715,7 +1715,8 @@ class PurchaseInvoiceCreate(BaseModel):
     notes: str | None = None
     # Buyer self-assesses VAT (excluded from AP); posts Dr Input Tax / Cr Tax Payable on approve.
     is_reverse_charge: bool = False
-    currency: str | None = None
+    # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
     items: list[PurchaseInvoiceItemCreate] | None = None
 
@@ -1748,7 +1749,8 @@ class SalesInvoiceCreate(BaseModel):
     discount_amount: float = Field(default=0, ge=0)
     notes: str | None = None
     store_id: str | None = None
-    currency: str | None = None
+    # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
     is_reverse_charge: bool = False
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
@@ -1842,7 +1844,8 @@ class CustomerPaymentCreate(BaseModel):
     cheque_date: datetime | None = None
     apply_early_discount: bool | None = None
     liquid_account_id: str | None = None
-    currency: str | None = None
+    # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
 
 
@@ -2619,7 +2622,8 @@ class SupplierPaymentCreate(BaseModel):
     cheque_date: datetime | None = None
     apply_early_discount: bool | None = None
     liquid_account_id: str | None = None
-    currency: str | None = None
+    # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
 
 

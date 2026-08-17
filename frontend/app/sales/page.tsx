@@ -1049,6 +1049,10 @@ export default function Page() {
             value={currency}
             onChange={(e) => setCurrency(e.target.value.toUpperCase())}
             placeholder="Currency (blank=base)"
+            aria-label="Sales invoice currency"
+            pattern="[A-Z]{3}"
+            maxLength={3}
+            title="ISO-4217 currency (blank = company base)"
             style={{ width: 140 }}
           />
           <input

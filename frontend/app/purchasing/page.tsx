@@ -2252,6 +2252,10 @@ export default function Page() {
             value={invCurrency}
             onChange={(e) => setInvCurrency(e.target.value.toUpperCase())}
             placeholder="Currency (blank=base)"
+            aria-label="Purchase invoice currency"
+            pattern="[A-Z]{3}"
+            maxLength={3}
+            title="ISO-4217 currency (blank = company base)"
             style={{ width: 140 }}
           />
           <input
@@ -2327,6 +2331,10 @@ export default function Page() {
             value={invCurrency}
             onChange={(e) => setInvCurrency(e.target.value.toUpperCase())}
             placeholder="Currency (blank=base)"
+            aria-label="Purchase invoice currency"
+            pattern="[A-Z]{3}"
+            maxLength={3}
+            title="ISO-4217 currency (blank = company base)"
             style={{ width: 140 }}
           />
           <input
