@@ -31,3 +31,7 @@ Stage 1343 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keyseat Gate, Transfer Keyseat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1343 opened under **ADR-2693** after CONTINUE/NEXT (Tenant MVP Transfer Relief Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2694**. Stage 1342 feature scope remains frozen.
