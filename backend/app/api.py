@@ -3799,10 +3799,13 @@ async def movements(
 
 @api.get("/inventory/stock-counts")
 async def list_stock_counts(
+    status: Annotated[StockCountReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await stock_counts_svc.list_counts(db, claims["tenant_id"])
+    rows = await stock_counts_svc.list_counts(
+        db, claims["tenant_id"], status=status
+    )
     out = []
     for row in rows:
         data = await stock_counts_svc.serialize_count(db, row)

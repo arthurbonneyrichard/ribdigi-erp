@@ -111,19 +111,33 @@ async def serialize_count(db: AsyncSession, count: m.StockCount) -> dict:
     }
 
 
-async def list_counts(db: AsyncSession, tenant_id: str, *, limit: int = 50) -> list[m.StockCount]:
-    return list(
-        (
-            await db.execute(
-                select(m.StockCount)
-                .where(m.StockCount.tenant_id == tenant_id)
-                .order_by(m.StockCount.created_at.desc())
-                .limit(limit)
-            )
-        )
-        .scalars()
-        .all()
+async def list_counts(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 50,
+) -> list[m.StockCount]:
+    stmt = (
+        select(m.StockCount)
+        .where(m.StockCount.tenant_id == tenant_id)
+        .order_by(m.StockCount.created_at.desc())
+        .limit(limit)
     )
+    if status is not None:
+        # Schema StockCountReportStatusValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in COUNT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be draft, completed, or cancelled",
+            )
+        else:
+            stmt = stmt.where(m.StockCount.status == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def _resolve_product_ids(

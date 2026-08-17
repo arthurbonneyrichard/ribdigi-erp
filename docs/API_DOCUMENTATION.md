@@ -667,7 +667,7 @@ Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a s
 
 ### 5.6 Stock Count
 **Create:** `POST /inventory/stock-counts`  
-**List:** `GET /inventory/stock-counts`  
+**List:** `GET /inventory/stock-counts` — optional Query `status` ∈ `draft`|`completed`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Inventory Counts **Stock count status filter** All / Draft / Completed / Cancelled (`countManageFilter`; client filter over full cache).  
 **Get:** `GET /inventory/stock-counts/{count_id}`  
 **Cancel:** `POST /inventory/stock-counts/{count_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to count `notes` as `Cancel: …` and stored in audit `stock_count_cancelled.details.reason`); draft only → `cancelled` (`can_cancel`); no variance movements. Inventory Counts **Cancel reason** UI.  
 **Complete:** `POST /inventory/stock-counts/{count_id}/complete` — posts warehouse/product variance adjustments (`movement_type=adjustment`).

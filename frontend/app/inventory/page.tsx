@@ -121,6 +121,9 @@ export default function Page() {
   const [batches, setBatches] = useState<any[]>([]);
   const [expiring, setExpiring] = useState<any[]>([]);
   const [counts, setCounts] = useState<any[]>([]);
+  const [countManageFilter, setCountManageFilter] = useState<
+    'all' | 'draft' | 'completed' | 'cancelled'
+  >('all');
   const [activeCount, setActiveCount] = useState<any | null>(null);
   const [countWarehouseId, setCountWarehouseId] = useState('');
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
@@ -1440,6 +1443,10 @@ export default function Page() {
   const managedBrands = byStatus(brands, brandManageFilter);
   const managedUnits = byStatus(units, unitManageFilter);
   const managedVariants = byStatus(variants, variantManageFilter);
+  const managedCounts = counts.filter((c) => {
+    if (countManageFilter === 'all') return true;
+    return (c.status || 'draft') === countManageFilter;
+  });
 
   return (
     <Shell>
@@ -2882,6 +2889,22 @@ export default function Page() {
             </p>
           </div>
 
+          <select
+            value={countManageFilter}
+            onChange={(e) =>
+              setCountManageFilter(
+                e.target.value as 'all' | 'draft' | 'completed' | 'cancelled'
+              )
+            }
+            title="Filter stock count list by status"
+            aria-label="Stock count status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="completed">Completed only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
           <table className="table" style={{ marginBottom: 16 }}>
             <thead>
               <tr>
@@ -2893,7 +2916,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {counts.map((c) => (
+              {managedCounts.map((c) => (
                 <tr key={c.id}>
                   <td>{c.count_number}</td>
                   <td>{c.status}</td>
@@ -2915,6 +2938,13 @@ export default function Page() {
                   </td>
                 </tr>
               ))}
+              {!managedCounts.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No stock counts for this filter
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
