@@ -31,3 +31,7 @@ Stage 1274 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Spindle Gate, Transfer Spindle Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1274 opened under **ADR-2555** after CONTINUE/NEXT (Tenant MVP Transfer Plug Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2556**. Stage 1273 feature scope remains frozen.
