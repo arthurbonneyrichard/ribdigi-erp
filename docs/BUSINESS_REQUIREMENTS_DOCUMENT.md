@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1324 D1 Transfer Socket Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1324_FIDELITY.md` (`test_stage1324_fidelity_d1.py`); Offline Complete / Transfer Socket Gate honesty / go-live still MISSING.
 Stage 1323 D1 Transfer Fulcrum Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1323_FIDELITY.md` (`test_stage1323_fidelity_d1.py`); Offline Complete / Transfer Fulcrum Gate honesty / go-live still MISSING.
 Stage 1322 D1 Transfer Pintle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1322_FIDELITY.md` (`test_stage1322_fidelity_d1.py`); Offline Complete / Transfer Pintle Gate honesty / go-live still MISSING.
 Stage 1321 D1 Transfer Tenon Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1321_FIDELITY.md` (`test_stage1321_fidelity_d1.py`); Offline Complete / Transfer Tenon Gate honesty / go-live still MISSING.
