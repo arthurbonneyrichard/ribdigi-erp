@@ -166,6 +166,7 @@ async def test_store_inventory_isolation(client, db_session):
         tenant_id=seed["t2"].id,
         name="Beta Store",
         code="BST",
+        company_id=seed["c2"].id,
     )
     await db_session.commit()
 
@@ -442,10 +443,18 @@ async def test_cheque_isolation(client, db_session):
 async def test_stock_transfer_isolation(client, db_session):
     ac, seed = client
     from_store = await create_store(
-        db_session, tenant_id=seed["t2"].id, name="Beta From", code="BF1"
+        db_session,
+        tenant_id=seed["t2"].id,
+        name="Beta From",
+        code="BF1",
+        company_id=seed["c2"].id,
     )
     to_store = await create_store(
-        db_session, tenant_id=seed["t2"].id, name="Beta To", code="BT1"
+        db_session,
+        tenant_id=seed["t2"].id,
+        name="Beta To",
+        code="BT1",
+        company_id=seed["c2"].id,
     )
     await db_session.flush()
     from_wh = (
@@ -928,7 +937,11 @@ async def test_foreign_liquid_account_id_on_supplier_payment_404(client, db_sess
 async def test_foreign_store_id_on_expense_create_404(client, db_session):
     ac, seed = client
     store = await create_store(
-        db_session, tenant_id=seed["t2"].id, name="Beta Exp Store", code="BXS"
+        db_session,
+        tenant_id=seed["t2"].id,
+        name="Beta Exp Store",
+        code="BXS",
+        company_id=seed["c2"].id,
     )
     await db_session.commit()
 

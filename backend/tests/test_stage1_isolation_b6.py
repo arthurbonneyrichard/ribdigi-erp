@@ -226,6 +226,7 @@ async def test_foreign_manager_id_on_warehouse_patch_404(client, db_session):
         tenant_id=seed["t1"].id,
         code="WH-ISO",
         name="Isolation Store",
+        company_id=seed["c1"].id,
     )
     await db_session.commit()
     wh = (
@@ -256,6 +257,7 @@ async def test_mismatched_tenant_header_on_warehouse_patch_403(client, db_sessio
         tenant_id=seed["t1"].id,
         code="WH-HDR",
         name="Header Store",
+        company_id=seed["c1"].id,
     )
     await db_session.commit()
     wh = (

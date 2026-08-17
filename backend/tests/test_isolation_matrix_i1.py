@@ -144,6 +144,7 @@ async def test_foreign_branch_and_report_dimension_404(client, db_session):
         name="Beta Store I1",
         code="I1BS",
         branch_id=branch.id,
+        company_id=seed["c2"].id,
     )
     await db_session.commit()
 

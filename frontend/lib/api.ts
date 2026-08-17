@@ -27,7 +27,7 @@ export function authHeaders(extra?: Record<string, string>): Record<string, stri
   return headers;
 }
 
-export async function api(path: string, opts: RequestInit = {}) {
+export async function api<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...authHeaders(opts.headers as Record<string, string> | undefined),
@@ -44,5 +44,5 @@ export async function api(path: string, opts: RequestInit = {}) {
     const code = typeof detail === 'object' && detail ? detail.code : undefined;
     throw new ApiError(message, { code, status: response.status });
   }
-  return body;
+  return body as T;
 }
