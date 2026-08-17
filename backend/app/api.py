@@ -142,6 +142,7 @@ from app.schemas import (
     AiReportsGenerateBody,
     AiReportsExportBody,
     AiReportTemplateCreateBody,
+    AiLowStockPredictionRequestsBody,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseReject,
@@ -12352,20 +12353,20 @@ async def ai_low_stock_prediction(
 
 @api.post("/ai/inventory/low-stock-prediction/requests")
 async def ai_low_stock_prediction_requests(
-    payload: dict | None = None,
+    payload: AiLowStockPredictionRequestsBody | None = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Auto-generate draft purchase requests from prediction rows (BR-21.4)."""
-    body = payload or {}
-    lines = body.get("lines")
-    days_ahead = int(body.get("days_ahead") or 14)
-    min_confidence = float(body.get("min_confidence") or 0)
+    # Schema AiLowStockPredictionRequestsBody rejects unknown keys /
+    # bad days_ahead|min_confidence → 422.
+    body = payload or AiLowStockPredictionRequestsBody()
+    lines = body.lines
     if not lines:
         pred = await ai_inventory_svc.low_stock_prediction(
             db,
             tenant_id=claims["tenant_id"],
-            days_ahead=days_ahead,
+            days_ahead=body.days_ahead,
             actor_user_id=claims.get("sub"),
         )
         lines = pred.get("at_risk") or []
@@ -12376,9 +12377,9 @@ async def ai_low_stock_prediction_requests(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         at_risk_lines=lines,
-        notes=body.get("notes"),
-        min_confidence=min_confidence,
-        include_open=bool(body.get("include_open")),
+        notes=body.notes,
+        min_confidence=body.min_confidence,
+        include_open=body.include_open,
     )
     await db.commit()
     return env(result, f"Created {result.get('created_count', 0)} draft purchase request(s)")

@@ -134,7 +134,7 @@ export default function Page() {
     try {
       const body: Record<string, unknown> = {
         days_ahead: 14,
-        notes: 'Created from AI low-stock prediction',
+        notes: 'AiLowStockPredictionRequestsBody hello-world',
         include_open: includeOpenPr,
       };
       // Prefer lines already loaded so the UI matches what the user saw
@@ -535,6 +535,7 @@ export default function Page() {
             onClick={createDraftPrsFromPredictions}
             disabled={draftPrBusy}
             title="Creates draft purchase requests from at-risk prediction lines (requires purchasing:write)"
+            aria-label="Create draft purchase requests from predictions"
           >
             {draftPrBusy ? 'Creating draft PR(s)…' : 'Create draft PR(s)'}
           </button>
@@ -546,6 +547,7 @@ export default function Page() {
               type="checkbox"
               checked={includeOpenPr}
               onChange={(e) => setIncludeOpenPr(e.target.checked)}
+              aria-label="Include open purchase requests"
             />
             Include open PRs
           </label>
