@@ -85,6 +85,7 @@ from app.schemas import (
     ApiKeyStatusFilterValue,
     ApiKeyCreate,
     ExpenseStatusFilterValue,
+    WebhookDeliveryStatusFilterValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
     MovementTypeValue,
@@ -11943,13 +11944,14 @@ async def webhooks_test_delivery(
 @api.get("/webhooks/{webhook_id}/deliveries")
 async def webhooks_list_deliveries(
     webhook_id: str,
+    status: Annotated[WebhookDeliveryStatusFilterValue | None, Query()] = None,
     limit: int = 50,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Recent outbound delivery attempts for one webhook (Integrations UI)."""
     rows = await webhooks_svc.list_deliveries(
-        db, claims["tenant_id"], webhook_id, limit=limit
+        db, claims["tenant_id"], webhook_id, status=status, limit=limit
     )
     return env([webhooks_svc.serialize_delivery(r) for r in rows])
 

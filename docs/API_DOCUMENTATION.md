@@ -1658,7 +1658,7 @@ Company admins can also manage endpoints in the **Integrations** UI (`/integrati
 **Update:** `PATCH /webhooks/{webhook_id}` (set `rotate_secret: true` to issue a new `whsec_…`; soft-disable via `is_active: false` — Integrations **Disable** / **Enable** + manage status filter All/Active/Inactive)  
 **Delete:** `DELETE /webhooks/{webhook_id}`  
 **Test:** `POST /webhooks/{webhook_id}/test` (delivers signed `webhook.test`)  
-**Deliveries:** `GET /webhooks/{webhook_id}/deliveries?limit=50`  
+**Deliveries:** `GET /webhooks/{webhook_id}/deliveries?limit=50` — optional Query `status` ∈ `pending`|`pending_retry`|`delivered`|`failed` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Integrations **Webhook delivery status filter** All / Pending / Pending retry / Delivered / Failed (`deliveryStatusFilter`; client filter over loaded delivery cache).  
 **Retry delivery:** `POST /webhooks/{webhook_id}/deliveries/{delivery_id}/retry` (pending_retry or failed)
 
 `events` on create/update is OpenAPI `list[Literal[…]]` of known event names (aligned with Integrations checkboxes / `VALID_EVENTS`). Unknown or blank items → **422**; empty list → **422** (`min_length=1` on create). Case is coerced (e.g. `Sale.Created` → `sale.created`). Service `normalize_events` remains defense-in-depth (**400**). HTTPS required for remote URLs (localhost http allowed).

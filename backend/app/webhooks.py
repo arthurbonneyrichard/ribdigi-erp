@@ -171,22 +171,36 @@ async def list_deliveries(
     tenant_id: str,
     webhook_id: str,
     *,
+    status: str | None = None,
     limit: int = 50,
 ) -> list[m.WebhookDelivery]:
     """Recent delivery attempts for one webhook endpoint (Integrations UI)."""
     await get_endpoint(db, tenant_id, webhook_id)
     lim = max(1, min(int(limit or 50), 200))
-    rows = (
-        await db.execute(
-            select(m.WebhookDelivery)
-            .where(
-                m.WebhookDelivery.tenant_id == tenant_id,
-                m.WebhookDelivery.webhook_id == webhook_id,
-            )
-            .order_by(m.WebhookDelivery.created_at.desc())
-            .limit(lim)
+    stmt = (
+        select(m.WebhookDelivery)
+        .where(
+            m.WebhookDelivery.tenant_id == tenant_id,
+            m.WebhookDelivery.webhook_id == webhook_id,
         )
-    ).scalars().all()
+        .order_by(m.WebhookDelivery.created_at.desc())
+        .limit(lim)
+    )
+    if status is not None:
+        # Schema WebhookDeliveryStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {STATUS_PENDING, STATUS_PENDING_RETRY, STATUS_DELIVERED, STATUS_FAILED}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, pending_retry, delivered, or failed",
+            )
+        else:
+            stmt = stmt.where(m.WebhookDelivery.status == wanted)
+    rows = (await db.execute(stmt)).scalars().all()
     return list(rows)
 
 

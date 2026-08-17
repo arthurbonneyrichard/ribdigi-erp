@@ -74,6 +74,9 @@ export default function Page() {
   const [deliveriesFor, setDeliveriesFor] = useState<string | null>(null);
   const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
   const [deliveriesBusy, setDeliveriesBusy] = useState(false);
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<
+    'all' | 'pending' | 'pending_retry' | 'delivered' | 'failed'
+  >('all');
 
   const [keyName, setKeyName] = useState('');
   const [keyExpires, setKeyExpires] = useState('');
@@ -281,6 +284,10 @@ export default function Page() {
   const managedKeys = keys.filter((k) => {
     if (apiKeyManageFilter === 'all') return true;
     return (k.status || 'active') === apiKeyManageFilter;
+  });
+  const managedDeliveries = deliveries.filter((d) => {
+    if (deliveryStatusFilter === 'all') return true;
+    return (d.status || 'pending') === deliveryStatusFilter;
   });
 
   return (
@@ -597,8 +604,30 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             </strong>
             <p className="muted" style={{ margin: 0 }}>
               Recent attempts from GET /webhooks/:id/deliveries. Retry re-signs and POSTs the stored
-              payload (pending_retry or failed).
+              payload (pending_retry or failed). Optional Query status ∈
+              pending|pending_retry|delivered|failed (blank/invalid → 422).
             </p>
+            <select
+              value={deliveryStatusFilter}
+              onChange={(e) =>
+                setDeliveryStatusFilter(
+                  e.target.value as
+                    | 'all'
+                    | 'pending'
+                    | 'pending_retry'
+                    | 'delivered'
+                    | 'failed'
+                )
+              }
+              title="Filter delivery history by status"
+              aria-label="Webhook delivery status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="pending">Pending only</option>
+              <option value="pending_retry">Pending retry only</option>
+              <option value="delivered">Delivered only</option>
+              <option value="failed">Failed only</option>
+            </select>
             {deliveriesBusy ? <p className="muted">Loading…</p> : null}
             <table className="table">
               <thead>
@@ -613,7 +642,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                 </tr>
               </thead>
               <tbody>
-                {deliveries.map((d) => (
+                {managedDeliveries.map((d) => (
                   <tr key={d.id}>
                     <td style={{ fontSize: 12 }}>
                       {d.created_at ? String(d.created_at).replace('T', ' ').slice(0, 19) : '—'}
@@ -636,10 +665,12 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                     </td>
                   </tr>
                 ))}
-                {!deliveries.length && !deliveriesBusy && (
+                {!managedDeliveries.length && !deliveriesBusy && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No deliveries yet — click Test to create one
+                      {deliveries.length
+                        ? 'No deliveries for this filter'
+                        : 'No deliveries yet — click Test to create one'}
                     </td>
                   </tr>
                 )}

@@ -1623,6 +1623,11 @@ ExpenseStatusFilterValue = Annotated[
     Literal["pending", "approved", "rejected"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.webhooks STATUS_* (Integrations delivery history filter).
+WebhookDeliveryStatusFilterValue = Annotated[
+    Literal["pending", "pending_retry", "delivered", "failed"],
+    BeforeValidator(coerce_package_code_value),
+]
 ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
 
 
