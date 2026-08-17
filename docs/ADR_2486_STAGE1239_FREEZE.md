@@ -31,3 +31,7 @@ Stage 1240 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reveal Gate, Transfer Reveal Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1240 opened under **ADR-2487** after CONTINUE/NEXT (Tenant MVP Transfer Astragal Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2488**. Stage 1239 feature scope remains frozen.

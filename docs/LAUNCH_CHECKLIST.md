@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1240 track opened (ADR-2487: `test_stage1240_open.py`, `docs/STAGE_1240_PLAN.md`) — Transfer Astragal Gate Honesty Pack Remaining-Gate Index; closed under ADR-2488
+- [x] Transfer Astragal Gate Honesty Pack remaining-gate hub (Stage 1240 I1: `test_stage1240_index_i1.py`, `docs/TRANSFER_ASTRAGAL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Astragal Gate Honesty Pack blocker matrix (Stage 1240 B1: `test_stage1240_blockers_b1.py`, `docs/TRANSFER_ASTRAGAL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1239 / Stage 1238 / Stage 392 / CHANGE_IMPACT pointers (Stage 1240 P1: `test_stage1240_pointers_p1.py`, `docs/TRANSFER_ASTRAGAL_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1240 fidelity sync (D1: `test_stage1240_fidelity_d1.py`, `docs/STAGE_1240_FIDELITY.md`)
+- [x] Stage 1240 exit + freeze (H1240x: `test_stage1240_exit_h1240x.py`, `docs/STAGE_1240_EXIT_CRITERIA.md`, ADR-2488)
 Stage 1239 track opened (ADR-2485: `test_stage1239_open.py`, `docs/STAGE_1239_PLAN.md`) — Transfer Reveal Gate Honesty Pack Remaining-Gate Index; closed under ADR-2486
 - [x] Transfer Reveal Gate Honesty Pack remaining-gate hub (Stage 1239 I1: `test_stage1239_index_i1.py`, `docs/TRANSFER_REVEAL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Reveal Gate Honesty Pack blocker matrix (Stage 1239 B1: `test_stage1239_blockers_b1.py`, `docs/TRANSFER_REVEAL_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
