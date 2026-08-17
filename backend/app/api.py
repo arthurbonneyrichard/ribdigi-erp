@@ -101,6 +101,7 @@ from app.schemas import (
     JournalStatusFilterValue,
     CashTransferKindFilterValue,
     PosSessionStatusFilterValue,
+    TaxFilingJurisdictionValue,
     BankStatementStatusFilterValue,
     WebhookDeliveryStatusFilterValue,
     SalesReturnReportReasonValue,
@@ -9368,7 +9369,8 @@ async def reports_export(
     year: int | None = None,
     month: int | None = None,
     warehouse_id: str | None = None,
-    jurisdiction: str | None = None,
+    # omit → export default (tax_filing_gh → GH); blank/unsupported → 422
+    jurisdiction: Annotated[TaxFilingJurisdictionValue | None, Query()] = None,
     store_id: str | None = None,
     branch_id: str | None = None,
     category_id: str | None = None,
@@ -10619,13 +10621,15 @@ async def reports_tax(
 async def reports_tax_filing(
     from_date: str | None = None,
     to_date: str | None = None,
-    jurisdiction: str | None = None,
+    # omit → tenant tax_jurisdiction (neutral pack if unsupported); blank/unsupported → 422
+    jurisdiction: Annotated[TaxFilingJurisdictionValue | None, Query()] = None,
     store_id: str | None = None,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import tax_filings as tax_filings_svc
 
+    # Schema TaxFilingJurisdictionValue rejects blank/unknown → 422 (blank was silent omit).
     fd = reports_svc.parse_date(from_date)
     td = reports_svc.parse_date(to_date, end_of_day=True)
     if jurisdiction:

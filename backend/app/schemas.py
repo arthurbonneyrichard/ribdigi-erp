@@ -23,6 +23,7 @@ from app.tenants import (
     coerce_thousand_separator_value,
     coerce_time_format_value,
 )
+from app.tax_filings import coerce_tax_filing_jurisdiction_value
 from app.expenses import coerce_expense_payment_method_value
 from app.print_branding import coerce_invoice_template_value, coerce_receipt_paper_value
 
@@ -1958,6 +1959,11 @@ CashTransferKindFilterValue = Annotated[
 PosSessionStatusFilterValue = Annotated[
     Literal["open", "closed"],
     BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.tax_filings.SUPPORTED (Tax Filing pack / export).
+TaxFilingJurisdictionValue = Annotated[
+    Literal["GH"],
+    BeforeValidator(coerce_tax_filing_jurisdiction_value),
 ]
 # Keep aligned with BankStatement.status (Accounting Reconcile statements filter).
 BankStatementStatusFilterValue = Annotated[

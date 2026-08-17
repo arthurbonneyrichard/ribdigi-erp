@@ -39,6 +39,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [taxRateManageFilter, setTaxRateManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filingJurisdictionFilter, setFilingJurisdictionFilter] = useState<'' | 'GH'>('');
 
   const managedRates = rows.filter((r) => {
     if (taxRateManageFilter === 'all') return true;
@@ -51,6 +52,7 @@ export default function Page() {
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
     if (storeId) params.set('store_id', storeId);
+    if (filingJurisdictionFilter) params.set('jurisdiction', filingJurisdictionFilter);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -164,7 +166,11 @@ export default function Page() {
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       if (storeId) params.set('store_id', storeId);
-      if (reportType === 'tax_filing_gh') params.set('jurisdiction', 'GH');
+      if (reportType === 'tax_filing_gh') {
+        params.set('jurisdiction', filingJurisdictionFilter || 'GH');
+      } else if (filingJurisdictionFilter) {
+        params.set('jurisdiction', filingJurisdictionFilter);
+      }
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -215,6 +221,7 @@ export default function Page() {
               setStoreId(e.target.value);
               setCtxStoreId(e.target.value);
             }}
+            aria-label="Tax report store filter"
           >
             <option value="">All stores</option>
             {stores
@@ -225,8 +232,20 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <select
+            value={filingJurisdictionFilter}
+            onChange={(e) => {
+              const next = e.target.value as '' | 'GH';
+              setFilingJurisdictionFilter(next);
+            }}
+            aria-label="Tax filing jurisdiction filter"
+          >
+            <option value="">Tenant default</option>
+            <option value="GH">GH — Ghana VAT</option>
+          </select>
           <button
             onClick={() => refresh().catch((err) => setError(err.message))}
+            aria-label="Apply tax period filters"
           >
             Apply
           </button>

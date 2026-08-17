@@ -1336,8 +1336,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 12.2 Tax Reports
 **Endpoint:** `GET /reports/tax?from_date=&to_date=&store_id=` — output/input/net VAT summary; optional `store_id` (invoices by invoice store, POS by session store, input via PO/GRN warehouse→store). Response echoes `store_id`/`store_name`.  
-**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&store_id=&jurisdiction=` — same store scope; export `tax` / `tax_filing` / `tax_filing_gh` pass `store_id`.  
-Tax UI (`/tax`) period controls include store picker.
+**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&store_id=&jurisdiction=` — same store scope; export `tax` / `tax_filing` / `tax_filing_gh` pass `store_id`. Query `jurisdiction` ∈ `GH` (schema Query `Literal` + strip/upper; keep aligned with `tax_filings.SUPPORTED`; omit → tenant `tax_jurisdiction` with neutral pack when unsupported; blank/unsupported → **422** — blank was silent omit; unsupported was late service **400**). Same Query Literal on `GET /reports/export` (omit → export default; `tax_filing_gh` still defaults to GH). Tax UI (`/tax`) **Tax filing jurisdiction filter** (`filingJurisdictionFilter`) + period store picker.
 
 ## 13. Multi-Store Management
 
