@@ -31,3 +31,7 @@ Stage 1304 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Pinion Gate, Transfer Pinion Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1304 opened under **ADR-2615** after CONTINUE/NEXT (Tenant MVP Transfer Nut Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2616**. Stage 1303 feature scope remains frozen.
