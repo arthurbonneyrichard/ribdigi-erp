@@ -2501,10 +2501,46 @@ WebhookEventValue = Annotated[
 ]
 
 
+def coerce_webhook_url_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for URL 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_webhook_url_value(value: str) -> str:
+    """AfterValidator: absolute http(s) URL; http only for localhost (BR-18.6)."""
+    from urllib.parse import urlparse
+
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("url must be an absolute http(s) URL")
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme == "http" and host not in {
+        "localhost",
+        "127.0.0.1",
+        "testserver",
+        "host.docker.internal",
+    }:
+        raise ValueError("Webhook URL must use HTTPS (http allowed only for localhost)")
+    return value
+
+
+# Keep aligned with app.webhooks.validate_url (Integrations endpoint URL).
+WebhookUrlValue = Annotated[
+    str,
+    BeforeValidator(coerce_webhook_url_value),
+    AfterValidator(validate_webhook_url_value),
+]
+
+
 class WebhookCreate(BaseModel):
     """Outbound webhook endpoint create."""
 
-    url: str = Field(min_length=1)
+    # omit not allowed; blank/non-http(s)/non-localhost http → 422 (was free str; late **400**)
+    url: WebhookUrlValue
     # Closed event catalog; blank/unknown item → 422; empty list → 422
     events: list[WebhookEventValue] = Field(min_length=1)
     secret: str | None = None
@@ -2515,7 +2551,8 @@ class WebhookCreate(BaseModel):
 class WebhookUpdate(BaseModel):
     """Outbound webhook endpoint patch — omit = no change."""
 
-    url: str | None = Field(default=None, min_length=1)
+    # omit = no change; blank/non-http(s) → 422 (was free str min_length=1; late **400**)
+    url: WebhookUrlValue | None = None
     events: list[WebhookEventValue] | None = Field(default=None, min_length=1)
     description: str | None = None
     is_active: bool | None = None

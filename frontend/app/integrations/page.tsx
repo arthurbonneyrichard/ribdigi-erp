@@ -493,6 +493,8 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           value={hookUrl}
           onChange={(e) => setHookUrl(e.target.value)}
           placeholder="https://your-app.com/webhooks/ribdigi"
+          aria-label="Webhook endpoint URL"
+          title="Absolute https URL (http only for localhost)"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <label className="muted">Description</label>

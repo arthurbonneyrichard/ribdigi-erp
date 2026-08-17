@@ -1679,9 +1679,9 @@ Company admins can also manage endpoints in the **Integrations** UI (`/integrati
 
 ### 17.1 Manage Webhooks
 **List:** `GET /webhooks` — optional `?is_active=true|false` (or `active_only=true`) filters disabled endpoints (omit = all; Integrations manage status filter).  
-**Create:** `POST /webhooks`  
+**Create:** `POST /webhooks` — `url` ∈ absolute `http(s)` (`WebhookUrlValue`; strip; blank/`ftp://`/`not-a-url`/remote `http` → **422** — was free `str`; late service **400**; `http` allowed only for localhost). `events[]` ∈ `VALID_EVENTS` (blank/unknown/empty → **422**). Integrations **Webhook endpoint URL** input.  
 **Get:** `GET /webhooks/{webhook_id}`  
-**Update:** `PATCH /webhooks/{webhook_id}` (set `rotate_secret: true` to issue a new `whsec_…`; soft-disable via `is_active: false` — Integrations **Disable** / **Enable** + manage status filter All/Active/Inactive)  
+**Update:** `PATCH /webhooks/{webhook_id}` (same `WebhookUrlValue` when `url` sent; set `rotate_secret: true` to issue a new `whsec_…`; soft-disable via `is_active: false` — Integrations **Disable** / **Enable** + manage status filter All/Active/Inactive)  
 **Delete:** `DELETE /webhooks/{webhook_id}`  
 **Test:** `POST /webhooks/{webhook_id}/test` (delivers signed `webhook.test`)  
 **Deliveries:** `GET /webhooks/{webhook_id}/deliveries?limit=50` — optional Query `status` ∈ `pending`|`pending_retry`|`delivered`|`failed` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Integrations **Webhook delivery status filter** All / Pending / Pending retry / Delivered / Failed (`deliveryStatusFilter`; client filter over loaded delivery cache).  

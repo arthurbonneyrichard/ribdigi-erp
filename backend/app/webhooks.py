@@ -73,6 +73,7 @@ def decrypt_webhook_secret(token: str) -> str:
 
 
 def validate_url(url: str) -> str:
+    # Defense in depth: WebhookCreate/Update WebhookUrlValue → 422 on blank/non-http(s).
     cleaned = (url or "").strip()
     parsed = urlparse(cleaned)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:

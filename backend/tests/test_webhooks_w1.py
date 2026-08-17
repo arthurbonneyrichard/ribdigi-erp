@@ -151,7 +151,8 @@ async def test_webhook_rejects_http_non_localhost(client):
         headers=headers,
         json={"url": "http://evil.example.com/hook", "events": ["sale.created"]},
     )
-    assert bad.status_code == 400
+    # WebhookUrlValue → 422 (was late service validate_url **400**)
+    assert bad.status_code == 422
 
 
 @pytest.mark.asyncio
