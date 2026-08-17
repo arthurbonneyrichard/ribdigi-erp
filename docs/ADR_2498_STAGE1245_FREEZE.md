@@ -31,3 +31,7 @@ Stage 1246 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Stile Gate, Transfer Stile Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1246 opened under **ADR-2499** after CONTINUE/NEXT (Tenant MVP Transfer Panel Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2500**. Stage 1245 feature scope remains frozen.
