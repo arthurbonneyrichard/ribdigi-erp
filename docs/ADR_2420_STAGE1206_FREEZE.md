@@ -31,3 +31,7 @@ Stage 1207 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ambulatory Gate, Transfer Ambulatory Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1207 opened under **ADR-2421** after CONTINUE/NEXT (Tenant MVP Transfer Sacristy Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2422**. Stage 1206 feature scope remains frozen.
