@@ -31,3 +31,7 @@ Stage 1224 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Boss Gate, Transfer Boss Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1224 opened under **ADR-2455** after CONTINUE/NEXT (Tenant MVP Transfer Corbel Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2456**. Stage 1223 feature scope remains frozen.
