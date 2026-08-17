@@ -31,3 +31,7 @@ Stage 1331 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reamer Gate, Transfer Reamer Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1331 opened under **ADR-2669** after CONTINUE/NEXT (Tenant MVP Transfer Broach Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2670**. Stage 1330 feature scope remains frozen.
