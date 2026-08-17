@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,16 +13,26 @@ from app import models as m
 
 
 def parse_date(value: str | datetime | None, *, end_of_day: bool = False) -> datetime | None:
+    # Schema IsoDateQueryValue rejects blank/invalid on audit Query → 422; keep
+    # defense-in-depth so other free-str date Query paths return **400** not **500**.
     if value is None or value == "":
         return None
     if isinstance(value, datetime):
         dt = value
     else:
         text = str(value).strip()
-        if len(text) == 10:
-            dt = datetime.strptime(text, "%Y-%m-%d")
-        else:
-            dt = datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+        if not text:
+            return None
+        try:
+            if len(text) == 10:
+                dt = datetime.strptime(text, "%Y-%m-%d")
+            else:
+                dt = datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid date; use YYYY-MM-DD",
+            ) from exc
     if end_of_day:
         return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)

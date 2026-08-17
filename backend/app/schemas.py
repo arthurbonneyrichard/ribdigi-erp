@@ -2254,6 +2254,37 @@ AuditModuleValue = Annotated[
 ]
 
 
+def coerce_iso_date_query_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for date 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_iso_date_query_value(value: str) -> str:
+    """AfterValidator: YYYY-MM-DD (or ISO datetime); blank/invalid → 422."""
+    if not value:
+        raise ValueError("date must be YYYY-MM-DD")
+    try:
+        if len(value) == 10:
+            datetime.strptime(value, "%Y-%m-%d")
+        else:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("date must be YYYY-MM-DD") from exc
+    return value
+
+
+# Keep aligned with app.reports.parse_date (Audit + report date Query filters).
+IsoDateQueryValue = Annotated[
+    str,
+    BeforeValidator(coerce_iso_date_query_value),
+    AfterValidator(validate_iso_date_query_value),
+]
+
+
 class ApiKeyCreate(BaseModel):
     """POST /api-keys — typed create body (BR-18.1).
 

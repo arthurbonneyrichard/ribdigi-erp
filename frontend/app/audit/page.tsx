@@ -251,13 +251,15 @@ export default function Page() {
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          title="From date"
+          title="From date (YYYY-MM-DD)"
+          aria-label="Audit from date"
         />
         <input
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          title="To date"
+          title="To date (YYYY-MM-DD)"
+          aria-label="Audit to date"
         />
         <button type="button" onClick={() => refreshLogs().catch((e) => setError(e.message))}>
           Filter
