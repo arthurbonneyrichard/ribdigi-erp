@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -1901,6 +1901,41 @@ ReportTypeValue = Annotated[
     ],
     BeforeValidator(coerce_package_code_value),
 ]
+
+
+class AiReportsGenerateBody(BaseModel):
+    """POST /ai/reports/generate — typed report generator body (BR-21.7).
+
+    Unknown keys → **422** (`extra=forbid`). Must provide `prompt`, `template_id`,
+    or `report_type` (schema **422**; was late service **422**). Invalid
+    `format` / `report_type` → **422** (format garbage was silently remapped to
+    csv; unknown report_type was late **400**). `params` is an alias for
+    `filters`. Service `generate_report` / `parse_prompt` remain defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    prompt: str | None = None
+    format: ReportExportFormatValue | None = None
+    template_id: str | None = None
+    report_type: ReportTypeValue | None = None
+    period: str | None = None
+    filters: dict[str, Any] | None = None
+    params: dict[str, Any] | None = None
+
+    @field_validator("prompt", "template_id", "period", mode="before")
+    @classmethod
+    def _strip_optional(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            return text or None
+        return value
+
+    @model_validator(mode="after")
+    def _require_prompt_template_or_type(self) -> AiReportsGenerateBody:
+        if not (self.prompt or self.template_id or self.report_type):
+            raise ValueError("Provide prompt, template_id, or report_type")
+        return self
 
 
 class ReportScheduleCreate(BaseModel):

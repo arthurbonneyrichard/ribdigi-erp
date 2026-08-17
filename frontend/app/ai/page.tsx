@@ -388,7 +388,9 @@ export default function Page() {
           <button onClick={go} aria-label="Ask AI chat">
             Ask
           </button>
-          <button onClick={generateReport}>Generate report</button>
+          <button onClick={generateReport} aria-label="Generate AI report">
+            Generate report
+          </button>
           <button onClick={customerAssist} aria-label="Customer assist">
             Customer assist
           </button>

@@ -1602,7 +1602,7 @@ Rule-based trend forecast, RFM segments, product affinity, peak hours/days. See 
 Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR may suggest category keywords.
 
 ### 16.7 AI Report Generator
-**Generate (JSON preview):** `POST /ai/reports/generate`  
+**Generate (JSON preview):** `POST /ai/reports/generate` — typed body `AiReportsGenerateBody` `{ "prompt"? | "template_id"? | "report_type"?, "format"?, "period"?, "filters"?|"params"? }` (`extra=forbid`; must provide prompt/template_id/report_type; invalid `format` ∈ csv|pdf|xlsx or `report_type` ∈ EXPORTABLE → **422** — format garbage was silently remapped to csv; unknown report_type was late **400**). AI UI **Generate AI report** (`aria-label`).  
 **Export file:** `POST /ai/reports/export`  
 **Templates:** `GET|POST /ai/reports/templates`, `DELETE /ai/reports/templates/{id}`
 
@@ -1610,7 +1610,7 @@ Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR
 { "prompt": "Show me monthly sales for Q2 2026", "format": "csv" }
 ```
 
-Also accepts structured `{ "report_type": "sales", "period": "last_month", "format": "pdf" }` (mapped onto EXPORTABLE types). Constrained NL — see `docs/AI_REPORT_GENERATOR_MVP.md`.
+Also accepts structured `{ "report_type": "sales_monthly", "period": "last_month", "format": "pdf" }` (EXPORTABLE types). Constrained NL — see `docs/AI_REPORT_GENERATOR_MVP.md`.
 
 ### 16.8 AI Document Assistant
 **Endpoint:** `POST /ai/documents/analyze`

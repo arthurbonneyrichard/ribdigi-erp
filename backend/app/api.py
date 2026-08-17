@@ -139,6 +139,7 @@ from app.schemas import (
     AiDocumentExpenseCreate,
     AiChatBody,
     AiCustomerAssistBody,
+    AiReportsGenerateBody,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseReject,
@@ -12508,22 +12509,23 @@ async def ai_documents_create_purchase_invoice(
 
 @api.post("/ai/reports/generate")
 async def ai_reports_generate(
-    payload: dict | None = None,
+    payload: AiReportsGenerateBody,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """BR-21.7 constrained NL / structured report generation (JSON preview)."""
-    body = payload or {}
+    # Schema AiReportsGenerateBody rejects unknown keys / bad format|type /
+    # missing prompt|template_id|report_type → 422.
     data = await ai_reports_svc.generate_report(
         db,
         tenant_id=claims["tenant_id"],
         actor_user_id=claims.get("sub"),
-        prompt=body.get("prompt"),
-        format=body.get("format"),
-        template_id=body.get("template_id"),
-        report_type=body.get("report_type"),
-        period=body.get("period"),
-        filters=body.get("filters") or body.get("params"),
+        prompt=payload.prompt,
+        format=payload.format,
+        template_id=payload.template_id,
+        report_type=payload.report_type,
+        period=payload.period,
+        filters=payload.filters or payload.params,
     )
     return env(data, "Report generated")
 
