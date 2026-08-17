@@ -149,9 +149,15 @@ async def resolve_role_assignment(
     db: AsyncSession, tenant_id: str, role: str
 ) -> tuple[str, dict]:
     """Return (role_key, permissions payload including record_scope) for user assignment."""
-    role_key = (role or "").strip()
+    # Schema RoleKeyValue rejects blank/malformed → 422; keep shape + unknown defense-in-depth.
+    role_key = (role or "").strip().lower()
     if not role_key:
         raise HTTPException(status_code=400, detail="Role is required")
+    if not ROLE_KEY_RE.match(role_key):
+        raise HTTPException(
+            status_code=400,
+            detail="Role key must be lowercase letters/numbers/underscore, start with a letter (2–49 chars)",
+        )
     if role_key in VALID_ROLES:
         perms = permissions_for_role(role_key)
         scope = record_scope_for_role(role_key)

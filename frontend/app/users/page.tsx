@@ -594,6 +594,7 @@ export default function Page() {
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
+            aria-label="User role"
           >
             {assignableRoles().map((r) => (
               <option key={r.role} value={r.role}>
@@ -688,7 +689,11 @@ export default function Page() {
               <td>{r.email}</td>
               <td>
                 {canWrite ? (
-                  <select value={r.role} onChange={(e) => setRole(r.id, e.target.value)}>
+                  <select
+                    value={r.role}
+                    onChange={(e) => setRole(r.id, e.target.value)}
+                    aria-label={`Change role for ${r.email}`}
+                  >
                     {assignableRoles(r.role).map((role) => (
                       <option key={role.role} value={role.role}>
                         {role.label}

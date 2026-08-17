@@ -467,6 +467,8 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 }
 ```
 
+`role` ∈ role key shape (`RoleKeyValue` / `custom_roles.ROLE_KEY_RE`; strip/lower; omit → `cashier`; blank/`A`/`Cashier!` → **422** — was free `str`; blank late **400**). Unknown role still service **400**. Users **User role** select.
+
 `record_scope` schema `Literal["own","department","branch","all"]` (omit = role default; blank/invalid → **422** — no silent `all` from `""`). Response wraps `{ "user": {...}, ... }`.
 
 ### 4.2 List Users
@@ -478,7 +480,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 ### 4.4 Update User
 **Endpoint:** `PATCH /users/{user_id}`
 
-Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**).
+Supports `full_name`, `phone`, `role` (same `RoleKeyValue`; omit = no change; blank/malformed → **422**), `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**). Users row **Change role** select (`aria-label`).
 
 ### 4.5 Delete / Deactivate User
 **Endpoint:** `DELETE /users/{user_id}` (soft deactivate)
@@ -489,7 +491,7 @@ Supports `full_name`, `phone`, `role`, `password`, `is_active`, `branch_id`, `cl
 
 **Get Role:** `GET /roles/{role}` — system catalog entry or custom role (inactive custom roles still resolve).
 
-**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). `base_role` schema `Literal` of clonable system roles (platform_* + company_admin|store_manager|sales_officer|inventory_officer|accountant|cashier; strip/lower; omit/null OK when `permissions` set; blank/unknown/`super_admin` → **422**). Clones system `base_role` permission map when provided. `permissions` map modules ∈ assignable modules with actions ∈ `read`|`write`|`approve`|`*` (`ApiKeyPermissionAction`; strip/lower; unknown module|action / empty map / `*:*` / unknown top-level keys → **422** — was late service **400**). Body `extra=forbid`. Users **Create custom role** controls (`aria-label`s).
+**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). `key` ∈ same `RoleKeyValue` shape as user assign (strip/lower; blank/malformed → **422** — was free `str`; late **400**); system-key collision / `super_*` remain service **400**. `base_role` schema `Literal` of clonable system roles (platform_* + company_admin|store_manager|sales_officer|inventory_officer|accountant|cashier; strip/lower; omit/null OK when `permissions` set; blank/unknown/`super_admin` → **422**). Clones system `base_role` permission map when provided. `permissions` map modules ∈ assignable modules with actions ∈ `read`|`write`|`approve`|`*` (`ApiKeyPermissionAction`; strip/lower; unknown module|action / empty map / `*:*` / unknown top-level keys → **422** — was late service **400**). Body `extra=forbid`. Users **Create custom role** controls (`aria-label`s).
 
 **Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope? (same Literal), is_active? }` (`extra=forbid`; same `permissions` honesty when sent). Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
 **Delete Custom Role:** `DELETE /roles/{role}` — hard delete; returns **409** while any user still has that role. Prefer soft-deactivate for retirement.

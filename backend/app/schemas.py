@@ -350,6 +350,34 @@ SystemRoleValue = Annotated[
 ]
 
 
+def coerce_role_key_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_role_key_value(value: str) -> str:
+    """AfterValidator: shape only (custom_roles.ROLE_KEY_RE); unknown role stays service 400."""
+    from app.custom_roles import ROLE_KEY_RE
+
+    if not ROLE_KEY_RE.match(value):
+        raise ValueError(
+            "Role key must be lowercase letters/numbers/underscore, start with a letter (2–49 chars)"
+        )
+    return value
+
+
+# Keep aligned with custom_roles.ROLE_KEY_RE (user assign + custom role key shape).
+RoleKeyValue = Annotated[
+    str,
+    BeforeValidator(coerce_role_key_value),
+    AfterValidator(validate_role_key_value),
+]
+
+
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
     if bool(getattr(model, "override_credit_limit", False)):
@@ -527,7 +555,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     full_name: str
     password: str
-    role: str = "cashier"
+    # omit → cashier; blank/malformed key → 422 (was free str; blank late **400**)
+    role: RoleKeyValue = "cashier"
     phone: str | None = None
     branch_id: str | None = None
     department_id: str | None = None
@@ -538,7 +567,8 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     full_name: str | None = None
     phone: str | None = None
-    role: str | None = None
+    # omit = no change; blank/malformed key → 422 (was free str; blank late **400**)
+    role: RoleKeyValue | None = None
     is_active: bool | None = None
     password: str | None = None
     # Record visibility: own | department | branch | all (omit = no change; blank → 422)
@@ -675,7 +705,8 @@ class CustomRoleCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    key: str
+    # Shape via RoleKeyValue → 422 on blank/malformed; collision/super_/system stay service **400**
+    key: RoleKeyValue
     label: str
     permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     # Clone-from system role; omit/null OK when permissions set; blank/unknown/super_admin → 422
