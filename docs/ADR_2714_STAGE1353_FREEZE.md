@@ -31,3 +31,7 @@ Stage 1354 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bevel Gate, Transfer Bevel Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1354 opened under **ADR-2715** after CONTINUE/NEXT (Tenant MVP Transfer Spur Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2716**. Stage 1353 feature scope remains frozen.
