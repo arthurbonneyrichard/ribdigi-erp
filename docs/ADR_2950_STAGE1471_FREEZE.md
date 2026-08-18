@@ -31,3 +31,7 @@ Stage 1472 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Spinform Gate, Transfer Spinform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1472 opened under **ADR-2951** after CONTINUE/NEXT (Tenant MVP Transfer Stretchform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2952**. Stage 1471 feature scope remains frozen.
