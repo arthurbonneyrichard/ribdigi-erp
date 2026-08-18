@@ -20,6 +20,7 @@ export default function Page() {
   const [payMethod, setPayMethod] = useState('cash');
   const [payChequeNumber, setPayChequeNumber] = useState('');
   const [payChequeBankName, setPayChequeBankName] = useState('');
+  const [payChequeDate, setPayChequeDate] = useState('');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
   const [creditLimit, setCreditLimit] = useState('');
@@ -165,9 +166,10 @@ export default function Page() {
       const chequeFields =
         payMethod === 'cheque'
           ? {
-              // Blank → null so Pay does not 422 (ChequeNumberValue / BankNameValue).
+              // Blank → null so Pay does not 422 (ChequeNumberValue / BankNameValue / IsoDateQueryValue).
               cheque_number: payChequeNumber.trim() || null,
               bank_name: payChequeBankName.trim() || null,
+              cheque_date: payChequeDate.trim() || null,
             }
           : {};
       if (kind === 'receivable') {
@@ -205,6 +207,7 @@ export default function Page() {
       setPayAmount('');
       setPayChequeNumber('');
       setPayChequeBankName('');
+      setPayChequeDate('');
       await refresh();
       await loadStatement();
     } catch (err: any) {
@@ -495,6 +498,13 @@ export default function Page() {
                   placeholder="Cheque bank name"
                   aria-label="Payment cheque bank name"
                   style={{ width: 160 }}
+                />
+                <input
+                  type="date"
+                  value={payChequeDate}
+                  onChange={(e) => setPayChequeDate(e.target.value)}
+                  aria-label="Payment cheque date"
+                  title="Cheque date (YYYY-MM-DD)"
                 />
               </>
             ) : null}

@@ -2035,7 +2035,10 @@ class CustomerPaymentCreate(BaseModel):
     # omit/`null` → no bank on cheque; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/garbage could persist on cheque payment bank_name).
     bank_name: BankNameValue | None = None
-    cheque_date: datetime | None = None
+    # omit/`null` → no cheque date; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates rejected; Credit UI
+    # never set → always null). API parses via reports.parse_date.
+    cheque_date: IsoDateQueryValue | None = None
     apply_early_discount: bool | None = None
     liquid_account_id: str | None = None
     # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
@@ -2412,7 +2415,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),
@@ -3148,7 +3151,10 @@ class SupplierPaymentCreate(BaseModel):
     # omit/`null` → no bank on cheque; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/garbage could persist on cheque payment bank_name).
     bank_name: BankNameValue | None = None
-    cheque_date: datetime | None = None
+    # omit/`null` → no cheque date; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates rejected; Credit UI
+    # never set → always null). API parses via reports.parse_date.
+    cheque_date: IsoDateQueryValue | None = None
     apply_early_discount: bool | None = None
     liquid_account_id: str | None = None
     # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
