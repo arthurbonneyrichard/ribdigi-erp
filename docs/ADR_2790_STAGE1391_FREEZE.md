@@ -31,3 +31,7 @@ Stage 1392 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Circlip Gate, Transfer Circlip Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1392 opened under **ADR-2791** after CONTINUE/NEXT (Tenant MVP Transfer Castle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2792**. Stage 1391 feature scope remains frozen.
