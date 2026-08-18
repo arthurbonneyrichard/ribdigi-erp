@@ -31,3 +31,7 @@ Stage 1428 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ubolt Gate, Transfer Ubolt Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1428 opened under **ADR-2863** after CONTINUE/NEXT (Tenant MVP Transfer Wireclip Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2864**. Stage 1427 feature scope remains frozen.
