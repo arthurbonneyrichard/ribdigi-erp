@@ -119,7 +119,10 @@ export default function Page() {
             ? { website: String(tenant.website).trim() }
             : {}),
           address: tenant.address,
-          legal_name: tenant.legal_name,
+          // Omit blank legal name so Save does not 422 (LegalNameValue); leave prior.
+          ...(String(tenant.legal_name || '').trim()
+            ? { legal_name: String(tenant.legal_name).trim() }
+            : {}),
           // Omit blank registration so Save does not 422 (RegistrationNumberValue); leave prior.
           ...(String(tenant.registration_number || '').trim()
             ? { registration_number: String(tenant.registration_number).trim() }
@@ -300,6 +303,7 @@ export default function Page() {
           value={tenant.legal_name || ''}
           onChange={(e) => setTenant({ ...tenant, legal_name: e.target.value })}
           placeholder="Legal name"
+          aria-label="Company legal name"
         />
         <input
           value={tenant.registration_number || ''}

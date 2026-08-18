@@ -529,7 +529,9 @@ class TenantProfileUpdate(BaseModel):
     # Same absolute http(s) honesty as Webhook/Bank feed URLs (`WebhookUrlValue`).
     website: WebhookUrlValue | None = None
     address: str | None = None
-    legal_name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist; len<2 or >200 was late **400**).
+    legal_name: LegalNameValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared; garbage could persist; length>80 was late **400**).
     registration_number: RegistrationNumberValue | None = None
@@ -2703,6 +2705,27 @@ ContactPersonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_contact_person_value),
+]
+
+
+def validate_legal_name_value(value: str) -> str:
+    """AfterValidator: legal entity name; blank/URL/short/garbage → 422 (2–200)."""
+    if not value:
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    if len(value) < 2 or len(value) > 200:
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    return value
+
+
+# Company legal name — human label (2–200; no URL/email).
+LegalNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_legal_name_value),
 ]
 
 

@@ -118,4 +118,5 @@ async def test_company_legal_fields_patch_and_get(client):
         headers=headers,
         json={"legal_name": "X"},
     )
-    assert bad.status_code == 400
+    # Schema LegalNameValue → 422 (was late service 400 for len<2).
+    assert bad.status_code == 422, bad.text
