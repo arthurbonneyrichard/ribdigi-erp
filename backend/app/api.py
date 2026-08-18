@@ -12451,8 +12451,8 @@ async def ai_low_stock_prediction_requests(
 
 @api.get("/ai/sales/analysis")
 async def ai_sales_analysis(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12469,8 +12469,8 @@ async def ai_sales_analysis(
 
 @api.get("/ai/expenses/analysis")
 async def ai_expenses_analysis(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):

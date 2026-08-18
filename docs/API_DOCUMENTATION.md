@@ -1612,12 +1612,12 @@ Omitting `lines` runs prediction then creates draft purchase requests (`purchasi
 ### 16.5 AI Sales Analysis
 **Endpoint:** `GET /ai/sales/analysis?from_date=&to_date=`
 
-Rule-based trend forecast, RFM segments, product affinity, peak hours/days. See `docs/AI_SALES_EXPENSE_MVP.md`.
+Rule-based trend forecast, RFM segments, product affinity, peak hours/days. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → service default ~90d window; blank/invalid → **422** — blank was silent default; invalid was late service **400**). AI **Analysis From/To date** inputs (`aria-label`s). See `docs/AI_SALES_EXPENSE_MVP.md`.
 
 ### 16.6 AI Expense Analysis
 **Endpoint:** `GET /ai/expenses/analysis?from_date=&to_date=`
 
-Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR may suggest category keywords.
+Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR may suggest category keywords. Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty.
 
 ### 16.7 AI Report Generator
 **Generate (JSON preview):** `POST /ai/reports/generate` — typed body `AiReportsGenerateBody` `{ "prompt"? | "template_id"? | "report_type"?, "format"?, "period"?, "filters"?|"params"? }` (`extra=forbid`; must provide prompt/template_id/report_type; invalid `format` ∈ csv|pdf|xlsx or `report_type` ∈ EXPORTABLE → **422** — format garbage was silently remapped to csv; unknown report_type was late **400**). AI UI **Generate AI report** (`aria-label`).  

@@ -21,6 +21,8 @@ export default function Page() {
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
   const [draftPiBusy, setDraftPiBusy] = useState(false);
   const [tmplName, setTmplName] = useState('');
+  const [analysisFromDate, setAnalysisFromDate] = useState('');
+  const [analysisToDate, setAnalysisToDate] = useState('');
 
   async function go() {
     setError('');
@@ -203,7 +205,11 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const r = await api('/ai/sales/analysis');
+      const params = new URLSearchParams();
+      if (analysisFromDate) params.set('from_date', analysisFromDate);
+      if (analysisToDate) params.set('to_date', analysisToDate);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const r = await api(`/ai/sales/analysis${qs}`);
       const d = r.data || {};
       setA(
         [
@@ -222,7 +228,11 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const r = await api('/ai/expenses/analysis');
+      const params = new URLSearchParams();
+      if (analysisFromDate) params.set('from_date', analysisFromDate);
+      if (analysisToDate) params.set('to_date', analysisToDate);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const r = await api(`/ai/expenses/analysis${qs}`);
       const d = r.data || {};
       setA(
         [
@@ -561,8 +571,26 @@ export default function Page() {
             />
             Include open PRs
           </label>
-          <button onClick={loadSalesAnalysis}>Sales analysis</button>
-          <button onClick={loadExpenseAnalysis}>Expense analysis</button>
+          <input
+            type="date"
+            value={analysisFromDate}
+            onChange={(e) => setAnalysisFromDate(e.target.value)}
+            title="Analysis from date (YYYY-MM-DD)"
+            aria-label="AI analysis from date"
+          />
+          <input
+            type="date"
+            value={analysisToDate}
+            onChange={(e) => setAnalysisToDate(e.target.value)}
+            title="Analysis to date (YYYY-MM-DD)"
+            aria-label="AI analysis to date"
+          />
+          <button onClick={loadSalesAnalysis} aria-label="Sales analysis">
+            Sales analysis
+          </button>
+          <button onClick={loadExpenseAnalysis} aria-label="Expense analysis">
+            Expense analysis
+          </button>
           <button onClick={loadSecurityAlerts}>Security alerts</button>
         </div>
         <p className="muted" style={{ marginTop: 8, fontSize: 12 }}>
