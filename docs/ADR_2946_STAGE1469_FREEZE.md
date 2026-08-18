@@ -31,3 +31,7 @@ Stage 1470 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bendform Gate, Transfer Bendform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1470 opened under **ADR-2947** after CONTINUE/NEXT (Tenant MVP Transfer Pressform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2948**. Stage 1469 feature scope remains frozen.
