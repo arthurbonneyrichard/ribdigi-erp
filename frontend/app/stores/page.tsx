@@ -502,7 +502,8 @@ export default function Page() {
         body: JSON.stringify({
           code: brCode.trim(),
           name: brName.trim(),
-          address: brAddress.trim() || null,
+          // Omit blank address so Create does not 422 (AddressValue).
+          ...(brAddress.trim() ? { address: brAddress.trim() } : {}),
           phone: brPhone.trim() || null,
           email: brEmail.trim() || null,
           manager_id: brManagerId || null,
@@ -525,7 +526,8 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           name: brName.trim() || undefined,
-          address: brAddress,
+          // Omit blank address so Save does not 422 (AddressValue); leave prior.
+          ...(brAddress.trim() ? { address: brAddress.trim() } : {}),
           // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
           ...(brPhone.trim() ? { phone: brPhone.trim() } : {}),
           email: brEmail.trim() || null,
@@ -826,6 +828,7 @@ export default function Page() {
               value={brAddress}
               onChange={(e) => setBrAddress(e.target.value)}
               placeholder="Address"
+              aria-label="Branch address"
             />
             <input
               value={brPhone}

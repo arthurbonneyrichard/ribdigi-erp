@@ -427,7 +427,7 @@ Create body `PlatformStaffCreate` (`extra=forbid`): `email` ∈ `EmailStr` (blan
 }
 ```
 
-PATCH supports `name`, `address`, `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank silently cleared; garbage could persist), `email`, `manager_id`, `clear_manager`, `is_active`. Create `phone` same (omit/`null` → no phone). Multi-Store **Branch phone** input (`aria-label`); create sends `null` when blank; edit omits blank phone. Deactivate with `is_active: false` (soft; row retained). Code is unique per tenant and immutable after create.
+PATCH supports `name`, `address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`; omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; garbage could persist), `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank silently cleared; garbage could persist), `email`, `manager_id`, `clear_manager`, `is_active`. Create `address` / `phone` same (omit/`null` → no address/phone). Multi-Store **Branch address** + **Branch phone** inputs (`aria-label`s); create/edit omit blank address; create sends `null` phone when blank; edit omits blank phone. Deactivate with `is_active: false` (soft; row retained). Code is unique per tenant and immutable after create.
 
 ### 3.5a2 Departments (BR-2.5)
 **List:** `GET /departments` (`branch_id`, `active_only` optional; `is_active=true|false` for Multi-Store manage filter)  

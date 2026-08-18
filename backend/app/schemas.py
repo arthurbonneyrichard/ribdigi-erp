@@ -748,7 +748,9 @@ class CashTransferCreate(BaseModel):
 class BranchCreate(BaseModel):
     code: str
     name: str
-    address: str | None = None
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on create). Same AddressValue as Company/Store.
+    address: AddressValue | None = None
     # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on create).
     phone: E164PhoneValue | None = None
@@ -758,7 +760,9 @@ class BranchCreate(BaseModel):
 
 class BranchUpdate(BaseModel):
     name: str | None = None
-    address: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist). Same AddressValue as Company/Store.
+    address: AddressValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank silently cleared; garbage could persist).
     phone: E164PhoneValue | None = None
