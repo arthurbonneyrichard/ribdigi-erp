@@ -18,6 +18,7 @@ export default function Page() {
   const [schedule, setSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
+  const [payChequeNumber, setPayChequeNumber] = useState('');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
   const [creditLimit, setCreditLimit] = useState('');
@@ -160,6 +161,13 @@ export default function Page() {
     if (!partyId || !payAmount) return;
     setError('');
     try {
+      const chequeFields =
+        payMethod === 'cheque'
+          ? {
+              // Blank → null so Save does not 422 (ChequeNumberValue); service may fall back.
+              cheque_number: payChequeNumber.trim() || null,
+            }
+          : {};
       if (kind === 'receivable') {
         await api(`/customers/${partyId}/payments`, {
           method: 'POST',
@@ -170,6 +178,7 @@ export default function Page() {
             apply_early_discount: applyEarly,
             liquid_account_id: liquidAccountId || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
+            ...chequeFields,
           }),
         });
       } else {
@@ -182,6 +191,7 @@ export default function Page() {
             apply_early_discount: applyEarly,
             liquid_account_id: liquidAccountId || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
+            ...chequeFields,
           }),
         });
       }
@@ -191,6 +201,7 @@ export default function Page() {
           : 'Payment recorded (oldest open docs first)',
       );
       setPayAmount('');
+      setPayChequeNumber('');
       await refresh();
       await loadStatement();
     } catch (err: any) {
@@ -456,12 +467,25 @@ export default function Page() {
               placeholder="Payment amount"
               style={{ width: 120 }}
             />
-            <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}>
+            <select
+              value={payMethod}
+              onChange={(e) => setPayMethod(e.target.value)}
+              aria-label="Payment method"
+            >
               <option value="cash">Cash</option>
               <option value="bank_transfer">Bank transfer</option>
               <option value="card">Card</option>
               <option value="cheque">Cheque</option>
             </select>
+            {payMethod === 'cheque' ? (
+              <input
+                value={payChequeNumber}
+                onChange={(e) => setPayChequeNumber(e.target.value)}
+                placeholder="Cheque number"
+                aria-label="Payment cheque number"
+                style={{ width: 140 }}
+              />
+            ) : null}
             <select
               value={liquidAccountId}
               onChange={(e) => setLiquidAccountId(e.target.value)}

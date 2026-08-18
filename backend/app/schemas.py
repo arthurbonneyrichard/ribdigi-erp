@@ -2029,7 +2029,9 @@ class CustomerPaymentCreate(BaseModel):
     payment_method: SettlementPaymentMethod = "cash"
     reference: str | None = None
     notes: str | None = None
-    cheque_number: str | None = None
+    # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
+    # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
+    cheque_number: ChequeNumberValue | None = None
     bank_name: str | None = None
     cheque_date: datetime | None = None
     apply_early_discount: bool | None = None
@@ -2573,6 +2575,44 @@ BankBranchValue = Annotated[
 ]
 
 
+def coerce_cheque_number_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for cheque_number 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_cheque_number_value(value: str) -> str:
+    """AfterValidator: cheque ref (max 50); blank/URL/garbage → 422."""
+    if not value:
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 50:
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,49}", value):
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Customer/supplier payment cheque_number — short cheque ref (max 50).
+ChequeNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_cheque_number_value),
+    AfterValidator(validate_cheque_number_value),
+]
+
+
 class ApiKeyCreate(BaseModel):
     """POST /api-keys — typed create body (BR-18.1).
 
@@ -3100,7 +3140,9 @@ class SupplierPaymentCreate(BaseModel):
     payment_method: SettlementPaymentMethod = "bank_transfer"
     reference: str | None = None
     notes: str | None = None
-    cheque_number: str | None = None
+    # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
+    # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
+    cheque_number: ChequeNumberValue | None = None
     bank_name: str | None = None
     cheque_date: datetime | None = None
     apply_early_discount: bool | None = None
