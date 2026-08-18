@@ -442,14 +442,16 @@ class EmailSettingsUpdate(BaseModel):
     (was free `str`; blank/garbage were accepted into tenant SMTP host). Optional
     `from_name` ∈ `SmtpFromNameValue`; omit/`null` → no change; blank/`!!!`/
     `http://…` → **422** (was free `str`; blank/garbage were accepted into
-    tenant SMTP From display name).
+    tenant SMTP From display name). Optional `username` ∈ `SmtpUsernameValue`;
+    omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank/garbage were accepted into tenant SMTP username; email-shaped logins OK).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     host: SmtpHostValue | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
-    username: str | None = None
+    username: SmtpUsernameValue | None = None
     password: str | None = None
     clear_password: bool = False
     from_email: EmailStr | None = None
@@ -2580,6 +2582,30 @@ SmtpFromNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_smtp_from_name_value),
+]
+
+
+def validate_smtp_username_value(value: str) -> str:
+    """AfterValidator: non-empty SMTP login; blank/URL/punctuation-only → 422.
+
+    Email-shaped usernames (`ops@smtp.example.com`) are allowed; URLs are not.
+    """
+    if not value:
+        raise ValueError("username must be a non-empty SMTP login")
+    if len(value) > 200:
+        raise ValueError("username must be a non-empty SMTP login")
+    if "://" in value:
+        raise ValueError("username must be a non-empty SMTP login")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("username must be a non-empty SMTP login")
+    return value
+
+
+# Company SMTP username — plain login or email-shaped (max 200; no URL scheme).
+SmtpUsernameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_smtp_username_value),
 ]
 
 

@@ -624,6 +624,7 @@ export default function Page() {
           <input
             value={emailUser}
             onChange={(e) => setEmailUser(e.target.value)}
+            aria-label="Company SMTP username"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">
@@ -682,13 +683,15 @@ export default function Page() {
                 try {
                   const body: Record<string, unknown> = {
                     port: Number(emailPort) || 587,
-                    username: emailUser,
                     use_tls: emailUseTls,
                     use_ssl: emailUseSsl,
                   };
                   // Omit blank host so Save does not 422 (SmtpHostValue); leave prior value.
                   const trimmedHost = emailHost.trim();
                   if (trimmedHost) body.host = trimmedHost;
+                  // Omit blank username so Save does not 422 (SmtpUsernameValue); leave prior.
+                  const trimmedUser = emailUser.trim();
+                  if (trimmedUser) body.username = trimmedUser;
                   const trimmedFrom = emailFromEmail.trim();
                   if (trimmedFrom) body.from_email = trimmedFrom;
                   // Omit blank from_name so Save does not 422 (SmtpFromNameValue); leave prior.
