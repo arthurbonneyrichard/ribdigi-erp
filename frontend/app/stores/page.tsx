@@ -517,7 +517,8 @@ export default function Page() {
         body: JSON.stringify({
           name: brName.trim() || undefined,
           address: brAddress,
-          phone: brPhone,
+          // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
+          ...(brPhone.trim() ? { phone: brPhone.trim() } : {}),
           email: brEmail.trim() || null,
           manager_id: brManagerId || null,
           clear_manager: !brManagerId,
@@ -816,7 +817,12 @@ export default function Page() {
               onChange={(e) => setBrAddress(e.target.value)}
               placeholder="Address"
             />
-            <input value={brPhone} onChange={(e) => setBrPhone(e.target.value)} placeholder="Phone" />
+            <input
+              value={brPhone}
+              onChange={(e) => setBrPhone(e.target.value)}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Branch phone"
+            />
             <input value={brEmail} onChange={(e) => setBrEmail(e.target.value)} placeholder="Email" />
             <select value={brManagerId} onChange={(e) => setBrManagerId(e.target.value)}>
               <option value="">Manager (optional)</option>

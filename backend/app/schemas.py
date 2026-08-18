@@ -704,7 +704,9 @@ class BranchCreate(BaseModel):
     code: str
     name: str
     address: str | None = None
-    phone: str | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on create).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
     manager_id: str | None = None
 
@@ -712,7 +714,9 @@ class BranchCreate(BaseModel):
 class BranchUpdate(BaseModel):
     name: str | None = None
     address: str | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
     manager_id: str | None = None
     clear_manager: bool = False

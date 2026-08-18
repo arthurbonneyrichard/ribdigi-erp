@@ -151,7 +151,7 @@ async def create_branch(
         code=code,
         name=name_clean,
         address=(address or "").strip() or None,
-        phone=(phone or "").strip() or None,
+        phone=phone,
         email=(email or "").strip() or None,
         manager_id=manager_id,
         is_active=True,
@@ -183,7 +183,8 @@ async def update_branch(
     if address is not None:
         row.address = address.strip() or None
     if phone is not None:
-        row.phone = phone.strip() or None
+        # Defense in depth: BranchUpdate E164PhoneValue → 422 on blank/invalid.
+        row.phone = phone
     if email is not None:
         row.email = email.strip() or None
     if clear_manager:
