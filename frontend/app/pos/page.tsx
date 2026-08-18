@@ -1043,7 +1043,7 @@ export default function Page() {
               </div>
               <div>
                 <span>Net sales</span>
-                <strong>{money(Number(shiftReport.summary?.net_sales ?? shiftReport.payment_breakdown?.total || 0))}</strong>
+                <strong>{money(Number(shiftReport.summary?.net_sales ?? shiftReport.payment_breakdown?.total ?? 0))}</strong>
               </div>
             </div>
             <p className="muted" style={{ margin: '8px 0' }}>
