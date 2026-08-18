@@ -301,6 +301,7 @@ export default function Page() {
           status: customerStatus || 'active',
           email: customerEmail || null,
           phone: customerPhone.trim() || null,
+          // null when blank so Create does not 422 (AddressValue).
           address: customerAddress.trim() || null,
           latitude: customerLat === '' ? null : Number(customerLat),
           longitude: customerLng === '' ? null : Number(customerLng),
@@ -1105,6 +1106,7 @@ export default function Page() {
             value={customerAddress}
             onChange={(e) => setCustomerAddress(e.target.value)}
             placeholder="Address"
+            aria-label="Customer address"
             style={{ minWidth: 160 }}
           />
           <input

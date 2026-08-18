@@ -394,6 +394,7 @@ export default function Page() {
           status: supplierStatus || 'active',
           email: supplierEmail.trim() || null,
           phone: supplierPhone.trim() || null,
+          // null when blank so Create does not 422 (AddressValue).
           address: supplierAddress.trim() || null,
           latitude: supplierLat === '' ? null : Number(supplierLat),
           longitude: supplierLng === '' ? null : Number(supplierLng),
@@ -1623,6 +1624,7 @@ export default function Page() {
             value={supplierAddress}
             onChange={(e) => setSupplierAddress(e.target.value)}
             placeholder="Address"
+            aria-label="Supplier address"
             style={{ minWidth: 160 }}
           />
           <input

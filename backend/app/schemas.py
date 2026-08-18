@@ -1053,7 +1053,10 @@ class PartyCreate(BaseModel):
     # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on customer/supplier create).
     phone: E164PhoneValue | None = None
-    address: str | None = None
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier create). Same AddressValue
+    # as Company/Store/Branch/Warehouse.
+    address: AddressValue | None = None
     latitude: float | None = None
     longitude: float | None = None
     credit_limit: float = 0
@@ -1074,7 +1077,10 @@ class PartyUpdate(BaseModel):
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on customer/supplier PATCH).
     phone: E164PhoneValue | None = None
-    address: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier PATCH). Same AddressValue
+    # as Company/Store/Branch/Warehouse.
+    address: AddressValue | None = None
     latitude: float | None = None
     longitude: float | None = None
     credit_limit: float | None = None
