@@ -31,3 +31,7 @@ Stage 1503 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Diecutform Gate, Transfer Diecutform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1503 opened under **ADR-3013** after CONTINUE/NEXT (Tenant MVP Transfer Punchform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3014**. Stage 1502 feature scope remains frozen.
