@@ -31,3 +31,7 @@ Stage 1497 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Notchform Gate, Transfer Notchform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1497 opened under **ADR-3001** after CONTINUE/NEXT (Tenant MVP Transfer Slitform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3002**. Stage 1496 feature scope remains frozen.
