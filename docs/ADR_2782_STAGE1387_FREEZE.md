@@ -31,3 +31,7 @@ Stage 1388 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Preload Gate, Transfer Preload Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1388 opened under **ADR-2783** after CONTINUE/NEXT (Tenant MVP Transfer Shim Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2784**. Stage 1387 feature scope remains frozen.
