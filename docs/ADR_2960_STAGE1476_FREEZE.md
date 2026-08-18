@@ -31,3 +31,7 @@ Stage 1477 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Rollbend Gate, Transfer Rollbend Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1477 opened under **ADR-2961** after CONTINUE/NEXT (Tenant MVP Transfer Tubeform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2962**. Stage 1476 feature scope remains frozen.
