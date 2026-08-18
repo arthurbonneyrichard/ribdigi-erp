@@ -109,7 +109,10 @@ export default function Page() {
           company_name: tenant.company_name,
           industry: tenant.industry,
           currency: tenant.currency,
-          phone: tenant.phone,
+          // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
+          ...(String(tenant.phone || '').trim()
+            ? { phone: String(tenant.phone).trim() }
+            : {}),
           email: tenant.email,
           website: tenant.website,
           address: tenant.address,
@@ -324,7 +327,8 @@ export default function Page() {
         <input
           value={tenant.phone || ''}
           onChange={(e) => setTenant({ ...tenant, phone: e.target.value })}
-          placeholder="Phone"
+          placeholder="Phone (E.164 e.g. +233...)"
+          aria-label="Company phone"
         />
         <input
           value={tenant.email || ''}

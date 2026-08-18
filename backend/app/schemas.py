@@ -510,7 +510,9 @@ class TenantProfileUpdate(BaseModel):
     industry: IndustryValue | None = None
     # omit = no change; blank/non-ISO → 422 (was free str; length-only late **400**)
     currency: CurrencyCodeValue | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared company phone; garbage could persist).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
     website: str | None = None
     address: str | None = None

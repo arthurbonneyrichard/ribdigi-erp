@@ -603,7 +603,8 @@ async def update_profile(
 
         tenant.currency = normalize_currency(currency)
     if phone is not None:
-        tenant.phone = phone.strip() or None
+        # Defense in depth: TenantProfileUpdate E164PhoneValue → 422 on blank/invalid.
+        tenant.phone = phone
     if email is not None:
         tenant.email = email.strip() or None
     if website is not None:
