@@ -680,7 +680,9 @@ class AccountCreate(BaseModel):
     # omit/`null` → no number; blank/`not-an-account`/`http://…` → **422**
     # (was free `str`; blank silent→null; garbage could persist on liquid bank COA).
     account_number: BankAccountNumberValue | None = None
-    bank_branch: str | None = None
+    # omit/`null` → no branch; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist).
+    bank_branch: BankBranchValue | None = None
 
 
 class AccountUpdate(BaseModel):
@@ -692,7 +694,9 @@ class AccountUpdate(BaseModel):
     # omit/`null` → no change; blank/`not-an-account`/`http://…` → **422**
     # (was free `str`; blank silent→null; garbage could persist).
     account_number: BankAccountNumberValue | None = None
-    bank_branch: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist).
+    bank_branch: BankBranchValue | None = None
     is_active: bool | None = None
 
 
@@ -2545,6 +2549,27 @@ BankNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_bank_name_value),
+]
+
+
+def validate_bank_branch_value(value: str) -> str:
+    """AfterValidator: non-empty branch label; blank/URL/punctuation-only → 422."""
+    if not value:
+        raise ValueError("bank_branch must be a non-empty branch name")
+    if len(value) > 120:
+        raise ValueError("bank_branch must be a non-empty branch name")
+    if "://" in value or "@" in value:
+        raise ValueError("bank_branch must be a non-empty branch name")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank_branch must be a non-empty branch name")
+    return value
+
+
+# Liquid bank COA bank_branch — human label (max 120; no URL/email).
+BankBranchValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_branch_value),
 ]
 
 
