@@ -243,6 +243,7 @@ export default function Page() {
   const [cashTender, setCashTender] = useState('');
   const [cardTender, setCardTender] = useState('');
   const [paper, setPaper] = useState('80mm');
+  const [receiptTo, setReceiptTo] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -767,10 +768,17 @@ export default function Page() {
     setError('');
     setReceiptBusy(channel);
     try {
-      await api(`/pos/sales/${lastSale.id}/receipt/send?channel=${channel}`, {
+      const params = new URLSearchParams({ channel });
+      if (receiptTo.trim()) params.set('to', receiptTo.trim());
+      await api(`/pos/sales/${lastSale.id}/receipt/send?${params.toString()}`, {
         method: 'POST',
         body: '{}',
       });
+      setMessage(
+        channel === 'email'
+          ? `Receipt emailed${receiptTo.trim() ? ` to ${receiptTo.trim()}` : ''}`
+          : `Receipt SMS sent${receiptTo.trim() ? ` to ${receiptTo.trim()}` : ''}`,
+      );
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -1136,14 +1144,25 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={printLastReceipt}
                   disabled={!!receiptBusy}
+                  aria-label="Print last receipt"
                 >
                   {receiptBusy === 'print' ? 'Printing…' : 'Print'}
                 </button>
+                <input
+                  type="text"
+                  value={receiptTo}
+                  onChange={(e) => setReceiptTo(e.target.value)}
+                  placeholder="Optional to= (email or E.164)"
+                  aria-label="POS receipt override to"
+                  style={{ minWidth: 180 }}
+                  disabled={!!receiptBusy}
+                />
                 <button
                   type="button"
                   className="tpos-btn"
                   onClick={() => sendLastReceipt('email')}
                   disabled={!!receiptBusy}
+                  aria-label="Email last receipt"
                 >
                   {receiptBusy === 'email' ? 'Sending…' : 'Email'}
                 </button>
@@ -1152,6 +1171,7 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={() => sendLastReceipt('sms')}
                   disabled={!!receiptBusy}
+                  aria-label="SMS last receipt"
                 >
                   {receiptBusy === 'sms' ? 'Sending…' : 'SMS'}
                 </button>

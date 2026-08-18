@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse, Response
-from pydantic import EmailStr
+from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
@@ -133,6 +133,7 @@ from app.schemas import (
     InvoicePrintFormatValue,
     ReceiptPrintFormatValue,
     ReceiptChannelValue,
+    E164PhoneValue,
     EmailVerifyConfirm,
     ResendVerificationRequest,
     ExchangeRateRefresh,
@@ -7590,7 +7591,10 @@ async def pos_receipt_send(
     sale_id: str,
     # omit → email; blank/invalid → 422 (was `channel or "email"`)
     channel: Annotated[ReceiptChannelValue, Query()] = "email",
-    to: str | None = None,
+    # omit → cashier email/phone; blank/invalid → 422 (blank was silent fallthrough;
+    # garbage was accepted until soft email/SMS failure). Typed by channel:
+    # email → EmailStr; sms → E164PhoneValue.
+    to: Annotated[str | None, Query()] = None,
     # omit → 80mm; blank/invalid → 422 (was silent 80mm for garbage)
     paper: Annotated[ReceiptPaperValue, Query()] = "80mm",
     claims=Depends(require_permission("pos", "write")),
@@ -7610,9 +7614,32 @@ async def pos_receipt_send(
     text = receipts_svc.render_thermal_text(receipt, paper=paper)
     channel = channel.lower() if isinstance(channel, str) else channel
 
+    override: str | None = None
+    if to is not None:
+        raw = to.strip() if isinstance(to, str) else str(to).strip()
+        if not raw:
+            raise HTTPException(
+                status_code=422,
+                detail="to must be a valid email or E.164 phone",
+            )
+        try:
+            if channel == "email":
+                override = str(TypeAdapter(EmailStr).validate_python(raw))
+            else:
+                override = TypeAdapter(E164PhoneValue).validate_python(raw)
+        except PydanticValidationError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "to must be a valid email"
+                    if channel == "email"
+                    else "to must be E.164 (+ and 8–15 digits)"
+                ),
+            ) from exc
+
     if channel == "email":
         user = await db.get(m.User, claims["sub"])
-        recipient = to or (user.email if user else None)
+        recipient = override or (user.email if user else None)
         if not recipient:
             raise HTTPException(status_code=400, detail="No email recipient")
         tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
@@ -7642,7 +7669,7 @@ async def pos_receipt_send(
 
     if channel == "sms":
         user = await db.get(m.User, claims["sub"])
-        recipient = to or (user.phone if user else None)
+        recipient = override or (user.phone if user else None)
         if not recipient:
             raise HTTPException(status_code=400, detail="No SMS recipient phone")
         body = (

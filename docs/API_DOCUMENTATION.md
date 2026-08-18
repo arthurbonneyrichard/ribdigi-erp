@@ -1130,7 +1130,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 **Endpoint:** `GET /pos/sales/{sale_id}/receipt`  
 Query `format` ∈ json|text|pdf (omit → `json`; blank/invalid → **422**); `paper` ∈ 58mm|80mm (omit → company print branding default; blank/invalid → **422**). POS paper select.
 
-**Send:** `POST /pos/sales/{sale_id}/receipt/send` — query `channel` ∈ email|sms (omit → `email`; blank/invalid → **422**; no silent email from `""`); `paper` ∈ 58mm|80mm (omit → `80mm`; blank/invalid → **422**); optional `to`. POS Email / SMS buttons.
+**Send:** `POST /pos/sales/{sale_id}/receipt/send` — query `channel` ∈ email|sms (omit → `email`; blank/invalid → **422**; no silent email from `""`); `paper` ∈ 58mm|80mm (omit → `80mm`; blank/invalid → **422**); optional Query `to` typed by channel — email → `EmailStr`; sms → `E164PhoneValue`; omit → cashier email/phone; blank/`not-an-email`/`not-a-phone` → **422** (blank was silent fallthrough; garbage was accepted until soft send failure). POS **POS receipt override to** + Email / SMS buttons.
 
 **Query Params (legacy note):** `?format=pdf&paper=80mm`
 
