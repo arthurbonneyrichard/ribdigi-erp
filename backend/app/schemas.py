@@ -1566,7 +1566,9 @@ class WarehouseCreate(BaseModel):
     # BR-2.4 — schema Literal; omit defaults to retail; blank/invalid → 422
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] = "retail"
     manager_id: str | None = None
-    address: str | None = None
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on create). Same AddressValue as Company/Store/Branch.
+    address: AddressValue | None = None
     capacity: float | None = Field(default=None, ge=0)
 
 
@@ -1577,7 +1579,9 @@ class WarehouseUpdate(BaseModel):
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] | None = None
     manager_id: str | None = None
     clear_manager: bool = False
-    address: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist). Same AddressValue as Company/Store/Branch.
+    address: AddressValue | None = None
     capacity: float | None = Field(default=None, ge=0)
     clear_capacity: bool = False
     is_active: bool | None = None

@@ -465,6 +465,8 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 
 `warehouse_type`: `retail` | `bulk` | `cold_storage` | `other` (schema `Literal`; omit on create defaults to `retail`; blank/invalid → **422**). PATCH supports `clear_manager`, `clear_store`, `clear_capacity`, `is_active`.
 
+`address` (when sent) ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no address; PATCH omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Warehouse address** input (`aria-label`); create/edit omit blank.
+
 ---
 
 ## 4. User Management

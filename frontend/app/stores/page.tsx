@@ -418,7 +418,8 @@ export default function Page() {
           code: whCode.trim(),
           name: whName.trim(),
           warehouse_type: whType,
-          address: whAddress.trim() || null,
+          // Omit blank address so Create does not 422 (AddressValue).
+          ...(whAddress.trim() ? { address: whAddress.trim() } : {}),
           capacity: whCapacity === '' ? null : Number(whCapacity),
           manager_id: whManagerId || null,
           store_id: whStoreId || null,
@@ -448,7 +449,8 @@ export default function Page() {
         body: JSON.stringify({
           name: whName.trim() || undefined,
           warehouse_type: whType,
-          address: whAddress,
+          // Omit blank address so Save does not 422 (AddressValue); leave prior.
+          ...(whAddress.trim() ? { address: whAddress.trim() } : {}),
           capacity: whCapacity === '' ? null : Number(whCapacity),
           clear_capacity: whCapacity === '',
           manager_id: whManagerId || null,
@@ -983,6 +985,7 @@ export default function Page() {
               value={whAddress}
               onChange={(e) => setWhAddress(e.target.value)}
               placeholder="Address"
+              aria-label="Warehouse address"
             />
             <input
               value={whCapacity}
