@@ -530,7 +530,9 @@ class TenantProfileUpdate(BaseModel):
     website: WebhookUrlValue | None = None
     address: str | None = None
     legal_name: str | None = None
-    registration_number: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist; length>80 was late **400**).
+    registration_number: RegistrationNumberValue | None = None
     contact_person: str | None = None
     billing_address: str | None = None
     shipping_address: str | None = None
@@ -2597,6 +2599,35 @@ TaxRegistrationNumberValue = Annotated[
     str,
     BeforeValidator(coerce_bank_account_number_value),
     AfterValidator(validate_tax_registration_number_value),
+]
+
+
+def validate_registration_number_value(value: str) -> str:
+    """AfterValidator: company registration id; blank/URL/garbage → 422 (max 80)."""
+    if not value:
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 80:
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,79}", value):
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Company registration number — alphanumeric + optional spaces/hyphens (max 80).
+RegistrationNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_account_number_value),
+    AfterValidator(validate_registration_number_value),
 ]
 
 

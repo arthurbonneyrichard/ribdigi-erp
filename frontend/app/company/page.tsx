@@ -120,7 +120,10 @@ export default function Page() {
             : {}),
           address: tenant.address,
           legal_name: tenant.legal_name,
-          registration_number: tenant.registration_number,
+          // Omit blank registration so Save does not 422 (RegistrationNumberValue); leave prior.
+          ...(String(tenant.registration_number || '').trim()
+            ? { registration_number: String(tenant.registration_number).trim() }
+            : {}),
           contact_person: tenant.contact_person,
           billing_address: tenant.billing_address,
           shipping_address: tenant.shipping_address,
@@ -299,6 +302,7 @@ export default function Page() {
           value={tenant.registration_number || ''}
           onChange={(e) => setTenant({ ...tenant, registration_number: e.target.value })}
           placeholder="Company registration number"
+          aria-label="Company registration number"
         />
         <input
           value={tenant.contact_person || ''}

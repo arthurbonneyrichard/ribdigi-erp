@@ -277,6 +277,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 
 `tax_registration_number` (when sent) ∈ `TaxRegistrationNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 40); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared TIN; garbage could persist). Company **TIN / VAT registration number** input (`aria-label`); Save omits blank TIN so prior value is kept.
 
+`registration_number` (when sent) ∈ `RegistrationNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 80); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared; garbage could persist; length>80 was late service **400**). Company **Company registration number** input (`aria-label`); Save omits blank so prior value is kept.
+
 `fiscal_year_start` (when sent) ∈ valid calendar `MM-DD` (`FiscalYearStartValue`; strip; blank/invalid/`13-01`/`02-30` → **422** — was free `str` with length-only late service **400**; garbage could persist). Company **Fiscal year start** input.
 
 `timezone` (when sent) ∈ valid IANA key (`TimezoneValue`; strip + `ZoneInfo`; blank/`Foo/Bar`/`UTC+0` → **422** — was free `str`; blank late **400**; garbage could persist). Company **Timezone** select.
