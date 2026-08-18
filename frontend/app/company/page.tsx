@@ -683,7 +683,6 @@ export default function Page() {
                   const body: Record<string, unknown> = {
                     port: Number(emailPort) || 587,
                     username: emailUser,
-                    from_name: emailFromName,
                     use_tls: emailUseTls,
                     use_ssl: emailUseSsl,
                   };
@@ -692,6 +691,9 @@ export default function Page() {
                   if (trimmedHost) body.host = trimmedHost;
                   const trimmedFrom = emailFromEmail.trim();
                   if (trimmedFrom) body.from_email = trimmedFrom;
+                  // Omit blank from_name so Save does not 422 (SmtpFromNameValue); leave prior.
+                  const trimmedFromName = emailFromName.trim();
+                  if (trimmedFromName) body.from_name = trimmedFromName;
                   if (emailPassword) body.password = emailPassword;
                   const r = await api('/settings/email', {
                     method: 'PATCH',

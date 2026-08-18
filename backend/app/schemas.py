@@ -439,7 +439,10 @@ class EmailSettingsUpdate(BaseModel):
     omit/`null` → no change; blank/`not-an-email` → **422** (was free `str`;
     blank/garbage were accepted into tenant SMTP config). Optional `host` ∈
     `SmtpHostValue`; omit/`null` → no change; blank/`http://…`/`not a host` → **422**
-    (was free `str`; blank/garbage were accepted into tenant SMTP host).
+    (was free `str`; blank/garbage were accepted into tenant SMTP host). Optional
+    `from_name` ∈ `SmtpFromNameValue`; omit/`null` → no change; blank/`!!!`/
+    `http://…` → **422** (was free `str`; blank/garbage were accepted into
+    tenant SMTP From display name).
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -450,7 +453,7 @@ class EmailSettingsUpdate(BaseModel):
     password: str | None = None
     clear_password: bool = False
     from_email: EmailStr | None = None
-    from_name: str | None = None
+    from_name: SmtpFromNameValue | None = None
     use_tls: bool | None = None
     use_ssl: bool | None = None
 
@@ -2556,6 +2559,27 @@ BankNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_bank_name_value),
+]
+
+
+def validate_smtp_from_name_value(value: str) -> str:
+    """AfterValidator: non-empty From display name; blank/URL/punctuation-only → 422."""
+    if not value:
+        raise ValueError("from_name must be a non-empty display name")
+    if len(value) > 120:
+        raise ValueError("from_name must be a non-empty display name")
+    if "://" in value or "@" in value:
+        raise ValueError("from_name must be a non-empty display name")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("from_name must be a non-empty display name")
+    return value
+
+
+# Company SMTP From display name — human label (max 120; no URL/email).
+SmtpFromNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_smtp_from_name_value),
 ]
 
 
