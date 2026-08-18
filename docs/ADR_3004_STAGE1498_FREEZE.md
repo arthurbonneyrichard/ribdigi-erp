@@ -31,3 +31,7 @@ Stage 1499 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nibbleform Gate, Transfer Nibbleform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1499 opened under **ADR-3005** after CONTINUE/NEXT (Tenant MVP Transfer Lancingform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3006**. Stage 1498 feature scope remains frozen.
