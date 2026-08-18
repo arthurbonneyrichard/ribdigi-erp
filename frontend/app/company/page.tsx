@@ -747,6 +747,7 @@ export default function Page() {
             value={smsFromNumber}
             onChange={(e) => setSmsFromNumber(e.target.value)}
             placeholder="+15551234567"
+            aria-label="Company SMS from number"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">Your mobile (for test SMS)</label>
@@ -754,6 +755,7 @@ export default function Page() {
             value={profilePhone}
             onChange={(e) => setProfilePhone(e.target.value)}
             placeholder="Your mobile (E.164 e.g. +233...)"
+            aria-label="Profile phone for SMS test"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -763,8 +765,9 @@ export default function Page() {
                 try {
                   const body: Record<string, unknown> = {
                     account_sid: smsAccountSid,
-                    from_number: smsFromNumber,
                   };
+                  const trimmedFrom = smsFromNumber.trim();
+                  if (trimmedFrom) body.from_number = trimmedFrom;
                   if (smsAuthToken) body.auth_token = smsAuthToken;
                   const r = await api('/settings/sms', {
                     method: 'PATCH',
@@ -778,6 +781,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Save SMS settings"
             >
               Save SMS settings
             </button>
@@ -795,6 +799,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Save my phone"
             >
               Save my phone
             </button>
@@ -808,6 +813,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Send test SMS to me"
             >
               Send test SMS to me
             </button>

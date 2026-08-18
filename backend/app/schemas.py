@@ -454,14 +454,31 @@ class EmailSettingsUpdate(BaseModel):
 
 
 class SmsTestRequest(BaseModel):
-    to: str | None = None
+    """POST /settings/sms/test — optional override recipient.
+
+    Optional `to` ∈ `E164PhoneValue`; omit/`null` → profile phone; blank/invalid → **422**
+    (was free `str`; blank/garbage were accepted until send failed).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    to: E164PhoneValue | None = None
 
 
 class SmsSettingsUpdate(BaseModel):
+    """PATCH /settings/sms (BR-15.2).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `from_number` ∈ `E164PhoneValue`
+    (`+` + 8–15 digits); omit/`null` → no change; blank/`not-a-phone`/`123` → **422**
+    (was free `str`; blank/garbage were accepted into tenant Twilio config).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     account_sid: str | None = None
     auth_token: str | None = None
     clear_auth_token: bool = False
-    from_number: str | None = None
+    from_number: E164PhoneValue | None = None
 
 
 class ProfileUpdate(BaseModel):
@@ -2346,6 +2363,38 @@ IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),
     AfterValidator(validate_iso_date_query_value),
+]
+
+
+def coerce_e164_phone_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for phone 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_e164_phone_value(value: str) -> str:
+    """AfterValidator: E.164 (+ and 8–15 digits); blank/invalid → 422."""
+    if not value:
+        raise ValueError("phone must be E.164 (+ and 8–15 digits)")
+    cleaned = re.sub(r"[^\d+]", "", value)
+    if cleaned.startswith("00"):
+        cleaned = "+" + cleaned[2:]
+    if not cleaned.startswith("+"):
+        raise ValueError("phone must be E.164 (+ and 8–15 digits)")
+    digits = re.sub(r"\D", "", cleaned)
+    if len(digits) < 8 or len(digits) > 15:
+        raise ValueError("phone must be E.164 (+ and 8–15 digits)")
+    return "+" + digits
+
+
+# Twilio From / SMS test override — require E.164 with leading +.
+E164PhoneValue = Annotated[
+    str,
+    BeforeValidator(coerce_e164_phone_value),
+    AfterValidator(validate_e164_phone_value),
 ]
 
 

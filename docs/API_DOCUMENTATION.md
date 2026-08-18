@@ -381,8 +381,8 @@ Create body `PlatformStaffCreate` (`extra=forbid`): `email` ∈ `EmailStr` (blan
 
 ### 3.5z2 SMS / Twilio settings (BR-15.2)
 **Get:** `GET /settings/sms` — resolved status (`source`: `tenant` | `env` | `none`); never returns auth token (only `has_auth_token`).  
-**Patch:** `PATCH /settings/sms` — tenant Twilio override on `tenants.sms_settings` (`auth_token_enc`). Omit `auth_token` to keep; `clear_auth_token: true` removes it. Requires account_sid + from_number + token for tenant override.  
-**Test:** `POST /settings/sms/test` — optional `{ "to": "+233..." }` or profile phone; console when unset.
+**Patch:** `PATCH /settings/sms` — typed body `SmsSettingsUpdate` (`extra=forbid`; unknown keys → **422**). Tenant Twilio override on `tenants.sms_settings` (`auth_token_enc`). Omit `auth_token` to keep; `clear_auth_token: true` removes it. Optional `from_number` ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank/garbage were accepted). Requires account_sid + from_number + token for tenant override. Company **Company SMS from number** + **Save SMS settings**.  
+**Test:** `POST /settings/sms/test` — optional `{ "to": "+233..." }` ∈ `E164PhoneValue` (`extra=forbid`); omit → profile phone; blank/invalid → **422**; console when unset.
 
 ```json
 {
