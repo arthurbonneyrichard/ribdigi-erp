@@ -31,3 +31,7 @@ Stage 1364 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Spider Gate, Transfer Spider Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1364 opened under **ADR-2735** after CONTINUE/NEXT (Tenant MVP Transfer Sidegear Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2736**. Stage 1363 feature scope remains frozen.
