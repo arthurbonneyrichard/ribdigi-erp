@@ -31,3 +31,7 @@ Stage 1374 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bellows Gate, Transfer Bellows Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1374 opened under **ADR-2755** after CONTINUE/NEXT (Tenant MVP Transfer Roller Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2756**. Stage 1373 feature scope remains frozen.
