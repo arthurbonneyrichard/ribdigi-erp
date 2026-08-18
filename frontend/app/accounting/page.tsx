@@ -395,7 +395,10 @@ export default function Page() {
         liquid_kind: newAcctKind,
       };
       if (newAcctKind === 'bank') {
-        body.bank_name = newBankName.trim();
+        // Blank bank_name → schema 422 (BankNameValue); omit only when empty so
+        // service required-name 400 still covers intentional omit.
+        const trimmedBank = newBankName.trim();
+        if (trimmedBank) body.bank_name = trimmedBank;
         body.account_number = newAcctNumber.trim() || null;
         body.bank_branch = newBankBranch.trim() || null;
       }

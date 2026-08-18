@@ -674,7 +674,9 @@ class AccountCreate(BaseModel):
     account_type: Literal["asset", "liability", "equity", "income", "expense"] = "asset"
     # omit/null = non-liquid; blank/invalid → 422 (no silent None from "")
     liquid_kind: Literal["cash", "bank"] | None = None
-    bank_name: str | None = None
+    # omit/`null` → no name; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null then late service **400** when liquid_kind=bank).
+    bank_name: BankNameValue | None = None
     # omit/`null` → no number; blank/`not-an-account`/`http://…` → **422**
     # (was free `str`; blank silent→null; garbage could persist on liquid bank COA).
     account_number: BankAccountNumberValue | None = None
@@ -683,7 +685,10 @@ class AccountCreate(BaseModel):
 
 class AccountUpdate(BaseModel):
     name: str | None = None
-    bank_name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist; clearing bank_name on a bank
+    # account still fails service required-name **400**).
+    bank_name: BankNameValue | None = None
     # omit/`null` → no change; blank/`not-an-account`/`http://…` → **422**
     # (was free `str`; blank silent→null; garbage could persist).
     account_number: BankAccountNumberValue | None = None
@@ -2509,6 +2514,37 @@ BankAccountNumberValue = Annotated[
     str,
     BeforeValidator(coerce_bank_account_number_value),
     AfterValidator(validate_bank_account_number_value),
+]
+
+
+def coerce_bank_name_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for bank_name 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_bank_name_value(value: str) -> str:
+    """AfterValidator: non-empty bank label; blank/URL/punctuation-only → 422."""
+    if not value:
+        raise ValueError("bank_name must be a non-empty bank name")
+    if len(value) > 120:
+        raise ValueError("bank_name must be a non-empty bank name")
+    if "://" in value or "@" in value:
+        raise ValueError("bank_name must be a non-empty bank name")
+    # Require at least one letter or digit (reject "!!!", "---", "...")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank_name must be a non-empty bank name")
+    return value
+
+
+# Liquid bank COA bank_name — human label (max 120; no URL/email).
+BankNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_name_value),
 ]
 
 
