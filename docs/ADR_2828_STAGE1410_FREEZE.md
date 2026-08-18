@@ -31,3 +31,7 @@ Stage 1411 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Rclip Gate, Transfer Rclip Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1411 opened under **ADR-2829** after CONTINUE/NEXT (Tenant MVP Transfer Lynch Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2830**. Stage 1410 feature scope remains frozen.
