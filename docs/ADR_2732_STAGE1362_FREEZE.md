@@ -31,3 +31,7 @@ Stage 1363 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Differential Gate, Transfer Differential Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1363 opened under **ADR-2733** after CONTINUE/NEXT (Tenant MVP Transfer Spider Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2734**. Stage 1362 feature scope remains frozen.
