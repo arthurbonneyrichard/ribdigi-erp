@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1517 D1 Transfer Spotuv Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1517_FIDELITY.md` (`test_stage1517_fidelity_d1.py`); Offline Complete / Transfer Spotuv Gate honesty / go-live still MISSING.
 Stage 1516 D1 Transfer Blindstamp Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1516_FIDELITY.md` (`test_stage1516_fidelity_d1.py`); Offline Complete / Transfer Blindstamp Gate honesty / go-live still MISSING.
 Stage 1515 D1 Transfer Debosform Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1515_FIDELITY.md` (`test_stage1515_fidelity_d1.py`); Offline Complete / Transfer Debosform Gate honesty / go-live still MISSING.
 Stage 1514 D1 Transfer Hotstamp Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1514_FIDELITY.md` (`test_stage1514_fidelity_d1.py`); Offline Complete / Transfer Hotstamp Gate honesty / go-live still MISSING.
