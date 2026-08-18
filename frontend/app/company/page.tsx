@@ -124,7 +124,10 @@ export default function Page() {
           ...(String(tenant.registration_number || '').trim()
             ? { registration_number: String(tenant.registration_number).trim() }
             : {}),
-          contact_person: tenant.contact_person,
+          // Omit blank contact so Save does not 422 (ContactPersonValue); leave prior.
+          ...(String(tenant.contact_person || '').trim()
+            ? { contact_person: String(tenant.contact_person).trim() }
+            : {}),
           billing_address: tenant.billing_address,
           shipping_address: tenant.shipping_address,
           timezone: tenant.timezone,
@@ -308,6 +311,7 @@ export default function Page() {
           value={tenant.contact_person || ''}
           onChange={(e) => setTenant({ ...tenant, contact_person: e.target.value })}
           placeholder="Primary contact person"
+          aria-label="Company contact person"
         />
         <select
           value={tenant.industry || 'retail'}

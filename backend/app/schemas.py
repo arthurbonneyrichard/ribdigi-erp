@@ -533,7 +533,9 @@ class TenantProfileUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared; garbage could persist; length>80 was late **400**).
     registration_number: RegistrationNumberValue | None = None
-    contact_person: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist; length>150 was late **400**).
+    contact_person: ContactPersonValue | None = None
     billing_address: str | None = None
     shipping_address: str | None = None
     # omit = no change; blank/non-IANA → 422 (was free str; blank late **400**; garbage could persist)
@@ -2680,6 +2682,27 @@ SmtpFromNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_smtp_from_name_value),
+]
+
+
+def validate_contact_person_value(value: str) -> str:
+    """AfterValidator: non-empty person name; blank/URL/punctuation-only → 422 (max 150)."""
+    if not value:
+        raise ValueError("contact_person must be a non-empty person name")
+    if len(value) > 150:
+        raise ValueError("contact_person must be a non-empty person name")
+    if "://" in value or "@" in value:
+        raise ValueError("contact_person must be a non-empty person name")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("contact_person must be a non-empty person name")
+    return value
+
+
+# Company primary contact person — human label (max 150; no URL/email).
+ContactPersonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_contact_person_value),
 ]
 
 
