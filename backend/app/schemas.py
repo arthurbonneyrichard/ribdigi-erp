@@ -2032,7 +2032,9 @@ class CustomerPaymentCreate(BaseModel):
     # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
     # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
     cheque_number: ChequeNumberValue | None = None
-    bank_name: str | None = None
+    # omit/`null` → no bank on cheque; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on cheque payment bank_name).
+    bank_name: BankNameValue | None = None
     cheque_date: datetime | None = None
     apply_early_discount: bool | None = None
     liquid_account_id: str | None = None
@@ -3143,7 +3145,9 @@ class SupplierPaymentCreate(BaseModel):
     # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
     # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
     cheque_number: ChequeNumberValue | None = None
-    bank_name: str | None = None
+    # omit/`null` → no bank on cheque; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on cheque payment bank_name).
+    bank_name: BankNameValue | None = None
     cheque_date: datetime | None = None
     apply_early_discount: bool | None = None
     liquid_account_id: str | None = None

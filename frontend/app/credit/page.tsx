@@ -19,6 +19,7 @@ export default function Page() {
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
   const [payChequeNumber, setPayChequeNumber] = useState('');
+  const [payChequeBankName, setPayChequeBankName] = useState('');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
   const [creditLimit, setCreditLimit] = useState('');
@@ -164,8 +165,9 @@ export default function Page() {
       const chequeFields =
         payMethod === 'cheque'
           ? {
-              // Blank → null so Save does not 422 (ChequeNumberValue); service may fall back.
+              // Blank → null so Pay does not 422 (ChequeNumberValue / BankNameValue).
               cheque_number: payChequeNumber.trim() || null,
+              bank_name: payChequeBankName.trim() || null,
             }
           : {};
       if (kind === 'receivable') {
@@ -202,6 +204,7 @@ export default function Page() {
       );
       setPayAmount('');
       setPayChequeNumber('');
+      setPayChequeBankName('');
       await refresh();
       await loadStatement();
     } catch (err: any) {
@@ -478,13 +481,22 @@ export default function Page() {
               <option value="cheque">Cheque</option>
             </select>
             {payMethod === 'cheque' ? (
-              <input
-                value={payChequeNumber}
-                onChange={(e) => setPayChequeNumber(e.target.value)}
-                placeholder="Cheque number"
-                aria-label="Payment cheque number"
-                style={{ width: 140 }}
-              />
+              <>
+                <input
+                  value={payChequeNumber}
+                  onChange={(e) => setPayChequeNumber(e.target.value)}
+                  placeholder="Cheque number"
+                  aria-label="Payment cheque number"
+                  style={{ width: 140 }}
+                />
+                <input
+                  value={payChequeBankName}
+                  onChange={(e) => setPayChequeBankName(e.target.value)}
+                  placeholder="Cheque bank name"
+                  aria-label="Payment cheque bank name"
+                  style={{ width: 160 }}
+                />
+              </>
             ) : null}
             <select
               value={liquidAccountId}
