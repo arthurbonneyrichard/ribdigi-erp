@@ -31,3 +31,7 @@ Stage 1495 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Pierceform Gate, Transfer Pierceform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1495 opened under **ADR-2997** after CONTINUE/NEXT (Tenant MVP Transfer Trimform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2998**. Stage 1494 feature scope remains frozen.
