@@ -1717,7 +1717,9 @@ class PurchaseOrderCreate(BaseModel):
     supplier_id: str
     warehouse_id: str | None = None
     notes: str | None = None
-    delivery_address: str | None = None
+    # omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist). Same AddressValue as Party/Store.
+    delivery_address: AddressValue | None = None
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
 
 
@@ -1726,7 +1728,9 @@ class PurchaseOrderAmend(BaseModel):
 
     items: list[PurchaseOrderItemCreate] | None = None
     notes: str | None = None
-    delivery_address: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared ship-to; garbage could persist). Same AddressValue.
+    delivery_address: AddressValue | None = None
     due_date: datetime | None = None
     clear_due_date: bool = False
     # Required typed reason (BR-6.3 honesty); no silent amend

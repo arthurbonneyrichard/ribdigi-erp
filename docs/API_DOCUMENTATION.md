@@ -859,7 +859,7 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 }
 ```
 
-Optional `delivery_address` is stored on the PO, returned on GET/list/serialize, amendable via `POST /purchasing/orders/{id}/amend`, and included in supplier email bodies when set (BR-6.3).
+Optional `delivery_address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Stored on the PO, returned on GET/list/serialize, amendable via `POST /purchasing/orders/{id}/amend`, and included in supplier email bodies when set (BR-6.3). Purchasing **PO delivery address** input (`aria-label`); create sends `null` when blank.
 
 Per-line `discount` (≥0, cannot exceed qty×unit_price) is applied after tax on the line (same order as PI). `line_total` and PO `total_amount` reflect discounts; serialize/email include `discount`. Amend via `POST /purchasing/orders/{id}/amend`. Alembic `20260814_0096` (BR-6.3).
 
@@ -871,7 +871,7 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 
 **Send / resend:** `POST /purchasing/orders/{po_id}/send` — emails supplier (SMTP/console); draft → `sent`. Optional Query `to` ∈ `EmailStr`; omit → supplier email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Purchasing **Purchase order email override to** + **Email purchase order** / **Resend purchase order email**.
 
-**Amend:** `POST /purchasing/orders/{po_id}/amend` — body may include `items` / `notes` / `delivery_address` / `due_date` / `notify_supplier` / optional `to` ∈ `EmailStr` (blank/invalid → **422** when present); **`reason` required** (non-empty) → stored on `purchase_order_amendments.reason` + audit `po_amended.details.reason`. Purchasing Orders **Required amendment reason** UI + **PO amend email override to** (BR-6.3). Omit/blank reason → 422/400.
+**Amend:** `POST /purchasing/orders/{po_id}/amend` — body may include `items` / `notes` / `delivery_address` ∈ `AddressValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; garbage could persist; Purchasing **PO amend delivery address** omits blank) / `due_date` / `notify_supplier` / optional `to` ∈ `EmailStr` (blank/invalid → **422** when present); **`reason` required** (non-empty) → stored on `purchase_order_amendments.reason` + audit `po_amended.details.reason`. Purchasing Orders **Required amendment reason** UI + **PO amend email override to** (BR-6.3). Omit/blank reason → 422/400.
 
 ### 6.4 Goods Received Note (GRN)
 **List:** `GET /purchases/grn`  

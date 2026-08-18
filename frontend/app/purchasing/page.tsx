@@ -450,6 +450,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           supplier_id: supplierId,
+          // null when blank so Create does not 422 (AddressValue).
           delivery_address: poDeliveryAddress.trim() || null,
           items: [
             {
@@ -569,7 +570,10 @@ export default function Page() {
         body: JSON.stringify({
           reason,
           notes: amendNotes,
-          delivery_address: amendDeliveryAddress,
+          // Omit blank delivery so Amend does not 422 (AddressValue); leave prior.
+          ...(amendDeliveryAddress.trim()
+            ? { delivery_address: amendDeliveryAddress.trim() }
+            : {}),
           notify_supplier: amendNotify,
           ...(amendNotify && amendEmailTo.trim()
             ? { to: amendEmailTo.trim() }
@@ -1774,6 +1778,7 @@ export default function Page() {
             value={poDeliveryAddress}
             onChange={(e) => setPoDeliveryAddress(e.target.value)}
             placeholder="Delivery address (optional)"
+            aria-label="PO delivery address"
           />
           <button onClick={createPo} disabled={!supplierId || !productId}>
             Create draft PO
@@ -2158,6 +2163,7 @@ export default function Page() {
                     value={amendDeliveryAddress}
                     onChange={(e) => setAmendDeliveryAddress(e.target.value)}
                     placeholder="Delivery address"
+                    aria-label="PO amend delivery address"
                   />
                   <input
                     value={amendReason}
