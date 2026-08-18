@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1397 track opened (ADR-2801: `test_stage1397_open.py`, `docs/STAGE_1397_PLAN.md`) — Transfer Cotterpin Gate Honesty Pack Remaining-Gate Index; closed under ADR-2802
+- [x] Transfer Cotterpin Gate Honesty Pack remaining-gate hub (Stage 1397 I1: `test_stage1397_index_i1.py`, `docs/TRANSFER_COTTERPIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Cotterpin Gate Honesty Pack blocker matrix (Stage 1397 B1: `test_stage1397_blockers_b1.py`, `docs/TRANSFER_COTTERPIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1396 / Stage 1395 / Stage 392 / CHANGE_IMPACT pointers (Stage 1397 P1: `test_stage1397_pointers_p1.py`, `docs/TRANSFER_COTTERPIN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1397 fidelity sync (D1: `test_stage1397_fidelity_d1.py`, `docs/STAGE_1397_FIDELITY.md`)
+- [x] Stage 1397 exit + freeze (H1397x: `test_stage1397_exit_h1397x.py`, `docs/STAGE_1397_EXIT_CRITERIA.md`, ADR-2802)
 Stage 1396 track opened (ADR-2799: `test_stage1396_open.py`, `docs/STAGE_1396_PLAN.md`) — Transfer Dowelpin Gate Honesty Pack Remaining-Gate Index; closed under ADR-2800
 - [x] Transfer Dowelpin Gate Honesty Pack remaining-gate hub (Stage 1396 I1: `test_stage1396_index_i1.py`, `docs/TRANSFER_DOWELPIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Dowelpin Gate Honesty Pack blocker matrix (Stage 1396 B1: `test_stage1396_blockers_b1.py`, `docs/TRANSFER_DOWELPIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
