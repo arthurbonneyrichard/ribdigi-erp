@@ -99,6 +99,7 @@ export default function Page() {
   const [soCancelReason, setSoCancelReason] = useState('');
   const [siCancelReason, setSiCancelReason] = useState('');
   const [srCancelReason, setSrCancelReason] = useState('');
+  const [docEmailTo, setDocEmailTo] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
@@ -612,7 +613,15 @@ export default function Page() {
       body = { ...body, reason };
     }
     try {
-      const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
+      let requestPath = path;
+      if (
+        (path.includes('/quotations/') || path.includes('/invoices/')) &&
+        path.endsWith('/send') &&
+        docEmailTo.trim()
+      ) {
+        requestPath = `${path}?to=${encodeURIComponent(docEmailTo.trim())}`;
+      }
+      const r = await api(requestPath, { method: 'POST', body: JSON.stringify(body) });
       if (path.includes('/quotations/') && path.endsWith('/reject')) {
         setQuoteRejectReason('');
       }
@@ -1254,6 +1263,17 @@ export default function Page() {
             <p className="muted" style={{ marginTop: 6 }}>
               Used by Reject on draft/sent quotations (stored as <code>rejection_reason</code>).
             </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email override{' '}
+              <input
+                type="email"
+                value={docEmailTo}
+                onChange={(e) => setDocEmailTo(e.target.value)}
+                placeholder="Optional to= (omit → customer email)"
+                aria-label="Document email override to"
+                style={{ minWidth: 280 }}
+              />
+            </label>
           </div>
         <select
           value={quotationManageFilter}
@@ -1303,12 +1323,18 @@ export default function Page() {
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(q)}>View</button>
                   {q.status === 'draft' && (
-                    <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}>
+                    <button
+                      onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}
+                      aria-label="Email quotation"
+                    >
                       Email
                     </button>
                   )}
                   {q.status === 'sent' && (
-                    <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}>
+                    <button
+                      onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}
+                      aria-label="Resend quotation email"
+                    >
                       Resend
                     </button>
                   )}
@@ -1545,6 +1571,17 @@ export default function Page() {
               Appended to draft invoice notes and audit (<code>POST .../invoices/.../cancel</code>{' '}
               {'{ reason }'}). Draft only.
             </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email override{' '}
+              <input
+                type="email"
+                value={docEmailTo}
+                onChange={(e) => setDocEmailTo(e.target.value)}
+                placeholder="Optional to= (omit → customer email)"
+                aria-label="Document email override to"
+                style={{ minWidth: 280 }}
+              />
+            </label>
           </div>
         <select
           value={invoiceManageFilter}
@@ -1633,7 +1670,10 @@ export default function Page() {
                     </>
                   )}
                   {inv.can_email && (
-                    <button onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed')}>
+                    <button
+                      onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed')}
+                      aria-label={inv.emailed_at ? 'Resend invoice email' : 'Email invoice'}
+                    >
                       {inv.emailed_at ? 'Resend email' : 'Email'}
                     </button>
                   )}

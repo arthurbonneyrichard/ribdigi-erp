@@ -235,6 +235,8 @@ export default function Page() {
   const [poCancelReason, setPoCancelReason] = useState('');
   const [piCancelReason, setPiCancelReason] = useState('');
   const [prCancelReason, setPrCancelReason] = useState('');
+  const [poEmailTo, setPoEmailTo] = useState('');
+  const [amendEmailTo, setAmendEmailTo] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
     { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
@@ -474,7 +476,8 @@ export default function Page() {
   async function sendPo(poId: string, resend = false) {
     setError('');
     try {
-      const r = await api(`/purchasing/orders/${poId}/send`, { method: 'POST' });
+      const qs = poEmailTo.trim() ? `?to=${encodeURIComponent(poEmailTo.trim())}` : '';
+      const r = await api(`/purchasing/orders/${poId}/send${qs}`, { method: 'POST' });
       const to = r.data?.delivery?.to || r.data?.emailed_to || 'supplier';
       const mode = r.data?.delivery?.mode ? ` (${r.data.delivery.mode})` : '';
       setMessage(
@@ -567,6 +570,9 @@ export default function Page() {
           notes: amendNotes,
           delivery_address: amendDeliveryAddress,
           notify_supplier: amendNotify,
+          ...(amendNotify && amendEmailTo.trim()
+            ? { to: amendEmailTo.trim() }
+            : {}),
           items: [
             {
               product_id: line.product_id,
@@ -1786,6 +1792,17 @@ export default function Page() {
             <p className="muted" style={{ marginTop: 6 }}>
               Appended to PO notes and audit (<code>POST .../cancel</code> {'{ reason }'}).
             </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email override{' '}
+              <input
+                type="email"
+                value={poEmailTo}
+                onChange={(e) => setPoEmailTo(e.target.value)}
+                placeholder="Optional to= (omit → supplier email)"
+                aria-label="Purchase order email override to"
+                style={{ minWidth: 280 }}
+              />
+            </label>
           </div>
 
           <select
@@ -1842,9 +1859,15 @@ export default function Page() {
                     {o.notes || '—'}
                   </td>
                   <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Email</button>}
+                    {o.status === 'draft' && (
+                      <button onClick={() => sendPo(o.id)} aria-label="Email purchase order">
+                        Email
+                      </button>
+                    )}
                     {o.status === 'sent' && (
-                      <button onClick={() => sendPo(o.id, true)}>Resend</button>
+                      <button onClick={() => sendPo(o.id, true)} aria-label="Resend purchase order email">
+                        Resend
+                      </button>
                     )}
                     {o.can_amend && (
                       <button type="button" onClick={() => openAmend(o)}>
@@ -2150,6 +2173,15 @@ export default function Page() {
                     />
                     Email supplier about amendment
                   </label>
+                  {amendNotify && (
+                    <input
+                      type="email"
+                      value={amendEmailTo}
+                      onChange={(e) => setAmendEmailTo(e.target.value)}
+                      placeholder="Optional amend to= (omit → supplier email)"
+                      aria-label="PO amend email override to"
+                    />
+                  )}
                   <button type="button" onClick={amendPo}>
                     Save amendment
                   </button>

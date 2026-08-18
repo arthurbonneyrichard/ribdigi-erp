@@ -844,7 +844,9 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 
 **Cancel:** `POST /purchasing/orders/{po_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to PO `notes` as `Cancel: …` and stored in audit `po_cancelled.details.reason`); allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel` + `notes`. Purchasing Orders **Cancel reason** UI (BR-6.3).
 
-**Amend:** `POST /purchasing/orders/{po_id}/amend` — body may include `items` / `notes` / `delivery_address` / `due_date` / `notify_supplier`; **`reason` required** (non-empty) → stored on `purchase_order_amendments.reason` + audit `po_amended.details.reason`. Purchasing Orders **Required amendment reason** UI (BR-6.3). Omit/blank → 422/400.
+**Send / resend:** `POST /purchasing/orders/{po_id}/send` — emails supplier (SMTP/console); draft → `sent`. Optional Query `to` ∈ `EmailStr`; omit → supplier email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Purchasing **Purchase order email override to** + **Email purchase order** / **Resend purchase order email**.
+
+**Amend:** `POST /purchasing/orders/{po_id}/amend` — body may include `items` / `notes` / `delivery_address` / `due_date` / `notify_supplier` / optional `to` ∈ `EmailStr` (blank/invalid → **422** when present); **`reason` required** (non-empty) → stored on `purchase_order_amendments.reason` + audit `po_amended.details.reason`. Purchasing Orders **Required amendment reason** UI + **PO amend email override to** (BR-6.3). Omit/blank reason → 422/400.
 
 ### 6.4 Goods Received Note (GRN)
 **List:** `GET /purchases/grn`  
@@ -952,7 +954,7 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 **List:** `GET /sales/quotations` — optional Query `status` ∈ `draft`|`sent`|`accepted`|`rejected`|`expired`|`converted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Quotations **Quotation status filter** (`quotationManageFilter`; client filter over full cache).  
 **Create:** `POST /sales/quotations`  
 **Get:** `GET /sales/quotations/{quote_id}`  
-**Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`  
+**Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`. Optional Query `to` ∈ `EmailStr`; omit → customer email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Sales **Document email override to** + **Email quotation** / **Resend quotation email**.
 **Accept:** `POST /sales/quotations/{quote_id}/accept` — draft/sent only → `accepted`  
 **Reject:** `POST /sales/quotations/{quote_id}/reject` — body `{ "reason" }` **required** (`SalesQuotationReject`; omit/empty → 422) → `rejected` + `rejection_reason` (Sales Quotations **Reject reason** input; 409 if already accepted/rejected/converted/expired)  
 **Convert to Order:** `POST /sales/quotations/{quote_id}/convert-order`  
@@ -1021,6 +1023,8 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 ```
 
 Create accepts header `discount_amount` and per-line `items[].discount` (≥0) with the same tax-before-line-discount order as quotations/orders. Sales UI Create sale + invoice detail show discounts (BR-7.4).
+
+**Send / resend:** `POST /sales/invoices/{invoice_id}/send` — emails customer (SMTP/console) for posted/sent/partial/paid/overdue; stamps `emailed_at`/`emailed_to`; unpaid → `sent` on first email. Optional Query `to` ∈ `EmailStr`; omit → customer email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Sales **Document email override to** + **Email invoice** / **Resend invoice email**.
 
 Optional create `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; strip/upper) — omit/`null` → tenant base via `resolve_rate`; blank/`EURO`/`gh` → **422** (was free `str`; blank silently became base). Optional `exchange_rate` (>0) pairs with non-base currency. Sales **Currency** input (`aria-label="Sales invoice currency"`).
 

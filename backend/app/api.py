@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse, Response
+from pydantic import EmailStr
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
@@ -5573,10 +5574,11 @@ async def post_sales_invoice(
 @api.post("/sales/invoices/{invoice_id}/send")
 async def send_sales_invoice(
     invoice_id: str,
-    to: str | None = None,
+    to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Email invoice. Optional Query `to` ∈ EmailStr; omit → customer email; blank/invalid → 422."""
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     invoice, delivery = await sales_svc.send_sales_invoice(
@@ -5584,7 +5586,7 @@ async def send_sales_invoice(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         invoice_id=invoice_id,
-        to=to,
+        to=str(to) if to is not None else None,
     )
     await audit_svc.record_event(
         db,
@@ -5690,14 +5692,18 @@ async def get_quotation(
 @api.post("/sales/quotations/{quotation_id}/send")
 async def send_quotation(
     quotation_id: str,
-    to: str | None = None,
+    to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Email quotation. Optional Query `to` ∈ EmailStr; omit → customer email; blank/invalid → 422."""
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     quote, delivery = await sales_docs_svc.send_quotation(
-        db, claims["tenant_id"], quotation_id, to=to
+        db,
+        claims["tenant_id"],
+        quotation_id,
+        to=str(to) if to is not None else None,
     )
     await audit_svc.record_event(
         db,
@@ -6405,14 +6411,19 @@ async def get_purchase_order(
 @api.post("/purchasing/orders/{po_id}/send")
 async def send_purchase_order(
     po_id: str,
-    to: str | None = None,
+    to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Email PO. Optional Query `to` ∈ EmailStr; omit → supplier email; blank/invalid → 422."""
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
     po, delivery = await purchasing_svc.send_purchase_order(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id, to=to
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+        to=str(to) if to is not None else None,
     )
     await audit_svc.record_event(
         db,
@@ -6452,7 +6463,7 @@ async def amend_purchase_order(
         clear_due_date=payload.clear_due_date,
         reason=payload.reason,
         notify_supplier=payload.notify_supplier,
-        notify_to=payload.to,
+        notify_to=str(payload.to) if payload.to is not None else None,
     )
     await audit_svc.record_event(
         db,

@@ -1598,6 +1598,8 @@ class PurchaseOrderCreate(BaseModel):
 
 
 class PurchaseOrderAmend(BaseModel):
+    """PO amend (BR-6.3). Optional `to` ∈ EmailStr when notifying supplier; blank/invalid → 422."""
+
     items: list[PurchaseOrderItemCreate] | None = None
     notes: str | None = None
     delivery_address: str | None = None
@@ -1606,7 +1608,7 @@ class PurchaseOrderAmend(BaseModel):
     # Required typed reason (BR-6.3 honesty); no silent amend
     reason: str = Field(min_length=1, max_length=500)
     notify_supplier: bool = False
-    to: str | None = None
+    to: EmailStr | None = None
 
 
 class PurchaseOrderCancel(BaseModel):
