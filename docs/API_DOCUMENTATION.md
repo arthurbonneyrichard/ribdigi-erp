@@ -275,6 +275,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 
 `website` (when sent) ∈ `WebhookUrlValue` (strip; absolute `http(s)` + netloc; `http` only for localhost/127.0.0.1/testserver/host.docker.internal); omit/`null` → no change; blank/`ftp://`/`not-a-url`/`www.x`/plain-http remote → **422** (was free `str`; blank silently cleared; garbage could persist). Company **Company website** input (`aria-label`); Save omits blank website so prior value is kept.
 
+`tax_registration_number` (when sent) ∈ `TaxRegistrationNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 40); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared TIN; garbage could persist). Company **TIN / VAT registration number** input (`aria-label`); Save omits blank TIN so prior value is kept.
+
 `fiscal_year_start` (when sent) ∈ valid calendar `MM-DD` (`FiscalYearStartValue`; strip; blank/invalid/`13-01`/`02-30` → **422** — was free `str` with length-only late service **400**; garbage could persist). Company **Fiscal year start** input.
 
 `timezone` (when sent) ∈ valid IANA key (`TimezoneValue`; strip + `ZoneInfo`; blank/`Foo/Bar`/`UTC+0` → **422** — was free `str`; blank late **400**; garbage could persist). Company **Timezone** select.

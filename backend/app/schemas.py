@@ -541,7 +541,9 @@ class TenantProfileUpdate(BaseModel):
     # Keep aligned with tax_filings.SUPPORTED / TaxFilingJurisdictionValue (Company select).
     # omit = no change; blank/unsupported → 422 (was free str; length-only late **400**).
     tax_jurisdiction: TaxFilingJurisdictionValue | None = None
-    tax_registration_number: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared TIN; garbage could persist). Max 40 (DB column).
+    tax_registration_number: TaxRegistrationNumberValue | None = None
     # BR-20.2 / BR-12 — schema Literals; omit = no change; blank/invalid → 422
     tax_filing_period: TaxFilingPeriodValue | None = None
     date_format: DateFormatValue | None = None
@@ -2566,6 +2568,35 @@ BankAccountNumberValue = Annotated[
     str,
     BeforeValidator(coerce_bank_account_number_value),
     AfterValidator(validate_bank_account_number_value),
+]
+
+
+def validate_tax_registration_number_value(value: str) -> str:
+    """AfterValidator: TIN/VAT id; blank/URL/garbage → 422 (max 40 for DB)."""
+    if not value:
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 40:
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,39}", value):
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Company TIN / VAT registration number — alphanumeric + optional spaces/hyphens (max 40).
+TaxRegistrationNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_account_number_value),
+    AfterValidator(validate_tax_registration_number_value),
 ]
 
 

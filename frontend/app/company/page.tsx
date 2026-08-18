@@ -127,7 +127,10 @@ export default function Page() {
           timezone: tenant.timezone,
           fiscal_year_start: tenant.fiscal_year_start,
           tax_jurisdiction: tenant.tax_jurisdiction,
-          tax_registration_number: tenant.tax_registration_number,
+          // Omit blank TIN so Save does not 422 (TaxRegistrationNumberValue); leave prior.
+          ...(String(tenant.tax_registration_number || '').trim()
+            ? { tax_registration_number: String(tenant.tax_registration_number).trim() }
+            : {}),
           tax_filing_period: tenant.tax_filing_period,
           date_format: tenant.date_format,
           decimal_separator: tenant.decimal_separator,
