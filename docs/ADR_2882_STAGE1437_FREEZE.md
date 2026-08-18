@@ -31,3 +31,7 @@ Stage 1438 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Crimp Gate, Transfer Crimp Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1438 opened under **ADR-2883** after CONTINUE/NEXT (Tenant MVP Transfer Rivetset Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2884**. Stage 1437 feature scope remains frozen.
