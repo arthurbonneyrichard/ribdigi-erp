@@ -31,3 +31,7 @@ Stage 1454 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Slit Gate, Transfer Slit Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1454 opened under **ADR-2915** after CONTINUE/NEXT (Tenant MVP Transfer Nibble Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2916**. Stage 1453 feature scope remains frozen.
