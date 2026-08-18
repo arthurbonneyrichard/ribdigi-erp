@@ -31,3 +31,7 @@ Stage 1478 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tubeform Gate, Transfer Tubeform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1478 opened under **ADR-2963** after CONTINUE/NEXT (Tenant MVP Transfer Bulgeform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2964**. Stage 1477 feature scope remains frozen.
