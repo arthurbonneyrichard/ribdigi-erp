@@ -31,3 +31,7 @@ Stage 1519 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Softtouch Gate, Transfer Softtouch Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1519 opened under **ADR-3045** after CONTINUE/NEXT (Tenant MVP Transfer Varnish Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3046**. Stage 1518 feature scope remains frozen.

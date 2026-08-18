@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1519 track opened (ADR-3045: `test_stage1519_open.py`, `docs/STAGE_1519_PLAN.md`) — Transfer Varnish Gate Honesty Pack Remaining-Gate Index; closed under ADR-3046
+- [x] Transfer Varnish Gate Honesty Pack remaining-gate hub (Stage 1519 I1: `test_stage1519_index_i1.py`, `docs/TRANSFER_VARNISH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Varnish Gate Honesty Pack blocker matrix (Stage 1519 B1: `test_stage1519_blockers_b1.py`, `docs/TRANSFER_VARNISH_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1518 / Stage 1517 / Stage 392 / CHANGE_IMPACT pointers (Stage 1519 P1: `test_stage1519_pointers_p1.py`, `docs/TRANSFER_VARNISH_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1519 fidelity sync (D1: `test_stage1519_fidelity_d1.py`, `docs/STAGE_1519_FIDELITY.md`)
+- [x] Stage 1519 exit + freeze (H1519x: `test_stage1519_exit_h1519x.py`, `docs/STAGE_1519_EXIT_CRITERIA.md`, ADR-3046)
 Stage 1518 track opened (ADR-3043: `test_stage1518_open.py`, `docs/STAGE_1518_PLAN.md`) — Transfer Softtouch Gate Honesty Pack Remaining-Gate Index; closed under ADR-3044
 - [x] Transfer Softtouch Gate Honesty Pack remaining-gate hub (Stage 1518 I1: `test_stage1518_index_i1.py`, `docs/TRANSFER_SOFTTOUCH_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Softtouch Gate Honesty Pack blocker matrix (Stage 1518 B1: `test_stage1518_blockers_b1.py`, `docs/TRANSFER_SOFTTOUCH_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

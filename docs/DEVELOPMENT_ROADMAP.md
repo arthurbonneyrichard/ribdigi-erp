@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 1519 D1 (2026-08-14):** Transfer Varnish Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1519_FIDELITY.md` (`test_stage1519_fidelity_d1.py`). Open ADR: `docs/ADR_3045_STAGE1519_OPEN.md`; plan `docs/STAGE_1519_PLAN.md`.
+
+**Stage 1519 exit (2026-08-14):** I1, B1, P1, D1, H1519x met — `docs/STAGE_1519_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_3046_STAGE1519_FREEZE.md`. Fidelity: `docs/STAGE_1519_FIDELITY.md`.
+
 **Stage 1518 D1 (2026-08-14):** Transfer Softtouch Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1518_FIDELITY.md` (`test_stage1518_fidelity_d1.py`). Open ADR: `docs/ADR_3043_STAGE1518_OPEN.md`; plan `docs/STAGE_1518_PLAN.md`.
 
 **Stage 1518 exit (2026-08-14):** I1, B1, P1, D1, H1518x met — `docs/STAGE_1518_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_3044_STAGE1518_FREEZE.md`. Fidelity: `docs/STAGE_1518_FIDELITY.md`.
