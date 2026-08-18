@@ -589,7 +589,8 @@ export default function Page() {
           <input
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="Phone (optional)"
+            placeholder="Phone (optional, E.164 e.g. +233...)"
+            aria-label="User phone"
           />
           <select
             value={form.role}

@@ -472,6 +472,8 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 
 `role` ∈ role key shape (`RoleKeyValue` / `custom_roles.ROLE_KEY_RE`; strip/lower; omit → `cashier`; blank/`A`/`Cashier!` → **422** — was free `str`; blank late **400**). Unknown role still service **400**. Users **User role** select.
 
+`phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`; blank/garbage could persist). Users **User phone** input (`aria-label`); create sends `null` when blank.
+
 `record_scope` schema `Literal["own","department","branch","all"]` (omit = role default; blank/invalid → **422** — no silent `all` from `""`). Response wraps `{ "user": {...}, ... }`.
 
 ### 4.2 List Users
@@ -483,7 +485,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 ### 4.4 Update User
 **Endpoint:** `PATCH /users/{user_id}`
 
-Supports `full_name`, `phone`, `role` (same `RoleKeyValue`; omit = no change; blank/malformed → **422**), `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**). Users row **Change role** select (`aria-label`).
+Supports `full_name`, `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank silently cleared; garbage could persist), `role` (same `RoleKeyValue`; omit = no change; blank/malformed → **422**), `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**). Users row **Change role** select (`aria-label`).
 
 ### 4.5 Delete / Deactivate User
 **Endpoint:** `DELETE /users/{user_id}` (soft deactivate)

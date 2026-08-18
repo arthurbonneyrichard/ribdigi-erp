@@ -2705,7 +2705,8 @@ async def update_user(
         changes["full_name"] = name
 
     if payload.phone is not None:
-        user.phone = payload.phone.strip() or None
+        # UserUpdate.phone ∈ E164PhoneValue — already stripped/normalized (+…).
+        user.phone = payload.phone
         changes["phone"] = user.phone
 
     if payload.role is not None:
