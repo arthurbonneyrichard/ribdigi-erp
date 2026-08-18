@@ -31,3 +31,7 @@ Stage 1491 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Stampform Gate, Transfer Stampform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1491 opened under **ADR-2989** after CONTINUE/NEXT (Tenant MVP Transfer Forgeform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2990**. Stage 1490 feature scope remains frozen.
