@@ -31,3 +31,7 @@ Stage 1437 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Peen Gate, Transfer Peen Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1437 opened under **ADR-2881** after CONTINUE/NEXT (Tenant MVP Transfer Crimp Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2882**. Stage 1436 feature scope remains frozen.

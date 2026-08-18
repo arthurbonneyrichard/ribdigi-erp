@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1437 D1 Transfer Crimp Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1437_FIDELITY.md` (`test_stage1437_fidelity_d1.py`); Offline Complete / Transfer Crimp Gate honesty / go-live still MISSING.
 Stage 1436 D1 Transfer Peen Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1436_FIDELITY.md` (`test_stage1436_fidelity_d1.py`); Offline Complete / Transfer Peen Gate honesty / go-live still MISSING.
 Stage 1435 D1 Transfer Wedgesocket Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1435_FIDELITY.md` (`test_stage1435_fidelity_d1.py`); Offline Complete / Transfer Wedgesocket Gate honesty / go-live still MISSING.
 Stage 1434 D1 Transfer Cablestop Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1434_FIDELITY.md` (`test_stage1434_fidelity_d1.py`); Offline Complete / Transfer Cablestop Gate honesty / go-live still MISSING.
