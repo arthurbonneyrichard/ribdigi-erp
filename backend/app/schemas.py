@@ -532,7 +532,9 @@ class TenantProfileUpdate(BaseModel):
     # (was free `str`; blank silently cleared; garbage like `www.x` could persist).
     # Same absolute http(s) honesty as Webhook/Bank feed URLs (`WebhookUrlValue`).
     website: WebhookUrlValue | None = None
-    address: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared HQ/billing/shipping; garbage could persist).
+    address: AddressValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`;
     # blank silently cleared; garbage could persist; len<2 or >200 was late **400**).
     legal_name: LegalNameValue | None = None
@@ -542,8 +544,9 @@ class TenantProfileUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared; garbage could persist; length>150 was late **400**).
     contact_person: ContactPersonValue | None = None
-    billing_address: str | None = None
-    shipping_address: str | None = None
+    # Same AddressValue honesty as HQ `address`.
+    billing_address: AddressValue | None = None
+    shipping_address: AddressValue | None = None
     # omit = no change; blank/non-IANA → 422 (was free str; blank late **400**; garbage could persist)
     timezone: TimezoneValue | None = None
     # omit = no change; blank/invalid MM-DD → 422 (was free str; length-only late **400**)
@@ -2751,6 +2754,27 @@ CompanyNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_company_name_value),
+]
+
+
+def validate_address_value(value: str) -> str:
+    """AfterValidator: non-empty postal/physical address; blank/URL/garbage → 422 (max 500)."""
+    if not value:
+        raise ValueError("address must be a non-empty postal address")
+    if len(value) > 500:
+        raise ValueError("address must be a non-empty postal address")
+    if "://" in value or "@" in value:
+        raise ValueError("address must be a non-empty postal address")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("address must be a non-empty postal address")
+    return value
+
+
+# Company HQ / billing / shipping address — postal label (max 500; no URL/email).
+AddressValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_address_value),
 ]
 
 

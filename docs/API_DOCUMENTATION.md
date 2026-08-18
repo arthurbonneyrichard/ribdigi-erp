@@ -287,6 +287,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 
 `company_name` (when sent) ∈ `CompanyNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`; blank/`X` late service **400**; garbage could persist). Company **Company trading name** input (`aria-label`); Save always sends (required trading name).
 
+`address` / `billing_address` / `shipping_address` (when sent) ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared; garbage could persist). Company **Company headquarters address** / **Company billing address** / **Company shipping address** textareas (`aria-label`s); Save omits blank so prior value is kept.
+
 `fiscal_year_start` (when sent) ∈ valid calendar `MM-DD` (`FiscalYearStartValue`; strip; blank/invalid/`13-01`/`02-30` → **422** — was free `str` with length-only late service **400**; garbage could persist). Company **Fiscal year start** input.
 
 `timezone` (when sent) ∈ valid IANA key (`TimezoneValue`; strip + `ZoneInfo`; blank/`Foo/Bar`/`UTC+0` → **422** — was free `str`; blank late **400**; garbage could persist). Company **Timezone** select.

@@ -118,7 +118,10 @@ export default function Page() {
           ...(String(tenant.website || '').trim()
             ? { website: String(tenant.website).trim() }
             : {}),
-          address: tenant.address,
+          // Omit blank HQ address so Save does not 422 (AddressValue); leave prior.
+          ...(String(tenant.address || '').trim()
+            ? { address: String(tenant.address).trim() }
+            : {}),
           // Omit blank legal name so Save does not 422 (LegalNameValue); leave prior.
           ...(String(tenant.legal_name || '').trim()
             ? { legal_name: String(tenant.legal_name).trim() }
@@ -131,8 +134,13 @@ export default function Page() {
           ...(String(tenant.contact_person || '').trim()
             ? { contact_person: String(tenant.contact_person).trim() }
             : {}),
-          billing_address: tenant.billing_address,
-          shipping_address: tenant.shipping_address,
+          // Omit blank billing/shipping so Save does not 422 (AddressValue); leave prior.
+          ...(String(tenant.billing_address || '').trim()
+            ? { billing_address: String(tenant.billing_address).trim() }
+            : {}),
+          ...(String(tenant.shipping_address || '').trim()
+            ? { shipping_address: String(tenant.shipping_address).trim() }
+            : {}),
           timezone: tenant.timezone,
           fiscal_year_start: tenant.fiscal_year_start,
           tax_jurisdiction: tenant.tax_jurisdiction,
@@ -364,16 +372,19 @@ export default function Page() {
           value={tenant.address || ''}
           onChange={(e) => setTenant({ ...tenant, address: e.target.value })}
           placeholder="Headquarters address"
+          aria-label="Company headquarters address"
         />
         <textarea
           value={tenant.billing_address || ''}
           onChange={(e) => setTenant({ ...tenant, billing_address: e.target.value })}
           placeholder="Billing address"
+          aria-label="Company billing address"
         />
         <textarea
           value={tenant.shipping_address || ''}
           onChange={(e) => setTenant({ ...tenant, shipping_address: e.target.value })}
           placeholder="Shipping address"
+          aria-label="Company shipping address"
         />
         <select
           value={tenant.timezone || 'Africa/Accra'}
