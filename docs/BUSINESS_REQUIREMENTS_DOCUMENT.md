@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1417 D1 Transfer Safetypin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1417_FIDELITY.md` (`test_stage1417_fidelity_d1.py`); Offline Complete / Transfer Safetypin Gate honesty / go-live still MISSING.
 Stage 1416 D1 Transfer Screwpin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1416_FIDELITY.md` (`test_stage1416_fidelity_d1.py`); Offline Complete / Transfer Screwpin Gate honesty / go-live still MISSING.
 Stage 1415 D1 Transfer Anchorshackle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1415_FIDELITY.md` (`test_stage1415_fidelity_d1.py`); Offline Complete / Transfer Anchorshackle Gate honesty / go-live still MISSING.
 Stage 1414 D1 Transfer Deeshackle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1414_FIDELITY.md` (`test_stage1414_fidelity_d1.py`); Offline Complete / Transfer Deeshackle Gate honesty / go-live still MISSING.
