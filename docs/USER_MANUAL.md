@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 1416 Transfer Screwpin Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_SCREWPIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_SCREWPIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 1415 Transfer Anchorshackle Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_ANCHORSHACKLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_ANCHORSHACKLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 1414 Transfer Deeshackle Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_DEESHACKLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_DEESHACKLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 1413 Transfer Bowshackle Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_BOWSHACKLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_BOWSHACKLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
