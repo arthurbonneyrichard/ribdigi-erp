@@ -31,3 +31,7 @@ Stage 1440 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Punch Gate, Transfer Punch Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1440 opened under **ADR-2887** after CONTINUE/NEXT (Tenant MVP Transfer Dolly Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2888**. Stage 1439 feature scope remains frozen.
