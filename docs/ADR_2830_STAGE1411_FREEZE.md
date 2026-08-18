@@ -31,3 +31,7 @@ Stage 1412 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Lynch Gate, Transfer Lynch Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1412 opened under **ADR-2831** after CONTINUE/NEXT (Tenant MVP Transfer Cotterless Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2832**. Stage 1411 feature scope remains frozen.
