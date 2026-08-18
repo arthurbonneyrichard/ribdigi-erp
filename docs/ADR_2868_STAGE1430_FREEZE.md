@@ -31,3 +31,7 @@ Stage 1431 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Cableclamp Gate, Transfer Cableclamp Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1431 opened under **ADR-2869** after CONTINUE/NEXT (Tenant MVP Transfer Loadbinder Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2870**. Stage 1430 feature scope remains frozen.
