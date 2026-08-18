@@ -31,3 +31,7 @@ Stage 1518 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Spotuv Gate, Transfer Spotuv Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1518 opened under **ADR-3043** after CONTINUE/NEXT (Tenant MVP Transfer Softtouch Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3044**. Stage 1517 feature scope remains frozen.
