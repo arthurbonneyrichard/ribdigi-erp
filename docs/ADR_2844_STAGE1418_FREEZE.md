@@ -31,3 +31,7 @@ Stage 1419 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Togglepin Gate, Transfer Togglepin Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1419 opened under **ADR-2845** after CONTINUE/NEXT (Tenant MVP Transfer Snaphook Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2846**. Stage 1418 feature scope remains frozen.
