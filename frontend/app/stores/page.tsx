@@ -678,7 +678,8 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           drawer_mode: drawerMode,
-          drawer_host: drawerHost || null,
+          // Blank → null (omit clears); garbage rejected by SmtpHostValue → 422.
+          drawer_host: drawerHost.trim() || null,
           drawer_port: Number(drawerPort) || 9100,
           drawer_open_on_cash: drawerOnCash,
         }),
@@ -1098,12 +1099,14 @@ export default function Page() {
                 <input
                   value={drawerHost}
                   onChange={(e) => setDrawerHost(e.target.value)}
-                  placeholder="Printer/drawer host"
+                  placeholder="Host (e.g. 127.0.0.1)"
+                  aria-label="Cash drawer host"
                 />
                 <input
                   value={drawerPort}
                   onChange={(e) => setDrawerPort(e.target.value)}
                   placeholder="Port (9100)"
+                  aria-label="Cash drawer port"
                 />
               </>
             )}
@@ -1115,7 +1118,11 @@ export default function Page() {
               />{' '}
               Open on cash POS sales
             </label>
-            <button onClick={saveDrawerSettings} disabled={!drawerStoreId}>
+            <button
+              onClick={saveDrawerSettings}
+              disabled={!drawerStoreId}
+              aria-label="Save drawer settings"
+            >
               Save drawer settings
             </button>
           </div>

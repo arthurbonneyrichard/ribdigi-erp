@@ -1480,7 +1480,11 @@ class StoreUpdate(BaseModel):
 class StoreDrawerSettingsUpdate(BaseModel):
     # BR-8.1 — schema Literal; omit = no change; blank/invalid → 422 (no silent none)
     drawer_mode: Literal["none", "mock", "network", "browser_bridge"] | None = None
-    drawer_host: str | None = None
+    # omit/`null` → no change / clear; blank/`http://…`/`not a host` → **422**
+    # (was free `str`; blank silent→null; garbage could persist). Same hostname
+    # honesty as Company SMTP (`SmtpHostValue`). Network mode still requires host
+    # at service (**400**) when unset.
+    drawer_host: SmtpHostValue | None = None
     drawer_port: int | None = Field(default=None, ge=1, le=65535)
     drawer_open_on_cash: bool | None = None
 
@@ -2443,18 +2447,18 @@ def coerce_smtp_host_value(value: object) -> object:
 def validate_smtp_host_value(value: str) -> str:
     """AfterValidator: DNS hostname / IPv4 / localhost; blank/URL/garbage → 422."""
     if not value:
-        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
     if len(value) > 253:
-        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
     lowered = value.lower()
     if "://" in lowered or "@" in lowered or any(ch.isspace() for ch in value):
-        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
     # localhost, dotted IPv4, or DNS labels (letters/digits/hyphen, dots between).
     if not re.fullmatch(
         r"(?:localhost|(?:\d{1,3}\.){3}\d{1,3}|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)",
         lowered,
     ):
-        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
     return lowered
 
 

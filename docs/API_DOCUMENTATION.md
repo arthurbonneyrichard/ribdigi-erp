@@ -1144,7 +1144,7 @@ Query `format` ∈ json|text|pdf (omit → `json`; blank/invalid → **422**); `
 **Query Params (legacy note):** `?format=pdf&paper=80mm`
 
 ### 8.5 Cash Drawer
-**Store settings:** `PATCH /stores/{store_id}/drawer` — body `StoreDrawerSettingsUpdate` `{ drawer_mode?, drawer_host?, drawer_port?, drawer_open_on_cash? }`. `drawer_mode` schema `Literal["none","mock","network","browser_bridge"]` (omit = no change; blank/invalid → **422**; no silent `none` from `""`). Service `normalize_mode` remains defense-in-depth **400**. Multi-Store UI drawer Mode select.  
+**Store settings:** `PATCH /stores/{store_id}/drawer` — body `StoreDrawerSettingsUpdate` `{ drawer_mode?, drawer_host?, drawer_port?, drawer_open_on_cash? }`. `drawer_mode` schema `Literal["none","mock","network","browser_bridge"]` (omit = no change; blank/invalid → **422**; no silent `none` from `""`). `drawer_host` ∈ `SmtpHostValue` (strip/lower; DNS hostname / IPv4 / `localhost`; no `://` / `@` / spaces); omit/`null` OK; blank/`http://…`/`not a host` → **422** (was free `str`; blank silent→null; garbage could persist). Service still requires host for `network` mode (**400**). Service `normalize_mode` remains defense-in-depth **400**. Multi-Store **Cash drawer host** input (`aria-label`; shown when Mode = network).  
 **Get:** `GET /pos/sessions/{session_id}/drawer`  
 **Open (manual):** `POST /pos/sessions/{session_id}/drawer/open` — body `{ "reason" }` required (min 3 chars; rejects placeholders like `manual` / `n/a`); POS **Drawer reason** input (no `window.prompt`). Auto-open on cash sale uses internal `pos_sale:{id}` reason.
 
