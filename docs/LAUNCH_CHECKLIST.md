@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1404 track opened (ADR-2815: `test_stage1404_open.py`, `docs/STAGE_1404_PLAN.md`) — Transfer Rivetpin Gate Honesty Pack Remaining-Gate Index; closed under ADR-2816
+- [x] Transfer Rivetpin Gate Honesty Pack remaining-gate hub (Stage 1404 I1: `test_stage1404_index_i1.py`, `docs/TRANSFER_RIVETPIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Rivetpin Gate Honesty Pack blocker matrix (Stage 1404 B1: `test_stage1404_blockers_b1.py`, `docs/TRANSFER_RIVETPIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1403 / Stage 1402 / Stage 392 / CHANGE_IMPACT pointers (Stage 1404 P1: `test_stage1404_pointers_p1.py`, `docs/TRANSFER_RIVETPIN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1404 fidelity sync (D1: `test_stage1404_fidelity_d1.py`, `docs/STAGE_1404_FIDELITY.md`)
+- [x] Stage 1404 exit + freeze (H1404x: `test_stage1404_exit_h1404x.py`, `docs/STAGE_1404_EXIT_CRITERIA.md`, ADR-2816)
 Stage 1403 track opened (ADR-2813: `test_stage1403_open.py`, `docs/STAGE_1403_PLAN.md`) — Transfer Linchpin Gate Honesty Pack Remaining-Gate Index; closed under ADR-2814
 - [x] Transfer Linchpin Gate Honesty Pack remaining-gate hub (Stage 1403 I1: `test_stage1403_index_i1.py`, `docs/TRANSFER_LINCHPIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Linchpin Gate Honesty Pack blocker matrix (Stage 1403 B1: `test_stage1403_blockers_b1.py`, `docs/TRANSFER_LINCHPIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
