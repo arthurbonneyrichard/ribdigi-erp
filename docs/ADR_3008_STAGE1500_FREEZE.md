@@ -31,3 +31,7 @@ Stage 1501 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Scoreform Gate, Transfer Scoreform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1501 opened under **ADR-3009** after CONTINUE/NEXT (Tenant MVP Transfer Shearform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3010**. Stage 1500 feature scope remains frozen.
