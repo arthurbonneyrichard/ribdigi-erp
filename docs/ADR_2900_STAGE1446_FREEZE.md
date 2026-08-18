@@ -31,3 +31,7 @@ Stage 1447 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Blank Gate, Transfer Blank Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1447 opened under **ADR-2901** after CONTINUE/NEXT (Tenant MVP Transfer Coining Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2902**. Stage 1446 feature scope remains frozen.
