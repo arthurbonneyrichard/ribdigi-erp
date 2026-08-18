@@ -31,3 +31,7 @@ Stage 1420 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Snaphook Gate, Transfer Snaphook Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1420 opened under **ADR-2847** after CONTINUE/NEXT (Tenant MVP Transfer Carabiner Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2848**. Stage 1419 feature scope remains frozen.
