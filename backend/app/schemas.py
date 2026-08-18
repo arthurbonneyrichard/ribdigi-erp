@@ -477,12 +477,15 @@ class SmsSettingsUpdate(BaseModel):
 
     Unknown keys → **422** (`extra=forbid`). Optional `from_number` ∈ `E164PhoneValue`
     (`+` + 8–15 digits); omit/`null` → no change; blank/`not-a-phone`/`123` → **422**
-    (was free `str`; blank/garbage were accepted into tenant Twilio config).
+    (was free `str`; blank/garbage were accepted into tenant Twilio config). Optional
+    `account_sid` ∈ `TwilioAccountSidValue` (strip; alphanumeric 1–64); omit/`null` →
+    no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage were
+    accepted into tenant Twilio SID). Not strict `AC`+32hex (fixtures use short SIDs).
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    account_sid: str | None = None
+    account_sid: TwilioAccountSidValue | None = None
     auth_token: str | None = None
     clear_auth_token: bool = False
     from_number: E164PhoneValue | None = None
@@ -2457,6 +2460,39 @@ E164PhoneValue = Annotated[
     str,
     BeforeValidator(coerce_e164_phone_value),
     AfterValidator(validate_e164_phone_value),
+]
+
+
+def coerce_twilio_account_sid_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for account_sid 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_twilio_account_sid_value(value: str) -> str:
+    """AfterValidator: alphanumeric Twilio SID; blank/URL/punctuation → 422.
+
+    Loose (not AC+32hex) so short fixtures like ACtip73 remain valid.
+    """
+    if not value:
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    if len(value) > 64:
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    if "://" in value or any(ch.isspace() for ch in value):
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    if not re.fullmatch(r"[A-Za-z0-9]+", value):
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    return value
+
+
+# Twilio Account SID — alphanumeric 1–64 (fixtures may be short; not strict AC+32hex).
+TwilioAccountSidValue = Annotated[
+    str,
+    BeforeValidator(coerce_twilio_account_sid_value),
+    AfterValidator(validate_twilio_account_sid_value),
 ]
 
 

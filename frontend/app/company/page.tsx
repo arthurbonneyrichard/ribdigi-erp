@@ -745,6 +745,7 @@ export default function Page() {
             value={smsAccountSid}
             onChange={(e) => setSmsAccountSid(e.target.value)}
             placeholder="ACxxxxxxxx"
+            aria-label="Company SMS account SID"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">
@@ -779,9 +780,10 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
-                  const body: Record<string, unknown> = {
-                    account_sid: smsAccountSid,
-                  };
+                  const body: Record<string, unknown> = {};
+                  // Omit blank SID so Save does not 422 (TwilioAccountSidValue); leave prior.
+                  const trimmedSid = smsAccountSid.trim();
+                  if (trimmedSid) body.account_sid = trimmedSid;
                   const trimmedFrom = smsFromNumber.trim();
                   if (trimmedFrom) body.from_number = trimmedFrom;
                   if (smsAuthToken) body.auth_token = smsAuthToken;
