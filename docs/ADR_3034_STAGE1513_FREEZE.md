@@ -31,3 +31,7 @@ Stage 1514 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Embossdie Gate, Transfer Embossdie Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1514 opened under **ADR-3035** after CONTINUE/NEXT (Tenant MVP Transfer Hotstamp Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3036**. Stage 1513 feature scope remains frozen.
