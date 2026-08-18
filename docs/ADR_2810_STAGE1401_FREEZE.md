@@ -31,3 +31,7 @@ Stage 1402 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Groovepin Gate, Transfer Groovepin Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1402 opened under **ADR-2811** after CONTINUE/NEXT (Tenant MVP Transfer Taperpin Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2812**. Stage 1401 feature scope remains frozen.
