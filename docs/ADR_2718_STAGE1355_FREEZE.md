@@ -31,3 +31,7 @@ Stage 1356 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Idler Gate, Transfer Idler Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1356 opened under **ADR-2719** after CONTINUE/NEXT (Tenant MVP Transfer Planet Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2720**. Stage 1355 feature scope remains frozen.
