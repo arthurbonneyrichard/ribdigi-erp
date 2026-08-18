@@ -598,9 +598,16 @@ class PlatformGrantAccess(BaseModel):
 
 
 class PlatformStaffCreate(BaseModel):
-    """Create a platform staff user on the software-owner workspace."""
+    """Create a platform staff user on the software-owner workspace (BR-platform).
 
-    email: str = Field(min_length=3)
+    Unknown keys → **422** (`extra=forbid`). `email` ∈ `EmailStr`; blank /
+    `not-an-email` / too-short garbage → **422** (was free `str` with
+    `min_length=3`; `"abc"` was accepted).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
     full_name: str = Field(min_length=1)
     password: str = Field(min_length=1)
     # Same Literal as grant; omit → platform_support; blank/invalid → 422

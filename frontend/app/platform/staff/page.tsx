@@ -190,6 +190,7 @@ export default function PlatformStaffPage() {
               <input
                 value={form.full_name}
                 onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+                aria-label="Platform staff full name"
                 required
               />
             </label>
@@ -199,6 +200,7 @@ export default function PlatformStaffPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                aria-label="Platform staff email"
                 required
               />
             </label>
@@ -208,6 +210,7 @@ export default function PlatformStaffPage() {
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                aria-label="Platform staff password"
                 required
               />
             </label>
@@ -216,6 +219,7 @@ export default function PlatformStaffPage() {
               <select
                 value={form.role}
                 onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                aria-label="Platform staff role"
               >
                 {roles
                   .filter((r) => r.key !== 'super_admin')
@@ -226,7 +230,7 @@ export default function PlatformStaffPage() {
                   ))}
               </select>
             </label>
-            <button type="submit" disabled={busy}>
+            <button type="submit" disabled={busy} aria-label="Create platform staff">
               {busy ? 'Saving…' : 'Create staff'}
             </button>
           </form>
