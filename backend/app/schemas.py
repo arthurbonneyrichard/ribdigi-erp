@@ -2307,7 +2307,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),
@@ -2724,12 +2724,14 @@ class BankStatementLineCreate(BaseModel):
     """Nested line on `BankStatementCreateBody` (BR-10.3).
 
     Unknown keys → **422**. Zero / missing amount → **422** (was late service **400**).
+    Optional `txn_date` ∈ `IsoDateQueryValue`; omit → service default; blank/invalid → **422**
+    (blank was silent default; invalid was uncaught **500** via `_parse_dt`).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     amount: float
-    txn_date: str | None = None
+    txn_date: IsoDateQueryValue | None = None
     description: str | None = None
     external_ref: str | None = None
 
@@ -2740,7 +2742,7 @@ class BankStatementLineCreate(BaseModel):
             raise ValueError("Statement line amount cannot be zero")
         return float(value)
 
-    @field_validator("description", "external_ref", "txn_date", mode="before")
+    @field_validator("description", "external_ref", mode="before")
     @classmethod
     def _strip_optional_strs(cls, value: object) -> object:
         if isinstance(value, str):
@@ -2754,13 +2756,15 @@ class BankStatementCreateBody(BaseModel):
 
     Unknown keys → **422** (`extra=forbid`). Blank/omit `account_id` → **422**
     (was free `dict` that turned omit/`""` into a late **404**). Zero line amounts
-    → **422**. Service `create_statement` remains defense-in-depth.
+    → **422**. Optional `statement_date` ∈ `IsoDateQueryValue`; omit → today;
+    blank/invalid → **422** (blank was silent today; invalid was uncaught **500**).
+    Service `create_statement` remains defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     account_id: str = Field(min_length=1)
-    statement_date: str | None = None
+    statement_date: IsoDateQueryValue | None = None
     opening_balance: float = 0
     closing_balance: float = 0
     notes: str | None = None
@@ -2773,7 +2777,7 @@ class BankStatementCreateBody(BaseModel):
             return value.strip()
         return value
 
-    @field_validator("notes", "statement_date", mode="before")
+    @field_validator("notes", mode="before")
     @classmethod
     def _strip_optional_header(cls, value: object) -> object:
         if isinstance(value, str):

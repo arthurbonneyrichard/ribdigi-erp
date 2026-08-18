@@ -63,6 +63,8 @@ def test_bank_statement_create_ui_and_docs():
     assert 'aria-label="Statement closing balance"' in page
     assert 'aria-label="Statement line amount"' in page
     assert 'aria-label="Statement line description"' in page
+    assert 'aria-label="Statement date"' in page
+    assert 'aria-label="Statement line txn date"' in page
     assert 'aria-label="Create bank statement"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Bank statement create body OpenAPI" in agents

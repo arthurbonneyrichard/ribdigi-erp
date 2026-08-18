@@ -8637,7 +8637,7 @@ async def import_bank_statement(
     file: UploadFile = File(...),
     opening_balance: float | None = None,
     closing_balance: float | None = None,
-    statement_date: str | None = None,
+    statement_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     notes: str | None = None,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),

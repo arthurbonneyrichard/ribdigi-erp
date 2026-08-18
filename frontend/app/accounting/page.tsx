@@ -43,6 +43,8 @@ export default function Page() {
   const [closing, setClosing] = useState('0');
   const [lineAmount, setLineAmount] = useState('100');
   const [lineDesc, setLineDesc] = useState('Deposit');
+  const [stmtDate, setStmtDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [lineTxnDate, setLineTxnDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [pickBank, setPickBank] = useState<string[]>([]);
   const [pickBook, setPickBook] = useState<string[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -512,13 +514,13 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           account_id: reconAccountId,
-          statement_date: new Date().toISOString().slice(0, 10),
+          statement_date: stmtDate || undefined,
           opening_balance: Number(opening),
           closing_balance: Number(closing),
           notes: lineDesc.trim() || undefined,
           lines: [
             {
-              txn_date: new Date().toISOString().slice(0, 10),
+              txn_date: lineTxnDate || undefined,
               amount: amt,
               description: lineDesc,
             },
@@ -550,6 +552,7 @@ export default function Page() {
         opening_balance: String(Number(opening) || 0),
       });
       if (closing !== '' && closing != null) qs.set('closing_balance', String(Number(closing)));
+      if (stmtDate) qs.set('statement_date', stmtDate);
       const res = await fetch(`${apiBase}/accounting/bank-statements/import?${qs}`, {
         method: 'POST',
         headers: {
@@ -1619,6 +1622,20 @@ export default function Page() {
               ))}
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input
+                type="date"
+                value={stmtDate}
+                onChange={(e) => setStmtDate(e.target.value)}
+                title="Statement date (YYYY-MM-DD)"
+                aria-label="Statement date"
+              />
+              <input
+                type="date"
+                value={lineTxnDate}
+                onChange={(e) => setLineTxnDate(e.target.value)}
+                title="Statement line txn date (YYYY-MM-DD)"
+                aria-label="Statement line txn date"
+              />
               <input
                 value={opening}
                 onChange={(e) => setOpening(e.target.value)}
