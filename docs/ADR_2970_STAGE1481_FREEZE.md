@@ -31,3 +31,7 @@ Stage 1482 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Creaseform Gate, Transfer Creaseform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1482 opened under **ADR-2971** after CONTINUE/NEXT (Tenant MVP Transfer Flangeform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2972**. Stage 1481 feature scope remains frozen.
