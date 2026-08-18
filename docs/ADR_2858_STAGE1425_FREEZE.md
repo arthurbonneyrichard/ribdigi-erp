@@ -31,3 +31,7 @@ Stage 1426 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Clevishook Gate, Transfer Clevishook Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1426 opened under **ADR-2859** after CONTINUE/NEXT (Tenant MVP Transfer Padaye Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2860**. Stage 1425 feature scope remains frozen.
