@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1455 track opened (ADR-2917: `test_stage1455_open.py`, `docs/STAGE_1455_PLAN.md`) — Transfer Crease Gate Honesty Pack Remaining-Gate Index; closed under ADR-2918
+- [x] Transfer Crease Gate Honesty Pack remaining-gate hub (Stage 1455 I1: `test_stage1455_index_i1.py`, `docs/TRANSFER_CREASE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Crease Gate Honesty Pack blocker matrix (Stage 1455 B1: `test_stage1455_blockers_b1.py`, `docs/TRANSFER_CREASE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1454 / Stage 1453 / Stage 392 / CHANGE_IMPACT pointers (Stage 1455 P1: `test_stage1455_pointers_p1.py`, `docs/TRANSFER_CREASE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1455 fidelity sync (D1: `test_stage1455_fidelity_d1.py`, `docs/STAGE_1455_FIDELITY.md`)
+- [x] Stage 1455 exit + freeze (H1455x: `test_stage1455_exit_h1455x.py`, `docs/STAGE_1455_EXIT_CRITERIA.md`, ADR-2918)
 Stage 1454 track opened (ADR-2915: `test_stage1454_open.py`, `docs/STAGE_1454_PLAN.md`) — Transfer Nibble Gate Honesty Pack Remaining-Gate Index; closed under ADR-2916
 - [x] Transfer Nibble Gate Honesty Pack remaining-gate hub (Stage 1454 I1: `test_stage1454_index_i1.py`, `docs/TRANSFER_NIBBLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Nibble Gate Honesty Pack blocker matrix (Stage 1454 B1: `test_stage1454_blockers_b1.py`, `docs/TRANSFER_NIBBLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
