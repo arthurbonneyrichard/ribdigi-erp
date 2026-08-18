@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1516 track opened (ADR-3039: `test_stage1516_open.py`, `docs/STAGE_1516_PLAN.md`) — Transfer Blindstamp Gate Honesty Pack Remaining-Gate Index; closed under ADR-3040
+- [x] Transfer Blindstamp Gate Honesty Pack remaining-gate hub (Stage 1516 I1: `test_stage1516_index_i1.py`, `docs/TRANSFER_BLINDSTAMP_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Blindstamp Gate Honesty Pack blocker matrix (Stage 1516 B1: `test_stage1516_blockers_b1.py`, `docs/TRANSFER_BLINDSTAMP_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1515 / Stage 1514 / Stage 392 / CHANGE_IMPACT pointers (Stage 1516 P1: `test_stage1516_pointers_p1.py`, `docs/TRANSFER_BLINDSTAMP_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1516 fidelity sync (D1: `test_stage1516_fidelity_d1.py`, `docs/STAGE_1516_FIDELITY.md`)
+- [x] Stage 1516 exit + freeze (H1516x: `test_stage1516_exit_h1516x.py`, `docs/STAGE_1516_EXIT_CRITERIA.md`, ADR-3040)
 Stage 1515 track opened (ADR-3037: `test_stage1515_open.py`, `docs/STAGE_1515_PLAN.md`) — Transfer Debosform Gate Honesty Pack Remaining-Gate Index; closed under ADR-3038
 - [x] Transfer Debosform Gate Honesty Pack remaining-gate hub (Stage 1515 I1: `test_stage1515_index_i1.py`, `docs/TRANSFER_DEBOSFORM_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Debosform Gate Honesty Pack blocker matrix (Stage 1515 B1: `test_stage1515_blockers_b1.py`, `docs/TRANSFER_DEBOSFORM_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
