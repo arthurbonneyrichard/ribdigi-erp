@@ -31,3 +31,7 @@ Stage 1445 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Mandrelbar Gate, Transfer Mandrelbar Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1445 opened under **ADR-2897** after CONTINUE/NEXT (Tenant MVP Transfer Formdie Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2898**. Stage 1444 feature scope remains frozen.
