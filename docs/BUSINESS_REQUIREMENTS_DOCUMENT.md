@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1461 D1 Transfer Emboss Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1461_FIDELITY.md` (`test_stage1461_fidelity_d1.py`); Offline Complete / Transfer Emboss Gate honesty / go-live still MISSING.
 Stage 1460 D1 Transfer Offset Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1460_FIDELITY.md` (`test_stage1460_fidelity_d1.py`); Offline Complete / Transfer Offset Gate honesty / go-live still MISSING.
 Stage 1459 D1 Transfer Joggle Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1459_FIDELITY.md` (`test_stage1459_fidelity_d1.py`); Offline Complete / Transfer Joggle Gate honesty / go-live still MISSING.
 Stage 1458 D1 Transfer Curl Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1458_FIDELITY.md` (`test_stage1458_fidelity_d1.py`); Offline Complete / Transfer Curl Gate honesty / go-live still MISSING.
