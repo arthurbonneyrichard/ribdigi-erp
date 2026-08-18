@@ -23,6 +23,7 @@ export default function Page() {
   const [tmplName, setTmplName] = useState('');
   const [analysisFromDate, setAnalysisFromDate] = useState('');
   const [analysisToDate, setAnalysisToDate] = useState('');
+  const [draftDocDate, setDraftDocDate] = useState('');
 
   async function go() {
     setError('');
@@ -374,6 +375,8 @@ export default function Page() {
       const r = await api('/ai/documents/analyze', { method: 'POST', body: fd });
       const d = r.data || {};
       setLastDocExtract(d);
+      const rawDate = String(d.extracted?.expense_date || '').trim();
+      setDraftDocDate(rawDate.length >= 10 ? rawDate.slice(0, 10) : '');
       setA(
         [
           `type=${d.document_type} engine=${d.engine} conf=${d.confidence}`,
@@ -403,6 +406,7 @@ export default function Page() {
     setMessage('');
     setDraftExpenseBusy(true);
     try {
+      const expenseDate = draftDocDate.trim() || String(ex.expense_date || '').trim() || null;
       const r = await api('/ai/documents/create-expense', {
         method: 'POST',
         body: JSON.stringify({
@@ -410,7 +414,7 @@ export default function Page() {
           payee: ex.payee || null,
           description: ex.description || null,
           reference: ex.reference || null,
-          expense_date: ex.expense_date || null,
+          expense_date: expenseDate,
           category_id: ex.category_id || lastDocExtract.category_suggestion?.category_id || null,
           category: ex.category || lastDocExtract.category_suggestion?.category || null,
           payment_method: 'cash',
@@ -438,6 +442,7 @@ export default function Page() {
     setMessage('');
     setDraftPiBusy(true);
     try {
+      const invoiceDate = draftDocDate.trim() || String(ex.expense_date || '').trim() || null;
       const r = await api('/ai/documents/create-purchase-invoice', {
         method: 'POST',
         body: JSON.stringify({
@@ -445,7 +450,7 @@ export default function Page() {
           supplier_id: poMatch.supplier_id || null,
           supplier_invoice_number: ex.reference || null,
           notes: ex.description || null,
-          invoice_date: ex.expense_date || null,
+          invoice_date: invoiceDate,
           is_reverse_charge: false,
         }),
       });
@@ -528,11 +533,19 @@ export default function Page() {
               }}
             />
           </label>
+          <input
+            type="date"
+            value={draftDocDate}
+            onChange={(e) => setDraftDocDate(e.target.value)}
+            title="Draft expense / purchase invoice date (YYYY-MM-DD)"
+            aria-label="AI document draft date"
+          />
           <button
             type="button"
             onClick={createDraftExpenseFromDoc}
             disabled={draftExpenseBusy || !lastDocExtract?.extracted?.amount}
             title="Creates a pending expense from the last Analyze document result (requires expenses:write)"
+            aria-label="Create draft expense"
           >
             {draftExpenseBusy ? 'Creating draft expense…' : 'Create draft expense'}
           </button>
@@ -541,6 +554,7 @@ export default function Page() {
             onClick={createDraftPurchaseInvoiceFromDoc}
             disabled={draftPiBusy || !hasPoMatch}
             title="Creates a draft purchase invoice by copying lines from the top matched PO (requires purchasing:write)"
+            aria-label="Create draft purchase invoice"
           >
             {draftPiBusy ? 'Creating draft PI…' : 'Create draft purchase invoice'}
           </button>

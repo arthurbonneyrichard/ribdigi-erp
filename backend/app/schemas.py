@@ -1180,7 +1180,15 @@ class AiCustomerAssistBody(BaseModel):
 
 
 class AiDocumentExpenseCreate(BaseModel):
-    """Explicit Create draft expense from reviewed OCR fields (BR-21.8)."""
+    """Explicit Create draft expense from reviewed OCR fields (BR-21.8).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `expense_date` ∈
+    `IsoDateQueryValue`; omit → service default (today); blank/invalid → **422**
+    (blank was silent default; invalid was late service **400** via
+    `_parse_expense_date`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     amount: float = Field(gt=0)
     payee: str | None = None
@@ -1189,21 +1197,29 @@ class AiDocumentExpenseCreate(BaseModel):
     category_id: str | None = None
     category: str | None = None
     payment_method: ExpensePaymentMethod = "cash"
-    expense_date: str | datetime | None = None
+    expense_date: IsoDateQueryValue | None = None
     store_id: str | None = None
     branch_id: str | None = None
     department_id: str | None = None
 
 
 class AiDocumentPurchaseInvoiceCreate(BaseModel):
-    """Explicit Create draft purchase invoice from reviewed OCR + matched PO (BR-21.8)."""
+    """Explicit Create draft purchase invoice from reviewed OCR + matched PO (BR-21.8).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `invoice_date` ∈
+    `IsoDateQueryValue`; omit → service default; blank/invalid → **422**
+    (blank was silent default; invalid was late service **400** via
+    `_parse_invoice_date`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     purchase_order_id: str
     supplier_id: str | None = None
     supplier_invoice_number: str | None = None
     notes: str | None = None
     is_reverse_charge: bool = False
-    invoice_date: str | datetime | None = None
+    invoice_date: IsoDateQueryValue | None = None
 
 
 class ExpenseUpdate(BaseModel):
@@ -2307,7 +2323,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),
