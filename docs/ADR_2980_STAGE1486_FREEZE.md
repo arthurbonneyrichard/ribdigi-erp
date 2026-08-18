@@ -31,3 +31,7 @@ Stage 1487 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Beadform Gate, Transfer Beadform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1487 opened under **ADR-2981** after CONTINUE/NEXT (Tenant MVP Transfer Joggleform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2982**. Stage 1486 feature scope remains frozen.
