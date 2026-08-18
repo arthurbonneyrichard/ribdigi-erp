@@ -31,3 +31,7 @@ Stage 1515 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hotstamp Gate, Transfer Hotstamp Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1515 opened under **ADR-3037** after CONTINUE/NEXT (Tenant MVP Transfer Debosform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3038**. Stage 1514 feature scope remains frozen.
