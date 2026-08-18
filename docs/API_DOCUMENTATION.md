@@ -1398,7 +1398,9 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 `operating_hours` typed `StoreOperatingHours` (`extra=forbid`; keys ∈ `mon`…`sun` only; each day `StoreDayHours` with `closed` or `open`/`close` as `HH:MM` 24h, open before close). Unknown day keys / bad times / open≥close → **422** (was late service **400**). Returned on list/GET; update via `PATCH /stores/{store_id}` (BR-2.3). Creating a store still auto-creates a linked warehouse. Multi-Store **Operating hours** editor (`aria-label`s).
 
-**Update fields:** `name`, `address`, `phone`, `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours` (same typed map). Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
+`phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); create omit/`null` → no phone; PATCH omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Store phone** input (`aria-label`); create sends `null` when blank; edit omits blank phone.
+
+**Update fields:** `name`, `address`, `phone` ∈ `E164PhoneValue` (same rules), `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours` (same typed map). Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
 
 **Cash drawer:** `PATCH /stores/{store_id}/drawer` — see §8.5 (`drawer_mode` OpenAPI `Literal`; blank/invalid → **422**).
 

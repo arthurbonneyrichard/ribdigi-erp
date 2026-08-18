@@ -1438,7 +1438,9 @@ class StoreCreate(BaseModel):
     name: str
     code: str
     address: str | None = None
-    phone: str | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on create).
+    phone: E164PhoneValue | None = None
     manager_id: str | None = None
     branch_id: str | None = None
     operating_hours: StoreOperatingHours | None = None
@@ -1447,7 +1449,9 @@ class StoreCreate(BaseModel):
 class StoreUpdate(BaseModel):
     name: str | None = None
     address: str | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist).
+    phone: E164PhoneValue | None = None
     manager_id: str | None = None
     clear_manager: bool = False
     branch_id: str | None = None

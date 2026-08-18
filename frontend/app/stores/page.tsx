@@ -112,12 +112,14 @@ export default function Page() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [managerId, setManagerId] = useState('');
   const [branchId, setBranchId] = useState('');
   const [hours, setHours] = useState<OperatingHours>(defaultHours());
   const [editStoreId, setEditStoreId] = useState('');
   const [editName, setEditName] = useState('');
   const [editAddress, setEditAddress] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [editManagerId, setEditManagerId] = useState('');
   const [editBranchId, setEditBranchId] = useState('');
   const [editHours, setEditHours] = useState<OperatingHours>(defaultHours());
@@ -245,6 +247,7 @@ export default function Page() {
           code,
           name,
           address: address || undefined,
+          phone: phone.trim() || null,
           manager_id: managerId || null,
           branch_id: branchId || null,
           operating_hours: hours,
@@ -253,6 +256,7 @@ export default function Page() {
       setCode('');
       setName('');
       setAddress('');
+      setPhone('');
       setManagerId('');
       setBranchId('');
       setHours(defaultHours());
@@ -290,6 +294,7 @@ export default function Page() {
     setEditStoreId(s.id);
     setEditName(s.name || '');
     setEditAddress(s.address || '');
+    setEditPhone(s.phone || '');
     setEditManagerId(s.manager_id || '');
     setEditBranchId(s.branch_id || '');
     setEditHours(s.operating_hours ? { ...defaultHours(), ...s.operating_hours } : defaultHours());
@@ -305,6 +310,8 @@ export default function Page() {
         body: JSON.stringify({
           name: editName.trim() || undefined,
           address: editAddress,
+          // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
+          ...(editPhone.trim() ? { phone: editPhone.trim() } : {}),
           manager_id: editManagerId || null,
           clear_manager: !editManagerId,
           branch_id: editBranchId || null,
@@ -910,6 +917,12 @@ export default function Page() {
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Store phone"
+            />
             <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
               <option value="">Manager (optional)</option>
               {users.map((u) => (
@@ -1341,6 +1354,12 @@ export default function Page() {
               value={editAddress}
               onChange={(e) => setEditAddress(e.target.value)}
               placeholder="Address"
+            />
+            <input
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Store phone"
             />
             <select value={editManagerId} onChange={(e) => setEditManagerId(e.target.value)}>
               <option value="">No manager</option>

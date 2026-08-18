@@ -220,7 +220,8 @@ async def update_store(
     if address is not None:
         store.address = address.strip() or None
     if phone is not None:
-        store.phone = phone.strip() or None
+        # Defense in depth: StoreUpdate E164PhoneValue → 422 on blank/invalid.
+        store.phone = phone
     if clear_manager:
         store.manager_id = None
     elif manager_id is not None:
