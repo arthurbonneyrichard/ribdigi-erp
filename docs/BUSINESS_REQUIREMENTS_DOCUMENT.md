@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1409 D1 Transfer Hitchpin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1409_FIDELITY.md` (`test_stage1409_fidelity_d1.py`); Offline Complete / Transfer Hitchpin Gate honesty / go-live still MISSING.
 Stage 1408 D1 Transfer Quickpin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1408_FIDELITY.md` (`test_stage1408_fidelity_d1.py`); Offline Complete / Transfer Quickpin Gate honesty / go-live still MISSING.
 Stage 1407 D1 Transfer Hairpin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1407_FIDELITY.md` (`test_stage1407_fidelity_d1.py`); Offline Complete / Transfer Hairpin Gate honesty / go-live still MISSING.
 Stage 1406 D1 Transfer Splitpin Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1406_FIDELITY.md` (`test_stage1406_fidelity_d1.py`); Offline Complete / Transfer Splitpin Gate honesty / go-live still MISSING.
