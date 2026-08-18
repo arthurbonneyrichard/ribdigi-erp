@@ -2010,7 +2010,9 @@ class SalesOrderCreate(BaseModel):
     quotation_id: str | None = None
     store_id: str | None = None
     delivery_date: datetime | None = None
-    delivery_address: str | None = None
+    # omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist). Same AddressValue as PO.
+    delivery_address: AddressValue | None = None
     discount_amount: float = Field(default=0, ge=0)
     notes: str | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
@@ -2019,7 +2021,9 @@ class SalesOrderCreate(BaseModel):
 class SalesOrderConfirm(BaseModel):
     store_id: str | None = None
     delivery_date: datetime | None = None
-    delivery_address: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist). Same AddressValue as PO.
+    delivery_address: AddressValue | None = None
 
 
 class SalesOrderCancel(BaseModel):

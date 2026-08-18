@@ -274,6 +274,7 @@ export default function Page() {
     customer_id: customerId,
     store_id: storeId || null,
     delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
+    // null when blank so Create order does not 422 (AddressValue).
     delivery_address: deliveryAddress.trim() || null,
     discount_amount: hdrDisc,
     items: lineItems,
@@ -1053,6 +1054,7 @@ export default function Page() {
             value={deliveryAddress}
             onChange={(e) => setDeliveryAddress(e.target.value)}
             placeholder="Delivery address"
+            aria-label="SO delivery address"
             style={{ minWidth: 180 }}
           />
           <input
@@ -1476,7 +1478,10 @@ export default function Page() {
                                 delivery_date: deliveryDate
                                   ? new Date(deliveryDate).toISOString()
                                   : null,
-                                delivery_address: deliveryAddress.trim() || null,
+                                // Omit blank delivery so Confirm does not 422 (AddressValue).
+                                ...(deliveryAddress.trim()
+                                  ? { delivery_address: deliveryAddress.trim() }
+                                  : {}),
                               }
                             : {}
                         )
