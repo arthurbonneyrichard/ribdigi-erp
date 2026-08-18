@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1382 D1 Transfer Spherical Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1382_FIDELITY.md` (`test_stage1382_fidelity_d1.py`); Offline Complete / Transfer Spherical Gate honesty / go-live still MISSING.
 Stage 1381 D1 Transfer Cone Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1381_FIDELITY.md` (`test_stage1381_fidelity_d1.py`); Offline Complete / Transfer Cone Gate honesty / go-live still MISSING.
 Stage 1380 D1 Transfer Cup Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1380_FIDELITY.md` (`test_stage1380_fidelity_d1.py`); Offline Complete / Transfer Cup Gate honesty / go-live still MISSING.
 Stage 1379 D1 Transfer Thrust Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1379_FIDELITY.md` (`test_stage1379_fidelity_d1.py`); Offline Complete / Transfer Thrust Gate honesty / go-live still MISSING.

@@ -31,3 +31,7 @@ Stage 1382 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Cone Gate, Transfer Cone Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1382 opened under **ADR-2771** after CONTINUE/NEXT (Tenant MVP Transfer Spherical Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2772**. Stage 1381 feature scope remains frozen.
