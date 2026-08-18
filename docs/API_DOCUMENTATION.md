@@ -782,6 +782,8 @@ List supports optional `?status=active|inactive` (schema Query `Literal` + strip
 `GET|POST /suppliers/{supplier_id}/contacts`  
 `PATCH|DELETE /suppliers/{supplier_id}/contacts/{contact_id}`  
 
+`phone` ∈ `E164PhoneValue` (omit/`null` → no phone on create / no change on PATCH; blank/`not-a-phone`/`123` → **422** — was free `str`; blank/garbage could persist). Purchasing **Party contact phone** input (`aria-label`); create sends `null` when blank.
+
 ```json
 { "name": "Ada Buyer", "phone": "+233200000001", "email": "ada@acme.example.com", "designation": "Purchasing", "is_primary": true }
 ```
@@ -944,7 +946,7 @@ Line credits inherit proportional PO line discount (`return_qty / ordered_qty ×
 
 List supports optional `?status=active|inactive` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no late **400**). Sales Manage customer filters All / Active / Inactive; Sale/POS pickers stay active-only. Party `code` is unique per tenant when set.
 
-**Contacts (BR-6.1):** same nested `/customers/{customer_id}/contacts` routes as suppliers; `GET /customers/{id}` includes `contacts`.
+**Contacts (BR-6.1):** same nested `/customers/{customer_id}/contacts` routes as suppliers; `GET /customers/{id}` includes `contacts`. Contact `phone` ∈ `E164PhoneValue` (omit/`null` OK; blank/garbage → **422**). Sales **Party contact phone** input (`aria-label`); create sends `null` when blank.
 
 ### 7.2 Customer Groups
 **List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults; `is_active=true|false` optional — Sales manage All/Active/Inactive; default returns all)  

@@ -1035,7 +1035,9 @@ class PartyUpdate(BaseModel):
 
 class PartyContactCreate(BaseModel):
     name: str
-    phone: str | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier contact create).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
     designation: str | None = None
     is_primary: bool = False
@@ -1043,7 +1045,9 @@ class PartyContactCreate(BaseModel):
 
 class PartyContactUpdate(BaseModel):
     name: str | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier contact PATCH).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
     designation: str | None = None
     is_primary: bool | None = None
