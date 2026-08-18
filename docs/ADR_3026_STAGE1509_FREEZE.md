@@ -31,3 +31,7 @@ Stage 1510 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Windowform Gate, Transfer Windowform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1510 opened under **ADR-3027** after CONTINUE/NEXT (Tenant MVP Transfer Counterform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3028**. Stage 1509 feature scope remains frozen.
