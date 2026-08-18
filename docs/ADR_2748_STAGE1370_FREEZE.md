@@ -31,3 +31,7 @@ Stage 1371 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Boot Gate, Transfer Boot Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1371 opened under **ADR-2749** after CONTINUE/NEXT (Tenant MVP Transfer Needle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2750**. Stage 1370 feature scope remains frozen.
