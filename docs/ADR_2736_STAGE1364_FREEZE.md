@@ -31,3 +31,7 @@ Stage 1365 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sidegear Gate, Transfer Sidegear Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1365 opened under **ADR-2737** after CONTINUE/NEXT (Tenant MVP Transfer Halfshaft Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2738**. Stage 1364 feature scope remains frozen.
