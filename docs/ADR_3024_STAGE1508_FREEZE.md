@@ -31,3 +31,7 @@ Stage 1509 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ruleform Gate, Transfer Ruleform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1509 opened under **ADR-3025** after CONTINUE/NEXT (Tenant MVP Transfer Windowform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3026**. Stage 1508 feature scope remains frozen.
