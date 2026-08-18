@@ -31,3 +31,7 @@ Stage 1377 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Inner Gate, Transfer Inner Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1377 opened under **ADR-2761** after CONTINUE/NEXT (Tenant MVP Transfer Outer Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2762**. Stage 1376 feature scope remains frozen.
