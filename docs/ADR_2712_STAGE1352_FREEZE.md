@@ -31,3 +31,7 @@ Stage 1353 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Worm Gate, Transfer Worm Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1353 opened under **ADR-2713** after CONTINUE/NEXT (Tenant MVP Transfer Bevel Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2714**. Stage 1352 feature scope remains frozen.
