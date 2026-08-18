@@ -31,3 +31,7 @@ Stage 1505 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Perfform Gate, Transfer Perfform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1505 opened under **ADR-3017** after CONTINUE/NEXT (Tenant MVP Transfer Slotform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3018**. Stage 1504 feature scope remains frozen.
