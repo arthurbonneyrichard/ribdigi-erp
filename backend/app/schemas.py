@@ -503,7 +503,9 @@ class RefreshRequest(BaseModel):
 
 
 class TenantCreate(BaseModel):
-    company_name: str
+    # Required trading name ∈ CompanyNameValue; blank/`!!!`/`http://…`/`X` → **422**
+    # (was free `str` with no create-path length/content check).
+    company_name: CompanyNameValue
     slug: str
     # BR-1.2 — schema Literal (+ case coerce via BeforeValidator); omit → retail;
     # blank/invalid → 422 (no silent retail from garbage).
@@ -515,7 +517,9 @@ class TenantCreate(BaseModel):
 
 
 class TenantProfileUpdate(BaseModel):
-    company_name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`;
+    # blank/`X` late service **400**; garbage could persist). Required trading name.
+    company_name: CompanyNameValue | None = None
     # omit = no change; blank/invalid → 422 (same IndustryValue Literal)
     industry: IndustryValue | None = None
     # omit = no change; blank/non-ISO → 422 (was free str; length-only late **400**)
@@ -2726,6 +2730,27 @@ LegalNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_legal_name_value),
+]
+
+
+def validate_company_name_value(value: str) -> str:
+    """AfterValidator: trading name; blank/URL/short/garbage → 422 (2–200)."""
+    if not value:
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    if len(value) < 2 or len(value) > 200:
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    return value
+
+
+# Company trading name — required identity label (2–200; no URL/email).
+CompanyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_company_name_value),
 ]
 
 

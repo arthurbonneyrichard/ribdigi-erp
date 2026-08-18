@@ -219,6 +219,8 @@ Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, 
 
 `currency` ∈ 3-letter ISO (`CurrencyCodeValue`; strip/upper; omit → `GHS`; blank/non-ISO → **422** — was free `str` with no create-path check). Same honesty on `PATCH /tenants/me`. Company **Currency** select.
 
+`company_name` ∈ `CompanyNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); required on create; blank/`!!!`/`http://…`/`X` → **422** (was free `str` with no create-path length/content check). Same honesty on `PATCH /tenants/me` (omit/`null` → no change). Company **Company trading name** input (`aria-label`).
+
 **Response:**
 ```json
 {
@@ -282,6 +284,8 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 `contact_person` (when sent) ∈ `ContactPersonValue` (strip; 1–150 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared; garbage could persist; length>150 was late service **400**). Company **Company contact person** input (`aria-label`); Save omits blank so prior value is kept.
 
 `legal_name` (when sent) ∈ `LegalNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`; blank silently cleared; garbage could persist; len<2 or >200 was late service **400**). Company **Company legal name** input (`aria-label`); Save omits blank so prior value is kept.
+
+`company_name` (when sent) ∈ `CompanyNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`; blank/`X` late service **400**; garbage could persist). Company **Company trading name** input (`aria-label`); Save always sends (required trading name).
 
 `fiscal_year_start` (when sent) ∈ valid calendar `MM-DD` (`FiscalYearStartValue`; strip; blank/invalid/`13-01`/`02-30` → **422** — was free `str` with length-only late service **400**; garbage could persist). Company **Fiscal year start** input.
 

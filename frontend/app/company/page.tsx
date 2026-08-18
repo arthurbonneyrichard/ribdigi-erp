@@ -298,6 +298,7 @@ export default function Page() {
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
           placeholder="Company name (trading)"
+          aria-label="Company trading name"
         />
         <input
           value={tenant.legal_name || ''}
