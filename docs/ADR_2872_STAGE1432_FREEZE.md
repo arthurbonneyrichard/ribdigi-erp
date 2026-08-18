@@ -31,3 +31,7 @@ Stage 1433 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Swage Gate, Transfer Swage Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1433 opened under **ADR-2873** after CONTINUE/NEXT (Tenant MVP Transfer Ferruleclamp Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2874**. Stage 1432 feature scope remains frozen.
