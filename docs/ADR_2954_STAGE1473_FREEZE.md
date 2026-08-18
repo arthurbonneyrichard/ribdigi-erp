@@ -31,3 +31,7 @@ Stage 1474 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hydroform Gate, Transfer Hydroform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1474 opened under **ADR-2955** after CONTINUE/NEXT (Tenant MVP Transfer Superform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2956**. Stage 1473 feature scope remains frozen.
