@@ -907,6 +907,7 @@ Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`
 **List:** `GET /purchasing/invoices` — optional Query `status` ∈ `draft`|`unpaid`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Invoices **Purchase invoice status filter** (`piManageFilter`; client filter over full cache).  
 **Create:** `POST /purchasing/invoices`  
 **Get:** `GET /purchasing/invoices/{invoice_id}`  
+**Update draft:** `PATCH /purchasing/invoices/{invoice_id}` — draft only (409 otherwise). Body `PurchaseInvoiceUpdate` may include `supplier_invoice_number`, `notes`, optional `invoice_date` / `due_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Purchasing **Supplier invoice OCR** **Purchase invoice OCR date** input (`aria-label`); Apply omits blank date.  
 **Pay:** `POST /purchasing/invoices/{invoice_id}/payments`  
 **Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to invoice `notes` as `Cancel: …` and stored in audit `pi_cancelled.details.reason`; already-cancelled is idempotent); allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted. Serialize includes `can_cancel` + `notes`. Purchasing Invoices **Cancel reason** UI (BR-6.5).
 

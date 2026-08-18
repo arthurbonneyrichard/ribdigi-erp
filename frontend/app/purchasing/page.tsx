@@ -961,7 +961,8 @@ export default function Page() {
         body.supplier_invoice_number = ocrDraft.supplier_invoice_number;
       }
       if (ocrDraft.notes !== '') body.notes = ocrDraft.notes;
-      if (ocrDraft.invoice_date !== '') body.invoice_date = ocrDraft.invoice_date;
+      const invoiceDate = ocrDraft.invoice_date.trim();
+      if (invoiceDate !== '') body.invoice_date = invoiceDate;
       await api(`/purchasing/invoices/${ocrFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage('OCR suggestions applied to draft invoice');
       setOcrFor(null);
@@ -2416,6 +2417,7 @@ export default function Page() {
                   placeholder="Supplier invoice #"
                 />
                 <input
+                  aria-label="Purchase invoice OCR date"
                   value={ocrDraft.invoice_date}
                   onChange={(e) => setOcrDraft({ ...ocrDraft, invoice_date: e.target.value })}
                   placeholder="Invoice date YYYY-MM-DD"

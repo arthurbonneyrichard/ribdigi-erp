@@ -6768,8 +6768,8 @@ async def patch_purchase_invoice(
         invoice_id=invoice_id,
         supplier_invoice_number=payload.supplier_invoice_number,
         notes=payload.notes,
-        invoice_date=payload.invoice_date,
-        due_date=payload.due_date,
+        invoice_date=reports_svc.parse_date(payload.invoice_date),
+        due_date=reports_svc.parse_date(payload.due_date),
     )
     await audit_svc.record_event(
         db,

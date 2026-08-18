@@ -1963,10 +1963,17 @@ class PurchaseInvoiceCreate(BaseModel):
 
 
 class PurchaseInvoiceUpdate(BaseModel):
+    """PATCH draft purchase invoice — optional OCR/manual date fields.
+
+    Optional `invoice_date` / `due_date` ∈ `IsoDateQueryValue`; omit/`null` → no
+    change; blank/invalid → **422** (was free `datetime`; OpenAPI date-time;
+    padded dates inconsistent). API `reports.parse_date` remains defense-in-depth.
+    """
+
     supplier_invoice_number: str | None = None
     notes: str | None = None
-    invoice_date: datetime | None = None
-    due_date: datetime | None = None
+    invoice_date: IsoDateQueryValue | None = None
+    due_date: IsoDateQueryValue | None = None
 
 
 class PurchaseInvoiceCancel(BaseModel):
@@ -2470,7 +2477,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),
