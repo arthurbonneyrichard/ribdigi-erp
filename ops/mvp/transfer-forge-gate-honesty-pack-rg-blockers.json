@@ -1,0 +1,20 @@
+{
+  "id": "transfer-forge-gate-honesty-pack-rg-blockers",
+  "stage": 1463,
+  "pack": "B1",
+  "doc": "docs/TRANSFER_FORGE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "hub": "docs/TRANSFER_FORGE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "transfer_forge_gate_honesty_complete_claimed": "REMAINING",
+    "transfer_forge_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_transfer_forge_gate_honesty": "NON_CLAIM",
+    "transfer_forge_gate_pack_as_transfer_forge_gate_complete": "NON_CLAIM",
+    "stage392_as_golive": "NON_CLAIM",
+    "packaging_as_offline_complete": "NON_CLAIM"
+  },
+  "packaging_complete": true,
+  "message": "Stage 1463 B1 Transfer Forge Gate Honesty Pack blocker matrix packaging only."
+}
