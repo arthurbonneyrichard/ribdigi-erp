@@ -31,3 +31,7 @@ Stage 1458 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hem Gate, Transfer Hem Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1458 opened under **ADR-2923** after CONTINUE/NEXT (Tenant MVP Transfer Curl Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2924**. Stage 1457 feature scope remains frozen.
