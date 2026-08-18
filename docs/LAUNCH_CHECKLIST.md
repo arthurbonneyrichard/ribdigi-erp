@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1394 track opened (ADR-2795: `test_stage1394_open.py`, `docs/STAGE_1394_PLAN.md`) — Transfer Setscrew Gate Honesty Pack Remaining-Gate Index; closed under ADR-2796
+- [x] Transfer Setscrew Gate Honesty Pack remaining-gate hub (Stage 1394 I1: `test_stage1394_index_i1.py`, `docs/TRANSFER_SETSCREW_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Setscrew Gate Honesty Pack blocker matrix (Stage 1394 B1: `test_stage1394_blockers_b1.py`, `docs/TRANSFER_SETSCREW_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1393 / Stage 1392 / Stage 392 / CHANGE_IMPACT pointers (Stage 1394 P1: `test_stage1394_pointers_p1.py`, `docs/TRANSFER_SETSCREW_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1394 fidelity sync (D1: `test_stage1394_fidelity_d1.py`, `docs/STAGE_1394_FIDELITY.md`)
+- [x] Stage 1394 exit + freeze (H1394x: `test_stage1394_exit_h1394x.py`, `docs/STAGE_1394_EXIT_CRITERIA.md`, ADR-2796)
 Stage 1393 track opened (ADR-2793: `test_stage1393_open.py`, `docs/STAGE_1393_PLAN.md`) — Transfer Jamnut Gate Honesty Pack Remaining-Gate Index; closed under ADR-2794
 - [x] Transfer Jamnut Gate Honesty Pack remaining-gate hub (Stage 1393 I1: `test_stage1393_index_i1.py`, `docs/TRANSFER_JAMNUT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Jamnut Gate Honesty Pack blocker matrix (Stage 1393 B1: `test_stage1393_blockers_b1.py`, `docs/TRANSFER_JAMNUT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
