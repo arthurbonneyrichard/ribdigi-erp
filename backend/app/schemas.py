@@ -638,7 +638,9 @@ class PlatformStaffCreate(BaseModel):
     # Same Literal as grant; omit → platform_support; blank/invalid → 422
     # (was free dict; API `role or "platform_support"` silently coerced "")
     role: PlatformRoleValue = "platform_support"
-    phone: str | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on platform staff create).
+    phone: E164PhoneValue | None = None
 
 
 class PlatformStaffUpdate(BaseModel):
@@ -646,7 +648,9 @@ class PlatformStaffUpdate(BaseModel):
 
     full_name: str | None = Field(default=None, min_length=1)
     role: PlatformRoleValue | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on platform staff PATCH).
+    phone: E164PhoneValue | None = None
     is_active: bool | None = None
 
 

@@ -37,6 +37,7 @@ export default function PlatformStaffPage() {
     full_name: '',
     password: '',
     role: 'platform_support',
+    phone: '',
   });
   const [grantRole, setGrantRole] = useState('platform_support');
   const [busy, setBusy] = useState(false);
@@ -71,9 +72,15 @@ export default function PlatformStaffPage() {
     try {
       await api('/platform/staff', {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          email: form.email.trim(),
+          full_name: form.full_name.trim(),
+          password: form.password,
+          role: form.role,
+          phone: form.phone.trim() || null,
+        }),
       });
-      setForm({ email: '', full_name: '', password: '', role: 'platform_support' });
+      setForm({ email: '', full_name: '', password: '', role: 'platform_support', phone: '' });
       setMessage('Staff user created');
       await refresh();
     } catch (err: any) {
@@ -229,6 +236,15 @@ export default function PlatformStaffPage() {
                     </option>
                   ))}
               </select>
+            </label>
+            <label>
+              <span>Phone</span>
+              <input
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="Phone (E.164 e.g. +233...)"
+                aria-label="Platform staff phone"
+              />
             </label>
             <button type="submit" disabled={busy} aria-label="Create platform staff">
               {busy ? 'Saving…' : 'Create staff'}
