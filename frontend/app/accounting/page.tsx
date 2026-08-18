@@ -1455,20 +1455,23 @@ export default function Page() {
                     value={newBankName}
                     onChange={(e) => setNewBankName(e.target.value)}
                     placeholder="Bank name"
+                    aria-label="Bank name"
                   />
                   <input
                     value={newAcctNumber}
                     onChange={(e) => setNewAcctNumber(e.target.value)}
                     placeholder="Account number"
+                    aria-label="Bank account number"
                   />
                   <input
                     value={newBankBranch}
                     onChange={(e) => setNewBankBranch(e.target.value)}
                     placeholder="Branch"
+                    aria-label="Bank branch"
                   />
                 </>
               )}
-              <button type="button" onClick={createLiquidAccount}>
+              <button type="button" onClick={createLiquidAccount} aria-label="Create liquid account">
                 Create account
               </button>
             </div>

@@ -1238,7 +1238,7 @@ Posting a journal (`POST /accounting/journal-entries`) rejects `entry_date` (def
 
 ### 10.3 Cash & Bank Accounts
 **List liquid:** `GET /accounting/liquid-accounts`  
-**Create account:** `POST /accounting/accounts` — `account_type` schema `Literal["asset","liability","equity","income","expense"]` (omit → `asset`; blank/invalid → **422**); `liquid_kind` schema `Literal["cash","bank"] | null` (omit/null = non-liquid; blank/invalid → **422**; when set, account is forced to `asset`)  
+**Create account:** `POST /accounting/accounts` — `account_type` schema `Literal["asset","liability","equity","income","expense"]` (omit → `asset`; blank/invalid → **422**); `liquid_kind` schema `Literal["cash","bank"] | null` (omit/null = non-liquid; blank/invalid → **422**; when set, account is forced to `asset`); optional `account_number` ∈ `BankAccountNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 64); omit/`null` OK; blank/`not-an-account`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Accounting **Bank account number** input (`aria-label`; shown when Kind = bank); create sends `null` when blank.  
 ```json
 { "code": "1001", "name": "Petty Cash", "liquid_kind": "cash" }
 ```

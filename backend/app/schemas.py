@@ -675,14 +675,18 @@ class AccountCreate(BaseModel):
     # omit/null = non-liquid; blank/invalid → 422 (no silent None from "")
     liquid_kind: Literal["cash", "bank"] | None = None
     bank_name: str | None = None
-    account_number: str | None = None
+    # omit/`null` → no number; blank/`not-an-account`/`http://…` → **422**
+    # (was free `str`; blank silent→null; garbage could persist on liquid bank COA).
+    account_number: BankAccountNumberValue | None = None
     bank_branch: str | None = None
 
 
 class AccountUpdate(BaseModel):
     name: str | None = None
     bank_name: str | None = None
-    account_number: str | None = None
+    # omit/`null` → no change; blank/`not-an-account`/`http://…` → **422**
+    # (was free `str`; blank silent→null; garbage could persist).
+    account_number: BankAccountNumberValue | None = None
     bank_branch: str | None = None
     is_active: bool | None = None
 
@@ -2467,6 +2471,44 @@ SmtpHostValue = Annotated[
     str,
     BeforeValidator(coerce_smtp_host_value),
     AfterValidator(validate_smtp_host_value),
+]
+
+
+def coerce_bank_account_number_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for account_number 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_bank_account_number_value(value: str) -> str:
+    """AfterValidator: alphanumeric (+ spaces/hyphens); blank/URL/garbage → 422."""
+    if not value:
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 64:
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,63}", value):
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Liquid bank COA account_number — digits/letters with optional spaces/hyphens.
+BankAccountNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_account_number_value),
+    AfterValidator(validate_bank_account_number_value),
 ]
 
 
