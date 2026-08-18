@@ -31,3 +31,7 @@ Stage 1493 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Coinform Gate, Transfer Coinform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1493 opened under **ADR-2993** after CONTINUE/NEXT (Tenant MVP Transfer Blankform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2994**. Stage 1492 feature scope remains frozen.
