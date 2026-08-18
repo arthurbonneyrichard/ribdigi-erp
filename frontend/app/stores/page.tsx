@@ -246,7 +246,8 @@ export default function Page() {
         body: JSON.stringify({
           code,
           name,
-          address: address || undefined,
+          // Omit blank address so Create does not 422 (AddressValue).
+          ...(address.trim() ? { address: address.trim() } : {}),
           phone: phone.trim() || null,
           manager_id: managerId || null,
           branch_id: branchId || null,
@@ -309,7 +310,8 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           name: editName.trim() || undefined,
-          address: editAddress,
+          // Omit blank address so Save does not 422 (AddressValue); leave prior.
+          ...(editAddress.trim() ? { address: editAddress.trim() } : {}),
           // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
           ...(editPhone.trim() ? { phone: editPhone.trim() } : {}),
           manager_id: editManagerId || null,
@@ -917,7 +919,12 @@ export default function Page() {
           <div style={{ display: 'grid', gap: 8 }}>
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Address"
+              aria-label="Store address"
+            />
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -1361,6 +1368,7 @@ export default function Page() {
               value={editAddress}
               onChange={(e) => setEditAddress(e.target.value)}
               placeholder="Address"
+              aria-label="Store address"
             />
             <input
               value={editPhone}

@@ -1418,7 +1418,9 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 `phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); create omit/`null` → no phone; PATCH omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Store phone** input (`aria-label`); create sends `null` when blank; edit omits blank phone.
 
-**Update fields:** `name`, `address`, `phone` ∈ `E164PhoneValue` (same rules), `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours` (same typed map). Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
+`address` (when sent) ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no address; PATCH omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Store address** input (`aria-label`); create/edit omit blank.
+
+**Update fields:** `name`, `address` ∈ `AddressValue` (same rules), `phone` ∈ `E164PhoneValue` (same rules), `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours` (same typed map). Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
 
 **Cash drawer:** `PATCH /stores/{store_id}/drawer` — see §8.5 (`drawer_mode` OpenAPI `Literal`; blank/invalid → **422**).
 

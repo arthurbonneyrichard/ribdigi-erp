@@ -1490,7 +1490,9 @@ class StoreOperatingHours(BaseModel):
 class StoreCreate(BaseModel):
     name: str
     code: str
-    address: str | None = None
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/`garbage` could persist on create). Same AddressValue as Company.
+    address: AddressValue | None = None
     # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on create).
     phone: E164PhoneValue | None = None
@@ -1501,7 +1503,9 @@ class StoreCreate(BaseModel):
 
 class StoreUpdate(BaseModel):
     name: str | None = None
-    address: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist). Same AddressValue as Company.
+    address: AddressValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank silently cleared; garbage could persist).
     phone: E164PhoneValue | None = None
