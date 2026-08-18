@@ -31,3 +31,7 @@ Stage 1449 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Draw Gate, Transfer Draw Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1449 opened under **ADR-2905** after CONTINUE/NEXT (Tenant MVP Transfer Pierce Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2906**. Stage 1448 feature scope remains frozen.
