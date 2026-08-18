@@ -9533,7 +9533,7 @@ async def report_schedules_run_due(
 
 @api.get("/reports/sales/daily")
 async def report_sales_daily(
-    date: str | None = None,
+    date: Annotated[IsoDateQueryValue | None, Query()] = None,
     store_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),

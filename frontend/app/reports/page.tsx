@@ -203,7 +203,11 @@ export default function Page() {
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly, returns] = await Promise.all([
-          api(`/reports/sales/daily${qs()}`),
+          api(
+            `/reports/sales/daily${qs(
+              toDate || fromDate ? { date: toDate || fromDate } : {}
+            )}`
+          ),
           api(`/reports/sales/monthly${qs()}`),
           api(
             `/reports/sales/returns${qs({
@@ -751,7 +755,10 @@ export default function Page() {
         <>
           <div className="grid">
             <div className="card">
-              <h3>Today{data.daily?.store_name ? ` · ${data.daily.store_name}` : ''}</h3>
+              <h3>
+                {data.daily?.date ? `Day · ${data.daily.date}` : 'Today'}
+                {data.daily?.store_name ? ` · ${data.daily.store_name}` : ''}
+              </h3>
               <p>Revenue: {data.daily?.total_revenue}</p>
               <p>Invoices: {data.daily?.invoice_count} · POS: {data.daily?.pos_count}</p>
             </div>
