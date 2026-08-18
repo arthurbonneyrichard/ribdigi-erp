@@ -31,3 +31,7 @@ Stage 1383 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Spherical Gate, Transfer Spherical Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1383 opened under **ADR-2773** after CONTINUE/NEXT (Tenant MVP Transfer Radial Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2774**. Stage 1382 feature scope remains frozen.
