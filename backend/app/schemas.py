@@ -1230,7 +1230,10 @@ class ExpenseCreate(BaseModel):
     store_id: str | None = None
     branch_id: str | None = None
     department_id: str | None = None
-    expense_date: datetime | None = None
+    # omit/`null` → service default (today); blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent). Same
+    # IsoDateQueryValue as AI draft expense_date / payment cheque_date.
+    expense_date: IsoDateQueryValue | None = None
 
 
 class AiChatBody(BaseModel):
@@ -1339,7 +1342,10 @@ class ExpenseUpdate(BaseModel):
     payment_method: ExpensePaymentMethod | None = None
     reference: str | None = None
     payee: str | None = None
-    expense_date: datetime | None = None
+    # omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422** (was free
+    # `datetime`; OpenAPI date-time; padded dates inconsistent). Same
+    # IsoDateQueryValue as create / AI draft / payment cheque_date.
+    expense_date: IsoDateQueryValue | None = None
     store_id: str | None = None
     branch_id: str | None = None
     department_id: str | None = None

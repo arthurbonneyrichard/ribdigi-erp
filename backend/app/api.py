@@ -8016,7 +8016,7 @@ async def add_expense(
         branch_id=payload.branch_id,
         department_id=payload.department_id,
         liquid_account_id=payload.liquid_account_id,
-        expense_date=payload.expense_date,
+        expense_date=reports_svc.parse_date(payload.expense_date),
     )
     await db.commit()
     return env(await expenses_svc.serialize_expense_full(db, expense), "Expense recorded")
@@ -8051,7 +8051,7 @@ async def patch_expense(
         description=payload.description,
         payee=payload.payee,
         reference=payload.reference,
-        expense_date=payload.expense_date,
+        expense_date=reports_svc.parse_date(payload.expense_date),
         payment_method=payload.payment_method,
         category_id=payload.category_id,
         category=payload.category,

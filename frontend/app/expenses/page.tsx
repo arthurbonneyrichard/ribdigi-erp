@@ -81,6 +81,7 @@ export default function Page() {
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [reference, setReference] = useState('');
+  const [expenseDate, setExpenseDate] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [approveComment, setApproveComment] = useState('');
   const [ocrFor, setOcrFor] = useState<string | null>(null);
@@ -275,6 +276,8 @@ export default function Page() {
           amount: Number(amount),
           description,
           payee: payee || undefined,
+          // null when blank so Create does not 422 (IsoDateQueryValue); omit → today.
+          expense_date: expenseDate.trim() || null,
           payment_method: paymentMethod,
           liquid_account_id: liquidAccountId || null,
           reference: reference || undefined,
@@ -287,6 +290,7 @@ export default function Page() {
       setDescription('');
       setPayee('');
       setReference('');
+      setExpenseDate('');
       setStoreId('');
       setBranchId('');
       setDepartmentId('');
@@ -1202,6 +1206,13 @@ export default function Page() {
             onChange={(e) => setReference(e.target.value)}
             placeholder="Reference"
           />
+          <input
+            value={expenseDate}
+            onChange={(e) => setExpenseDate(e.target.value)}
+            placeholder="Date YYYY-MM-DD (optional)"
+            aria-label="Expense date"
+            title="Expense date (optional YYYY-MM-DD)"
+          />
           <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank transfer</option>
@@ -1336,6 +1347,7 @@ export default function Page() {
               value={ocrDraft.expense_date}
               onChange={(e) => setOcrDraft({ ...ocrDraft, expense_date: e.target.value })}
               placeholder="Date YYYY-MM-DD"
+              aria-label="Expense OCR date"
             />
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" onClick={applyOcr}>
