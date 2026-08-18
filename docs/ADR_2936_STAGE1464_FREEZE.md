@@ -31,3 +31,7 @@ Stage 1465 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Swageform Gate, Transfer Swageform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1465 opened under **ADR-2937** after CONTINUE/NEXT (Tenant MVP Transfer Upset Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2938**. Stage 1464 feature scope remains frozen.
