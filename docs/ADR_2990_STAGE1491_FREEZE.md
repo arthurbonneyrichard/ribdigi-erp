@@ -31,3 +31,7 @@ Stage 1492 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Forgeform Gate, Transfer Forgeform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1492 opened under **ADR-2991** after CONTINUE/NEXT (Tenant MVP Transfer Coinform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2992**. Stage 1491 feature scope remains frozen.
