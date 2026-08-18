@@ -483,7 +483,9 @@ class SmsSettingsUpdate(BaseModel):
 
 class ProfileUpdate(BaseModel):
     full_name: str | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared phone; garbage was late **400** via normalize_phone).
+    phone: E164PhoneValue | None = None
 
 
 class RefreshRequest(BaseModel):

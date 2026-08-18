@@ -2153,8 +2153,6 @@ async def update_me(
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
-    from app import sms as sms_svc
-
     user = await db.get(m.User, claims["sub"])
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -2164,14 +2162,8 @@ async def update_me(
             raise HTTPException(status_code=400, detail="full_name cannot be empty")
         user.full_name = name
     if payload.phone is not None:
-        phone = payload.phone.strip()
-        if phone == "":
-            user.phone = None
-        else:
-            normalized = sms_svc.normalize_phone(phone)
-            if not normalized:
-                raise HTTPException(status_code=400, detail="Invalid phone number")
-            user.phone = normalized if normalized.startswith("+") else phone.strip()
+        # ProfileUpdate.phone ∈ E164PhoneValue — already stripped/normalized (+…).
+        user.phone = payload.phone
     await db.commit()
     return env(
         {
