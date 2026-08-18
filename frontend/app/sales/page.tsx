@@ -1097,8 +1097,9 @@ export default function Page() {
           <input
             value={customerPhone}
             onChange={(e) => setCustomerPhone(e.target.value)}
-            placeholder="Phone"
-            style={{ width: 120 }}
+            placeholder="Phone (E.164 e.g. +233...)"
+            aria-label="Customer phone"
+            style={{ width: 160 }}
           />
           <input
             value={customerAddress}

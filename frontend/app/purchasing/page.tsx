@@ -1615,8 +1615,9 @@ export default function Page() {
           <input
             value={supplierPhone}
             onChange={(e) => setSupplierPhone(e.target.value)}
-            placeholder="Phone"
-            style={{ width: 120 }}
+            placeholder="Phone (E.164 e.g. +233...)"
+            aria-label="Supplier phone"
+            style={{ width: 160 }}
           />
           <input
             value={supplierAddress}

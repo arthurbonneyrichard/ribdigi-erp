@@ -1001,7 +1001,9 @@ class PartyCreate(BaseModel):
     category: str | None = None
     status: Literal["active", "inactive"] = "active"
     email: EmailStr | None = None
-    phone: str | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier create).
+    phone: E164PhoneValue | None = None
     address: str | None = None
     latitude: float | None = None
     longitude: float | None = None
@@ -1020,7 +1022,9 @@ class PartyUpdate(BaseModel):
     category: str | None = None
     status: Literal["active", "inactive"] | None = None
     email: EmailStr | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier PATCH).
+    phone: E164PhoneValue | None = None
     address: str | None = None
     latitude: float | None = None
     longitude: float | None = None
