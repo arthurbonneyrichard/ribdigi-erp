@@ -630,15 +630,18 @@ export default function Page() {
           />
           <label className="muted">From email</label>
           <input
+            type="email"
             value={emailFromEmail}
             onChange={(e) => setEmailFromEmail(e.target.value)}
             placeholder="noreply@example.com"
+            aria-label="Company from email"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">From name</label>
           <input
             value={emailFromName}
             onChange={(e) => setEmailFromName(e.target.value)}
+            aria-label="Company from name"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
@@ -672,11 +675,12 @@ export default function Page() {
                     host: emailHost,
                     port: Number(emailPort) || 587,
                     username: emailUser,
-                    from_email: emailFromEmail,
                     from_name: emailFromName,
                     use_tls: emailUseTls,
                     use_ssl: emailUseSsl,
                   };
+                  const trimmedFrom = emailFromEmail.trim();
+                  if (trimmedFrom) body.from_email = trimmedFrom;
                   if (emailPassword) body.password = emailPassword;
                   const r = await api('/settings/email', {
                     method: 'PATCH',
@@ -690,6 +694,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Save email settings"
             >
               Save email settings
             </button>
@@ -703,6 +708,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Send test email to me"
             >
               Send test email to me
             </button>

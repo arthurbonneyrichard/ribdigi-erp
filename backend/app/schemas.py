@@ -433,12 +433,21 @@ class EmailTestRequest(BaseModel):
 
 
 class EmailSettingsUpdate(BaseModel):
+    """PATCH /settings/email (BR-20.3).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `from_email` ∈ `EmailStr`;
+    omit/`null` → no change; blank/`not-an-email` → **422** (was free `str`;
+    blank/garbage were accepted into tenant SMTP config).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     host: str | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
     username: str | None = None
     password: str | None = None
     clear_password: bool = False
-    from_email: str | None = None
+    from_email: EmailStr | None = None
     from_name: str | None = None
     use_tls: bool | None = None
     use_ssl: bool | None = None

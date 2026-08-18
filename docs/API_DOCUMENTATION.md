@@ -363,8 +363,8 @@ Create/patch `role` uses the same platform-role schema `Literal` as grant (strip
 
 ### 3.5z Email / SMTP settings (BR-20.3)
 **Get:** `GET /settings/email` (`company_admin` / `super_admin`) — resolved status (`source`: `tenant` | `env` | `none`); never returns password (only `has_password`).  
-**Patch:** `PATCH /settings/email` — tenant SMTP override stored on `tenants.email_settings` (password encrypted as `password_enc`). Omit `password` to keep existing; `clear_password: true` removes it. Requires host + from_email for tenant override to take precedence over env.  
-**Test:** `POST /settings/email/test` — optional `{ "to": "..." }`; uses resolved tenant/env config (console when unset).
+**Patch:** `PATCH /settings/email` — typed body `EmailSettingsUpdate` (`extra=forbid`; unknown keys → **422**). Tenant SMTP override stored on `tenants.email_settings` (password encrypted as `password_enc`). Omit `password` to keep existing; `clear_password: true` removes it. Optional `from_email` ∈ `EmailStr`; omit/`null` → no change; blank/`not-an-email` → **422** (was free `str`; blank/garbage were accepted). Requires host + from_email for tenant override to take precedence over env. Company **Company from email** + **Save email settings**.  
+**Test:** `POST /settings/email/test` — optional `{ "to": "..." }` (`EmailStr`); uses resolved tenant/env config (console when unset).
 
 ```json
 {
