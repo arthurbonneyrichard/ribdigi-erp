@@ -42,6 +42,7 @@ type Customer = {
   name: string;
   email?: string | null;
   phone?: string | null;
+  status?: string | null;
   customer_group_id?: string | null;
   customer_group?: { id: string; name: string; discount_percent: number } | null;
 };

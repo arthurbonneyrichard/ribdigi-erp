@@ -86,7 +86,7 @@ type Warehouse = {
   is_active?: boolean;
 };
 type UserRow = { id: string; email?: string; full_name?: string; name?: string };
-type Product = { id: string; name: string; sku: string; stock_qty: number };
+type Product = { id: string; name: string; sku: string; stock_qty: number; is_active?: boolean };
 type Transfer = {
   id: string;
   transfer_number: string;

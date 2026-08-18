@@ -43,7 +43,9 @@ export function formatNumber(
     groups.unshift(intPart.slice(Math.max(0, i - 3), i));
   }
   const joined =
-    p.thousand_separator === '' ? groups.join('') : groups.join(p.thousand_separator);
+    p.thousand_separator === '' || p.thousand_separator == null
+      ? groups.join('')
+      : groups.join(p.thousand_separator);
   const sign = n < 0 ? '-' : '';
   if (fractionDigits <= 0) return `${sign}${joined}`;
   return `${sign}${joined}${p.decimal_separator}${fracPart}`;

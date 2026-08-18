@@ -31,7 +31,7 @@ type Supplier = {
   category?: string | null;
   status?: string | null;
 };
-type Product = { id: string; name: string; sku: string; cost_price: number; tracks_batches?: boolean };
+type Product = { id: string; name: string; sku: string; cost_price: number; tracks_batches?: boolean; is_active?: boolean };
 type PurchaseRequest = {
   id: string;
   request_number: string;
