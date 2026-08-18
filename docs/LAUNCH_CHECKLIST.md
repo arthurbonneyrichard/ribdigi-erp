@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1406 track opened (ADR-2819: `test_stage1406_open.py`, `docs/STAGE_1406_PLAN.md`) — Transfer Splitpin Gate Honesty Pack Remaining-Gate Index; closed under ADR-2820
+- [x] Transfer Splitpin Gate Honesty Pack remaining-gate hub (Stage 1406 I1: `test_stage1406_index_i1.py`, `docs/TRANSFER_SPLITPIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Splitpin Gate Honesty Pack blocker matrix (Stage 1406 B1: `test_stage1406_blockers_b1.py`, `docs/TRANSFER_SPLITPIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1405 / Stage 1404 / Stage 392 / CHANGE_IMPACT pointers (Stage 1406 P1: `test_stage1406_pointers_p1.py`, `docs/TRANSFER_SPLITPIN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1406 fidelity sync (D1: `test_stage1406_fidelity_d1.py`, `docs/STAGE_1406_FIDELITY.md`)
+- [x] Stage 1406 exit + freeze (H1406x: `test_stage1406_exit_h1406x.py`, `docs/STAGE_1406_EXIT_CRITERIA.md`, ADR-2820)
 Stage 1405 track opened (ADR-2817: `test_stage1405_open.py`, `docs/STAGE_1405_PLAN.md`) — Transfer Shearpin Gate Honesty Pack Remaining-Gate Index; closed under ADR-2818
 - [x] Transfer Shearpin Gate Honesty Pack remaining-gate hub (Stage 1405 I1: `test_stage1405_index_i1.py`, `docs/TRANSFER_SHEARPIN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Shearpin Gate Honesty Pack blocker matrix (Stage 1405 B1: `test_stage1405_blockers_b1.py`, `docs/TRANSFER_SHEARPIN_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

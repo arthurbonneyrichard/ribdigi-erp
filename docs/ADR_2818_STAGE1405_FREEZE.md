@@ -31,3 +31,7 @@ Stage 1406 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shearpin Gate, Transfer Shearpin Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1406 opened under **ADR-2819** after CONTINUE/NEXT (Tenant MVP Transfer Splitpin Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2820**. Stage 1405 feature scope remains frozen.
