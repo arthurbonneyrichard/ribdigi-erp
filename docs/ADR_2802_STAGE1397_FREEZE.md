@@ -31,3 +31,7 @@ Stage 1398 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Cotterpin Gate, Transfer Cotterpin Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1398 opened under **ADR-2803** after CONTINUE/NEXT (Tenant MVP Transfer Clevispin Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2804**. Stage 1397 feature scope remains frozen.
