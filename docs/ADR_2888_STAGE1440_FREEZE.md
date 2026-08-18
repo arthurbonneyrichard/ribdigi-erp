@@ -31,3 +31,7 @@ Stage 1441 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Dolly Gate, Transfer Dolly Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1441 opened under **ADR-2889** after CONTINUE/NEXT (Tenant MVP Transfer Bucking Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2890**. Stage 1440 feature scope remains frozen.
