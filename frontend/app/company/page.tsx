@@ -611,6 +611,7 @@ export default function Page() {
             value={emailHost}
             onChange={(e) => setEmailHost(e.target.value)}
             placeholder="smtp.example.com"
+            aria-label="Company SMTP host"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">Port</label>
@@ -680,13 +681,15 @@ export default function Page() {
                 setError('');
                 try {
                   const body: Record<string, unknown> = {
-                    host: emailHost,
                     port: Number(emailPort) || 587,
                     username: emailUser,
                     from_name: emailFromName,
                     use_tls: emailUseTls,
                     use_ssl: emailUseSsl,
                   };
+                  // Omit blank host so Save does not 422 (SmtpHostValue); leave prior value.
+                  const trimmedHost = emailHost.trim();
+                  if (trimmedHost) body.host = trimmedHost;
                   const trimmedFrom = emailFromEmail.trim();
                   if (trimmedFrom) body.from_email = trimmedFrom;
                   if (emailPassword) body.password = emailPassword;

@@ -437,12 +437,14 @@ class EmailSettingsUpdate(BaseModel):
 
     Unknown keys → **422** (`extra=forbid`). Optional `from_email` ∈ `EmailStr`;
     omit/`null` → no change; blank/`not-an-email` → **422** (was free `str`;
-    blank/garbage were accepted into tenant SMTP config).
+    blank/garbage were accepted into tenant SMTP config). Optional `host` ∈
+    `SmtpHostValue`; omit/`null` → no change; blank/`http://…`/`not a host` → **422**
+    (was free `str`; blank/garbage were accepted into tenant SMTP host).
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    host: str | None = None
+    host: SmtpHostValue | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
     username: str | None = None
     password: str | None = None
@@ -2426,6 +2428,41 @@ E164PhoneValue = Annotated[
     str,
     BeforeValidator(coerce_e164_phone_value),
     AfterValidator(validate_e164_phone_value),
+]
+
+
+def coerce_smtp_host_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for host 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_smtp_host_value(value: str) -> str:
+    """AfterValidator: DNS hostname / IPv4 / localhost; blank/URL/garbage → 422."""
+    if not value:
+        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+    if len(value) > 253:
+        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+    lowered = value.lower()
+    if "://" in lowered or "@" in lowered or any(ch.isspace() for ch in value):
+        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+    # localhost, dotted IPv4, or DNS labels (letters/digits/hyphen, dots between).
+    if not re.fullmatch(
+        r"(?:localhost|(?:\d{1,3}\.){3}\d{1,3}|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)",
+        lowered,
+    ):
+        raise ValueError("SMTP host must be a hostname (e.g. smtp.example.com)")
+    return lowered
+
+
+# Company SMTP host — hostname/IPv4/localhost (no URL scheme / email / spaces).
+SmtpHostValue = Annotated[
+    str,
+    BeforeValidator(coerce_smtp_host_value),
+    AfterValidator(validate_smtp_host_value),
 ]
 
 
