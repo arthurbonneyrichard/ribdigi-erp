@@ -31,3 +31,7 @@ Stage 1413 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Cotterless Gate, Transfer Cotterless Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1413 opened under **ADR-2833** after CONTINUE/NEXT (Tenant MVP Transfer Bowshackle Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2834**. Stage 1412 feature scope remains frozen.
