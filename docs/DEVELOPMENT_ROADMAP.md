@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 1511 D1 (2026-08-14):** Transfer Foilform Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1511_FIDELITY.md` (`test_stage1511_fidelity_d1.py`). Open ADR: `docs/ADR_3029_STAGE1511_OPEN.md`; plan `docs/STAGE_1511_PLAN.md`.
+
+**Stage 1511 exit (2026-08-14):** I1, B1, P1, D1, H1511x met — `docs/STAGE_1511_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_3030_STAGE1511_FREEZE.md`. Fidelity: `docs/STAGE_1511_FIDELITY.md`.
+
 **Stage 1510 D1 (2026-08-14):** Transfer Counterform Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_1510_FIDELITY.md` (`test_stage1510_fidelity_d1.py`). Open ADR: `docs/ADR_3027_STAGE1510_OPEN.md`; plan `docs/STAGE_1510_PLAN.md`.
 
 **Stage 1510 exit (2026-08-14):** I1, B1, P1, D1, H1510x met — `docs/STAGE_1510_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_3028_STAGE1510_FREEZE.md`. Fidelity: `docs/STAGE_1510_FIDELITY.md`.
