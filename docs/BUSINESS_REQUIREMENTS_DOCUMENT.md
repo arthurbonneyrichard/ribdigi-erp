@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1451 D1 Transfer Notch Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1451_FIDELITY.md` (`test_stage1451_fidelity_d1.py`); Offline Complete / Transfer Notch Gate honesty / go-live still MISSING.
 Stage 1450 D1 Transfer Trim Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1450_FIDELITY.md` (`test_stage1450_fidelity_d1.py`); Offline Complete / Transfer Trim Gate honesty / go-live still MISSING.
 Stage 1449 D1 Transfer Pierce Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1449_FIDELITY.md` (`test_stage1449_fidelity_d1.py`); Offline Complete / Transfer Pierce Gate honesty / go-live still MISSING.
 Stage 1448 D1 Transfer Draw Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1448_FIDELITY.md` (`test_stage1448_fidelity_d1.py`); Offline Complete / Transfer Draw Gate honesty / go-live still MISSING.

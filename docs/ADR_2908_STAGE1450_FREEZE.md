@@ -31,3 +31,7 @@ Stage 1451 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Trim Gate, Transfer Trim Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1451 opened under **ADR-2909** after CONTINUE/NEXT (Tenant MVP Transfer Notch Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2910**. Stage 1450 feature scope remains frozen.
