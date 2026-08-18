@@ -514,7 +514,10 @@ class TenantProfileUpdate(BaseModel):
     # blank silently cleared company phone; garbage could persist).
     phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    website: str | None = None
+    # omit/`null` → no change; blank/`ftp://`/`not-a-url`/plain-http remote → **422**
+    # (was free `str`; blank silently cleared; garbage like `www.x` could persist).
+    # Same absolute http(s) honesty as Webhook/Bank feed URLs (`WebhookUrlValue`).
+    website: WebhookUrlValue | None = None
     address: str | None = None
     legal_name: str | None = None
     registration_number: str | None = None

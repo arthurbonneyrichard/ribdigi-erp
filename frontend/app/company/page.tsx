@@ -114,7 +114,10 @@ export default function Page() {
             ? { phone: String(tenant.phone).trim() }
             : {}),
           email: tenant.email,
-          website: tenant.website,
+          // Omit blank website so Save does not 422 (WebhookUrlValue); leave prior value.
+          ...(String(tenant.website || '').trim()
+            ? { website: String(tenant.website).trim() }
+            : {}),
           address: tenant.address,
           legal_name: tenant.legal_name,
           registration_number: tenant.registration_number,
@@ -338,7 +341,8 @@ export default function Page() {
         <input
           value={tenant.website || ''}
           onChange={(e) => setTenant({ ...tenant, website: e.target.value })}
-          placeholder="Website"
+          placeholder="Website (https://…)"
+          aria-label="Company website"
         />
         <textarea
           value={tenant.address || ''}
