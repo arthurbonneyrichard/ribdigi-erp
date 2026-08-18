@@ -31,3 +31,7 @@ Stage 1481 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Panelform Gate, Transfer Panelform Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1481 opened under **ADR-2969** after CONTINUE/NEXT (Tenant MVP Transfer Creaseform Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2970**. Stage 1480 feature scope remains frozen.
