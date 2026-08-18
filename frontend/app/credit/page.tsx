@@ -12,6 +12,8 @@ export default function Page() {
   const [partyId, setPartyId] = useState('');
   const [statement, setStatement] = useState<any>(null);
   const [history, setHistory] = useState<any>(null);
+  const [histFromDate, setHistFromDate] = useState('');
+  const [histToDate, setHistToDate] = useState('');
   const [creditInfo, setCreditInfo] = useState<any>(null);
   const [schedule, setSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
@@ -95,10 +97,14 @@ export default function Page() {
     if (!partyId) return;
     setError('');
     try {
+      const params = new URLSearchParams();
+      if (histFromDate) params.set('from_date', histFromDate);
+      if (histToDate) params.set('to_date', histToDate);
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const path =
         kind === 'receivable'
-          ? `/customers/${partyId}/history`
-          : `/suppliers/${partyId}/history`;
+          ? `/customers/${partyId}/history${qs}`
+          : `/suppliers/${partyId}/history${qs}`;
       const r = await api(path);
       setHistory(r.data);
       const s = r.data?.summary;
@@ -422,6 +428,20 @@ export default function Page() {
             <button type="button" onClick={loadCreditInfo}>
               Balance
             </button>
+            <input
+              type="date"
+              value={histFromDate}
+              onChange={(e) => setHistFromDate(e.target.value)}
+              title="History from date (YYYY-MM-DD)"
+              aria-label="Credit history from date"
+            />
+            <input
+              type="date"
+              value={histToDate}
+              onChange={(e) => setHistToDate(e.target.value)}
+              title="History to date (YYYY-MM-DD)"
+              aria-label="Credit history to date"
+            />
             <button type="button" onClick={loadHistory}>
               History
             </button>

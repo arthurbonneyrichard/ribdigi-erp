@@ -10168,8 +10168,8 @@ async def customer_credit_statement(
 @api.get("/customers/{customer_id}/history")
 async def customer_history(
     customer_id: str,
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10197,8 +10197,8 @@ async def supplier_credit_statement(
 @api.get("/suppliers/{supplier_id}/history")
 async def supplier_history(
     supplier_id: str,
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):

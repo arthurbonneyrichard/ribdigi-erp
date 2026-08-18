@@ -1304,7 +1304,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ```
 
 **Record Payment:** `POST /customers/{customer_id}/payments` — `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**; same aliases as expenses). Optional `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; omit/`null` → invoice/base via `resolve_rate`; blank/non-ISO → **422** — was free `str`; blank silently base). Also `POST /sales/payments` with the same `CustomerPaymentCreate` body. Credit UI Method select matches. Service `normalize_expense_payment_method` / `normalize_currency` remain defense-in-depth **400**.  
-**Customer History:** `GET /customers/{customer_id}/history?from_date=&to_date=` — purchase history (sales invoices + POS), returns, and payments with `summary` totals (BR-7.1).
+**Customer History:** `GET /customers/{customer_id}/history?from_date=&to_date=` — purchase history (sales invoices + POS), returns, and payments with `summary` totals (BR-7.1). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Credit **History From/To date** inputs (`aria-label`s).
 
 ```json
 {
@@ -1319,7 +1319,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 ### 11.2 Supplier Credit
 **Get Credit / Balance:** `GET /suppliers/{supplier_id}/credit` — `outstanding_balance`, `open_bills[]` (PIs + uninvoiced POs). Requires `credit:read`.  
 **Get Outstanding Bills:** `GET /suppliers/{supplier_id}/outstanding`  
-**Supplier History:** `GET /suppliers/{supplier_id}/history?from_date=&to_date=` — purchase history (POs + purchase invoices), returns, and payments with `summary` totals (BR-6.1).
+**Supplier History:** `GET /suppliers/{supplier_id}/history?from_date=&to_date=` — purchase history (POs + purchase invoices), returns, and payments with `summary` totals (BR-6.1). Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty. Credit **History From/To date** inputs (`aria-label`s).
 
 **Payment Schedule:** `GET /suppliers/{supplier_id}/payment-schedule` — open purchase invoices + uninvoiced POs sorted by `due_date` ascending; each row includes `balance_due`, `days_until_due`, `days_overdue`, optional `early_discount` quote when tenant early-pay settings apply. Response also has `total_due`, `upcoming_count`, `overdue_count`. Requires `credit:read`.
 
