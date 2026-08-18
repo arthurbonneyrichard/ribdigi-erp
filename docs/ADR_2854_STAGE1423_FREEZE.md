@@ -31,3 +31,7 @@ Stage 1424 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Eyebolt Gate, Transfer Eyebolt Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1424 opened under **ADR-2855** after CONTINUE/NEXT (Tenant MVP Transfer Eyenut Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2856**. Stage 1423 feature scope remains frozen.
