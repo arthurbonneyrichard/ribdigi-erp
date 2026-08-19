@@ -867,12 +867,15 @@ export default function Page() {
                 onChange={(e) => setJePrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Journal number prefix"
+                title="Journal document prefix (letters, digits, _ or -)"
               />
               <input
                 value={jeNext}
                 onChange={(e) => setJeNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Journal next number"
               />
               <span className="muted">{jePreview || '—'}</span>
             </div>
@@ -883,15 +886,18 @@ export default function Page() {
                 onChange={(e) => setXferPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Cash transfer number prefix"
+                title="Cash transfer document prefix (letters, digits, _ or -)"
               />
               <input
                 value={xferNext}
                 onChange={(e) => setXferNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Cash transfer next number"
               />
               <span className="muted">{xferPreview || '—'}</span>
-              <button type="button" onClick={saveAccountingNumbering}>
+              <button type="button" onClick={saveAccountingNumbering} aria-label="Save accounting numbering">
                 Save numbering
               </button>
             </div>

@@ -1271,7 +1271,7 @@ Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "exp
 - `POST /accounting/transfers` `{ "kind": "transfer|deposit|withdrawal", "from_account_id", "to_account_id", "amount", "reference", "notes" }` — `kind` schema `Literal` (omit → `transfer`; blank/invalid → **422**)  
 - `GET /accounting/transfers/{id}`  
 
-**Numbering:** `GET|PATCH /accounting/settings` exposes `cash_transfer_numbering` alongside `journal_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `XFER`) when `reference` is omitted; explicit references are kept. Journal line `reference` uses the same value (BR-10.3 / BR-20.4).
+**Numbering:** `GET|PATCH /accounting/settings` exposes `cash_transfer_numbering` alongside `journal_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `XFER`) when `reference` is omitted; explicit references are kept. Journal line `reference` uses the same value (BR-10.3 / BR-20.4). Nested `prefix` ∈ `DocumentPrefixValue` (strip + upper; `^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$`); blank/`!!!`/`JE!`/`a b` → **422** (was free `str`; service `normalize_prefix` late **400**). Accounting **Journal number prefix** / **Cash transfer number prefix** inputs (`aria-label`s).
 
 `transfer` requires two distinct liquid accounts (Dr destination / Cr source).  
 `deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.

@@ -2154,15 +2154,49 @@ class EarlyPaySettingsUpdate(BaseModel):
     early_pay_discount_days: int = Field(ge=0, le=365)
 
 
+def coerce_document_prefix_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip + upper; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().upper()
+
+
+def validate_document_prefix_value(value: str) -> str:
+    """AfterValidator: align with doc_numbers._PREFIX_RE / normalize_prefix."""
+    from app.doc_numbers import _PREFIX_RE
+
+    if not value or not _PREFIX_RE.match(value):
+        raise ValueError(
+            "Document prefix must be 1–20 chars: letters, digits, underscore, or hyphen"
+        )
+    return value
+
+
+# Shared by DocumentNumberingFields + legacy SalesInvoiceNumberingUpdate / SalesSettingsUpdate.prefix.
+DocumentPrefixValue = Annotated[
+    str,
+    BeforeValidator(coerce_document_prefix_value),
+    AfterValidator(validate_document_prefix_value),
+]
+
+
 class SalesInvoiceNumberingUpdate(BaseModel):
     """Legacy flat body for invoice-only PATCH /sales/settings."""
 
-    prefix: str = Field(min_length=1, max_length=20)
+    prefix: DocumentPrefixValue
     next_number: int = Field(default=1, ge=1, le=999999)
 
 
 class DocumentNumberingFields(BaseModel):
-    prefix: str = Field(min_length=1, max_length=20)
+    """Nested numbering PATCH — prefix ∈ DocumentPrefixValue (BR-20.4).
+
+    Blank/`!!!`/`JE!`/`a b` → **422** (was free `str` min_length=1; service
+    `normalize_prefix` late **400**). Strip + upper at schema boundary.
+    """
+
+    prefix: DocumentPrefixValue
     next_number: int = Field(default=1, ge=1, le=999999)
 
 
@@ -2174,7 +2208,7 @@ class SalesSettingsUpdate(BaseModel):
     credit_note_numbering: DocumentNumberingFields | None = None
     payment_receipt_numbering: DocumentNumberingFields | None = None
     # Legacy flat fields (invoice only)
-    prefix: str | None = Field(default=None, min_length=1, max_length=20)
+    prefix: DocumentPrefixValue | None = None
     next_number: int | None = Field(default=None, ge=1, le=999999)
 
 
