@@ -31,3 +31,7 @@ Stage 1599 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bizenglaze Gate, Transfer Bizenglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1599 opened under **ADR-3205** after CONTINUE/NEXT (Tenant MVP Transfer Karatsuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3206**. Stage 1598 feature scope remains frozen.
