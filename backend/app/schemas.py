@@ -4248,13 +4248,18 @@ class BankStatementLineCreate(BaseModel):
     Unknown keys → **422**. Zero / missing amount → **422** (was late service **400**).
     Optional `txn_date` ∈ `IsoDateQueryValue`; omit → service default; blank/invalid → **422**
     (blank was silent default; invalid was uncaught **500** via `_parse_dt`).
+    Optional `description` ∈ `BankStatementLineDescriptionValue`; omit/`null` → no
+    description; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently
+    dropped via strip-to-None / garbage could persist).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     amount: float
     txn_date: IsoDateQueryValue | None = None
-    description: str | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped via strip-to-None / garbage could persist).
+    description: BankStatementLineDescriptionValue | None = None
     external_ref: str | None = None
 
     @field_validator("amount")
@@ -4264,9 +4269,9 @@ class BankStatementLineCreate(BaseModel):
             raise ValueError("Statement line amount cannot be zero")
         return float(value)
 
-    @field_validator("description", "external_ref", mode="before")
+    @field_validator("external_ref", mode="before")
     @classmethod
-    def _strip_optional_strs(cls, value: object) -> object:
+    def _strip_optional_external_ref(cls, value: object) -> object:
         if isinstance(value, str):
             text = value.strip()
             return text or None
@@ -4472,6 +4477,35 @@ JournalReferenceValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_journal_reference_value),
+]
+
+
+def validate_bank_statement_line_description_value(value: str) -> str:
+    """AfterValidator: bank statement line description; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    if len(value) > 500:
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    return value
+
+
+# Bank statement line narrative — keep ≤500 at API boundary.
+BankStatementLineDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_statement_line_description_value),
 ]
 
 

@@ -522,6 +522,7 @@ export default function Page() {
     setMessage('');
     try {
       const amt = Number(lineAmount);
+      const desc = lineDesc.trim() || null;
       const r = await api('/accounting/bank-statements', {
         method: 'POST',
         body: JSON.stringify({
@@ -529,12 +530,12 @@ export default function Page() {
           statement_date: stmtDate || undefined,
           opening_balance: Number(opening),
           closing_balance: Number(closing),
-          notes: lineDesc.trim() || undefined,
+          notes: desc || undefined,
           lines: [
             {
               txn_date: lineTxnDate || undefined,
               amount: amt,
-              description: lineDesc,
+              description: desc,
             },
           ],
         }),
@@ -1734,6 +1735,7 @@ export default function Page() {
                 onChange={(e) => setLineDesc(e.target.value)}
                 placeholder="Line desc"
                 aria-label="Statement line description"
+                title="Optional line description (1–500 chars; letters/digits required)"
               />
             </div>
             <button
