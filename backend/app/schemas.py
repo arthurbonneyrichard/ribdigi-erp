@@ -664,7 +664,9 @@ class PlatformStaffCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     email: EmailStr
-    full_name: str = Field(min_length=1)
+    # Required display name ∈ PlatformStaffFullNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str` min_length=1; whitespace/`!!!`/URL could persist).
+    full_name: PlatformStaffFullNameValue
     password: str = Field(min_length=1)
     # Same Literal as grant; omit → platform_support; blank/invalid → 422
     # (was free dict; API `role or "platform_support"` silently coerced "")
@@ -677,7 +679,9 @@ class PlatformStaffCreate(BaseModel):
 class PlatformStaffUpdate(BaseModel):
     """Patch platform staff — omit = no change; blank role → 422."""
 
-    full_name: str | None = Field(default=None, min_length=1)
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`
+    # min_length=1; whitespace/`!!!`/URL could persist).
+    full_name: PlatformStaffFullNameValue | None = None
     role: PlatformRoleValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on platform staff PATCH).
@@ -3159,6 +3163,27 @@ PartyContactNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_party_contact_name_value),
+]
+
+
+def validate_platform_staff_full_name_value(value: str) -> str:
+    """AfterValidator: platform staff display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Platform staff full name — matches User.full_name String(150).
+PlatformStaffFullNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_platform_staff_full_name_value),
 ]
 
 
