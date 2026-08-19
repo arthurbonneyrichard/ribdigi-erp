@@ -808,7 +808,7 @@ export default function Page() {
       const r = await api('/products', {
         method: 'POST',
         body: JSON.stringify({
-          name: productName,
+          name: productName.trim(),
           sku: productSku.trim() || null,
           barcode: productBarcode.trim() || null,
           description: productDescription.trim() || null,
@@ -1918,7 +1918,13 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add product</h3>
-            <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Name" />
+            <input
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              placeholder="Name"
+              aria-label="Product name"
+              title="Product name (1–200 chars; letters/digits required)"
+            />
             <input
               value={productSku}
               onChange={(e) => setProductSku(e.target.value)}
@@ -1998,7 +2004,11 @@ export default function Page() {
               <option value="zero_rated">Tax: zero-rated</option>
               <option value="exempt">Tax: exempt</option>
             </select>
-            <button onClick={createProduct} disabled={!productName.trim()}>
+            <button
+              onClick={createProduct}
+              disabled={!productName.trim()}
+              aria-label="Create product"
+            >
               Create product
             </button>
           </div>

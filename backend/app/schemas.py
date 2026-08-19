@@ -900,7 +900,9 @@ class CustomRoleUpdate(BaseModel):
 
 
 class ProductCreate(BaseModel):
-    name: str
+    # Required catalog label ∈ ProductNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on product create).
+    name: ProductNameValue
     sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
     barcode: str | None = None
     description: str | None = None
@@ -924,7 +926,9 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank late service **400**; garbage could persist on product display name).
+    name: ProductNameValue | None = None
     sku: str | None = None
     barcode: str | None = None
     description: str | None = None
@@ -2836,6 +2840,27 @@ PartyNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_party_name_value),
+]
+
+
+def validate_product_name_value(value: str) -> str:
+    """AfterValidator: product display name; blank/URL/garbage → 422 (1–200)."""
+    if not value:
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    return value
+
+
+# Catalog product display name — matches Product.name String(200).
+ProductNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_name_value),
 ]
 
 
