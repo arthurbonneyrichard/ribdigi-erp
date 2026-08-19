@@ -3285,8 +3285,16 @@ export default function Page() {
             value={adjNotes}
             onChange={(e) => setAdjNotes(e.target.value)}
             placeholder="Details"
+            aria-label="Stock adjustment notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
           />
-          <button type="button" className="btn-ok" onClick={postStockAdjust} disabled={!selectedId || !adjReason}>
+          <button
+            type="button"
+            className="btn-ok"
+            onClick={postStockAdjust}
+            disabled={!selectedId || !adjReason}
+            aria-label="Post stock adjustment"
+          >
             Post adjustment
           </button>
         </div>

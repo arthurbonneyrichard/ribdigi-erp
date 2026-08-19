@@ -686,7 +686,7 @@ Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory
 }
 ```
 
-`reason` required ∈ `{damage, theft, expiry, found, lost}` (schema `Literal`; no silent default to `damage`; omit/blank/invalid → **422**). Inventory UI **Select reason**. Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements` (Query `Literal`; blank/invalid → **422**).
+`reason` required ∈ `{damage, theft, expiry, found, lost}` (schema `Literal`; no silent default to `damage`; omit/blank/invalid → **422**). Inventory UI **Select reason**. Optional `notes` ∈ `StockAdjustNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Adjust **Stock adjustment notes** input. Persists `stock_movements.reason` with `movement_type=adjustment`. Optional warehouse scope. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements` (Query `Literal`; blank/invalid → **422**).
 
 **Stock Transfer (BR-5.2 / BR-5.4):** `POST /inventory/stock-transfers` (also `POST /stores/transfers`)
 
