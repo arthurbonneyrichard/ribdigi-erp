@@ -31,3 +31,7 @@ Stage 1621 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tsuboyaglaze Gate, Transfer Tsuboyaglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1621 opened under **ADR-3249** after CONTINUE/NEXT (Tenant MVP Transfer Izumoyakiglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3250**. Stage 1620 feature scope remains frozen.
