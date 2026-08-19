@@ -1561,6 +1561,8 @@ export default function Page() {
                 value={xferNotes}
                 onChange={(e) => setXferNotes(e.target.value)}
                 placeholder="Notes"
+                aria-label="Cash transfer notes"
+                title="Optional notes (1–500 chars; letters/digits required)"
               />
               <button type="button" className="btn-ok" onClick={postTransfer} aria-label="Post cash transfer">
                 Post
