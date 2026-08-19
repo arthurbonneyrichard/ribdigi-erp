@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1558 track opened (ADR-3123: `test_stage1558_open.py`, `docs/STAGE_1558_PLAN.md`) — Transfer Chromecoat Gate Honesty Pack Remaining-Gate Index; closed under ADR-3124
+- [x] Transfer Chromecoat Gate Honesty Pack remaining-gate hub (Stage 1558 I1: `test_stage1558_index_i1.py`, `docs/TRANSFER_CHROMECOAT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Chromecoat Gate Honesty Pack blocker matrix (Stage 1558 B1: `test_stage1558_blockers_b1.py`, `docs/TRANSFER_CHROMECOAT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1557 / Stage 1556 / Stage 392 / CHANGE_IMPACT pointers (Stage 1558 P1: `test_stage1558_pointers_p1.py`, `docs/TRANSFER_CHROMECOAT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1558 fidelity sync (D1: `test_stage1558_fidelity_d1.py`, `docs/STAGE_1558_FIDELITY.md`)
+- [x] Stage 1558 exit + freeze (H1558x: `test_stage1558_exit_h1558x.py`, `docs/STAGE_1558_EXIT_CRITERIA.md`, ADR-3124)
 Stage 1557 track opened (ADR-3121: `test_stage1557_open.py`, `docs/STAGE_1557_PLAN.md`) — Transfer Galvancoat Gate Honesty Pack Remaining-Gate Index; closed under ADR-3122
 - [x] Transfer Galvancoat Gate Honesty Pack remaining-gate hub (Stage 1557 I1: `test_stage1557_index_i1.py`, `docs/TRANSFER_GALVANCOAT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Galvancoat Gate Honesty Pack blocker matrix (Stage 1557 B1: `test_stage1557_blockers_b1.py`, `docs/TRANSFER_GALVANCOAT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
