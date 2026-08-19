@@ -31,3 +31,7 @@ Stage 1546 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shellaccoat Gate, Transfer Shellaccoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1546 opened under **ADR-3099** after CONTINUE/NEXT (Tenant MVP Transfer Enamelcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3100**. Stage 1545 feature scope remains frozen.
