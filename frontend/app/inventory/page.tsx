@@ -3552,11 +3552,14 @@ export default function Page() {
               value={xferNotes}
               onChange={(e) => setXferNotes(e.target.value)}
               placeholder="Transfer note"
+              aria-label="Stock transfer notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
             />
             <button
               type="button"
               onClick={createWarehouseTransfer}
               disabled={!selectedId || !xferFromWh || !xferToWh}
+              aria-label="Create stock transfer"
             >
               Create &amp; request
             </button>
