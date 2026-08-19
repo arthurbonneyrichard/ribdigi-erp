@@ -31,3 +31,7 @@ Stage 1571 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Iridiumcoat Gate, Transfer Iridiumcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1571 opened under **ADR-3149** after CONTINUE/NEXT (Tenant MVP Transfer Osmiumcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3150**. Stage 1570 feature scope remains frozen.
