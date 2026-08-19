@@ -31,3 +31,7 @@ Stage 1593 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Celadonglaze Gate, Transfer Celadonglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1593 opened under **ADR-3193** after CONTINUE/NEXT (Tenant MVP Transfer Tenmokuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3194**. Stage 1592 feature scope remains frozen.
