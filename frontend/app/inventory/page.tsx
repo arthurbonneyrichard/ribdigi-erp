@@ -3389,8 +3389,16 @@ export default function Page() {
             value={outNotes}
             onChange={(e) => setOutNotes(e.target.value)}
             placeholder="Details"
+            aria-label="Stock-out notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
           />
-          <button type="button" className="btn-ok" onClick={postStockOut} disabled={!selectedId || !outRefType}>
+          <button
+            type="button"
+            className="btn-ok"
+            onClick={postStockOut}
+            disabled={!selectedId || !outRefType}
+            aria-label="Post stock out"
+          >
             Post stock out
           </button>
         </div>

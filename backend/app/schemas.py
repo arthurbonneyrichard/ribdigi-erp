@@ -1275,7 +1275,9 @@ class StockOut(BaseModel):
     product_id: str
     quantity: float = Field(gt=0)
     unit_id: str | None = None
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on StockMovement.notes Text).
+    notes: StockOutNotesValue | None = None
     warehouse_id: str | None = None
     variant_id: str | None = None
     batch_id: str | None = None
@@ -3074,6 +3076,27 @@ StockAdjustNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_adjust_notes_value),
+]
+
+
+def validate_stock_out_notes_value(value: str) -> str:
+    """AfterValidator: stock-out notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock-out notes — StockMovement.notes Text; keep ≤500 at API boundary.
+StockOutNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_out_notes_value),
 ]
 
 

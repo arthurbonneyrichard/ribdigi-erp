@@ -658,7 +658,7 @@ Batch fields (`batch_number`, optional `manufacturing_date` / `expiry_date` ∈ 
 }
 ```
 
-`reference_type` required ∈ `{sale, transfer, adjustment, damage, internal, other}` (schema `StockOut` + `Literal`; no silent default to `other`; omit/blank/invalid → **422**). Inventory UI **Select reference type**. Optional `reference_id`, `warehouse_id`, `variant_id`, `unit_id`, `batch_id` (otherwise FEFO). Persists `stock_movements.reference_type` / `reference_id` with `movement_type=stock_out`. Inventory UI **Stock Out** tab.
+`reference_type` required ∈ `{sale, transfer, adjustment, damage, internal, other}` (schema `StockOut` + `Literal`; no silent default to `other`; omit/blank/invalid → **422**). Inventory UI **Select reference type**. Optional `notes` ∈ `StockOutNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Stock Out **Stock-out notes** input. Optional `reference_id`, `warehouse_id`, `variant_id`, `unit_id`, `batch_id` (otherwise FEFO). Persists `stock_movements.reference_type` / `reference_id` with `movement_type=stock_out`. Inventory UI **Stock Out** tab.
 
 **Warehouse Stock (BR-5.4):** `GET /inventory/warehouse-stock?warehouse_id=&include_zero=false` — per-warehouse on-hand + reorder policy (`inventory:read`). Response `items[]` include `quantity`, `reorder_level`, `reorder_qty`, `below_reorder`, `suggested_order_qty`, `consolidated_stock`. Inventory **Warehouse stock** tab.
 
