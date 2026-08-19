@@ -31,3 +31,7 @@ Stage 1594 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmokuglaze Gate, Transfer Tenmokuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1594 opened under **ADR-3195** after CONTINUE/NEXT (Tenant MVP Transfer Shinoglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3196**. Stage 1593 feature scope remains frozen.
