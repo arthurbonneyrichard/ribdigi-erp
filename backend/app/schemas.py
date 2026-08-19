@@ -3221,6 +3221,25 @@ PosCustomerNameValue = Annotated[
 ]
 
 
+def validate_api_key_name_value(value: str) -> str:
+    """AfterValidator: API key display name; blank/URL/garbage/short → 422 (2–120)."""
+    if not value or len(value) < 2 or len(value) > 120:
+        raise ValueError("API key name must be a non-empty label (2–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("API key name must be a non-empty label (2–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("API key name must be a non-empty label (2–120 chars)")
+    return value
+
+
+# API key display name — matches ApiKeyCreate.name (2–120).
+ApiKeyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_api_key_name_value),
+]
+
+
 def validate_account_code_value(value: str) -> str:
     """AfterValidator: COA code; blank/garbage → 422 (1–30; alnum/_/-)."""
     if not value:
@@ -3433,9 +3452,11 @@ ChequeNumberValue = Annotated[
 class ApiKeyCreate(BaseModel):
     """POST /api-keys — typed create body (BR-18.1).
 
-    Unknown top-level keys → **422** (`extra=forbid`). Name omit/too short/too long,
-    invalid `expires_at`, unknown permission module/action → **422** (was late **400**
-    via free `dict`). Omit/null/`{}` `permissions` → service default read map.
+    Unknown top-level keys → **422** (`extra=forbid`). Name ∈ `ApiKeyNameValue`
+    (strip; 2–120; ≥1 letter/digit; no `://`/`@`); omit/too short/`!!!`/URL → **422**
+    (was free `str` min_length=2; punctuation/URL could persist). Invalid `expires_at`,
+    unknown permission module/action → **422** (was late **400** via free `dict`).
+    Omit/null/`{}` `permissions` → service default read map.
 
     Optional `expires_at` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime);
     omit/`null` → no expiry; blank/`not-a-date`/`01/02/2024` → **422** (was free
@@ -3445,16 +3466,11 @@ class ApiKeyCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(min_length=2, max_length=120)
+    # Required key label ∈ ApiKeyNameValue; blank/`!!!`/`http://…`/`x` → **422**
+    # (was free `str` min_length=2; punctuation/URL could persist).
+    name: ApiKeyNameValue
     permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     expires_at: IsoDateQueryValue | None = None
-
-    @field_validator("name", mode="before")
-    @classmethod
-    def _strip_name(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()
-        return value
 
     @field_validator("permissions", mode="before")
     @classmethod

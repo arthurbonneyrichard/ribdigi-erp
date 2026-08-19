@@ -102,12 +102,18 @@ export default function Page() {
   }
 
   async function createKey() {
+    const name = keyName.trim();
+    if (!name) {
+      setError('API key name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setRevealedKey('');
     setBusy(true);
     try {
-      const body: Record<string, unknown> = { name: keyName || 'Integration key' };
+      const body: Record<string, unknown> = { name };
       const expiry = keyExpires.trim();
       if (expiry) body.expires_at = expiry;
       const r = await api('/api-keys', { method: 'POST', body: JSON.stringify(body) });
@@ -365,7 +371,7 @@ export default function Page() {
           <button
             type="button"
             onClick={createKey}
-            disabled={busy}
+            disabled={busy || !keyName.trim()}
             aria-label="Create API key"
           >
             Create API key
