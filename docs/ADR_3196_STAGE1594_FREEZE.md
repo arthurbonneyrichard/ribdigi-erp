@@ -31,3 +31,7 @@ Stage 1595 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shinoglaze Gate, Transfer Shinoglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1595 opened under **ADR-3197** after CONTINUE/NEXT (Tenant MVP Transfer Oribeglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3198**. Stage 1594 feature scope remains frozen.
