@@ -3863,6 +3863,27 @@ WebhookUrlValue = Annotated[
 ]
 
 
+def validate_webhook_description_value(value: str) -> str:
+    """AfterValidator: webhook endpoint label; blank/URL/garbage → 422 (1–255)."""
+    if not value:
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    if len(value) > 255:
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    return value
+
+
+# Webhook endpoint description — matches WebhookEndpoint.description String(255).
+WebhookDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_webhook_description_value),
+]
+
+
 class WebhookCreate(BaseModel):
     """Outbound webhook endpoint create."""
 
@@ -3871,7 +3892,9 @@ class WebhookCreate(BaseModel):
     # Closed event catalog; blank/unknown item → 422; empty list → 422
     events: list[WebhookEventValue] = Field(min_length=1)
     secret: str | None = None
-    description: str | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently None / garbage could persist).
+    description: WebhookDescriptionValue | None = None
     is_active: bool = True
 
 
@@ -3881,7 +3904,9 @@ class WebhookUpdate(BaseModel):
     # omit = no change; blank/non-http(s) → 422 (was free str min_length=1; late **400**)
     url: WebhookUrlValue | None = None
     events: list[WebhookEventValue] | None = Field(default=None, min_length=1)
-    description: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist).
+    description: WebhookDescriptionValue | None = None
     is_active: bool | None = None
     rotate_secret: bool = False
 

@@ -169,7 +169,7 @@ export default function Page() {
         body: JSON.stringify({
           url: hookUrl,
           events: hookEvents,
-          description: hookDesc || null,
+          description: hookDesc.trim() || null,
           is_active: true,
         }),
       });
@@ -510,6 +510,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           value={hookDesc}
           onChange={(e) => setHookDesc(e.target.value)}
           placeholder="Optional label"
+          aria-label="Webhook description"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <p className="muted" style={{ marginBottom: 4 }}>
