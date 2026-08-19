@@ -6460,7 +6460,7 @@ async def amend_purchase_order(
         items=items,
         notes=payload.notes,
         delivery_address=payload.delivery_address,
-        due_date=payload.due_date,
+        due_date=reports_svc.parse_date(payload.due_date),
         clear_due_date=payload.clear_due_date,
         reason=payload.reason,
         notify_supplier=payload.notify_supplier,

@@ -77,6 +77,7 @@ type PurchaseOrder = {
   total_amount: number;
   notes?: string | null;
   delivery_address?: string | null;
+  due_date?: string | null;
   revision_no?: number;
   can_amend?: boolean;
   can_cancel?: boolean;
@@ -223,6 +224,7 @@ export default function Page() {
   const [amendUnitId, setAmendUnitId] = useState('');
   const [amendNotes, setAmendNotes] = useState('');
   const [amendDeliveryAddress, setAmendDeliveryAddress] = useState('');
+  const [amendDueDate, setAmendDueDate] = useState('');
   const [amendReason, setAmendReason] = useState('');
   const [amendNotify, setAmendNotify] = useState(false);
   const [prSupplierId, setPrSupplierId] = useState('');
@@ -550,6 +552,7 @@ export default function Page() {
     setAmendUnitId(line?.unit_id || '');
     setAmendNotes(po.notes || '');
     setAmendDeliveryAddress(po.delivery_address || '');
+    setAmendDueDate(po.due_date ? String(po.due_date).slice(0, 10) : '');
     setAmendReason('');
     setAmendNotify(po.status === 'sent');
   }
@@ -574,6 +577,8 @@ export default function Page() {
           ...(amendDeliveryAddress.trim()
             ? { delivery_address: amendDeliveryAddress.trim() }
             : {}),
+          // Omit blank due date so Amend does not 422 (IsoDateQueryValue); leave prior.
+          ...(amendDueDate.trim() ? { due_date: amendDueDate.trim() } : {}),
           notify_supplier: amendNotify,
           ...(amendNotify && amendEmailTo.trim()
             ? { to: amendEmailTo.trim() }
@@ -2171,6 +2176,14 @@ export default function Page() {
                     onChange={(e) => setAmendDeliveryAddress(e.target.value)}
                     placeholder="Delivery address"
                     aria-label="PO amend delivery address"
+                  />
+                  <input
+                    aria-label="PO amend due date"
+                    type="text"
+                    placeholder="YYYY-MM-DD"
+                    title="Due date (optional YYYY-MM-DD; blank leaves prior)"
+                    value={amendDueDate}
+                    onChange={(e) => setAmendDueDate(e.target.value)}
                   />
                   <input
                     value={amendReason}
