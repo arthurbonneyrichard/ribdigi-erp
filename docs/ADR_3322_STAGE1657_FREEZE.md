@@ -31,3 +31,7 @@ Stage 1658 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tobikannaglaze Gate, Transfer Tobikannaglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1658 opened under **ADR-3323** after CONTINUE/NEXT (Tenant MVP Transfer Gosuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3324**. Stage 1657 feature scope remains frozen.
