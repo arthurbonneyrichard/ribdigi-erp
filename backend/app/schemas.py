@@ -614,7 +614,9 @@ class TenantMaxStoresOverrideUpdate(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    full_name: str
+    # Required display name ∈ UserFullNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; empty/whitespace/`!!!`/URL could persist).
+    full_name: UserFullNameValue
     password: str
     # omit → cashier; blank/malformed key → 422 (was free str; blank late **400**)
     role: RoleKeyValue = "cashier"
@@ -628,7 +630,9 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    full_name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # empty/whitespace/`!!!`/URL could persist).
+    full_name: UserFullNameValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank silently cleared; garbage could persist).
     phone: E164PhoneValue | None = None
@@ -3184,6 +3188,27 @@ PlatformStaffFullNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_platform_staff_full_name_value),
+]
+
+
+def validate_user_full_name_value(value: str) -> str:
+    """AfterValidator: tenant user display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Tenant user full name — matches User.full_name String(150).
+UserFullNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_user_full_name_value),
 ]
 
 

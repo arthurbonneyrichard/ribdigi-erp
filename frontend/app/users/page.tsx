@@ -161,6 +161,12 @@ export default function Page() {
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
+    const fullName = form.full_name.trim();
+    if (!fullName) {
+      setError('User full name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setBusy(true);
@@ -168,8 +174,8 @@ export default function Page() {
       await api('/users', {
         method: 'POST',
         body: JSON.stringify({
-          email: form.email,
-          full_name: form.full_name,
+          email: form.email.trim(),
+          full_name: fullName,
           password: form.password,
           role: form.role,
           phone: form.phone || null,
@@ -576,6 +582,7 @@ export default function Page() {
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             placeholder="Full name"
+            aria-label="User full name"
             required
           />
           <input
@@ -644,7 +651,7 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy || !form.full_name.trim()} aria-label="Create user">
             {busy ? 'Creating…' : 'Create user'}
           </button>
         </form>
