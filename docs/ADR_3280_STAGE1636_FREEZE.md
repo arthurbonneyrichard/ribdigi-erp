@@ -31,3 +31,7 @@ Stage 1637 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Setoguroglaze Gate, Transfer Setoguroglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1637 opened under **ADR-3281** after CONTINUE/NEXT (Tenant MVP Transfer Nezumishinoglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3282**. Stage 1636 feature scope remains frozen.
