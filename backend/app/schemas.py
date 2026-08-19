@@ -3179,6 +3179,27 @@ CustomRoleLabelValue = Annotated[
 ]
 
 
+def validate_bank_connection_display_name_value(value: str) -> str:
+    """AfterValidator: bank connection display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Bank connection display name — matches BankConnection.display_name String(120).
+BankConnectionDisplayNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_connection_display_name_value),
+]
+
+
 def validate_account_code_value(value: str) -> str:
     """AfterValidator: COA code; blank/garbage → 422 (1–30; alnum/_/-)."""
     if not value:
@@ -3812,7 +3833,8 @@ class BankConnectionCreate(BaseModel):
     account_id: str
     # BR-10.3 — schema Literal; omit defaults to mock; blank/invalid → 422
     provider: Literal["mock", "http_json"] = "mock"
-    display_name: str | None = None
+    # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
+    display_name: BankConnectionDisplayNameValue | None = None
     external_account_id: str | None = None
     # omit/null OK (mock); blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
     feed_url: WebhookUrlValue | None = None
@@ -3825,7 +3847,8 @@ class BankConnectionCreate(BaseModel):
 class BankConnectionUpdate(BaseModel):
     # BR-10.3 — omit = no change; blank/invalid → 422 (no silent mock)
     provider: Literal["mock", "http_json"] | None = None
-    display_name: str | None = None
+    # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
+    display_name: BankConnectionDisplayNameValue | None = None
     external_account_id: str | None = None
     # omit/null = no change; blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
     feed_url: WebhookUrlValue | None = None

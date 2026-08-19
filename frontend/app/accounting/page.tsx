@@ -589,6 +589,7 @@ export default function Page() {
 
   async function createConnection() {
     if (!reconAccountId) return;
+    const displayName = connName.trim();
     setError('');
     setMessage('');
     try {
@@ -597,7 +598,7 @@ export default function Page() {
         body: JSON.stringify({
           account_id: reconAccountId,
           provider: connProvider,
-          display_name: connName,
+          display_name: displayName || null,
           external_account_id: connExtId || null,
           feed_url: connProvider === 'http_json' ? connFeedUrl : null,
           auto_sync: true,
@@ -1730,7 +1731,7 @@ export default function Page() {
               duplicates are skipped by external ref. Soft-deactivate pauses Sync / Celery auto-sync
               without deleting the connection (use Remove to delete).
             </p>
-            <input value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
+            <input aria-label="Bank connection display name" value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
             <select value={connProvider} onChange={(e) => setConnProvider(e.target.value)}>
               <option value="mock">mock (built-in sample feed)</option>
               <option value="http_json">http_json (GET JSON feed URL)</option>
@@ -1749,7 +1750,12 @@ export default function Page() {
                 aria-label="Bank feed URL"
               />
             )}
-            <button onClick={createConnection} disabled={!reconAccountId}>
+            <button
+              type="button"
+              aria-label="Connect bank account"
+              onClick={createConnection}
+              disabled={!reconAccountId}
+            >
               Connect selected liquid account
             </button>
             <select
