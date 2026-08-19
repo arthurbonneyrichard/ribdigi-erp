@@ -3217,15 +3217,38 @@ ReportScheduleRecipientsValue = Annotated[
 ]
 
 
+def validate_report_schedule_name_value(value: str) -> str:
+    """AfterValidator: schedule title; blank/URL/short/garbage → 422 (2–120)."""
+    if not value:
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    if len(value) < 2 or len(value) > 120:
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    return value
+
+
+# Report schedule display name — matches ReportSchedule.name String(120).
+ReportScheduleNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_report_schedule_name_value),
+]
+
+
 class ReportScheduleCreate(BaseModel):
     """Email report schedule create (BR-14).
 
-    `recipients` ∈ ReportScheduleRecipientsValue (`list[EmailStr]` or comma/`;`
-    string); required ≥1; blank/`bad`/`ops@x.com, bad` → **422** (was free
-    `list[str]|str`; service soft-dropped non-`@` then late **400** if empty).
+    `name` ∈ ReportScheduleNameValue (strip; 2–120; ≥1 letter/digit; no `://`/`@`);
+    blank/`!!!`/`http://…` → **422** (was free `str` min_length=2; whitespace
+    late service **400**; punctuation/URL could persist). `recipients` ∈
+    ReportScheduleRecipientsValue (`list[EmailStr]` or comma/`;` string); required ≥1;
+    blank/`bad` → **422**.
     """
 
-    name: str = Field(min_length=2)
+    name: ReportScheduleNameValue
     # Schema Literal; blank/unknown → 422 (was free str → service 400)
     report_type: ReportTypeValue
     format: ReportExportFormatValue = "xlsx"
@@ -3240,11 +3263,12 @@ class ReportScheduleCreate(BaseModel):
 class ReportScheduleUpdate(BaseModel):
     """Email report schedule patch — omit = no change; blank frequency/format/report_type → 422.
 
+    Optional `name` ∈ ReportScheduleNameValue; omit/`null` → no change; blank/invalid → **422**.
     Optional `recipients` ∈ ReportScheduleRecipientsValue; omit/`null` → no change;
     blank/invalid → **422** (do not clear to empty).
     """
 
-    name: str | None = Field(default=None, min_length=2)
+    name: ReportScheduleNameValue | None = None
     report_type: ReportTypeValue | None = None
     format: ReportExportFormatValue | None = None
     frequency: ScheduleFrequencyValue | None = None

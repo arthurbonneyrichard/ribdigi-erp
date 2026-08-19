@@ -423,7 +423,7 @@ export default function Page() {
       await api('/reports/schedules', {
         method: 'POST',
         body: JSON.stringify({
-          name: schedForm.name,
+          name: schedForm.name.trim(),
           report_type: schedForm.report_type,
           format: schedForm.format,
           frequency: schedForm.frequency,
@@ -2088,6 +2088,8 @@ export default function Page() {
               placeholder="Schedule name"
               value={schedForm.name}
               onChange={(e) => setSchedForm({ ...schedForm, name: e.target.value })}
+              aria-label="Report schedule name"
+              title="Schedule name (2–120 chars; letters/digits required)"
             />
             <select
               value={schedForm.report_type}

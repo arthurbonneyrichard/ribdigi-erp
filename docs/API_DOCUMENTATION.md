@@ -1495,8 +1495,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 14.5 Email report schedules (BR-14)
 **List:** `GET /reports/schedules` — optional Query `enabled` ∈ `true`|`false` (omit → all; invalid → **422**); optional Query `frequency` ∈ `daily`|`weekly` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Reports Email schedules **Report schedule enabled filter** / **frequency filter** (`scheduleManageFilter` / `scheduleFrequencyFilter`; client filter over full list cache).  
-**Create:** `POST /reports/schedules` — body `recipients` ∈ `ReportScheduleRecipientsValue` (`list[EmailStr]` or comma/`;`-separated string); required ≥1; blank/`bad`/`ops@x.com, bad` → **422** (was free `list[str]|str`; service soft-dropped tokens without `@` then late **400** if empty). Service `_normalize_recipients` remains defense-in-depth (**400**). Reports **Report schedule recipients** input (`aria-label`).  
-**Update:** `PATCH /reports/schedules/{schedule_id}` — optional `recipients` same honesty; omit/`null` → no change; blank/invalid → **422**.  
+**Create:** `POST /reports/schedules` — body `name` ∈ `ReportScheduleNameValue` (strip; 2–120 chars; ≥1 letter/digit; no `://` / `@`); blank/`!!!`/`http://…` → **422** (was free `str` min_length=2; whitespace late service **400**; punctuation/URL could persist). Body `recipients` ∈ `ReportScheduleRecipientsValue` (`list[EmailStr]` or comma/`;`-separated string); required ≥1; blank/`bad`/`ops@x.com, bad` → **422**. Service strip/`_normalize_recipients` remain defense-in-depth (**400**). Reports **Report schedule name** + **Report schedule recipients** inputs (`aria-label`s).  
+**Update:** `PATCH /reports/schedules/{schedule_id}` — optional `name` / `recipients` same honesty; omit/`null` → no change; blank/invalid → **422**.  
 **Delete:** `DELETE /reports/schedules/{schedule_id}`  
 **Run now:** `POST /reports/schedules/{schedule_id}/run?force=true`  
 **Run due (tenant):** `POST /reports/schedules/run-due`
