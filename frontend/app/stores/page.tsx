@@ -980,7 +980,13 @@ export default function Page() {
               placeholder="Code"
               disabled={!!editWhId}
             />
-            <input value={whName} onChange={(e) => setWhName(e.target.value)} placeholder="Name" />
+            <input
+              value={whName}
+              onChange={(e) => setWhName(e.target.value)}
+              placeholder="Name"
+              aria-label={editWhId ? 'Edit warehouse name' : 'Warehouse name'}
+              title="Warehouse name (1–150 chars; letters/digits required)"
+            />
             <select value={whType} onChange={(e) => setWhType(e.target.value)} title="Warehouse type">
               <option value="retail">Retail</option>
               <option value="bulk">Bulk</option>
@@ -1042,6 +1048,7 @@ export default function Page() {
                 type="button"
                 onClick={createWarehouse}
                 disabled={!whCode.trim() || !whName.trim()}
+                aria-label="Create warehouse"
               >
                 Create warehouse
               </button>

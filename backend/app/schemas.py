@@ -1607,7 +1607,9 @@ class InventoryFefoSettingsUpdate(BaseModel):
 
 
 class WarehouseCreate(BaseModel):
-    name: str
+    # Required warehouse label ∈ WarehouseNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store warehouse create).
+    name: WarehouseNameValue
     code: str
     store_id: str | None = None
     # BR-2.4 — schema Literal; omit defaults to retail; blank/invalid → 422
@@ -1620,7 +1622,9 @@ class WarehouseCreate(BaseModel):
 
 
 class WarehouseUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on warehouse display name).
+    name: WarehouseNameValue | None = None
     store_id: str | None = None
     clear_store: bool = False
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] | None = None
@@ -2886,6 +2890,27 @@ StoreNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_store_name_value),
+]
+
+
+def validate_warehouse_name_value(value: str) -> str:
+    """AfterValidator: warehouse display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Warehouse display name — matches Warehouse.name String(150).
+WarehouseNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_warehouse_name_value),
 ]
 
 

@@ -448,8 +448,8 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 ### 3.5b Warehouses (BR-2.4)
 **List:** `GET /warehouses` (`is_active=true|false` optional — Multi-Store manage filter; default returns all)  
 **Get:** `GET /warehouses/{warehouse_id}`  
-**Create:** `POST /warehouses`  
-**Update:** `PATCH /warehouses/{warehouse_id}` — partial fields include name/type/manager/address/capacity/store plus soft-deactivate via `is_active` (Multi-Store **Activate** / **Deactivate**; inactive hidden from Inventory/Reports pickers; stock movements, warehouse transfers, and PO warehouse assign return 400)
+**Create:** `POST /warehouses` — `name` ∈ `WarehouseNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Warehouse name** input.  
+**Update:** `PATCH /warehouses/{warehouse_id}` — `name` ∈ `WarehouseNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); partial fields also include type/manager/address/capacity/store plus soft-deactivate via `is_active` (Multi-Store **Activate** / **Deactivate**; inactive hidden from Inventory/Reports pickers; stock movements, warehouse transfers, and PO warehouse assign return 400). Multi-Store **Edit warehouse name** input.
 
 ```json
 {
