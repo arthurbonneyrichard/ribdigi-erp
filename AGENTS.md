@@ -89,6 +89,8 @@
 
 - **Party contact name OpenAPI (BR-6.1 / BR-7.1):** `PartyContactCreate.name` (required) + `PartyContactUpdate.name` (optional) ∈ `PartyContactNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`) for nested `POST|PATCH /customers|suppliers/{id}/contacts`; blank/`!!!`/`http://…` → **422**; update omit/`null` → no change (was free `str`; blank/garbage could persist). Sales/Purchasing **Party contact name** input (`aria-label`).
 
+- **Party contact designation OpenAPI (BR-6.1 / BR-7.1):** `PartyContactCreate` / `Update.designation` ∈ `PartyContactDesignationValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`); omit/`null` OK (create) / no change (PATCH); blank/`!!!`/`http://…` → **422** (was free `str`; blank silently None / garbage could persist). Sales/Purchasing **Party contact designation** input (`aria-label`); create sends `null` when blank.
+
 - **Custom role label OpenAPI (BR-3.2):** `CustomRoleCreate.label` (required) + `CustomRoleUpdate.label` (optional) ∈ `CustomRoleLabelValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`) for `POST|PATCH /roles`; blank/`!!!`/`http://…` → **422**; update omit/`null` → no change (was free `str`; blank/garbage could persist). Users **Custom role label** input (`aria-label`).
 
 - **Bank connection display_name OpenAPI (BR-10.3):** `BankConnectionCreate` / `Update.display_name` ∈ `BankConnectionDisplayNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`); omit/`null` OK (create) / no change (PATCH); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Accounting Reconcile **Bank connection display name** input (`aria-label`); create sends `null` when blank.

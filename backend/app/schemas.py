@@ -1139,7 +1139,9 @@ class PartyContactCreate(BaseModel):
     # blank/garbage could persist on customer/supplier contact create).
     phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    designation: str | None = None
+    # omit/`null` → no designation; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently None / garbage could persist on contact create).
+    designation: PartyContactDesignationValue | None = None
     is_primary: bool = False
 
 
@@ -1149,7 +1151,9 @@ class PartyContactUpdate(BaseModel):
     # blank/garbage could persist on customer/supplier contact PATCH).
     phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    designation: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on contact PATCH).
+    designation: PartyContactDesignationValue | None = None
     is_primary: bool | None = None
 
 
@@ -3155,6 +3159,27 @@ PartyContactNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_party_contact_name_value),
+]
+
+
+def validate_party_contact_designation_value(value: str) -> str:
+    """AfterValidator: party contact designation; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Party contact designation — matches PartyContact.designation String(120).
+PartyContactDesignationValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_contact_designation_value),
 ]
 
 

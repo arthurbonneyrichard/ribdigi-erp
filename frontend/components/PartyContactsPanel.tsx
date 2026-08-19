@@ -174,6 +174,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
           value={designation}
           onChange={(e) => setDesignation(e.target.value)}
           placeholder="Designation"
+          aria-label="Party contact designation"
         />
         <input
           value={phone}
