@@ -31,3 +31,7 @@ Stage 1606 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kutaniglaze Gate, Transfer Kutaniglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1606 opened under **ADR-3219** after CONTINUE/NEXT (Tenant MVP Transfer Nabeshimaglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3220**. Stage 1605 feature scope remains frozen.
