@@ -1535,7 +1535,9 @@ class StoreOperatingHours(BaseModel):
 
 
 class StoreCreate(BaseModel):
-    name: str
+    # Required store label ∈ StoreNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store create).
+    name: StoreNameValue
     code: str
     # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/`garbage` could persist on create). Same AddressValue as Company.
@@ -1549,7 +1551,9 @@ class StoreCreate(BaseModel):
 
 
 class StoreUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on store display name).
+    name: StoreNameValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared; garbage could persist). Same AddressValue as Company.
     address: AddressValue | None = None
@@ -2861,6 +2865,27 @@ ProductNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_name_value),
+]
+
+
+def validate_store_name_value(value: str) -> str:
+    """AfterValidator: store display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Multi-store display name — matches Store.name String(150).
+StoreNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_store_name_value),
 ]
 
 

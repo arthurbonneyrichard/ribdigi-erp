@@ -245,7 +245,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           code,
-          name,
+          name: name.trim(),
           // Omit blank address so Create does not 422 (AddressValue).
           ...(address.trim() ? { address: address.trim() } : {}),
           phone: phone.trim() || null,
@@ -923,7 +923,13 @@ export default function Page() {
           <h3>New store</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              aria-label="Store name"
+              title="Store name (1–150 chars; letters/digits required)"
+            />
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -1369,7 +1375,13 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16, marginBottom: 16 }}>
           <h3>Edit store · {stores.find((s) => s.id === editStoreId)?.code || editStoreId.slice(0, 8)}</h3>
           <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
-            <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" />
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Name"
+              aria-label="Edit store name"
+              title="Store name (1–150 chars; letters/digits required)"
+            />
             <input
               value={editAddress}
               onChange={(e) => setEditAddress(e.target.value)}

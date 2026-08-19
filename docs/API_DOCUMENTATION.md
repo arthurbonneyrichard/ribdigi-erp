@@ -1396,9 +1396,9 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 13.1 Stores
 **List:** `GET /stores` (`is_active=true|false` optional — Multi-Store manage All/Active/Inactive; default returns all)  
-**Create:** `POST /stores`  
+**Create:** `POST /stores` — `name` ∈ `StoreNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Store name** input.  
 **Get:** `GET /stores/{store_id}`  
-**Update:** `PATCH /stores/{store_id}`
+**Update:** `PATCH /stores/{store_id}` — `name` ∈ `StoreNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit store name** input.
 
 **Create Store:**
 ```json
@@ -1427,7 +1427,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 `address` (when sent) ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no address; PATCH omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Store address** input (`aria-label`); create/edit omit blank.
 
-**Update fields:** `name`, `address` ∈ `AddressValue` (same rules), `phone` ∈ `E164PhoneValue` (same rules), `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours` (same typed map). Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
+**Update fields:** `name` ∈ `StoreNameValue` (same rules as create), `address` ∈ `AddressValue` (same rules), `phone` ∈ `E164PhoneValue` (same rules), `manager_id`, `clear_manager`, `branch_id`, `clear_branch`, `is_active`, `operating_hours` (same typed map). Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
 
 **Cash drawer:** `PATCH /stores/{store_id}/drawer` — see §8.5 (`drawer_mode` OpenAPI `Literal`; blank/invalid → **422**).
 
