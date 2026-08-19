@@ -2064,7 +2064,13 @@ export default function Page() {
               a product has no product-level rate (nearest parent wins). Product rate still overrides.
             </p>
             <input value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="Code" />
-            <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Name" />
+            <input
+              value={catName}
+              onChange={(e) => setCatName(e.target.value)}
+              placeholder="Name"
+              aria-label="Category name"
+              title="Category name (1–120 chars; letters/digits required)"
+            />
             <select value={catParentId} onChange={(e) => setCatParentId(e.target.value)}>
               <option value="">Parent (optional — root)</option>
               {categories
@@ -2093,8 +2099,8 @@ export default function Page() {
                   const r = await api('/catalog/categories', {
                     method: 'POST',
                     body: JSON.stringify({
-                      code: catCode,
-                      name: catName,
+                      code: catCode.trim(),
+                      name: catName.trim(),
                       parent_id: catParentId || null,
                       tax_rate_id: catTaxRateId || null,
                     }),
@@ -2109,7 +2115,8 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
-              disabled={!catCode || !catName}
+              disabled={!catCode.trim() || !catName.trim()}
+              aria-label="Add category"
             >
               Add category
             </button>

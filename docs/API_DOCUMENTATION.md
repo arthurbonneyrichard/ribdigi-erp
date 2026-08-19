@@ -534,8 +534,8 @@ Supports `full_name`, `phone` ∈ `E164PhoneValue` (omit/`null` → no change; b
 
 ### 5.1 Product Categories
 **List:** `GET /catalog/categories` — tree order with `depth` and `path` (e.g. `Food › Soft Drinks › Colas`) (BR-5.1); optional `is_active=true|false` for Catalog manage All/Active/Inactive (default all)  
-**Create:** `POST /catalog/categories` (`code`, `name`, optional `parent_id`, `tax_rate_id`)  
-**Update:** `PATCH /catalog/categories/{category_id}` — reparent via `parent_id` (null clears to root); rejects self-parent and cycles; soft-reactivate via `is_active: true` (Inventory Catalog **Activate**)  
+**Create:** `POST /catalog/categories` (`code`, `name`, optional `parent_id`, `tax_rate_id`) — `name` ∈ `CategoryNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory Catalog **Category name** input.  
+**Update:** `PATCH /catalog/categories/{category_id}` — `name` ∈ `CategoryNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); reparent via `parent_id` (null clears to root); rejects self-parent and cycles; soft-reactivate via `is_active: true` (Inventory Catalog **Activate**)  
 **Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate `is_active=false`; Inventory **Deactivate**; inactive blocked on product create/PATCH; product create category picker hides inactive)
 
 Inventory Catalog **Category tree** UI shows indented hierarchy + reparent picker; product create category select uses `path`.

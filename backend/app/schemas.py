@@ -979,14 +979,18 @@ class StockCountCancel(BaseModel):
 
 class ProductCategoryCreate(BaseModel):
     code: str
-    name: str
+    # Required category label ∈ CategoryNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on catalog category create).
+    name: CategoryNameValue
     parent_id: str | None = None
     tax_rate_id: str | None = None
 
 
 class ProductCategoryUpdate(BaseModel):
     code: str | None = None
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on category display name).
+    name: CategoryNameValue | None = None
     parent_id: str | None = None
     tax_rate_id: str | None = None
     is_active: bool | None = None
@@ -2961,6 +2965,27 @@ BrandNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_brand_name_value),
+]
+
+
+def validate_category_name_value(value: str) -> str:
+    """AfterValidator: product category display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Catalog product-category display name — matches ProductCategory.name String(120).
+CategoryNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_category_name_value),
 ]
 
 
