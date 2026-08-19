@@ -31,3 +31,7 @@ Stage 1601 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hagiglaze Gate, Transfer Hagiglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1601 opened under **ADR-3209** after CONTINUE/NEXT (Tenant MVP Transfer Mashikoglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3210**. Stage 1600 feature scope remains frozen.
