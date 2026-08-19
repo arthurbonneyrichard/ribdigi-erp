@@ -887,6 +887,8 @@ export default function Page() {
               value={deptName}
               onChange={(e) => setDeptName(e.target.value)}
               placeholder="Name (e.g. Sales)"
+              aria-label={editDeptId ? 'Edit department name' : 'Department name'}
+              title="Department name (1–150 chars; letters/digits required)"
             />
             <select value={deptBranchId} onChange={(e) => setDeptBranchId(e.target.value)}>
               <option value="">Branch (optional)</option>
@@ -920,6 +922,7 @@ export default function Page() {
                 type="button"
                 onClick={createDepartment}
                 disabled={!deptCode.trim() || !deptName.trim()}
+                aria-label="Create department"
               >
                 Create department
               </button>

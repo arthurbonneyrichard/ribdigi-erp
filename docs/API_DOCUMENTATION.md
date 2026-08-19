@@ -431,8 +431,8 @@ PATCH supports `name`, `address` ∈ `AddressValue` (strip; 1–500 chars; at le
 
 ### 3.5a2 Departments (BR-2.5)
 **List:** `GET /departments` (`branch_id`, `active_only` optional; `is_active=true|false` for Multi-Store manage filter)  
-**Create:** `POST /departments`  
-**Update:** `PATCH /departments/{department_id}`
+**Create:** `POST /departments` — `name` ∈ `DepartmentNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Department name** input.  
+**Update:** `PATCH /departments/{department_id}` — `name` ∈ `DepartmentNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit department name** input.
 
 ```json
 {

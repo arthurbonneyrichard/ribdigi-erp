@@ -787,13 +787,17 @@ class BranchUpdate(BaseModel):
 
 class DepartmentCreate(BaseModel):
     code: str
-    name: str
+    # Required department label ∈ DepartmentNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store department create).
+    name: DepartmentNameValue
     branch_id: str | None = None
     head_user_id: str | None = None
 
 
 class DepartmentUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on department display name).
+    name: DepartmentNameValue | None = None
     branch_id: str | None = None
     clear_branch: bool = False
     head_user_id: str | None = None
@@ -3011,6 +3015,27 @@ UnitNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_unit_name_value),
+]
+
+
+def validate_department_name_value(value: str) -> str:
+    """AfterValidator: department display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Department display name — matches Department.name String(150).
+DepartmentNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_department_name_value),
 ]
 
 
