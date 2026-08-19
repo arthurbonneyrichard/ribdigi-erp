@@ -31,3 +31,7 @@ Stage 1666 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Madaragarakeglaze Gate, Transfer Madaragarakeglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1666 opened under **ADR-3339** after CONTINUE/NEXT (Tenant MVP Transfer Chojigiroyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3340**. Stage 1665 feature scope remains frozen.
