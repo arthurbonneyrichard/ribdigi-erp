@@ -2745,8 +2745,16 @@ export default function Page() {
               value={stockNotes}
               onChange={(e) => setStockNotes(e.target.value)}
               placeholder="Notes (optional)"
+              aria-label="Stock-in notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
             />
-            <button onClick={stockInBatch} disabled={!selectedId || !batchNumber}>
+            <button
+              type="button"
+              className="btn-ok"
+              onClick={stockInBatch}
+              disabled={!selectedId || !batchNumber}
+              aria-label="Receive batch"
+            >
               Receive batch
             </button>
           </div>
