@@ -31,3 +31,7 @@ Stage 1619 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koishiwaraglaze Gate, Transfer Koishiwaraglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1619 opened under **ADR-3245** after CONTINUE/NEXT (Tenant MVP Transfer Hasamiglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3246**. Stage 1618 feature scope remains frozen.
