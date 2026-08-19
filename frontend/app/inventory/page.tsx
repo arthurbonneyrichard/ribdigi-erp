@@ -1266,8 +1266,8 @@ export default function Page() {
           variant_id: stockVariantId || null,
           notes: stockNotes.trim() || null,
           batch_number: batchNumber,
-          manufacturing_date: mfgDate ? new Date(mfgDate).toISOString() : null,
-          expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+          manufacturing_date: mfgDate.trim() || null,
+          expiry_date: expiryDate.trim() || null,
         }),
       });
       const converted =
@@ -1307,8 +1307,8 @@ export default function Page() {
         warehouse_id: openingWarehouseId || null,
         variant_id: openingVariantId || null,
         batch_number: openingBatch || null,
-        manufacturing_date: openingMfg ? new Date(openingMfg).toISOString() : null,
-        expiry_date: openingExpiry ? new Date(openingExpiry).toISOString() : null,
+        manufacturing_date: openingMfg.trim() || null,
+        expiry_date: openingExpiry.trim() || null,
       };
       if (openingUnitCost !== '') line.unit_cost = Number(openingUnitCost);
       const r = await api('/inventory/opening-stock', {
@@ -2659,9 +2659,23 @@ export default function Page() {
             </select>
             <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
             <label className="muted">Manufacturing date</label>
-            <input type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} />
+            <input
+              aria-label="Stock-in manufacturing date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Manufacturing date (optional YYYY-MM-DD)"
+              value={mfgDate}
+              onChange={(e) => setMfgDate(e.target.value)}
+            />
             <label className="muted">Expiry date</label>
-            <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+            <input
+              aria-label="Stock-in expiry date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Expiry date (optional YYYY-MM-DD)"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+            />
             <input value={stockQty} onChange={(e) => setStockQty(e.target.value)} placeholder="Quantity" />
             <select value={stockUnitId} onChange={(e) => setStockUnitId(e.target.value)}>
               <option value="">Unit (default = product stock unit)</option>
@@ -2773,10 +2787,20 @@ export default function Page() {
               placeholder="Batch number (if tracked)"
             />
             <label className="muted">Manufacturing date</label>
-            <input type="date" value={openingMfg} onChange={(e) => setOpeningMfg(e.target.value)} />
+            <input
+              aria-label="Opening stock manufacturing date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Manufacturing date (optional YYYY-MM-DD)"
+              value={openingMfg}
+              onChange={(e) => setOpeningMfg(e.target.value)}
+            />
             <label className="muted">Expiry date</label>
             <input
-              type="date"
+              aria-label="Opening stock expiry date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Expiry date (optional YYYY-MM-DD)"
               value={openingExpiry}
               onChange={(e) => setOpeningExpiry(e.target.value)}
             />

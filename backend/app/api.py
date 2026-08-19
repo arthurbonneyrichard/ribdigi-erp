@@ -3990,8 +3990,8 @@ async def stock_in(
         warehouse_id=payload.warehouse_id,
         variant_id=payload.variant_id,
         batch_number=payload.batch_number,
-        manufacturing_date=payload.manufacturing_date,
-        expiry_date=payload.expiry_date,
+        manufacturing_date=reports_svc.parse_date(payload.manufacturing_date),
+        expiry_date=reports_svc.parse_date(payload.expiry_date),
     )
     await db.commit()
     return env(result, "Stock in recorded")
@@ -4010,7 +4010,14 @@ async def opening_stock_post(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        lines=[line.model_dump() for line in payload.lines],
+        lines=[
+            {
+                **line.model_dump(),
+                "manufacturing_date": reports_svc.parse_date(line.manufacturing_date),
+                "expiry_date": reports_svc.parse_date(line.expiry_date),
+            }
+            for line in payload.lines
+        ],
         post_journal=payload.post_journal,
         reference=payload.reference,
         notes=payload.notes,

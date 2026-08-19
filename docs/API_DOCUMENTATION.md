@@ -618,8 +618,8 @@ Barcodes are unique across **products and variants** in the tenant (409 on clash
   "unit_id": "unit_001",
   "notes": "Receive to main warehouse",
   "batch_number": "LOT-001",
-  "manufacturing_date": "2026-01-01T00:00:00",
-  "expiry_date": "2026-12-31T00:00:00"
+  "manufacturing_date": "2026-01-01",
+  "expiry_date": "2026-12-31"
 }
 ```
 
@@ -632,13 +632,13 @@ Optional `warehouse_id` / `variant_id` / `notes` (BR-5.2). Inventory Batches UI 
   "warehouse_id": "wh_001",
   "quantity": 100,
   "batch_number": "LOT-001",
-  "manufacturing_date": "2026-07-01T00:00:00",
-  "expiry_date": "2027-07-01T00:00:00",
+  "manufacturing_date": "2026-07-01",
+  "expiry_date": "2027-07-01",
   "notes": "Initial stock from PO-001"
 }
 ```
 
-Batch fields (`batch_number`, `manufacturing_date`, `expiry_date`) create/update a `product_batches` row; response includes serialized `batch`. Same date fields are accepted on opening-stock lines.
+Batch fields (`batch_number`, optional `manufacturing_date` / `expiry_date` ∈ `IsoDateQueryValue` — strip; `YYYY-MM-DD` or ISO datetime; omit/`null` → no batch dates; blank/`not-a-date`/`01/02/2024` → **422** — was free `datetime`; OpenAPI date-time; padded dates inconsistent) create/update a `product_batches` row; response includes serialized `batch`. Same date honesty on `POST /inventory/opening-stock` lines. API `reports.parse_date` remains defense-in-depth. Inventory **Stock-in manufacturing date** / **Stock-in expiry date** + **Opening stock manufacturing date** / **Opening stock expiry date** inputs (`aria-label`s); post sends `null` when blank.
 
 **Stock Out:** `POST /inventory/stock-out`
 
