@@ -4251,6 +4251,9 @@ class BankStatementLineCreate(BaseModel):
     Optional `description` ∈ `BankStatementLineDescriptionValue`; omit/`null` → no
     description; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently
     dropped via strip-to-None / garbage could persist).
+    Optional `external_ref` ∈ `BankStatementLineExternalRefValue`; omit/`null` → no
+    ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently dropped
+    via strip-to-None / garbage could persist; max 120 matches column).
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -4260,7 +4263,9 @@ class BankStatementLineCreate(BaseModel):
     # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped via strip-to-None / garbage could persist).
     description: BankStatementLineDescriptionValue | None = None
-    external_ref: str | None = None
+    # omit/`null` → no ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank
+    # silently dropped via strip-to-None / garbage could persist; max 120).
+    external_ref: BankStatementLineExternalRefValue | None = None
 
     @field_validator("amount")
     @classmethod
@@ -4268,14 +4273,6 @@ class BankStatementLineCreate(BaseModel):
         if abs(float(value)) < 1e-9:
             raise ValueError("Statement line amount cannot be zero")
         return float(value)
-
-    @field_validator("external_ref", mode="before")
-    @classmethod
-    def _strip_optional_external_ref(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
-        return value
 
 
 class BankStatementCreateBody(BaseModel):
@@ -4507,6 +4504,35 @@ BankStatementLineDescriptionValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_bank_statement_line_description_value),
+]
+
+
+def validate_bank_statement_line_external_ref_value(value: str) -> str:
+    """AfterValidator: bank statement line external_ref; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    if len(value) > 120:
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    return value
+
+
+# Bank statement line external_ref — matches BankStatementLine.external_ref String(120).
+BankStatementLineExternalRefValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_statement_line_external_ref_value),
 ]
 
 

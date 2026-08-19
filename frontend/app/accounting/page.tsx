@@ -45,6 +45,7 @@ export default function Page() {
   const [closing, setClosing] = useState('0');
   const [lineAmount, setLineAmount] = useState('100');
   const [lineDesc, setLineDesc] = useState('Deposit');
+  const [lineExternalRef, setLineExternalRef] = useState('');
   const [stmtNotes, setStmtNotes] = useState('');
   const [stmtDate, setStmtDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [lineTxnDate, setLineTxnDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -538,6 +539,7 @@ export default function Page() {
               txn_date: lineTxnDate || undefined,
               amount: amt,
               description: desc,
+              external_ref: lineExternalRef.trim() || null,
             },
           ],
         }),
@@ -545,6 +547,7 @@ export default function Page() {
       setMessage('Statement created');
       setSelected(r.data);
       setStmtNotes('');
+      setLineExternalRef('');
       await refresh();
       const detail = await api(`/accounting/bank-statements/${r.data.id}`);
       setSelected(detail.data);
@@ -1741,6 +1744,13 @@ export default function Page() {
                 placeholder="Line desc"
                 aria-label="Statement line description"
                 title="Optional line description (1–500 chars; letters/digits required)"
+              />
+              <input
+                value={lineExternalRef}
+                onChange={(e) => setLineExternalRef(e.target.value)}
+                placeholder="Line external ref (optional)"
+                aria-label="Statement line external ref"
+                title="Optional external ref (1–120 chars; letters/digits required)"
               />
             </div>
             <input
