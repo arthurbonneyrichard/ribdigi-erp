@@ -31,3 +31,7 @@ Stage 1583 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Glasscoat Gate, Transfer Glasscoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1583 opened under **ADR-3173** after CONTINUE/NEXT (Tenant MVP Transfer Vitreouscoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3174**. Stage 1582 feature scope remains frozen.
