@@ -31,3 +31,7 @@ Stage 1548 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Epoxycoat Gate, Transfer Epoxycoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1548 opened under **ADR-3103** after CONTINUE/NEXT (Tenant MVP Transfer Urethanecoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3104**. Stage 1547 feature scope remains frozen.
