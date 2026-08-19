@@ -31,3 +31,7 @@ Stage 1573 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Rutheniumcoat Gate, Transfer Rutheniumcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1573 opened under **ADR-3153** after CONTINUE/NEXT (Tenant MVP Transfer Titaniumcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3154**. Stage 1572 feature scope remains frozen.
