@@ -1300,7 +1300,9 @@ class ExpenseCreate(BaseModel):
     # blank/invalid → 422 (no silent cash from garbage).
     payment_method: ExpensePaymentMethod = "cash"
     liquid_account_id: str | None = None
-    reference: str | None = None
+    # omit/`null` → auto EXP-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-numbered / garbage could persist).
+    reference: ExpenseReferenceValue | None = None
     # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on expense create).
     payee: ExpensePayeeValue | None = None
@@ -1383,7 +1385,9 @@ class AiDocumentExpenseCreate(BaseModel):
     # blank/garbage could persist on AI draft expense).
     payee: ExpensePayeeValue | None = None
     description: str | None = None
-    reference: str | None = None
+    # omit/`null` → auto / service default; blank/`!!!`/`http://…` → **422** (was
+    # free `str`; blank/garbage could persist on AI draft expense).
+    reference: ExpenseReferenceValue | None = None
     category_id: str | None = None
     category: str | None = None
     payment_method: ExpensePaymentMethod = "cash"
@@ -1421,7 +1425,9 @@ class ExpenseUpdate(BaseModel):
     amount: float | None = Field(default=None, gt=0)
     # omit = no change; blank/invalid → 422
     payment_method: ExpensePaymentMethod | None = None
-    reference: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on expense PATCH).
+    reference: ExpenseReferenceValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on expense PATCH). Use recurring `clear_payee`
     # pattern is N/A here — send a valid label to change.
@@ -4301,6 +4307,27 @@ ExpensePayeeValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_payee_value),
+]
+
+
+def validate_expense_reference_value(value: str) -> str:
+    """AfterValidator: expense vendor/doc reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Expense reference — matches Expense.reference String(100); omit → auto EXP-YYYY-NNNN.
+ExpenseReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_reference_value),
 ]
 
 

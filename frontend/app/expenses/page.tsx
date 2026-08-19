@@ -286,7 +286,7 @@ export default function Page() {
           expense_date: expenseDate.trim() || null,
           payment_method: paymentMethod,
           liquid_account_id: liquidAccountId || null,
-          reference: reference || undefined,
+          reference: reference.trim() || null,
           branch_id: branchId || null,
           department_id: departmentId || null,
           store_id: storeId || null,
@@ -1219,6 +1219,7 @@ export default function Page() {
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder="Reference"
+            aria-label="Expense reference"
           />
           <input
             value={expenseDate}
