@@ -50,6 +50,12 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
   }, [partyId, kind]);
 
   async function addContact() {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Party contact name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setLoading(true);
@@ -57,7 +63,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
       await api(base, {
         method: 'POST',
         body: JSON.stringify({
-          name: name.trim(),
+          name: trimmedName,
           phone: phone.trim() || null,
           email: email.trim() || null,
           designation: designation.trim() || null,
@@ -163,7 +169,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
         </tbody>
       </table>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Contact name" />
+        <input aria-label="Party contact name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Contact name" />
         <input
           value={designation}
           onChange={(e) => setDesignation(e.target.value)}
@@ -184,7 +190,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
           />
           Primary
         </label>
-        <button type="button" onClick={addContact} disabled={loading || !name.trim()}>
+        <button type="button" aria-label="Add party contact" onClick={addContact} disabled={loading || !name.trim()}>
           {loading ? 'Saving…' : 'Add contact'}
         </button>
       </div>

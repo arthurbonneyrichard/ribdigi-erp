@@ -1130,7 +1130,9 @@ class PartyUpdate(BaseModel):
 
 
 class PartyContactCreate(BaseModel):
-    name: str
+    # Required contact label ∈ PartyContactNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on customer/supplier contact create).
+    name: PartyContactNameValue
     # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on customer/supplier contact create).
     phone: E164PhoneValue | None = None
@@ -1140,7 +1142,7 @@ class PartyContactCreate(BaseModel):
 
 
 class PartyContactUpdate(BaseModel):
-    name: str | None = None
+    name: PartyContactNameValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on customer/supplier contact PATCH).
     phone: E164PhoneValue | None = None
@@ -3130,6 +3132,27 @@ ExpenseCategoryNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_category_name_value),
+]
+
+
+def validate_party_contact_name_value(value: str) -> str:
+    """AfterValidator: party contact display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Party contact display name — matches PartyContact.name String(150).
+PartyContactNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_contact_name_value),
 ]
 
 
