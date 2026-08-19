@@ -31,3 +31,7 @@ Stage 1532 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Pearlcoat Gate, Transfer Pearlcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1532 opened under **ADR-3071** after CONTINUE/NEXT (Tenant MVP Transfer Metalcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3072**. Stage 1531 feature scope remains frozen.
