@@ -971,8 +971,8 @@ List supports optional `?status=active|inactive` (schema Query `Literal` + strip
 
 ### 7.2 Customer Groups
 **List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults; `is_active=true|false` optional — Sales manage All/Active/Inactive; default returns all)  
-**Create:** `POST /customers/groups`  
-**Update:** `PATCH /customers/groups/{group_id}` — `{ name?, discount_percent?, is_active? }` (soft-deactivate via `is_active=false`; Sales UI **Activate** / **Deactivate** + **Save discount** + manage status filter)
+**Create:** `POST /customers/groups` — `name` ∈ `CustomerGroupNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Sales **Customer group name** input.  
+**Update:** `PATCH /customers/groups/{group_id}` — `{ name?, discount_percent?, is_active? }` (`name` ∈ `CustomerGroupNameValue`; omit/`null` → no change; blank/`!!!`/`http://…` → **422**; soft-deactivate via `is_active=false`; Sales UI **Activate** / **Deactivate** + **Save discount** + manage status filter)
 **Assign on customer:** `POST /customers` / `PATCH /customers/{customer_id}` with `customer_group_id` (inactive group → 400)  
 **Preview price:** `GET /products/{product_id}/price?customer_id=&variant_id=`
 

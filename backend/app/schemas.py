@@ -1150,13 +1150,15 @@ class PartyContactUpdate(BaseModel):
 
 
 class CustomerGroupCreate(BaseModel):
-    name: str
+    # Required group label ∈ CustomerGroupNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on customer group create).
+    name: CustomerGroupNameValue
     code: str | None = None
     discount_percent: float = 0
 
 
 class CustomerGroupUpdate(BaseModel):
-    name: str | None = None
+    name: CustomerGroupNameValue | None = None
     discount_percent: float | None = None
     is_active: bool | None = None
 
@@ -3061,6 +3063,27 @@ VariantNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_variant_name_value),
+]
+
+
+def validate_customer_group_name_value(value: str) -> str:
+    """AfterValidator: customer group display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Customer group display name — matches CustomerGroup.name String(120).
+CustomerGroupNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_customer_group_name_value),
 ]
 
 

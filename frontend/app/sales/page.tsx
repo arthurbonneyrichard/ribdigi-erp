@@ -353,12 +353,17 @@ export default function Page() {
   }
 
   async function createGroup() {
+    const name = newGroupName.trim();
+    if (!name) {
+      setError('Customer group name is required.');
+      return;
+    }
     setError('');
     try {
       await api('/customers/groups', {
         method: 'POST',
         body: JSON.stringify({
-          name: newGroupName,
+          name,
           discount_percent: Number(newGroupDiscount) || 0,
         }),
       });
@@ -926,6 +931,7 @@ export default function Page() {
           </ul>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
+              aria-label="Customer group name"
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="New group name"
@@ -936,7 +942,12 @@ export default function Page() {
               placeholder="Discount %"
               style={{ width: 100 }}
             />
-            <button type="button" onClick={createGroup}>
+            <button
+              type="button"
+              aria-label="Add group"
+              onClick={createGroup}
+              disabled={!newGroupName.trim()}
+            >
               Add group
             </button>
           </div>
