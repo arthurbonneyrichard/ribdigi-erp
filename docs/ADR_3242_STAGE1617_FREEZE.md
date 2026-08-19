@@ -31,3 +31,7 @@ Stage 1618 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ontaglaze Gate, Transfer Ontaglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1618 opened under **ADR-3243** after CONTINUE/NEXT (Tenant MVP Transfer Koishiwaraglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3244**. Stage 1617 feature scope remains frozen.
