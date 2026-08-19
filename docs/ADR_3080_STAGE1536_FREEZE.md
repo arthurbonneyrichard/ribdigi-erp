@@ -31,3 +31,7 @@ Stage 1537 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Basecoat Gate, Transfer Basecoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1537 opened under **ADR-3081** after CONTINUE/NEXT (Tenant MVP Transfer Topcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3082**. Stage 1536 feature scope remains frozen.
