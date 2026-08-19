@@ -31,3 +31,7 @@ Stage 1674 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Setoguroyuglaze Gate, Transfer Setoguroyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1674 opened under **ADR-3355** after CONTINUE/NEXT (Tenant MVP Transfer Nezumishinoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3356**. Stage 1673 feature scope remains frozen.
