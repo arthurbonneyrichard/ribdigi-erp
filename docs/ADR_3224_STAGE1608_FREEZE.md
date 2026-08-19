@@ -31,3 +31,7 @@ Stage 1609 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Satsumaglaze Gate, Transfer Satsumaglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1609 opened under **ADR-3225** after CONTINUE/NEXT (Tenant MVP Transfer Minoglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3226**. Stage 1608 feature scope remains frozen.
