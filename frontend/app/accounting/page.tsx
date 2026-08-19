@@ -912,9 +912,11 @@ export default function Page() {
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
-                type="date"
                 value={closeThrough}
                 onChange={(e) => setCloseThrough(e.target.value)}
+                placeholder="Through date YYYY-MM-DD"
+                aria-label="Period close through date"
+                title="Period close through date (YYYY-MM-DD)"
               />
               <input
                 value={periodReason}

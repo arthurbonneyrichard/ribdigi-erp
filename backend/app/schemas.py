@@ -3558,16 +3558,23 @@ class ChequeLifecycleReason(BaseModel):
 
 
 class PeriodCloseBody(BaseModel):
-    """Close books through an inclusive calendar date (BR-10.2)."""
+    """Close books through an inclusive calendar date (BR-10.2).
 
-    through_date: date
+    `through_date` ∈ IsoDateQueryValue (required); blank/invalid → **422**.
+    """
+
+    # IsoDateQueryValue as JournalCreate.entry_date / expense_date.
+    through_date: IsoDateQueryValue
     reason: str = Field(min_length=1, max_length=500)
 
 
 class PeriodReopenBody(BaseModel):
-    """Reopen: set an earlier closed-through date, or null to clear — reason required (BR-10.2 honesty)."""
+    """Reopen: set an earlier closed-through date, or null to clear — reason required (BR-10.2 honesty).
 
-    through_date: date | None = None
+    Optional `through_date` ∈ IsoDateQueryValue; omit/`null` → clear; blank/invalid → **422**.
+    """
+
+    through_date: IsoDateQueryValue | None = None
     reason: str = Field(min_length=1, max_length=500)
 
 

@@ -9112,11 +9112,12 @@ async def accounting_period_close(
     """BR-10.2 — close books through an inclusive calendar date."""
     from app import accounting as accounting_svc
 
+    parsed = reports_svc.parse_date(payload.through_date)
     status = await accounting_svc.close_books(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        through_date=payload.through_date,
+        through_date=accounting_svc.as_calendar_date(parsed),
         reason=payload.reason,
     )
     await db.commit()
@@ -9132,11 +9133,12 @@ async def accounting_period_reopen(
     """BR-10.2 — reopen books (earlier through_date or clear)."""
     from app import accounting as accounting_svc
 
+    parsed = reports_svc.parse_date(payload.through_date)
     status = await accounting_svc.reopen_books(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        through_date=payload.through_date,
+        through_date=accounting_svc.as_calendar_date(parsed),
         reason=payload.reason,
     )
     await db.commit()
