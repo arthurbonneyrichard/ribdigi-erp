@@ -1381,6 +1381,7 @@ export default function Page() {
                 <span>Customer name</span>
                 <input
                   className="tpos-input"
+                  aria-label="POS customer name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Optional name on receipt"

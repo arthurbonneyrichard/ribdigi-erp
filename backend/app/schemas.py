@@ -3200,6 +3200,27 @@ BankConnectionDisplayNameValue = Annotated[
 ]
 
 
+def validate_pos_customer_name_value(value: str) -> str:
+    """AfterValidator: POS walk-in customer name; blank/URL/garbage → 422 (1–180)."""
+    if not value:
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    if len(value) > 180:
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    return value
+
+
+# POS walk-in receipt name — matches PosSaleCreate.customer_name max 180.
+PosCustomerNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_pos_customer_name_value),
+]
+
+
 def validate_account_code_value(value: str) -> str:
     """AfterValidator: COA code; blank/garbage → 422 (1–30; alnum/_/-)."""
     if not value:
@@ -4156,7 +4177,8 @@ class PosPaymentLine(BaseModel):
 class PosSaleCreate(BaseModel):
     session_id: str | None = None
     party_id: str | None = None
-    customer_name: str | None = Field(default=None, max_length=180)
+    # omit/`null` → walk-in (no name); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
+    customer_name: PosCustomerNameValue | None = None
     subtotal: float = 0
     tax: float = 0
     total: float = 0
