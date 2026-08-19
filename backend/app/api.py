@@ -6545,7 +6545,14 @@ async def create_grn(
         purchase_order_id=payload.purchase_order_id,
         warehouse_id=payload.warehouse_id,
         notes=payload.notes,
-        items=[i.model_dump() for i in payload.items],
+        items=[
+            {
+                **i.model_dump(),
+                "manufacturing_date": reports_svc.parse_date(i.manufacturing_date),
+                "expiry_date": reports_svc.parse_date(i.expiry_date),
+            }
+            for i in payload.items
+        ],
     )
     await webhooks_svc.emit_event(
         db,

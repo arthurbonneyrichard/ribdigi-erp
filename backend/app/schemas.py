@@ -1888,6 +1888,13 @@ class AiLowStockPredictionRequestsBody(BaseModel):
 
 
 class GrnItemCreate(BaseModel):
+    """GRN line — optional batch dates ∈ IsoDateQueryValue (BR-6.4).
+
+    Optional `manufacturing_date` / `expiry_date`; omit/`null` → no batch dates;
+    blank/invalid → **422** (was free `datetime`; OpenAPI date-time; padded dates
+    inconsistent). API `reports.parse_date` remains defense-in-depth.
+    """
+
     po_item_id: str
     received_qty: float = Field(gt=0)
     accepted_qty: float | None = None
@@ -1895,8 +1902,8 @@ class GrnItemCreate(BaseModel):
     rejection_reason: str | None = None
     # Optional lot for accepted stock (BR-6.4); required when product.tracks_batches
     batch_number: str | None = None
-    manufacturing_date: datetime | None = None
-    expiry_date: datetime | None = None
+    manufacturing_date: IsoDateQueryValue | None = None
+    expiry_date: IsoDateQueryValue | None = None
 
     @model_validator(mode="after")
     def require_reason_when_rejected(self):
@@ -2477,7 +2484,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),

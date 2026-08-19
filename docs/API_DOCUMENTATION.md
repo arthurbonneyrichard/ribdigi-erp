@@ -878,7 +878,7 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 **Create:** `POST /purchases/grn`  
 **Get:** `GET /purchases/grn/{grn_id}`
 
-Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`, `manufacturing_date`, `expiry_date` (required when the product `tracks_batches`). Serialize echoes batch fields from the GRN’s stock movements / `product_batches` (not stored on `goods_receipt_items`). Purchasing Orders receive UI (BR-6.4).
+Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`, `manufacturing_date` / `expiry_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → no batch dates; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). Batch number required when the product `tracks_batches`. API `reports.parse_date` remains defense-in-depth. Serialize echoes batch fields from the GRN’s stock movements / `product_batches` (not stored on `goods_receipt_items`). Purchasing Orders receive UI **GRN manufacturing date** / **GRN expiry date** inputs (`aria-label`s; BR-6.4); post omits blank dates.
 
 **Create GRN:**
 ```json

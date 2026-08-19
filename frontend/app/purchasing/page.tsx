@@ -2069,8 +2069,11 @@ export default function Page() {
                             <td>
                               {receivable ? (
                                 <input
+                                  aria-label="GRN manufacturing date"
                                   style={{ width: 120 }}
-                                  type="date"
+                                  type="text"
+                                  placeholder="YYYY-MM-DD"
+                                  title="Manufacturing date (optional YYYY-MM-DD)"
                                   value={draft.mfg}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
@@ -2086,8 +2089,11 @@ export default function Page() {
                             <td>
                               {receivable ? (
                                 <input
+                                  aria-label="GRN expiry date"
                                   style={{ width: 120 }}
-                                  type="date"
+                                  type="text"
+                                  placeholder="YYYY-MM-DD"
+                                  title="Expiry date (optional YYYY-MM-DD)"
                                   value={draft.expiry}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
