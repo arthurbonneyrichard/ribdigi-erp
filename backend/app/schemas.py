@@ -695,7 +695,9 @@ class PlatformRevokeAccess(BaseModel):
 
 class AccountCreate(BaseModel):
     code: str
-    name: str
+    # Required COA label ∈ AccountNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank late service **400**; garbage could persist).
+    name: AccountNameValue
     # BR-10.3 / COA — schema Literal; omit → asset; blank/invalid → 422
     account_type: Literal["asset", "liability", "equity", "income", "expense"] = "asset"
     # omit/null = non-liquid; blank/invalid → 422 (no silent None from "")
@@ -712,7 +714,9 @@ class AccountCreate(BaseModel):
 
 
 class AccountUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank late service **400**; garbage could persist on COA display name).
+    name: AccountNameValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silent→null; garbage could persist; clearing bank_name on a bank
     # account still fails service required-name **400**).
@@ -2784,6 +2788,27 @@ BankNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_bank_name_value),
+]
+
+
+def validate_account_name_value(value: str) -> str:
+    """AfterValidator: COA display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Chart-of-accounts display name — matches Account.name String(150).
+AccountNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_account_name_value),
 ]
 
 

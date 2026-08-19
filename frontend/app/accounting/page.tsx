@@ -1152,8 +1152,15 @@ export default function Page() {
               onChange={(e) => setEditAcctName(e.target.value)}
               placeholder="Display name"
               disabled={!editAcctId}
+              aria-label="Edit account name"
+              title="Account display name (1–150 chars; letters/digits required)"
             />
-            <button type="button" onClick={saveAccountName} disabled={!editAcctId}>
+            <button
+              type="button"
+              onClick={saveAccountName}
+              disabled={!editAcctId}
+              aria-label="Save account name"
+            >
               Save name
             </button>
           </div>
@@ -1468,6 +1475,8 @@ export default function Page() {
                 value={newAcctName}
                 onChange={(e) => setNewAcctName(e.target.value)}
                 placeholder="Name (e.g. Petty Cash)"
+                aria-label="Account name"
+                title="Account display name (1–150 chars; letters/digits required)"
               />
               <select value={newAcctKind} onChange={(e) => setNewAcctKind(e.target.value)}>
                 <option value="cash">Cash</option>
