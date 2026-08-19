@@ -45,6 +45,7 @@ export default function Page() {
   const [closing, setClosing] = useState('0');
   const [lineAmount, setLineAmount] = useState('100');
   const [lineDesc, setLineDesc] = useState('Deposit');
+  const [stmtNotes, setStmtNotes] = useState('');
   const [stmtDate, setStmtDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [lineTxnDate, setLineTxnDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [pickBank, setPickBank] = useState<string[]>([]);
@@ -530,7 +531,7 @@ export default function Page() {
           statement_date: stmtDate || undefined,
           opening_balance: Number(opening),
           closing_balance: Number(closing),
-          notes: desc || undefined,
+          notes: stmtNotes.trim() || null,
           lines: [
             {
               txn_date: lineTxnDate || undefined,
@@ -542,6 +543,7 @@ export default function Page() {
       });
       setMessage('Statement created');
       setSelected(r.data);
+      setStmtNotes('');
       await refresh();
       const detail = await api(`/accounting/bank-statements/${r.data.id}`);
       setSelected(detail.data);
@@ -1738,6 +1740,13 @@ export default function Page() {
                 title="Optional line description (1–500 chars; letters/digits required)"
               />
             </div>
+            <input
+              value={stmtNotes}
+              onChange={(e) => setStmtNotes(e.target.value)}
+              placeholder="Statement notes (optional)"
+              aria-label="Statement notes"
+              title="Optional statement notes (1–500 chars; letters/digits required)"
+            />
             <button
               onClick={createStatement}
               disabled={!reconAccountId}

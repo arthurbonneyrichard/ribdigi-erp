@@ -4285,7 +4285,10 @@ class BankStatementCreateBody(BaseModel):
     (was free `dict` that turned omit/`""` into a late **404**). Zero line amounts
     → **422**. Optional `statement_date` ∈ `IsoDateQueryValue`; omit → today;
     blank/invalid → **422** (blank was silent today; invalid was uncaught **500**).
-    Service `create_statement` remains defense-in-depth.
+    Optional `notes` ∈ `BankStatementNotesValue`; omit/`null` → no notes; blank/
+    `!!!`/`http://…` → **422** (was free `str`; blank silently dropped via
+    strip-to-None / garbage could persist). Service `create_statement` remains
+    defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -4294,7 +4297,9 @@ class BankStatementCreateBody(BaseModel):
     statement_date: IsoDateQueryValue | None = None
     opening_balance: float = 0
     closing_balance: float = 0
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped via strip-to-None / garbage could persist).
+    notes: BankStatementNotesValue | None = None
     lines: list[BankStatementLineCreate] = Field(default_factory=list)
 
     @field_validator("account_id", mode="before")
@@ -4302,14 +4307,6 @@ class BankStatementCreateBody(BaseModel):
     def _strip_account_id(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip()
-        return value
-
-    @field_validator("notes", mode="before")
-    @classmethod
-    def _strip_optional_header(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
         return value
 
 
@@ -4506,6 +4503,27 @@ BankStatementLineDescriptionValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_bank_statement_line_description_value),
+]
+
+
+def validate_bank_statement_notes_value(value: str) -> str:
+    """AfterValidator: bank statement header notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Bank statement header notes — keep ≤500 at API boundary.
+BankStatementNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_statement_notes_value),
 ]
 
 
