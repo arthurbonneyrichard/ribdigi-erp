@@ -31,3 +31,7 @@ Stage 1680 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shinoyakiyuglaze Gate, Transfer Shinoyakiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1680 opened under **ADR-3367** after CONTINUE/NEXT (Tenant MVP Transfer Oribeyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3368**. Stage 1679 feature scope remains frozen.
