@@ -31,3 +31,7 @@ Stage 1661 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sometsukeglaze Gate, Transfer Sometsukeglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1661 opened under **ADR-3329** after CONTINUE/NEXT (Tenant MVP Transfer Nigoshiglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3330**. Stage 1660 feature scope remains frozen.
