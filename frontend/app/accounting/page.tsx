@@ -1555,13 +1555,14 @@ export default function Page() {
                 value={xferRef}
                 onChange={(e) => setXferRef(e.target.value)}
                 placeholder="Reference"
+                aria-label="Cash transfer reference"
               />
               <input
                 value={xferNotes}
                 onChange={(e) => setXferNotes(e.target.value)}
                 placeholder="Notes"
               />
-              <button type="button" className="btn-ok" onClick={postTransfer}>
+              <button type="button" className="btn-ok" onClick={postTransfer} aria-label="Post cash transfer">
                 Post
               </button>
             </div>

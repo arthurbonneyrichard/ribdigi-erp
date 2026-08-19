@@ -758,7 +758,9 @@ class CashTransferCreate(BaseModel):
     from_account_id: str | None = None
     to_account_id: str | None = None
     amount: float = Field(gt=0)
-    reference: str | None = None
+    # omit/`null` → auto XFER-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-numbered / garbage could persist).
+    reference: CashTransferReferenceValue | None = None
     notes: str | None = None
 
 
@@ -4328,6 +4330,27 @@ ExpenseReferenceValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_reference_value),
+]
+
+
+def validate_cash_transfer_reference_value(value: str) -> str:
+    """AfterValidator: cash transfer reference; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Cash transfer reference — matches CashTransfer.reference String(80); omit → auto XFER.
+CashTransferReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_cash_transfer_reference_value),
 ]
 
 
