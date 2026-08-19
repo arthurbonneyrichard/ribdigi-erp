@@ -1027,7 +1027,9 @@ class BrandCreate(BaseModel):
     # Required brand label ∈ BrandNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog brand create).
     name: BrandNameValue
-    description: str | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared / garbage could persist on Brand.description Text).
+    description: BrandDescriptionValue | None = None
 
 
 class BrandUpdate(BaseModel):
@@ -1035,7 +1037,9 @@ class BrandUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on brand display name).
     name: BrandNameValue | None = None
-    description: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on Brand.description Text).
+    description: BrandDescriptionValue | None = None
     is_active: bool | None = None
 
 
@@ -3003,6 +3007,27 @@ ProductDescriptionValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_description_value),
+]
+
+
+def validate_brand_description_value(value: str) -> str:
+    """AfterValidator: brand catalog narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Brand description — Brand.description Text; keep ≤500 at API boundary.
+BrandDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_brand_description_value),
 ]
 
 

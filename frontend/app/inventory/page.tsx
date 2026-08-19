@@ -2291,6 +2291,8 @@ export default function Page() {
               value={brandDescription}
               onChange={(e) => setBrandDescription(e.target.value)}
               placeholder="Description (optional)"
+              aria-label="Brand description"
+              title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
             <button
