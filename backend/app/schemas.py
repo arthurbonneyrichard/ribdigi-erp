@@ -1301,7 +1301,9 @@ class ExpenseCreate(BaseModel):
     payment_method: ExpensePaymentMethod = "cash"
     liquid_account_id: str | None = None
     reference: str | None = None
-    payee: str | None = None
+    # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on expense create).
+    payee: ExpensePayeeValue | None = None
     store_id: str | None = None
     branch_id: str | None = None
     department_id: str | None = None
@@ -1377,7 +1379,9 @@ class AiDocumentExpenseCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     amount: float = Field(gt=0)
-    payee: str | None = None
+    # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on AI draft expense).
+    payee: ExpensePayeeValue | None = None
     description: str | None = None
     reference: str | None = None
     category_id: str | None = None
@@ -1418,7 +1422,10 @@ class ExpenseUpdate(BaseModel):
     # omit = no change; blank/invalid → 422
     payment_method: ExpensePaymentMethod | None = None
     reference: str | None = None
-    payee: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on expense PATCH). Use recurring `clear_payee`
+    # pattern is N/A here — send a valid label to change.
+    payee: ExpensePayeeValue | None = None
     # omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422** (was free
     # `datetime`; OpenAPI date-time; padded dates inconsistent). Same
     # IsoDateQueryValue as create / AI draft / payment cheque_date.
@@ -1471,7 +1478,9 @@ class RecurringExpenseCreate(BaseModel):
     frequency: Literal["daily", "weekly", "monthly", "yearly"] = "monthly"
     # BR-9.2 / BR-9.5 — same ExpensePaymentMethod Literal; omit → bank_transfer
     payment_method: ExpensePaymentMethod = "bank_transfer"
-    payee: str | None = None
+    # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on recurring create).
+    payee: ExpensePayeeValue | None = None
     branch_id: str | None = None
     department_id: str | None = None
 
@@ -1479,7 +1488,9 @@ class RecurringExpenseCreate(BaseModel):
 class RecurringExpenseUpdate(BaseModel):
     is_active: bool | None = None
     amount: float | None = Field(default=None, gt=0)
-    payee: str | None = None
+    # omit/`null` → no change (unless `clear_payee`); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on recurring PATCH).
+    payee: ExpensePayeeValue | None = None
     clear_payee: bool = False
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on recurring PATCH).
@@ -4269,6 +4280,27 @@ ExpenseDescriptionValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_description_value),
+]
+
+
+def validate_expense_payee_value(value: str) -> str:
+    """AfterValidator: expense payee label; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Expense / recurring payee — matches Expense.payee / RecurringExpense.payee String(150).
+ExpensePayeeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_payee_value),
 ]
 
 

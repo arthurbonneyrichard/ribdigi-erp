@@ -281,7 +281,7 @@ export default function Page() {
           category_id: categoryId || undefined,
           amount: Number(amount),
           description: description.trim() || null,
-          payee: payee || undefined,
+          payee: payee.trim() || null,
           // null when blank so Create does not 422 (IsoDateQueryValue); omit → today.
           expense_date: expenseDate.trim() || null,
           payment_method: paymentMethod,
@@ -317,7 +317,7 @@ export default function Page() {
           category_id: recCategoryId || undefined,
           amount: Number(recAmount),
           description: recDescription.trim() || null,
-          payee: recPayee || undefined,
+          payee: recPayee.trim() || null,
           frequency: recFrequency,
           payment_method: recPaymentMethod,
           branch_id: recBranchId || null,
@@ -1203,7 +1203,12 @@ export default function Page() {
               ))}
           </select>
           <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-          <input value={payee} onChange={(e) => setPayee(e.target.value)} placeholder="Payee" />
+          <input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="Payee"
+            aria-label="Expense payee"
+          />
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
