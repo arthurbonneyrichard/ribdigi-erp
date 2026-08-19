@@ -1,0 +1,62 @@
+{
+  "id": "mvp-declaration-pack-rg-blockers",
+  "stage": 249,
+  "pack": "B1",
+  "doc": "docs/MVP_DECLARATION_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MVP_DECLARATION_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration": "docs/MVP_DECLARATION_MVP.md",
+    "launch_cert_pack_remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration_register": "ops/mvp/mvp-declaration.json"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "sections_1_3_verified": false,
+  "blockers": {
+    "go_live_complete": "REMAINING",
+    "section_7_signed_complete": "REMAINING",
+    "attestation_complete": "REMAINING",
+    "sections_1_3_verified_complete": "REMAINING",
+    "stage31_c1_as_signed_declaration": "NON_CLAIM",
+    "stage230_as_go_live": "NON_CLAIM",
+    "go_live_claimed": "false",
+    "section_7_signed": "false",
+    "attestation_claimed": "false",
+    "sections_1_3_verified": "false"
+  },
+  "steps": [
+    {
+      "id": "mdprb-golive",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprb-s7",
+      "title": "Mark section 7 signed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprb-attestation",
+      "title": "Mark attestation Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprb-stage31-nonclaim",
+      "title": "Mark Stage 31 C1 as non-claim for signed declaration",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mdprb-decl-remaining",
+      "title": "Go-live / section 7 / attestation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 249 B1 MVP declaration pack RG blocker matrix packaging only. Go-live and section 7 Completes remain MISSING."
+}

@@ -1,0 +1,60 @@
+{
+  "id": "live-migration-pack-rg-pointers",
+  "stage": 322,
+  "pack": "P1",
+  "doc": "docs/LIVE_MIGRATION_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md",
+    "live_migration_remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md",
+    "live_dr_pack_remaining_gate": "docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "live_migration_remaining_gate_stage193",
+    "live_dr_pack_remaining_gate_stage321",
+    "e2e_backup_restore_pack_remaining_gate_stage320",
+    "first_tenant_live_onboarding_remaining_gate_stage194",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "lmprp-stage193",
+      "title": "Point to Stage 193 live migration remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmprp-stage321",
+      "title": "Point to Stage 321 live DR pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmprp-stage320",
+      "title": "Point to Stage 320 E2E backup restore pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmprp-stage194",
+      "title": "Point to Stage 194 first-tenant live onboarding remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmprp-migration-remaining",
+      "title": "Live migration Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 322 P1 live migration pack RG pointers packaging only. Do not claim live migration Complete."
+}

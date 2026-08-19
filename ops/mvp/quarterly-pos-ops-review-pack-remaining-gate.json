@@ -1,0 +1,57 @@
+{
+  "id": "quarterly-pos-ops-review-pack-remaining-gate",
+  "stage": 349,
+  "pack": "I1",
+  "doc": "docs/QUARTERLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/QUARTERLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/QUARTERLY_POS_OPS_REVIEW_PACK_RG_POINTERS_MVP.md",
+    "quarterly_pos_ops_review": "docs/QUARTERLY_POS_OPS_REVIEW_MVP.md",
+    "monthly_pos_ops_pointers_pack_remaining_gate": "docs/MONTHLY_POS_OPS_POINTERS_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_trends_pack_remaining_gate": "docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "live_migration_claimed": false,
+  "distinct_from_stage178_quarterly_pos_ops_review": true,
+  "distinct_from_stage348_monthly_pos_ops_pointers_pack_remaining_gate": true,
+  "distinct_from_stage347_monthly_pos_ops_trends_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "qporpr-read-blockers",
+      "title": "Read B1 quarterly POS ops review pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporpr-follow-pointers",
+      "title": "Follow P1 Stage 178 / Stage 348 / Stage 347 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporpr-checklist-missing",
+      "title": "Reaffirm live quarterly POS ops review / Offline Complete / support SLA / attestation / live migration MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporpr-no-packaging-as-live",
+      "title": "Do not treat Stage 178 / Stage 177 / Stage 348 / Stage 347 / Stage 329 as live quarterly POS ops review Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qporpr-checklist-remaining",
+      "title": "Offline Complete / support SLA / attestation / live migration / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 349 I1 quarterly POS ops review pack remaining-gate index packaging only. Do not claim live quarterly POS ops review Complete."
+}

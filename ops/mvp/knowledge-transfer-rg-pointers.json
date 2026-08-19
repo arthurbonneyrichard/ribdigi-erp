@@ -1,0 +1,60 @@
+{
+  "id": "knowledge-transfer-rg-pointers",
+  "stage": 216,
+  "pack": "P1",
+  "doc": "docs/KNOWLEDGE_TRANSFER_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "knowledge_transfer_register": "ops/mvp/knowledge-transfer.json",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "knowledge_base_remaining_gate": "docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md",
+    "live_training_remaining_gate_stage189": "docs/LIVE_TRAINING_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_knowledge_transfer_claimed": false,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "knowledge_transfer_stage33_t1",
+    "customer_training_cert_stage48_t1",
+    "knowledge_base_remaining_gate_stage215",
+    "live_training_remaining_gate_stage189",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ktp-kt",
+      "title": "Point to Stage 33 T1 knowledge transfer",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktp-cert",
+      "title": "Point to Stage 48 T1 customer training cert",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktp-kb-gate",
+      "title": "Point to Stage 215 knowledge base remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktp-lt-gate",
+      "title": "Point to Stage 189 live-training remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktp-training-remaining",
+      "title": "Live training Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 216 P1 knowledge transfer RG pointers packaging only. Do not claim live training Complete."
+}

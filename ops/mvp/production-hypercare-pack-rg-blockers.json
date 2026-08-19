@@ -1,0 +1,62 @@
+{
+  "id": "production-hypercare-pack-rg-blockers",
+  "stage": 264,
+  "pack": "B1",
+  "doc": "docs/PRODUCTION_HYPERCARE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md",
+    "production_hypercare": "docs/PRODUCTION_HYPERCARE_MVP.md",
+    "production_hypercare_remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "production_hypercare_register": "ops/mvp/production-hypercare.json"
+  },
+  "packaging_complete": true,
+  "production_hypercare_live_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "support_sla_claimed": false,
+  "blockers": {
+    "production_hypercare_live_complete": "REMAINING",
+    "oncall_rota_live_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "support_sla_complete": "REMAINING",
+    "stage67_h1_as_hypercare_live": "NON_CLAIM",
+    "stage219_as_hypercare_live": "NON_CLAIM",
+    "production_hypercare_live_claimed": "false",
+    "oncall_rota_live": "false",
+    "go_live_claimed": "false",
+    "support_sla_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "phprb-hypercare",
+      "title": "Mark live production hypercare Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprb-oncall",
+      "title": "Mark on-call rota Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprb-go-live",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprb-stage67-nonclaim",
+      "title": "Mark Stage 67 H1 as non-claim for live production hypercare Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprb-hypercare-remaining",
+      "title": "Live production hypercare Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 264 B1 production hypercare pack RG blocker matrix packaging only. Live production hypercare Completes remain MISSING."
+}

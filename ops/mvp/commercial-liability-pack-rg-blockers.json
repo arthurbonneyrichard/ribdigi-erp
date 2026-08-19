@@ -1,0 +1,63 @@
+{
+  "id": "commercial-liability-pack-rg-blockers",
+  "stage": 313,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_LIABILITY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md",
+    "commercial_liability": "docs/COMMERCIAL_LIABILITY_MVP.md"
+  },
+  "packaging_complete": true,
+  "liability_cap_claimed": false,
+  "indemnity_signed_claimed": false,
+  "legal_counsel_claimed": false,
+  "contract_liability_live": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "liability_cap_claimed": "REMAINING",
+    "indemnity_signed_claimed": "REMAINING",
+    "legal_counsel_claimed": "REMAINING",
+    "contract_liability_live": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage77_as_liability_cap": "NON_CLAIM",
+    "stage310_as_liability_cap": "NON_CLAIM",
+    "liability_cap_claimed_flag": "false",
+    "indemnity_signed_claimed_flag": "false",
+    "legal_counsel_claimed_flag": "false",
+    "contract_liability_live_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "clprb-cap",
+      "title": "Mark liability-cap signed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprb-indemnity",
+      "title": "Mark indemnity signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprb-counsel",
+      "title": "Mark legal counsel Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprb-stage77-nonclaim",
+      "title": "Mark Stage 77 L1 as non-claim for liability-cap signed Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprb-cap-remaining",
+      "title": "Liability-cap signed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 313 B1 commercial liability pack RG blocker matrix packaging only. Liability-cap signed Completes remain MISSING."
+}

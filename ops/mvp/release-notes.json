@@ -1,0 +1,70 @@
+{
+  "stage": "32",
+  "workstream": "N1",
+  "doc": "docs/RELEASE_NOTES_MVP.md",
+  "version_label": "Commercial MVP v1.0 packaging",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "acceptance_archive": "ops/mvp/acceptance-archive.json",
+  "operator_handoff": "ops/mvp/operator-handoff.json",
+  "gate_matrix": "ops/mvp/gate-matrix.json",
+  "operator_remaining_register": "ops/mvp/operator-remaining-register.json",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "packaging_complete": true,
+  "production_live_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "deferred_implemented_claimed": false,
+  "highlights": [
+    {
+      "id": "foundation-commerce",
+      "title": "Foundation through commerce & AI packaging Complete (MVP)",
+      "stages": "1–25",
+      "class": "complete_mvp",
+      "summary": "Multi-tenant ERP shell, inventory, sales/POS, accounting, tax, reports, commerce gates, actuals→AI insights packaging evidenced under Stage exit/freeze ADRs"
+    },
+    {
+      "id": "ops-platform",
+      "title": "Ops platform / release / staging / hardening / go-live support packaging Complete (MVP)",
+      "stages": "26–30",
+      "class": "complete_mvp",
+      "summary": "Monitoring, WAL/PITR, K8s/Helm, load capacity, offsite backup, PgBouncer, security scan, launch cert, staging packs, pen-test/soak/TLS/cutover, evidence/incident/support/attestation packaging"
+    },
+    {
+      "id": "closeout",
+      "title": "Commercial MVP closeout packaging Complete (MVP)",
+      "stages": "31",
+      "class": "complete_mvp",
+      "summary": "Gate honesty matrix, deferred ADR register, operator Remaining register, packaging≠live declaration"
+    },
+    {
+      "id": "handoff-archive",
+      "title": "Acceptance archive + operator handoff packaging Complete (MVP)",
+      "stages": "32 A1–H1",
+      "class": "complete_mvp",
+      "summary": "Stage 1–31 exit/freeze index and ops take-over checklist; handoff_complete_claimed remains false"
+    },
+    {
+      "id": "remaining-go-live",
+      "title": "Live go-live / §7 / attestation Remaining",
+      "stages": "operator",
+      "class": "remaining_post_mvp",
+      "summary": "LAUNCH §§1–3 / §7, live drills, hosted SaaS observability, purchased pen-test require real env verification"
+    },
+    {
+      "id": "remaining-deferred-adrs",
+      "title": "Deferred ADR-001–006 post-MVP scopes Remaining",
+      "stages": "deferred",
+      "class": "deferred_adr",
+      "summary": "Paid billing, schema-per-tenant, i18n packs, store membership, hard-delete archival not implemented as Complete"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage32_n1_release_notes.json",
+  "deferred": [
+    "Treating release notes packaging as production live",
+    "Forged LAUNCH §7 Name/Date sign-off",
+    "Claiming live go-live Complete from Stage 26–32 packaging",
+    "Implementing deferred ADR-001–006 as Complete"
+  ]
+}

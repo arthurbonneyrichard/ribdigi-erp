@@ -1,0 +1,62 @@
+{
+  "id": "subscription-renewal-pack-rg-blockers",
+  "stage": 272,
+  "pack": "B1",
+  "doc": "docs/SUBSCRIPTION_RENEWAL_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md",
+    "subscription_renewal": "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+    "billing_deferred_adr": "docs/ADR_002_BILLING_DEFERRED.md",
+    "subscription_renewal_register": "ops/mvp/subscription-renewal.json"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "subscriptions_live_claimed": false,
+  "annual_discount_enforcement_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "billing_complete": "REMAINING",
+    "subscriptions_live_complete": "REMAINING",
+    "annual_discount_enforcement_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage52_r1_as_subscriptions_live": "NON_CLAIM",
+    "stage36_as_billing_complete": "NON_CLAIM",
+    "billing_complete_claimed": "false",
+    "subscriptions_live_claimed": "false",
+    "annual_discount_enforcement_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "srprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-subscriptions",
+      "title": "Mark live subscriptions Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-discount",
+      "title": "Mark annual-discount enforcement Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-stage52-nonclaim",
+      "title": "Mark Stage 52 R1 as non-claim for live subscriptions Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-subscriptions-remaining",
+      "title": "Live subscriptions Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 272 B1 subscription renewal pack RG blocker matrix packaging only. Live subscriptions Completes remain MISSING."
+}

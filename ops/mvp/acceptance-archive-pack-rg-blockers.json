@@ -1,0 +1,66 @@
+{
+  "id": "acceptance-archive-pack-rg-blockers",
+  "stage": 284,
+  "pack": "B1",
+  "doc": "docs/ACCEPTANCE_ARCHIVE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ACCEPTANCE_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "acceptance_archive": "docs/ACCEPTANCE_ARCHIVE_MVP.md"
+  },
+  "packaging_complete": true,
+  "archive_live_claimed": false,
+  "section_7_signed_claimed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "archive_live": "REMAINING",
+    "section_7_signed": "REMAINING",
+    "attestation": "REMAINING",
+    "live_runs_certified": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage32_as_archive_live": "NON_CLAIM",
+    "stage283_as_production_live": "NON_CLAIM",
+    "archive_live_claimed": "false",
+    "section_7_signed_claimed": "false",
+    "attestation_claimed": "false",
+    "live_runs_certified_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "aaprb-archive",
+      "title": "Mark archive live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprb-section7",
+      "title": "Mark \u00a77 signed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprb-attestation",
+      "title": "Mark attestation Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprb-stage32-nonclaim",
+      "title": "Mark Stage 32 A1 as non-claim for archive live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprb-archive-remaining",
+      "title": "Archive live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 284 B1 acceptance archive pack RG blocker matrix packaging only. Archive live Completes remain MISSING."
+}

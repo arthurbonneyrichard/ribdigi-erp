@@ -1,0 +1,156 @@
+{
+  "stage": "54",
+  "workstream": "S1",
+  "doc": "docs/DIRECT_SALES_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "partner_reseller": "ops/mvp/partner-reseller.json",
+  "partner_reseller_doc": "docs/PARTNER_RESELLER_MVP.md",
+  "digital_marketing": "ops/mvp/digital-marketing.json",
+  "digital_marketing_doc": "docs/DIGITAL_MARKETING_MVP.md",
+  "pricing_transparency": "ops/mvp/pricing-transparency.json",
+  "pricing_transparency_doc": "docs/PRICING_TRANSPARENCY_MVP.md",
+  "marketplace_presence": "ops/mvp/marketplace-presence.json",
+  "marketplace_presence_doc": "docs/MARKETPLACE_PRESENCE_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage54_plan": "docs/STAGE_54_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "inside_sales_team_live": false,
+  "enterprise_pipeline_claimed": false,
+  "white_label_sales_pipeline_claimed": false,
+  "direct_sales_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage54_s1_direct_sales.json",
+  "steps": [
+    {
+      "id": "ds-product-overview",
+      "category": "sales",
+      "title": "Index PRODUCT_OVERVIEW Direct Sales / Enterprise / White-Label themes as GTM honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_54_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ds-partner-adjacency",
+      "category": "pipeline",
+      "title": "Link Stage 49 partner / reseller as channel adjacency (not inside-sales team)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PARTNER_RESELLER_MVP.md",
+        "ops/mvp/partner-reseller.json"
+      ],
+      "source": "docs/PARTNER_RESELLER_MVP.md"
+    },
+    {
+      "id": "ds-marketing-adjacency",
+      "category": "sales",
+      "title": "Link Stage 54 M1 digital marketing as acquisition adjacency (not direct sales pipeline)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DIGITAL_MARKETING_MVP.md",
+        "ops/mvp/digital-marketing.json"
+      ],
+      "source": "docs/DIGITAL_MARKETING_MVP.md"
+    },
+    {
+      "id": "ds-pricing-adjacency",
+      "category": "pipeline",
+      "title": "Link Stage 49 pricing transparency as commercial adjacency (not Enterprise sales close)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRICING_TRANSPARENCY_MVP.md",
+        "ops/mvp/pricing-transparency.json"
+      ],
+      "source": "docs/PRICING_TRANSPARENCY_MVP.md"
+    },
+    {
+      "id": "ds-marketplace-adjacency",
+      "category": "sales",
+      "title": "Link Stage 51 marketplace presence as distribution adjacency (not inside sales)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MARKETPLACE_PRESENCE_MVP.md",
+        "ops/mvp/marketplace-presence.json"
+      ],
+      "source": "docs/MARKETPLACE_PRESENCE_MVP.md"
+    },
+    {
+      "id": "ds-billing-deferred",
+      "category": "pipeline",
+      "title": "Link Stage 36 billing-deferred honesty as Enterprise close Remaining adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "ds-roadmap-backlog",
+      "category": "sales",
+      "title": "Index DEVELOPMENT_ROADMAP GTM / Enterprise sales backlog as Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "ds-plan-honesty",
+      "category": "pipeline",
+      "title": "Confirm Stage 54 plan explicitly defers live inside-sales team / Enterprise pipeline",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_54_PLAN.md",
+        "docs/DIRECT_SALES_MVP.md"
+      ],
+      "source": "docs/STAGE_54_PLAN.md"
+    },
+    {
+      "id": "ds-team-remaining",
+      "category": "honesty",
+      "title": "Live inside-sales team Remaining \u2014 packaging \u2260 staffed Enterprise sales org",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_54_PLAN.md",
+        "docs/DIRECT_SALES_MVP.md"
+      ],
+      "source": "docs/STAGE_54_PLAN.md"
+    },
+    {
+      "id": "ds-pipeline-remaining",
+      "category": "honesty",
+      "title": "Enterprise / White-Label sales pipeline Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_54_PLAN.md",
+        "docs/DIRECT_SALES_MVP.md"
+      ],
+      "source": "docs/STAGE_54_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live inside-sales team Complete",
+    "Enterprise sales pipeline Complete",
+    "White-Label sales pipeline Complete",
+    "Direct-sales program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

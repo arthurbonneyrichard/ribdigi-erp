@@ -1,0 +1,62 @@
+{
+  "id": "attestation-pack-rg-pointers",
+  "stage": 213,
+  "pack": "P1",
+  "doc": "docs/ATTESTATION_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "attestation_pack": "docs/ATTESTATION_PACK_MVP.md",
+    "attestation_matrix": "ops/launch/attestation-matrix.json",
+    "attestation_evidence": "ops/launch/attestation-evidence.example.json",
+    "evidence_ledger_remaining_gate": "docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md",
+    "attestation_remaining_gate_stage187": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_attestation_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "go_live_claimed": false,
+  "topics": [
+    "attestation_pack_stage30_a1",
+    "attestation_matrix",
+    "attestation_evidence_schema",
+    "evidence_ledger_remaining_gate_stage212",
+    "attestation_remaining_gate_stage187",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "arp-pack",
+      "title": "Point to Stage 30 A1 attestation pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arp-matrix",
+      "title": "Point to attestation matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arp-evidence",
+      "title": "Point to attestation evidence schema",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arp-ledger-gate",
+      "title": "Point to Stage 212 evidence ledger remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arp-attestation-remaining",
+      "title": "Live go-live attestation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 213 P1 attestation pack RG pointers packaging only. Do not claim live go-live attestation Complete."
+}

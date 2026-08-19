@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Stage 26 K1 — install/upgrade staging release (operator template; not CI).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+NS="${RIBDIGI_NS:-ribdigi-staging}"
+RELEASE="${RIBDIGI_RELEASE:-ribdigi-staging}"
+
+kubectl get ns "$NS" >/dev/null 2>&1 || kubectl create namespace "$NS"
+
+if ! kubectl -n "$NS" get secret ribdigi-secrets >/dev/null 2>&1; then
+  echo "Create secret first:"
+  echo "  kubectl -n $NS create secret generic ribdigi-secrets --from-env-file=.env.production"
+  exit 1
+fi
+
+helm upgrade --install "$RELEASE" "$ROOT/helm/ribdigi" \
+  -f "$ROOT/helm/ribdigi/values-staging.yaml" \
+  -n "$NS"
+
+kubectl -n "$NS" rollout status deploy/ribdigi-backend --timeout=180s
+echo "Install complete. Run ops/k8s/staging-smoke.sh.example next."

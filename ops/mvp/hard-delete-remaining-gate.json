@@ -1,0 +1,56 @@
+{
+  "id": "hard-delete-remaining-gate",
+  "stage": 183,
+  "pack": "I1",
+  "doc": "docs/HARD_DELETE_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/HARD_DELETE_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/HARD_DELETE_PACK_POINTERS_MVP.md",
+    "adr003": "docs/ADR_003_USER_DELETE_POLICY.md",
+    "erasure_honesty": "docs/ERASURE_HONESTY_MVP.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "membership_remaining_gate": "docs/MEMBERSHIP_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "hard_delete_claimed": false,
+  "hard_delete_api_claimed": false,
+  "archival_complete_claimed": false,
+  "soft_delete_as_hard_delete_claimed": false,
+  "user_store_membership_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage37_erasure_honesty": true,
+  "distinct_from_stage182_membership_gate": true,
+  "steps": [
+    {
+      "id": "hd-read-blockers",
+      "title": "Read B1 hard-delete blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hd-follow-pointers",
+      "title": "Follow P1 ADR-003 / erasure / deferred ADR pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hd-hard-delete-missing",
+      "title": "Reaffirm hard-delete MISSING until archival strategy ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hd-no-soft-as-hard",
+      "title": "Do not treat soft-delete Completes as hard-delete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hd-hard-delete-remaining",
+      "title": "Hard-delete / archival / permanent row removal Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 183 I1 hard-delete remaining-gate index packaging only. Do not claim hard-delete Complete."
+}

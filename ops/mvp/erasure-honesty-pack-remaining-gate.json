@@ -1,0 +1,57 @@
+{
+  "id": "erasure-honesty-pack-remaining-gate",
+  "stage": 305,
+  "pack": "I1",
+  "doc": "docs/ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ERASURE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ERASURE_HONESTY_PACK_RG_POINTERS_MVP.md",
+    "erasure_honesty": "docs/ERASURE_HONESTY_MVP.md",
+    "commercial_billing_deferred_pack_remaining_gate": "docs/COMMERCIAL_BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "soft_delete_erasure_pack_remaining_gate": "docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md",
+    "data_portability_pack_remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "hard_delete_claimed": false,
+  "erasure_complete_claimed": false,
+  "anonymize_workflow_claimed": false,
+  "deferred_implemented_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage37_erasure_honesty": true,
+  "distinct_from_stage304_commercial_billing_deferred_pack_remaining_gate": true,
+  "distinct_from_soft_delete_erasure_pack_remaining_gate": true,
+  "distinct_from_data_portability_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ehpr-read-blockers",
+      "title": "Read B1 erasure honesty pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ehpr-follow-pointers",
+      "title": "Follow P1 Stage 37 E1 / Stage 304 / prior soft-delete-erasure-pack / Stage 37 P1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ehpr-erasure-missing",
+      "title": "Reaffirm hard delete / erasure MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ehpr-no-packaging-as-live",
+      "title": "Do not treat Stage 37 E1 / prior SOFT_DELETE_ERASURE_PACK / Stage 304 as hard delete Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ehpr-erasure-remaining",
+      "title": "Hard delete / erasure / anonymize / deferred implemented / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 305 I1 erasure honesty pack remaining-gate index packaging only. Do not claim hard delete Complete."
+}

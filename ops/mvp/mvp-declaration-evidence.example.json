@@ -1,0 +1,18 @@
+{
+  "declaration_id": "",
+  "declared_at": "",
+  "environment": "",
+  "packaging_complete": true,
+  "commercial_mvp_packaging_declared": true,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "sections_1_3_verified": false,
+  "live_runs_certified": false,
+  "passed": false,
+  "engineering_name": "",
+  "operations_name": "",
+  "product_name": "",
+  "operator": "",
+  "notes": "Schema example only — packaging declaration is not a forged go-live certificate. Keep go_live_claimed=false and section_7_signed=false until real env verification. See docs/MVP_DECLARATION_MVP.md (Stage 31 C1)."
+}

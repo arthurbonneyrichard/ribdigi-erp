@@ -1,0 +1,56 @@
+{
+  "id": "evidence-ledger-blockers",
+  "stage": 212,
+  "pack": "B1",
+  "doc": "docs/EVIDENCE_LEDGER_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/EVIDENCE_LEDGER_REMAINING_GATE_MVP.md",
+    "evidence_ledger": "docs/EVIDENCE_LEDGER_MVP.md",
+    "attestation_pack": "docs/ATTESTATION_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_evidence_ledger_claimed": false,
+  "live_runs_certified": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_operator_run_certification": "REMAINING",
+    "go_live_section7_attestation": "REMAINING",
+    "stage30_l1_as_live_evidence_ledger": "NON_CLAIM",
+    "live_runs_certified": "false",
+    "attestation_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "eb-runs",
+      "title": "Mark live operator-run certification Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eb-attestation",
+      "title": "Mark go-live / section 7 attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eb-stage30-nonclaim",
+      "title": "Mark Stage 30 L1 evidence ledger as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eb-attestation-false",
+      "title": "Mark attestation_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eb-ledger-remaining",
+      "title": "Live evidence-ledger Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 212 B1 evidence ledger blocker matrix packaging only. Live evidence-ledger Complete remains MISSING."
+}

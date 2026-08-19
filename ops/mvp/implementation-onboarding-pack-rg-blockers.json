@@ -1,0 +1,53 @@
+{
+  "id": "implementation-onboarding-pack-rg-blockers",
+  "stage": 247,
+  "pack": "B1",
+  "doc": "docs/IMPLEMENTATION_ONBOARDING_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/IMPLEMENTATION_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "implementation_onboarding": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+    "business_pilot_pack_remaining_gate": "docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md",
+    "implementation_onboarding_register": "ops/mvp/implementation-onboarding.json"
+  },
+  "packaging_complete": true,
+  "data_migration_fee_billing_live": false,
+  "onsite_training_delivery_claimed": false,
+  "custom_workflow_sold_claimed": false,
+  "implementation_onboarding_program_live": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_data_migration_fee_billing": "REMAINING",
+    "onsite_training_delivery_complete": "REMAINING",
+    "stage56_o1_as_live_implementation_onboarding": "NON_CLAIM",
+    "stage246_i1_as_live_implementation_onboarding": "NON_CLAIM",
+    "implementation_onboarding_program_live": "false",
+    "onsite_training_delivery_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ioprb-billing",
+      "title": "Mark live data-migration fee billing Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ioprb-training",
+      "title": "Mark on-site training delivery Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ioprb-stage56-nonclaim",
+      "title": "Mark Stage 56 O1 as non-claim for live implementation onboarding",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ioprb-impl-remaining",
+      "title": "Live implementation onboarding Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 247 B1 implementation onboarding pack RG blocker matrix packaging only. Live implementation onboarding Complete remains MISSING."
+}

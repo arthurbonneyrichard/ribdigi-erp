@@ -1,0 +1,56 @@
+{
+  "id": "i18n-remaining-gate",
+  "stage": 184,
+  "pack": "I1",
+  "doc": "docs/I18N_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/I18N_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/I18N_PACK_POINTERS_MVP.md",
+    "adr006": "docs/ADR_006_LANGUAGE_I18N.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "i18n_scaffold": "frontend/lib/i18n.ts",
+    "hard_delete_remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "i18n_packs_claimed": false,
+  "multi_language_claimed": false,
+  "non_english_switcher_claimed": false,
+  "english_as_i18n_complete_claimed": false,
+  "hard_delete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_english_scaffold_packaging": true,
+  "distinct_from_stage183_hard_delete_gate": true,
+  "steps": [
+    {
+      "id": "ir-read-blockers",
+      "title": "Read B1 i18n blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-follow-pointers",
+      "title": "Follow P1 ADR-006 / deferred ADR / scaffold pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-i18n-missing",
+      "title": "Reaffirm multi-language MISSING until real packs ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-no-english-as-i18n",
+      "title": "Do not treat English Completes or scaffold as i18n packs Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ir-i18n-remaining",
+      "title": "Non-English packs / language switching Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 184 I1 i18n remaining-gate index packaging only. Do not claim i18n packs Complete."
+}

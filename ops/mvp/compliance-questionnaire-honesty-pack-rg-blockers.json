@@ -1,0 +1,77 @@
+{
+  "id": "compliance-questionnaire-honesty-pack-rg-blockers",
+  "stage": 516,
+  "pack": "B1",
+  "doc": "docs/COMPLIANCE_QUESTIONNAIRE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMPLIANCE_QUESTIONNAIRE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "compliance_questionnaire_pack_remaining_gate": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "compliance_questionnaire_honesty_complete_claimed": false,
+  "compliance_questionnaire_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "compliance_questionnaire_honesty_complete_claimed": "REMAINING",
+    "compliance_questionnaire_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_compliance_questionnaire_honesty": "NON_CLAIM",
+    "compliance_questionnaire_pack_as_compliance_questionnaire_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "compliance_questionnaire_honesty_complete_claimed_flag": "false",
+    "compliance_questionnaire_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "cqhprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-honesty",
+      "title": "Mark Compliance Questionnaire honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-as-golive",
+      "title": "Mark Compliance Questionnaire as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-prior-nonclaim",
+      "title": "Mark COMPLIANCE_QUESTIONNAIRE_PACK as non-claim for compliance-questionnaire Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqhprb-checklist-remaining",
+      "title": "Offline Complete / Compliance Questionnaire / Compliance Questionnaire honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 516 B1 Compliance Questionnaire Honesty Pack RG blocker matrix packaging only."
+}

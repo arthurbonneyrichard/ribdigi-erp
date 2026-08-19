@@ -1,0 +1,154 @@
+{
+  "stage": "78",
+  "workstream": "S1",
+  "doc": "docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md",
+  "stage78_plan": "docs/STAGE_78_PLAN.md",
+  "sow_doc": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+  "sow": "ops/mvp/professional-services-sow.json",
+  "pricing_commercial_doc": "docs/COMMERCIAL_PRICING_MVP.md",
+  "pricing_commercial": "ops/mvp/commercial-pricing.json",
+  "onboarding_doc": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+  "onboarding": "ops/mvp/implementation-onboarding.json",
+  "terms_doc": "docs/COMMERCIAL_TERMS_MVP.md",
+  "terms": "ops/mvp/commercial-terms.json",
+  "billing_commercial_doc": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+  "billing_commercial": "ops/mvp/commercial-billing-deferred.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "signed_sow_claimed": false,
+  "professional_services_live": false,
+  "implementation_delivery_claimed": false,
+  "public_pricing_portal_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage78_s1_commercial_professional_services.json",
+  "steps": [
+    {
+      "id": "cps-owner-outline",
+      "category": "services",
+      "title": "Index owner Commercial Professional Services Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/ADR_162_STAGE78_OPEN.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    },
+    {
+      "id": "cps-sow",
+      "category": "services",
+      "title": "Link Stage 48 professional services SOW as adjacency (signed SOW Remaining \u2260 services live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+        "ops/mvp/professional-services-sow.json"
+      ],
+      "source": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+    },
+    {
+      "id": "cps-pricing",
+      "category": "services",
+      "title": "Link Stage 78 P1 commercial pricing as adjacency (pricing packaging \u2260 signed SOW)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_PRICING_MVP.md",
+        "ops/mvp/commercial-pricing.json"
+      ],
+      "source": "docs/COMMERCIAL_PRICING_MVP.md"
+    },
+    {
+      "id": "cps-onboarding",
+      "category": "services",
+      "title": "Link Stage 56 implementation/onboarding as adjacency (onboarding Remaining \u2260 signed SOW)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+        "ops/mvp/implementation-onboarding.json"
+      ],
+      "source": "docs/IMPLEMENTATION_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "cps-terms",
+      "category": "services",
+      "title": "Link Stage 76 T1 commercial terms as adjacency (terms packaging \u2260 signed SOW)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_TERMS_MVP.md",
+        "ops/mvp/commercial-terms.json"
+      ],
+      "source": "docs/COMMERCIAL_TERMS_MVP.md"
+    },
+    {
+      "id": "cps-billing",
+      "category": "services",
+      "title": "Link Stage 76 B1 billing deferred as adjacency (paid billing Remaining \u2260 signed SOW)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+        "ops/mvp/commercial-billing-deferred.json"
+      ],
+      "source": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+    },
+    {
+      "id": "cps-plan-honesty",
+      "category": "services",
+      "title": "Confirm Stage 78 plan explicitly defers signed SOW / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    },
+    {
+      "id": "cps-delivery-ownership",
+      "category": "services",
+      "title": "Index professional-services delivery ownership Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md",
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+      ],
+      "source": "docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md"
+    },
+    {
+      "id": "cps-sow-remaining",
+      "category": "honesty",
+      "title": "Commercial signed SOW Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    },
+    {
+      "id": "cps-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / professional services live / pricing portal Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_78_PLAN.md",
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+      ],
+      "source": "docs/STAGE_78_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Signed SOW Complete",
+    "Professional services live Complete",
+    "Implementation delivery Complete",
+    "Public pricing portal Complete",
+    "Live go-live Complete"
+  ]
+}

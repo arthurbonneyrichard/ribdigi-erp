@@ -1,0 +1,154 @@
+{
+  "stage": "40",
+  "workstream": "S1",
+  "doc": "docs/SBOM_DISCLOSURE_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "security_scan": "docs/SECURITY_SCAN_MVP.md",
+  "vuln_disclosure": "docs/VULN_DISCLOSURE_MVP.md",
+  "vuln_disclosure_register": "ops/mvp/vuln-disclosure.json",
+  "pentest_pack": "docs/PENTEST_PACK_MVP.md",
+  "backend_requirements": "backend/requirements.txt",
+  "frontend_package": "frontend/package.json",
+  "ci_workflow": ".github/workflows/ci.yml",
+  "stage40_plan": "docs/STAGE_40_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "status_uptime": "ops/mvp/status-uptime.json",
+  "status_uptime_doc": "docs/STATUS_UPTIME_MVP.md",
+  "packaging_complete": true,
+  "sbom_pipeline_live": false,
+  "cosign_signing_claimed": false,
+  "snyk_saas_claimed": false,
+  "fossa_claimed": false,
+  "dependabot_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage40_s1_sbom_disclosure.json",
+  "steps": [
+    {
+      "id": "sb-security-guide-sbom",
+      "category": "sbom",
+      "title": "Bound SECURITY_GUIDE \u00a712.4 SBOM theme as honesty packaging (not live pipeline)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_40_PLAN.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "sb-backend-manifest",
+      "category": "dependency",
+      "title": "Index backend requirements.txt as dependency disclosure manifest packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "backend/requirements.txt",
+        ".github/workflows/ci.yml"
+      ],
+      "source": "backend/requirements.txt"
+    },
+    {
+      "id": "sb-frontend-manifest",
+      "category": "dependency",
+      "title": "Index frontend package.json as dependency disclosure manifest packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "frontend/package.json",
+        "docs/DEVELOPER_GUIDE.md"
+      ],
+      "source": "frontend/package.json"
+    },
+    {
+      "id": "sb-security-scan",
+      "category": "scanning",
+      "title": "Link Stage 27 security-scan baseline as vuln-scanning adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_SCAN_MVP.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/SECURITY_SCAN_MVP.md"
+    },
+    {
+      "id": "sb-vuln-disclosure",
+      "category": "disclosure",
+      "title": "Link Stage 38 vulnerability disclosure pack as supply-chain disclosure adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "ops/mvp/vuln-disclosure.json"
+      ],
+      "source": "docs/VULN_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "sb-pentest-adjacency",
+      "category": "scanning",
+      "title": "Index Stage 29 pen-test pack as external vuln-assessment adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PENTEST_PACK_MVP.md",
+        "docs/SECURITY_SCAN_MVP.md"
+      ],
+      "source": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "id": "sb-cosign-remaining",
+      "category": "honesty",
+      "title": "Cosign image signing / verification Remaining (SECURITY_GUIDE \u00a712.2)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_40_PLAN.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "sb-fossa-remaining",
+      "category": "honesty",
+      "title": "FOSSA / license-compliance SaaS Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_40_PLAN.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "sb-pipeline-remaining",
+      "category": "honesty",
+      "title": "Live SBOM generation pipeline Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_40_PLAN.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/STAGE_40_PLAN.md"
+    },
+    {
+      "id": "sb-dependabot-snyk-remaining",
+      "category": "honesty",
+      "title": "Paid Dependabot / Snyk continuous scanning Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_40_PLAN.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    }
+  ],
+  "deferred": [
+    "Live SBOM generation for every release Complete",
+    "Cosign image signing / verification Complete",
+    "Paid Snyk / Dependabot continuous scanning SaaS Complete",
+    "FOSSA / license-compliance SaaS Complete"
+  ]
+}

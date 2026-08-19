@@ -1,0 +1,51 @@
+{
+  "id": "cashier-bind-catalog",
+  "stage": 172,
+  "pack": "B1",
+  "doc": "docs/CASHIER_BIND_CATALOG_MVP.md",
+  "related": {
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "user_manual": "docs/USER_MANUAL.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "catalog_ttl_hours": 4,
+  "stock_authoritative_offline": false,
+  "steps": [
+    {
+      "id": "bc-open-offline-sync",
+      "title": "Open Settings → Offline sync",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bc-bind-browser",
+      "title": "Bind browser device while ONLINE",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bc-refresh-catalog",
+      "title": "Refresh offline catalog on POS (4h TTL)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bc-stale-stock",
+      "title": "Treat offline stock as non-authoritative",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bc-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 172 B1 bind + catalog packaging only. Offline Complete remains MISSING."
+}

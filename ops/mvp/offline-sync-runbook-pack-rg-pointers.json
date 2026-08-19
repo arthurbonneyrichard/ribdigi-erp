@@ -1,0 +1,60 @@
+{
+  "id": "offline-sync-runbook-pack-rg-pointers",
+  "stage": 336,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SYNC_RUNBOOK_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_RUNBOOK_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "offline_sync_escalation_pack_remaining_gate": "docs/OFFLINE_SYNC_ESCALATION_PACK_REMAINING_GATE_MVP.md",
+    "incident_severity_pack_remaining_gate": "docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "browser_e2e_claimed": false,
+  "go_live_claimed": false,
+  "fabricated_sync_claimed": false,
+  "topics": [
+    "offline_sync_runbook_stage169",
+    "offline_sync_escalation_pack_remaining_gate_stage335",
+    "incident_severity_pack_remaining_gate_stage334",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "osrprp-stage169",
+      "title": "Point to Stage 169 offline sync runbook packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprp-stage335",
+      "title": "Point to Stage 335 offline sync escalation pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprp-stage334",
+      "title": "Point to Stage 334 incident severity pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprp-runbook-remaining",
+      "title": "Live offline sync runbook Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 336 P1 offline sync runbook pack RG pointers packaging only. Do not claim live offline sync runbook Complete."
+}

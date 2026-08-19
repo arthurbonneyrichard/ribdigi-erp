@@ -1,0 +1,67 @@
+{
+  "id": "connectivity-sync-status-pack-rg-pointers",
+  "stage": 402,
+  "pack": "P1",
+  "doc": "docs/CONNECTIVITY_SYNC_STATUS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CONNECTIVITY_SYNC_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "permission_alias_map_pack": "docs/PERMISSION_ALIAS_MAP_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_push_idempotency_pack": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "connectivity_sync_status_complete_claimed": false,
+  "sync_status_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section6_connectivity_sync_status": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "permission_alias_map_pack_remaining_gate_stage401": "docs/PERMISSION_ALIAS_MAP_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_push_idempotency_pack_remaining_gate_stage400": "docs/OFFLINE_SYNC_PUSH_IDEMPOTENCY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / connectivity_sync_status / sync_status / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "cssprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a76 connectivity sync status",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cssprp-stage401",
+      "title": "Point to Stage 401 permission alias map pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cssprp-stage400",
+      "title": "Point to Stage 400 offline sync push/idempotency pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cssprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cssprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cssprp-checklist-remaining",
+      "title": "Offline Complete / connectivity sync-status Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 402 P1 connectivity sync status pack RG pointers packaging only."
+}

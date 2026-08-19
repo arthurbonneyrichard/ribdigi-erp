@@ -1,0 +1,55 @@
+{
+  "id": "weekly-pos-ops-adherence",
+  "stage": 176,
+  "pack": "A1",
+  "doc": "docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md",
+  "related": {
+    "weekly_review": "docs/WEEKLY_POS_OPS_REVIEW_MVP.md",
+    "store_open": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "store_close": "docs/STORE_CLOSE_CHECKLIST_MVP.md",
+    "shift_handover": "docs/SHIFT_HANDOVER_CHECKLIST_MVP.md",
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "store_open_close_adherence",
+    "shift_handover_notes"
+  ],
+  "steps": [
+    {
+      "id": "wa-open-close",
+      "title": "Sample open/close adherence vs Stages 173–174",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wa-handover-notes",
+      "title": "Review Stage 175 handover snapshot quality",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wa-coach-new-devices",
+      "title": "Coach new devices via Stage 172 quickstart",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wa-no-fake-sla",
+      "title": "Do not invent SLA metrics from incomplete notes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wa-offline-sla-remaining",
+      "title": "Offline Complete / live SLA Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 176 A1 weekly adherence packaging only. Offline Complete / live SLA remain MISSING."
+}

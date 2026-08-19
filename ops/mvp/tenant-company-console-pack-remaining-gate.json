@@ -1,0 +1,57 @@
+{
+  "id": "tenant-company-console-pack-remaining-gate",
+  "stage": 267,
+  "pack": "I1",
+  "doc": "docs/TENANT_COMPANY_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/TENANT_COMPANY_CONSOLE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/TENANT_COMPANY_CONSOLE_PACK_RG_POINTERS_MVP.md",
+    "tenant_company_console": "docs/TENANT_COMPANY_CONSOLE_MVP.md",
+    "ribdigi_house_console_pack_remaining_gate": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "post_launch_continuity_pack_remaining_gate": "docs/POST_LAUNCH_CONTINUITY_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "tenant_company_console_register": "ops/mvp/tenant-company-console.json"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "tenant_modules_reclaimed_complete": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage68_t1_tenant_company_console": true,
+  "distinct_from_stage266_ribdigi_house_console_pack_remaining_gate": true,
+  "distinct_from_stage265_post_launch_continuity_pack_remaining_gate": true,
+  "distinct_from_stage239_operator_handoff_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "tccpr-read-blockers",
+      "title": "Read B1 tenant company console pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tccpr-follow-pointers",
+      "title": "Follow P1 Stage 68 / Stage 266 / Stage 265 / Stage 36 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tccpr-billing-missing",
+      "title": "Reaffirm paid billing / live tenant ERP MISSING until real commercial verification ships (ADR-002)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tccpr-no-packaging-as-live",
+      "title": "Do not treat Stage 68 T1 / Stage 266 / Stage 36 as live tenant ERP Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tccpr-tenant-erp-remaining",
+      "title": "Paid billing / tenant module re-Complete / demo tenant / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 267 I1 tenant company console pack remaining-gate index packaging only. Do not claim live tenant ERP Complete."
+}

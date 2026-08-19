@@ -1,0 +1,38 @@
+# Stage 26 M1 — Fluent Bit example for RIBDIGI structured request logs
+# Parses ribdigi.request JSON lines from Stage 18 L1 RequestLoggingMiddleware.
+# This is an operator hook example — not a deployed SIEM claim.
+#
+# Typical fields: event, request_id, method, path, status, latency_ms,
+# tenant_id, user_id, error_code (safe codes only).
+
+[SERVICE]
+    Flush         5
+    Daemon        Off
+    Log_Level     info
+
+[INPUT]
+    Name              tail
+    Path              /var/log/ribdigi/*.log
+    Tag               ribdigi.request
+    Refresh_Interval  5
+    Mem_Buf_Limit     10MB
+    Skip_Long_Lines   On
+
+[FILTER]
+    Name         parser
+    Match        ribdigi.request
+    Key_Name     log
+    Parser       json
+    Reserve_Data On
+
+# Example: forward to stdout (replace with cloud_watch_logs / es / loki OUTPUT in staging).
+[OUTPUT]
+    Name   stdout
+    Match  ribdigi.request
+    Format json_lines
+
+# Docker / Kubernetes alternative without Fluent Bit:
+# - Docker json-file / journald driver already captures process stdout
+# - Ensure LOG_LEVEL=INFO and REQUEST_LOG_ENABLED=true
+# - Filter container logs for logger name ribdigi.request or "http_request"/"http_error" events
+# - Correlate with X-Request-ID response header

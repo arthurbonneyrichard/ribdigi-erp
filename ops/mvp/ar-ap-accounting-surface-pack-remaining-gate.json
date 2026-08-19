@@ -1,0 +1,57 @@
+{
+  "id": "ar-ap-accounting-surface-pack-remaining-gate",
+  "stage": 366,
+  "pack": "I1",
+  "doc": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/AR_AP_ACCOUNTING_SURFACE_PACK_RG_POINTERS_MVP.md",
+    "ar_ap_accounting_surface": "docs/AR_AP_ACCOUNTING_SURFACE_MVP.md",
+    "e2e_verify_financials_pack_remaining_gate": "docs/E2E_VERIFY_FINANCIALS_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "new_ar_ap_engine_claimed": false,
+  "open_banking_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "demo_tenant_claimed": false,
+  "distinct_from_stage232_ar_ap_accounting_surface": true,
+  "distinct_from_stage365_e2e_verify_financials_pack_remaining_gate": true,
+  "distinct_from_stage320_e2e_backup_restore_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "aaaspr-read-blockers",
+      "title": "Read B1 AR/AP accounting surface pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaaspr-follow-pointers",
+      "title": "Follow P1 Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaaspr-checklist-missing",
+      "title": "Reaffirm new AR/AP engine / Open Banking / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaaspr-no-packaging-as-live",
+      "title": "Do not treat Stage 232 / Stage 365 / Stage 320 / Stage 329 as live AR/AP accounting-surface Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaaspr-checklist-remaining",
+      "title": "New AR/AP engine / Open Banking / go-live / attestation / demo tenant Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 366 I1 AR/AP accounting surface pack remaining-gate index packaging only. Do not claim live AR/AP accounting-surface Complete."
+}

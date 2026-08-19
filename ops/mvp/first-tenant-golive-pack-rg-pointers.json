@@ -1,0 +1,60 @@
+{
+  "id": "first-tenant-golive-pack-rg-pointers",
+  "stage": 245,
+  "pack": "P1",
+  "doc": "docs/FIRST_TENANT_GOLIVE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_golive": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+    "first_tenant_onboarding_pack_remaining_gate": "docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "first_tenant_golive_register": "ops/mvp/first-tenant-golive.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "first_paying_tenant_claimed": false,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "first_tenant_golive_stage66_t1",
+    "first_tenant_onboarding_pack_remaining_gate_stage244",
+    "first_tenant_live_onboarding_remaining_gate_stage194",
+    "golive_remaining_gate_stage180",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ftgprp-stage66",
+      "title": "Point to Stage 66 T1 first-tenant go-live",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgprp-stage244",
+      "title": "Point to Stage 244 first-tenant onboarding pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgprp-stage194",
+      "title": "Point to Stage 194 first-tenant live onboarding remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgprp-stage180",
+      "title": "Point to Stage 180 go-live remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgprp-golive-remaining",
+      "title": "First paying tenant / go-live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 245 P1 first-tenant go-live pack RG pointers packaging only. Do not claim first paying tenant or go-live Complete."
+}

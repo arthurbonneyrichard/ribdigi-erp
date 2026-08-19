@@ -35,16 +35,42 @@ class Tenant(Base):
     tax_registration_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
     tax_filing_period: Mapped[str] = mapped_column(String(20), default="monthly")
     status: Mapped[str] = mapped_column(String(20), default="trial")
+    plan_code: Mapped[str] = mapped_column(String(40), default="trial")
+    legal_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    registration_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     website: Mapped[str | None] = mapped_column(String(255), nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    billing_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    shipping_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    warehouse_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contact_person_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    contact_person_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contact_person_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    inactivity_timeout_minutes: Mapped[int] = mapped_column(Integer, default=30)
+    date_format: Mapped[str] = mapped_column(String(20), default="DD/MM/YYYY")
+    number_format: Mapped[str] = mapped_column(String(20), default="1,234.56")
+    time_format: Mapped[str] = mapped_column(String(20), default="24h")
+    smtp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    smtp_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    smtp_port: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    smtp_username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    smtp_password_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    smtp_from_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    smtp_from_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    smtp_use_tls: Mapped[bool] = mapped_column(Boolean, default=True)
+    smtp_use_ssl: Mapped[bool] = mapped_column(Boolean, default=False)
     timezone: Mapped[str] = mapped_column(String(64), default="Africa/Accra")
     fiscal_year_start: Mapped[str] = mapped_column(String(5), default="01-01")
+    # Stage 118 F1 — ISO period_start dates for manually closed fiscal years (MVP close console)
+    fiscal_closed_period_starts: Mapped[list | None] = mapped_column(JSON, nullable=True)
     expense_approval_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=100)
     expense_l2_threshold: Mapped[float] = mapped_column(Numeric(14, 2), default=1000)
     # Optional N-level approval matrix: {"levels": [{step, min_amount, roles, label}, ...]}
     expense_approval_matrix: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Purchase request approval matrix (same shape as expense_approval_matrix).
+    purchase_request_approval_matrix: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # e.g. 2/10 net 30 → pct=2, days=10 (0 disables)
     early_pay_discount_pct: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     early_pay_discount_days: Mapped[int] = mapped_column(Integer, default=0)
@@ -56,8 +82,136 @@ class Tenant(Base):
     grace_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     trial_notices: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Per-document prefix/series: {sales_invoice: {prefix, include_year, pad, next_number}, ...}
+    document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Default sales invoice print layout: a4 | thermal_80 | thermal_58
+    invoice_print_template: Mapped[str] = mapped_column(String(20), default="a4")
+    # Default POS receipt layout: thermal_80 | thermal_58
+    receipt_print_template: Mapped[str] = mapped_column(String(20), default="thermal_80")
+    # Optional free-text lines on invoices/receipts/quotations/credit notes
+    document_header: Mapped[str | None] = mapped_column(Text, nullable=True)
+    document_footer: Mapped[str | None] = mapped_column(Text, nullable=True)
     suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     suspended_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Stage 87 Y1 — Ribdigi House operator notes (not customer-visible company profile)
+    platform_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Stage 6 N2 — {dismissed_at, skipped: [step_id, ...]}
+    onboarding_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # ADR-490 — subscription caps (enforce on create; billing Complete still deferred)
+    max_companies: Mapped[int] = mapped_column(Integer, default=1)
+    max_users: Mapped[int] = mapped_column(Integer, default=25)
+    max_branches: Mapped[int] = mapped_column(Integer, default=5)
+    max_stores: Mapped[int] = mapped_column(Integer, default=5)
+    # Platform Owner override for store entitlement (-1 = unlimited). NULL = use max_stores.
+    max_stores_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_warehouses: Mapped[int] = mapped_column(Integer, default=5)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+
+class BusinessType(Base):
+    """Configurable company business-type catalog (not hard-coded app branches)."""
+
+    __tablename__ = "business_types"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    code: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    label: Mapped[str] = mapped_column(String(120))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Company(Base):
+    """Operating business under a SaaS tenant (ADR-490). Tenant ≠ Company."""
+
+    __tablename__ = "companies"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40), default="MAIN")
+    name: Mapped[str] = mapped_column(String(200))
+    business_type_id: Mapped[str | None] = mapped_column(
+        ForeignKey("business_types.id"), nullable=True, index=True
+    )
+    industry: Mapped[str] = mapped_column(String(50), default="retail")
+    legal_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    registration_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    tax_registration_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    website: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    currency: Mapped[str] = mapped_column(String(10), default="GHS")
+    timezone: Mapped[str] = mapped_column(String(64), default="Africa/Accra")
+    fiscal_year_start: Mapped[str] = mapped_column(String(5), default="01-01")
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Tenant Admin store allocation under subscription entitlement (NULL=0; -1=unlimited).
+    store_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # ADR-490 phase 16 — per-company document number series (falls back to tenant JSON).
+    document_numbering: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # ADR-490 phase 17 — per-company print templates (falls back to tenant columns).
+    invoice_print_template: Mapped[str] = mapped_column(String(20), default="a4")
+    receipt_print_template: Mapped[str] = mapped_column(String(20), default="thermal_80")
+    document_header: Mapped[str | None] = mapped_column(Text, nullable=True)
+    document_footer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class UserCompanyMembership(Base):
+    """User ↔ Company membership with company-scoped role (ADR-490)."""
+
+    __tablename__ = "user_company_memberships"
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", "company_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    role: Mapped[str] = mapped_column(String(50), default="cashier")
+    permissions: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+
+class Branch(Base):
+    """Tenant branch / region for org structure and record scopes."""
+
+    __tablename__ = "branches"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(150))
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Department(Base):
+    """Tenant department; optional branch linkage for org structure."""
+
+    __tablename__ = "departments"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    branch_id: Mapped[str | None] = mapped_column(ForeignKey("branches.id"), nullable=True, index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(150))
+    head_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -72,6 +226,8 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(50), default="cashier")
+    branch_id: Mapped[str | None] = mapped_column(ForeignKey("branches.id"), nullable=True, index=True)
+    department_id: Mapped[str | None] = mapped_column(ForeignKey("departments.id"), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     permissions: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -82,6 +238,24 @@ class User(Base):
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     totp_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class CustomRole(Base):
+    """Tenant-defined RBAC role (system roles remain code-defined in rbac.py)."""
+
+    __tablename__ = "custom_roles"
+    __table_args__ = (UniqueConstraint("tenant_id", "slug"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    slug: Mapped[str] = mapped_column(String(50), index=True)
+    label: Mapped[str] = mapped_column(String(120))
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    record_scope: Mapped[str] = mapped_column(String(20), default="own")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class AuthSession(Base):
@@ -116,15 +290,18 @@ class AuthToken(Base):
 
 class Store(Base):
     __tablename__ = "stores"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    branch_id: Mapped[str | None] = mapped_column(ForeignKey("branches.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(150))
     code: Mapped[str] = mapped_column(String(50))
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    operating_hours: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Cash drawer: none|mock|network|browser_bridge
     drawer_mode: Mapped[str] = mapped_column(String(30), default="none")
@@ -135,13 +312,19 @@ class Store(Base):
 
 class Warehouse(Base):
     __tablename__ = "warehouses"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(150))
     code: Mapped[str] = mapped_column(String(50))
+    warehouse_type: Mapped[str] = mapped_column(String(40), default="retail")
+    manager_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    capacity: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class WarehouseStock(Base):
@@ -152,57 +335,74 @@ class WarehouseStock(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    reserved_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    minimum_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
 
 
 class ProductCategory(Base):
     __tablename__ = "product_categories"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     parent_id: Mapped[str | None] = mapped_column(ForeignKey("product_categories.id"), nullable=True, index=True)
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(120))
+    tax_rate_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tax_rates.id"), nullable=True, index=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Brand(Base):
     __tablename__ = "brands"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class UnitOfMeasure(Base):
     __tablename__ = "units_of_measure"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     code: Mapped[str] = mapped_column(String(20))
     name: Mapped[str] = mapped_column(String(80))
+    # 1 of this unit = conversion_factor of base_unit (null base => this unit is a base)
+    base_unit_id: Mapped[str | None] = mapped_column(ForeignKey("units_of_measure.id"), nullable=True, index=True)
+    conversion_factor: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Product(Base):
     __tablename__ = "products"
-    __table_args__ = (UniqueConstraint("tenant_id", "sku"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "company_id", "sku"),
+        UniqueConstraint("tenant_id", "company_id", "barcode"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200), index=True)
     sku: Mapped[str] = mapped_column(String(100), index=True)
     barcode: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
@@ -214,7 +414,13 @@ class Product(Base):
     cost_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     selling_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     stock_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    reserved_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    minimum_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    weight: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # kg
+    length: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # cm
+    width: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # cm
+    height: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)  # cm
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True)
     tax_exempt: Mapped[bool] = mapped_column(Boolean, default=False)
     tracks_batches: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -223,10 +429,14 @@ class Product(Base):
 
 class ProductVariant(Base):
     __tablename__ = "product_variants"
-    __table_args__ = (UniqueConstraint("tenant_id", "sku"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "company_id", "sku"),
+        UniqueConstraint("tenant_id", "company_id", "barcode"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     name: Mapped[str] = mapped_column(String(120))
     sku: Mapped[str] = mapped_column(String(100), index=True)
@@ -241,12 +451,30 @@ class ProductVariant(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class ProductImage(Base):
+    """Gallery images for a product; one may be marked primary (synced to products.image_url)."""
+
+    __tablename__ = "product_images"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    content_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class ProductBatch(Base):
     __tablename__ = "product_batches"
     __table_args__ = (UniqueConstraint("tenant_id", "product_id", "batch_number", "variant_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
     warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True)
@@ -263,6 +491,7 @@ class StockMovement(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
     batch_id: Mapped[str | None] = mapped_column(ForeignKey("product_batches.id"), nullable=True, index=True)
@@ -273,31 +502,104 @@ class StockMovement(Base):
     quantity_after: Mapped[float] = mapped_column(Numeric(14, 3))
     reference_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     reference_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
-class Party(Base):
-    __tablename__ = "parties"
+class StockReservation(Base):
+    """Soft allocation against on-hand stock for confirmed sales orders."""
+
+    __tablename__ = "stock_reservations"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True, index=True)
+    sales_order_id: Mapped[str] = mapped_column(ForeignKey("sales_orders.id"), index=True)
+    sales_order_item_id: Mapped[str] = mapped_column(ForeignKey("sales_order_items.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    # active | released | consumed
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class CustomerGroup(Base):
+    __tablename__ = "customer_groups"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(50))
+    discount_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Party(Base):
+    __tablename__ = "parties"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "kind", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     kind: Mapped[str] = mapped_column(String(20))
     name: Mapped[str] = mapped_column(String(180))
+    code: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    # e.g. manufacturer | distributor | wholesaler | other (suppliers); walk-in | registered (customers)
+    party_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    customer_group_id: Mapped[str | None] = mapped_column(
+        ForeignKey("customer_groups.id"), nullable=True, index=True
+    )
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payment_terms_days: Mapped[int] = mapped_column(Integer, default=0)
+    # Nullable = inherit tenant early-pay terms; set values override (0/0 disables for this party).
+    early_pay_discount_pct: Mapped[float | None] = mapped_column(Numeric(7, 4), nullable=True)
+    early_pay_discount_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     credit_limit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PartyContact(Base):
+    __tablename__ = "party_contacts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    party_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    designation: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "client_request_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     tx_type: Mapped[str] = mapped_column(String(30), index=True)
     reference: Mapped[str] = mapped_column(String(80), index=True)
+    # Stage 164 I1 — offline/sync idempotency key (nullable for legacy online sales)
+    client_request_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
     session_id: Mapped[str | None] = mapped_column(ForeignKey("pos_sessions.id"), nullable=True, index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -310,13 +612,18 @@ class Transaction(Base):
 
 class ExpenseCategory(Base):
     __tablename__ = "expense_categories"
-    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(120))
     budget_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    # Stage 14 E1 — optional COA debit account for approved expenses in this category
+    account_id: Mapped[str | None] = mapped_column(
+        ForeignKey("accounts.id"), nullable=True, index=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
@@ -325,6 +632,7 @@ class Expense(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     category_id: Mapped[str | None] = mapped_column(ForeignKey("expense_categories.id"), nullable=True)
     category: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -337,6 +645,10 @@ class Expense(Base):
     reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     payee: Mapped[str | None] = mapped_column(String(150), nullable=True)
     store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
+    # Stage 14 E2 — optional department assignment (branch via department.branch_id)
+    department_id: Mapped[str | None] = mapped_column(
+        ForeignKey("departments.id"), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(String(30), default="pending", index=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -354,6 +666,7 @@ class ExpenseApprovalAction(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     expense_id: Mapped[str] = mapped_column(ForeignKey("expenses.id"), index=True)
     step: Mapped[int] = mapped_column(Integer)
     action: Mapped[str] = mapped_column(String(20))  # approve | reject | auto_approve
@@ -367,6 +680,7 @@ class RecurringExpense(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     category_id: Mapped[str | None] = mapped_column(ForeignKey("expense_categories.id"), nullable=True)
     category: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -374,27 +688,41 @@ class RecurringExpense(Base):
     frequency: Mapped[str] = mapped_column(String(20), default="monthly")
     payment_method: Mapped[str] = mapped_column(String(40), default="bank_transfer")
     payee: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    department_id: Mapped[str | None] = mapped_column(
+        ForeignKey("departments.id"), nullable=True, index=True
+    )
     start_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     next_run_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    skip_next: Mapped[bool] = mapped_column(Boolean, default=False)
+    next_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    next_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_notified_for: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Account(Base):
     __tablename__ = "accounts"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "code"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     code: Mapped[str] = mapped_column(String(30))
     name: Mapped[str] = mapped_column(String(150))
     account_type: Mapped[str] = mapped_column(String(30))
+    parent_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id"), nullable=True, index=True)
     balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     is_cash_account: Mapped[bool] = mapped_column(Boolean, default=False)
     is_bank_account: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     account_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    bank_branch: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
 
 class BankAccountConnection(Base):
@@ -405,6 +733,7 @@ class BankAccountConnection(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), index=True)
     provider: Mapped[str] = mapped_column(String(40), default="mock")  # mock|http_json
     display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -428,6 +757,7 @@ class BankStatement(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), index=True)
     statement_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     opening_balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -446,6 +776,7 @@ class BankClearingGroup(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     statement_id: Mapped[str] = mapped_column(ForeignKey("bank_statements.id"), index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -457,6 +788,7 @@ class BankClearingBookLink(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     group_id: Mapped[str] = mapped_column(ForeignKey("bank_clearing_groups.id"), index=True)
     journal_line_id: Mapped[str] = mapped_column(
         ForeignKey("journal_entry_lines.id"), unique=True, index=True
@@ -468,6 +800,7 @@ class BankStatementLine(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     statement_id: Mapped[str] = mapped_column(ForeignKey("bank_statements.id"), index=True)
     txn_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     amount: Mapped[float] = mapped_column(Numeric(14, 2))  # + deposit / - withdrawal
@@ -491,6 +824,7 @@ class ExchangeRate(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     currency_code: Mapped[str] = mapped_column(String(10), index=True)
     rate_to_base: Mapped[float] = mapped_column(Numeric(18, 8))
     # manual | open_er_api | frankfurter | …
@@ -505,6 +839,7 @@ class TaxRate(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(80))
     rate: Mapped[float] = mapped_column(Numeric(7, 4))
     tax_type: Mapped[str] = mapped_column(String(30), default="vat")
@@ -522,6 +857,7 @@ class Notification(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     category: Mapped[str] = mapped_column(String(40), default="system", index=True)
     title: Mapped[str] = mapped_column(String(160))
@@ -543,6 +879,41 @@ class NotificationPreference(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class AiQuery(Base):
+    """Persisted AI chat turns (rule-based or provider-backed)."""
+
+    __tablename__ = "ai_queries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    message: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    intent: Mapped[str | None] = mapped_column(String(60), nullable=True, index=True)
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class AiReportTemplate(Base):
+    """Saved natural-language report prompts for reuse (BR-21.7)."""
+
+    __tablename__ = "ai_report_templates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    prompt: Mapped[str] = mapped_column(Text)
+    report_type: Mapped[str] = mapped_column(String(60), index=True)
+    format: Mapped[str] = mapped_column(String(10), default="xlsx")
+    params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class AuditLog(Base):
     """Append-only activity log with optional hash chaining for tamper evidence."""
 
@@ -550,6 +921,7 @@ class AuditLog(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     user_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     module: Mapped[str] = mapped_column(String(40), default="system", index=True)
     action: Mapped[str] = mapped_column(String(100), index=True)
@@ -561,14 +933,94 @@ class AuditLog(Base):
     prev_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     integrity_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    # Set when a cold-archive copy has been written (BR-17.2); row is never deleted in MVP.
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+
+
+class AuditColdArchive(Base):
+    """Manifest for a cold-storage JSONL export of aged audit events."""
+
+    __tablename__ = "audit_cold_archives"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    sha256: Mapped[str] = mapped_column(String(64))
+    event_count: Mapped[int] = mapped_column(Integer, default=0)
+    from_created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    to_created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    byte_size: Mapped[int] = mapped_column(Integer, default=0)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PurchaseRequest(Base):
+    """Internal requisition; approved requests convert to draft purchase orders."""
+
+    __tablename__ = "purchase_requests"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "request_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    request_number: Mapped[str] = mapped_column(String(50), index=True)
+    supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True)
+    # draft -> pending -> approved | rejected | cancelled; approved -> converted
+    status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
+    department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    required_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    estimated_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    approval_step: Mapped[int] = mapped_column(Integer, default=1)
+    approval_steps_required: Mapped[int] = mapped_column(Integer, default=1)
+    purchase_order_id: Mapped[str | None] = mapped_column(
+        ForeignKey("purchase_orders.id"), nullable=True, index=True
+    )
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PurchaseRequestApprovalAction(Base):
+    __tablename__ = "purchase_request_approval_actions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    purchase_request_id: Mapped[str] = mapped_column(ForeignKey("purchase_requests.id"), index=True)
+    step: Mapped[int] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(20))  # approve | reject | auto_approve
+    actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PurchaseRequestItem(Base):
+    __tablename__ = "purchase_request_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    purchase_request_id: Mapped[str] = mapped_column(ForeignKey("purchase_requests.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class PurchaseOrder(Base):
     __tablename__ = "purchase_orders"
-    __table_args__ = (UniqueConstraint("tenant_id", "po_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "po_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     po_number: Mapped[str] = mapped_column(String(50), index=True)
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True)
@@ -579,7 +1031,12 @@ class PurchaseOrder(Base):
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     paid_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    purchase_request_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -590,21 +1047,41 @@ class PurchaseOrderItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     purchase_order_id: Mapped[str] = mapped_column(ForeignKey("purchase_orders.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
     received_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class PurchaseOrderAmendment(Base):
+    """Immutable history of PO changes after issue (and optional draft saves)."""
+
+    __tablename__ = "purchase_order_amendments"
+    __table_args__ = (UniqueConstraint("tenant_id", "purchase_order_id", "revision"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    purchase_order_id: Mapped[str] = mapped_column(ForeignKey("purchase_orders.id"), index=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    reason: Mapped[str] = mapped_column(Text)
+    changed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    changes: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class GoodsReceipt(Base):
     __tablename__ = "goods_receipts"
-    __table_args__ = (UniqueConstraint("tenant_id", "grn_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "grn_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     grn_number: Mapped[str] = mapped_column(String(50), index=True)
     purchase_order_id: Mapped[str] = mapped_column(ForeignKey("purchase_orders.id"), index=True)
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
@@ -620,6 +1097,7 @@ class GoodsReceiptItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     goods_receipt_id: Mapped[str] = mapped_column(ForeignKey("goods_receipts.id"), index=True)
     po_item_id: Mapped[str] = mapped_column(ForeignKey("purchase_order_items.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
@@ -627,18 +1105,23 @@ class GoodsReceiptItem(Base):
     accepted_qty: Mapped[float] = mapped_column(Numeric(14, 3))
     rejected_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    batch_id: Mapped[str | None] = mapped_column(ForeignKey("product_batches.id"), nullable=True, index=True)
+    batch_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    manufacturing_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expiry_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class SalesInvoice(Base):
     __tablename__ = "sales_invoices"
-    __table_args__ = (UniqueConstraint("tenant_id", "invoice_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "invoice_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     invoice_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft")
-    # draft -> posted -> partial/paid | cancelled
+    # draft -> posted -> sent -> partial/paid/overdue | cancelled
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     # Memo tax under reverse charge (not charged to customer / not seller output).
@@ -654,8 +1137,14 @@ class SalesInvoice(Base):
     store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     quotation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     sales_order_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    credit_limit_overridden: Mapped[bool] = mapped_column(Boolean, default=False)
+    credit_override_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    credit_override_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    credit_override_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -665,6 +1154,7 @@ class SalesInvoiceItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     sales_invoice_id: Mapped[str] = mapped_column(ForeignKey("sales_invoices.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
@@ -673,14 +1163,17 @@ class SalesInvoiceItem(Base):
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    # standard | zero | exempt — locked at invoice create for VAT filing splits
+    supply_category: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
 
 class CustomerPayment(Base):
     __tablename__ = "customer_payments"
-    __table_args__ = (UniqueConstraint("tenant_id", "payment_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "payment_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     payment_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     sales_invoice_id: Mapped[str | None] = mapped_column(ForeignKey("sales_invoices.id"), nullable=True)
@@ -701,10 +1194,11 @@ class CustomerPayment(Base):
 
 class SupplierPayment(Base):
     __tablename__ = "supplier_payments"
-    __table_args__ = (UniqueConstraint("tenant_id", "payment_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "payment_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     payment_number: Mapped[str] = mapped_column(String(50), index=True)
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     purchase_order_id: Mapped[str | None] = mapped_column(ForeignKey("purchase_orders.id"), nullable=True)
@@ -730,10 +1224,11 @@ class Cheque(Base):
     """Customer (received) or supplier (issued) cheque lifecycle."""
 
     __tablename__ = "cheques"
-    __table_args__ = (UniqueConstraint("tenant_id", "cheque_number", "direction"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "cheque_number", "direction"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     # received (customer) | issued (supplier/expense)
     direction: Mapped[str] = mapped_column(String(20), index=True)
     # pending -> deposited (received) -> cleared | bounced | cancelled
@@ -763,10 +1258,11 @@ class PosSession(Base):
     """Cashier shift / POS session with cash reconciliation."""
 
     __tablename__ = "pos_sessions"
-    __table_args__ = (UniqueConstraint("tenant_id", "session_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "session_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     session_number: Mapped[str] = mapped_column(String(50), index=True)
@@ -785,21 +1281,45 @@ class PosSession(Base):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
-class JournalEntry(Base):
-    __tablename__ = "journal_entries"
-    __table_args__ = (UniqueConstraint("tenant_id", "entry_number"),)
+class PosPayment(Base):
+    """Tender line for a POS sale (supports split payments)."""
+
+    __tablename__ = "pos_payments"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    sale_id: Mapped[str] = mapped_column(ForeignKey("transactions.id"), index=True)
+    payment_method: Mapped[str] = mapped_column(String(40), default="cash")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    liquid_account_id: Mapped[str | None] = mapped_column(
+        ForeignKey("accounts.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class JournalEntry(Base):
+    __tablename__ = "journal_entries"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "entry_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     entry_number: Mapped[str] = mapped_column(String(50), index=True)
     entry_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     source_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    # Stage 14 A1 — optional store dimension for store-filtered statements
+    store_id: Mapped[str | None] = mapped_column(
+        ForeignKey("stores.id"), nullable=True, index=True
+    )
     total_debit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_credit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     status: Mapped[str] = mapped_column(String(20), default="posted")
+    attachment_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -809,6 +1329,7 @@ class JournalEntryLine(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     journal_entry_id: Mapped[str] = mapped_column(ForeignKey("journal_entries.id"), index=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), index=True)
     debit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -818,13 +1339,14 @@ class JournalEntryLine(Base):
 
 class StockTransfer(Base):
     __tablename__ = "stock_transfers"
-    __table_args__ = (UniqueConstraint("tenant_id", "transfer_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "transfer_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     transfer_number: Mapped[str] = mapped_column(String(50), index=True)
-    from_store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
-    to_store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
+    from_store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    to_store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     from_warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
     to_warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
@@ -842,11 +1364,47 @@ class StockTransferItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     transfer_id: Mapped[str] = mapped_column(ForeignKey("stock_transfers.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
     shipped_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     received_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+
+
+class StockCount(Base):
+    """Physical inventory count session for a warehouse."""
+
+    __tablename__ = "stock_counts"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "count_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
+    count_number: Mapped[str] = mapped_column(String(50), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    completed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class StockCountItem(Base):
+    __tablename__ = "stock_count_items"
+    __table_args__ = (UniqueConstraint("tenant_id", "stock_count_id", "product_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    stock_count_id: Mapped[str] = mapped_column(ForeignKey("stock_counts.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    expected_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    counted_qty: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 
 class BackupJob(Base):
@@ -887,6 +1445,7 @@ class ReportSchedule(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(120))
     report_type: Mapped[str] = mapped_column(String(60), index=True)
     format: Mapped[str] = mapped_column(String(10), default="xlsx")
@@ -944,10 +1503,11 @@ class WebAuthnChallenge(Base):
 
 class SalesQuotation(Base):
     __tablename__ = "sales_quotations"
-    __table_args__ = (UniqueConstraint("tenant_id", "quotation_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "quotation_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     quotation_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
@@ -971,6 +1531,7 @@ class SalesQuotationItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     quotation_id: Mapped[str] = mapped_column(ForeignKey("sales_quotations.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
@@ -983,22 +1544,30 @@ class SalesQuotationItem(Base):
 
 class SalesOrder(Base):
     __tablename__ = "sales_orders"
-    __table_args__ = (UniqueConstraint("tenant_id", "order_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "order_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     order_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     quotation_id: Mapped[str | None] = mapped_column(ForeignKey("sales_quotations.id"), nullable=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivery_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     converted_invoice_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    processing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    shipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1008,6 +1577,7 @@ class SalesOrderItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     sales_order_id: Mapped[str] = mapped_column(ForeignKey("sales_orders.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
@@ -1020,10 +1590,11 @@ class SalesOrderItem(Base):
 
 class SalesReturn(Base):
     __tablename__ = "sales_returns"
-    __table_args__ = (UniqueConstraint("tenant_id", "return_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "return_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     return_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     sales_invoice_id: Mapped[str] = mapped_column(ForeignKey("sales_invoices.id"), index=True)
@@ -1034,6 +1605,7 @@ class SalesReturn(Base):
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    credit_note_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -1044,6 +1616,7 @@ class SalesReturnItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     sales_return_id: Mapped[str] = mapped_column(ForeignKey("sales_returns.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
@@ -1056,10 +1629,11 @@ class SalesReturnItem(Base):
 
 class PurchaseReturn(Base):
     __tablename__ = "purchase_returns"
-    __table_args__ = (UniqueConstraint("tenant_id", "return_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "return_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     return_number: Mapped[str] = mapped_column(String(50), index=True)
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     purchase_order_id: Mapped[str] = mapped_column(ForeignKey("purchase_orders.id"), index=True)
@@ -1083,6 +1657,7 @@ class PurchaseReturnItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     purchase_return_id: Mapped[str] = mapped_column(ForeignKey("purchase_returns.id"), index=True)
     goods_receipt_item_id: Mapped[str] = mapped_column(ForeignKey("goods_receipt_items.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
@@ -1094,10 +1669,11 @@ class PurchaseReturnItem(Base):
 
 class PurchaseInvoice(Base):
     __tablename__ = "purchase_invoices"
-    __table_args__ = (UniqueConstraint("tenant_id", "invoice_number"),)
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id", "invoice_number"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     invoice_number: Mapped[str] = mapped_column(String(50), index=True)
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     purchase_order_id: Mapped[str | None] = mapped_column(ForeignKey("purchase_orders.id"), nullable=True, index=True)
@@ -1132,6 +1708,7 @@ class PurchaseInvoiceItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     purchase_invoice_id: Mapped[str] = mapped_column(ForeignKey("purchase_invoices.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
@@ -1139,3 +1716,215 @@ class PurchaseInvoiceItem(Base):
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class ApiKey(Base):
+    """Tenant integration API keys (Stage 6 K1 / BR-18.1). Secret stored hashed only."""
+
+    __tablename__ = "api_keys"
+    __table_args__ = (UniqueConstraint("tenant_id", "key_prefix"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    key_prefix: Mapped[str] = mapped_column(String(24), index=True)
+    key_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    # module → list of actions (same shape as user.permissions)
+    permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Stage 7 K2 — lifetime authenticated request count
+    request_count: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ApiKeyUsageDaily(Base):
+    """Per-day API key request counts for usage charts (Stage 7 K2)."""
+
+    __tablename__ = "api_key_usage_daily"
+    __table_args__ = (UniqueConstraint("api_key_id", "usage_date"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    api_key_id: Mapped[str] = mapped_column(ForeignKey("api_keys.id"), index=True)
+    usage_date: Mapped[str] = mapped_column(String(10))  # YYYY-MM-DD
+    request_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflineDevice(Base):
+    """Tenant offline/PWA device registration (Stage 163 V1). Soft-revoke only."""
+
+    __tablename__ = "offline_devices"
+    __table_args__ = (UniqueConstraint("tenant_id", "device_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    device_code: Mapped[str] = mapped_column(String(64), index=True)
+    platform: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    registered_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SyncQueueItem(Base):
+    """Tenant sync queue row (Stage 164 Q1). Soft statuses only — no fake Completes."""
+
+    __tablename__ = "sync_queue_items"
+    __table_args__ = (UniqueConstraint("tenant_id", "client_op_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    device_id: Mapped[str | None] = mapped_column(
+        ForeignKey("offline_devices.id"), nullable=True, index=True
+    )
+    direction: Mapped[str] = mapped_column(String(10), default="push", index=True)
+    op_type: Mapped[str] = mapped_column(String(40), index=True)
+    client_op_id: Mapped[str] = mapped_column(String(80), index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    result_entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    result_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    acked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class SyncConflict(Base):
+    """Sync conflict record (Stage 164 C1). Open until explicitly resolved."""
+
+    __tablename__ = "sync_conflicts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    queue_item_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sync_queue_items.id"), nullable=True, index=True
+    )
+    device_id: Mapped[str | None] = mapped_column(
+        ForeignKey("offline_devices.id"), nullable=True, index=True
+    )
+    op_type: Mapped[str] = mapped_column(String(40), index=True)
+    client_op_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    client_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    server_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    resolution: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class PosHeldCart(Base):
+    """POS held cart park (Stage 165–167: park, soft reserve, reserve expiry)."""
+
+    __tablename__ = "pos_held_carts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), index=True)
+    session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("pos_sessions.id"), nullable=True, index=True
+    )
+    label: Mapped[str] = mapped_column(String(120), default="Held cart")
+    cart_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="held", index=True)
+    # Stage 166 S1 — soft product.reserved_qty hold (not SO StockReservation rows)
+    stock_reserved: Mapped[bool] = mapped_column(Boolean, default=False)
+    reservation_lines: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Stage 167 E1 — soft-reserve expiry (null when park-only / no reserve)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    held_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    resumed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    discarded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class WebhookEndpoint(Base):
+    """Outbound webhook subscription (Stage 6 W1)."""
+
+    __tablename__ = "webhook_endpoints"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    url: Mapped[str] = mapped_column(String(500))
+    events: Mapped[list] = mapped_column(JSON, default=list)
+    secret_enc: Mapped[str] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_delivery_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    failure_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class WebhookDelivery(Base):
+    """Delivery attempt log for webhook fan-out."""
+
+    __tablename__ = "webhook_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    webhook_id: Mapped[str] = mapped_column(ForeignKey("webhook_endpoints.id"), index=True)
+    event: Mapped[str] = mapped_column(String(80), index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    response_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Stage 7 W2 — when status=pending_retry, worker re-attempts after this time
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class BusinessInsight(Base):
+    """Persisted important Smart BI alerts (Layer 1 — no external AI)."""
+
+    __tablename__ = "business_insights"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    branch_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    insight_type: Mapped[str] = mapped_column(String(60), index=True)
+    category: Mapped[str] = mapped_column(String(40), index=True)
+    priority: Mapped[str] = mapped_column(String(20), index=True)
+    title: Mapped[str] = mapped_column(String(200))
+    message: Mapped[str] = mapped_column(Text)
+    recommendation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metric_value: Mapped[float | None] = mapped_column(Numeric(18, 4), nullable=True)
+    comparison_value: Mapped[float | None] = mapped_column(Numeric(18, 4), nullable=True)
+    percentage_change: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
+    related_entity_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    related_entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    action_href: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    acknowledged_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class BusinessInsightSettings(Base):
+    """Per-tenant/company thresholds for Smart BI rules."""
+
+    __tablename__ = "business_insight_settings"
+    __table_args__ = (UniqueConstraint("tenant_id", "company_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
+    settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

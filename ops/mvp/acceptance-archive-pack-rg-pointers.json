@@ -1,0 +1,61 @@
+{
+  "id": "acceptance-archive-pack-rg-pointers",
+  "stage": 284,
+  "pack": "P1",
+  "doc": "docs/ACCEPTANCE_ARCHIVE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ACCEPTANCE_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "acceptance_archive": "docs/ACCEPTANCE_ARCHIVE_MVP.md",
+    "release_notes_pack_remaining_gate": "docs/RELEASE_NOTES_PACK_REMAINING_GATE_MVP.md",
+    "post_mvp_backlog_pack_remaining_gate": "docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration": "docs/MVP_DECLARATION_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "archive_live_claimed": false,
+  "section_7_signed_claimed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "acceptance_archive_stage32",
+    "release_notes_pack_remaining_gate_stage283",
+    "post_mvp_backlog_pack_remaining_gate_stage282",
+    "mvp_declaration_stage31",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "aaprp-stage32",
+      "title": "Point to Stage 32 A1 acceptance archive",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprp-stage283",
+      "title": "Point to Stage 283 release notes pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprp-stage282",
+      "title": "Point to Stage 282 post-MVP backlog pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprp-stage31",
+      "title": "Point to Stage 31 C1 MVP declaration adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aaprp-archive-remaining",
+      "title": "Archive live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 284 P1 acceptance archive pack RG pointers packaging only. Do not claim archive live Complete."
+}

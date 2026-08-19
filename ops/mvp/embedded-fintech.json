@@ -1,0 +1,158 @@
+{
+  "stage": "61",
+  "workstream": "F1",
+  "doc": "docs/EMBEDDED_FINTECH_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "billing_deferred_honesty": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_honesty_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "pricing_transparency": "ops/mvp/pricing-transparency.json",
+  "pricing_transparency_doc": "docs/PRICING_TRANSPARENCY_MVP.md",
+  "subscription_renewal": "ops/mvp/subscription-renewal.json",
+  "subscription_renewal_doc": "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+  "unit_economics_positioning": "ops/mvp/unit-economics-positioning.json",
+  "unit_economics_positioning_doc": "docs/UNIT_ECONOMICS_POSITIONING_MVP.md",
+  "multi_country_tax": "ops/mvp/multi-country-tax.json",
+  "multi_country_tax_doc": "docs/MULTI_COUNTRY_TAX_MVP.md",
+  "cancellation_churn": "ops/mvp/cancellation-churn.json",
+  "cancellation_churn_doc": "docs/CANCELLATION_CHURN_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage61_plan": "docs/STAGE_61_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "lending_product_live_claimed": false,
+  "invoice_financing_live_claimed": false,
+  "embedded_fintech_program_live": false,
+  "fintech_marketplace_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage61_f1_embedded_fintech.json",
+  "steps": [
+    {
+      "id": "ef-product-overview",
+      "category": "fintech",
+      "title": "Index PRODUCT_OVERVIEW embedded fintech / lending / invoice-financing Long-Term themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_61_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ef-billing-deferred",
+      "category": "commercial",
+      "title": "Link billing deferred honesty (ADR-002) as commercial adjacency (not lending product live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "ef-pricing",
+      "category": "commercial",
+      "title": "Link pricing transparency as list-price adjacency (not invoice financing live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRICING_TRANSPARENCY_MVP.md",
+        "ops/mvp/pricing-transparency.json"
+      ],
+      "source": "docs/PRICING_TRANSPARENCY_MVP.md"
+    },
+    {
+      "id": "ef-subscription",
+      "category": "commercial",
+      "title": "Link subscription renewal as billing adjacency (not embedded fintech program live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+        "ops/mvp/subscription-renewal.json"
+      ],
+      "source": "docs/SUBSCRIPTION_RENEWAL_MVP.md"
+    },
+    {
+      "id": "ef-unit-economics",
+      "category": "fintech",
+      "title": "Link unit economics / positioning as commercial adjacency (not fintech marketplace live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/UNIT_ECONOMICS_POSITIONING_MVP.md",
+        "ops/mvp/unit-economics-positioning.json"
+      ],
+      "source": "docs/UNIT_ECONOMICS_POSITIONING_MVP.md"
+    },
+    {
+      "id": "ef-tax-adjacency",
+      "category": "fintech",
+      "title": "Link Stage 60 multi-country tax as ops-depth adjacency (tax pack \u2260 lending Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MULTI_COUNTRY_TAX_MVP.md",
+        "ops/mvp/multi-country-tax.json"
+      ],
+      "source": "docs/MULTI_COUNTRY_TAX_MVP.md"
+    },
+    {
+      "id": "ef-cancellation",
+      "category": "commercial",
+      "title": "Link cancellation / churn pack as lifecycle adjacency (not invoice financing live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CANCELLATION_CHURN_MVP.md",
+        "ops/mvp/cancellation-churn.json"
+      ],
+      "source": "docs/CANCELLATION_CHURN_MVP.md"
+    },
+    {
+      "id": "ef-plan-honesty",
+      "category": "fintech",
+      "title": "Confirm Stage 61 plan explicitly defers live embedded fintech / lending",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_61_PLAN.md",
+        "docs/EMBEDDED_FINTECH_MVP.md"
+      ],
+      "source": "docs/STAGE_61_PLAN.md"
+    },
+    {
+      "id": "ef-lending-remaining",
+      "category": "honesty",
+      "title": "Live lending product Remaining \u2014 packaging \u2260 shipped lending surface",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_61_PLAN.md",
+        "docs/EMBEDDED_FINTECH_MVP.md"
+      ],
+      "source": "docs/STAGE_61_PLAN.md"
+    },
+    {
+      "id": "ef-invoice-financing-remaining",
+      "category": "honesty",
+      "title": "Live invoice financing Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_61_PLAN.md",
+        "docs/EMBEDDED_FINTECH_MVP.md"
+      ],
+      "source": "docs/STAGE_61_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live lending product Complete",
+    "Live invoice financing Complete",
+    "Embedded fintech program live Complete",
+    "Fintech marketplace live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

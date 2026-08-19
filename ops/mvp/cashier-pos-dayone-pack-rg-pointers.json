@@ -1,0 +1,60 @@
+{
+  "id": "cashier-pos-dayone-pack-rg-pointers",
+  "stage": 358,
+  "pack": "P1",
+  "doc": "docs/CASHIER_POS_DAYONE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CASHIER_POS_DAYONE_PACK_REMAINING_GATE_MVP.md",
+    "cashier_pos_dayone": "docs/CASHIER_POS_DAYONE_MVP.md",
+    "cashier_bind_catalog_pack_remaining_gate": "docs/CASHIER_BIND_CATALOG_PACK_REMAINING_GATE_MVP.md",
+    "cashier_quickstart_pack_remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_conflict_free_claimed": false,
+  "topics": [
+    "cashier_pos_dayone_stage172",
+    "cashier_bind_catalog_pack_remaining_gate_stage357",
+    "cashier_quickstart_pack_remaining_gate_stage339",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cpdprp-stage172",
+      "title": "Point to Stage 172 cashier POS day-one packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprp-stage357",
+      "title": "Point to Stage 357 cashier bind catalog pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprp-stage339",
+      "title": "Point to Stage 339 cashier quickstart pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdprp-checklist-remaining",
+      "title": "Live cashier POS day-one Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 358 P1 cashier POS dayone pack RG pointers packaging only. Do not claim live cashier POS day-one Complete."
+}

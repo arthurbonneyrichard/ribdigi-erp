@@ -1,0 +1,60 @@
+{
+  "id": "golive-pack-pointers",
+  "stage": 180,
+  "pack": "P1",
+  "doc": "docs/GOLIVE_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+    "offline_complete_remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "billing_deferred_register": "ops/mvp/billing-deferred-honesty.json",
+    "adr002": "docs/ADR_002_BILLING_DEFERRED.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "offline_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "topics": [
+    "launch_checklist",
+    "offline_complete_remaining_gate",
+    "billing_deferred_honesty",
+    "adr002_billing_deferred",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "gp-launch",
+      "title": "Point to LAUNCH_CHECKLIST §§1–3 / §7",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-offline-gate",
+      "title": "Point to Stage 179 Offline Complete remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-billing",
+      "title": "Point to billing deferred honesty + ADR-002",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-explicit-nonclaim",
+      "title": "State packaging Completes are not go-live",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gp-golive-remaining",
+      "title": "Go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 180 P1 go-live pack pointers packaging only. Do not claim go-live."
+}

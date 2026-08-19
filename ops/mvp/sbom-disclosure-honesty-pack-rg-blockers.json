@@ -1,0 +1,77 @@
+{
+  "id": "sbom-disclosure-honesty-pack-rg-blockers",
+  "stage": 530,
+  "pack": "B1",
+  "doc": "docs/SBOM_DISCLOSURE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SBOM_DISCLOSURE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "sbom_disclosure_pack_remaining_gate": "docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "sbom_disclosure_honesty_complete_claimed": false,
+  "sbom_disclosure_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "sbom_disclosure_honesty_complete_claimed": "REMAINING",
+    "sbom_disclosure_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_sbom_disclosure_honesty": "NON_CLAIM",
+    "sbom_disclosure_pack_as_sbom_disclosure_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "sbom_disclosure_honesty_complete_claimed_flag": "false",
+    "sbom_disclosure_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "sdhrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdhrb-honesty",
+      "title": "Mark SBOM Disclosure honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdhrb-as-golive",
+      "title": "Mark SBOM Disclosure as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdhrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdhrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdhrb-prior-nonclaim",
+      "title": "Mark SBOM_DISCLOSURE_PACK as non-claim for sbom-disclosure Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdhrb-checklist-remaining",
+      "title": "Offline Complete / SBOM Disclosure / SBOM Disclosure honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 530 B1 SBOM Disclosure Honesty Pack RG blocker matrix packaging only."
+}

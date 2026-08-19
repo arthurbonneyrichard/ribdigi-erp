@@ -1,0 +1,61 @@
+{
+  "id": "residual-risk-pack-rg-blockers",
+  "stage": 281,
+  "pack": "B1",
+  "doc": "docs/RESIDUAL_RISK_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md",
+    "residual_risk": "docs/RESIDUAL_RISK_MVP.md",
+    "residual_risk_remaining_gate": "docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "risks_closed_claimed": false,
+  "certification_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "risks_closed": "REMAINING",
+    "certification_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage33_as_risks_closed": "NON_CLAIM",
+    "stage196_as_risks_closed": "NON_CLAIM",
+    "risks_closed_claimed": "false",
+    "certification_complete_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "rrprb-risks",
+      "title": "Mark residual risks closed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-certification",
+      "title": "Mark certification Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-stage33-nonclaim",
+      "title": "Mark Stage 33 K1 as non-claim for residual risks closed Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprb-risks-remaining",
+      "title": "Residual risks closed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 281 B1 residual risk pack RG blocker matrix packaging only. Residual risks closed Completes remain MISSING."
+}

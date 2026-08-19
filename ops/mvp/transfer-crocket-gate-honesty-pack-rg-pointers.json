@@ -1,0 +1,77 @@
+{
+  "id": "transfer-crocket-gate-honesty-pack-rg-pointers",
+  "stage": 1221,
+  "pack": "P1",
+  "doc": "docs/TRANSFER_CROCKET_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TRANSFER_CROCKET_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_finial_gate_honesty_pack_remaining_gate": "docs/TRANSFER_FINIAL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_oculus_gate_honesty_pack_remaining_gate": "docs/TRANSFER_OCULUS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_crocket_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_crocket_gate_honesty_complete_claimed": false,
+  "transfer_crocket_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_transfer_crocket_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_finial_gate_honesty_pack_remaining_gate_stage1220": "docs/TRANSFER_FINIAL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_oculus_gate_honesty_pack_remaining_gate_stage1219": "docs/TRANSFER_OCULUS_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_crocket_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / transfer_crocket_gate / transfer_crocket_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "tcrocketghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Transfer Crocket Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcrocketghp-stage1220",
+      "title": "Point to Stage 1220 TRANSFER FINIAL GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcrocketghp-stage1219",
+      "title": "Point to Stage 1219 TRANSFER OCULUS GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcrocketghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcrocketghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcrocketghp-prior-pack",
+      "title": "Point to Transfer Crocket Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcrocketghp-checklist-remaining",
+      "title": "Offline Complete / Transfer Crocket Gate / Transfer Crocket Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 1221 P1 Transfer Crocket Gate Honesty Pack RG pointers packaging only."
+}

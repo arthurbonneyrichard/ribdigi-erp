@@ -1,0 +1,62 @@
+{
+  "id": "e2e-org-bootstrap-pack-rg-blockers",
+  "stage": 364,
+  "pack": "B1",
+  "doc": "docs/E2E_ORG_BOOTSTRAP_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_ORG_BOOTSTRAP_PACK_REMAINING_GATE_MVP.md",
+    "e2e_org_bootstrap": "docs/E2E_ORG_BOOTSTRAP_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_bootstrap_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "live_bootstrap_claimed": "REMAINING",
+    "e2e_smoke_executed_claimed": "REMAINING",
+    "demo_tenant_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage35_as_live_e2e_org_bootstrap": "NON_CLAIM",
+    "live_bootstrap_claimed_flag": "false",
+    "e2e_smoke_executed_claimed_flag": "false",
+    "demo_tenant_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "eobprb-live-bootstrap",
+      "title": "Mark live bootstrap Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprb-e2e-smoke",
+      "title": "Mark E2E smoke Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprb-demo",
+      "title": "Mark demo tenant Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprb-stage35-nonclaim",
+      "title": "Mark Stage 35 as non-claim for live E2E org-bootstrap Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eobprb-checklist-remaining",
+      "title": "Live E2E org-bootstrap Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 364 B1 E2E org bootstrap pack RG blocker matrix packaging only. Live E2E org-bootstrap Completes remain MISSING."
+}

@@ -1,0 +1,58 @@
+{
+  "stage": "28",
+  "workstream": "R1",
+  "doc": "docs/PITR_DRILL_PACK_MVP.md",
+  "runbook": "docs/DR_WAL_PITR_RUNBOOK.md",
+  "compose_sketch": "ops/backup/docker-compose.wal-drill.example.yml",
+  "operator_pitr_drill_executed": false,
+  "ci_pitr_success_claimed": false,
+  "steps": [
+    {
+      "id": "1",
+      "title": "Provision empty Postgres data directory",
+      "class": "operator_required"
+    },
+    {
+      "id": "2",
+      "title": "Restore latest base backup",
+      "class": "operator_required"
+    },
+    {
+      "id": "3",
+      "title": "Configure restore_command for WAL fetch from S3",
+      "class": "operator_required"
+    },
+    {
+      "id": "4",
+      "title": "Set recovery target time or catch-up then promote",
+      "class": "operator_required"
+    },
+    {
+      "id": "5",
+      "title": "Start Postgres; verify pg_is_in_recovery then promote",
+      "class": "operator_required"
+    },
+    {
+      "id": "6",
+      "title": "Smoke health/ready, login, spot-check a tenant",
+      "class": "operator_required"
+    },
+    {
+      "id": "7",
+      "title": "Record outcomes in ops change log (date, operator, base backup id, target time, result)",
+      "class": "operator_required"
+    }
+  ],
+  "pass_criteria": [
+    "Postgres promotes cleanly after WAL catch-up",
+    "GET /api/v1/health/ready returns healthy",
+    "Login + one tenant spot-check succeed",
+    "Ops change log entry recorded"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/dr/stage28_r1_pitr_drill_pack.json",
+  "deferred": [
+    "CI-executed pg_basebackup / WAL replay certificate",
+    "Managed-cloud PITR automation",
+    "Live staging drill execution recorded as Complete without operator log"
+  ]
+}

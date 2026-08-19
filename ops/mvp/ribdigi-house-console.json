@@ -1,0 +1,152 @@
+{
+  "stage": "68",
+  "workstream": "H1",
+  "doc": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+  "stage68_plan": "docs/STAGE_68_PLAN.md",
+  "adr137": "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+  "adr002": "docs/ADR_002_BILLING_DEFERRED.md",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "subscription_renewal_doc": "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+  "subscription_renewal": "ops/mvp/subscription-renewal.json",
+  "platform_shell": "frontend/components/PlatformShell.tsx",
+  "platform_api": "backend/app/platform_api.py",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "subscriptions_live_claimed": false,
+  "mrr_fabricated_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage68_h1_ribdigi_house_console.json",
+  "steps": [
+    {
+      "id": "rh-owner-outline",
+      "category": "house",
+      "title": "Index owner Ribdigi House Platform Owner Dashboard path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/ADR_142_STAGE68_OPEN.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    },
+    {
+      "id": "rh-adr137",
+      "category": "house",
+      "title": "Link ADR-137 platform principal as House console foundation (principal isolation \u2260 paid billing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+        "frontend/components/PlatformShell.tsx"
+      ],
+      "source": "docs/ADR_137_PLATFORM_PRINCIPAL.md"
+    },
+    {
+      "id": "rh-tenants-users",
+      "category": "house",
+      "title": "Index Tenants + Platform Users House modules (lifecycle packaging \u2260 subscriptions Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+        "backend/app/platform_api.py"
+      ],
+      "source": "backend/app/platform_api.py"
+    },
+    {
+      "id": "rh-plans-metadata",
+      "category": "house",
+      "title": "Index Plans as metadata-only plan_code (metadata \u2260 paid plan catalog Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+        "docs/ADR_002_BILLING_DEFERRED.md"
+      ],
+      "source": "docs/ADR_002_BILLING_DEFERRED.md"
+    },
+    {
+      "id": "rh-billing-deferred",
+      "category": "house",
+      "title": "Link Stage 36 B1 billing-deferred as Billing / Subscriptions adjacency (ADR-002 Remaining)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "rh-subscription-renewal",
+      "category": "house",
+      "title": "Link Stage 52 R1 subscription-renewal as Subscriptions adjacency (auto-renewal Remaining)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+        "ops/mvp/subscription-renewal.json"
+      ],
+      "source": "docs/SUBSCRIPTION_RENEWAL_MVP.md"
+    },
+    {
+      "id": "rh-security-audit-health-settings",
+      "category": "house",
+      "title": "Index Security / Audit / Health / Settings House modules as ADR-137 adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+        "frontend/components/PlatformShell.tsx"
+      ],
+      "source": "frontend/components/PlatformShell.tsx"
+    },
+    {
+      "id": "rh-plan-honesty",
+      "category": "house",
+      "title": "Confirm Stage 68 plan explicitly defers paid billing / live subscriptions",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    },
+    {
+      "id": "rh-billing-remaining",
+      "category": "honesty",
+      "title": "Paid billing / payment-provider Remaining \u2014 packaging \u2260 billing Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/ADR_002_BILLING_DEFERRED.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    },
+    {
+      "id": "rh-subscriptions-remaining",
+      "category": "honesty",
+      "title": "Live subscriptions / checkout / fabricated MRR Remaining (Stage 85 R1 roster is metadata honesty only)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_68_PLAN.md",
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+      ],
+      "source": "docs/STAGE_68_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Paid billing / payment-provider Complete (ADR-002)",
+    "Live subscriptions / checkout Complete",
+    "Fabricated MRR Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

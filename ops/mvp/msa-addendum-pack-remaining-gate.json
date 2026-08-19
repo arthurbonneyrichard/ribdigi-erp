@@ -1,0 +1,58 @@
+{
+  "id": "msa-addendum-pack-remaining-gate",
+  "stage": 299,
+  "pack": "I1",
+  "doc": "docs/MSA_ADDENDUM_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/MSA_ADDENDUM_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/MSA_ADDENDUM_PACK_RG_POINTERS_MVP.md",
+    "msa_addendum": "docs/MSA_ADDENDUM_MVP.md",
+    "dpa_subprocessor_pack_remaining_gate": "docs/DPA_SUBPROCESSOR_PACK_REMAINING_GATE_MVP.md",
+    "commercial_terms_pack_remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "dpa_subprocessor": "docs/DPA_SUBPROCESSOR_MVP.md"
+  },
+  "packaging_complete": true,
+  "msa_signed_claimed": false,
+  "security_exhibit_signed": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage39_msa_addendum": true,
+  "distinct_from_stage298_dpa_subprocessor_pack_remaining_gate": true,
+  "distinct_from_stage293_commercial_terms_pack_remaining_gate": true,
+  "distinct_from_stage39_dpa_subprocessor": true,
+  "steps": [
+    {
+      "id": "mapr-read-blockers",
+      "title": "Read B1 MSA addendum pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mapr-follow-pointers",
+      "title": "Follow P1 Stage 39 A1 / Stage 298 / Stage 293 / Stage 39 P1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mapr-msa-missing",
+      "title": "Reaffirm signed MSA / contract execution MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mapr-no-packaging-as-live",
+      "title": "Do not treat Stage 39 A1 / Stage 298 / Stage 293 as signed MSA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mapr-msa-remaining",
+      "title": "Signed MSA / security exhibit / legal counsel / contract / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 299 I1 MSA addendum pack remaining-gate index packaging only. Do not claim signed MSA Complete."
+}

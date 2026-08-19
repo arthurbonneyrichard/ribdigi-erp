@@ -1,0 +1,61 @@
+{
+  "id": "commercial-dpa-pack-rg-pointers",
+  "stage": 292,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_DPA_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md",
+    "commercial_dpa": "docs/COMMERCIAL_DPA_MVP.md",
+    "commercial_privacy_notice_pack_remaining_gate": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "cookie_privacy_notice_pack_remaining_gate": "docs/COOKIE_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "dpa_subprocessor": "docs/DPA_SUBPROCESSOR_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "dpa_signed_claimed": false,
+  "subprocessor_register_live": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_dpa_stage77",
+    "commercial_privacy_notice_pack_remaining_gate_stage291",
+    "cookie_privacy_notice_pack_remaining_gate_stage290",
+    "dpa_subprocessor_stage39",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cdprp-stage77",
+      "title": "Point to Stage 77 A1 commercial DPA",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdprp-stage291",
+      "title": "Point to Stage 291 commercial privacy notice pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdprp-stage290",
+      "title": "Point to Stage 290 cookie privacy notice pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdprp-stage39",
+      "title": "Point to Stage 39 DPA subprocessor adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdprp-dpa-remaining",
+      "title": "Signed DPA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 292 P1 commercial DPA pack RG pointers packaging only. Do not claim signed DPA Complete."
+}

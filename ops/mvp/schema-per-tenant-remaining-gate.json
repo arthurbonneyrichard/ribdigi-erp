@@ -1,0 +1,55 @@
+{
+  "id": "schema-per-tenant-remaining-gate",
+  "stage": 185,
+  "pack": "I1",
+  "doc": "docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SCHEMA_PER_TENANT_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SCHEMA_PER_TENANT_PACK_POINTERS_MVP.md",
+    "adr001": "docs/ADR_001_TENANCY.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md",
+    "i18n_remaining_gate": "docs/I18N_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "schema_per_tenant_claimed": false,
+  "database_per_tenant_claimed": false,
+  "shared_schema_as_schema_per_tenant_claimed": false,
+  "i18n_packs_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_shared_schema_mvp": true,
+  "distinct_from_stage184_i18n_gate": true,
+  "steps": [
+    {
+      "id": "sr-read-blockers",
+      "title": "Read B1 schema-per-tenant blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-follow-pointers",
+      "title": "Follow P1 ADR-001 / deferred ADR / readiness pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-schema-missing",
+      "title": "Reaffirm schema-per-tenant MISSING until post-MVP migration",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-no-shared-as-spt",
+      "title": "Do not treat shared-schema Completes as schema-per-tenant",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sr-schema-remaining",
+      "title": "Schema-per-tenant / database-per-tenant Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 185 I1 schema-per-tenant remaining-gate index packaging only. Do not claim schema-per-tenant Complete."
+}

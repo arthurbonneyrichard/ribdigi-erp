@@ -1,0 +1,49 @@
+{
+  "id": "support-runbook-pack-rg-blockers",
+  "stage": 236,
+  "pack": "B1",
+  "doc": "docs/SUPPORT_RUNBOOK_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_RUNBOOK_PACK_REMAINING_GATE_MVP.md",
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+    "admin_ops_map": "ops/support/admin-ops-map.json"
+  },
+  "packaging_complete": true,
+  "live_support_sla_claimed": false,
+  "live_support_runbook_claimed": false,
+  "hosted_support_desk_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_support_sla_oncall_rota": "REMAINING",
+    "hosted_support_desk": "REMAINING",
+    "stage30_s1_as_live_support_sla": "NON_CLAIM",
+    "live_support_sla_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "srprb-sla",
+      "title": "Mark live support SLA / on-call rota Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-desk",
+      "title": "Mark hosted support desk Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-stage30-nonclaim",
+      "title": "Mark Stage 30 S1 as non-claim for live support SLA",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-sla-remaining",
+      "title": "Live support SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 236 B1 support runbook pack RG blocker matrix packaging only. Live support SLA Complete remains MISSING."
+}

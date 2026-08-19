@@ -1,0 +1,77 @@
+{
+  "id": "unique-constraint-gate-honesty-pack-rg-pointers",
+  "stage": 712,
+  "pack": "P1",
+  "doc": "docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/UNIQUE_CONSTRAINT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "foreign_key_cascade_gate_honesty_pack_remaining_gate": "docs/FOREIGN_KEY_CASCADE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transaction_isolation_gate_honesty_pack_remaining_gate": "docs/TRANSACTION_ISOLATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "unique_constraint_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "unique_constraint_gate_honesty_complete_claimed": false,
+  "unique_constraint_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_unique_constraint_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "foreign_key_cascade_gate_honesty_pack_remaining_gate_stage711": "docs/FOREIGN_KEY_CASCADE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transaction_isolation_gate_honesty_pack_remaining_gate_stage710": "docs/TRANSACTION_ISOLATION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "unique_constraint_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / unique_constraint_gate / unique_constraint_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "ucghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Unique Constraint Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ucghp-stage711",
+      "title": "Point to Stage 711 FOREIGN KEY CASCADE GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ucghp-stage710",
+      "title": "Point to Stage 710 TRANSACTION ISOLATION GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ucghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ucghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ucghp-prior-pack",
+      "title": "Point to Unique Constraint Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ucghp-checklist-remaining",
+      "title": "Offline Complete / Unique Constraint Gate / Unique Constraint Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 712 P1 Unique Constraint Gate Honesty Pack RG pointers packaging only."
+}

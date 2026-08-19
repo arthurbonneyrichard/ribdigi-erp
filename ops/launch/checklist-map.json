@@ -1,0 +1,54 @@
+{
+  "stage": "27",
+  "workstream": "L1",
+  "checklist": "docs/LAUNCH_CHECKLIST.md",
+  "doc": "docs/LAUNCH_CERT_MVP.md",
+  "production_signoff_claimed": false,
+  "sections": {
+    "1": {
+      "title": "Configuration & secrets",
+      "class": "operator_required",
+      "unchecked_required": true
+    },
+    "2": {
+      "title": "Identity & security",
+      "class": "operator_required",
+      "unchecked_required": true
+    },
+    "3": {
+      "title": "Integrations (Stage 6–7)",
+      "class": "operator_required",
+      "unchecked_required": true
+    },
+    "4": {
+      "title": "Core ERP smoke",
+      "class": "mixed",
+      "operator_required_prefixes": [
+        "Product create + stock-in"
+      ],
+      "ci_proven_markers": [
+        "test_purchasing_chain_c1.py",
+        "test_sales_chain_c1.py",
+        "test_launch_smoke_t1.py",
+        "test_reliability_cache_r1.py",
+        "test_security_scan_s1.py",
+        "test_pgbouncer_p1.py",
+        "test_backup_offsite_b1.py"
+      ]
+    },
+    "5": {
+      "title": "Reliability & cache",
+      "class": "ci_proven",
+      "evidence": "test_reliability_cache_r1.py"
+    },
+    "6": {
+      "title": "Explicitly deferred",
+      "class": "deferred"
+    },
+    "7": {
+      "title": "Sign-off",
+      "class": "operator_required",
+      "signed_required": false
+    }
+  }
+}

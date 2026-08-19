@@ -1,0 +1,77 @@
+{
+  "id": "loadtest-baseline-honesty-pack-rg-blockers",
+  "stage": 536,
+  "pack": "B1",
+  "doc": "docs/LOADTEST_BASELINE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LOADTEST_BASELINE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "loadtest_baseline_pack_remaining_gate": "docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "loadtest_baseline_honesty_complete_claimed": false,
+  "loadtest_baseline_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "loadtest_baseline_honesty_complete_claimed": "REMAINING",
+    "loadtest_baseline_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_loadtest_baseline_honesty": "NON_CLAIM",
+    "loadtest_baseline_pack_as_loadtest_baseline_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "loadtest_baseline_honesty_complete_claimed_flag": "false",
+    "loadtest_baseline_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "lbhrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lbhrb-honesty",
+      "title": "Mark Loadtest Baseline honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lbhrb-as-golive",
+      "title": "Mark Loadtest Baseline as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lbhrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lbhrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lbhrb-prior-nonclaim",
+      "title": "Mark LOADTEST_BASELINE_PACK as non-claim for loadtest-baseline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lbhrb-checklist-remaining",
+      "title": "Offline Complete / Loadtest Baseline / Loadtest Baseline honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 536 B1 Loadtest Baseline Honesty Pack RG blocker matrix packaging only."
+}

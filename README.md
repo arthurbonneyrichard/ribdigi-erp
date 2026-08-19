@@ -27,6 +27,18 @@ docker compose up --build
 - API: http://localhost:8000
 - Swagger: http://localhost:8000/docs
 
+**Live code updates (Docker Desktop):** `backend` and `frontend` bind-mount the repo. Backend uses uvicorn `--reload`; frontend uses `next dev` with polling (`WATCHPACK_POLLING`). After pulling compose changes, recreate the frontend once:
+
+```bash
+docker compose up -d --build --force-recreate frontend
+```
+
+Celery worker/beat do **not** auto-reload — restart them after backend task/code changes:
+
+```bash
+docker compose restart celery_worker celery_beat
+```
+
 No default application login is created automatically. Create a tenant through the tenant registration API/UI.
 
 ## Optional local seed data

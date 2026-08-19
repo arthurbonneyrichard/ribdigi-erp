@@ -1,0 +1,60 @@
+{
+  "id": "offline-materials-pack-rg-pointers",
+  "stage": 330,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_MATERIALS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_MATERIALS_PACK_REMAINING_GATE_MVP.md",
+    "offline_materials_remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "loadtest_baseline_pack_remaining_gate": "docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "attestation_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "offline_materials_remaining_gate_stage190",
+    "offline_complete_pack_remaining_gate_stage329",
+    "loadtest_baseline_pack_remaining_gate_stage328",
+    "faq_offline_pos_stage171",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ofmprp-stage190",
+      "title": "Point to Stage 190 Offline materials remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprp-stage328",
+      "title": "Point to Stage 328 loadtest baseline pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprp-faq",
+      "title": "Point to FAQ offline POS materials adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ofmprp-materials-remaining",
+      "title": "Live Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 330 P1 Offline materials pack RG pointers packaging only. Do not claim live Offline Complete."
+}

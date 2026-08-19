@@ -1,0 +1,125 @@
+{
+  "stage": "77",
+  "workstream": "A1",
+  "doc": "docs/COMMERCIAL_DPA_MVP.md",
+  "stage77_plan": "docs/STAGE_77_PLAN.md",
+  "dpa_doc": "docs/DPA_SUBPROCESSOR_MVP.md",
+  "dpa": "ops/mvp/dpa-subprocessor.json",
+  "msa_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "msa": "ops/mvp/msa-addendum.json",
+  "terms_doc": "docs/COMMERCIAL_TERMS_MVP.md",
+  "terms": "ops/mvp/commercial-terms.json",
+  "privacy_doc": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+  "privacy": "ops/mvp/commercial-privacy-notice.json",
+  "portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "portability": "ops/mvp/data-portability.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "dpa_signed_claimed": false,
+  "subprocessor_register_live": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "tos_signed_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage77_a1_commercial_dpa.json",
+  "steps": [
+    {
+      "id": "cdpa-owner-outline",
+      "category": "dpa",
+      "title": "Index owner Commercial DPA Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/ADR_160_STAGE77_OPEN.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    },
+    {
+      "id": "cdpa-stage39",
+      "category": "dpa",
+      "title": "Link Stage 39 DPA/subprocessor as adjacency (signed DPA Remaining ≠ commercial DPA live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/DPA_SUBPROCESSOR_MVP.md", "ops/mvp/dpa-subprocessor.json"],
+      "source": "docs/DPA_SUBPROCESSOR_MVP.md"
+    },
+    {
+      "id": "cdpa-msa",
+      "category": "dpa",
+      "title": "Link Stage 39 MSA addendum as adjacency (MSA packaging ≠ signed DPA)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/MSA_ADDENDUM_MVP.md", "ops/mvp/msa-addendum.json"],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "cdpa-terms",
+      "category": "dpa",
+      "title": "Link Stage 76 T1 commercial terms as adjacency (terms packaging ≠ signed DPA)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/COMMERCIAL_TERMS_MVP.md", "ops/mvp/commercial-terms.json"],
+      "source": "docs/COMMERCIAL_TERMS_MVP.md"
+    },
+    {
+      "id": "cdpa-privacy",
+      "category": "dpa",
+      "title": "Link Stage 75 P1 privacy notice as adjacency (privacy packaging ≠ signed DPA)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md", "ops/mvp/commercial-privacy-notice.json"],
+      "source": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md"
+    },
+    {
+      "id": "cdpa-portability",
+      "category": "dpa",
+      "title": "Link data portability as adjacency (portability Remaining ≠ signed DPA)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/DATA_PORTABILITY_MVP.md", "ops/mvp/data-portability.json"],
+      "source": "docs/DATA_PORTABILITY_MVP.md"
+    },
+    {
+      "id": "cdpa-plan-honesty",
+      "category": "dpa",
+      "title": "Confirm Stage 77 plan explicitly defers signed DPA / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/COMMERCIAL_DPA_MVP.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    },
+    {
+      "id": "cdpa-counsel-review",
+      "category": "dpa",
+      "title": "Index commercial-DPA legal counsel Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/COMMERCIAL_DPA_MVP.md", "docs/DPA_SUBPROCESSOR_MVP.md"],
+      "source": "docs/COMMERCIAL_DPA_MVP.md"
+    },
+    {
+      "id": "cdpa-dpa-remaining",
+      "category": "honesty",
+      "title": "Commercial signed DPA Remaining — packaging ≠ live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/COMMERCIAL_DPA_MVP.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    },
+    {
+      "id": "cdpa-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / subprocessor register / liability Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/DPA_SUBPROCESSOR_MVP.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Signed DPA Complete",
+    "Subprocessor register live Complete",
+    "Liability cap signed Complete",
+    "Signed ToS Complete",
+    "Live go-live Complete"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "id": "security-scan-remaining-gate",
+  "stage": 210,
+  "pack": "I1",
+  "doc": "docs/SECURITY_SCAN_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SECURITY_SCAN_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SECURITY_SCAN_PACK_POINTERS_MVP.md",
+    "security_scan": "docs/SECURITY_SCAN_MVP.md",
+    "pentest_remaining_gate": "docs/PENTEST_REMAINING_GATE_MVP.md",
+    "zap_baseline": "ops/security/zap-baseline.example.yml"
+  },
+  "packaging_complete": true,
+  "live_security_scan_claimed": false,
+  "live_zap_executed": false,
+  "vendor_pen_test_purchased": false,
+  "go_live_claimed": false,
+  "distinct_from_stage27_s1_security_scan": true,
+  "distinct_from_stage209_pentest_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ss-read-blockers",
+      "title": "Read B1 security scan blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-follow-pointers",
+      "title": "Follow P1 Stage 27 / Stage 209 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-scan-missing",
+      "title": "Reaffirm live security-scan MISSING until live ZAP / full scan evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-no-packaging-as-scan",
+      "title": "Do not treat Stage 27 S1 as live security-scan Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-scan-remaining",
+      "title": "Live security-scan / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 210 I1 security scan remaining-gate index packaging only. Do not claim live security-scan Complete."
+}

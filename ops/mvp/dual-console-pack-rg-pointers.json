@@ -1,0 +1,59 @@
+{
+  "id": "dual-console-pack-rg-pointers",
+  "stage": 268,
+  "pack": "P1",
+  "doc": "docs/DUAL_CONSOLE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "stage68_fidelity": "docs/STAGE_68_FIDELITY.md",
+    "tenant_company_console_pack_remaining_gate": "docs/TENANT_COMPANY_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "ribdigi_house_console_pack_remaining_gate": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "platform_principal": "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "dual_console_live_claimed": false,
+  "cross_principal_leak_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "dual_console_stage68_fidelity",
+    "tenant_company_console_pack_remaining_gate_stage267",
+    "ribdigi_house_console_pack_remaining_gate_stage266",
+    "platform_principal_adr137",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "dcprp-stage68",
+      "title": "Point to Stage 68 dual-console fidelity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcprp-stage267",
+      "title": "Point to Stage 267 tenant company console pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcprp-stage266",
+      "title": "Point to Stage 266 Ribdigi House console pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcprp-adr137",
+      "title": "Point to ADR-137 platform principal adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcprp-dual-console-remaining",
+      "title": "Live dual-console Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 268 P1 dual console pack RG pointers packaging only. Do not claim live dual-console Complete."
+}

@@ -21,6 +21,30 @@ def early_pay_settings(tenant: m.Tenant) -> dict:
         "early_pay_discount_pct": pct,
         "early_pay_discount_days": days,
         "enabled": pct > 0 and days > 0,
+        "source": "tenant",
+    }
+
+
+def resolve_early_pay_settings(tenant: m.Tenant, party: m.Party | None = None) -> dict:
+    """Prefer party early-pay override when either field is set; otherwise tenant defaults."""
+    tenant_ep = early_pay_settings(tenant)
+    if party is None:
+        return tenant_ep
+    pct_raw = getattr(party, "early_pay_discount_pct", None)
+    days_raw = getattr(party, "early_pay_discount_days", None)
+    if pct_raw is None and days_raw is None:
+        return tenant_ep
+    pct = float(pct_raw or 0)
+    days = int(days_raw or 0)
+    if pct < 0 or pct > 100:
+        raise HTTPException(status_code=400, detail="early_pay_discount_pct must be between 0 and 100")
+    if days < 0 or days > 365:
+        raise HTTPException(status_code=400, detail="early_pay_discount_days must be between 0 and 365")
+    return {
+        "early_pay_discount_pct": pct,
+        "early_pay_discount_days": days,
+        "enabled": pct > 0 and days > 0,
+        "source": "supplier" if party.kind == "supplier" else "party",
     }
 
 
@@ -121,23 +145,27 @@ def add_to_bucket(buckets: dict[str, float], days: int, amount: float) -> None:
     buckets[key] = round(buckets.get(key, 0.0) + float(amount), 2)
 
 
-async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
+async def ar_aging(
+    db: AsyncSession,
+    tenant_id: str,
+    as_of: datetime | None = None,
+    *,
+    company_id: str | None = None,
+) -> dict:
     as_of = as_of or datetime.utcnow()
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice).where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.status.in_(["posted", "partial"]),
-            )
-        )
-    ).scalars().all()
+    inv_q = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(["posted", "partial"]),
+    )
+    if company_id:
+        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
+    party_q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
+    if company_id:
+        party_q = party_q.where(m.Party.company_id == company_id)
     customers = {
         p.id: p
-        for p in (
-            await db.execute(
-                select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
-            )
-        ).scalars().all()
+        for p in (await db.execute(party_q)).scalars().all()
     }
 
     by_customer: dict[str, dict] = {}
@@ -193,33 +221,36 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     }
 
 
-async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
+async def ap_aging(
+    db: AsyncSession,
+    tenant_id: str,
+    as_of: datetime | None = None,
+    *,
+    company_id: str | None = None,
+) -> dict:
     as_of = as_of or datetime.utcnow()
-    invoices = (
-        await db.execute(
-            select(m.PurchaseInvoice).where(
-                m.PurchaseInvoice.tenant_id == tenant_id,
-                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
-            )
-        )
-    ).scalars().all()
+    inv_q = select(m.PurchaseInvoice).where(
+        m.PurchaseInvoice.tenant_id == tenant_id,
+        m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+    )
+    if company_id:
+        inv_q = inv_q.where(m.PurchaseInvoice.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
     invoiced_po_ids = {i.purchase_order_id for i in invoices if i.purchase_order_id}
 
-    orders = (
-        await db.execute(
-            select(m.PurchaseOrder).where(
-                m.PurchaseOrder.tenant_id == tenant_id,
-                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
-            )
-        )
-    ).scalars().all()
+    po_q = select(m.PurchaseOrder).where(
+        m.PurchaseOrder.tenant_id == tenant_id,
+        m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+    )
+    if company_id:
+        po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
+    orders = (await db.execute(po_q)).scalars().all()
+    party_q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
+    if company_id:
+        party_q = party_q.where(m.Party.company_id == company_id)
     suppliers = {
         p.id: p
-        for p in (
-            await db.execute(
-                select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
-            )
-        ).scalars().all()
+        for p in (await db.execute(party_q)).scalars().all()
     }
 
     by_supplier: dict[str, dict] = {}
@@ -269,10 +300,14 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             }
         )
 
+    # Stage 11 C1 — uninvoiced AP exposure = accepted GRN value (not full PO total).
+    from app.purchasing import po_received_accepted_value
+
     for po in orders:
         if po.id in invoiced_po_ids:
             continue
-        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        received_value = await po_received_accepted_value(db, tenant_id, po.id)
+        due = max(float(received_value) - float(po.paid_amount or 0), 0)
         if due <= 0:
             continue
         days = days_overdue(as_of, po.due_date, po.created_at)
@@ -290,6 +325,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "party_name": row["name"],
                 "due_date": po.due_date,
                 "balance_due": due,
+                "received_value": received_value,
                 "days_overdue": days,
                 "bucket": bucket,
             }
@@ -305,7 +341,14 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     }
 
 
-async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str) -> dict:
+async def customer_outstanding_bills(
+    db: AsyncSession,
+    tenant_id: str,
+    customer_id: str,
+    *,
+    company_id: str | None = None,
+) -> list[dict]:
+    """Open AR invoices for a customer (Stage 8 S2 / BR-11.1)."""
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -317,27 +360,85 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
     ).scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+    if company_id and customer.company_id and customer.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Customer not found")
 
-    invoices = (
-        await db.execute(
-            select(m.SalesInvoice)
-            .where(
-                m.SalesInvoice.tenant_id == tenant_id,
-                m.SalesInvoice.customer_id == customer_id,
-            )
-            .order_by(m.SalesInvoice.created_at.asc())
+    inv_q = select(m.SalesInvoice).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.customer_id == customer_id,
+        m.SalesInvoice.status.in_(["posted", "partial", "sent", "overdue"]),
+    )
+    if company_id:
+        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
+    rows: list[dict] = []
+    for inv in invoices:
+        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if due <= 0:
+            continue
+        rows.append(
+            {
+                "invoice_id": inv.id,
+                "invoice_number": inv.invoice_number,
+                "amount": round(due, 2),
+                "due_date": inv.due_date,
+                "status": inv.status,
+                "document_type": "sales_invoice",
+            }
         )
-    ).scalars().all()
-    payments = (
-        await db.execute(
-            select(m.CustomerPayment)
-            .where(
-                m.CustomerPayment.tenant_id == tenant_id,
-                m.CustomerPayment.customer_id == customer_id,
-            )
-            .order_by(m.CustomerPayment.created_at.asc())
+    rows.sort(
+        key=lambda r: (
+            r["due_date"] is None,
+            r["due_date"] or datetime.max,
+            -float(r["amount"]),
         )
-    ).scalars().all()
+    )
+    return rows
+
+
+async def customer_statement(
+    db: AsyncSession,
+    tenant_id: str,
+    customer_id: str,
+    *,
+    company_id: str | None = None,
+) -> dict:
+    customer = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == customer_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "customer",
+            )
+        )
+    ).scalar_one_or_none()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    if company_id and customer.company_id and customer.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    inv_q = (
+        select(m.SalesInvoice)
+        .where(
+            m.SalesInvoice.tenant_id == tenant_id,
+            m.SalesInvoice.customer_id == customer_id,
+        )
+        .order_by(m.SalesInvoice.created_at.asc())
+    )
+    if company_id:
+        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
+    pay_q = (
+        select(m.CustomerPayment)
+        .where(
+            m.CustomerPayment.tenant_id == tenant_id,
+            m.CustomerPayment.customer_id == customer_id,
+        )
+        .order_by(m.CustomerPayment.created_at.asc())
+    )
+    if company_id:
+        pay_q = pay_q.where(m.CustomerPayment.company_id == company_id)
+    payments = (await db.execute(pay_q)).scalars().all()
 
     lines = []
     for inv in invoices:
@@ -378,7 +479,13 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
     }
 
 
-async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str) -> dict:
+async def supplier_statement(
+    db: AsyncSession,
+    tenant_id: str,
+    supplier_id: str,
+    *,
+    company_id: str | None = None,
+) -> dict:
     supplier = (
         await db.execute(
             select(m.Party).where(
@@ -390,27 +497,31 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
     ).scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
+    if company_id and supplier.company_id and supplier.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Supplier not found")
 
-    orders = (
-        await db.execute(
-            select(m.PurchaseOrder)
-            .where(
-                m.PurchaseOrder.tenant_id == tenant_id,
-                m.PurchaseOrder.supplier_id == supplier_id,
-            )
-            .order_by(m.PurchaseOrder.created_at.asc())
+    po_q = (
+        select(m.PurchaseOrder)
+        .where(
+            m.PurchaseOrder.tenant_id == tenant_id,
+            m.PurchaseOrder.supplier_id == supplier_id,
         )
-    ).scalars().all()
-    payments = (
-        await db.execute(
-            select(m.SupplierPayment)
-            .where(
-                m.SupplierPayment.tenant_id == tenant_id,
-                m.SupplierPayment.supplier_id == supplier_id,
-            )
-            .order_by(m.SupplierPayment.created_at.asc())
+        .order_by(m.PurchaseOrder.created_at.asc())
+    )
+    if company_id:
+        po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
+    orders = (await db.execute(po_q)).scalars().all()
+    pay_q = (
+        select(m.SupplierPayment)
+        .where(
+            m.SupplierPayment.tenant_id == tenant_id,
+            m.SupplierPayment.supplier_id == supplier_id,
         )
-    ).scalars().all()
+        .order_by(m.SupplierPayment.created_at.asc())
+    )
+    if company_id:
+        pay_q = pay_q.where(m.SupplierPayment.company_id == company_id)
+    payments = (await db.execute(pay_q)).scalars().all()
 
     lines = []
     for po in orders:
@@ -450,5 +561,260 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
     }
 
 
+async def supplier_payment_schedule(
+    db: AsyncSession,
+    tenant_id: str,
+    supplier_id: str,
+    *,
+    as_of: datetime | None = None,
+    company_id: str | None = None,
+) -> dict:
+    """Upcoming/overdue AP schedule for a supplier (Stage 8 S1 / BR-11.2)."""
+    as_of = as_of or datetime.utcnow()
+    supplier = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == supplier_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "supplier",
+            )
+        )
+    ).scalar_one_or_none()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    if company_id and supplier.company_id and supplier.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    ep = resolve_early_pay_settings(tenant, supplier)
+
+    inv_q = select(m.PurchaseInvoice).where(
+        m.PurchaseInvoice.tenant_id == tenant_id,
+        m.PurchaseInvoice.supplier_id == supplier_id,
+        m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+    )
+    if company_id:
+        inv_q = inv_q.where(m.PurchaseInvoice.company_id == company_id)
+    invoices = (await db.execute(inv_q)).scalars().all()
+    po_q = select(m.PurchaseOrder).where(
+        m.PurchaseOrder.tenant_id == tenant_id,
+        m.PurchaseOrder.supplier_id == supplier_id,
+        m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+    )
+    if company_id:
+        po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
+    orders = (await db.execute(po_q)).scalars().all()
+
+    items: list[dict] = []
+    for inv in invoices:
+        due_amt = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        if due_amt <= 0:
+            continue
+        due_dt = inv.due_date
+        if due_dt is None:
+            days_until = None
+            is_overdue = False
+            bucket = "unscheduled"
+        else:
+            days_until = (due_dt.date() - as_of.date()).days
+            is_overdue = days_until < 0
+            if is_overdue:
+                bucket = "overdue"
+            elif days_until == 0:
+                bucket = "due_today"
+            else:
+                bucket = "upcoming"
+        quote = purchase_invoice_early_discount(
+            inv,
+            pct=ep["early_pay_discount_pct"],
+            days=ep["early_pay_discount_days"],
+            as_of=as_of,
+        )
+        items.append(
+            {
+                "document_type": "purchase_invoice",
+                "purchase_invoice_id": inv.id,
+                "invoice_number": inv.invoice_number,
+                "purchase_order_id": inv.purchase_order_id,
+                "amount": round(due_amt, 2),
+                "due_date": due_dt,
+                "status": inv.status,
+                "days_until_due": days_until,
+                "is_overdue": is_overdue,
+                "schedule_bucket": bucket,
+                "early_discount": quote,
+            }
+        )
+
+    invoiced_pos = {i.purchase_order_id for i in invoices if i.purchase_order_id}
+    for po in orders:
+        if po.id in invoiced_pos:
+            continue
+        due_amt = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        if due_amt <= 0:
+            continue
+        due_dt = po.due_date
+        if due_dt is None:
+            days_until = None
+            is_overdue = False
+            bucket = "unscheduled"
+        else:
+            days_until = (due_dt.date() - as_of.date()).days
+            is_overdue = days_until < 0
+            if is_overdue:
+                bucket = "overdue"
+            elif days_until == 0:
+                bucket = "due_today"
+            else:
+                bucket = "upcoming"
+        items.append(
+            {
+                "document_type": "purchase_order",
+                "purchase_order_id": po.id,
+                "po_number": po.po_number,
+                "amount": round(due_amt, 2),
+                "due_date": due_dt,
+                "status": po.status,
+                "days_until_due": days_until,
+                "is_overdue": is_overdue,
+                "schedule_bucket": bucket,
+                "early_discount": None,
+            }
+        )
+
+    def _sort_key(row: dict):
+        due = row.get("due_date")
+        # Overdue first (most overdue), then due today, then upcoming, unscheduled last
+        if due is None:
+            return (3, datetime.max, -float(row["amount"]))
+        days = row.get("days_until_due")
+        if days is not None and days < 0:
+            return (0, due, -float(row["amount"]))
+        if days == 0:
+            return (1, due, -float(row["amount"]))
+        return (2, due, -float(row["amount"]))
+
+    items.sort(key=_sort_key)
+    total_due = round(sum(float(i["amount"]) for i in items), 2)
+    overdue_total = round(
+        sum(float(i["amount"]) for i in items if i["schedule_bucket"] == "overdue"), 2
+    )
+    upcoming_total = round(
+        sum(
+            float(i["amount"])
+            for i in items
+            if i["schedule_bucket"] in {"due_today", "upcoming"}
+        ),
+        2,
+    )
+    return {
+        "supplier_id": supplier.id,
+        "supplier_name": supplier.name,
+        "as_of": as_of.date().isoformat(),
+        "total_due": total_due,
+        "overdue_total": overdue_total,
+        "upcoming_total": upcoming_total,
+        "early_pay": ep,
+        "items": items,
+    }
+
+
 def default_due_date(from_dt: datetime | None = None, terms_days: int = DEFAULT_PAYMENT_TERMS_DAYS) -> datetime:
     return (from_dt or datetime.utcnow()) + timedelta(days=terms_days)
+
+
+def credit_limit_projection(customer: m.Party, additional_amount: float) -> dict:
+    """Return credit utilization projection for an additional AR amount (base currency)."""
+    limit = float(customer.credit_limit or 0)
+    balance = float(customer.balance or 0)
+    add = round(float(additional_amount or 0), 2)
+    projected = round(balance + add, 2)
+    exceeded = limit > 0 and projected > limit + 1e-9
+    return {
+        "credit_limit": limit,
+        "current_balance": balance,
+        "additional_amount": add,
+        "projected_balance": projected,
+        "exceeded": exceeded,
+        "available": round(max(limit - balance, 0), 2) if limit > 0 else None,
+    }
+
+
+async def enforce_credit_limit(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    role: str,
+    permissions: dict | None,
+    customer: m.Party,
+    additional_amount: float,
+    override: bool = False,
+    override_reason: str | None = None,
+    entity: str,
+    entity_id: str | None,
+    module: str = "credit",
+    extra_details: dict | None = None,
+    record_audit: bool = True,
+) -> dict:
+    """Block over-limit credit unless caller has credit:approve and supplies a reason.
+
+    Returns projection dict. When override is applied, records an audit event
+    (unless ``record_audit`` is False — caller will record with a final entity id).
+    """
+    from app.rbac import has_permission
+    from app import audit as audit_svc
+
+    projection = credit_limit_projection(customer, additional_amount)
+    if not projection["exceeded"]:
+        return {**projection, "overridden": False}
+
+    detail = {
+        "code": "CREDIT_LIMIT_EXCEEDED",
+        "message": "This sale would exceed the customer credit limit",
+        **projection,
+        **(extra_details or {}),
+    }
+
+    if not override:
+        raise HTTPException(status_code=409, detail=detail)
+
+    reason = (override_reason or "").strip()
+    if len(reason) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "CREDIT_OVERRIDE_REASON_REQUIRED",
+                "message": "credit_override_reason is required (min 3 characters) to override the credit limit",
+            },
+        )
+
+    if not has_permission(role, "credit", "approve", overrides=permissions):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "CREDIT_OVERRIDE_FORBIDDEN",
+                "message": "Missing permission: credit:approve",
+            },
+        )
+
+    if record_audit:
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="credit_limit_override",
+            entity=entity,
+            entity_id=entity_id,
+            module=module,
+            details={
+                "customer_id": customer.id,
+                "customer_name": customer.name,
+                "reason": reason,
+                **projection,
+                **(extra_details or {}),
+            },
+        )
+    return {**projection, "overridden": True, "override_reason": reason}

@@ -1,0 +1,158 @@
+{
+  "stage": "58",
+  "workstream": "B1",
+  "doc": "docs/BUSINESS_METRICS_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "success_metrics": "ops/mvp/success-metrics.json",
+  "success_metrics_doc": "docs/SUCCESS_METRICS_MVP.md",
+  "unit_economics_positioning": "ops/mvp/unit-economics-positioning.json",
+  "unit_economics_positioning_doc": "docs/UNIT_ECONOMICS_POSITIONING_MVP.md",
+  "freemium_trial": "ops/mvp/freemium-trial.json",
+  "freemium_trial_doc": "docs/FREEMIUM_TRIAL_MVP.md",
+  "subscription_renewal": "ops/mvp/subscription-renewal.json",
+  "subscription_renewal_doc": "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+  "cancellation_churn": "ops/mvp/cancellation-churn.json",
+  "cancellation_churn_doc": "docs/CANCELLATION_CHURN_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage58_plan": "docs/STAGE_58_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "mrr_measured_claimed": false,
+  "paying_customers_measured_claimed": false,
+  "nrr_grr_measured_claimed": false,
+  "business_metrics_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage58_b1_business_metrics.json",
+  "steps": [
+    {
+      "id": "bm-product-overview",
+      "category": "business",
+      "title": "Index PRODUCT_OVERVIEW Paying Customers / MRR / GRR / NRR / Trial-to-Paid as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_58_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "bm-success-metrics",
+      "category": "metrics",
+      "title": "Link Stage 57 success-metrics as product-metrics adjacency (not measured MRR/NRR)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUCCESS_METRICS_MVP.md",
+        "ops/mvp/success-metrics.json"
+      ],
+      "source": "docs/SUCCESS_METRICS_MVP.md"
+    },
+    {
+      "id": "bm-unit-economics",
+      "category": "business",
+      "title": "Link Stage 55 unit-economics as commercial metrics adjacency (not measured paying customers)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/UNIT_ECONOMICS_POSITIONING_MVP.md",
+        "ops/mvp/unit-economics-positioning.json"
+      ],
+      "source": "docs/UNIT_ECONOMICS_POSITIONING_MVP.md"
+    },
+    {
+      "id": "bm-freemium-trial",
+      "category": "metrics",
+      "title": "Link Stage 50 freemium / trial as conversion adjacency (not measured trial-to-paid)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FREEMIUM_TRIAL_MVP.md",
+        "ops/mvp/freemium-trial.json"
+      ],
+      "source": "docs/FREEMIUM_TRIAL_MVP.md"
+    },
+    {
+      "id": "bm-subscription-renewal",
+      "category": "business",
+      "title": "Link Stage 52 subscription renewal as retention adjacency (not measured GRR/NRR)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+        "ops/mvp/subscription-renewal.json"
+      ],
+      "source": "docs/SUBSCRIPTION_RENEWAL_MVP.md"
+    },
+    {
+      "id": "bm-cancellation-churn",
+      "category": "metrics",
+      "title": "Link Stage 53 cancellation / churn as churn adjacency (not measured retention)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CANCELLATION_CHURN_MVP.md",
+        "ops/mvp/cancellation-churn.json"
+      ],
+      "source": "docs/CANCELLATION_CHURN_MVP.md"
+    },
+    {
+      "id": "bm-billing-deferred",
+      "category": "business",
+      "title": "Link Stage 36 billing-deferred as billing Remaining adjacency (not measured MRR)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "bm-plan-honesty",
+      "category": "metrics",
+      "title": "Confirm Stage 58 plan explicitly defers measured MRR / paying customers / NRR",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_58_PLAN.md",
+        "docs/BUSINESS_METRICS_MVP.md"
+      ],
+      "source": "docs/STAGE_58_PLAN.md"
+    },
+    {
+      "id": "bm-mrr-remaining",
+      "category": "honesty",
+      "title": "Measured MRR / paying customers Remaining \u2014 packaging \u2260 observed revenue metrics",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_58_PLAN.md",
+        "docs/BUSINESS_METRICS_MVP.md"
+      ],
+      "source": "docs/STAGE_58_PLAN.md"
+    },
+    {
+      "id": "bm-nrr-remaining",
+      "category": "honesty",
+      "title": "Measured NRR / GRR / trial-to-paid Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_58_PLAN.md",
+        "docs/BUSINESS_METRICS_MVP.md"
+      ],
+      "source": "docs/STAGE_58_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Measured MRR Complete",
+    "Measured paying customers Complete",
+    "Measured NRR / GRR / trial-to-paid Complete",
+    "Business metrics program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

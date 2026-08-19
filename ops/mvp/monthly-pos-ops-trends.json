@@ -1,0 +1,54 @@
+{
+  "id": "monthly-pos-ops-trends",
+  "stage": 177,
+  "pack": "T1",
+  "doc": "docs/MONTHLY_POS_OPS_TRENDS_MVP.md",
+  "related": {
+    "monthly_review": "docs/MONTHLY_POS_OPS_REVIEW_MVP.md",
+    "weekly_review": "docs/WEEKLY_POS_OPS_REVIEW_MVP.md",
+    "weekly_signals": "docs/WEEKLY_POS_OPS_SIGNALS_MVP.md",
+    "store_close_drain": "docs/STORE_CLOSE_DRAIN_MVP.md",
+    "weekly_adherence": "docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "weekly_review_outcomes",
+    "hold_soft_reserve_trends"
+  ],
+  "steps": [
+    {
+      "id": "mt-weekly-outcomes",
+      "title": "Summarize Stage 176 W1/A1/R1 findings for the month",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mt-adherence-gaps",
+      "title": "Note recurring open/close/handover adherence gaps",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mt-hold-trends",
+      "title": "Review Hold/soft-reserve stale and expiry patterns",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mt-conflict-age",
+      "title": "Track conflict backlog age trends without SLA claims",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mt-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 177 T1 monthly trends packaging only. Offline Complete remains MISSING."
+}

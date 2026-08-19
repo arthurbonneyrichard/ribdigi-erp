@@ -1,0 +1,60 @@
+{
+  "id": "k8s-deploy-pack-rg-pointers",
+  "stage": 318,
+  "pack": "P1",
+  "doc": "docs/K8S_DEPLOY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md",
+    "pgbouncer_soak_pack_remaining_gate": "docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md",
+    "pentest_pack_remaining_gate": "docs/PENTEST_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy_remaining_gate": "docs/K8S_DEPLOY_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_cluster_deploy_claimed": false,
+  "ci_deploy_claimed": false,
+  "live_staging_apply_claimed": false,
+  "managed_data_plane_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "k8s_deploy_stage26",
+    "pgbouncer_soak_pack_remaining_gate_stage317",
+    "pentest_pack_remaining_gate_stage316",
+    "k8s_deploy_remaining_gate_stage206",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "kdprp-stage26",
+      "title": "Point to Stage 26 K1 k8s deploy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprp-stage317",
+      "title": "Point to Stage 317 PgBouncer soak pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprp-stage316",
+      "title": "Point to Stage 316 pen-test pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprp-stage206",
+      "title": "Point to Stage 206 k8s deploy remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprp-deploy-remaining",
+      "title": "Live cluster deploy Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 318 P1 k8s deploy pack RG pointers packaging only. Do not claim live cluster deploy Complete."
+}

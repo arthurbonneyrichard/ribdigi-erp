@@ -1,0 +1,55 @@
+{
+  "id": "knowledge-base-remaining-gate",
+  "stage": 215,
+  "pack": "I1",
+  "doc": "docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/KNOWLEDGE_BASE_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/KNOWLEDGE_BASE_RG_POINTERS_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "support_runbook_remaining_gate": "docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md",
+    "hosted_faq_saas_remaining_gate_stage191": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md",
+    "knowledge_base_register": "ops/mvp/knowledge-base.json"
+  },
+  "packaging_complete": true,
+  "live_knowledge_base_claimed": false,
+  "hosted_kb_saas_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage171_k1_knowledge_base": true,
+  "distinct_from_stage191_hosted_faq_saas_remaining_gate": true,
+  "distinct_from_stage214_support_runbook_remaining_gate": true,
+  "steps": [
+    {
+      "id": "kb-read-blockers",
+      "title": "Read B1 knowledge base blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-follow-pointers",
+      "title": "Follow P1 Stage 171 / Stage 214 / Stage 191 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-saas-missing",
+      "title": "Reaffirm hosted FAQ SaaS MISSING until a real hosted portal ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-no-packaging-as-saas",
+      "title": "Do not treat Stage 171 K1 as hosted FAQ SaaS Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kb-saas-remaining",
+      "title": "Hosted FAQ SaaS / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 215 I1 knowledge base remaining-gate index packaging only. Do not claim hosted FAQ SaaS Complete."
+}

@@ -1,0 +1,49 @@
+{
+  "stage": "29",
+  "workstream": "T1",
+  "doc": "docs/TLS_INGRESS_PACK_MVP.md",
+  "k8s_mvp": "docs/K8S_DEPLOY_MVP.md",
+  "cluster_issuer": "ops/k8s/cluster-issuer.example.yaml",
+  "ingress_tls": "ops/k8s/ingress-tls.example.yaml",
+  "letsencrypt_issued": false,
+  "tls_cutover_claimed": false,
+  "steps": [
+    {
+      "id": "1",
+      "title": "Install cert-manager in the cluster (operator; not CI)",
+      "class": "operator_required"
+    },
+    {
+      "id": "2",
+      "title": "Apply ClusterIssuer example (staging vs production ACME servers)",
+      "class": "operator_required"
+    },
+    {
+      "id": "3",
+      "title": "Apply Ingress TLS example or enable helm ingress.tls with real host/email",
+      "class": "operator_required"
+    },
+    {
+      "id": "4",
+      "title": "Confirm Certificate Ready and HTTPS probe to /api/v1/health",
+      "class": "operator_required"
+    },
+    {
+      "id": "5",
+      "title": "Record outcomes in ops change log (issuer, host, secretName, result)",
+      "class": "operator_required"
+    }
+  ],
+  "pass_criteria": [
+    "cert-manager pods Ready",
+    "Certificate resource Ready=True for the Ingress secret",
+    "HTTPS GET /api/v1/health succeeds",
+    "Ops change-log entry recorded"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/k8s/stage29_t1_tls_ingress.json",
+  "deferred": [
+    "Live Let's Encrypt issuance Complete claimed by CI",
+    "Production TLS cutover without operator log",
+    "Istio mTLS mesh Complete"
+  ]
+}

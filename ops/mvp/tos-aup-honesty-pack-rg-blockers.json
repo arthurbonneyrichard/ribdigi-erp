@@ -1,0 +1,77 @@
+{
+  "id": "tos-aup-honesty-pack-rg-blockers",
+  "stage": 560,
+  "pack": "B1",
+  "doc": "docs/TOS_AUP_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TOS_AUP_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "tos_aup_pack_remaining_gate": "docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "tos_aup_honesty_complete_claimed": false,
+  "tos_aup_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "tos_aup_honesty_complete_claimed": "REMAINING",
+    "tos_aup_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_tos_aup_honesty": "NON_CLAIM",
+    "tos_aup_pack_as_tos_aup_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "tos_aup_honesty_complete_claimed_flag": "false",
+    "tos_aup_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "tahrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tahrb-honesty",
+      "title": "Mark TOS AUP honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tahrb-as-golive",
+      "title": "Mark TOS AUP as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tahrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tahrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tahrb-prior-nonclaim",
+      "title": "Mark TOS_AUP_PACK as non-claim for tos-aup Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tahrb-checklist-remaining",
+      "title": "Offline Complete / TOS AUP / TOS AUP honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 560 B1 TOS AUP Honesty Pack RG blocker matrix packaging only."
+}

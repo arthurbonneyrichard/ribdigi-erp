@@ -1,0 +1,54 @@
+{
+  "id": "support-sla-boundary-blockers",
+  "stage": 220,
+  "pack": "B1",
+  "doc": "docs/SUPPORT_SLA_BOUNDARY_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_support_sla_boundary_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_support_sla_execution": "REMAINING",
+    "hosted_pagerduty_helpdesk_saas": "REMAINING",
+    "stage36_s1_as_live_support_sla": "NON_CLAIM",
+    "support_sla_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ssbb-exec",
+      "title": "Mark live support-SLA execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbb-pagerduty",
+      "title": "Mark hosted PagerDuty / helpdesk SaaS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbb-stage36-nonclaim",
+      "title": "Mark Stage 36 S1 support SLA boundary as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbb-sla-false",
+      "title": "Mark support_sla_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbb-sla-remaining",
+      "title": "Live support-SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 220 B1 support SLA boundary blocker matrix packaging only. Live support-SLA Complete remains MISSING."
+}

@@ -1,0 +1,57 @@
+{
+  "id": "commercial-acceptance-pack-remaining-gate",
+  "stage": 257,
+  "pack": "I1",
+  "doc": "docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMMERCIAL_ACCEPTANCE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMMERCIAL_ACCEPTANCE_PACK_RG_POINTERS_MVP.md",
+    "commercial_acceptance": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+    "commercial_packaging_archive_pack_remaining_gate": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_residual_pack_remaining_gate": "docs/COMMERCIAL_RESIDUAL_PACK_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_register": "ops/mvp/commercial-acceptance.json"
+  },
+  "packaging_complete": true,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "distinct_from_stage71_a1_commercial_acceptance": true,
+  "distinct_from_stage256_commercial_packaging_archive_pack_remaining_gate": true,
+  "distinct_from_stage255_commercial_residual_pack_remaining_gate": true,
+  "distinct_from_stage197_commercial_acceptance_remaining_gate": true,
+  "steps": [
+    {
+      "id": "capr-read-blockers",
+      "title": "Read B1 commercial acceptance pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "capr-follow-pointers",
+      "title": "Follow P1 Stage 71 / Stage 256 / Stage 255 / Stage 197 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "capr-acceptance-missing",
+      "title": "Reaffirm commercial acceptance MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "capr-no-packaging-as-live",
+      "title": "Do not treat Stage 71 A1 / Stage 256 / Stage 197 as commercial acceptance Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "capr-acceptance-remaining",
+      "title": "Commercial acceptance / steady-state ops / go-live / section 7 Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 257 I1 commercial acceptance pack remaining-gate index packaging only. Do not claim commercial acceptance Complete."
+}

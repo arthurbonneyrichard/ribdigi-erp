@@ -1,0 +1,53 @@
+{
+  "id": "customer-training-cert-pack-rg-blockers",
+  "stage": 242,
+  "pack": "B1",
+  "doc": "docs/CUSTOMER_TRAINING_CERT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md",
+    "customer_training_cert": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+    "live_training_pack_remaining_gate": "docs/LIVE_TRAINING_PACK_REMAINING_GATE_MVP.md",
+    "customer_training_cert_register": "ops/mvp/customer-training-cert.json"
+  },
+  "packaging_complete": true,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "training_certification_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_training_delivery_execution": "REMAINING",
+    "training_certification_complete": "REMAINING",
+    "stage48_t1_as_live_training": "NON_CLAIM",
+    "stage48_t1_as_training_certification": "NON_CLAIM",
+    "stage241_i1_as_live_training": "NON_CLAIM",
+    "live_training_claimed": "false",
+    "training_certification_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ctcprb-delivery",
+      "title": "Mark live training delivery execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcprb-cert",
+      "title": "Mark training certification Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcprb-stage48-nonclaim",
+      "title": "Mark Stage 48 T1 as non-claim for live training / certification",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ctcprb-training-remaining",
+      "title": "Live training / certification Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 242 B1 customer training cert pack RG blocker matrix packaging only. Live training and training certification Complete remain MISSING."
+}

@@ -1,0 +1,60 @@
+{
+  "id": "preflight-verification-pack-rg-pointers",
+  "stage": 261,
+  "pack": "P1",
+  "doc": "docs/PREFLIGHT_VERIFICATION_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "preflight_verification": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+    "commercial_golive_closeout_pack_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md",
+    "first_commercial_day_pack_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md",
+    "preflight_verification_remaining_gate": "docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md",
+    "preflight_verification_register": "ops/mvp/preflight-verification.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "sections_1_3_verified": false,
+  "preflight_verified_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "preflight_verification_stage69_v1",
+    "commercial_golive_closeout_pack_remaining_gate_stage260",
+    "first_commercial_day_pack_remaining_gate_stage259",
+    "preflight_verification_remaining_gate_stage201",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "pvprp-stage69",
+      "title": "Point to Stage 69 V1 preflight verification",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprp-stage260",
+      "title": "Point to Stage 260 commercial go-live closeout pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprp-stage259",
+      "title": "Point to Stage 259 first commercial day pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprp-stage201",
+      "title": "Point to Stage 201 preflight verification remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprp-preflight-remaining",
+      "title": "\u00a7\u00a71\u20133 verified Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 261 P1 preflight verification pack RG pointers packaging only. Do not claim \u00a7\u00a71\u20133 verified Complete."
+}

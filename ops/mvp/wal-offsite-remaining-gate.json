@@ -1,0 +1,58 @@
+{
+  "id": "wal-offsite-remaining-gate",
+  "stage": 233,
+  "pack": "I1",
+  "doc": "docs/WAL_OFFSITE_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/WAL_OFFSITE_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/WAL_OFFSITE_RG_POINTERS_MVP.md",
+    "wal_pitr_runbook": "docs/DR_WAL_PITR_RUNBOOK.md",
+    "pitr_drill_pack_remaining_gate": "docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md",
+    "ar_ap_accounting_surface": "docs/AR_AP_ACCOUNTING_SURFACE_MVP.md",
+    "ribbak_offsite_sync": "ops/backup/sync-ribbak-offsite.sh.example",
+    "wal_archive_conf": "ops/postgres/postgresql-wal-archive.conf.example",
+    "wal_archive_script": "ops/postgres/archive-wal-to-s3.sh.example"
+  },
+  "packaging_complete": true,
+  "live_offsite_backup_claimed": false,
+  "live_wal_archive_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage26_w1_wal_pitr_strategy": true,
+  "distinct_from_stage27_b1_backup_offsite": true,
+  "distinct_from_stage231_pitr_drill_pack_remaining_gate": true,
+  "distinct_from_stage232_ar_ap_accounting_surface": true,
+  "steps": [
+    {
+      "id": "wor-read-blockers",
+      "title": "Read B1 WAL offsite blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wor-follow-pointers",
+      "title": "Follow P1 Stage 26 / Stage 27 / Stage 231 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wor-offsite-missing",
+      "title": "Reaffirm live offsite backup MISSING until a real staging offsite + WAL archive ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wor-no-packaging-as-live",
+      "title": "Do not treat Stage 26 W1 / Stage 27 B1 as live offsite Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wor-offsite-remaining",
+      "title": "Live offsite / live WAL archive / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 233 I1 WAL offsite remaining-gate index packaging only. Do not claim live offsite backup Complete."
+}

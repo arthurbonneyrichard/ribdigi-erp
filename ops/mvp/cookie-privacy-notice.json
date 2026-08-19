@@ -1,0 +1,157 @@
+{
+  "stage": "43",
+  "workstream": "C1",
+  "doc": "docs/COOKIE_PRIVACY_NOTICE_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "data_portability": "ops/mvp/data-portability.json",
+  "data_portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "erasure_honesty": "ops/mvp/erasure-honesty.json",
+  "erasure_honesty_doc": "docs/ERASURE_HONESTY_MVP.md",
+  "dpa_subprocessor": "ops/mvp/dpa-subprocessor.json",
+  "dpa_subprocessor_doc": "docs/DPA_SUBPROCESSOR_MVP.md",
+  "compliance_questionnaire": "ops/mvp/compliance-questionnaire.json",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "compliance_readiness": "ops/mvp/compliance-readiness-register.json",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "tos_aup": "ops/mvp/tos-aup.json",
+  "tos_aup_doc": "docs/TOS_AUP_MVP.md",
+  "stage43_plan": "docs/STAGE_43_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "cookie_consent_live": false,
+  "cmp_saas_claimed": false,
+  "privacy_notice_live": false,
+  "legal_counsel_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage43_c1_cookie_privacy_notice.json",
+  "steps": [
+    {
+      "id": "cp-httponly-session",
+      "category": "cookie",
+      "title": "Index SECURITY_GUIDE HttpOnly / short-lived session cookie themes",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/COOKIE_PRIVACY_NOTICE_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "cp-samesite-csrf",
+      "category": "cookie",
+      "title": "Index SECURITY_GUIDE SameSite / CSRF cookie protection themes",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "cp-portability-consent",
+      "category": "privacy",
+      "title": "Link Stage 37 data-portability consent-management Remaining as notice adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_PORTABILITY_MVP.md",
+        "ops/mvp/data-portability.json"
+      ],
+      "source": "docs/DATA_PORTABILITY_MVP.md"
+    },
+    {
+      "id": "cp-erasure-session",
+      "category": "privacy",
+      "title": "Link Stage 37 erasure honesty / session-revoke as privacy-notice adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ERASURE_HONESTY_MVP.md",
+        "ops/mvp/erasure-honesty.json"
+      ],
+      "source": "docs/ERASURE_HONESTY_MVP.md"
+    },
+    {
+      "id": "cp-dpa-adjacency",
+      "category": "privacy",
+      "title": "Link Stage 39 DPA / subprocessor as privacy-terms adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DPA_SUBPROCESSOR_MVP.md",
+        "ops/mvp/dpa-subprocessor.json"
+      ],
+      "source": "docs/DPA_SUBPROCESSOR_MVP.md"
+    },
+    {
+      "id": "cp-compliance-questionnaire",
+      "category": "compliance",
+      "title": "Link Stage 34 compliance questionnaire privacy / GDPR theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "ops/mvp/compliance-questionnaire.json"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "cp-compliance-readiness",
+      "category": "compliance",
+      "title": "Link Stage 33 compliance readiness data-protection theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "docs/COMPLIANCE_READINESS_MVP.md"
+    },
+    {
+      "id": "cp-tos-adjacency",
+      "category": "notice",
+      "title": "Link Stage 43 T1 ToS / AUP as adjacent legal notice (privacy notice separate)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/TOS_AUP_MVP.md",
+        "ops/mvp/tos-aup.json"
+      ],
+      "source": "docs/TOS_AUP_MVP.md"
+    },
+    {
+      "id": "cp-cookie-consent-remaining",
+      "category": "honesty",
+      "title": "Live cookie-consent banner / CMP SaaS Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_43_PLAN.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/STAGE_43_PLAN.md"
+    },
+    {
+      "id": "cp-privacy-notice-remaining",
+      "category": "honesty",
+      "title": "Published customer privacy notice / legal counsel Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_43_PLAN.md",
+        "docs/DATA_PORTABILITY_MVP.md"
+      ],
+      "source": "docs/STAGE_43_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live cookie-consent banner / CMP SaaS Complete",
+    "Published customer privacy notice Complete",
+    "Legal counsel / outside counsel approval Complete",
+    "GDPR / privacy certification Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

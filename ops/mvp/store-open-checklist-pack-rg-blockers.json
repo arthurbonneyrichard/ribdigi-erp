@@ -1,0 +1,63 @@
+{
+  "id": "store-open-checklist-pack-rg-blockers",
+  "stage": 340,
+  "pack": "B1",
+  "doc": "docs/STORE_OPEN_CHECKLIST_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_OPEN_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_store_open_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "live_training_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_store_open_claimed": "REMAINING",
+    "stage173_as_live_store_open_checklist": "NON_CLAIM",
+    "stage172_as_live_store_open_checklist": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "live_training_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_store_open_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "socprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprb-training",
+      "title": "Mark live training Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprb-stage173-nonclaim",
+      "title": "Mark Stage 173 / Stage 172 as non-claim for live store open checklist Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socprb-checklist-remaining",
+      "title": "Live store open checklist Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 340 B1 store open checklist pack RG blocker matrix packaging only. Live store open checklist Completes remain MISSING."
+}

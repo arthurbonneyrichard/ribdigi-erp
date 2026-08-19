@@ -21,7 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.config import settings
 
-ENFORCED_ROLES = frozenset({"company_admin", "super_admin"})
+ENFORCED_ROLES = frozenset(
+    {"company_admin", "super_admin", "platform_super_admin", "platform_admin"}
+)
 BACKUP_CODE_COUNT = 10
 CHALLENGE_TTL_MINUTES = 5
 ISSUER = "RIBDIGI ERP"
@@ -236,6 +238,7 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/me",
     "/auth/me",
     "/auth/logout",
+    "/auth/idle-logout",
     "/auth/sessions",
     "/auth/2fa/status",
     "/auth/2fa/setup",
@@ -246,7 +249,10 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/auth/webauthn/register/verify",
     "/auth/webauthn/credentials",
     "/settings/email",
+    "/settings/sms",
     "/health",
+    "/health/ready",
+    "/metrics",
 )
 
 

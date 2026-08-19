@@ -1,0 +1,59 @@
+{
+  "id": "post-mvp-backlog-pack-rg-pointers",
+  "stage": 282,
+  "pack": "P1",
+  "doc": "docs/POST_MVP_BACKLOG_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md",
+    "post_mvp_backlog": "docs/POST_MVP_BACKLOG_MVP.md",
+    "residual_risk_pack_remaining_gate": "docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md",
+    "compliance_readiness_pack_remaining_gate": "docs/COMPLIANCE_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "backlog_closed_claimed": false,
+  "deferred_implemented_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "post_mvp_backlog_stage32",
+    "residual_risk_pack_remaining_gate_stage281",
+    "compliance_readiness_pack_remaining_gate_stage280",
+    "deferred_adr_register_stage31",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "pmbprp-stage32",
+      "title": "Point to Stage 32 B1 post-MVP backlog",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pmbprp-stage281",
+      "title": "Point to Stage 281 residual risk pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pmbprp-stage280",
+      "title": "Point to Stage 280 compliance readiness pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pmbprp-stage31",
+      "title": "Point to Stage 31 R1 deferred ADR register adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pmbprp-backlog-remaining",
+      "title": "Backlog closed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 282 P1 post-MVP backlog pack RG pointers packaging only. Do not claim backlog closed Complete."
+}

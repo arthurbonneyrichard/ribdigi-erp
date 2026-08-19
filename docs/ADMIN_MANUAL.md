@@ -422,10 +422,9 @@ For businesses operating in multiple currencies:
 
 ### 4.7 Language Configuration
 
-1. Go to **Admin → Company Setup → Languages**
-2. **Default Language:** Set for all users (MVP: English only)
-3. **User-Level Override:** Individual users can set their preferred language in profile settings
-4. **i18n Framework:** Ready for future language packs (Spanish, French, Arabic, Chinese, etc.)
+1. Commercial MVP UI language is **English only** (ADR-006 / BR-2.7).
+2. Profile / Security shows the current language (`en`); other locales are rejected until packs ship.
+3. Frontend i18n scaffold (`frontend/lib/i18n.ts`) is in place for future language packs — do not claim Spanish/French/etc. are available in MVP.
 
 ### 4.8 Tax Configuration
 
@@ -532,15 +531,14 @@ Proper tax setup is critical for compliance.
 
 ### 5.4 Deleting a User
 
-> **⚠️ CAUTION:** Deletion is permanent. Deactivation is preferred.
+> **Commercial MVP:** Permanent hard delete is **not** available (see ADR-003). Use **Deactivate**.
 
 1. Go to **Admin → Users**
-2. Find user → **Actions (⋮) → Delete**
-3. Choose handling method:
-   - **Reassign Records:** Transfer user's transactions to another user
-   - **Preserve Records:** Keep transactions with "Deleted User" label
-4. Enter confirmation text
-5. Click **Permanently Delete**
+2. Find user → **Deactivate**
+3. Confirm — the user cannot log in; historical transactions and audit trails keep the user ID
+4. To restore access later → **Activate**
+
+Hard delete with archival/reassignment remains a post-MVP capability.
 
 ### 5.5 Bulk User Import
 
@@ -696,6 +694,8 @@ For exceptional cases where a user needs permissions different from their role:
 ---
 
 ## 7. Backup & Recovery
+
+**MVP fidelity (Stage 30 S1):** Operator backup/restore UI steps below pair with infra packs — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`, `docs/DR_WAL_PITR_RUNBOOK.md`, `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json`, `ops/backup/sync-ribbak-offsite.sh.example` (`docs/SUPPORT_RUNBOOK_MVP.md`, `test_support_runbook_s1.py`). Packaging only — live PITR drill **execution** Remaining; do not treat this manual as green WAL replay.
 
 ### 7.1 Understanding Backup Architecture
 
@@ -1146,6 +1146,8 @@ Use these placeholders in custom templates:
 
 ## 11. Maintenance & Monitoring
 
+**MVP fidelity (Stage 30 S1):** Health / maintenance UI pairs with `docs/OPS_MONITORING_MVP.md`, `docs/GRAFANA_PACK_MVP.md`, `docs/INCIDENT_PACK_MVP.md`, `ops/prometheus/`, `ops/grafana/alertmanager.yml.example`, `ops/incident/oncall-runbook.md.example` (`docs/SUPPORT_RUNBOOK_MVP.md`, `test_support_runbook_s1.py`). Hosted Grafana/PagerDuty and live on-call rota remain Remaining — packaging only.
+
 ### 11.1 System Health Dashboard
 
 **Super Admin Only:**
@@ -1196,6 +1198,8 @@ For long-term data management:
 
 ## 12. Troubleshooting
 
+**MVP fidelity (Stage 30 S1):** Product UI troubleshooting below; infra emergencies also use `docs/INCIDENT_PACK_MVP.md`, `docs/CUTOVER_PACK_MVP.md`, `docs/TLS_INGRESS_PACK_MVP.md`, `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `docs/EVIDENCE_LEDGER_MVP.md` (`ops/support/admin-ops-map.json`, `test_support_runbook_s1.py`). Not a claim of live cutover / soak / ACME / attestation success.
+
 ### 12.1 User Access Issues
 
 | Issue | Cause | Solution |
@@ -1235,12 +1239,13 @@ For long-term data management:
 3. Reset passwords for affected users
 4. Enable maintenance mode if necessary
 5. Export audit logs for analysis
-6. Contact RIBDIGI Support immediately
+6. Follow operator incident pack — `docs/INCIDENT_PACK_MVP.md` / `ops/incident/oncall-runbook.md.example` (Stage 30 I1; hosted PagerDuty Remaining)
+7. Contact RIBDIGI Support immediately
 
 **Data Corruption:**
 1. Do not attempt manual database edits
 2. Note the affected records and symptoms
-3. Restore from most recent clean backup
+3. Restore from most recent clean backup (logical `.ribbak` — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`; WAL/PITR packaging — `docs/PITR_DRILL_PACK_MVP.md`, live execution Remaining)
 4. Contact RIBDIGI Support for assistance
 
 ---
@@ -1278,6 +1283,7 @@ For long-term data management:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | August 2026 | RIBDIGI Product Team | Initial MVP release |
+| 1.0.1 | August 2026 | RIBDIGI Product Team | Stage 30 S1: §§7/11/12 cite ops packs (`docs/SUPPORT_RUNBOOK_MVP.md`) |
 
 ---
 

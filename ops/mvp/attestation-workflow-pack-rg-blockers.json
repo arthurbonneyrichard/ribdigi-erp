@@ -1,0 +1,69 @@
+{
+  "id": "attestation-workflow-pack-rg-blockers",
+  "stage": 405,
+  "pack": "B1",
+  "doc": "docs/ATTESTATION_WORKFLOW_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ATTESTATION_WORKFLOW_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_workflow_complete_claimed": false,
+  "attestation_workflow_as_offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "attestation_workflow_complete_claimed": "REMAINING",
+    "attestation_workflow_as_offline_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_attestation_workflow": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "attestation_workflow_complete_claimed_flag": "false",
+    "attestation_workflow_as_offline_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "awfprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprb-workflow",
+      "title": "Mark attestation-workflow Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprb-as-offline",
+      "title": "Mark attestation workflow as Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "awfprb-checklist-remaining",
+      "title": "Offline Complete / attestation / attestation-workflow Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 405 B1 attestation workflow pack RG blocker matrix packaging only."
+}

@@ -1,0 +1,57 @@
+{
+  "id": "live-migration-pack-remaining-gate",
+  "stage": 322,
+  "pack": "I1",
+  "doc": "docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LIVE_MIGRATION_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LIVE_MIGRATION_PACK_RG_POINTERS_MVP.md",
+    "live_migration_remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md",
+    "live_dr_pack_remaining_gate": "docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage193_live_migration_remaining_gate": true,
+  "distinct_from_stage169_migration_gate": true,
+  "distinct_from_stage321_live_dr_pack_remaining_gate": true,
+  "distinct_from_stage320_e2e_backup_restore_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "lmpr-read-blockers",
+      "title": "Read B1 live migration pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmpr-follow-pointers",
+      "title": "Follow P1 Stage 193 / Stage 321 / Stage 320 / Stage 194 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmpr-migration-missing",
+      "title": "Reaffirm live migration / production migrate MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmpr-no-packaging-as-live",
+      "title": "Do not treat Stage 193 / Stage 169 M1 / Stage 321 as live migration Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lmpr-migration-remaining",
+      "title": "Live migration / production migrate / CI deploy / live DR / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 322 I1 live migration pack remaining-gate index packaging only. Do not claim live migration Complete."
+}

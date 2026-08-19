@@ -1,0 +1,236 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import PlatformShell from '../../../components/PlatformShell';
+import { api } from '../../../lib/api';
+import { downloadPlatformEvidence } from '../../../lib/platformEvidence';
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+export default function PlatformSettingsPage() {
+  const [companyName, setCompanyName] = useState('');
+  const [idle, setIdle] = useState(30);
+  const [supportEmail, setSupportEmail] = useState('');
+  const [supportPhone, setSupportPhone] = useState('');
+  const [timezone, setTimezone] = useState('Africa/Accra');
+  const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
+  const [timeFormat, setTimeFormat] = useState('24h');
+  const [numberFormat, setNumberFormat] = useState('1,234.56');
+  const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    setError('');
+    try {
+      const r = await api('/platform/settings');
+      setCompanyName(r.data?.company_name || '');
+      setIdle(Number(r.data?.inactivity_timeout_minutes) || 30);
+      setSupportEmail(r.data?.support_email || '');
+      setSupportPhone(r.data?.support_phone || '');
+      setTimezone(r.data?.timezone || 'Africa/Accra');
+      setDateFormat(r.data?.date_format || 'DD/MM/YYYY');
+      setTimeFormat(r.data?.time_format || '24h');
+      setNumberFormat(r.data?.number_format || '1,234.56');
+    } catch (err: any) {
+      setError(err.message || 'Failed to load settings');
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      await api('/platform/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          company_name: companyName,
+          inactivity_timeout_minutes: idle,
+          support_email: supportEmail,
+          support_phone: supportPhone,
+          timezone,
+          date_format: dateFormat,
+          time_format: timeFormat,
+          number_format: numberFormat,
+        }),
+      });
+      setMsg('Settings saved');
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Save failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function downloadEvidence() {
+    setError('');
+    setMsg('');
+    try {
+      setMsg(await downloadPlatformEvidence());
+    } catch (err: any) {
+      setError(err.message || 'Evidence download failed');
+    }
+  }
+
+  async function downloadSettingsCsv() {
+    setError('');
+    setMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/platform/settings/export`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Settings export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'platform_settings_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setMsg('House settings CSV downloaded');
+    } catch (err: any) {
+      setError(err.message || 'Settings export failed');
+    }
+  }
+
+  return (
+    <PlatformShell>
+      <h1>Platform settings</h1>
+      <p className="muted">
+        Ribdigi House console settings (platform tenant only). Export via{' '}
+        <code>GET /platform/settings/export</code> (Stage 150 S1).
+      </p>
+      <p className="muted" style={{ maxWidth: 640 }}>
+        House settings cover Ribdigi House identity, idle logout, and support contacts — not the
+        full tenant Company profile (addresses, tax, document branding). Customer tenants manage
+        that under Tenant Admin → Company.
+      </p>
+      {error && <p>{error}</p>}
+      {msg && <p style={{ color: '#047857' }}>{msg}</p>}
+      <form onSubmit={save} className="card" style={{ marginTop: 16, maxWidth: 480 }}>
+        <label className="muted">Display name</label>
+        <input
+          value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
+          required
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        />
+        <label className="muted">Idle logout (minutes)</label>
+        <input
+          type="number"
+          min={5}
+          max={480}
+          value={idle}
+          onChange={(e) => setIdle(Number(e.target.value))}
+          required
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        />
+        <label className="muted">Support email</label>
+        <input
+          value={supportEmail}
+          onChange={(e) => setSupportEmail(e.target.value)}
+          type="email"
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        />
+        <label className="muted">Support phone</label>
+        <input
+          value={supportPhone}
+          onChange={(e) => setSupportPhone(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        />
+        <label className="muted">House timezone (IANA)</label>
+        <input
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          placeholder="Africa/Accra"
+          required
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        />
+        <p className="muted" style={{ marginTop: -8, marginBottom: 12, fontSize: 13 }}>
+          Must be a valid IANA timezone (e.g. Africa/Accra). Invalid values are rejected by the API.
+        </p>
+        <label className="muted">House date format</label>
+        <select
+          value={dateFormat}
+          onChange={(e) => setDateFormat(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+          <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+          <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+        </select>
+        <label className="muted">House time format</label>
+        <select
+          value={timeFormat}
+          onChange={(e) => setTimeFormat(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="24h">24h</option>
+          <option value="12h">12h</option>
+        </select>
+        <label className="muted">House number format</label>
+        <select
+          value={numberFormat}
+          onChange={(e) => setNumberFormat(e.target.value)}
+          style={{ width: '100%', padding: 10, margin: '6px 0 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+        >
+          <option value="1,234.56">1,234.56</option>
+          <option value="1.234,56">1.234,56</option>
+          <option value="1 234.56">1 234.56</option>
+        </select>
+        <button
+          type="submit"
+          disabled={busy}
+          style={{ padding: '10px 14px', borderRadius: 8, background: '#111827', color: '#fff', border: 0 }}
+        >
+          Save
+        </button>
+      </form>
+      <p style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" onClick={downloadSettingsCsv}>
+          Export settings CSV
+        </button>
+        <button type="button" onClick={downloadEvidence}>
+          Download evidence JSON
+        </button>
+      </p>
+
+      <div className="card" style={{ marginTop: 24, maxWidth: 640 }}>
+        <h2 style={{ fontSize: 16, marginTop: 0 }}>Operator runbooks (packaging links)</h2>
+        <p className="muted">
+          Curated references for Ribdigi House operators. Packaging only — not live SLA or go-live
+          attestation.
+        </p>
+        <ul>
+          <li>
+            <code>docs/SUPPORT_RUNBOOK_MVP.md</code> — support runbook
+          </li>
+          <li>
+            <code>docs/INCIDENT_PACK_MVP.md</code> — incident pack
+          </li>
+          <li>
+            <code>docs/DR_LOGICAL_BACKUP_RUNBOOK.md</code> — logical backup DR
+          </li>
+          <li>
+            <code>ops/mvp/README.md</code> — MVP evidence / ops index
+          </li>
+        </ul>
+      </div>
+    </PlatformShell>
+  );
+}

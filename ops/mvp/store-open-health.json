@@ -1,0 +1,55 @@
+{
+  "id": "store-open-health",
+  "stage": 173,
+  "pack": "H1",
+  "doc": "docs/STORE_OPEN_HEALTH_MVP.md",
+  "related": {
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "cashier_pos_dayone": "docs/CASHIER_POS_DAYONE_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "hold_expiry",
+    "offline_device_health",
+    "sync_conflict_queue"
+  ],
+  "steps": [
+    {
+      "id": "sh-hold-expiry",
+      "title": "Expire stale Hold soft-reserves (4h)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-device-health",
+      "title": "Confirm offline device active; refresh catalog if TTL expired",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-conflict-queue",
+      "title": "Glance sync conflict queue; Accept client honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-escalate",
+      "title": "Escalate stuck conflicts via Stage 170 E1",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 173 H1 store-open health packaging only. Offline Complete remains MISSING."
+}

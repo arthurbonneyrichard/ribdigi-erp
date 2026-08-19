@@ -1,0 +1,155 @@
+{
+  "stage": "79",
+  "workstream": "R1",
+  "doc": "docs/COMMERCIAL_DATA_RETENTION_MVP.md",
+  "stage79_plan": "docs/STAGE_79_PLAN.md",
+  "retention_doc": "docs/DATA_RETENTION_RETURN_MVP.md",
+  "retention": "ops/mvp/data-retention-return.json",
+  "dpa_commercial_doc": "docs/COMMERCIAL_DPA_MVP.md",
+  "dpa_commercial": "ops/mvp/commercial-dpa.json",
+  "portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "portability": "ops/mvp/data-portability.json",
+  "privacy_doc": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+  "privacy": "ops/mvp/commercial-privacy-notice.json",
+  "terms_doc": "docs/COMMERCIAL_TERMS_MVP.md",
+  "terms": "ops/mvp/commercial-terms.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "data_return_portal_claimed": false,
+  "contract_exit_return_live": false,
+  "offboarding_workflow_claimed": false,
+  "hot_audit_purge_claimed": false,
+  "dpa_signed_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage79_r1_commercial_data_retention.json",
+  "steps": [
+    {
+      "id": "cdr-owner-outline",
+      "category": "retention",
+      "title": "Index owner Commercial Data Retention/Return Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_79_PLAN.md",
+        "docs/ADR_164_STAGE79_OPEN.md"
+      ],
+      "source": "docs/STAGE_79_PLAN.md"
+    },
+    {
+      "id": "cdr-stage45",
+      "category": "retention",
+      "title": "Link Stage 45 data retention/return as adjacency (portal Remaining \u2260 commercial retention live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_RETENTION_RETURN_MVP.md",
+        "ops/mvp/data-retention-return.json"
+      ],
+      "source": "docs/DATA_RETENTION_RETURN_MVP.md"
+    },
+    {
+      "id": "cdr-dpa",
+      "category": "retention",
+      "title": "Link Stage 77 A1 commercial DPA as adjacency (DPA packaging \u2260 data return portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_DPA_MVP.md",
+        "ops/mvp/commercial-dpa.json"
+      ],
+      "source": "docs/COMMERCIAL_DPA_MVP.md"
+    },
+    {
+      "id": "cdr-portability",
+      "category": "retention",
+      "title": "Link data portability as adjacency (portability Remaining \u2260 data return portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_PORTABILITY_MVP.md",
+        "ops/mvp/data-portability.json"
+      ],
+      "source": "docs/DATA_PORTABILITY_MVP.md"
+    },
+    {
+      "id": "cdr-privacy",
+      "category": "retention",
+      "title": "Link Stage 75 P1 privacy notice as adjacency (privacy packaging \u2260 data return portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+        "ops/mvp/commercial-privacy-notice.json"
+      ],
+      "source": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md"
+    },
+    {
+      "id": "cdr-terms",
+      "category": "retention",
+      "title": "Link Stage 76 T1 commercial terms as adjacency (terms packaging \u2260 data return portal)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_TERMS_MVP.md",
+        "ops/mvp/commercial-terms.json"
+      ],
+      "source": "docs/COMMERCIAL_TERMS_MVP.md"
+    },
+    {
+      "id": "cdr-plan-honesty",
+      "category": "retention",
+      "title": "Confirm Stage 79 plan explicitly defers data return portal / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_79_PLAN.md",
+        "docs/COMMERCIAL_DATA_RETENTION_MVP.md"
+      ],
+      "source": "docs/STAGE_79_PLAN.md"
+    },
+    {
+      "id": "cdr-offboarding-ownership",
+      "category": "retention",
+      "title": "Index offboarding workflow Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_DATA_RETENTION_MVP.md",
+        "docs/DATA_RETENTION_RETURN_MVP.md"
+      ],
+      "source": "docs/COMMERCIAL_DATA_RETENTION_MVP.md"
+    },
+    {
+      "id": "cdr-portal-remaining",
+      "category": "honesty",
+      "title": "Commercial data return portal Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_79_PLAN.md",
+        "docs/COMMERCIAL_DATA_RETENTION_MVP.md"
+      ],
+      "source": "docs/STAGE_79_PLAN.md"
+    },
+    {
+      "id": "cdr-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / offboarding / customer audit Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_79_PLAN.md",
+        "docs/DATA_RETENTION_RETURN_MVP.md"
+      ],
+      "source": "docs/STAGE_79_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Data return portal Complete",
+    "Contract exit return live Complete",
+    "Offboarding workflow Complete",
+    "Customer audit rights live Complete",
+    "Live go-live Complete"
+  ]
+}

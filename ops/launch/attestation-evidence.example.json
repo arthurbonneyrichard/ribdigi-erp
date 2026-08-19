@@ -1,0 +1,17 @@
+{
+  "attestation_id": "",
+  "started_at": "",
+  "finished_at": "",
+  "environment": "",
+  "sections_1_3_verified": false,
+  "ledger_honesty_reviewed": false,
+  "cutover_completed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "passed": false,
+  "engineering_name": "",
+  "operations_name": "",
+  "product_name": "",
+  "operator": "",
+  "notes": "Schema example only — not a forged go-live attestation. Copy after real env verification; keep passed=false and section_7_signed=false until measured. See docs/ATTESTATION_PACK_MVP.md (Stage 30 A1)."
+}

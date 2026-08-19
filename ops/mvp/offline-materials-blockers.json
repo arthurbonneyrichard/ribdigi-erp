@@ -1,0 +1,57 @@
+{
+  "id": "offline-materials-blockers",
+  "stage": 190,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_MATERIALS_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md",
+    "offline_complete_remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "offline_complete_product_claim": "REMAINING",
+    "playwright_offline_e2e": "REMAINING",
+    "stage171_faq_as_offline_complete": "NON_CLAIM",
+    "stages172_175_checklists_as_offline_complete": "NON_CLAIM",
+    "stage179_gate_as_offline_complete": "NON_CLAIM",
+    "offline_complete_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ob-offline-complete",
+      "title": "Mark Offline Complete product claim Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-playwright",
+      "title": "Mark Playwright offline E2E Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-faq-nonclaim",
+      "title": "Mark Stage 171 FAQ as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-checklists-nonclaim",
+      "title": "Mark Stage 172–175 checklists as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ob-offline-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 190 B1 offline materials blocker matrix packaging only. Offline Complete remains MISSING."
+}

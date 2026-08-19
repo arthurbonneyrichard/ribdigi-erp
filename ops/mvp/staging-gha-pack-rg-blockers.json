@@ -1,0 +1,54 @@
+{
+  "id": "staging-gha-pack-rg-blockers",
+  "stage": 229,
+  "pack": "B1",
+  "doc": "docs/STAGING_GHA_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+    "staging_gha_pack": "docs/STAGING_GHA_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_staging_apply_claimed": false,
+  "gha_staging_wired_into_main_ci": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_gha_staging_apply": "REMAINING",
+    "staging_deploy_in_main_ci": "REMAINING",
+    "stage28_g1_as_live_staging_apply": "NON_CLAIM",
+    "live_staging_apply_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sgprb-apply",
+      "title": "Mark live GHA→staging apply Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprb-main-ci",
+      "title": "Mark staging deploy in main ci.yml Remaining (must stay unwired)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprb-stage28-nonclaim",
+      "title": "Mark Stage 28 G1 staging GHA pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprb-claimed-false",
+      "title": "Mark live_staging_apply_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprb-apply-remaining",
+      "title": "Live staging apply Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 229 B1 staging GHA pack RG blocker matrix packaging only. Live staging apply Complete remains MISSING."
+}

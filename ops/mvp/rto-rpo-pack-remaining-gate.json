@@ -1,0 +1,57 @@
+{
+  "id": "rto-rpo-pack-remaining-gate",
+  "stage": 308,
+  "pack": "I1",
+  "doc": "docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/RTO_RPO_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/RTO_RPO_PACK_RG_POINTERS_MVP.md",
+    "rto_rpo": "docs/RTO_RPO_MVP.md",
+    "encryption_kms_pack_remaining_gate": "docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md",
+    "data_residency_pack_remaining_gate": "docs/DATA_RESIDENCY_PACK_REMAINING_GATE_MVP.md",
+    "data_retention_return": "docs/DATA_RETENTION_RETURN_MVP.md"
+  },
+  "packaging_complete": true,
+  "measured_rto_claimed": false,
+  "measured_rpo_claimed": false,
+  "multi_region_failover_claimed": false,
+  "rto_rpo_sla_live": false,
+  "go_live_claimed": false,
+  "distinct_from_stage45_rto_rpo": true,
+  "distinct_from_stage307_encryption_kms_pack_remaining_gate": true,
+  "distinct_from_stage306_data_residency_pack_remaining_gate": true,
+  "distinct_from_stage45_data_retention_return": true,
+  "steps": [
+    {
+      "id": "rrpr-read-blockers",
+      "title": "Read B1 RTO/RPO pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrpr-follow-pointers",
+      "title": "Follow P1 Stage 45 O1 / Stage 307 / Stage 306 / Stage 45 T1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrpr-rto-missing",
+      "title": "Reaffirm measured RTO / measured RPO MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrpr-no-packaging-as-live",
+      "title": "Do not treat Stage 45 O1 / Stage 307 / Stage 306 as measured RTO Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrpr-rto-remaining",
+      "title": "Measured RTO / RPO / multi-region failover / RTO-RPO SLA / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 308 I1 RTO/RPO pack remaining-gate index packaging only. Do not claim measured RTO Complete."
+}

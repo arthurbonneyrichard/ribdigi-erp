@@ -1,0 +1,59 @@
+{
+  "id": "adr005-store-membership-pack-remaining-gate",
+  "stage": 403,
+  "pack": "I1",
+  "doc": "docs/ADR005_STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ADR005_STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ADR005_STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "connectivity_sync_status_pack_remaining_gate": "docs/CONNECTIVITY_SYNC_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "permission_alias_map_pack_remaining_gate": "docs/PERMISSION_ALIAS_MAP_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "adr005_store_membership_complete_claimed": false,
+  "store_membership_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage402_connectivity_sync_status_pack_remaining_gate": true,
+  "distinct_from_stage401_permission_alias_map_pack_remaining_gate": true,
+  "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "a5smpr-read-blockers",
+      "title": "Read B1 ADR-005 store membership pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a5smpr-follow-pointers",
+      "title": "Follow P1 Stage 402 / Stage 401 / Stage 392 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a5smpr-checklist-missing",
+      "title": "Reaffirm Offline Complete / ADR-005 / ADR-005 store-membership / store membership / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a5smpr-no-packaging-as-live",
+      "title": "Do not treat Stage 392 / Stage 402 / Stage 401 as Offline Complete or ADR-005 Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "a5smpr-checklist-remaining",
+      "title": "Offline Complete / ADR-005 / ADR-005 store-membership / store membership / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 403 I1 ADR-005 store membership pack remaining-gate index packaging only. Do not claim Offline Complete or ADR-005 Completes."
+}

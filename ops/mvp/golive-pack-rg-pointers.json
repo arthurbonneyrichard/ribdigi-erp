@@ -1,0 +1,60 @@
+{
+  "id": "golive-pack-rg-pointers",
+  "stage": 325,
+  "pack": "P1",
+  "doc": "docs/GOLIVE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "customer_assurance_pack_remaining_gate": "docs/CUSTOMER_ASSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_pack_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_golive_pack_remaining_gate": "docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "sections_1_3_verified_claimed": false,
+  "section_7_signed_claimed": false,
+  "attestation_claimed": false,
+  "offline_complete_claimed": false,
+  "topics": [
+    "golive_remaining_gate_stage180",
+    "customer_assurance_pack_remaining_gate_stage324",
+    "first_tenant_live_onboarding_pack_remaining_gate_stage323",
+    "first_tenant_golive_pack_remaining_gate_stage245",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "glprp-stage180",
+      "title": "Point to Stage 180 go-live remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprp-stage324",
+      "title": "Point to Stage 324 customer assurance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprp-stage323",
+      "title": "Point to Stage 323 first-tenant live onboarding pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprp-stage245",
+      "title": "Point to Stage 245 first-tenant golive pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprp-golive-remaining",
+      "title": "Live go-live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 325 P1 golive pack RG pointers packaging only. Do not claim live go-live Complete."
+}

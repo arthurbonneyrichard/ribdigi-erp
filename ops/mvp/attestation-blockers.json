@@ -1,0 +1,58 @@
+{
+  "id": "attestation-blockers",
+  "stage": 187,
+  "pack": "B1",
+  "doc": "docs/ATTESTATION_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+    "attestation_pack": "docs/ATTESTATION_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "golive_attestation_walk_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "attestation_claimed": "false",
+    "launch_section_7_signed": "REMAINING",
+    "launch_sections_1_3_verified": "REMAINING",
+    "stage69_a1_as_attestation": "NON_CLAIM",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ab-attestation",
+      "title": "Mark attestation_claimed false / Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-section-7",
+      "title": "Mark LAUNCH \u00a77 signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-sections-1-3",
+      "title": "Mark LAUNCH \u00a7\u00a71\u20133 verified Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-stage69-nonclaim",
+      "title": "Mark Stage 69 A1 packaging as non-claim for attestation",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-attestation-remaining",
+      "title": "Attestation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 187 B1 attestation blocker matrix packaging only. Attestation Complete remains MISSING."
+}

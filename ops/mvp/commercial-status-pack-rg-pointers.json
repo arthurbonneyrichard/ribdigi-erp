@@ -1,0 +1,61 @@
+{
+  "id": "commercial-status-pack-rg-pointers",
+  "stage": 296,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_STATUS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_status": "docs/COMMERCIAL_STATUS_MVP.md",
+    "commercial_support_pack_remaining_gate": "docs/COMMERCIAL_SUPPORT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_security_contact_pack_remaining_gate": "docs/COMMERCIAL_SECURITY_CONTACT_PACK_REMAINING_GATE_MVP.md",
+    "status_uptime": "docs/STATUS_UPTIME_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "status_page_live": false,
+  "uptime_sla_claimed": false,
+  "measured_uptime_claimed": false,
+  "commercial_support_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_status_stage74",
+    "commercial_support_pack_remaining_gate_stage295",
+    "commercial_security_contact_pack_remaining_gate_stage294",
+    "status_uptime_stage40",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cstprp-stage74",
+      "title": "Point to Stage 74 U1 commercial status",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cstprp-stage295",
+      "title": "Point to Stage 295 commercial support pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cstprp-stage294",
+      "title": "Point to Stage 294 commercial security contact pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cstprp-stage40",
+      "title": "Point to Stage 40 status uptime adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cstprp-status-remaining",
+      "title": "Status page live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 296 P1 commercial status pack RG pointers packaging only. Do not claim status page live Complete."
+}

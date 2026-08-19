@@ -1,0 +1,56 @@
+{
+  "id": "store-membership-pack-remaining-gate",
+  "stage": 273,
+  "pack": "I1",
+  "doc": "docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STORE_MEMBERSHIP_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STORE_MEMBERSHIP_PACK_RG_POINTERS_MVP.md",
+    "store_membership_adr": "docs/ADR_005_USER_STORE_ASSIGNMENT.md",
+    "subscription_renewal_pack_remaining_gate": "docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_pack_remaining_gate": "docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "membership_remaining_gate": "docs/MEMBERSHIP_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "store_membership_live_claimed": false,
+  "users_store_id_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_adr005_user_store_assignment": true,
+  "distinct_from_stage182_membership_remaining_gate": true,
+  "distinct_from_stage272_subscription_renewal_pack_remaining_gate": true,
+  "distinct_from_stage271_billing_deferred_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "smpr-read-blockers",
+      "title": "Read B1 store membership pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smpr-follow-pointers",
+      "title": "Follow P1 ADR-005 / Stage 272 / Stage 271 / Stage 182 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smpr-membership-missing",
+      "title": "Reaffirm live store-membership / users.store_id MISSING until real membership ships (ADR-005)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smpr-no-packaging-as-live",
+      "title": "Do not treat ADR-005 / Stage 182 / Stage 272 as live store-membership Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "smpr-membership-remaining",
+      "title": "Live store-membership / users.store_id / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 273 I1 store membership pack remaining-gate index packaging only. Do not claim live store-membership Complete."
+}

@@ -888,6 +888,7 @@ CREATE TABLE expense_categories (
     tenant_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    account_id UUID REFERENCES accounts(id),  -- Stage 14 E1: expense GL for approve posting
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(tenant_id, name)
@@ -905,6 +906,8 @@ CREATE TABLE expenses (
     reference VARCHAR(100),
     description TEXT,
     branch_id UUID,
+    store_id UUID REFERENCES stores(id),           -- Stage 14 E2
+    department_id UUID REFERENCES departments(id), -- Stage 14 E2
     attachments JSONB,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'paid')),
     is_recurring BOOLEAN DEFAULT FALSE,
@@ -926,6 +929,8 @@ CREATE TABLE recurring_expenses (
     end_date DATE,
     next_run_date DATE,
     description TEXT,
+    store_id UUID REFERENCES stores(id),           -- Stage 14 E2
+    department_id UUID REFERENCES departments(id), -- Stage 14 E2
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -958,12 +963,17 @@ CREATE TABLE journal_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     entry_number VARCHAR(50) NOT NULL,
-    entry_date DATE NOT NULL,
+    entry_date DATE NOT NULL,  -- implemented as TIMESTAMPTZ/DateTime in ORM
     reference VARCHAR(100),
     description TEXT,
+    source_type VARCHAR(50),   -- e.g. manual, opening_balance, grn, expense
+    source_id UUID,
+    store_id UUID REFERENCES stores(id),  -- Stage 14 A1: multi-store P&L / cash-flow filter
     total_debit DECIMAL(15,4) NOT NULL,
     total_credit DECIMAL(15,4) NOT NULL,
-    is_balanced BOOLEAN GENERATED ALWAYS AS (total_debit = total_credit) STORED,
+    status VARCHAR(20) NOT NULL DEFAULT 'posted',  -- posted | unposted
+    -- is_balanced is computed in API serialize (balanced flag); not all DBs keep generated column
+    attachment_url TEXT,  -- Stage 9 J1: storage key or external URL for supporting document
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(tenant_id, entry_number)
@@ -1783,6 +1793,35 @@ Optional audit columns:
 | Old Partition Archival | Quarterly | pg_dump + S3 | Low |
 | Statistics Update | Daily | ANALYZE | Low |
 | Connection Pool Tuning | Monthly | PgBouncer config | Low |
+
+### Stage 163 — `offline_devices` (Alembic `20260813_0091`)
+
+Tenant-scoped device registration for Offline foundation (shared-schema + `tenant_id`). Soft-revoke via `revoked_at` (no hard delete). Unique `(tenant_id, device_code)`.
+
+### Stage 164 — sync queue + POS idempotency (Alembic `20260813_0092`)
+
+- `sync_queue_items` — direction push/pull, `client_op_id` unique per tenant, status pending/applied/failed/conflict/acked
+- `sync_conflicts` — open conflicts for payload mismatches (no silent overwrite)
+- `transactions.client_request_id` — nullable unique with `tenant_id` for idempotent POS (online + sync push)
+
+### Stage 165 — `pos_held_carts` (Alembic `20260813_0093`)
+
+Cashier cart park for Hold/Resume Partial. Status held/resumed/discarded. Default path does not reserve stock and is not a sale.
+
+### Stage 166 — Hold soft reserve columns (Alembic `20260813_0094`)
+
+- `pos_held_carts.stock_reserved` — whether soft reserve was taken
+- `pos_held_carts.reservation_lines` — JSON lines `{product_id, quantity, sku}` used to adjust `products.reserved_qty`
+- Soft reserve only; does **not** create SO-linked `stock_reservations` rows
+
+### Stage 167 — Hold soft-reserve expiry (Alembic `20260813_0095`)
+
+- `pos_held_carts.expires_at` — set when soft-reserved (default TTL 4h); null for park-only holds
+- Status may become `expired` after cleanup; releases `reserved_qty`
+
+### Stage 169 — Migration gate (packaging)
+
+Pre-deploy Alembic honesty: single head + valid revision chain proven by `test_stage169_migration_gate_m1.py`. Operator checklist: `docs/MIGRATION_GATE_MVP.md` / `ops/mvp/migration-gate.json`. Does not claim production migrate Complete.
 
 ---
 

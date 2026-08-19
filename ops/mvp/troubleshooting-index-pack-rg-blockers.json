@@ -1,0 +1,63 @@
+{
+  "id": "troubleshooting-index-pack-rg-blockers",
+  "stage": 338,
+  "pack": "B1",
+  "doc": "docs/TROUBLESHOOTING_INDEX_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TROUBLESHOOTING_INDEX_PACK_REMAINING_GATE_MVP.md",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "support_sla_claimed": "REMAINING",
+    "offline_complete_claimed": "REMAINING",
+    "live_dr_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage171_as_live_troubleshooting_index": "NON_CLAIM",
+    "stage169_170_as_live_troubleshooting_index": "NON_CLAIM",
+    "support_sla_claimed_flag": "false",
+    "offline_complete_claimed_flag": "false",
+    "live_dr_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "tiprb-sla",
+      "title": "Mark support-SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprb-dr",
+      "title": "Mark live DR Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprb-stage171-nonclaim",
+      "title": "Mark Stage 171 / Stage 169 / Stage 170 as non-claim for live troubleshooting index Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprb-index-remaining",
+      "title": "Live troubleshooting index Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 338 B1 troubleshooting index pack RG blocker matrix packaging only. Live troubleshooting index Completes remain MISSING."
+}

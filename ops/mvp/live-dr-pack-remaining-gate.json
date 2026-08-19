@@ -1,0 +1,57 @@
+{
+  "id": "live-dr-pack-remaining-gate",
+  "stage": 321,
+  "pack": "I1",
+  "doc": "docs/LIVE_DR_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LIVE_DR_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LIVE_DR_PACK_RG_POINTERS_MVP.md",
+    "live_dr_remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "backup_restore_drill_honesty_pack_remaining_gate": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "live_migration_remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_dr_claimed": false,
+  "live_backup_restore_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "live_migration_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage192_live_dr_remaining_gate": true,
+  "distinct_from_stage193_live_migration_remaining_gate": true,
+  "distinct_from_stage320_e2e_backup_restore_pack_remaining_gate": true,
+  "distinct_from_stage319_backup_restore_drill_honesty_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ldpr-read-blockers",
+      "title": "Read B1 live DR pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldpr-follow-pointers",
+      "title": "Follow P1 Stage 192 / Stage 320 / Stage 319 / Stage 193 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldpr-dr-missing",
+      "title": "Reaffirm live DR / live PITR MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldpr-no-packaging-as-live",
+      "title": "Do not treat Stage 192 / Stage 193 / Stage 320 as live DR Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ldpr-dr-remaining",
+      "title": "Live DR / live backup restore / live PITR / live migration / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 321 I1 live DR pack remaining-gate index packaging only. Do not claim live DR Complete."
+}

@@ -1,0 +1,59 @@
+{
+  "id": "schema-per-tenant-pack-pointers",
+  "stage": 185,
+  "pack": "P1",
+  "doc": "docs/SCHEMA_PER_TENANT_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md",
+    "adr001": "docs/ADR_001_TENANCY.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md",
+    "security_guide": "docs/SECURITY_GUIDE.md",
+    "i18n_remaining_gate": "docs/I18N_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "schema_per_tenant_claimed": false,
+  "database_per_tenant_claimed": false,
+  "shared_schema_as_schema_per_tenant_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "adr001_tenancy",
+    "deferred_adr_register",
+    "production_readiness",
+    "i18n_remaining_gate_stage184",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sp-adr001",
+      "title": "Point to ADR-001 tenancy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-deferred-adr",
+      "title": "Point to deferred ADR register ADR-001 row",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-readiness",
+      "title": "Point to PRODUCTION_READINESS schema-per-tenant notes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-i18n-gate",
+      "title": "Point to Stage 184 i18n remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-schema-remaining",
+      "title": "Schema-per-tenant Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 185 P1 schema-per-tenant pack pointers packaging only. Do not claim schema-per-tenant Complete."
+}

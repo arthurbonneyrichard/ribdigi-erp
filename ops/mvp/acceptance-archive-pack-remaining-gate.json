@@ -1,0 +1,58 @@
+{
+  "id": "acceptance-archive-pack-remaining-gate",
+  "stage": 284,
+  "pack": "I1",
+  "doc": "docs/ACCEPTANCE_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ACCEPTANCE_ARCHIVE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ACCEPTANCE_ARCHIVE_PACK_RG_POINTERS_MVP.md",
+    "acceptance_archive": "docs/ACCEPTANCE_ARCHIVE_MVP.md",
+    "release_notes_pack_remaining_gate": "docs/RELEASE_NOTES_PACK_REMAINING_GATE_MVP.md",
+    "post_mvp_backlog_pack_remaining_gate": "docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration": "docs/MVP_DECLARATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "archive_live_claimed": false,
+  "section_7_signed_claimed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage32_acceptance_archive": true,
+  "distinct_from_stage283_release_notes_pack_remaining_gate": true,
+  "distinct_from_stage282_post_mvp_backlog_pack_remaining_gate": true,
+  "distinct_from_stage31_mvp_declaration": true,
+  "steps": [
+    {
+      "id": "aapr-read-blockers",
+      "title": "Read B1 acceptance archive pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aapr-follow-pointers",
+      "title": "Follow P1 Stage 32 A1 / Stage 283 / Stage 282 / Stage 31 C1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aapr-archive-missing",
+      "title": "Reaffirm archive live / \u00a77 signed / attestation / live runs MISSING until real go-live Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aapr-no-packaging-as-live",
+      "title": "Do not treat Stage 32 A1 / Stage 283 / Stage 282 as archive live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aapr-archive-remaining",
+      "title": "Archive live / \u00a77 signed / attestation / live runs / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 284 I1 acceptance archive pack remaining-gate index packaging only. Do not claim archive live Complete."
+}

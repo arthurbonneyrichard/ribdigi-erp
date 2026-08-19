@@ -1,0 +1,67 @@
+# Stage 10 Plan — Tax Fidelity & Document Workflow Closeout
+
+**Status:** Closed — exit met; freeze [ADR-026](ADR_026_STAGE10_FREEZE.md)  
+**Base:** BR-12.1 / tax + document workflow fidelity after Stage 9 freeze  
+**Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
+**Exit:** [STAGE_10_EXIT_CRITERIA.md](STAGE_10_EXIT_CRITERIA.md)
+
+Stage 10 closes commercial-MVP tax depth and human-confirmed document apply holes. It is **not** Kubernetes, WAL/PITR, vendor pen test, tax portal e-file, or FIFO/LIFO.
+
+## Delivery rules
+
+1. One workstream at a time (full AC + automated tests before the next).
+2. Prefer extending proven patterns (product `tax_rate_id` → category rate; GH/NG filing packs → another jurisdiction; OCR suggest → explicit apply).
+3. No demo data / fake success. Alembic only when schema is required.
+4. After each feature: tests → commit → push → PR update.
+
+## Workstream sequence
+
+| ID | Workstream | Priority | Verdict |
+|----|------------|----------|---------|
+| **T1** | Category-level tax rules (product → category → default) | P0 | COMPLETE |
+| **T2** | Additional tax filing template beyond GH/NG | P1 | COMPLETE |
+| **A1** | Human-confirmed OCR/document apply-to-draft | P1 | COMPLETE |
+| **B1** | Include uploaded media in logical backup/restore | P2 | COMPLETE |
+| **H10x** | Stage 10 exit criteria + freeze ADR | Exit | COMPLETE |
+
+## Explicitly out of this pass
+
+- Kubernetes / Helm; full Prometheus/Grafana/PagerDuty
+- pg_dump / WAL / S3 offsite PITR; vendor pen test; PgBouncer
+- Paid billing (ADR-002); schema-per-tenant (ADR-001); i18n (ADR-006)
+- Certified 1000-VU; Prophet/LLM; multi-bin; PO Kanban
+- Open Banking; tax e-file portals; FIFO/LIFO/WA costing
+- User↔store membership (ADR-005)
+
+## T1 acceptance criteria
+
+- [x] `product_categories.tax_rate_id` via Alembic; serialize on category APIs.
+- [x] `resolve_product_tax`: product rate → category (walk parents) → tenant default; product exempt still wins.
+- [x] Catalog create/PATCH accepts `tax_rate_id` (tenant-scoped active rate); Inventory UI can set it.
+- [x] Automated tests in `backend/tests/test_category_tax_t1.py`.
+
+## T2 acceptance criteria
+
+- [x] At least one filing template pack beyond GH/NG (Kenya KRA — export + Tax UI).
+- [x] Docs state no portal e-file.
+- [x] Automated tests for the new packing/export type (`backend/tests/test_tax_filing_ke_t2.py`).
+
+## A1 acceptance criteria
+
+- [x] Explicit apply endpoint(s): `POST /expenses/{id}/ocr-apply`, `POST /purchasing/invoices/{id}/ocr-apply`.
+- [x] No silent auto-write; `confirm: true` required; purchase invoice draft-only; Expenses/Purchasing UI review-then-apply.
+- [x] Automated tests in `backend/tests/test_ocr_apply_a1.py` (confirm gate, draft lock, tenant isolation).
+
+## B1 acceptance criteria
+
+- [x] Logical `.ribbak` payload includes `media` blobs (base64 + sha256) for tenant-scoped keys from logos, product images, expense/PI/journal attachments; restore rehydrates via storage.
+- [x] Automated tests in `backend/tests/test_backup_media_b1.py` (round-trip + external URL skip).
+
+## H10x acceptance criteria
+
+- [x] `docs/STAGE_10_EXIT_CRITERIA.md` records T1/T2/A1/B1/H10x COMPLETE with evidence.
+- [x] Scope freeze ADR-026 accepted; automated guard test `backend/tests/test_stage10_exit_h10x.py`.
+
+## Sign-off
+
+Stage 10 exit is met. Feature scope is frozen under ADR-026 (bugfixes / security / tests / docs only until CONTINUE opens the next track).

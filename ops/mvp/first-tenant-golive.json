@@ -1,0 +1,172 @@
+{
+  "stage": "66",
+  "workstream": "T1",
+  "doc": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+  "stage66_plan": "docs/STAGE_66_PLAN.md",
+  "first_tenant_doc": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+  "first_tenant": "ops/mvp/first-tenant-onboarding.json",
+  "business_pilot_doc": "docs/BUSINESS_PILOT_MVP.md",
+  "business_pilot": "ops/mvp/business-pilot.json",
+  "implementation_onboarding_doc": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+  "implementation_onboarding": "ops/mvp/implementation-onboarding.json",
+  "operator_handoff_doc": "docs/OPERATOR_HANDOFF_MVP.md",
+  "operator_handoff": "ops/mvp/operator-handoff.json",
+  "production_launch_doc": "docs/PRODUCTION_LAUNCH_MVP.md",
+  "production_launch": "ops/mvp/production-launch.json",
+  "mvp_declaration_doc": "docs/MVP_DECLARATION_MVP.md",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "attestation_doc": "docs/ATTESTATION_PACK_MVP.md",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "first_paying_tenant_claimed": false,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "demo_tenant_claimed": false,
+  "first_tenant_golive_program_live": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage66_t1_first_tenant_golive.json",
+  "steps": [
+    {
+      "id": "ftg-owner-outline",
+      "category": "onboarding",
+      "title": "Index owner First Paying Tenant Onboarding path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/ADR_138_STAGE66_OPEN.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    },
+    {
+      "id": "ftg-first-tenant",
+      "category": "onboarding",
+      "title": "Link Stage 33 F1 first-tenant onboarding as adjacency (live onboarding Remaining \u2260 paying tenant Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "ops/mvp/first-tenant-onboarding.json"
+      ],
+      "source": "docs/FIRST_TENANT_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "ftg-business-pilot",
+      "category": "onboarding",
+      "title": "Link Stage 65 P1 controlled business pilot as adjacency (live pilot Remaining \u2260 first paying tenant)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_PILOT_MVP.md",
+        "ops/mvp/business-pilot.json"
+      ],
+      "source": "docs/BUSINESS_PILOT_MVP.md"
+    },
+    {
+      "id": "ftg-implementation",
+      "category": "onboarding",
+      "title": "Link Stage 56 implementation onboarding as adjacency (onsite delivery Remaining \u2260 first tenant live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+        "ops/mvp/implementation-onboarding.json"
+      ],
+      "source": "docs/IMPLEMENTATION_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "ftg-operator-handoff",
+      "category": "onboarding",
+      "title": "Link Stage 32 operator handoff as adjacency (handoff packaging \u2260 first tenant onboarded)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_HANDOFF_MVP.md",
+        "ops/mvp/operator-handoff.json"
+      ],
+      "source": "docs/OPERATOR_HANDOFF_MVP.md"
+    },
+    {
+      "id": "ftg-production-launch",
+      "category": "onboarding",
+      "title": "Link Stage 66 L1 production launch as adjacency (live cutover / \u00a77 Remaining \u2260 first tenant Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_LAUNCH_MVP.md",
+        "ops/mvp/production-launch.json"
+      ],
+      "source": "docs/PRODUCTION_LAUNCH_MVP.md"
+    },
+    {
+      "id": "ftg-mvp-declaration",
+      "category": "onboarding",
+      "title": "Link Stage 31 MVP declaration as packaging adjacency (declared packaging \u2260 paying tenant live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MVP_DECLARATION_MVP.md",
+        "ops/mvp/mvp-declaration.json"
+      ],
+      "source": "docs/MVP_DECLARATION_MVP.md"
+    },
+    {
+      "id": "ftg-no-demo",
+      "category": "honesty",
+      "title": "Confirm no demo tenants / seed passwords / fake paying-tenant success",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "docs/FIRST_TENANT_GOLIVE_MVP.md"
+      ],
+      "source": "docs/FIRST_TENANT_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "ftg-plan-honesty",
+      "category": "onboarding",
+      "title": "Confirm Stage 66 plan explicitly defers first paying tenant / live onboarding",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/FIRST_TENANT_GOLIVE_MVP.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    },
+    {
+      "id": "ftg-paying-remaining",
+      "category": "honesty",
+      "title": "First paying tenant onboarded Remaining \u2014 packaging \u2260 paying tenant Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/FIRST_TENANT_GOLIVE_MVP.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    },
+    {
+      "id": "ftg-onboarding-remaining",
+      "category": "honesty",
+      "title": "Live onboarding success / first-tenant go-live Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_66_PLAN.md",
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md"
+      ],
+      "source": "docs/STAGE_66_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "First paying tenant onboarded Complete",
+    "Live onboarding success Complete",
+    "Live controlled business pilot Complete",
+    "Live go-live / \u00a77 / attestation Complete",
+    "Demo / fake first-tenant success"
+  ]
+}

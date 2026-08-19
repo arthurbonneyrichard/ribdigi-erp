@@ -1,0 +1,68 @@
+{
+  "id": "mvp-product-update-pack-rg-blockers",
+  "stage": 367,
+  "pack": "B1",
+  "doc": "docs/MVP_PRODUCT_UPDATE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "paid_billing_complete_claimed": false,
+  "store_membership_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "paid_billing_complete_claimed": "REMAINING",
+    "store_membership_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "change_impact_as_live_offline_billing": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "paid_billing_complete_claimed_flag": "false",
+    "store_membership_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "mpucprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprb-billing",
+      "title": "Mark paid billing Completes Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprb-membership",
+      "title": "Mark store membership Completes Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprb-change-impact-nonclaim",
+      "title": "Mark CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md as non-claim for Offline / billing / membership Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpucprb-checklist-remaining",
+      "title": "Offline Complete / paid billing / store membership Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 367 B1 MVP product-update pack RG blocker matrix packaging only. Offline / billing / membership Completes remain MISSING."
+}

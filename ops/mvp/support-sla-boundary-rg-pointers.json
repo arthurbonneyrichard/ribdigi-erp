@@ -1,0 +1,60 @@
+{
+  "id": "support-sla-boundary-rg-pointers",
+  "stage": 220,
+  "pack": "P1",
+  "doc": "docs/SUPPORT_SLA_BOUNDARY_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "support_sla_boundary_register": "ops/mvp/support-sla-boundary.json",
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+    "production_hypercare_remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "support_sla_remaining_gate_stage188": "docs/SUPPORT_SLA_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_support_sla_boundary_claimed": false,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "support_sla_boundary_stage36_s1",
+    "support_runbook_stage30",
+    "production_hypercare_remaining_gate_stage219",
+    "support_sla_remaining_gate_stage188",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ssbp-boundary",
+      "title": "Point to Stage 36 S1 support SLA boundary",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbp-runbook",
+      "title": "Point to Stage 30 support runbook",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbp-ph-gate",
+      "title": "Point to Stage 219 production hypercare remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbp-sla-gate",
+      "title": "Point to Stage 188 support-SLA remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssbp-sla-remaining",
+      "title": "Live support-SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 220 P1 support SLA boundary RG pointers packaging only. Do not claim live support-SLA Complete."
+}

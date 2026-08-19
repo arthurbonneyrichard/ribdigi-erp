@@ -2,33 +2,115 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
+import { formatDate } from '../../lib/format';
+import { getCompanyId, getWorkspaceKind } from '../../lib/workspaceContext';
 
 export default function Page() {
+  // Stage 95 C1 — Settings alias (MVP Navigation); route remains /company.
   const [tenant, setTenant] = useState<any>(null);
+  const [activeCompany, setActiveCompany] = useState<any>(null);
+  const [brandingScope, setBrandingScope] = useState<'tenant' | 'company'>('tenant');
   const [emailStatus, setEmailStatus] = useState<any>(null);
+  const [smtpForm, setSmtpForm] = useState({
+    smtp_enabled: false,
+    smtp_host: '',
+    smtp_port: '587',
+    smtp_username: '',
+    smtp_password: '',
+    smtp_from_email: '',
+    smtp_from_name: '',
+    smtp_use_tls: true,
+    smtp_use_ssl: false,
+  });
   const [smsStatus, setSmsStatus] = useState<any>(null);
   const [storageStatus, setStorageStatus] = useState<any>(null);
   const [profilePhone, setProfilePhone] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  // Stage 122 O1 — branch_active / dept_active → GET ?is_active=
+  const [branchActiveFilter, setBranchActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('branch_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  const [deptActiveFilter, setDeptActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('dept_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  const [orgUsers, setOrgUsers] = useState<any[]>([]);
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+  const [editingDeptId, setEditingDeptId] = useState<string | null>(null);
+  const [branchEdit, setBranchEdit] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    manager_id: '',
+  });
+  const [deptEdit, setDeptEdit] = useState({
+    name: '',
+    branch_id: '',
+    head_user_id: '',
+  });
+  const [branchForm, setBranchForm] = useState({
+    code: '',
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+  });
+  const [deptForm, setDeptForm] = useState({ code: '', name: '', branch_id: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  // Stage 118 F1 — fiscal period close console status
+  const [fiscalPeriod, setFiscalPeriod] = useState<any>(null);
+  // Stage 163 V1 / S1 / Stage 165 R1 — offline devices + sync honesty + conflict resolve
+  const [offlineDevices, setOfflineDevices] = useState<any[]>([]);
+  const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [syncConflicts, setSyncConflicts] = useState<any[]>([]);
+  const [deviceForm, setDeviceForm] = useState({ name: '', platform: 'web' });
+  const [deviceBusy, setDeviceBusy] = useState(false);
+  const [boundDeviceId, setBoundDeviceId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('offline_device_id') || '';
+  });
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-  async function loadLogoPreview(hasLogo: boolean) {
+  async function refreshOfflineSync() {
+    try {
+      const [devicesRes, syncRes, conflictsRes] = await Promise.all([
+        api('/offline/devices').catch(() => null),
+        api('/sync/status').catch(() => null),
+        api('/sync/conflicts?status=open').catch(() => null),
+      ]);
+      if (devicesRes?.data) setOfflineDevices(devicesRes.data || []);
+      if (syncRes?.data) setSyncStatus(syncRes.data);
+      if (conflictsRes?.data) setSyncConflicts(conflictsRes.data || []);
+    } catch {
+      // Company admins only for devices; sync status is authenticated.
+    }
+  }
+
+  async function loadLogoPreview(hasLogo: boolean, scope?: 'tenant' | 'company', companyId?: string) {
     if (!hasLogo) {
       setLogoPreview(null);
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const tenantId = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/tenants/me/logo`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-        },
+      const path =
+        scope === 'company' && companyId
+          ? `/companies/${companyId}/logo`
+          : '/tenants/me/logo';
+      const res = await fetch(`${apiBase}${path}`, {
+        headers: authHeaders(),
       });
       if (!res.ok) {
         setLogoPreview(null);
@@ -41,24 +123,110 @@ export default function Page() {
     }
   }
 
-  async function refresh() {
-    const [r, e, s, me, st] = await Promise.all([
+  async function refresh(opts?: { branchActive?: string; deptActive?: string }) {
+    const branchActive =
+      opts?.branchActive !== undefined ? opts.branchActive : branchActiveFilter;
+    const deptActive = opts?.deptActive !== undefined ? opts.deptActive : deptActiveFilter;
+    const branchQs =
+      branchActive === 'true'
+        ? '?is_active=true'
+        : branchActive === 'false'
+          ? '?is_active=false'
+          : '';
+    const deptQs =
+      deptActive === 'true'
+        ? '?is_active=true'
+        : deptActive === 'false'
+          ? '?is_active=false'
+          : '';
+    const [r, e, s, me, st, br, dep, users] = await Promise.all([
       api('/tenants/me'),
       api('/settings/email'),
       api('/settings/sms'),
       api('/me'),
       api('/settings/storage').catch(() => ({ data: null })),
+      api(`/branches${branchQs}`).catch(() => ({ data: [] })),
+      api(`/departments${deptQs}`).catch(() => ({ data: [] })),
+      api('/users').catch(() => ({ data: [] })),
     ]);
     setTenant(r.data);
     setEmailStatus(e.data);
+    if (e.data) {
+      setSmtpForm({
+        smtp_enabled: !!e.data.tenant_override_enabled,
+        smtp_host: e.data.source === 'tenant' ? e.data.host || '' : '',
+        smtp_port: String(e.data.port || 587),
+        smtp_username: e.data.source === 'tenant' ? e.data.username || '' : '',
+        smtp_password: '',
+        smtp_from_email: e.data.source === 'tenant' ? e.data.from_email || '' : '',
+        smtp_from_name: e.data.source === 'tenant' ? e.data.from_name || '' : '',
+        smtp_use_tls: e.data.use_tls !== false,
+        smtp_use_ssl: !!e.data.use_ssl,
+      });
+    }
     setSmsStatus(s.data);
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
-    await loadLogoPreview(!!r.data?.has_logo);
+    setBranches(br.data || []);
+    setDepartments(dep.data || []);
+    setOrgUsers(users.data || []);
+    const kind = getWorkspaceKind();
+    const cid = getCompanyId() || me.data?.company_id || '';
+    if (kind === 'company' && (me.data?.company || cid)) {
+      setBrandingScope('company');
+      const co = me.data?.company || (await api(`/companies/${cid}`).then((x) => x.data).catch(() => null));
+      setActiveCompany(co);
+      await loadLogoPreview(!!co?.has_logo, 'company', co?.id || cid);
+    } else {
+      setBrandingScope('tenant');
+      setActiveCompany(null);
+      await loadLogoPreview(!!r.data?.has_logo, 'tenant');
+    }
+    try {
+      const fp = await api('/accounting/fiscal-period');
+      setFiscalPeriod(fp.data);
+    } catch {
+      setFiscalPeriod(null);
+    }
+    await refreshOfflineSync();
   }
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
+  }, []);
+
+  async function closeFiscalPeriod() {
+    setError('');
+    try {
+      const r = await api('/accounting/fiscal-period/close', { method: 'POST', body: '{}' });
+      setFiscalPeriod(r.data);
+      setMessage('Fiscal period closed');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function reopenFiscalPeriod() {
+    setError('');
+    try {
+      const r = await api('/accounting/fiscal-period/reopen', { method: 'POST', body: '{}' });
+      setFiscalPeriod(r.data);
+      setMessage('Fiscal period reopened');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  // Stage 102 T1 / Stage 103 C1 / Stage 106 C1 — honor Shell #tax / #branches / #logo / #profile / #locale / #departments
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
   }, []);
 
   async function save() {
@@ -79,6 +247,24 @@ export default function Page() {
           tax_jurisdiction: tenant.tax_jurisdiction,
           tax_registration_number: tenant.tax_registration_number,
           tax_filing_period: tenant.tax_filing_period,
+          document_numbering: tenant.document_numbering || undefined,
+          invoice_print_template: tenant.invoice_print_template || undefined,
+          receipt_print_template: tenant.receipt_print_template || undefined,
+          document_header: tenant.document_header ?? undefined,
+          document_footer: tenant.document_footer ?? undefined,
+          plan_code: tenant.plan_code || undefined,
+          legal_name: tenant.legal_name || undefined,
+          registration_number: tenant.registration_number || undefined,
+          billing_address: tenant.billing_address || undefined,
+          shipping_address: tenant.shipping_address || undefined,
+          warehouse_address: tenant.warehouse_address || undefined,
+          contact_person_name: tenant.contact_person_name || undefined,
+          contact_person_email: tenant.contact_person_email || undefined,
+          contact_person_phone: tenant.contact_person_phone || undefined,
+          inactivity_timeout_minutes: tenant.inactivity_timeout_minutes || undefined,
+          date_format: tenant.date_format || undefined,
+          number_format: tenant.number_format || undefined,
+          time_format: tenant.time_format || undefined,
         }),
       });
       setTenant(r.data);
@@ -119,7 +305,8 @@ export default function Page() {
   if (!tenant) {
     return (
       <Shell>
-        <h1>Company</h1>
+        <h1>Settings</h1>
+        <p className="muted">Company profile &amp; tenant settings (MVP Navigation: Settings).</p>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
         <p className="muted">Loading…</p>
       </Shell>
@@ -128,9 +315,10 @@ export default function Page() {
 
   return (
     <Shell>
-      <h1>Company</h1>
+      <h1>Settings</h1>
       <p className="muted">
-        Status: {tenant.status} · Slug: {tenant.slug}
+        Company profile &amp; tenant settings · Status: {tenant.status} · Plan:{' '}
+        {tenant.plan_code || 'trial'} · Slug: {tenant.slug}
         {tenant.days_remaining != null && tenant.status === 'trial'
           ? ` · Trial days left: ${tenant.days_remaining}`
           : ''}
@@ -141,7 +329,10 @@ export default function Page() {
       {tenant.status === 'trial' && (
         <div className="card" style={{ marginBottom: 12, borderLeft: '4px solid #ca8a04' }}>
           <p>
-            Trial ends {tenant.trial_ends_at ? String(tenant.trial_ends_at).slice(0, 10) : 'soon'}
+            Trial ends{' '}
+            {tenant.trial_ends_at
+              ? formatDate(tenant.trial_ends_at, tenant.date_format)
+              : 'soon'}
             {tenant.days_remaining != null ? ` (${tenant.days_remaining} day(s) left)` : ''}.
           </p>
           <button onClick={activate}>Activate now</button>
@@ -152,7 +343,7 @@ export default function Page() {
           <p>
             <b>Read-only grace period.</b> Writes are blocked until you activate.
             {tenant.grace_ends_at
-              ? ` Grace ends ${String(tenant.grace_ends_at).slice(0, 10)}.`
+              ? ` Grace ends ${formatDate(tenant.grace_ends_at, tenant.date_format)}.`
               : ''}
           </p>
           <button onClick={activate}>Activate to restore access</button>
@@ -161,11 +352,26 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
-      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
-        <h3>Company logo</h3>
-        {tenant.has_logo && logoPreview && (
-          <img src={logoPreview} alt="Company logo" style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }} />
-        )}
+      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }} id="logo">
+        <h3>{brandingScope === 'company' ? 'Company logo' : 'Tenant logo'}</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          {brandingScope === 'company'
+            ? 'Shown in the sidebar and on company invoices, receipts, and other printable documents.'
+            : 'Shown in the tenant workspace sidebar and on documents when no company logo is set.'}
+        </p>
+        {((brandingScope === 'company' && activeCompany?.has_logo) ||
+          (brandingScope === 'tenant' && tenant.has_logo)) &&
+          logoPreview && (
+            <img
+              src={logoPreview}
+              alt={
+                brandingScope === 'company'
+                  ? `${activeCompany?.name || 'Company'} logo`
+                  : `${tenant.company_name || 'Tenant'} logo`
+              }
+              style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }}
+            />
+          )}
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
@@ -175,23 +381,28 @@ export default function Page() {
             if (!file) return;
             setError('');
             try {
-              const token = localStorage.getItem('token');
-              const tenantId = localStorage.getItem('tenant');
               const form = new FormData();
               form.append('file', file);
-              const res = await fetch(`${apiBase}/tenants/me/logo`, {
+              const path =
+                brandingScope === 'company' && activeCompany?.id
+                  ? `/companies/${activeCompany.id}/logo`
+                  : '/tenants/me/logo';
+              const res = await fetch(`${apiBase}${path}`, {
                 method: 'POST',
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-                },
+                headers: authHeaders(),
                 body: form,
               });
               const body = await res.json().catch(() => ({}));
               if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
-              setTenant(body.data);
+              if (brandingScope === 'company') {
+                setActiveCompany(body.data);
+                await loadLogoPreview(!!body.data?.has_logo, 'company', body.data?.id);
+              } else {
+                setTenant(body.data);
+                await loadLogoPreview(!!body.data?.has_logo, 'tenant');
+              }
               setMessage('Logo uploaded');
-              await loadLogoPreview(true);
+              window.dispatchEvent(new Event('ribdigi-branding-changed'));
             } catch (err: any) {
               setError(typeof err.message === 'string' ? err.message : 'Upload failed');
             } finally {
@@ -199,16 +410,26 @@ export default function Page() {
             }
           }}
         />
-        {tenant.has_logo && (
+        {((brandingScope === 'company' && activeCompany?.has_logo) ||
+          (brandingScope === 'tenant' && tenant.has_logo)) && (
           <button
             disabled={!!tenant.read_only}
             onClick={async () => {
               setError('');
               try {
-                const r = await api('/tenants/me/logo', { method: 'DELETE' });
-                setTenant(r.data);
+                const path =
+                  brandingScope === 'company' && activeCompany?.id
+                    ? `/companies/${activeCompany.id}/logo`
+                    : '/tenants/me/logo';
+                const r = await api(path, { method: 'DELETE' });
+                if (brandingScope === 'company') {
+                  setActiveCompany(r.data);
+                } else {
+                  setTenant(r.data);
+                }
                 setLogoPreview(null);
                 setMessage('Logo removed');
+                window.dispatchEvent(new Event('ribdigi-branding-changed'));
               } catch (err: any) {
                 setError(err.message);
               }
@@ -219,12 +440,75 @@ export default function Page() {
         )}
       </div>
 
-      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }} id="profile">
+        <p className="muted" style={{ margin: 0 }}>
+          {brandingScope === 'company'
+            ? 'Company profile drives sidebar branding and printable documents.'
+            : (
+              <>
+                Profile CSV via <code>GET /tenants/me/export</code> (Stage 143 P1).
+              </>
+            )}
+        </p>
+        {brandingScope === 'company' && activeCompany ? (
+          <>
+            <input
+              value={activeCompany.name || ''}
+              onChange={(e) => setActiveCompany({ ...activeCompany, name: e.target.value })}
+              placeholder="Company name"
+            />
+            <button
+              type="button"
+              disabled={!!tenant.read_only}
+              onClick={async () => {
+                setError('');
+                try {
+                  const r = await api(`/companies/${activeCompany.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: activeCompany.name }),
+                  });
+                  setActiveCompany(r.data);
+                  setMessage('Company name saved');
+                  window.dispatchEvent(new Event('ribdigi-branding-changed'));
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Save company name
+            </button>
+          </>
+        ) : null}
         <input
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
-          placeholder="Company name"
+          placeholder={brandingScope === 'company' ? 'Tenant display name (reference)' : 'Company name'}
         />
+        <input
+          value={tenant.legal_name || ''}
+          onChange={(e) => setTenant({ ...tenant, legal_name: e.target.value })}
+          placeholder="Legal name"
+        />
+        <input
+          value={tenant.registration_number || ''}
+          onChange={(e) => setTenant({ ...tenant, registration_number: e.target.value })}
+          placeholder="Registration number"
+        />
+        <select
+          value={tenant.plan_code || 'trial'}
+          onChange={(e) => setTenant({ ...tenant, plan_code: e.target.value })}
+          title="Commercial plan label only — billing is deferred"
+        >
+          {['trial', 'starter', 'growth', 'enterprise'].map((p) => (
+            <option key={p} value={p}>
+              Plan: {p}
+            </option>
+          ))}
+        </select>
+        <p className="muted" style={{ margin: 0, gridColumn: '1 / -1' }}>
+          Plan is commercial metadata only. Billing/payment for upgrades is deferred (see ADR-002);
+          changing plan does not charge a card or confirm payment.
+        </p>
         <select
           value={tenant.industry || 'retail'}
           onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}
@@ -258,38 +542,201 @@ export default function Page() {
         <textarea
           value={tenant.address || ''}
           onChange={(e) => setTenant({ ...tenant, address: e.target.value })}
-          placeholder="Address"
+          placeholder="Primary address"
         />
+        <textarea
+          value={tenant.billing_address || ''}
+          onChange={(e) => setTenant({ ...tenant, billing_address: e.target.value })}
+          placeholder="Billing address"
+        />
+        <textarea
+          value={tenant.shipping_address || ''}
+          onChange={(e) => setTenant({ ...tenant, shipping_address: e.target.value })}
+          placeholder="Shipping address"
+        />
+        <textarea
+          value={tenant.warehouse_address || ''}
+          onChange={(e) => setTenant({ ...tenant, warehouse_address: e.target.value })}
+          placeholder="Warehouse address"
+        />
+        <input
+          value={tenant.contact_person_name || ''}
+          onChange={(e) => setTenant({ ...tenant, contact_person_name: e.target.value })}
+          placeholder="Contact person name"
+        />
+        <input
+          value={tenant.contact_person_email || ''}
+          onChange={(e) => setTenant({ ...tenant, contact_person_email: e.target.value })}
+          placeholder="Contact person email"
+        />
+        <input
+          value={tenant.contact_person_phone || ''}
+          onChange={(e) => setTenant({ ...tenant, contact_person_phone: e.target.value })}
+          placeholder="Contact person phone"
+        />
+        <input
+          type="number"
+          min={5}
+          max={480}
+          value={tenant.inactivity_timeout_minutes ?? 30}
+          onChange={(e) =>
+            setTenant({ ...tenant, inactivity_timeout_minutes: Number(e.target.value) || 30 })
+          }
+          placeholder="Inactivity timeout (minutes)"
+        />
+        <div id="locale" style={{ display: 'grid', gap: 8 }}>
+        <select
+          value={tenant.date_format || 'DD/MM/YYYY'}
+          onChange={(e) => setTenant({ ...tenant, date_format: e.target.value })}
+        >
+          {['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'].map((f) => (
+            <option key={f} value={f}>
+              Date format: {f}
+            </option>
+          ))}
+        </select>
+        <select
+          value={tenant.number_format || '1,234.56'}
+          onChange={(e) => setTenant({ ...tenant, number_format: e.target.value })}
+        >
+          {['1,234.56', '1.234,56', '1 234.56'].map((f) => (
+            <option key={f} value={f}>
+              Number format: {f}
+            </option>
+          ))}
+        </select>
+        <select
+          value={tenant.time_format || '24h'}
+          onChange={(e) => setTenant({ ...tenant, time_format: e.target.value })}
+        >
+          <option value="24h">Time format: 24h</option>
+          <option value="12h">Time format: 12h</option>
+        </select>
         <input
           value={tenant.timezone || ''}
           onChange={(e) => setTenant({ ...tenant, timezone: e.target.value })}
           placeholder="Timezone"
         />
-        <input
-          value={tenant.fiscal_year_start || ''}
-          onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
-          placeholder="Fiscal year start MM-DD"
-        />
-        <input
-          value={tenant.tax_jurisdiction || 'GH'}
-          onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value.toUpperCase() })}
-          placeholder="Tax jurisdiction (e.g. GH)"
-        />
-        <input
-          value={tenant.tax_registration_number || ''}
-          onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
-          placeholder="TIN / VAT registration number"
-        />
-        <select
-          value={tenant.tax_filing_period || 'monthly'}
-          onChange={(e) => setTenant({ ...tenant, tax_filing_period: e.target.value })}
-        >
-          <option value="monthly">Filing period: monthly</option>
-          <option value="quarterly">Filing period: quarterly</option>
-        </select>
+        </div>
+        <div id="fiscal-period" style={{ display: 'grid', gap: 8 }}>
+          <input
+            value={tenant.fiscal_year_start || ''}
+            onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
+            placeholder="Fiscal year start MM-DD"
+            aria-label="Fiscal year start"
+          />
+          {/* Stage 118 F1 — close/reopen console (MVP; not a year-end wizard) */}
+          {fiscalPeriod && (
+            <div className="muted" style={{ display: 'grid', gap: 6 }}>
+              <p>
+                Open period: <strong>{fiscalPeriod.open_period_start}</strong> →{' '}
+                <strong>{fiscalPeriod.open_period_end_exclusive}</strong> (exclusive end)
+              </p>
+              <p>
+                Status:{' '}
+                <strong>{fiscalPeriod.current_period_closed ? 'Closed' : 'Open'}</strong>
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={closeFiscalPeriod}
+                  disabled={!!fiscalPeriod.current_period_closed || !!tenant.read_only}
+                >
+                  Close current period
+                </button>
+                <button
+                  type="button"
+                  onClick={reopenFiscalPeriod}
+                  disabled={!fiscalPeriod.current_period_closed || !!tenant.read_only}
+                >
+                  Reopen current period
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    // Stage 139 F1 — fiscal period status CSV
+                    setError('');
+                    try {
+                      const token = localStorage.getItem('token') || '';
+                      const res = await fetch(`${apiBase}/accounting/fiscal-period/export`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      if (!res.ok) {
+                        setError(await res.text());
+                        return;
+                      }
+                      const blob = await res.blob();
+                      const a = document.createElement('a');
+                      a.href = URL.createObjectURL(blob);
+                      a.download = 'fiscal_period_export.csv';
+                      a.click();
+                      URL.revokeObjectURL(a.href);
+                      setMessage('Fiscal period CSV downloaded (Stage 139 F1)');
+                    } catch (err: any) {
+                      setError(err.message || 'Fiscal period export failed');
+                    }
+                  }}
+                >
+                  Export fiscal period CSV
+                </button>
+              </div>
+              <p className="muted">
+                Closing blocks journal post/unpost in this period. Reopen requires company admin.
+                Status CSV via <code>GET /accounting/fiscal-period/export</code> (Stage 139 F1).
+              </p>
+            </div>
+          )}
+        </div>
+        <div id="tax" style={{ display: 'grid', gap: 8 }}>
+          <input
+            value={tenant.tax_jurisdiction || 'GH'}
+            onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value.toUpperCase() })}
+            placeholder="Tax jurisdiction (e.g. GH)"
+          />
+          <input
+            value={tenant.tax_registration_number || ''}
+            onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
+            placeholder="TIN / VAT registration number"
+          />
+          <select
+            value={tenant.tax_filing_period || 'monthly'}
+            onChange={(e) => setTenant({ ...tenant, tax_filing_period: e.target.value })}
+          >
+            <option value="monthly">Filing period: monthly</option>
+            <option value="quarterly">Filing period: quarterly</option>
+          </select>
+        </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={save} disabled={!!tenant.read_only}>
             Save profile
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 143 P1 — company profile CSV
+              setError('');
+              try {
+                const token = localStorage.getItem('token') || '';
+                const res = await fetch(`${apiBase}/tenants/me/export`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'company_profile_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Company profile CSV downloaded (Stage 143 P1)');
+              } catch (err: any) {
+                setError(err.message || 'Company profile export failed');
+              }
+            }}
+          >
+            Export profile CSV
           </button>
           {(tenant.status === 'trial' || tenant.status === 'grace') && (
             <button onClick={activate}>Activate</button>
@@ -302,56 +749,739 @@ export default function Page() {
         </div>
       </div>
 
-      {storageStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
-          <h2>Media storage</h2>
-          <p className="muted">
-            Backend: {storageStatus.backend}
-            {storageStatus.backend === 's3'
-              ? ` · Bucket ${storageStatus.bucket || '—'} · ${storageStatus.endpoint || 'AWS'}`
-              : ` · Dir ${storageStatus.media_dir || '—'}`}
-          </p>
-          <p className="muted">
-            Set STORAGE_BACKEND=s3 with S3_* / MinIO env vars for object storage. Keys stay tenant-scoped.
-          </p>
-        </div>
-      )}
-
-      {emailStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
-          <h2>Email / SMTP</h2>
-          <p className="muted">
-            Mode: {emailStatus.mode} · Configured: {String(emailStatus.configured)} · Enabled:{' '}
-            {String(emailStatus.enabled)}
-          </p>
-          <p className="muted">
-            From: {emailStatus.from_name} &lt;{emailStatus.from_email || '—'}&gt; · Host:{' '}
-            {emailStatus.host || 'console fallback'}
-          </p>
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="document-templates">
+        <h2>Document templates</h2>
+        <p className="muted">
+          Print templates — default layouts for invoices and POS receipts, plus optional
+          header/footer text on printed documents (MVP Navigation: Document Templates).
+          {tenant.print_templates_scope
+            ? ` Scope: ${tenant.print_templates_scope}.`
+            : ''}
+        </p>
+        <label className="muted" style={{ display: 'block', marginTop: 8 }}>
+          Invoice print template
+        </label>
+        <select
+          value={tenant.invoice_print_template || 'a4'}
+          onChange={(e) => setTenant({ ...tenant, invoice_print_template: e.target.value })}
+          style={{ maxWidth: 220 }}
+        >
+          <option value="a4">A4</option>
+          <option value="thermal_80">Thermal 80mm</option>
+          <option value="thermal_58">Thermal 58mm</option>
+        </select>
+        <label className="muted" style={{ display: 'block', marginTop: 12 }}>
+          Receipt print template
+        </label>
+        <select
+          value={tenant.receipt_print_template || 'thermal_80'}
+          onChange={(e) => setTenant({ ...tenant, receipt_print_template: e.target.value })}
+          style={{ maxWidth: 220 }}
+        >
+          <option value="thermal_80">Thermal 80mm</option>
+          <option value="thermal_58">Thermal 58mm</option>
+        </select>
+        <label className="muted" style={{ display: 'block', marginTop: 12 }}>
+          Document header
+        </label>
+        <textarea
+          rows={2}
+          maxLength={500}
+          placeholder="Optional line under company branding (e.g. branch slogan)"
+          value={tenant.document_header || ''}
+          onChange={(e) => setTenant({ ...tenant, document_header: e.target.value })}
+          style={{ width: '100%', maxWidth: 560 }}
+        />
+        <label className="muted" style={{ display: 'block', marginTop: 12 }}>
+          Document footer
+        </label>
+        <textarea
+          rows={2}
+          maxLength={500}
+          placeholder="Optional closing line (e.g. returns policy)"
+          value={tenant.document_footer || ''}
+          onChange={(e) => setTenant({ ...tenant, document_footer: e.target.value })}
+          style={{ width: '100%', maxWidth: 560 }}
+        />
+        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={save} disabled={!!tenant.read_only}>
+            Save print templates
+          </button>
           <button
+            type="button"
+            onClick={() => {
+              // Stage 119 T1 — sample invoice preview (current select value)
+              const tpl = encodeURIComponent(tenant.invoice_print_template || 'a4');
+              const token = localStorage.getItem('token');
+              const ten = localStorage.getItem('tenant');
+              const url = `${apiBase}/tenants/me/print-templates/preview?kind=invoice&format=html&template=${tpl}`;
+              const w = window.open('', '_blank');
+              fetch(url, {
+                headers: authHeaders(),
+              })
+                .then(async (res) => {
+                  if (!res.ok) throw new Error('Invoice preview failed');
+                  return res.text();
+                })
+                .then((html) => {
+                  if (w) {
+                    w.document.write(html);
+                    w.document.close();
+                  }
+                })
+                .catch((err) => {
+                  if (w) w.close();
+                  setError(err.message || 'Invoice preview failed');
+                });
+            }}
+          >
+            Preview sample invoice
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              // Stage 119 T1 — sample receipt preview
+              const tpl = encodeURIComponent(tenant.receipt_print_template || 'thermal_80');
+              const token = localStorage.getItem('token');
+              const ten = localStorage.getItem('tenant');
+              const url = `${apiBase}/tenants/me/print-templates/preview?kind=receipt&format=html&template=${tpl}`;
+              const w = window.open('', '_blank');
+              fetch(url, {
+                headers: authHeaders(),
+              })
+                .then(async (res) => {
+                  if (!res.ok) throw new Error('Receipt preview failed');
+                  return res.text();
+                })
+                .then((html) => {
+                  if (w) {
+                    w.document.write(html);
+                    w.document.close();
+                  }
+                })
+                .catch((err) => {
+                  if (w) w.close();
+                  setError(err.message || 'Receipt preview failed');
+                });
+            }}
+          >
+            Preview sample receipt
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="document-numbering">
+        <h2>Document numbering</h2>
+        <p className="muted">
+          Configure invoice/PO/GRN/quotation prefixes and next series numbers. Export via{' '}
+          <code>GET /tenants/me/document-settings/export</code> (Stage 128 N1).
+        </p>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Prefix</th>
+              <th>Year</th>
+              <th>Pad</th>
+              <th>Next #</th>
+              <th>Preview</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(
+              [
+                ['sales_invoice', 'Sales invoice'],
+                ['purchase_invoice', 'Purchase invoice'],
+                ['purchase_order', 'Purchase order'],
+                ['goods_receipt', 'GRN'],
+                ['sales_quotation', 'Quotation'],
+                ['sales_order', 'Sales order'],
+                ['sales_return', 'Sales return'],
+                ['sales_credit_note', 'Sales credit note'],
+                ['purchase_return', 'Purchase return'],
+                ['purchase_debit_note', 'Purchase debit note'],
+              ] as const
+            ).map(([key, label]) => {
+              const series = tenant.document_numbering?.[key] || {};
+              const preview = tenant.document_numbering_preview?.[key] || '—';
+              return (
+                <tr key={key}>
+                  <td>{label}</td>
+                  <td>
+                    <input
+                      value={series.prefix || ''}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, prefix: e.target.value },
+                          },
+                        })
+                      }
+                      style={{ width: 90 }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={!!series.include_year}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, include_year: e.target.checked },
+                          },
+                        })
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={String(series.pad ?? 4)}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, pad: Number(e.target.value) || 1 },
+                          },
+                        })
+                      }
+                      style={{ width: 60 }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={String(series.next_number ?? 1)}
+                      onChange={(e) =>
+                        setTenant({
+                          ...tenant,
+                          document_numbering: {
+                            ...(tenant.document_numbering || {}),
+                            [key]: { ...series, next_number: Number(e.target.value) || 1 },
+                          },
+                        })
+                      }
+                      style={{ width: 90 }}
+                    />
+                  </td>
+                  <td className="muted">{preview}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          <button onClick={save} disabled={!!tenant.read_only}>
+            Save numbering
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const res = await fetch(`${apiBase}/tenants/me/document-settings/export`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'document_settings_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Document settings CSV downloaded');
+            }}
+          >
+            Export document settings CSV
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 720 }} id="offline-sync">
+        <h2>Offline sync</h2>
+        <p className="muted">
+          Stage 168: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
+          Revoking a device blocks flush and retains pending queue ops (not auto-applied). Conflict
+          accept_client never double-posts applied POS. Offline Complete remains deferred.
+        </p>
+        <p className="muted">
+          Bound browser device:{' '}
+          {boundDeviceId ? <code>{boundDeviceId}</code> : 'none — bind an active device below'}
+        </p>
+        {syncStatus ? (
+          <p className="muted">
+            Sync enabled: {String(syncStatus.sync_enabled)} · Queue depth:{' '}
+            {syncStatus.queue_depth ?? 0} · Pending pushes: {syncStatus.pending_pushes ?? 0} ·
+            Pending pulls: {syncStatus.pending_pulls ?? 0} · Conflicts:{' '}
+            {syncStatus.conflict_count ?? 0}
+            {syncStatus.message ? ` · ${syncStatus.message}` : ''}
+          </p>
+        ) : (
+          <p className="muted">Loading sync status…</p>
+        )}
+        {syncConflicts.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <h3 style={{ margin: '8px 0' }}>Open conflicts</h3>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {syncConflicts.map((c) => (
+                <li key={c.id} style={{ marginBottom: 8 }}>
+                  <div className="muted" style={{ marginBottom: 4 }}>
+                    <strong>{c.op_type}</strong> · {c.client_op_id || c.id}
+                    {c.summary?.reason ? ` · ${c.summary.reason}` : ''}
+                    {c.summary?.client_payload_keys?.length
+                      ? ` · client keys: ${c.summary.client_payload_keys.join(', ')}`
+                      : ''}
+                  </div>
+                  <p className="muted" style={{ margin: '0 0 6px', fontSize: 12 }}>
+                    {c.summary?.accept_client_policy ||
+                      'Accept client re-applies only when the original op was never applied.'}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={deviceBusy}
+                    onClick={async () => {
+                      setDeviceBusy(true);
+                      setError('');
+                      try {
+                        await api(`/sync/conflicts/${c.id}/resolve`, {
+                          method: 'POST',
+                          body: JSON.stringify({ resolution: 'keep_server' }),
+                        });
+                        setMessage('Conflict resolved (keep_server — no re-apply)');
+                        await refreshOfflineSync();
+                      } catch (err: any) {
+                        setError(err.message || 'Resolve failed');
+                      } finally {
+                        setDeviceBusy(false);
+                      }
+                    }}
+                  >
+                    Keep server
+                  </button>{' '}
+                  <button
+                    type="button"
+                    disabled={deviceBusy}
+                    onClick={async () => {
+                      setDeviceBusy(true);
+                      setError('');
+                      try {
+                        const r = await api(`/sync/conflicts/${c.id}/resolve`, {
+                          method: 'POST',
+                          body: JSON.stringify({ resolution: 'accept_client' }),
+                        });
+                        const blocked = r.data?.reapply_blocked_reason;
+                        setMessage(
+                          blocked
+                            ? `Conflict resolved (accept_client blocked: ${blocked})`
+                            : r.data?.reapplied
+                              ? 'Conflict resolved — client payload re-applied under new client_op_id'
+                              : r.message || 'Conflict resolved (accept_client)',
+                        );
+                        await refreshOfflineSync();
+                      } catch (err: any) {
+                        setError(err.message || 'Resolve failed');
+                      } finally {
+                        setDeviceBusy(false);
+                      }
+                    }}
+                  >
+                    Accept client
+                  </button>{' '}
+                  <button
+                    type="button"
+                    disabled={deviceBusy}
+                    onClick={async () => {
+                      setDeviceBusy(true);
+                      setError('');
+                      try {
+                        await api(`/sync/conflicts/${c.id}/resolve`, {
+                          method: 'POST',
+                          body: JSON.stringify({ resolution: 'dismiss' }),
+                        });
+                        setMessage('Conflict dismissed (no re-apply)');
+                        await refreshOfflineSync();
+                      } catch (err: any) {
+                        setError(err.message || 'Resolve failed');
+                      } finally {
+                        setDeviceBusy(false);
+                      }
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <input
+            placeholder="Device name"
+            value={deviceForm.name}
+            onChange={(e) => setDeviceForm({ ...deviceForm, name: e.target.value })}
+            style={{ flex: 1, minWidth: 160, padding: 8 }}
+          />
+          <select
+            value={deviceForm.platform}
+            onChange={(e) => setDeviceForm({ ...deviceForm, platform: e.target.value })}
+            aria-label="Device platform"
+            style={{ padding: 8 }}
+          >
+            <option value="web">web</option>
+            <option value="android">android</option>
+            <option value="ios">ios</option>
+            <option value="desktop">desktop</option>
+            <option value="other">other</option>
+          </select>
+          <button
+            type="button"
+            disabled={deviceBusy}
             onClick={async () => {
               setError('');
+              setDeviceBusy(true);
               try {
-                const r = await api('/settings/email/test', { method: 'POST', body: '{}' });
-                setMessage(r.message || `Test email via ${r.data?.mode}`);
+                await api('/offline/devices', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    name: deviceForm.name,
+                    platform: deviceForm.platform,
+                  }),
+                });
+                setDeviceForm({ name: '', platform: 'web' });
+                setMessage('Offline device registered (Stage 163 V1)');
+                await refreshOfflineSync();
               } catch (err: any) {
-                setError(err.message);
+                setError(err.message || 'Device registration failed');
+              } finally {
+                setDeviceBusy(false);
               }
             }}
           >
-            Send test email to me
+            Register device
           </button>
+        </div>
+        {offlineDevices.length === 0 ? (
+          <p className="muted">No devices registered for this tenant.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Platform</th>
+                <th>Status</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {offlineDevices.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.name}</td>
+                  <td>
+                    <code>{d.device_code}</code>
+                  </td>
+                  <td>{d.platform || '—'}</td>
+                  <td>{d.status}</td>
+                  <td>
+                    {d.status !== 'revoked' && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={deviceBusy}
+                          onClick={() => {
+                            localStorage.setItem('offline_device_id', d.id);
+                            setBoundDeviceId(d.id);
+                            setMessage('Browser bound to this offline device (Stage 165 K1)');
+                          }}
+                        >
+                          Bind browser
+                        </button>{' '}
+                        <button
+                          type="button"
+                          disabled={deviceBusy}
+                          onClick={async () => {
+                            setError('');
+                            setDeviceBusy(true);
+                            try {
+                              const r = await api(`/offline/devices/${d.id}`, {
+                                method: 'DELETE',
+                              });
+                              if (boundDeviceId === d.id) {
+                                localStorage.removeItem('offline_device_id');
+                                setBoundDeviceId('');
+                              }
+                              const pending = r.data?.pending_queue?.pending_total ?? 0;
+                              setMessage(
+                                pending > 0
+                                  ? `Offline device revoked — ${pending} pending queue op(s) retained (not auto-applied; flush blocked)`
+                                  : r.data?.message ||
+                                      'Offline device revoked (soft revoke; no pending queue ops)',
+                              );
+                              await refreshOfflineSync();
+                            } catch (err: any) {
+                              setError(err.message || 'Revoke failed');
+                            } finally {
+                              setDeviceBusy(false);
+                            }
+                          }}
+                        >
+                          Revoke
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="media">
+        <h2>Media storage</h2>
+        {storageStatus ? (
+          <>
+            <p className="muted">
+              Backend: {storageStatus.backend}
+              {storageStatus.backend === 's3'
+                ? ` · Bucket ${storageStatus.bucket || '—'} · ${storageStatus.endpoint || 'AWS'}`
+                : ` · Dir ${storageStatus.media_dir || '—'}`}
+            </p>
+            <p className="muted">
+              Set STORAGE_BACKEND=s3 with S3_* / MinIO env vars for object storage. Keys stay
+              tenant-scoped. Secret-free export via <code>/settings/storage/export</code> (Stage 140
+              S1).
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 140 S1 — storage settings CSV (no S3 keys)
+                setError('');
+                try {
+                  const token = localStorage.getItem('token') || '';
+                  const res = await fetch(`${apiBase}/settings/storage/export`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'storage_settings_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Storage settings CSV downloaded (Stage 140 S1; secrets excluded)');
+                } catch (err: any) {
+                  setError(err.message || 'Storage settings export failed');
+                }
+              }}
+            >
+              Export storage settings CSV
+            </button>
+          </>
+        ) : (
+          <p className="muted">Loading storage status…</p>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="jobs-catalog">
+        <h3>Jobs catalog</h3>
+        <p className="muted">
+          Celery job names and beat intervals. Export via <code>GET /jobs/export</code> (Stage 143
+          J1; broker/result URLs never included).
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            // Stage 143 J1 — jobs catalog CSV
+            setError('');
+            try {
+              const token = localStorage.getItem('token') || '';
+              const res = await fetch(`${apiBase}/jobs/export`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'jobs_catalog_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Jobs catalog CSV downloaded (Stage 143 J1; secrets excluded)');
+            } catch (err: any) {
+              setError(err.message || 'Jobs catalog export failed');
+            }
+          }}
+        >
+          Export jobs catalog CSV
+        </button>
+      </div>
+
+      {emailStatus && (
+        <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="email">
+          <h2>Email / SMTP</h2>
+          <p className="muted">
+            Mode: {emailStatus.mode} · Source: {emailStatus.source} · Configured:{' '}
+            {String(emailStatus.configured)} · Enabled: {String(emailStatus.enabled)}
+          </p>
+          <p className="muted">
+            Effective from: {emailStatus.from_name} &lt;{emailStatus.from_email || '—'}&gt; · Host:{' '}
+            {emailStatus.host || 'console fallback'}
+          </p>
+          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={smtpForm.smtp_enabled}
+                onChange={(e) => setSmtpForm({ ...smtpForm, smtp_enabled: e.target.checked })}
+              />{' '}
+              Use tenant SMTP override
+            </label>
+            <input
+              value={smtpForm.smtp_host}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_host: e.target.value })}
+              placeholder="SMTP host"
+            />
+            <input
+              value={smtpForm.smtp_port}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_port: e.target.value })}
+              placeholder="Port"
+            />
+            <input
+              value={smtpForm.smtp_username}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_username: e.target.value })}
+              placeholder="Username"
+            />
+            <input
+              type="password"
+              value={smtpForm.smtp_password}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_password: e.target.value })}
+              placeholder={emailStatus.has_password ? 'Password (leave blank to keep)' : 'Password'}
+            />
+            <input
+              value={smtpForm.smtp_from_email}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_from_email: e.target.value })}
+              placeholder="From email"
+            />
+            <input
+              value={smtpForm.smtp_from_name}
+              onChange={(e) => setSmtpForm({ ...smtpForm, smtp_from_name: e.target.value })}
+              placeholder="From name"
+            />
+            <label>
+              <input
+                type="checkbox"
+                checked={smtpForm.smtp_use_tls}
+                onChange={(e) => setSmtpForm({ ...smtpForm, smtp_use_tls: e.target.checked })}
+              />{' '}
+              STARTTLS
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={smtpForm.smtp_use_ssl}
+                onChange={(e) => setSmtpForm({ ...smtpForm, smtp_use_ssl: e.target.checked })}
+              />{' '}
+              SSL
+            </label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                disabled={!!tenant.read_only}
+                onClick={async () => {
+                  setError('');
+                  try {
+                    const body: any = {
+                      smtp_enabled: smtpForm.smtp_enabled,
+                      smtp_host: smtpForm.smtp_host || null,
+                      smtp_port: Number(smtpForm.smtp_port) || 587,
+                      smtp_username: smtpForm.smtp_username || null,
+                      smtp_from_email: smtpForm.smtp_from_email || null,
+                      smtp_from_name: smtpForm.smtp_from_name || null,
+                      smtp_use_tls: smtpForm.smtp_use_tls,
+                      smtp_use_ssl: smtpForm.smtp_use_ssl,
+                    };
+                    if (smtpForm.smtp_password) body.smtp_password = smtpForm.smtp_password;
+                    const r = await api('/settings/email', {
+                      method: 'PATCH',
+                      body: JSON.stringify(body),
+                    });
+                    setEmailStatus(r.data);
+                    setSmtpForm({ ...smtpForm, smtp_password: '' });
+                    setMessage('SMTP settings saved');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Save SMTP
+              </button>
+              <button
+                onClick={async () => {
+                  setError('');
+                  try {
+                    const r = await api('/settings/email/test', { method: 'POST', body: '{}' });
+                    setMessage(r.message || `Test email via ${r.data?.mode}`);
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Send test email to me
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setError('');
+                  try {
+                    const token = localStorage.getItem('token') || '';
+                    const res = await fetch(`${apiBase}/settings/email/export`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok) {
+                      setError(await res.text());
+                      return;
+                    }
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'email_settings_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    setMessage('Email settings CSV downloaded (Stage 131 E1; password excluded)');
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                Export email settings CSV
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {smsStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+        <div className="card" style={{ marginTop: 16, maxWidth: 520 }} id="sms">
           <h2>SMS / Twilio</h2>
           <p className="muted">
             Mode: {smsStatus.mode} · Configured: {String(smsStatus.configured)} · Enabled:{' '}
             {String(smsStatus.enabled)}
           </p>
           <p className="muted">From: {smsStatus.from_number || 'console fallback'}</p>
+          <p className="muted">
+            Secret-free export via <code>/settings/sms/export</code> (Stage 135 S1) — auth token and
+            raw account SID never included.
+          </p>
           <input
             value={profilePhone}
             onChange={(e) => setProfilePhone(e.target.value)}
@@ -389,9 +1519,480 @@ export default function Page() {
             >
               Send test SMS to me
             </button>
+            <button
+              type="button"
+              onClick={async () => {
+                setError('');
+                try {
+                  const token = localStorage.getItem('token') || '';
+                  const res = await fetch(`${apiBase}/settings/sms/export`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'sms_settings_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('SMS settings CSV downloaded (Stage 135 S1; secrets excluded)');
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Export SMS settings CSV
+            </button>
           </div>
         </div>
       )}
+
+      <div className="card" style={{ marginTop: 16 }} id="branches">
+        <h3>Branches &amp; departments</h3>
+        <p className="muted">
+          Org units for user assignment and department/branch record scopes. Soft-deactivate keeps
+          history; reactivate anytime. Filter via <code>branch_active</code> /{' '}
+          <code>dept_active</code> → <code>GET ?is_active=</code> (Stage 122 O1).
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+          <label className="muted">
+            Branches{' '}
+            <select
+              value={branchActiveFilter}
+              onChange={(e) => {
+                const v = e.target.value;
+                setBranchActiveFilter(v);
+                const url = new URL(window.location.href);
+                if (v === 'true' || v === 'false') url.searchParams.set('branch_active', v);
+                else url.searchParams.delete('branch_active');
+                const qs = url.searchParams.toString();
+                window.history.replaceState(
+                  {},
+                  '',
+                  `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+                );
+                refresh({ branchActive: v }).catch((err) => setError(err.message));
+              }}
+              aria-label="Branch active filter"
+            >
+              <option value="">All</option>
+              <option value="true">Active only</option>
+              <option value="false">Inactive only</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 122 X1 — branches CSV export
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const qs =
+                  branchActiveFilter === 'true'
+                    ? '?is_active=true'
+                    : branchActiveFilter === 'false'
+                      ? '?is_active=false'
+                      : '';
+                const res = await fetch(`${apiBase}/branches/export${qs}`, {
+                  headers: authHeaders(),
+                });
+                if (!res.ok) throw new Error('Branches export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'branches_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                setMessage('Branches CSV exported');
+              } catch (err: any) {
+                setError(err.message || 'Branches export failed');
+              }
+            }}
+          >
+            Export branches CSV
+          </button>
+          <label className="muted">
+            Departments{' '}
+            <select
+              value={deptActiveFilter}
+              onChange={(e) => {
+                const v = e.target.value;
+                setDeptActiveFilter(v);
+                const url = new URL(window.location.href);
+                if (v === 'true' || v === 'false') url.searchParams.set('dept_active', v);
+                else url.searchParams.delete('dept_active');
+                const qs = url.searchParams.toString();
+                window.history.replaceState(
+                  {},
+                  '',
+                  `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+                );
+                refresh({ deptActive: v }).catch((err) => setError(err.message));
+              }}
+              aria-label="Department active filter"
+            >
+              <option value="">All</option>
+              <option value="true">Active only</option>
+              <option value="false">Inactive only</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={async () => {
+              // Stage 122 X1 — departments CSV export
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const qs =
+                  deptActiveFilter === 'true'
+                    ? '?is_active=true'
+                    : deptActiveFilter === 'false'
+                      ? '?is_active=false'
+                      : '';
+                const res = await fetch(`${apiBase}/departments/export${qs}`, {
+                  headers: authHeaders(),
+                });
+                if (!res.ok) throw new Error('Departments export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'departments_export.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+                setMessage('Departments CSV exported');
+              } catch (err: any) {
+                setError(err.message || 'Departments export failed');
+              }
+            }}
+          >
+            Export departments CSV
+          </button>
+        </div>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            try {
+              await api('/branches', {
+                method: 'POST',
+                body: JSON.stringify(branchForm),
+              });
+              setBranchForm({ code: '', name: '', address: '', phone: '', email: '' });
+              setMessage('Branch created');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message);
+            }
+          }}
+          style={{ display: 'grid', gap: 8, maxWidth: 480, marginBottom: 16 }}
+        >
+          <strong>New branch</strong>
+          <input
+            value={branchForm.code}
+            onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })}
+            placeholder="Code"
+            required
+          />
+          <input
+            value={branchForm.name}
+            onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
+            placeholder="Name"
+            required
+          />
+          <input
+            value={branchForm.address}
+            onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
+            placeholder="Address (optional)"
+          />
+          <input
+            value={branchForm.phone}
+            onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
+            placeholder="Phone (optional)"
+          />
+          <input
+            value={branchForm.email}
+            onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })}
+            placeholder="Email (optional)"
+          />
+          <button type="submit">Add branch</button>
+        </form>
+        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 10, maxWidth: 560 }}>
+          {branches.map((b) => (
+            <li key={b.id} style={{ borderTop: '1px solid #e7e5e4', paddingTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span>
+                  {b.code} — {b.name}
+                  {b.phone ? ` · ${b.phone}` : ''}
+                  {b.is_active ? '' : ' (inactive)'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingBranchId(b.id);
+                    setBranchEdit({
+                      name: b.name || '',
+                      address: b.address || '',
+                      phone: b.phone || '',
+                      email: b.email || '',
+                      manager_id: b.manager_id || '',
+                    });
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setError('');
+                    try {
+                      await api(`/branches/${b.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ is_active: !b.is_active }),
+                      });
+                      setMessage(b.is_active ? 'Branch deactivated' : 'Branch reactivated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                >
+                  {b.is_active ? 'Deactivate' : 'Reactivate'}
+                </button>
+              </div>
+              {editingBranchId === b.id && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setError('');
+                    try {
+                      await api(`/branches/${b.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                          name: branchEdit.name,
+                          address: branchEdit.address || null,
+                          phone: branchEdit.phone || null,
+                          email: branchEdit.email || null,
+                          manager_id: branchEdit.manager_id || null,
+                          clear_manager: !branchEdit.manager_id,
+                        }),
+                      });
+                      setEditingBranchId(null);
+                      setMessage('Branch updated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                  style={{ display: 'grid', gap: 6, marginTop: 8 }}
+                >
+                  <input
+                    value={branchEdit.name}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, name: e.target.value })}
+                    placeholder="Name"
+                    required
+                  />
+                  <input
+                    value={branchEdit.address}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, address: e.target.value })}
+                    placeholder="Address"
+                  />
+                  <input
+                    value={branchEdit.phone}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, phone: e.target.value })}
+                    placeholder="Phone"
+                  />
+                  <input
+                    value={branchEdit.email}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, email: e.target.value })}
+                    placeholder="Email"
+                  />
+                  <select
+                    value={branchEdit.manager_id}
+                    onChange={(e) => setBranchEdit({ ...branchEdit, manager_id: e.target.value })}
+                  >
+                    <option value="">No manager</option>
+                    {orgUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.full_name || u.email}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="submit">Save branch</button>
+                    <button type="button" onClick={() => setEditingBranchId(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </li>
+          ))}
+          {!branches.length && <li className="muted">No branches yet</li>}
+        </ul>
+
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            try {
+              await api('/departments', {
+                method: 'POST',
+                body: JSON.stringify({
+                  code: deptForm.code,
+                  name: deptForm.name,
+                  branch_id: deptForm.branch_id || null,
+                }),
+              });
+              setDeptForm({ code: '', name: '', branch_id: '' });
+              setMessage('Department created');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message);
+            }
+          }}
+          style={{ display: 'grid', gap: 8, maxWidth: 480, marginTop: 16 }}
+          id="departments"
+        >
+          <strong>New department</strong>
+          <input
+            value={deptForm.code}
+            onChange={(e) => setDeptForm({ ...deptForm, code: e.target.value })}
+            placeholder="Code"
+            required
+          />
+          <input
+            value={deptForm.name}
+            onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+            placeholder="Name"
+            required
+          />
+          <select
+            value={deptForm.branch_id}
+            onChange={(e) => setDeptForm({ ...deptForm, branch_id: e.target.value })}
+          >
+            <option value="">No branch</option>
+            {branches.filter((b) => b.is_active).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit">Add department</button>
+        </form>
+        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 10, maxWidth: 560, marginTop: 12 }}>
+          {departments.map((d) => (
+            <li key={d.id} style={{ borderTop: '1px solid #e7e5e4', paddingTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span>
+                  {d.code} — {d.name} {d.is_active ? '' : '(inactive)'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingDeptId(d.id);
+                    setDeptEdit({
+                      name: d.name || '',
+                      branch_id: d.branch_id || '',
+                      head_user_id: d.head_user_id || '',
+                    });
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setError('');
+                    try {
+                      await api(`/departments/${d.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ is_active: !d.is_active }),
+                      });
+                      setMessage(d.is_active ? 'Department deactivated' : 'Department reactivated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                >
+                  {d.is_active ? 'Deactivate' : 'Reactivate'}
+                </button>
+              </div>
+              {editingDeptId === d.id && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setError('');
+                    try {
+                      await api(`/departments/${d.id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                          name: deptEdit.name,
+                          branch_id: deptEdit.branch_id || null,
+                          clear_branch: !deptEdit.branch_id,
+                          head_user_id: deptEdit.head_user_id || null,
+                          clear_head: !deptEdit.head_user_id,
+                        }),
+                      });
+                      setEditingDeptId(null);
+                      setMessage('Department updated');
+                      await refresh();
+                    } catch (err: any) {
+                      setError(err.message);
+                    }
+                  }}
+                  style={{ display: 'grid', gap: 6, marginTop: 8 }}
+                >
+                  <input
+                    value={deptEdit.name}
+                    onChange={(e) => setDeptEdit({ ...deptEdit, name: e.target.value })}
+                    placeholder="Name"
+                    required
+                  />
+                  <select
+                    value={deptEdit.branch_id}
+                    onChange={(e) => setDeptEdit({ ...deptEdit, branch_id: e.target.value })}
+                  >
+                    <option value="">No branch</option>
+                    {branches.filter((b) => b.is_active || b.id === deptEdit.branch_id).map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={deptEdit.head_user_id}
+                    onChange={(e) => setDeptEdit({ ...deptEdit, head_user_id: e.target.value })}
+                  >
+                    <option value="">No head</option>
+                    {orgUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.full_name || u.email}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="submit">Save department</button>
+                    <button type="button" onClick={() => setEditingDeptId(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </li>
+          ))}
+          {!departments.length && <li className="muted">No departments yet</li>}
+        </ul>
+      </div>
     </Shell>
   );
 }

@@ -1,0 +1,156 @@
+{
+  "stage": "49",
+  "workstream": "R1",
+  "doc": "docs/PARTNER_RESELLER_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "tos_aup": "ops/mvp/tos-aup.json",
+  "tos_aup_doc": "docs/TOS_AUP_MVP.md",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "professional_services_sow": "ops/mvp/professional-services-sow.json",
+  "professional_services_sow_doc": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "deferred_adr_register_doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage49_plan": "docs/STAGE_49_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "partner_program_live": false,
+  "signed_reseller_agreement_claimed": false,
+  "white_label_live_claimed": false,
+  "channel_commission_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage49_r1_partner_reseller.json",
+  "steps": [
+    {
+      "id": "pr-product-overview",
+      "category": "partner",
+      "title": "Index PRODUCT_OVERVIEW white-label / reseller themes as channel honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_49_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "pr-tos-adjacency",
+      "category": "reseller",
+      "title": "Link Stage 43 ToS / AUP as legal-notice adjacency for channel terms",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/TOS_AUP_MVP.md",
+        "ops/mvp/tos-aup.json"
+      ],
+      "source": "docs/TOS_AUP_MVP.md"
+    },
+    {
+      "id": "pr-msa-adjacency",
+      "category": "reseller",
+      "title": "Link Stage 39 MSA security addendum as commercial exhibit adjacency (not reseller Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "pr-billing-deferred",
+      "category": "partner",
+      "title": "Link Stage 36 billing-deferred honesty as channel-revenue adjacency (ADR-002 remains deferred)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "pr-sow-adjacency",
+      "category": "partner",
+      "title": "Link Stage 48 professional services / SOW as direct-delivery adjacency (not reseller channel)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+        "ops/mvp/professional-services-sow.json"
+      ],
+      "source": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+    },
+    {
+      "id": "pr-deferred-adr",
+      "category": "reseller",
+      "title": "Link deferred ADR register / ADR-002 as billing and channel Remaining honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEFERRED_ADR_REGISTER_MVP.md",
+        "ops/mvp/deferred-adr-register.json"
+      ],
+      "source": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+    },
+    {
+      "id": "pr-roadmap-backlog",
+      "category": "partner",
+      "title": "Index DEVELOPMENT_ROADMAP white-label / ecosystem backlog as channel Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "pr-plan-honesty",
+      "category": "reseller",
+      "title": "Confirm Stage 49 plan explicitly defers live partner program / signed reseller",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_49_PLAN.md",
+        "docs/PARTNER_RESELLER_MVP.md"
+      ],
+      "source": "docs/STAGE_49_PLAN.md"
+    },
+    {
+      "id": "pr-program-remaining",
+      "category": "honesty",
+      "title": "Live partner program Remaining \u2014 packaging \u2260 operating channel program",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_49_PLAN.md",
+        "docs/PARTNER_RESELLER_MVP.md"
+      ],
+      "source": "docs/STAGE_49_PLAN.md"
+    },
+    {
+      "id": "pr-reseller-remaining",
+      "category": "honesty",
+      "title": "Signed reseller / white-label Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_49_PLAN.md",
+        "docs/PARTNER_RESELLER_MVP.md"
+      ],
+      "source": "docs/STAGE_49_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live partner program Complete",
+    "Signed reseller agreement Complete",
+    "White-label / OEM channel live Complete",
+    "Channel commission / revenue-share Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

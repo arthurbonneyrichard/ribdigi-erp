@@ -1,0 +1,58 @@
+{
+  "id": "sync-conflict-ux-pack-remaining-gate",
+  "stage": 369,
+  "pack": "I1",
+  "doc": "docs/SYNC_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SYNC_CONFLICT_UX_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SYNC_CONFLICT_UX_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage167_fidelity": "docs/STAGE_167_FIDELITY.md",
+    "stage164_fidelity": "docs/STAGE_164_FIDELITY.md",
+    "sync_idempotency_replay_pack_remaining_gate": "docs/SYNC_IDEMPOTENCY_REPLAY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "manager_conflict_review_complete_claimed": false,
+  "reconciliation_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage368_sync_idempotency_replay_pack_remaining_gate": true,
+  "distinct_from_stage167_conflict_ux": true,
+  "distinct_from_stage164_sync_conflicts": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "scuxpr-read-blockers",
+      "title": "Read B1 sync conflict UX pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scuxpr-follow-pointers",
+      "title": "Follow P1 Stage 368 / Stage 167 / Stage 164 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scuxpr-checklist-missing",
+      "title": "Reaffirm Offline Complete / manager-conflict-review / reconciliation / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scuxpr-no-packaging-as-live",
+      "title": "Do not treat Stage 167 / Stage 164 / Stage 368 / Stage 329 as Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scuxpr-checklist-remaining",
+      "title": "Offline Complete / manager-conflict-review / reconciliation / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 369 I1 sync conflict UX pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

@@ -1,0 +1,150 @@
+{
+  "stage": "38",
+  "workstream": "V1",
+  "doc": "docs/VULN_DISCLOSURE_MVP.md",
+  "security_scan": "docs/SECURITY_SCAN_MVP.md",
+  "pentest_pack": "docs/PENTEST_PACK_MVP.md",
+  "pentest_checklist": "ops/security/pentest-engagement-checklist.json",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+  "zap_template": "ops/security/zap-baseline.example.yml",
+  "stage38_plan": "docs/STAGE_38_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "disclosure_program_claimed": false,
+  "bug_bounty_claimed": false,
+  "continuous_disclosure_claimed": false,
+  "researcher_intake_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "steps": [
+    {
+      "id": "vd-security-guide-severity",
+      "category": "policy",
+      "title": "Index SECURITY_GUIDE severity / vulnerability response themes for disclosure boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "vd-owasp-baseline",
+      "category": "security",
+      "title": "Link Stage 27 S1 OWASP baseline CI honesty to disclosure packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_SCAN_MVP.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/SECURITY_SCAN_MVP.md"
+    },
+    {
+      "id": "vd-pentest-engagement",
+      "category": "security",
+      "title": "Link Stage 29 V1 pen-test engagement pack (not purchased cert Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PENTEST_PACK_MVP.md",
+        "ops/security/pentest-engagement-checklist.json"
+      ],
+      "source": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "id": "vd-coordinated-policy",
+      "category": "policy",
+      "title": "Document coordinated disclosure policy boundary (safe-harbor honesty packaging)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "docs/STAGE_38_PLAN.md"
+      ],
+      "source": "docs/VULN_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "vd-security-contact",
+      "category": "contact",
+      "title": "Package preferred security contact path honesty (no fake mailbox Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "vd-scope-matrix",
+      "category": "policy",
+      "title": "Index in-scope MVP vs out-of-scope social-engineering honesty for disclosure",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PENTEST_PACK_MVP.md",
+        "docs/SECURITY_SCAN_MVP.md"
+      ],
+      "source": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "id": "vd-dependency-scan-remaining",
+      "category": "deferred",
+      "title": "Confirm weekly dependency vulnerability scan Remaining (SECURITY_GUIDE checklist)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_38_PLAN.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "vd-zap-outside-ci",
+      "category": "security",
+      "title": "Confirm ZAP staging template remains outside main ci.yml (Stage 18 C1)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "ops/security/zap-baseline.example.yml",
+        "docs/SECURITY_SCAN_MVP.md"
+      ],
+      "source": "docs/SECURITY_SCAN_MVP.md"
+    },
+    {
+      "id": "vd-disclosure-program-remaining",
+      "category": "honesty",
+      "title": "Live public vulnerability disclosure program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_38_PLAN.md",
+        "docs/VULN_DISCLOSURE_MVP.md"
+      ],
+      "source": "docs/STAGE_38_PLAN.md#V1"
+    },
+    {
+      "id": "vd-bug-bounty-remaining",
+      "category": "honesty",
+      "title": "Purchased bug-bounty / continuous disclosure Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_38_PLAN.md",
+        "docs/PENTEST_PACK_MVP.md"
+      ],
+      "source": "docs/STAGE_38_PLAN.md#V1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage38_v1_vuln_disclosure.json",
+  "deferred": [
+    "Claiming live public vulnerability disclosure program Complete because Stage 38 V1 packaging exists",
+    "Purchased bug-bounty / continuous researcher intake Complete",
+    "Live coordinated disclosure SLA Complete",
+    "Vendor pen-test certificate Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

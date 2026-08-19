@@ -1,0 +1,37 @@
+# ADR-2634: Stage 1313 Scope Freeze
+
+**Status:** Accepted
+**Date:** 2026-08-14
+**Related:** [ADR-2633](ADR_2633_STAGE1313_OPEN.md), [STAGE_1313_EXIT_CRITERIA.md](STAGE_1313_EXIT_CRITERIA.md), [STAGE_1313_FIDELITY.md](STAGE_1313_FIDELITY.md), [CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md](CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md)
+
+## Context
+
+Stage 1313 Tenant MVP Transfer Trunnion Gate Honesty Pack Remaining-Gate Index Fidelity delivered Transfer Trunnion Gate Honesty Pack remaining-gate hub (I1), blocker matrix (B1), Stage 1312 / Stage 1311 / Stage 392 / CHANGE_IMPACT pointers (P1), fidelity sync (D1), and exit (H1313x). Prior Stage 1312 remains frozen under ADR-2632.
+
+## Decision
+
+1. **Stage 1313 is frozen for new feature scope** (bugfixes / test hardening / doc corrections only).
+2. **Do not open Stage 1314** until CONTINUE/NEXT with a distinct outline is approved.
+3. Deferred items in Stage 1313 exit criteria remain deferred.
+4. **Stage 1–1312 freezes remain in force**.
+5. Honesty flags stay false including `offline_complete_claimed` / `transfer_trunnion_gate_honesty_complete_claimed` / `transfer_trunnion_gate_as_golive_complete_claimed` / `go_live_claimed` / `attestation_claimed`, plus prior Stage 1312 honesty flags.
+6. Do **not** claim Offline Completes, Transfer Trunnion Gate Completes, Transfer Trunnion Gate honesty Completes, go-live Completes, or attestation Completes.
+
+## Consequences
+
+- Agents treat Stage 1313 I1 / B1 / P1 / D1 / H1313x as closed unless fixing a regression.
+- Main `ci.yml` remains deploy-free (**Stage 18 C1**).
+
+## Next stage
+
+Stage 1314 requires CONTINUE/NEXT with a distinct product outline after this freeze. Stage 1313 feature scope remains frozen.
+
+**Runner-up outline (not opened):** Tenant MVP Transfer Pivot Gate Honesty Pack Remaining-Gate Index Fidelity — single index of transfer-pivot-gate-honesty-pack-blockers (Transfer Pivot Gate materials non-claim as transfer-pivot-gate Completes / go-live Completes / Offline Complete) with explicit non-claim. Prefixed `TRANSFER_PIVOT_GATE_HONESTY_PACK_*` remaining-gate docs if a prior remaining-gate exists. Distinct from Stage 1313 transfer trunnion gate honesty pack remaining-gate, Stage 1312 transfer yoke gate honesty pack, Stage 408 `GOLIVE_HONESTY_PACK_*`, prior `MVP_PRODUCT_UPDATE_PACK_*`, and Stage 329 `OFFLINE_COMPLETE_PACK_*`. Source: `CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md` §5. Do **not** reopen `RESIDUAL_RISK_PACK_*` or `GOLIVE_PACK_*` Completes.
+
+## Non-claims
+
+Packaging ≠ live Completes for Offline, Transfer Trunnion Gate, Transfer Trunnion Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1314 opened under **ADR-2635** after CONTINUE/NEXT (Tenant MVP Transfer Pivot Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-2636**. Stage 1313 feature scope remains frozen.

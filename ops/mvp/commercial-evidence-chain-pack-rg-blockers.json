@@ -1,0 +1,62 @@
+{
+  "id": "commercial-evidence-chain-pack-rg-blockers",
+  "stage": 254,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_EVIDENCE_CHAIN_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_EVIDENCE_CHAIN_PACK_REMAINING_GATE_MVP.md",
+    "commercial_evidence_chain": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+    "assurance_evidence_pack_remaining_gate": "docs/ASSURANCE_EVIDENCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_evidence_chain_register": "ops/mvp/commercial-evidence-chain.json"
+  },
+  "packaging_complete": true,
+  "evidence_chain_live_claimed": false,
+  "customer_assurance_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "blockers": {
+    "evidence_chain_live_complete": "REMAINING",
+    "customer_assurance_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "section_7_signed_complete": "REMAINING",
+    "stage73_e1_as_evidence_chain_live": "NON_CLAIM",
+    "stage253_as_assurance_complete": "NON_CLAIM",
+    "evidence_chain_live_claimed": "false",
+    "customer_assurance_claimed": "false",
+    "go_live_claimed": "false",
+    "section_7_signed": "false"
+  },
+  "steps": [
+    {
+      "id": "cecprb-chain",
+      "title": "Mark evidence chain live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprb-assurance",
+      "title": "Mark customer assurance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprb-golive",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprb-stage73-nonclaim",
+      "title": "Mark Stage 73 E1 as non-claim for evidence chain live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cecprb-chain-remaining",
+      "title": "Evidence chain live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 254 B1 commercial evidence chain pack RG blocker matrix packaging only. Evidence chain live Completes remain MISSING."
+}

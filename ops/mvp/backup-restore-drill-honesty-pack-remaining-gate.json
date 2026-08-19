@@ -1,0 +1,57 @@
+{
+  "id": "backup-restore-drill-honesty-pack-remaining-gate",
+  "stage": 319,
+  "pack": "I1",
+  "doc": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_RG_POINTERS_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "k8s_deploy_pack_remaining_gate": "docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md",
+    "pgbouncer_soak_pack_remaining_gate": "docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md",
+    "pitr_drill_pack_remaining_gate": "docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_backup_restore_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage169_backup_restore_drill_honesty": true,
+  "distinct_from_pitr_drill_pack_remaining_gate": true,
+  "distinct_from_stage318_k8s_deploy_pack_remaining_gate": true,
+  "distinct_from_stage317_pgbouncer_soak_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "brdhr-read-blockers",
+      "title": "Read B1 backup restore drill honesty pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhr-follow-pointers",
+      "title": "Follow P1 Stage 169 B1 / Stage 318 / Stage 317 / Stage PITR pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhr-backup-missing",
+      "title": "Reaffirm live backup restore / live PITR MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhr-no-packaging-as-live",
+      "title": "Do not treat Stage 169 B1 / Stage PITR / Stage 318 as live backup restore Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhr-backup-remaining",
+      "title": "Live backup restore / E2E smoke / live PITR / demo tenant / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 319 I1 backup restore drill honesty pack remaining-gate index packaging only. Do not claim live backup restore Complete."
+}

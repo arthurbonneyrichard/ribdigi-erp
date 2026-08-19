@@ -1,0 +1,151 @@
+{
+  "stage": "35",
+  "workstream": "U1",
+  "doc": "docs/E2E_USERS_RBAC_MVP.md",
+  "e2e_org_bootstrap": "ops/mvp/e2e-org-bootstrap.json",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "stage21_plan": "docs/STAGE_21_PLAN.md",
+  "adr_004": "docs/ADR_004_MENU_PERMISSIONS.md",
+  "adr_005": "docs/ADR_005_USER_STORE_ASSIGNMENT.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "live_users_provisioned_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "store_membership_claimed": false,
+  "steps": [
+    {
+      "id": "ur-create-admin",
+      "category": "users",
+      "title": "Create/verify company admin user for real test tenant (no demo password)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_21_PLAN.md",
+        "ops/mvp/e2e-org-bootstrap.json"
+      ],
+      "source": "docs/STAGE_21_PLAN.md#U1"
+    },
+    {
+      "id": "ur-create-manager",
+      "category": "users",
+      "title": "Create store/branch manager user with scoped org assignment",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ur-create-inventory",
+      "category": "users",
+      "title": "Create inventory officer user for purchase/stock path",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_21_PLAN.md"
+      ],
+      "source": "docs/STAGE_21_PLAN.md#U1"
+    },
+    {
+      "id": "ur-create-cashier",
+      "category": "users",
+      "title": "Create cashier user for POS path",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#rbac"
+    },
+    {
+      "id": "ur-assign-roles",
+      "category": "rbac",
+      "title": "Assign predefined roles and confirm role catalog",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_21_PLAN.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ur-rbac-smoke-cashier",
+      "category": "rbac",
+      "title": "RBAC smoke: cashier cannot write users (403)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#rbac"
+    },
+    {
+      "id": "ur-tenant-header-403",
+      "category": "security",
+      "title": "Tenant header mismatch on users/roles path returns 403",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/SECURITY_GUIDE.md",
+        "docs/ADR_001_TENANCY.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#rbac"
+    },
+    {
+      "id": "ur-menu-adr004",
+      "category": "rbac",
+      "title": "Confirm ADR-004 menu visibility equals module permissions (no separate menu store)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_004_MENU_PERMISSIONS.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/ADR_004_MENU_PERMISSIONS.md"
+    },
+    {
+      "id": "ur-store-membership-deferred",
+      "category": "deferred",
+      "title": "Confirm ADR-005 user\u2194store membership remains deferred",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_005_USER_STORE_ASSIGNMENT.md",
+        "docs/STAGE_35_PLAN.md"
+      ],
+      "source": "docs/ADR_005_USER_STORE_ASSIGNMENT.md"
+    },
+    {
+      "id": "ur-live-provisioning-remaining",
+      "category": "honesty",
+      "title": "Live user provisioning / E2E smoke execution Remaining \u2014 packaging \u2260 provisioned",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_35_PLAN.md",
+        "ops/mvp/e2e-org-bootstrap.json"
+      ],
+      "source": "docs/STAGE_35_PLAN.md#U1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage35_u1_e2e_users_rbac.json",
+  "deferred": [
+    "Claiming live user provisioning Complete because Stage 35 U1 packaging exists",
+    "Demo tenants / seed passwords as Complete",
+    "User\u2194store membership Complete (ADR-005 deferred)",
+    "Live E2E smoke executed Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

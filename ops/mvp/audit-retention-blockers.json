@@ -1,0 +1,58 @@
+{
+  "id": "audit-retention-blockers",
+  "stage": 186,
+  "pack": "B1",
+  "doc": "docs/AUDIT_RETENTION_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md",
+    "adr007": "docs/ADR_007_AUDIT_RETENTION.md",
+    "data_retention_return": "docs/DATA_RETENTION_RETURN_MVP.md",
+    "commercial_data_retention": "docs/COMMERCIAL_DATA_RETENTION_MVP.md"
+  },
+  "packaging_complete": true,
+  "hot_audit_purge_claimed": false,
+  "hot_row_physical_delete_claimed": false,
+  "cold_archive_as_purge_claimed": false,
+  "infinite_retention_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "adr007_hot_table_pruning": "DEFERRED",
+    "purge_api": "REMAINING",
+    "cold_archive_as_purge": "NON_CLAIM",
+    "infinite_retention_complete": "NON_CLAIM",
+    "hot_audit_purge_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ab-adr007",
+      "title": "Mark ADR-007 hot-table pruning Deferred / post-MVP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-purge-api",
+      "title": "Mark purge API Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-cold-nonclaim",
+      "title": "Mark cold-archive Completes as non-claim for purge",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-infinite-nonclaim",
+      "title": "Mark infinite retention Complete as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-purge-remaining",
+      "title": "Hot audit purge Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 186 B1 audit-retention blocker matrix packaging only. Hot audit purge Complete remains MISSING."
+}

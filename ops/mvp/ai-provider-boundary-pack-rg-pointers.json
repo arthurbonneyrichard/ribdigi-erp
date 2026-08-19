@@ -1,0 +1,61 @@
+{
+  "id": "ai-provider-boundary-pack-rg-pointers",
+  "stage": 302,
+  "pack": "P1",
+  "doc": "docs/AI_PROVIDER_BOUNDARY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AI_PROVIDER_BOUNDARY_PACK_REMAINING_GATE_MVP.md",
+    "ai_provider_boundary": "docs/AI_PROVIDER_BOUNDARY_MVP.md",
+    "ai_use_disclosure_pack_remaining_gate": "docs/AI_USE_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "tos_aup_pack_remaining_gate": "docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md",
+    "ai_use_disclosure": "docs/AI_USE_DISCLOSURE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "external_llm_claimed": false,
+  "prophet_claimed": false,
+  "paid_model_vendor_required": false,
+  "output_pii_scanner_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "ai_provider_boundary_stage42",
+    "ai_use_disclosure_pack_remaining_gate_stage301",
+    "tos_aup_pack_remaining_gate_stage300",
+    "ai_use_disclosure_stage42",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "apbprp-stage42",
+      "title": "Point to Stage 42 P1 AI provider boundary",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprp-stage301",
+      "title": "Point to Stage 301 AI use disclosure pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprp-stage300",
+      "title": "Point to Stage 300 ToS/AUP pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprp-stage42a1",
+      "title": "Point to Stage 42 A1 AI use disclosure adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprp-llm-remaining",
+      "title": "External LLM Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 302 P1 AI provider boundary pack RG pointers packaging only. Do not claim external LLM Complete."
+}

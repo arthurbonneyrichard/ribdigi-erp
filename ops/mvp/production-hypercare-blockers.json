@@ -1,0 +1,54 @@
+{
+  "id": "production-hypercare-blockers",
+  "stage": 219,
+  "pack": "B1",
+  "doc": "docs/PRODUCTION_HYPERCARE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "production_hypercare": "docs/PRODUCTION_HYPERCARE_MVP.md",
+    "incident_pack": "docs/INCIDENT_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_production_hypercare_claimed": false,
+  "production_hypercare_live_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_production_hypercare_window": "REMAINING",
+    "oncall_rota_incident_drill": "REMAINING",
+    "stage67_h1_as_live_hypercare": "NON_CLAIM",
+    "production_hypercare_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "phb-window",
+      "title": "Mark live production hypercare window Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phb-oncall",
+      "title": "Mark on-call rota / incident drill Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phb-stage67-nonclaim",
+      "title": "Mark Stage 67 H1 production hypercare as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phb-hypercare-false",
+      "title": "Mark production_hypercare_live_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phb-hypercare-remaining",
+      "title": "Live hypercare Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 219 B1 production hypercare blocker matrix packaging only. Live hypercare Complete remains MISSING."
+}

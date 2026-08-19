@@ -1,0 +1,67 @@
+{
+  "id": "offline-hold-expiry-pack-rg-pointers",
+  "stage": 386,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_HOLD_EXPIRY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_HOLD_EXPIRY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_queue_ui_pack": "docs/OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md",
+    "offline_hold_reserve_pack": "docs/OFFLINE_HOLD_RESERVE_PACK_REMAINING_GATE_MVP.md",
+    "stage167_fidelity": "docs/STAGE_167_FIDELITY.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_hold_expiry_complete_claimed": false,
+  "hold_expiry_cleanup_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section13_offline_hold_expiry": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_queue_ui_pack_remaining_gate_stage385": "docs/OFFLINE_QUEUE_UI_PACK_REMAINING_GATE_MVP.md",
+    "offline_hold_reserve_pack_remaining_gate_stage378": "docs/OFFLINE_HOLD_RESERVE_PACK_REMAINING_GATE_MVP.md",
+    "stage167_hold_expiry_fidelity": "docs/STAGE_167_FIDELITY.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_hold_expiry / hold_expiry_cleanup / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "oheprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a713 offline hold expiry",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprp-stage385",
+      "title": "Point to Stage 385 offline queue UI pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprp-stage378",
+      "title": "Point to Stage 378 offline hold soft-reserve pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprp-stage167",
+      "title": "Point to Stage 167 Hold expiry fidelity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oheprp-checklist-remaining",
+      "title": "Offline Complete / offline hold-expiry Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 386 P1 offline hold expiry pack RG pointers packaging only."
+}

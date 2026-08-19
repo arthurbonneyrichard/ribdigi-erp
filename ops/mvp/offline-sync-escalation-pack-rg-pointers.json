@@ -1,0 +1,60 @@
+{
+  "id": "offline-sync-escalation-pack-rg-pointers",
+  "stage": 335,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SYNC_ESCALATION_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_ESCALATION_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "incident_severity_pack_remaining_gate": "docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md",
+    "support_readiness_pack_remaining_gate": "docs/SUPPORT_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "oncall_rota_live": false,
+  "pagerduty_hosted_claimed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "offline_sync_escalation_stage170",
+    "incident_severity_pack_remaining_gate_stage334",
+    "support_readiness_pack_remaining_gate_stage333",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "oseprp-stage170",
+      "title": "Point to Stage 170 offline sync escalation packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprp-stage334",
+      "title": "Point to Stage 334 incident severity pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprp-stage333",
+      "title": "Point to Stage 333 support readiness pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oseprp-escalation-remaining",
+      "title": "Live offline sync escalation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 335 P1 offline sync escalation pack RG pointers packaging only. Do not claim live offline sync escalation Complete."
+}

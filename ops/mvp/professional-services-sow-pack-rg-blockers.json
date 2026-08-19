@@ -1,0 +1,53 @@
+{
+  "id": "professional-services-sow-pack-rg-blockers",
+  "stage": 243,
+  "pack": "B1",
+  "doc": "docs/PROFESSIONAL_SERVICES_SOW_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md",
+    "professional_services_sow": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+    "customer_training_cert_pack_remaining_gate": "docs/CUSTOMER_TRAINING_CERT_PACK_REMAINING_GATE_MVP.md",
+    "professional_services_sow_register": "ops/mvp/professional-services-sow.json"
+  },
+  "packaging_complete": true,
+  "signed_sow_claimed": false,
+  "implementation_delivery_claimed": false,
+  "professional_services_live_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "signed_sow_execution": "REMAINING",
+    "implementation_delivery_complete": "REMAINING",
+    "stage48_p1_as_signed_sow": "NON_CLAIM",
+    "stage48_p1_as_implementation_delivery": "NON_CLAIM",
+    "stage242_i1_as_signed_sow": "NON_CLAIM",
+    "signed_sow_claimed": "false",
+    "implementation_delivery_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "pssprb-sow",
+      "title": "Mark signed SOW execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pssprb-delivery",
+      "title": "Mark live implementation delivery Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pssprb-stage48-nonclaim",
+      "title": "Mark Stage 48 P1 as non-claim for signed SOW / implementation delivery",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pssprb-sow-remaining",
+      "title": "Signed SOW / implementation delivery Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 243 B1 professional services SOW pack RG blocker matrix packaging only. Signed SOW and live implementation delivery Complete remain MISSING."
+}

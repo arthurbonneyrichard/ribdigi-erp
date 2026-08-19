@@ -1,0 +1,59 @@
+{
+  "id": "compliance-questionnaire-pack-rg-pointers",
+  "stage": 279,
+  "pack": "P1",
+  "doc": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md",
+    "compliance_questionnaire": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+    "data_portability_pack_remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+    "soft_delete_erasure_pack_remaining_gate": "docs/SOFT_DELETE_ERASURE_PACK_REMAINING_GATE_MVP.md",
+    "compliance_readiness": "docs/COMPLIANCE_READINESS_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "soc2_complete_claimed": false,
+  "certification_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "compliance_questionnaire_stage34",
+    "data_portability_pack_remaining_gate_stage278",
+    "soft_delete_erasure_pack_remaining_gate_stage277",
+    "compliance_readiness_stage33",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cqprp-stage34",
+      "title": "Point to Stage 34 C1 compliance questionnaire",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-stage278",
+      "title": "Point to Stage 278 data portability pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-stage277",
+      "title": "Point to Stage 277 soft-delete erasure pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-stage33",
+      "title": "Point to Stage 33 C1 compliance readiness adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-soc2-remaining",
+      "title": "SOC 2 Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 279 P1 compliance questionnaire pack RG pointers packaging only. Do not claim SOC 2 Complete."
+}

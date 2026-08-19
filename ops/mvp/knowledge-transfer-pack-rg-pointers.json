@@ -1,0 +1,60 @@
+{
+  "id": "knowledge-transfer-pack-rg-pointers",
+  "stage": 240,
+  "pack": "P1",
+  "doc": "docs/KNOWLEDGE_TRANSFER_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "knowledge_transfer_remaining_gate": "docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md",
+    "operator_handoff_pack_remaining_gate": "docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_base_pack_remaining_gate": "docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_transfer_register": "ops/mvp/knowledge-transfer.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_knowledge_transfer_claimed": false,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "knowledge_transfer_stage33_t1",
+    "knowledge_transfer_remaining_gate_stage216",
+    "operator_handoff_pack_remaining_gate_stage239",
+    "knowledge_base_pack_remaining_gate_stage238",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ktprp-stage33",
+      "title": "Point to Stage 33 T1 knowledge transfer",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktprp-stage216",
+      "title": "Point to Stage 216 knowledge transfer remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktprp-stage239",
+      "title": "Point to Stage 239 operator handoff pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktprp-stage238",
+      "title": "Point to Stage 238 knowledge base pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktprp-transfer-remaining",
+      "title": "Live knowledge-transfer Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 240 P1 knowledge transfer pack RG pointers packaging only. Do not claim live knowledge-transfer Complete."
+}

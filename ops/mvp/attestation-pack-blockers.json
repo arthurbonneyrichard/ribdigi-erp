@@ -1,0 +1,59 @@
+{
+  "id": "attestation-pack-blockers",
+  "stage": 213,
+  "pack": "B1",
+  "doc": "docs/ATTESTATION_PACK_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "attestation_pack": "docs/ATTESTATION_PACK_MVP.md",
+    "attestation_evidence": "ops/launch/attestation-evidence.example.json"
+  },
+  "packaging_complete": true,
+  "live_attestation_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_golive_attestation_execution": "REMAINING",
+    "section_7_name_date_signed": "REMAINING",
+    "launch_sections_1_3_verified": "REMAINING",
+    "stage30_a1_as_live_attestation": "NON_CLAIM",
+    "attestation_claimed": "false",
+    "section_7_signed": "false",
+    "sections_1_3_verified": "false"
+  },
+  "steps": [
+    {
+      "id": "ab-attestation",
+      "title": "Mark live go-live attestation Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-section7",
+      "title": "Mark section 7 Name/Date signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-sections13",
+      "title": "Mark LAUNCH sections 1-3 verified Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-stage30-nonclaim",
+      "title": "Mark Stage 30 A1 attestation pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ab-attestation-remaining",
+      "title": "Live go-live attestation Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 213 B1 attestation pack blocker matrix packaging only. Live go-live attestation Complete remains MISSING."
+}

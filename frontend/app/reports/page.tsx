@@ -2,32 +2,60 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
+import { useTabQuery } from '../../lib/tabQuery';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab =
   | 'summary'
   | 'sales'
+  | 'customers'
   | 'salesperson'
   | 'stores'
   | 'inventory'
   | 'purchases'
   | 'expenses'
+  | 'pnl'
   | 'cashflow'
   | 'balancesheet'
+  | 'credit'
+  | 'tax'
+  | 'transfers'
   | 'schedules';
+const REPORT_TABS: Tab[] = [
+  'summary',
+  'sales',
+  'customers',
+  'salesperson',
+  'stores',
+  'inventory',
+  'purchases',
+  'expenses',
+  'pnl',
+  'cashflow',
+  'balancesheet',
+  'credit',
+  'tax',
+  'transfers',
+  'schedules',
+];
 
 const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   summary: 'summary',
   sales: 'sales_products',
+  customers: 'sales_customers',
   salesperson: 'sales_salesperson',
   stores: 'sales_by_store',
-  inventory: 'inventory_low_stock',
+  inventory: 'inventory_valuation',
   purchases: 'purchases_summary',
   expenses: 'expenses_summary',
+  pnl: 'profit_loss',
   cashflow: 'cash_flow',
   balancesheet: 'balance_sheet',
+  credit: 'credit_aging',
+  tax: 'tax',
+  transfers: 'transfer_history',
 };
 
 const REPORT_TYPES = [
@@ -35,23 +63,62 @@ const REPORT_TYPES = [
   'sales_daily',
   'sales_monthly',
   'sales_products',
+  'sales_customers',
   'sales_salesperson',
   'sales_by_store',
   'inventory_balance',
   'inventory_low_stock',
+  'inventory_valuation',
   'purchases_summary',
+  'purchases_pending_orders',
+  'purchases_returns',
   'expenses_summary',
+  'profit_loss',
   'cash_flow',
   'balance_sheet',
+  'credit_aging',
   'tax',
   'tax_filing',
   'tax_filing_gh',
+  'tax_filing_ke',
+  'tax_filing_ng',
+  'transfer_history',
 ];
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('summary');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [tab, setTab] = useTabQuery(REPORT_TABS, 'summary');
+  // Stage 109 R1 / Stage 113 S1 / Stage 114 O1 — shareable period / dimension filters (+ transfer status/scope Shell leaves)
+  const [fromDate, setFromDate] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('from_date')?.trim() || '';
+  });
+  const [toDate, setToDate] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('to_date')?.trim() || '';
+  });
+  const [storeId, setStoreId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('store_id')?.trim() || '';
+  });
+  const [branchId, setBranchId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('branch_id')?.trim() || '';
+  });
+  const [categoryId, setCategoryId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('category_id')?.trim() || '';
+  });
+  const [transferScope, setTransferScope] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    return new URLSearchParams(window.location.search).get('scope')?.trim() || 'all';
+  });
+  const [transferStatus, setTransferStatus] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('status')?.trim() || '';
+  });
+  const [stores, setStores] = useState<{ id: string; code: string; name: string; branch_id?: string | null }[]>([]);
+  const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -67,6 +134,74 @@ export default function Page() {
     recipients: '',
     enabled: true,
   });
+  // Stage 112 R1 — shareable schedule frequency / enabled filters (client-side)
+  const [scheduleFrequencyFilter, setScheduleFrequencyFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = new URLSearchParams(window.location.search).get('frequency')?.trim() || '';
+    return v === 'daily' || v === 'weekly' ? v : '';
+  });
+  const [scheduleEnabledFilter, setScheduleEnabledFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = new URLSearchParams(window.location.search).get('enabled')?.trim() || '';
+    return v === 'true' || v === 'false' ? v : '';
+  });
+
+  function writeScheduleFilters(patch: { frequency?: string; enabled?: string }) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'schedules');
+    const freq = patch.frequency !== undefined ? patch.frequency : scheduleFrequencyFilter;
+    const en = patch.enabled !== undefined ? patch.enabled : scheduleEnabledFilter;
+    if (freq) url.searchParams.set('frequency', freq);
+    else url.searchParams.delete('frequency');
+    if (en) url.searchParams.set('enabled', en);
+    else url.searchParams.delete('enabled');
+    const hash = url.hash || '#schedules';
+    window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}${hash.startsWith('#') ? hash : ''}`);
+  }
+
+  const filteredSchedules = schedules.filter((s) => {
+    if (scheduleFrequencyFilter && s.frequency !== scheduleFrequencyFilter) return false;
+    if (scheduleEnabledFilter === 'true' && !s.enabled) return false;
+    if (scheduleEnabledFilter === 'false' && s.enabled) return false;
+    return true;
+  });
+
+  function writeReportFilters(patch: {
+    from_date?: string;
+    to_date?: string;
+    store_id?: string;
+    branch_id?: string;
+    category_id?: string;
+    scope?: string;
+    status?: string;
+  }) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const fd = patch.from_date !== undefined ? patch.from_date : fromDate;
+    const td = patch.to_date !== undefined ? patch.to_date : toDate;
+    const sid = patch.store_id !== undefined ? patch.store_id : storeId;
+    const bid = patch.branch_id !== undefined ? patch.branch_id : branchId;
+    const cid = patch.category_id !== undefined ? patch.category_id : categoryId;
+    const sc = patch.scope !== undefined ? patch.scope : transferScope;
+    const st = patch.status !== undefined ? patch.status : transferStatus;
+    if (fd) url.searchParams.set('from_date', fd);
+    else url.searchParams.delete('from_date');
+    if (td) url.searchParams.set('to_date', td);
+    else url.searchParams.delete('to_date');
+    if (sid) url.searchParams.set('store_id', sid);
+    else url.searchParams.delete('store_id');
+    if (bid) url.searchParams.set('branch_id', bid);
+    else url.searchParams.delete('branch_id');
+    if (cid) url.searchParams.set('category_id', cid);
+    else url.searchParams.delete('category_id');
+    if (sc && sc !== 'all') url.searchParams.set('scope', sc);
+    else url.searchParams.delete('scope');
+    if (st) url.searchParams.set('status', st);
+    else url.searchParams.delete('status');
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}` : url.pathname);
+  }
 
   function qs(extra: Record<string, string> = {}) {
     const params = new URLSearchParams();
@@ -77,25 +212,102 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
+  useEffect(() => {
+    Promise.all([
+      api('/stores').catch(() => ({ data: [] })),
+      api('/branches').catch(() => ({ data: [] })),
+      api('/catalog/categories').catch(() => ({ data: [] })),
+    ]).then(([s, b, c]) => {
+      setStores(s.data || []);
+      setBranches(b.data || []);
+      setCategories(c.data || []);
+    });
+  }, []);
+
+  const financialTab = tab === 'pnl' || tab === 'cashflow' || tab === 'balancesheet';
+  const storeOptions = branchId
+    ? stores.filter((s) => s.branch_id === branchId)
+    : stores;
+
   async function load(nextTab: Tab = tab) {
     setLoading(true);
     setError('');
     try {
       if (nextTab === 'schedules') {
-        const r = await api('/reports/schedules');
+        // Stage 127 S1 — server-side enabled filter (frequency remains client-side)
+        const schedQs =
+          scheduleEnabledFilter === 'true'
+            ? '?enabled=true'
+            : scheduleEnabledFilter === 'false'
+              ? '?enabled=false'
+              : '';
+        const r = await api(`/reports/schedules${schedQs}`);
         setSchedules(r.data || []);
         setData(null);
         return;
       }
       let path = '/reports/summary';
-      if (nextTab === 'sales') path = `/reports/sales/products${qs()}`;
+      if (nextTab === 'sales') {
+        path = `/reports/sales/products${qs({
+          store_id: storeId,
+          category_id: categoryId,
+        })}`;
+      }
+      if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
       if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
       if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
       if (nextTab === 'inventory') path = '/reports/inventory/low-stock';
       if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
       if (nextTab === 'expenses') path = `/reports/expenses/summary${qs()}`;
-      if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
-      if (nextTab === 'balancesheet') path = '/reports/balance-sheet';
+      if (nextTab === 'pnl') {
+        path = `/reports/profit-loss${qs({
+          store_id: storeId,
+          branch_id: branchId,
+          compare: 'true',
+        })}`;
+      }
+      if (nextTab === 'cashflow') {
+        path = `/reports/cash-flow${qs({
+          store_id: storeId,
+          branch_id: branchId,
+          compare: 'true',
+        })}`;
+      }
+      if (nextTab === 'balancesheet') {
+        path = `/reports/balance-sheet${qs({
+          as_of_date: toDate,
+          store_id: storeId,
+          branch_id: branchId,
+          compare: 'true',
+        })}`;
+      }
+      if (nextTab === 'credit') {
+        const [ar, ap] = await Promise.all([
+          api('/credit/aging?kind=receivable'),
+          api('/credit/aging?kind=payable'),
+        ]);
+        setData({ ar: ar.data, ap: ap.data });
+        return;
+      }
+      if (nextTab === 'tax') {
+        const [taxReport, filing] = await Promise.all([
+          api(`/reports/tax${qs()}`),
+          api(`/reports/tax/filing${qs()}`),
+        ]);
+        setData({ tax: taxReport.data, filing: filing.data });
+        return;
+      }
+      if (nextTab === 'transfers') {
+        const r = await api(
+          `/reports/transfers${qs({
+            store_id: storeId,
+            scope: transferScope,
+            status: transferStatus,
+          })}`
+        );
+        setData(r.data);
+        return;
+      }
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly] = await Promise.all([
@@ -104,14 +316,29 @@ export default function Page() {
         ]);
         setData({ products: r.data, daily: daily.data, monthly: monthly.data });
       } else if (nextTab === 'inventory') {
-        const [balance, movements] = await Promise.all([
+        const [balance, movements, valuation] = await Promise.all([
           api('/reports/inventory/balance'),
           api('/reports/inventory/movements'),
+          api(`/reports/inventory/valuation${qs({ store_id: storeId })}`),
         ]);
-        setData({ lowStock: r.data, balance: balance.data, movements: movements.data });
+        setData({
+          lowStock: r.data,
+          balance: balance.data,
+          movements: movements.data,
+          valuation: valuation.data,
+        });
       } else if (nextTab === 'purchases') {
-        const suppliers = await api(`/reports/purchases/suppliers${qs()}`);
-        setData({ summary: r.data, suppliers: suppliers.data });
+        const [suppliers, pending, returns] = await Promise.all([
+          api(`/reports/purchases/suppliers${qs()}`),
+          api(`/reports/purchases/pending-orders${qs()}`),
+          api(`/reports/purchases/returns${qs()}`),
+        ]);
+        setData({
+          summary: r.data,
+          suppliers: suppliers.data,
+          pending: pending.data,
+          returns: returns.data,
+        });
       } else {
         setData(r.data);
       }
@@ -126,12 +353,29 @@ export default function Page() {
     load('summary');
   }, []);
 
+  // Stage 112 R1 — honor Shell #schedules
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (hash !== 'schedules') return;
+    if (tab !== 'schedules') {
+      setTab('schedules');
+      load('schedules');
+      return;
+    }
+    const t = window.setTimeout(() => {
+      const el = document.getElementById('schedules');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [tab]);
+
   function switchTab(t: Tab) {
     setTab(t);
     load(t);
   }
 
-  async function download(format: 'csv' | 'pdf' | 'xlsx', reportType?: string) {
+  async function download(format: 'csv' | 'pdf' | 'xlsx', reportType?: string, extra: Record<string, string> = {}) {
     if (tab === 'schedules') return;
     setError('');
     setMessage('');
@@ -143,11 +387,18 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
+      if (toDate) params.set('as_of_date', toDate);
+      if (storeId) params.set('store_id', storeId);
+      if (branchId) params.set('branch_id', branchId);
+      if (financialTab) params.set('compare', 'true');
+      if (categoryId) params.set('category_id', categoryId);
+      if (tab === 'transfers') {
+        if (transferScope) params.set('scope', transferScope);
+        if (transferStatus) params.set('status', transferStatus);
+      }
+      Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
       const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -233,7 +484,10 @@ export default function Page() {
   return (
     <Shell>
       <h1>Reports & Analytics</h1>
-      <p className="muted">Sales, inventory, purchases, expenses, cash flow, and balance sheet</p>
+      <p className="muted">
+        Sales, inventory, purchases, expenses, financials, credit, tax, and transfer history — plus email
+        schedules
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -242,13 +496,18 @@ export default function Page() {
           [
             ['summary', 'Summary'],
             ['sales', 'Sales'],
+            ['customers', 'Customers'],
             ['salesperson', 'Salespeople'],
             ['stores', 'Stores'],
             ['inventory', 'Inventory'],
             ['purchases', 'Purchases'],
             ['expenses', 'Expenses'],
+            ['pnl', 'P&L'],
             ['cashflow', 'Cash flow'],
             ['balancesheet', 'Balance sheet'],
+            ['credit', 'Credit'],
+            ['tax', 'Tax'],
+            ['transfers', 'Transfers'],
             ['schedules', 'Email schedules'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
@@ -260,28 +519,324 @@ export default function Page() {
 
       {tab !== 'schedules' && (
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        <button onClick={() => load()} disabled={loading}>
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => {
+            const next = e.target.value;
+            setFromDate(next);
+            writeReportFilters({ from_date: next });
+          }}
+          aria-label="Report from date"
+        />
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => {
+            const next = e.target.value;
+            setToDate(next);
+            writeReportFilters({ to_date: next });
+          }}
+          aria-label="Report to date"
+        />
+        {financialTab && (
+          <select
+            value={branchId}
+            onChange={(e) => {
+              const next = e.target.value;
+              setBranchId(next);
+              setStoreId('');
+              writeReportFilters({ branch_id: next, store_id: '' });
+            }}
+            aria-label="Branch filter"
+          >
+            <option value="">All branches</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.code} — {b.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {(tab === 'sales' || tab === 'inventory' || tab === 'transfers' || financialTab) && (
+          <select
+            value={storeId}
+            onChange={(e) => {
+              const next = e.target.value;
+              setStoreId(next);
+              writeReportFilters({ store_id: next });
+            }}
+            aria-label="Store filter"
+          >
+            <option value="">All stores</option>
+            {storeOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} — {s.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {tab === 'transfers' && (
+          <>
+            <select
+              value={transferScope}
+              onChange={(e) => {
+                const next = e.target.value;
+                setTransferScope(next);
+                writeReportFilters({ scope: next });
+              }}
+              aria-label="Transfer scope"
+            >
+              <option value="all">All scopes</option>
+              <option value="inter_store">Inter-store</option>
+              <option value="warehouse">Warehouse</option>
+            </select>
+            <select
+              value={transferStatus}
+              onChange={(e) => {
+                const next = e.target.value;
+                setTransferStatus(next);
+                writeReportFilters({ status: next });
+              }}
+              aria-label="Transfer status"
+            >
+              <option value="">Any status</option>
+              <option value="draft">Draft</option>
+              <option value="requested">Requested</option>
+              <option value="in_transit">In transit</option>
+              <option value="received">Received</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </>
+        )}
+        {tab === 'sales' && (
+          <select
+            value={categoryId}
+            onChange={(e) => {
+              const next = e.target.value;
+              setCategoryId(next);
+              writeReportFilters({ category_id: next });
+            }}
+            aria-label="Category filter"
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <button
+          onClick={() => {
+            writeReportFilters({});
+            load();
+          }}
+          disabled={loading}
+        >
           {loading ? 'Loading…' : 'Apply filters'}
         </button>
         <button onClick={() => download('csv')}>Export CSV</button>
         <button onClick={() => download('xlsx')}>Export Excel</button>
         <button onClick={() => download('pdf')}>Export PDF</button>
+        {tab === 'pnl' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (fromDate) params.set('from_date', fromDate);
+                if (toDate) params.set('to_date', toDate);
+                if (storeId) params.set('store_id', storeId);
+                if (branchId) params.set('branch_id', branchId);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/profit-loss/export${qs}`, {
+                  headers: authHeaders(),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_profit_loss_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Profit-loss path CSV downloaded (Stage 161 L1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export profit-loss path CSV
+          </button>
+        )}
+        {tab === 'cashflow' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (fromDate) params.set('from_date', fromDate);
+                if (toDate) params.set('to_date', toDate);
+                if (storeId) params.set('store_id', storeId);
+                if (branchId) params.set('branch_id', branchId);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/cash-flow/export${qs}`, {
+                  headers: authHeaders(),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_cash_flow_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Cash-flow path CSV downloaded (Stage 160 C1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export cash-flow path CSV
+          </button>
+        )}
+        {tab === 'balancesheet' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (toDate) params.set('as_of_date', toDate);
+                if (storeId) params.set('store_id', storeId);
+                if (branchId) params.set('branch_id', branchId);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/balance-sheet/export${qs}`, {
+                  headers: authHeaders(),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_balance_sheet_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Balance-sheet path CSV downloaded (Stage 160 S1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export balance-sheet path CSV
+          </button>
+        )}
+        {tab === 'tax' && (
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              try {
+                const token = localStorage.getItem('token');
+                const tenant = localStorage.getItem('tenant');
+                const params = new URLSearchParams();
+                if (fromDate) params.set('from_date', fromDate);
+                if (toDate) params.set('to_date', toDate);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${base}/reports/tax/export${qs}`, {
+                  headers: authHeaders(),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'reports_tax_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Tax path CSV downloaded (Stage 161 X1)');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+          >
+            Export tax path CSV
+          </button>
+        )}
         {tab === 'sales' && (
           <>
             <button onClick={() => download('csv', 'sales_daily')}>Daily CSV</button>
             <button onClick={() => download('xlsx', 'sales_salesperson')}>Salespeople Excel</button>
             <button onClick={() => download('xlsx', 'trial_balance')}>Trial balance Excel</button>
             <button onClick={() => download('csv', 'trial_balance')}>Trial balance CSV</button>
+            <button
+              type="button"
+              onClick={async () => {
+                setError('');
+                setMessage('');
+                try {
+                  const token = localStorage.getItem('token');
+                  const tenant = localStorage.getItem('tenant');
+                  const params = new URLSearchParams();
+                  if (toDate) params.set('as_of_date', toDate);
+                  const qs = params.toString() ? `?${params}` : '';
+                  const res = await fetch(`${base}/reports/trial-balance/export${qs}`, {
+                    headers: authHeaders(),
+                  });
+                  if (!res.ok) throw new Error(await res.text());
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'reports_trial_balance_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Trial-balance path CSV downloaded (Stage 161 B1)');
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+            >
+              Export trial-balance path CSV
+            </button>
             <button onClick={() => download('pdf', 'profit_loss')}>P&amp;L PDF</button>
           </>
+        )}
+        {tab === 'customers' && (
+          <button onClick={() => download('xlsx', 'sales_customers')}>Customers Excel</button>
         )}
         {tab === 'salesperson' && (
           <button onClick={() => download('xlsx', 'sales_salesperson')}>Export Excel</button>
         )}
         {tab === 'stores' && (
           <button onClick={() => download('xlsx', 'sales_by_store')}>Export Excel</button>
+        )}
+        {tab === 'credit' && (
+          <>
+            <button onClick={() => download('xlsx', 'credit_aging', { kind: 'receivable' })}>
+              AR aging Excel
+            </button>
+            <button onClick={() => download('xlsx', 'credit_aging', { kind: 'payable' })}>
+              AP aging Excel
+            </button>
+          </>
+        )}
+        {tab === 'tax' && (
+          <>
+            <button onClick={() => download('xlsx', 'tax')}>Tax Excel</button>
+            <button onClick={() => download('xlsx', 'tax_filing')}>Filing pack Excel</button>
+          </>
+        )}
+        {tab === 'transfers' && (
+          <button onClick={() => download('xlsx', 'transfer_history')}>Transfers Excel</button>
         )}
       </div>
       )}
@@ -315,11 +870,14 @@ export default function Page() {
               <h3>Today</h3>
               <p>Revenue: {data.daily?.total_revenue}</p>
               <p>Invoices: {data.daily?.invoice_count} · POS: {data.daily?.pos_count}</p>
+              <p className="muted">
+                vs {data.daily?.previous_date || 'prior day'}: {data.daily?.change_pct ?? '—'}%
+              </p>
             </div>
             <div className="card">
               <h3>This month</h3>
               <p>Revenue: {data.monthly?.total_revenue}</p>
-              <p>Change: {data.monthly?.change_pct ?? '—'}%</p>
+              <p className="muted">vs prior month: {data.monthly?.change_pct ?? '—'}%</p>
             </div>
           </div>
           <h3 style={{ marginTop: 16 }}>Products</h3>
@@ -339,6 +897,49 @@ export default function Page() {
                   <td>{p.name}</td>
                   <td>{p.quantity}</td>
                   <td>{p.revenue}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'customers' && data && (
+        <>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Total revenue</div>
+              <div className="kpi">{data.total_revenue ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Sales count</div>
+              <div className="kpi">{data.total_sales ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Customers</div>
+              <div className="kpi">{data.customer_count ?? 0}</div>
+            </div>
+          </div>
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Sales</th>
+                <th>Invoices</th>
+                <th>POS</th>
+                <th>Revenue</th>
+                <th>Avg ticket</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.customers || []).map((c: any) => (
+                <tr key={c.customer_id || 'walk_in'}>
+                  <td>{c.name}</td>
+                  <td>{c.sale_count}</td>
+                  <td>{c.invoice_count}</td>
+                  <td>{c.pos_count}</td>
+                  <td>{c.revenue}</td>
+                  <td>{c.avg_ticket}</td>
                 </tr>
               ))}
             </tbody>
@@ -460,22 +1061,57 @@ export default function Page() {
               ))}
             </ul>
           </div>
-          <h3 style={{ marginTop: 16 }}>Stock value: {data.balance?.total_value ?? 0}</h3>
+
+          <h3 style={{ marginTop: 16 }}>
+            Stock valuation: {data.valuation?.total_value ?? data.balance?.total_value ?? 0}
+          </h3>
+          <p className="muted">
+            {data.valuation?.costing_method_note ||
+              'Value = quantity × product cost price (standard cost).'}
+          </p>
+          {(data.valuation?.by_warehouse || []).length > 0 && (
+            <table className="table" style={{ marginBottom: 12 }}>
+              <thead>
+                <tr>
+                  <th>Warehouse</th>
+                  <th>Lines</th>
+                  <th>Qty</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.valuation.by_warehouse.map((w: any) => (
+                  <tr key={w.warehouse_id}>
+                    <td>
+                      {w.warehouse_code} — {w.warehouse_name}
+                    </td>
+                    <td>{w.line_count}</td>
+                    <td>{w.total_quantity}</td>
+                    <td>{w.total_value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
           <table className="table">
             <thead>
               <tr>
                 <th>SKU</th>
                 <th>Name</th>
+                <th>Warehouse</th>
                 <th>Qty</th>
+                <th>Cost</th>
                 <th>Value</th>
               </tr>
             </thead>
             <tbody>
-              {(data.balance?.items || []).slice(0, 50).map((i: any) => (
-                <tr key={i.product_id}>
+              {(data.valuation?.items || data.balance?.items || []).slice(0, 50).map((i: any) => (
+                <tr key={`${i.warehouse_id || 'all'}-${i.product_id}`}>
                   <td>{i.sku}</td>
                   <td>{i.name}</td>
+                  <td>{i.warehouse_code || '—'}</td>
                   <td>{i.quantity}</td>
+                  <td>{i.cost_price ?? '—'}</td>
                   <td>{i.value}</td>
                 </tr>
               ))}
@@ -491,6 +1127,7 @@ export default function Page() {
             <p>Total: {data.summary?.total_amount}</p>
             <p>Outstanding: {data.summary?.outstanding_amount}</p>
           </div>
+          <h3 style={{ marginTop: 16 }}>By supplier</h3>
           <table className="table">
             <thead>
               <tr>
@@ -505,6 +1142,81 @@ export default function Page() {
                   <td>{s.name}</td>
                   <td>{s.order_count}</td>
                   <td>{s.total_amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: 16 }}>
+            Pending orders ({data.pending?.count ?? 0}) — open qty {data.pending?.open_qty ?? 0}
+          </h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>PO</th>
+                <th>Supplier</th>
+                <th>Status</th>
+                <th>Ordered</th>
+                <th>Received</th>
+                <th>Open</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.pending?.orders || []).map((o: any) => (
+                <tr key={o.id}>
+                  <td>{o.po_number}</td>
+                  <td>{o.supplier_name}</td>
+                  <td>{o.status}</td>
+                  <td>{o.ordered_qty}</td>
+                  <td>{o.received_qty}</td>
+                  <td>{o.open_qty}</td>
+                  <td>{o.total_amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: 16 }}>
+            Purchase returns ({data.returns?.return_count ?? 0}) — posted{' '}
+            {data.returns?.posted_amount ?? 0}
+          </h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Reason</th>
+                <th>Count</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.returns?.by_reason || []).map((r: any) => (
+                <tr key={r.reason}>
+                  <td>{r.reason}</td>
+                  <td>{r.return_count}</td>
+                  <td>{r.total_amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <table className="table" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Return</th>
+                <th>Supplier</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.returns?.returns || []).map((r: any) => (
+                <tr key={r.id}>
+                  <td>{r.return_number}</td>
+                  <td>{r.supplier_name}</td>
+                  <td>{r.reason}</td>
+                  <td>{r.status}</td>
+                  <td>{r.total_amount}</td>
                 </tr>
               ))}
             </tbody>
@@ -534,27 +1246,125 @@ export default function Page() {
         </>
       )}
 
+      {tab === 'pnl' && data && (
+        <>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Revenue</div>
+              <div className="kpi">{data.revenue ?? data.income}</div>
+              {data.comparison?.metrics?.revenue && (
+                <div className="muted">
+                  Prior {data.comparison.metrics.revenue.prior} (
+                  {data.comparison.metrics.revenue.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.revenue.change_pct}%`}
+                  )
+                </div>
+              )}
+            </div>
+            <div className="card">
+              <div className="muted">COGS</div>
+              <div className="kpi">{data.cogs ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Gross profit</div>
+              <div className="kpi">{data.gross_profit ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Operating expenses</div>
+              <div className="kpi">{data.operating_expenses ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Net profit</div>
+              <div className="kpi">{data.net_profit}</div>
+              {data.comparison?.metrics?.net_profit && (
+                <div className="muted">
+                  Prior {data.comparison.metrics.net_profit.prior} (
+                  {data.comparison.metrics.net_profit.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.net_profit.change_pct}%`}
+                  )
+                </div>
+              )}
+            </div>
+          </div>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Period: {data.from_date || 'all'} → {data.to_date || 'all'}
+            {data.comparison
+              ? ` · vs prior ${data.comparison.from_date} → ${data.comparison.to_date}`
+              : ''}
+          </p>
+          <table className="table" style={{ marginTop: 16 }}>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Bucket</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.accounts || []).map((a: any) => (
+                <tr key={a.account_id || a.code}>
+                  <td>{a.code}</td>
+                  <td>{a.name}</td>
+                  <td>{a.bucket || a.account_type}</td>
+                  <td>{a.balance}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
       {tab === 'cashflow' && data && (
         <>
           <div className="grid">
             <div className="card">
-              <div className="muted">Inflows</div>
-              <div className="kpi">{data.inflows}</div>
+              <div className="muted">Opening cash</div>
+              <div className="kpi">{data.opening_cash ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Outflows</div>
-              <div className="kpi">{data.outflows}</div>
+              <div className="muted">Operating</div>
+              <div className="kpi">{data.operating?.net ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Net</div>
-              <div className="kpi">{data.net}</div>
+              <div className="muted">Investing</div>
+              <div className="kpi">{data.investing?.net ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Financing</div>
+              <div className="kpi">{data.financing?.net ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Net change</div>
+              <div className="kpi">{data.net_change ?? data.net}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Closing cash</div>
+              <div className="kpi">{data.closing_cash ?? data.net}</div>
             </div>
           </div>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Transfers (cash↔bank): {data.transfers?.net ?? 0} · Period: {data.from_date || 'all'} →{' '}
+            {data.to_date || 'all'}
+            {data.comparison
+              ? ` · vs prior ${data.comparison.from_date} → ${data.comparison.to_date}`
+              : ''}
+            {data.comparison?.metrics?.net_change
+              ? ` · net_change ${
+                  data.comparison.metrics.net_change.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.net_change.change_pct}%`
+                }`
+              : ''}
+          </p>
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Entry</th>
+                <th>Activity</th>
                 <th>In</th>
                 <th>Out</th>
               </tr>
@@ -564,6 +1374,7 @@ export default function Page() {
                 <tr key={`${l.entry_number}-${idx}`}>
                   <td>{String(l.date)}</td>
                   <td>{l.entry_number}</td>
+                  <td>{l.activity || '—'}</td>
                   <td>{l.inflow}</td>
                   <td>{l.outflow}</td>
                 </tr>
@@ -575,10 +1386,23 @@ export default function Page() {
 
       {tab === 'balancesheet' && data && (
         <>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            As of {data.as_of || '—'} (set To date above as the as-of date)
+            {data.comparison?.as_of ? ` · vs prior as of ${data.comparison.as_of}` : ''}
+          </p>
           <div className="grid">
             <div className="card">
               <div className="muted">Total assets</div>
               <div className="kpi">{data.total_assets}</div>
+              {data.comparison?.metrics?.total_assets && (
+                <div className="muted">
+                  Prior {data.comparison.metrics.total_assets.prior} (
+                  {data.comparison.metrics.total_assets.change_pct == null
+                    ? 'n/a'
+                    : `${data.comparison.metrics.total_assets.change_pct}%`}
+                  )
+                </div>
+              )}
             </div>
             <div className="card">
               <div className="muted">Liabilities + equity</div>
@@ -615,11 +1439,230 @@ export default function Page() {
         </>
       )}
 
-      {tab === 'schedules' && (
+      {tab === 'credit' && data && (
         <>
           <p className="muted">
-            Company admins can schedule CSV, Excel, or PDF reports emailed on a daily or weekly cadence (UTC hour).
+            Credit aging surfaces the same AR/AP engine as the Credit module (no parallel report).{' '}
+            <a href="/credit">Open Credit module →</a>
           </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">AR total due</div>
+              <div className="kpi">{data.ar?.total_due ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">AP total due</div>
+              <div className="kpi">{data.ap?.total_due ?? 0}</div>
+            </div>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Receivables (parties)</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Total due</th>
+                <th>Balance</th>
+                <th>Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.ar?.parties || []).slice(0, 25).map((p: any) => (
+                <tr key={`ar-${p.party_id}`}>
+                  <td>{p.name}</td>
+                  <td>{p.total_due}</td>
+                  <td>{p.balance}</td>
+                  <td>{p.credit_limit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h3 style={{ marginTop: 16 }}>Payables (parties)</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Supplier</th>
+                <th>Total due</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.ap?.parties || []).slice(0, 25).map((p: any) => (
+                <tr key={`ap-${p.party_id}`}>
+                  <td>{p.name}</td>
+                  <td>{p.total_due}</td>
+                  <td>{p.balance}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'tax' && data && (
+        <>
+          <p className="muted">
+            Tax report and filing pack use the same endpoints as Tax Management.{' '}
+            <a href="/tax">Open Tax module →</a>
+          </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Output tax</div>
+              <div className="kpi">{data.tax?.output_tax ?? data.filing?.output_tax ?? '—'}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Input tax</div>
+              <div className="kpi">{data.tax?.input_tax ?? data.filing?.input_tax ?? '—'}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Net payable</div>
+              <div className="kpi">
+                {data.tax?.net_tax_payable ?? data.filing?.net_tax_payable ?? '—'}
+              </div>
+            </div>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Filing boxes</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Box</th>
+                <th>Label</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.filing?.filing_boxes?.boxes || data.filing?.boxes || []).map((b: any) => (
+                <tr key={`box-${b.box}`}>
+                  <td>{b.box}</td>
+                  <td>{b.label}</td>
+                  <td>{b.amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'transfers' && data && (
+        <>
+          <p className="muted">
+            Consolidated transfer history for inter-store and warehouse moves (BR-13.2).{' '}
+            <a href="/stores">Open Stores →</a>
+          </p>
+          <div className="grid">
+            <div className="card">
+              <div className="muted">Transfers</div>
+              <div className="kpi">{data.count ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Qty requested</div>
+              <div className="kpi">{data.total_qty_requested ?? 0}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Qty received</div>
+              <div className="kpi">{data.total_qty_received ?? 0}</div>
+            </div>
+          </div>
+          <h3 style={{ marginTop: 16 }}>Transfer history</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>From store</th>
+                <th>To store</th>
+                <th>Items</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.transfers || []).map((t: any) => (
+                <tr key={t.id}>
+                  <td>{t.transfer_number}</td>
+                  <td>{t.status}</td>
+                  <td>{t.from_store_id || '—'}</td>
+                  <td>{t.to_store_id || '—'}</td>
+                  <td>{(t.items || []).length}</td>
+                  <td>{t.created_at ? String(t.created_at).slice(0, 19) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {tab === 'schedules' && (
+        <div id="schedules">
+          <p className="muted">
+            Company admins can schedule CSV, Excel, or PDF reports emailed on a daily or weekly cadence
+            (UTC hour). Enabled filter uses <code>GET /reports/schedules?enabled=</code> (Stage 127
+            S1).
+          </p>
+          <div
+            className="card"
+            style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
+          >
+            <label className="muted">Filter schedules</label>
+            <select
+              value={scheduleFrequencyFilter}
+              onChange={(e) => {
+                const next = e.target.value;
+                setScheduleFrequencyFilter(next);
+                writeScheduleFilters({ frequency: next });
+              }}
+              aria-label="Filter schedules by frequency"
+            >
+              <option value="">All frequencies</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+            <select
+              value={scheduleEnabledFilter}
+              onChange={(e) => {
+                const next = e.target.value;
+                setScheduleEnabledFilter(next);
+                writeScheduleFilters({ enabled: next });
+                // Stage 127 S1 — re-fetch with server enabled filter
+                const schedQs =
+                  next === 'true' ? '?enabled=true' : next === 'false' ? '?enabled=false' : '';
+                api(`/reports/schedules${schedQs}`)
+                  .then((r) => setSchedules(r.data || []))
+                  .catch((err) => setError(err.message));
+              }}
+              aria-label="Filter schedules by enabled"
+            >
+              <option value="">All (enabled &amp; disabled)</option>
+              <option value="true">Enabled only</option>
+              <option value="false">Disabled only</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  scheduleEnabledFilter === 'true'
+                    ? '?enabled=true'
+                    : scheduleEnabledFilter === 'false'
+                      ? '?enabled=false'
+                      : '';
+                const res = await fetch(`${base}/reports/schedules/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'report_schedules_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Report schedules CSV downloaded');
+              }}
+            >
+              Export schedules CSV
+            </button>
+          </div>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
             <input
               placeholder="Schedule name"
@@ -703,7 +1746,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {schedules.map((s) => (
+              {filteredSchedules.map((s) => (
                 <tr key={s.id}>
                   <td>
                     {s.name} {!s.enabled && <span className="muted">(off)</span>}
@@ -731,8 +1774,8 @@ export default function Page() {
               ))}
             </tbody>
           </table>
-          {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}
-        </>
+          {!filteredSchedules.length && !loading && <p className="muted">No schedules yet.</p>}
+        </div>
       )}
     </Shell>
   );

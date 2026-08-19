@@ -1,0 +1,156 @@
+{
+  "stage": "71",
+  "workstream": "S1",
+  "doc": "docs/STEADY_STATE_OPS_MVP.md",
+  "stage71_plan": "docs/STAGE_71_PLAN.md",
+  "first_commercial_day_doc": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+  "first_commercial_day": "ops/mvp/first-commercial-day.json",
+  "closeout_doc": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+  "closeout": "ops/mvp/commercial-golive-closeout.json",
+  "continuity_doc": "docs/POST_LAUNCH_CONTINUITY_MVP.md",
+  "continuity": "ops/mvp/post-launch-continuity.json",
+  "hypercare_doc": "docs/PRODUCTION_HYPERCARE_MVP.md",
+  "hypercare": "ops/mvp/production-hypercare.json",
+  "handoff_doc": "docs/OPERATOR_HANDOFF_MVP.md",
+  "handoff": "ops/mvp/operator-handoff.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "steady_state_ops_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage71_s1_steady_state_ops.json",
+  "steps": [
+    {
+      "id": "sso-owner-outline",
+      "category": "steady_state",
+      "title": "Index owner Steady-State Commercial Ops path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/ADR_148_STAGE71_OPEN.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    },
+    {
+      "id": "sso-first-day",
+      "category": "steady_state",
+      "title": "Link Stage 70 F1 first commercial day as adjacency (first-day live Remaining \u2260 steady-state Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+        "ops/mvp/first-commercial-day.json"
+      ],
+      "source": "docs/FIRST_COMMERCIAL_DAY_MVP.md"
+    },
+    {
+      "id": "sso-closeout",
+      "category": "steady_state",
+      "title": "Link Stage 70 G1 closeout as adjacency (go-live Remaining \u2260 steady-state Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+        "ops/mvp/commercial-golive-closeout.json"
+      ],
+      "source": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md"
+    },
+    {
+      "id": "sso-continuity",
+      "category": "steady_state",
+      "title": "Link Stage 67 C1 continuity as adjacency (continuity live Remaining \u2260 steady-state Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/POST_LAUNCH_CONTINUITY_MVP.md",
+        "ops/mvp/post-launch-continuity.json"
+      ],
+      "source": "docs/POST_LAUNCH_CONTINUITY_MVP.md"
+    },
+    {
+      "id": "sso-hypercare",
+      "category": "steady_state",
+      "title": "Link Stage 67 H1 hypercare as adjacency (hypercare live Remaining \u2260 steady-state Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_HYPERCARE_MVP.md",
+        "ops/mvp/production-hypercare.json"
+      ],
+      "source": "docs/PRODUCTION_HYPERCARE_MVP.md"
+    },
+    {
+      "id": "sso-handoff",
+      "category": "steady_state",
+      "title": "Link Stage 32 operator handoff as adjacency (handoff packaging \u2260 steady-state live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_HANDOFF_MVP.md",
+        "ops/mvp/operator-handoff.json"
+      ],
+      "source": "docs/OPERATOR_HANDOFF_MVP.md"
+    },
+    {
+      "id": "sso-support-sla",
+      "category": "steady_state",
+      "title": "Link Stage 36 support SLA as adjacency (SLA claimed Remaining \u2260 steady-state Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "sso-plan-honesty",
+      "category": "steady_state",
+      "title": "Confirm Stage 71 plan explicitly defers steady-state live / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/STEADY_STATE_OPS_MVP.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    },
+    {
+      "id": "sso-steady-remaining",
+      "category": "honesty",
+      "title": "Steady-state commercial ops live Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/STEADY_STATE_OPS_MVP.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    },
+    {
+      "id": "sso-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / first commercial day live Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/FIRST_COMMERCIAL_DAY_MVP.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Steady-state commercial ops live Complete",
+    "Commercial acceptance Complete",
+    "First commercial day live Complete",
+    "Live go-live Complete",
+    "LAUNCH \u00a77 Name/Date signed Complete"
+  ]
+}

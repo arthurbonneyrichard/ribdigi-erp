@@ -1,0 +1,58 @@
+{
+  "id": "cyber-insurance-pack-remaining-gate",
+  "stage": 288,
+  "pack": "I1",
+  "doc": "docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CYBER_INSURANCE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CYBER_INSURANCE_PACK_RG_POINTERS_MVP.md",
+    "cyber_insurance": "docs/CYBER_INSURANCE_MVP.md",
+    "vuln_disclosure_pack_remaining_gate": "docs/VULN_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "breach_notification_pack_remaining_gate": "docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "liability_indemnity": "docs/LIABILITY_INDEMNITY_MVP.md"
+  },
+  "packaging_complete": true,
+  "coi_issued_claimed": false,
+  "cyber_insurance_live": false,
+  "insurance_certificate_claimed": false,
+  "broker_attestation_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage47_cyber_insurance": true,
+  "distinct_from_stage287_vuln_disclosure_pack_remaining_gate": true,
+  "distinct_from_stage286_breach_notification_pack_remaining_gate": true,
+  "distinct_from_stage46_liability_indemnity": true,
+  "steps": [
+    {
+      "id": "cipr-read-blockers",
+      "title": "Read B1 cyber insurance pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cipr-follow-pointers",
+      "title": "Follow P1 Stage 47 I1 / Stage 287 / Stage 286 / Stage 46 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cipr-coi-missing",
+      "title": "Reaffirm issued COI / live cyber insurance MISSING until real policies ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cipr-no-packaging-as-coi",
+      "title": "Do not treat Stage 47 I1 / Stage 287 / Stage 286 as issued COI Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cipr-coi-remaining",
+      "title": "Issued COI / live cyber insurance / broker attestation / certificate / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 288 I1 cyber insurance pack remaining-gate index packaging only. Do not claim issued COI Complete."
+}

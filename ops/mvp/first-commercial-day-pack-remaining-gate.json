@@ -1,0 +1,57 @@
+{
+  "id": "first-commercial-day-pack-remaining-gate",
+  "stage": 259,
+  "pack": "I1",
+  "doc": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/FIRST_COMMERCIAL_DAY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/FIRST_COMMERCIAL_DAY_PACK_RG_POINTERS_MVP.md",
+    "first_commercial_day": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+    "steady_state_ops_pack_remaining_gate": "docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_acceptance_pack_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md",
+    "first_commercial_day_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md",
+    "first_commercial_day_register": "ops/mvp/first-commercial-day.json"
+  },
+  "packaging_complete": true,
+  "first_commercial_day_claimed": false,
+  "steady_state_ops_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage70_f1_first_commercial_day": true,
+  "distinct_from_stage258_steady_state_ops_pack_remaining_gate": true,
+  "distinct_from_stage257_commercial_acceptance_pack_remaining_gate": true,
+  "distinct_from_stage199_first_commercial_day_remaining_gate": true,
+  "steps": [
+    {
+      "id": "fcdpr-read-blockers",
+      "title": "Read B1 first commercial day pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdpr-follow-pointers",
+      "title": "Follow P1 Stage 70 / Stage 258 / Stage 257 / Stage 199 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdpr-first-day-missing",
+      "title": "Reaffirm first commercial day live MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdpr-no-packaging-as-live",
+      "title": "Do not treat Stage 70 F1 / Stage 258 / Stage 199 as first commercial day live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdpr-first-day-remaining",
+      "title": "First commercial day / steady-state ops / commercial acceptance / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 259 I1 first commercial day pack remaining-gate index packaging only. Do not claim first commercial day live Complete."
+}

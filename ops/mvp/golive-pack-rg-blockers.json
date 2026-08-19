@@ -1,0 +1,63 @@
+{
+  "id": "golive-pack-rg-blockers",
+  "stage": 325,
+  "pack": "B1",
+  "doc": "docs/GOLIVE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "go_live_claimed": false,
+  "sections_1_3_verified_claimed": false,
+  "section_7_signed_claimed": false,
+  "attestation_claimed": false,
+  "offline_complete_claimed": false,
+  "blockers": {
+    "go_live_claimed": "REMAINING",
+    "sections_1_3_verified_claimed": "REMAINING",
+    "section_7_signed_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "offline_complete_claimed": "REMAINING",
+    "stage180_as_live_golive": "NON_CLAIM",
+    "stage66_69_as_live_golive": "NON_CLAIM",
+    "go_live_claimed_flag": "false",
+    "sections_1_3_verified_claimed_flag": "false",
+    "section_7_signed_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "offline_complete_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "glprb-golive",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprb-sections",
+      "title": "Mark LAUNCH \u00a7\u00a71\u20133 verified Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprb-section7",
+      "title": "Mark \u00a77 signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprb-stage180-nonclaim",
+      "title": "Mark Stage 180 / Stage 66 / Stage 69 as non-claim for live go-live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "glprb-golive-remaining",
+      "title": "Live go-live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 325 B1 golive pack RG blocker matrix packaging only. Live go-live Completes remain MISSING."
+}

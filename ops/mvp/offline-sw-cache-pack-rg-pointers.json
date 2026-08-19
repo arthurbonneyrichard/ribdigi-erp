@@ -1,0 +1,59 @@
+{
+  "id": "offline-sw-cache-pack-rg-pointers",
+  "stage": 380,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SW_CACHE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SW_CACHE_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_accept_client_pack": "docs/OFFLINE_ACCEPT_CLIENT_PACK_REMAINING_GATE_MVP.md",
+    "stage168_fidelity": "docs/STAGE_168_FIDELITY.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_sw_cache_complete_claimed": false,
+  "sw_static_cache_contract_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section20_offline_sw_cache": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_accept_client_pack_remaining_gate_stage379": "docs/OFFLINE_ACCEPT_CLIENT_PACK_REMAINING_GATE_MVP.md",
+    "stage168_sw_static_cache_fidelity": "docs/STAGE_168_FIDELITY.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / offline_sw_cache / sw_static_cache_contract / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "oscprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a720 offline SW cache",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oscprp-stage379",
+      "title": "Point to Stage 379 offline accept client pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oscprp-stage168",
+      "title": "Point to Stage 168 SW static-cache fidelity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oscprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oscprp-checklist-remaining",
+      "title": "Offline Complete / offline SW-cache Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 380 P1 offline SW cache pack RG pointers packaging only."
+}

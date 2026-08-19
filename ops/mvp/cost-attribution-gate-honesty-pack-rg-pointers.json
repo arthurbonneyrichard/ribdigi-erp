@@ -1,0 +1,77 @@
+{
+  "id": "cost-attribution-gate-honesty-pack-rg-pointers",
+  "stage": 656,
+  "pack": "P1",
+  "doc": "docs/COST_ATTRIBUTION_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COST_ATTRIBUTION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "capacity_planning_gate_honesty_pack_remaining_gate": "docs/CAPACITY_PLANNING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "chaos_drill_gate_honesty_pack_remaining_gate": "docs/CHAOS_DRILL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "cost_attribution_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "cost_attribution_gate_honesty_complete_claimed": false,
+  "cost_attribution_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_cost_attribution_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "capacity_planning_gate_honesty_pack_remaining_gate_stage655": "docs/CAPACITY_PLANNING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "chaos_drill_gate_honesty_pack_remaining_gate_stage654": "docs/CHAOS_DRILL_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "cost_attribution_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / cost_attribution_gate / cost_attribution_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "caghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Cost Attribution Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caghp-stage655",
+      "title": "Point to Stage 655 CAPACITY PLANNING GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caghp-stage654",
+      "title": "Point to Stage 654 CHAOS DRILL GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caghp-prior-pack",
+      "title": "Point to Cost Attribution Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "caghp-checklist-remaining",
+      "title": "Offline Complete / Cost Attribution Gate / Cost Attribution Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 656 P1 Cost Attribution Gate Honesty Pack RG pointers packaging only."
+}

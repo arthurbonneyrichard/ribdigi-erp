@@ -1,0 +1,66 @@
+{
+  "id": "tos-aup-pack-rg-blockers",
+  "stage": 300,
+  "pack": "B1",
+  "doc": "docs/TOS_AUP_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md",
+    "tos_aup": "docs/TOS_AUP_MVP.md"
+  },
+  "packaging_complete": true,
+  "tos_signed_claimed": false,
+  "aup_enforced_claimed": false,
+  "legal_counsel_claimed": false,
+  "clickwrap_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "tos_signed_claimed": "REMAINING",
+    "aup_enforced_claimed": "REMAINING",
+    "legal_counsel_claimed": "REMAINING",
+    "clickwrap_live": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage43_as_signed_tos": "NON_CLAIM",
+    "stage299_as_signed_msa": "NON_CLAIM",
+    "tos_signed_claimed_flag": "false",
+    "aup_enforced_claimed_flag": "false",
+    "legal_counsel_claimed_flag": "false",
+    "clickwrap_live_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "taprb-tos",
+      "title": "Mark signed ToS Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprb-aup",
+      "title": "Mark AUP enforced Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprb-clickwrap",
+      "title": "Mark clickwrap live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprb-stage43-nonclaim",
+      "title": "Mark Stage 43 T1 as non-claim for signed ToS Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprb-tos-remaining",
+      "title": "Signed ToS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 300 B1 ToS/AUP pack RG blocker matrix packaging only. Signed ToS Completes remain MISSING."
+}

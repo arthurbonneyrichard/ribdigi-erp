@@ -1,0 +1,77 @@
+{
+  "id": "transfer-country-gate-honesty-pack-rg-pointers",
+  "stage": 923,
+  "pack": "P1",
+  "doc": "docs/TRANSFER_COUNTRY_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TRANSFER_COUNTRY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_territory_gate_honesty_pack_remaining_gate": "docs/TRANSFER_TERRITORY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_region_gate_honesty_pack_remaining_gate": "docs/TRANSFER_REGION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_country_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "transfer_country_gate_honesty_complete_claimed": false,
+  "transfer_country_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_transfer_country_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "transfer_territory_gate_honesty_pack_remaining_gate_stage922": "docs/TRANSFER_TERRITORY_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_region_gate_honesty_pack_remaining_gate_stage921": "docs/TRANSFER_REGION_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "transfer_country_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / transfer_country_gate / transfer_country_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "tcountryghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Transfer Country Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcountryghp-stage922",
+      "title": "Point to Stage 922 TRANSFER TERRITORY GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcountryghp-stage921",
+      "title": "Point to Stage 921 TRANSFER REGION GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcountryghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcountryghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcountryghp-prior-pack",
+      "title": "Point to Transfer Country Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tcountryghp-checklist-remaining",
+      "title": "Offline Complete / Transfer Country Gate / Transfer Country Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 923 P1 Transfer Country Gate Honesty Pack RG pointers packaging only."
+}

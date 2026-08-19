@@ -1,0 +1,61 @@
+{
+  "id": "hard-delete-pack-rg-blockers",
+  "stage": 276,
+  "pack": "B1",
+  "doc": "docs/HARD_DELETE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_adr": "docs/ADR_003_USER_DELETE_POLICY.md",
+    "hard_delete_remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "hard_delete_complete_claimed": false,
+  "archival_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "hard_delete_complete": "REMAINING",
+    "archival_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "adr003_as_hard_delete_complete": "NON_CLAIM",
+    "stage183_as_hard_delete_complete": "NON_CLAIM",
+    "hard_delete_complete_claimed": "false",
+    "archival_complete_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "hdprb-hard-delete",
+      "title": "Mark hard-delete Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprb-archival",
+      "title": "Mark archival Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprb-adr003-nonclaim",
+      "title": "Mark ADR-003 as non-claim for hard-delete Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdprb-hard-delete-remaining",
+      "title": "Hard-delete Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 276 B1 hard delete pack RG blocker matrix packaging only. Hard-delete Completes remain MISSING."
+}

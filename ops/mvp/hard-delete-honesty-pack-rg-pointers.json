@@ -1,0 +1,77 @@
+{
+  "id": "hard-delete-honesty-pack-rg-pointers",
+  "stage": 540,
+  "pack": "P1",
+  "doc": "docs/HARD_DELETE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HARD_DELETE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "live_migration_honesty_pack_remaining_gate": "docs/LIVE_MIGRATION_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "live_dr_honesty_pack_remaining_gate": "docs/LIVE_DR_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_pack_remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "hard_delete_honesty_complete_claimed": false,
+  "hard_delete_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_hard_delete_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "live_migration_honesty_pack_remaining_gate_stage539": "docs/LIVE_MIGRATION_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "live_dr_honesty_pack_remaining_gate_stage538": "docs/LIVE_DR_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "hard_delete_pack_remaining_gate": "docs/HARD_DELETE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / hard_delete / hard_delete_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "hdhrp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Hard Delete Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrp-stage539",
+      "title": "Point to Stage 539 LIVE MIGRATION HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrp-stage538",
+      "title": "Point to Stage 538 LIVE DR HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrp-prior-pack",
+      "title": "Point to Hard Delete Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hdhrp-checklist-remaining",
+      "title": "Offline Complete / Hard Delete / Hard Delete honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 540 P1 Hard Delete Honesty Pack RG pointers packaging only."
+}

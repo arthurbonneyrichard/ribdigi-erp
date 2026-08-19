@@ -1,0 +1,58 @@
+{
+  "id": "live-dr-blockers",
+  "stage": 192,
+  "pack": "B1",
+  "doc": "docs/LIVE_DR_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "e2e_backup_restore": "docs/E2E_BACKUP_RESTORE_MVP.md",
+    "pitr_drill_pack": "docs/PITR_DRILL_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_dr_claimed": false,
+  "live_backup_restore_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_dr_execution": "REMAINING",
+    "live_staging_restore": "REMAINING",
+    "live_pitr_drill": "REMAINING",
+    "stage169_b1_as_live_dr": "NON_CLAIM",
+    "stage35_r1_as_live_dr": "NON_CLAIM",
+    "live_dr_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "lb-live-dr",
+      "title": "Mark live DR execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-staging-restore",
+      "title": "Mark live staging restore Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-pitr",
+      "title": "Mark live PITR drill Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-stage169-nonclaim",
+      "title": "Mark Stage 169 B1 backup drill as non-claim for live DR",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lb-dr-remaining",
+      "title": "Live DR Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 192 B1 live DR blocker matrix packaging only. Live DR Complete remains MISSING."
+}

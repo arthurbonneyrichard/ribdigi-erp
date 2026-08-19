@@ -1,0 +1,63 @@
+{
+  "id": "first-tenant-live-onboarding-pack-rg-blockers",
+  "stage": 323,
+  "pack": "B1",
+  "doc": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "first_paying_tenant_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "first_tenant_onboarded_claimed": "REMAINING",
+    "live_onboarding_success_claimed": "REMAINING",
+    "first_paying_tenant_claimed": "REMAINING",
+    "demo_tenant_claimed": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage194_as_live_first_tenant": "NON_CLAIM",
+    "stage33_66_as_live_first_tenant": "NON_CLAIM",
+    "first_tenant_onboarded_claimed_flag": "false",
+    "live_onboarding_success_claimed_flag": "false",
+    "first_paying_tenant_claimed_flag": "false",
+    "demo_tenant_claimed_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ftloprb-onboarded",
+      "title": "Mark first-tenant onboarded Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftloprb-success",
+      "title": "Mark live onboarding success Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftloprb-paying",
+      "title": "Mark first paying tenant Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftloprb-stage194-nonclaim",
+      "title": "Mark Stage 194 / Stage 33 / Stage 66 as non-claim for live first-tenant Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftloprb-onboarding-remaining",
+      "title": "Live first-tenant onboarding Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 323 B1 first-tenant live onboarding pack RG blocker matrix packaging only. Live first-tenant Completes remain MISSING."
+}

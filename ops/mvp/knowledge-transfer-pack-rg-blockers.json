@@ -1,0 +1,49 @@
+{
+  "id": "knowledge-transfer-pack-rg-blockers",
+  "stage": 240,
+  "pack": "B1",
+  "doc": "docs/KNOWLEDGE_TRANSFER_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "knowledge_transfer_register": "ops/mvp/knowledge-transfer.json"
+  },
+  "packaging_complete": true,
+  "live_knowledge_transfer_claimed": false,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_knowledge_transfer_execution": "REMAINING",
+    "live_training_training_complete": "REMAINING",
+    "stage33_t1_as_live_knowledge_transfer": "NON_CLAIM",
+    "live_knowledge_transfer_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ktprb-transfer",
+      "title": "Mark live knowledge-transfer execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktprb-training",
+      "title": "Mark live training / training Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktprb-stage33-nonclaim",
+      "title": "Mark Stage 33 T1 as non-claim for live knowledge-transfer",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktprb-transfer-remaining",
+      "title": "Live knowledge-transfer Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 240 B1 knowledge transfer pack RG blocker matrix packaging only. Live knowledge-transfer Complete remains MISSING."
+}

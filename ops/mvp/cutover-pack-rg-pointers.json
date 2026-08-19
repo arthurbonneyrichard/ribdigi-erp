@@ -1,0 +1,60 @@
+{
+  "id": "cutover-pack-rg-pointers",
+  "stage": 227,
+  "pack": "P1",
+  "doc": "docs/CUTOVER_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUTOVER_PACK_REMAINING_GATE_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "cutover_checklist": "ops/launch/cutover-checklist.json",
+    "cutover_remaining_gate": "docs/CUTOVER_REMAINING_GATE_MVP.md",
+    "pgbouncer_live_remaining_gate": "docs/PGBOUNCER_LIVE_REMAINING_GATE_MVP.md",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "production_cutover_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "live_cutover_pack_claimed": false,
+  "topics": [
+    "cutover_pack_stage29_x1",
+    "cutover_remaining_gate_stage203",
+    "pgbouncer_live_remaining_gate_stage226",
+    "launch_cert_stage27_l1",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cprp-pack",
+      "title": "Point to Stage 29 X1 cutover pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprp-co-gate",
+      "title": "Point to Stage 203 cutover remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprp-pbl-gate",
+      "title": "Point to Stage 226 PgBouncer live remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprp-launch-cert",
+      "title": "Point to Stage 27 L1 launch cert",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprp-cutover-remaining",
+      "title": "Live cutover Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 227 P1 cutover pack RG pointers packaging only. Do not claim live cutover Complete."
+}

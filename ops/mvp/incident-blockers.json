@@ -1,0 +1,59 @@
+{
+  "id": "incident-blockers",
+  "stage": 211,
+  "pack": "B1",
+  "doc": "docs/INCIDENT_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/INCIDENT_REMAINING_GATE_MVP.md",
+    "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+    "oncall_runbook": "ops/incident/oncall-runbook.md.example"
+  },
+  "packaging_complete": true,
+  "live_incident_response_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "pagerduty_hosted_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_oncall_rota_paging": "REMAINING",
+    "incident_drill_execution": "REMAINING",
+    "hosted_pagerduty": "REMAINING",
+    "stage30_i1_as_live_incident_response": "NON_CLAIM",
+    "oncall_rota_live": "false",
+    "incident_drill_executed": "false",
+    "pagerduty_hosted_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ib-oncall",
+      "title": "Mark live on-call rota / paging Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-drill",
+      "title": "Mark incident drill execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-pagerduty",
+      "title": "Mark hosted PagerDuty Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-stage30-nonclaim",
+      "title": "Mark Stage 30 I1 incident pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ib-incident-remaining",
+      "title": "Live incident-response Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 211 B1 incident blocker matrix packaging only. Live incident-response Complete remains MISSING."
+}

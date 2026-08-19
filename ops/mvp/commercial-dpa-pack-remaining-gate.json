@@ -1,0 +1,58 @@
+{
+  "id": "commercial-dpa-pack-remaining-gate",
+  "stage": 292,
+  "pack": "I1",
+  "doc": "docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMMERCIAL_DPA_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMMERCIAL_DPA_PACK_RG_POINTERS_MVP.md",
+    "commercial_dpa": "docs/COMMERCIAL_DPA_MVP.md",
+    "commercial_privacy_notice_pack_remaining_gate": "docs/COMMERCIAL_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "cookie_privacy_notice_pack_remaining_gate": "docs/COOKIE_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "dpa_subprocessor": "docs/DPA_SUBPROCESSOR_MVP.md"
+  },
+  "packaging_complete": true,
+  "dpa_signed_claimed": false,
+  "subprocessor_register_live": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage77_commercial_dpa": true,
+  "distinct_from_stage291_commercial_privacy_notice_pack_remaining_gate": true,
+  "distinct_from_stage290_cookie_privacy_notice_pack_remaining_gate": true,
+  "distinct_from_stage39_dpa_subprocessor": true,
+  "steps": [
+    {
+      "id": "cdpr-read-blockers",
+      "title": "Read B1 commercial DPA pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdpr-follow-pointers",
+      "title": "Follow P1 Stage 77 A1 / Stage 291 / Stage 290 / Stage 39 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdpr-dpa-missing",
+      "title": "Reaffirm signed DPA / subprocessor register live MISSING until real commercial DPA ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdpr-no-packaging-as-live",
+      "title": "Do not treat Stage 77 A1 / Stage 291 / Stage 290 as signed DPA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cdpr-dpa-remaining",
+      "title": "Signed DPA / subprocessor / legal counsel / contract / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 292 I1 commercial DPA pack remaining-gate index packaging only. Do not claim signed DPA Complete."
+}

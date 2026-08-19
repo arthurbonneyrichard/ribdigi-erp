@@ -185,6 +185,42 @@ def compute_line_total(
     )
 
 
+SUPPLY_CATEGORIES = frozenset({"standard", "zero", "exempt"})
+
+
+def classify_supply_category(*, tax_exempt: bool = False, rate_pct: float = 0) -> str:
+    """Classify a supply for VAT filing: exempt product, zero-rated, or standard."""
+    if tax_exempt:
+        return "exempt"
+    if float(rate_pct or 0) <= 0:
+        return "zero"
+    return "standard"
+
+
+def normalize_supply_category(value: str | None, *, fallback: str = "standard") -> str:
+    cat = (value or fallback).strip().lower()
+    if cat not in SUPPLY_CATEGORIES:
+        return fallback
+    return cat
+
+
+def resolve_line_supply_category(stored: str | None, *, tax_rate: float = 0) -> str:
+    """Prefer persisted category; legacy lines fall back to rate-based classify."""
+    if stored and str(stored).strip():
+        return normalize_supply_category(str(stored))
+    return classify_supply_category(rate_pct=tax_rate)
+
+
+def _accumulate_supply_net(
+    buckets: dict[str, float],
+    *,
+    net: float,
+    category: str,
+) -> None:
+    cat = normalize_supply_category(category, fallback="standard")
+    buckets[cat] = buckets.get(cat, 0.0) + float(net or 0)
+
+
 @dataclass(frozen=True)
 class TaxSpec:
     rate_pct: float
@@ -192,6 +228,7 @@ class TaxSpec:
     components: tuple[dict, ...] | None = None
     is_reverse_charge: bool = False
     tax_rate_id: str | None = None
+    supply_category: str = "standard"
 
     def compute_amounts(self, amount: float) -> tuple[float, float, float]:
         return compute_tax_amounts(
@@ -212,48 +249,153 @@ class TaxSpec:
         )
 
 
-async def get_default_tax_rate(db: AsyncSession, tenant_id: str) -> m.TaxRate | None:
-    return (
-        await db.execute(
-            select(m.TaxRate).where(
-                m.TaxRate.tenant_id == tenant_id,
-                m.TaxRate.is_active == True,  # noqa: E712
-                m.TaxRate.is_default == True,  # noqa: E712
-            )
-        )
-    ).scalar_one_or_none()
+async def get_default_tax_rate(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> m.TaxRate | None:
+    stmt = select(m.TaxRate).where(
+        m.TaxRate.tenant_id == tenant_id,
+        m.TaxRate.is_active == True,  # noqa: E712
+        m.TaxRate.is_default == True,  # noqa: E712
+    )
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
-async def get_tax_rate(db: AsyncSession, tenant_id: str, tax_rate_id: str) -> m.TaxRate:
-    row = (
-        await db.execute(
-            select(m.TaxRate).where(m.TaxRate.id == tax_rate_id, m.TaxRate.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
+async def get_tax_rate(
+    db: AsyncSession,
+    tenant_id: str,
+    tax_rate_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.TaxRate:
+    stmt = select(m.TaxRate).where(m.TaxRate.id == tax_rate_id, m.TaxRate.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Tax rate not found")
     return row
 
 
-async def clear_default_flags(db: AsyncSession, tenant_id: str) -> None:
-    rows = (
-        await db.execute(
-            select(m.TaxRate).where(m.TaxRate.tenant_id == tenant_id, m.TaxRate.is_default == True)  # noqa: E712
-        )
-    ).scalars().all()
+async def clear_default_flags(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> None:
+    stmt = select(m.TaxRate).where(
+        m.TaxRate.tenant_id == tenant_id, m.TaxRate.is_default == True  # noqa: E712
+    )
+    if company_id:
+        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
     for row in rows:
         row.is_default = False
 
 
+async def update_tax_rate(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    rate_id: str,
+    name: str | None = None,
+    rate: float | None = None,
+    tax_type: str | None = None,
+    pricing_mode: str | None = None,
+    components: list[dict] | None = None,
+    clear_components: bool = False,
+    is_reverse_charge: bool | None = None,
+    is_default: bool | None = None,
+    is_active: bool | None = None,
+    company_id: str | None = None,
+) -> m.TaxRate:
+    """Edit or deactivate a tax rate (Stage 14 T1)."""
+    row = await get_tax_rate(db, tenant_id, rate_id, company_id=company_id)
+    if name is not None:
+        name_norm = name.strip()
+        if not name_norm:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        row.name = name_norm
+    if tax_type is not None:
+        row.tax_type = tax_type.strip() or row.tax_type
+    if pricing_mode is not None:
+        mode = pricing_mode.strip().lower()
+        if mode not in {"exclusive", "inclusive"}:
+            raise HTTPException(status_code=400, detail="pricing_mode must be exclusive or inclusive")
+        row.pricing_mode = mode
+    if is_reverse_charge is not None:
+        row.is_reverse_charge = bool(is_reverse_charge)
+
+    if clear_components:
+        row.components = None
+        if rate is not None:
+            row.rate = round(float(rate), 4)
+    elif components is not None:
+        comps = normalize_components(components)
+        if comps:
+            row.components = comps
+            row.rate = effective_rate_from_components(comps, rate if rate is not None else float(row.rate or 0))
+        else:
+            row.components = None
+            if rate is not None:
+                row.rate = round(float(rate), 4)
+    elif rate is not None:
+        row.rate = round(float(rate), 4)
+
+    if is_active is not None:
+        row.is_active = bool(is_active)
+        if not row.is_active:
+            row.is_default = False
+
+    if is_default is not None:
+        if is_default:
+            await clear_default_flags(
+                db, tenant_id, company_id=company_id or getattr(row, "company_id", None)
+            )
+            row.is_default = True
+            row.is_active = True
+        else:
+            row.is_default = False
+
+    await db.flush()
+    return row
+
+
 def tax_spec_from_rate(rate: m.TaxRate) -> TaxSpec:
     comps = normalize_components(rate.components) if rate.components else None
+    rate_pct = float(rate.rate)
     return TaxSpec(
-        rate_pct=float(rate.rate),
+        rate_pct=rate_pct,
         pricing_mode=rate.pricing_mode or "exclusive",
         components=tuple(comps) if comps else None,
         is_reverse_charge=bool(rate.is_reverse_charge),
         tax_rate_id=rate.id,
+        supply_category=classify_supply_category(rate_pct=rate_pct),
     )
+
+
+async def _resolve_category_tax_rate(
+    db: AsyncSession, tenant_id: str, category_id: str | None
+) -> m.TaxRate | None:
+    """Walk category → parent for the first active tax_rate_id (Stage 10 T1)."""
+    cursor_id = category_id
+    seen: set[str] = set()
+    while cursor_id and cursor_id not in seen:
+        seen.add(cursor_id)
+        category = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.id == cursor_id,
+                    m.ProductCategory.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not category:
+            return None
+        if category.tax_rate_id:
+            rate = await get_tax_rate(db, tenant_id, category.tax_rate_id)
+            if rate.is_active:
+                return rate
+        cursor_id = category.parent_id
+    return None
 
 
 async def resolve_product_tax(
@@ -262,22 +404,41 @@ async def resolve_product_tax(
     product: m.Product,
     explicit_rate: float | None = None,
 ) -> TaxSpec:
-    """Resolve full tax spec for a product line."""
+    """Resolve full tax spec for a product line.
+
+    Precedence: exempt → explicit line rate → product.tax_rate_id →
+    category tax (walk parents) → company default → zero.
+    """
+    company_id = getattr(product, "company_id", None)
     if product.tax_exempt:
-        return TaxSpec(rate_pct=0.0, pricing_mode="exclusive")
+        return TaxSpec(
+            rate_pct=0.0,
+            pricing_mode="exclusive",
+            supply_category="exempt",
+        )
     if explicit_rate is not None:
-        default = await get_default_tax_rate(db, tenant_id)
+        default = await get_default_tax_rate(db, tenant_id, company_id=company_id)
         mode = default.pricing_mode if default else "exclusive"
+        rate_pct = float(explicit_rate)
         # Explicit override uses single-rate path (no compound legs).
-        return TaxSpec(rate_pct=float(explicit_rate), pricing_mode=mode)
+        return TaxSpec(
+            rate_pct=rate_pct,
+            pricing_mode=mode,
+            supply_category=classify_supply_category(rate_pct=rate_pct),
+        )
     if product.tax_rate_id:
         rate = await get_tax_rate(db, tenant_id, product.tax_rate_id)
         if rate.is_active:
             return tax_spec_from_rate(rate)
-    default = await get_default_tax_rate(db, tenant_id)
+    category_rate = await _resolve_category_tax_rate(
+        db, tenant_id, getattr(product, "category_id", None)
+    )
+    if category_rate:
+        return tax_spec_from_rate(category_rate)
+    default = await get_default_tax_rate(db, tenant_id, company_id=company_id)
     if default:
         return tax_spec_from_rate(default)
-    return TaxSpec(rate_pct=0.0, pricing_mode="exclusive")
+    return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_category="zero")
 
 
 async def resolve_product_tax_rate(
@@ -295,6 +456,7 @@ def serialize_tax_rate(rate: m.TaxRate) -> dict:
     comps = normalize_components(rate.components) if rate.components else None
     return {
         "id": rate.id,
+        "company_id": getattr(rate, "company_id", None),
         "name": rate.name,
         "rate": float(rate.rate),
         "tax_type": rate.tax_type,
@@ -312,9 +474,12 @@ async def tax_report(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Summary VAT/GST output vs input tax for a period."""
-    pack = await tax_filing_pack(db, tenant_id, from_date=from_date, to_date=to_date)
+    pack = await tax_filing_pack(
+        db, tenant_id, from_date=from_date, to_date=to_date, company_id=company_id
+    )
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -330,6 +495,8 @@ async def tax_report(
         "purchase_count": pack["purchase_count"],
         "purchase_order_count": pack["purchase_order_count"],
         "taxable_outputs_net": pack["filing_boxes"]["taxable_outputs_net"],
+        "zero_rated_outputs_net": pack["filing_boxes"]["zero_rated_outputs_net"],
+        "exempt_outputs_net": pack["filing_boxes"]["exempt_outputs_net"],
         "taxable_inputs_net": pack["filing_boxes"]["taxable_inputs_net"],
     }
 
@@ -340,29 +507,58 @@ async def tax_filing_pack(
     *,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export."""
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
+    if company_id:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.company_id == company_id)
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
     invoices = (await db.execute(inv_stmt)).scalars().all()
 
+    items_by_invoice: dict[str, list[m.SalesInvoiceItem]] = {}
+    if invoices:
+        inv_ids = [inv.id for inv in invoices]
+        item_rows = (
+            await db.execute(
+                select(m.SalesInvoiceItem).where(
+                    m.SalesInvoiceItem.tenant_id == tenant_id,
+                    m.SalesInvoiceItem.sales_invoice_id.in_(inv_ids),
+                )
+            )
+        ).scalars().all()
+        for row in item_rows:
+            items_by_invoice.setdefault(row.sales_invoice_id, []).append(row)
+
     output_schedule = []
     output_invoices = 0.0
     reverse_charge_tax = 0.0
-    taxable_outputs = 0.0
+    supply_nets: dict[str, float] = {"standard": 0.0, "zero": 0.0, "exempt": 0.0}
     for inv in invoices:
         tax = float(inv.tax_amount or 0)
         rc = float(getattr(inv, "reverse_charge_tax", 0) or 0)
         net = float(inv.subtotal or 0)
         output_invoices += tax
         reverse_charge_tax += rc
-        taxable_outputs += net
+        items = items_by_invoice.get(inv.id) or []
+        if items:
+            for item in items:
+                line_net = round(float(item.quantity or 0) * float(item.unit_price or 0), 2)
+                cat = resolve_line_supply_category(
+                    getattr(item, "supply_category", None),
+                    tax_rate=float(item.tax_rate or 0),
+                )
+                _accumulate_supply_net(supply_nets, net=line_net, category=cat)
+        else:
+            # Header-only / legacy invoices without lines.
+            cat = "standard" if tax > 0 else "zero"
+            _accumulate_supply_net(supply_nets, net=net, category=cat)
         output_schedule.append(
             {
                 "schedule": "output_sales_invoices",
@@ -382,6 +578,8 @@ async def tax_filing_pack(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "pos_sale",
     )
+    if company_id:
+        pos_stmt = pos_stmt.where(m.Transaction.company_id == company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -392,7 +590,23 @@ async def tax_filing_pack(
         tax = float(tx.tax or 0)
         net = float(tx.subtotal or 0)
         output_pos += tax
-        taxable_outputs += net
+        payload_items = list((tx.payload or {}).get("items") or [])
+        if payload_items:
+            for item in payload_items:
+                line_net = float(item.get("line_subtotal") or 0)
+                if not line_net:
+                    line_net = round(
+                        float(item.get("quantity") or 0) * float(item.get("unit_price") or 0),
+                        2,
+                    )
+                cat = resolve_line_supply_category(
+                    item.get("supply_category"),
+                    tax_rate=float(item.get("tax_rate") or 0),
+                )
+                _accumulate_supply_net(supply_nets, net=line_net, category=cat)
+        else:
+            cat = "standard" if tax > 0 else "zero"
+            _accumulate_supply_net(supply_nets, net=net, category=cat)
         output_schedule.append(
             {
                 "schedule": "output_pos",
@@ -408,11 +622,17 @@ async def tax_filing_pack(
             }
         )
 
+    taxable_outputs = supply_nets["standard"]
+    zero_rated_outputs = supply_nets["zero"]
+    exempt_outputs = supply_nets["exempt"]
+
     # Prefer approved purchase invoices for input tax; fall back to POs.
     pi_stmt = select(m.PurchaseInvoice).where(
         m.PurchaseInvoice.tenant_id == tenant_id,
         m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
     )
+    if company_id:
+        pi_stmt = pi_stmt.where(m.PurchaseInvoice.company_id == company_id)
     if from_date:
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
     if to_date:
@@ -455,6 +675,8 @@ async def tax_filing_pack(
             m.PurchaseOrder.tenant_id == tenant_id,
             m.PurchaseOrder.status.in_(["received", "partial", "sent", "closed"]),
         )
+        if company_id:
+            po_stmt = po_stmt.where(m.PurchaseOrder.company_id == company_id)
         if from_date:
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
         if to_date:
@@ -487,14 +709,28 @@ async def tax_filing_pack(
     input_tax = round(input_tax, 2)
     net = round(output_tax - input_tax, 2)
     taxable_outputs = round(taxable_outputs, 2)
+    zero_rated_outputs = round(zero_rated_outputs, 2)
+    exempt_outputs = round(exempt_outputs, 2)
     taxable_inputs = round(taxable_inputs, 2)
 
     filing_boxes = [
         {
             "box": "1",
             "code": "taxable_outputs_net",
-            "label": "Taxable outputs (net)",
+            "label": "Taxable outputs — standard-rated (net)",
             "amount": taxable_outputs,
+        },
+        {
+            "box": "1z",
+            "code": "zero_rated_outputs_net",
+            "label": "Zero-rated outputs (net)",
+            "amount": zero_rated_outputs,
+        },
+        {
+            "box": "1e",
+            "code": "exempt_outputs_net",
+            "label": "Exempt outputs (net)",
+            "amount": exempt_outputs,
         },
         {
             "box": "2",
@@ -551,6 +787,8 @@ async def tax_filing_pack(
         "purchase_order_count": len(input_schedule) if input_source == "purchase_orders" else 0,
         "filing_boxes": {
             "taxable_outputs_net": taxable_outputs,
+            "zero_rated_outputs_net": zero_rated_outputs,
+            "exempt_outputs_net": exempt_outputs,
             "output_tax": output_tax,
             "reverse_charge_tax": reverse_charge_tax,
             "taxable_inputs_net": taxable_inputs,

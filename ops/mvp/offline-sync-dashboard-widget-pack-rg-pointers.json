@@ -1,0 +1,59 @@
+{
+  "id": "offline-sync-dashboard-widget-pack-rg-pointers",
+  "stage": 373,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "ai_metrics_pack": "docs/AI_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "mvp_product_update_pack": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "sync_dashboard_widget_complete_claimed": false,
+  "live_device_sync_widget_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section28_sync_widget": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "ai_metrics_pack_remaining_gate_stage372": "docs/AI_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "mvp_product_update_pack_remaining_gate_stage367": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / sync_dashboard_widget / live_device_sync_widget / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "osdwprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a728 sync widget",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprp-stage372",
+      "title": "Point to Stage 372 AI metrics pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprp-stage367",
+      "title": "Point to Stage 367 MVP product-update pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osdwprp-checklist-remaining",
+      "title": "Offline Complete / sync-dashboard-widget Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 373 P1 offline sync dashboard widget pack RG pointers packaging only."
+}

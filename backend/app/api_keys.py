@@ -1,0 +1,262 @@
+"""Tenant API key lifecycle (Stage 6 K1 / Stage 7 K2 usage)."""
+
+from __future__ import annotations
+
+import secrets
+from datetime import datetime, timedelta
+from typing import Any
+
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import models as m
+from app.rbac import ALLOWED_ACTIONS, SYSTEM_MODULES
+from app.security import hash_token
+
+KEY_PREFIX_TOKEN = "rdk_"
+DEFAULT_PERMISSIONS: dict[str, list[str]] = {
+    "inventory": ["read"],
+    "sales": ["read"],
+    "purchasing": ["read"],
+    "customers": ["read"],
+    "reports": ["read"],
+}
+
+
+def normalize_permissions(raw: dict | None) -> dict[str, list[str]]:
+    source = raw if isinstance(raw, dict) and raw else DEFAULT_PERMISSIONS
+    out: dict[str, list[str]] = {}
+    for module, actions in source.items():
+        mod = str(module).strip().lower()
+        if mod not in SYSTEM_MODULES:
+            raise HTTPException(status_code=400, detail=f"Invalid permission module: {module}")
+        if not isinstance(actions, (list, tuple)) or not actions:
+            raise HTTPException(status_code=400, detail=f"Invalid actions for module: {module}")
+        cleaned: list[str] = []
+        for action in actions:
+            act = str(action).strip().lower()
+            if act not in ALLOWED_ACTIONS:
+                raise HTTPException(status_code=400, detail=f"Invalid action: {action}")
+            if act not in cleaned:
+                cleaned.append(act)
+        out[mod] = cleaned
+    if not out:
+        raise HTTPException(status_code=400, detail="permissions must include at least one module")
+    return out
+
+
+def serialize_key(row: m.ApiKey, *, include_secret: str | None = None) -> dict[str, Any]:
+    data = {
+        "id": row.id,
+        "name": row.name,
+        "key_prefix": row.key_prefix,
+        "permissions": row.permissions or {},
+        "created_by": row.created_by,
+        "created_at": row.created_at,
+        "last_used_at": row.last_used_at,
+        "request_count": int(getattr(row, "request_count", 0) or 0),
+        "expires_at": row.expires_at,
+        "revoked_at": row.revoked_at,
+        "status": "revoked" if row.revoked_at else ("expired" if _is_expired(row) else "active"),
+    }
+    if include_secret:
+        data["api_key"] = include_secret
+        data["secret_shown_once"] = True
+    return data
+
+
+def _fill_usage_series(
+    counts_by_day: dict[str, int],
+    *,
+    now: datetime,
+    days: int,
+) -> list[dict[str, Any]]:
+    end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start = end - timedelta(days=days - 1)
+    out: list[dict[str, Any]] = []
+    cur = start
+    while cur <= end:
+        key = cur.strftime("%Y-%m-%d")
+        out.append({"date": key, "requests": int(counts_by_day.get(key, 0))})
+        cur += timedelta(days=1)
+    return out
+
+
+async def record_api_key_usage(db: AsyncSession, row: m.ApiKey) -> None:
+    """Increment lifetime + daily counters and persist last_used_at (Stage 7 K2)."""
+    now = datetime.utcnow()
+    row.last_used_at = now
+    row.request_count = int(getattr(row, "request_count", 0) or 0) + 1
+    day = now.strftime("%Y-%m-%d")
+    existing = (
+        await db.execute(
+            select(m.ApiKeyUsageDaily).where(
+                m.ApiKeyUsageDaily.api_key_id == row.id,
+                m.ApiKeyUsageDaily.usage_date == day,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        existing.request_count = int(existing.request_count or 0) + 1
+        existing.updated_at = now
+    else:
+        db.add(
+            m.ApiKeyUsageDaily(
+                tenant_id=row.tenant_id,
+                api_key_id=row.id,
+                usage_date=day,
+                request_count=1,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+    # Commit so read-only API-key requests still persist usage (get_db does not auto-commit).
+    await db.commit()
+
+
+async def usage_stats(
+    db: AsyncSession,
+    tenant_id: str,
+    key_id: str,
+    *,
+    days: int = 30,
+) -> dict[str, Any]:
+    row = await get_key(db, tenant_id, key_id)
+    window = max(1, min(int(days or 30), 90))
+    now = datetime.utcnow()
+    start = (now - timedelta(days=window - 1)).strftime("%Y-%m-%d")
+    rows = (
+        await db.execute(
+            select(m.ApiKeyUsageDaily).where(
+                m.ApiKeyUsageDaily.tenant_id == tenant_id,
+                m.ApiKeyUsageDaily.api_key_id == key_id,
+                m.ApiKeyUsageDaily.usage_date >= start,
+            )
+        )
+    ).scalars().all()
+    by_day = {r.usage_date: int(r.request_count or 0) for r in rows}
+    series = _fill_usage_series(by_day, now=now, days=window)
+    period_requests = sum(p["requests"] for p in series)
+    return {
+        "api_key_id": row.id,
+        "name": row.name,
+        "key_prefix": row.key_prefix,
+        "last_used_at": row.last_used_at,
+        "total_requests": int(getattr(row, "request_count", 0) or 0),
+        "period_requests": period_requests,
+        "days": window,
+        "series": series,
+    }
+
+
+def _is_expired(row: m.ApiKey, *, now: datetime | None = None) -> bool:
+    if not row.expires_at:
+        return False
+    return row.expires_at <= (now or datetime.utcnow())
+
+
+def generate_raw_key() -> tuple[str, str, str]:
+    """Return (raw_key, prefix_for_display, hash)."""
+    secret = secrets.token_urlsafe(32)
+    raw = f"{KEY_PREFIX_TOKEN}{secret}"
+    # Short public prefix for UI (not enough to authenticate).
+    prefix = raw[:12]
+    return raw, prefix, hash_token(raw)
+
+
+async def list_keys(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    active_only: bool = False,
+) -> list[m.ApiKey]:
+    """Stage 127 K1 — status / active_only for honest API-key status lists."""
+    rows = list(
+        (
+            await db.execute(
+                select(m.ApiKey)
+                .where(m.ApiKey.tenant_id == tenant_id)
+                .order_by(m.ApiKey.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if status is not None:
+        wanted = str(status).strip().lower()
+        if wanted not in {"active", "revoked", "expired"}:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be active, revoked, or expired",
+            )
+        rows = [r for r in rows if serialize_key(r)["status"] == wanted]
+    elif active_only:
+        rows = [r for r in rows if serialize_key(r)["status"] == "active"]
+    return rows
+
+
+async def create_key(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    name: str,
+    permissions: dict | None = None,
+    expires_at: datetime | None = None,
+) -> tuple[m.ApiKey, str]:
+    cleaned_name = (name or "").strip()
+    if len(cleaned_name) < 2:
+        raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+    if len(cleaned_name) > 120:
+        raise HTTPException(status_code=400, detail="name must be at most 120 characters")
+    perms = normalize_permissions(permissions)
+    raw, prefix, key_hash = generate_raw_key()
+    row = m.ApiKey(
+        tenant_id=tenant_id,
+        name=cleaned_name,
+        key_prefix=prefix,
+        key_hash=key_hash,
+        permissions=perms,
+        created_by=user_id,
+        expires_at=expires_at,
+    )
+    db.add(row)
+    await db.flush()
+    return row, raw
+
+
+async def get_key(db: AsyncSession, tenant_id: str, key_id: str) -> m.ApiKey:
+    row = (
+        await db.execute(
+            select(m.ApiKey).where(m.ApiKey.id == key_id, m.ApiKey.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return row
+
+
+async def revoke_key(db: AsyncSession, tenant_id: str, key_id: str) -> m.ApiKey:
+    row = await get_key(db, tenant_id, key_id)
+    if row.revoked_at is None:
+        row.revoked_at = datetime.utcnow()
+        await db.flush()
+    return row
+
+
+async def authenticate_api_key(db: AsyncSession, raw_key: str) -> m.ApiKey:
+    raw = (raw_key or "").strip()
+    if not raw.startswith(KEY_PREFIX_TOKEN) or len(raw) < 20:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    digest = hash_token(raw)
+    row = (
+        await db.execute(select(m.ApiKey).where(m.ApiKey.key_hash == digest))
+    ).scalar_one_or_none()
+    if not row or row.revoked_at is not None:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    if _is_expired(row):
+        raise HTTPException(status_code=401, detail="API key expired")
+    await record_api_key_usage(db, row)
+    return row

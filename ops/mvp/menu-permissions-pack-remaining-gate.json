@@ -1,0 +1,56 @@
+{
+  "id": "menu-permissions-pack-remaining-gate",
+  "stage": 275,
+  "pack": "I1",
+  "doc": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/MENU_PERMISSIONS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/MENU_PERMISSIONS_PACK_RG_POINTERS_MVP.md",
+    "menu_permissions_adr": "docs/ADR_004_MENU_PERMISSIONS.md",
+    "language_i18n_pack_remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "store_membership_pack_remaining_gate": "docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+  },
+  "packaging_complete": true,
+  "dynamic_menu_complete_claimed": false,
+  "submenu_flags_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_adr004_menu_permissions": true,
+  "distinct_from_stage274_language_i18n_pack_remaining_gate": true,
+  "distinct_from_stage273_store_membership_pack_remaining_gate": true,
+  "distinct_from_stage31_deferred_adr_register": true,
+  "steps": [
+    {
+      "id": "mppr-read-blockers",
+      "title": "Read B1 menu permissions pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mppr-follow-pointers",
+      "title": "Follow P1 ADR-004 / Stage 274 / Stage 273 / Stage 31 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mppr-dynamic-menu-missing",
+      "title": "Reaffirm dynamic menu / submenu flags MISSING until real submenu-flag matrix ships (ADR-004)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mppr-no-packaging-as-live",
+      "title": "Do not treat ADR-004 / Stage 274 / Stage 273 as dynamic menu Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mppr-dynamic-menu-remaining",
+      "title": "Dynamic menu / submenu flags / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 275 I1 menu permissions pack remaining-gate index packaging only. Do not claim dynamic menu Complete."
+}

@@ -1,0 +1,63 @@
+{
+  "id": "incident-severity-matrix",
+  "stage": 170,
+  "pack": "V1",
+  "doc": "docs/INCIDENT_SEVERITY_MATRIX_MVP.md",
+  "related": {
+    "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+    "incident_checklist": "ops/incident/incident-checklist.json",
+    "support_sla_boundary": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+    "security_guide": "docs/SECURITY_GUIDE.md"
+  },
+  "packaging_complete": true,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "levels": [
+    {
+      "id": "P1",
+      "name": "Critical",
+      "ack_minutes": 15,
+      "examples": [
+        "tenant_wide_outage",
+        "suspected_breach",
+        "cross_tenant_leak",
+        "auth_totally_down"
+      ]
+    },
+    {
+      "id": "P2",
+      "name": "High",
+      "ack_minutes": 60,
+      "examples": [
+        "pos_cannot_sell_or_flush_multi_cashier",
+        "sync_push_failing_all_devices",
+        "stock_integrity_hold_expiry_bug"
+      ]
+    },
+    {
+      "id": "P3",
+      "name": "Medium",
+      "ack_minutes": 1440,
+      "examples": [
+        "single_device_revoke_confusion",
+        "catalog_ttl_stale_ux",
+        "conflict_storm_single_tenant",
+        "hold_soft_reserve_ux_defect"
+      ]
+    },
+    {
+      "id": "P4",
+      "name": "Low",
+      "ack_minutes": 10080,
+      "examples": [
+        "docs_runbook_gaps",
+        "non_blocking_ui_copy",
+        "hardening_followups"
+      ]
+    }
+  ],
+  "message": "Stage 170 V1 severity matrix packaging only. Do not claim live on-call or PagerDuty."
+}

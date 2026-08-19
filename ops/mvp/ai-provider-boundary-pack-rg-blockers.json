@@ -1,0 +1,66 @@
+{
+  "id": "ai-provider-boundary-pack-rg-blockers",
+  "stage": 302,
+  "pack": "B1",
+  "doc": "docs/AI_PROVIDER_BOUNDARY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/AI_PROVIDER_BOUNDARY_PACK_REMAINING_GATE_MVP.md",
+    "ai_provider_boundary": "docs/AI_PROVIDER_BOUNDARY_MVP.md"
+  },
+  "packaging_complete": true,
+  "external_llm_claimed": false,
+  "prophet_claimed": false,
+  "paid_model_vendor_required": false,
+  "output_pii_scanner_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "external_llm_claimed": "REMAINING",
+    "prophet_claimed": "REMAINING",
+    "paid_model_vendor_required": "REMAINING",
+    "output_pii_scanner_claimed": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage42_as_external_llm": "NON_CLAIM",
+    "stage301_as_ai_certification": "NON_CLAIM",
+    "external_llm_claimed_flag": "false",
+    "prophet_claimed_flag": "false",
+    "paid_model_vendor_required_flag": "false",
+    "output_pii_scanner_claimed_flag": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "apbprb-llm",
+      "title": "Mark external LLM Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprb-prophet",
+      "title": "Mark Prophet Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprb-vendor",
+      "title": "Mark paid model vendor Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprb-stage42-nonclaim",
+      "title": "Mark Stage 42 P1 as non-claim for external LLM Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "apbprb-llm-remaining",
+      "title": "External LLM Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 302 B1 AI provider boundary pack RG blocker matrix packaging only. External LLM Completes remain MISSING."
+}

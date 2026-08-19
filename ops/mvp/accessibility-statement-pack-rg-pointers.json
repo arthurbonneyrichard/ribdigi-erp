@@ -1,0 +1,61 @@
+{
+  "id": "accessibility-statement-pack-rg-pointers",
+  "stage": 285,
+  "pack": "P1",
+  "doc": "docs/ACCESSIBILITY_STATEMENT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+    "accessibility_statement": "docs/ACCESSIBILITY_STATEMENT_MVP.md",
+    "acceptance_archive_pack_remaining_gate": "docs/ACCEPTANCE_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "language_i18n_pack_remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "adr006": "docs/ADR_006_LANGUAGE_I18N.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "wcag_aa_claimed": false,
+  "accessibility_audit_claimed": false,
+  "conformance_program_live": false,
+  "remediation_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "accessibility_statement_stage41",
+    "acceptance_archive_pack_remaining_gate_stage284",
+    "language_i18n_pack_remaining_gate_stage274",
+    "adr006_language_i18n",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "asprp-stage41",
+      "title": "Point to Stage 41 A1 accessibility statement",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprp-stage284",
+      "title": "Point to Stage 284 acceptance archive pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprp-stage274",
+      "title": "Point to Stage 274 language i18n pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprp-adr006",
+      "title": "Point to ADR-006 language i18n adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "asprp-wcag-remaining",
+      "title": "WCAG AA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 285 P1 accessibility statement pack RG pointers packaging only. Do not claim WCAG AA Complete."
+}

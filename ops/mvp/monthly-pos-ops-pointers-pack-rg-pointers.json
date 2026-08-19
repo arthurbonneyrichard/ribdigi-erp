@@ -1,0 +1,60 @@
+{
+  "id": "monthly-pos-ops-pointers-pack-rg-pointers",
+  "stage": 348,
+  "pack": "P1",
+  "doc": "docs/MONTHLY_POS_OPS_POINTERS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MONTHLY_POS_OPS_POINTERS_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_pointers": "docs/MONTHLY_POS_OPS_POINTERS_MVP.md",
+    "monthly_pos_ops_trends_pack_remaining_gate": "docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_review_pack_remaining_gate": "docs/MONTHLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "risks_closed_claimed": false,
+  "topics": [
+    "monthly_pos_ops_pointers_stage177",
+    "monthly_pos_ops_trends_pack_remaining_gate_stage347",
+    "monthly_pos_ops_review_pack_remaining_gate_stage346",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "mpopprp-stage177",
+      "title": "Point to Stage 177 monthly POS ops pointers packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpopprp-stage347",
+      "title": "Point to Stage 347 monthly POS ops trends pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpopprp-stage346",
+      "title": "Point to Stage 346 monthly POS ops review pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpopprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpopprp-checklist-remaining",
+      "title": "Live monthly POS ops pointers Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 348 P1 monthly POS ops pointers pack RG pointers packaging only. Do not claim live monthly POS ops pointers Complete."
+}

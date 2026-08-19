@@ -50,9 +50,19 @@ def default_approval_levels(
     ]
 
 
-def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
-    """Validate/normalize levels. Raises HTTPException on bad input."""
+def normalize_approval_matrix(
+    raw: dict | list | None,
+    *,
+    known_roles: set[str] | None = None,
+) -> list[dict]:
+    """Validate/normalize levels. Raises HTTPException on bad input.
+
+    ``known_roles`` may include tenant custom role slugs (system roles always allowed).
+    """
     from app.rbac import VALID_ROLES
+    from app.roles import SLUG_RE
+
+    allowed = set(VALID_ROLES) | set(known_roles or ())
 
     if raw is None:
         return default_approval_levels()
@@ -92,7 +102,8 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
             role = str(r or "").strip()
             if not role:
                 continue
-            if role not in VALID_ROLES:
+            # System roles, known custom roles, or well-formed custom slugs.
+            if role not in allowed and not SLUG_RE.fullmatch(role):
                 raise HTTPException(status_code=400, detail=f"unknown role '{role}' in level {i + 1}")
             if role not in roles:
                 roles.append(role)
@@ -150,6 +161,53 @@ def assert_actor_may_act(*, levels: list[dict], step: int, actor_role: str | Non
         )
 
 
+async def notify_expense_approvers(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    expense: m.Expense,
+    step: int,
+    title: str,
+    message: str,
+    exclude_user_ids: set[str] | frozenset[str] | None = None,
+) -> int:
+    """Dashboard + email (default on) to active users whose role can act at this step."""
+    settings = await get_approval_settings(db, tenant_id)
+    roles = roles_for_step(settings["levels"], step)
+    if not roles:
+        return 0
+    exclude = set(exclude_user_ids or ())
+    users = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant_id,
+                m.User.is_active == True,  # noqa: E712
+                m.User.role.in_(list(roles)),
+            )
+        )
+    ).scalars().all()
+    from app.notifications import create_notification
+
+    notified = 0
+    for user in users:
+        if user.id in exclude:
+            continue
+        note = await create_notification(
+            db,
+            tenant_id=tenant_id,
+            user_id=user.id,
+            category="expense_approval",
+            title=title,
+            message=message,
+            entity_type="expense",
+            entity_id=expense.id,
+            company_id=getattr(expense, "company_id", None),
+        )
+        if note is not None:
+            notified += 1
+    return notified
+
+
 def next_run_date(from_dt: datetime, frequency: str) -> datetime:
     freq = (frequency or "monthly").lower()
     if freq == "daily":
@@ -161,17 +219,221 @@ def next_run_date(from_dt: datetime, frequency: str) -> datetime:
     return from_dt + timedelta(days=30)
 
 
-async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
+async def ensure_default_categories(
+    db: AsyncSession, tenant_id: str, company_id: str | None = None
+) -> None:
+    q = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+    if company_id:
+        q = q.where(m.ExpenseCategory.company_id == company_id)
     existing = {
         c.code
-        for c in (
-            await db.execute(select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id))
-        ).scalars().all()
+        for c in (await db.execute(q)).scalars().all()
     }
     for code, name in DEFAULT_CATEGORIES:
         if code not in existing:
-            db.add(m.ExpenseCategory(tenant_id=tenant_id, code=code, name=name, budget_amount=0))
+            db.add(
+                m.ExpenseCategory(
+                    tenant_id=tenant_id,
+                    company_id=company_id,
+                    code=code,
+                    name=name,
+                    budget_amount=0,
+                )
+            )
     await db.flush()
+
+
+async def resolve_expense_gl_account(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    account_id: str | None,
+    company_id: str | None = None,
+) -> m.Account | None:
+    """Validate optional category GL account (must be tenant expense-type, active)."""
+    if not account_id:
+        return None
+    from app.accounting import get_tenant_account
+
+    account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
+    if (account.account_type or "").strip().lower() != "expense":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_EXPENSE_ACCOUNT",
+                "message": "Expense category account must be an expense-type COA account",
+                "account_id": account_id,
+                "account_type": account.account_type,
+            },
+        )
+    if not bool(account.is_active):
+        raise HTTPException(status_code=400, detail="Expense category account is inactive")
+    return account
+
+
+def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None) -> dict:
+    out = {
+        "id": cat.id,
+        "company_id": getattr(cat, "company_id", None),
+        "code": cat.code,
+        "name": cat.name,
+        "budget_amount": float(cat.budget_amount or 0),
+        "account_id": cat.account_id,
+        "is_active": bool(cat.is_active),
+    }
+    if account is not None:
+        out["account_code"] = account.code
+        out["account_name"] = account.name
+    return out
+
+
+async def serialize_category_rich(
+    db: AsyncSession, tenant_id: str, cat: m.ExpenseCategory
+) -> dict:
+    account = None
+    if cat.account_id:
+        account = (
+            await db.execute(
+                select(m.Account).where(
+                    m.Account.id == cat.account_id,
+                    m.Account.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+    return serialize_category(cat, account=account)
+
+
+async def update_category(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str,
+    name: str | None = None,
+    budget_amount: float | None = None,
+    is_active: bool | None = None,
+    account_id: str | None = None,
+    clear_account: bool = False,
+    company_id: str | None = None,
+) -> m.ExpenseCategory:
+    cat = (
+        await db.execute(
+            select(m.ExpenseCategory).where(
+                m.ExpenseCategory.id == category_id,
+                m.ExpenseCategory.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Expense category not found")
+    if name is not None:
+        name_norm = name.strip()
+        if not name_norm:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        cat.name = name_norm
+    if budget_amount is not None:
+        if float(budget_amount) < 0:
+            raise HTTPException(status_code=400, detail="budget_amount cannot be negative")
+        cat.budget_amount = round(float(budget_amount), 2)
+    if is_active is not None:
+        cat.is_active = bool(is_active)
+    if clear_account:
+        cat.account_id = None
+    elif account_id is not None:
+        account = await resolve_expense_gl_account(
+            db,
+            tenant_id=tenant_id,
+            account_id=account_id,
+            company_id=company_id or getattr(cat, "company_id", None),
+        )
+        cat.account_id = account.id if account else None
+    await db.flush()
+    return cat
+
+
+async def category_budget_variance(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    company_id: str | None = None,
+) -> dict:
+    """Budget vs approved spend by category for a period (defaults to current month)."""
+    from app.reports import apply_company_filter
+
+    await ensure_default_categories(db, tenant_id, company_id=company_id)
+    now = datetime.utcnow()
+    start = from_date or datetime(now.year, now.month, 1)
+    if to_date is None:
+        if now.month == 12:
+            end = datetime(now.year, 12, 31, 23, 59, 59)
+        else:
+            end = datetime(now.year, now.month + 1, 1) - timedelta(seconds=1)
+    else:
+        end = to_date
+
+    cat_stmt = (
+        select(m.ExpenseCategory)
+        .where(m.ExpenseCategory.tenant_id == tenant_id)
+        .order_by(m.ExpenseCategory.name)
+    )
+    cat_stmt = apply_company_filter(cat_stmt, m.ExpenseCategory.company_id, company_id)
+    cats = (await db.execute(cat_stmt)).scalars().all()
+
+    exp_stmt = select(m.Expense).where(
+        m.Expense.tenant_id == tenant_id,
+        m.Expense.expense_date >= start,
+        m.Expense.expense_date <= end,
+        m.Expense.status.in_(["approved", "pending"]),
+    )
+    exp_stmt = apply_company_filter(exp_stmt, m.Expense.company_id, company_id)
+    expenses = (await db.execute(exp_stmt)).scalars().all()
+
+    spent_by: dict[str, float] = {}
+    pending_by: dict[str, float] = {}
+    for e in expenses:
+        key = e.category_id or f"name:{e.category or 'Uncategorized'}"
+        amt = float(e.amount or 0)
+        if e.status == "approved":
+            spent_by[key] = spent_by.get(key, 0) + amt
+        else:
+            pending_by[key] = pending_by.get(key, 0) + amt
+
+    rows = []
+    total_budget = 0.0
+    total_spent = 0.0
+    total_pending = 0.0
+    for cat in cats:
+        budget = float(cat.budget_amount or 0)
+        spent = round(spent_by.get(cat.id, 0), 2)
+        pending = round(pending_by.get(cat.id, 0), 2)
+        variance = round(budget - spent, 2)
+        util = round((spent / budget) * 100, 2) if budget > 0 else None
+        rows.append(
+            {
+                **serialize_category(cat),
+                "spent": spent,
+                "pending": pending,
+                "variance": variance,
+                "utilization_pct": util,
+                "over_budget": bool(budget > 0 and spent > budget),
+            }
+        )
+        total_budget += budget
+        total_spent += spent
+        total_pending += pending
+
+    return {
+        "from_date": start,
+        "to_date": end,
+        "categories": rows,
+        "totals": {
+            "budget_amount": round(total_budget, 2),
+            "spent": round(total_spent, 2),
+            "pending": round(total_pending, 2),
+            "variance": round(total_budget - total_spent, 2),
+        },
+    }
 
 
 def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:
@@ -295,6 +557,7 @@ async def list_approval_actions(
 def serialize_approval_action(row: m.ExpenseApprovalAction) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "expense_id": row.expense_id,
         "step": int(row.step),
         "action": row.action,
@@ -309,6 +572,7 @@ def serialize_expense(expense: m.Expense, actions: list[m.ExpenseApprovalAction]
     required = int(getattr(expense, "approval_steps_required", 1) or 1)
     return {
         "id": expense.id,
+        "company_id": getattr(expense, "company_id", None),
         "category_id": expense.category_id,
         "category": expense.category,
         "description": expense.description,
@@ -319,6 +583,7 @@ def serialize_expense(expense: m.Expense, actions: list[m.ExpenseApprovalAction]
         "reference": expense.reference,
         "payee": expense.payee,
         "store_id": expense.store_id,
+        "department_id": getattr(expense, "department_id", None),
         "status": expense.status,
         "created_by": expense.created_by,
         "approved_by": expense.approved_by,
@@ -352,6 +617,7 @@ async def resolve_category(
     *,
     category_id: str | None,
     category: str | None,
+    company_id: str | None = None,
 ) -> tuple[str | None, str]:
     if category_id:
         cat = (
@@ -364,11 +630,40 @@ async def resolve_category(
         ).scalar_one_or_none()
         if not cat:
             raise HTTPException(status_code=404, detail="Expense category not found")
+        from app.workspace import assert_fk_company
+
+        assert_fk_company(cat, company_id, detail="Expense category not found")
         return cat.id, cat.name
     name = (category or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="category or category_id is required")
     return None, name
+
+
+async def resolve_org_dimensions(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str | None,
+    department_id: str | None,
+    company_id: str | None = None,
+) -> tuple[str | None, str | None]:
+    """Validate optional store/department are tenant/company-scoped (404 on foreign ids)."""
+    resolved_store = None
+    resolved_dept = None
+    if store_id:
+        from app.stores import get_store
+
+        store = await get_store(db, tenant_id, store_id, company_id=company_id)
+        resolved_store = store.id
+    if department_id:
+        from app.org_units import get_department
+
+        dept = await get_department(db, tenant_id, department_id, company_id=company_id)
+        if not bool(dept.is_active):
+            raise HTTPException(status_code=409, detail="Department is not active")
+        resolved_dept = dept.id
+    return resolved_store, resolved_dept
 
 
 async def get_expense(db: AsyncSession, tenant_id: str, expense_id: str) -> m.Expense:
@@ -395,9 +690,11 @@ async def _record_action(
     actor_id: str | None,
     comment: str | None = None,
 ) -> None:
+    expense = await db.get(m.Expense, expense_id)
     db.add(
         m.ExpenseApprovalAction(
             tenant_id=tenant_id,
+            company_id=getattr(expense, "company_id", None) if expense else None,
             expense_id=expense_id,
             step=step,
             action=action,
@@ -421,11 +718,17 @@ async def create_expense(
     reference: str | None = None,
     payee: str | None = None,
     store_id: str | None = None,
+    department_id: str | None = None,
     expense_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> m.Expense:
-    await ensure_default_categories(db, tenant_id)
+    await ensure_default_categories(db, tenant_id, company_id=company_id)
     cat_id, cat_name = await resolve_category(
-        db, tenant_id, category_id=category_id, category=category
+        db,
+        tenant_id,
+        category_id=category_id,
+        category=category,
+        company_id=company_id,
     )
     settings = await get_approval_settings(db, tenant_id)
     levels = settings["levels"]
@@ -442,10 +745,20 @@ async def create_expense(
             payment_method or "cash",
             liquid_account_id=liquid_account_id,
             outflow=True,
+            company_id=company_id,
         )
+
+    resolved_store, resolved_dept = await resolve_org_dimensions(
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        department_id=department_id,
+        company_id=company_id,
+    )
 
     expense = m.Expense(
         tenant_id=tenant_id,
+        company_id=company_id,
         category_id=cat_id,
         category=cat_name,
         description=description or "",
@@ -455,7 +768,8 @@ async def create_expense(
         liquid_account_id=liquid_account_id,
         reference=reference,
         payee=payee,
-        store_id=store_id,
+        store_id=resolved_store,
+        department_id=resolved_dept,
         status="pending" if needs_approval else "approved",
         created_by=user_id,
         approved_by=None if needs_approval else user_id,
@@ -467,21 +781,36 @@ async def create_expense(
     db.add(expense)
     await db.flush()
 
-    if needs_approval:
-        from app.notifications import create_notification
+    from app import audit as audit_svc
 
-        await create_notification(
+    if needs_approval:
+        await notify_expense_approvers(
             db,
             tenant_id=tenant_id,
-            category="expense_approval",
+            expense=expense,
+            step=1,
             title="Expense Approval Required",
             message=(
                 f"Expense {cat_name} of {expense.amount:.2f} exceeds approval threshold "
                 f"({auto_t:.2f}) and awaits level-1 review"
                 + (f" (of {steps} levels)." if steps > 1 else ".")
             ),
-            entity_type="expense",
+            exclude_user_ids={user_id},
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_submitted",
+            entity="expense",
             entity_id=expense.id,
+            details={
+                "category": cat_name,
+                "amount": float(expense.amount),
+                "approval_steps_required": steps,
+                "threshold": float(auto_t),
+            },
+            module="expenses",
         )
     else:
         await _record_action(
@@ -496,6 +825,21 @@ async def create_expense(
         from app.accounting import post_expense_journal
 
         await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_auto_approved",
+            entity="expense",
+            entity_id=expense.id,
+            details={
+                "category": cat_name,
+                "amount": float(expense.amount),
+                "threshold": float(auto_t),
+                "reason": "under_threshold",
+            },
+            module="expenses",
+        )
     return expense
 
 
@@ -541,22 +885,38 @@ async def approve_expense(
         comment=comment,
     )
 
+    from app import audit as audit_svc
+
     if step < required:
         expense.approval_step = step + 1
         expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
-        from app.notifications import create_notification
-
-        await create_notification(
+        await notify_expense_approvers(
             db,
             tenant_id=tenant_id,
-            category="expense_approval",
+            expense=expense,
+            step=step + 1,
             title="Expense Needs Next-Level Approval",
             message=(
                 f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
                 f"and awaits level {step + 1} approval."
             ),
-            entity_type="expense",
+            exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_level_approved",
+            entity="expense",
             entity_id=expense.id,
+            details={
+                "category": expense.category,
+                "amount": float(expense.amount),
+                "step": step,
+                "next_step": step + 1,
+                "comment": comment,
+            },
+            module="expenses",
         )
         await db.flush()
         return expense
@@ -571,6 +931,21 @@ async def approve_expense(
     from app.accounting import post_expense_journal
 
     await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="expense_approved",
+        entity="expense",
+        entity_id=expense.id,
+        details={
+            "category": expense.category,
+            "amount": float(expense.amount),
+            "steps": required,
+            "comment": comment,
+        },
+        module="expenses",
+    )
     await db.flush()
     return expense
 
@@ -608,6 +983,23 @@ async def reject_expense(
     expense.approved_by = user_id
     expense.approved_at = datetime.utcnow()
     expense.rejection_reason = reason.strip()
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="expense_rejected",
+        entity="expense",
+        entity_id=expense.id,
+        details={
+            "category": expense.category,
+            "amount": float(expense.amount),
+            "reason": expense.rejection_reason,
+            "step": step,
+        },
+        module="expenses",
+    )
     await db.flush()
     return expense
 
@@ -626,6 +1018,10 @@ async def update_expense(
     payment_method: str | None = None,
     category_id: str | None = None,
     category: str | None = None,
+    store_id: str | None = None,
+    department_id: str | None = None,
+    clear_store: bool = False,
+    clear_department: bool = False,
 ) -> m.Expense:
     """Update editable fields on a pending (or rejected) expense. Does not auto-apply OCR."""
     expense = await get_expense(db, tenant_id, expense_id)
@@ -636,8 +1032,19 @@ async def update_expense(
 
     provided = any(
         x is not None
-        for x in (amount, description, payee, reference, expense_date, payment_method, category_id, category)
-    )
+        for x in (
+            amount,
+            description,
+            payee,
+            reference,
+            expense_date,
+            payment_method,
+            category_id,
+            category,
+            store_id,
+            department_id,
+        )
+    ) or clear_store or clear_department
     if not provided:
         raise HTTPException(status_code=400, detail="No expense fields provided")
 
@@ -651,7 +1058,11 @@ async def update_expense(
 
     if category_id is not None or category is not None:
         cat_id, cat_name = await resolve_category(
-            db, tenant_id, category_id=category_id, category=category
+            db,
+            tenant_id,
+            category_id=category_id,
+            category=category,
+            company_id=getattr(expense, "company_id", None),
         )
         expense.category_id = cat_id
         expense.category = cat_name
@@ -666,6 +1077,29 @@ async def update_expense(
         expense.expense_date = expense_date
     if payment_method is not None:
         expense.payment_method = payment_method.strip() or expense.payment_method
+
+    if clear_store:
+        expense.store_id = None
+    elif store_id is not None:
+        resolved_store, _ = await resolve_org_dimensions(
+            db,
+            tenant_id=tenant_id,
+            store_id=store_id,
+            department_id=None,
+            company_id=getattr(expense, "company_id", None),
+        )
+        expense.store_id = resolved_store
+    if clear_department:
+        expense.department_id = None
+    elif department_id is not None:
+        _, resolved_dept = await resolve_org_dimensions(
+            db,
+            tenant_id=tenant_id,
+            store_id=None,
+            department_id=department_id,
+            company_id=getattr(expense, "company_id", None),
+        )
+        expense.department_id = resolved_dept
 
     if amount is not None:
         new_amount = round(float(amount), 2)
@@ -693,8 +1127,23 @@ async def update_expense(
                     comment="Auto-approved under threshold after edit",
                 )
                 from app.accounting import post_expense_journal
+                from app import audit as audit_svc
 
                 await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+                await audit_svc.record_event(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    action="expense_auto_approved",
+                    entity="expense",
+                    entity_id=expense.id,
+                    details={
+                        "category": expense.category,
+                        "amount": float(expense.amount),
+                        "reason": "under_threshold_after_edit",
+                    },
+                    module="expenses",
+                )
             else:
                 expense.approval_steps_required = steps
                 expense.approval_step = 1
@@ -721,8 +1170,23 @@ async def update_expense(
                     comment="Auto-approved under threshold after edit",
                 )
                 from app.accounting import post_expense_journal
+                from app import audit as audit_svc
 
                 await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+                await audit_svc.record_event(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    action="expense_auto_approved",
+                    entity="expense",
+                    entity_id=expense.id,
+                    details={
+                        "category": expense.category,
+                        "amount": float(expense.amount),
+                        "reason": "under_threshold_after_edit",
+                    },
+                    module="expenses",
+                )
             else:
                 expense.status = "pending"
                 expense.approval_steps_required = steps
@@ -747,16 +1211,31 @@ async def create_recurring(
     category: str | None = None,
     payment_method: str = "bank_transfer",
     payee: str | None = None,
+    store_id: str | None = None,
+    department_id: str | None = None,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
+    company_id: str | None = None,
 ) -> m.RecurringExpense:
-    await ensure_default_categories(db, tenant_id)
+    await ensure_default_categories(db, tenant_id, company_id=company_id)
     cat_id, cat_name = await resolve_category(
-        db, tenant_id, category_id=category_id, category=category
+        db,
+        tenant_id,
+        category_id=category_id,
+        category=category,
+        company_id=company_id,
+    )
+    resolved_store, resolved_dept = await resolve_org_dimensions(
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        department_id=department_id,
+        company_id=company_id,
     )
     start = start_date or datetime.utcnow()
     row = m.RecurringExpense(
         tenant_id=tenant_id,
+        company_id=company_id,
         category_id=cat_id,
         category=cat_name,
         description=description or "",
@@ -764,6 +1243,8 @@ async def create_recurring(
         frequency=(frequency or "monthly").lower(),
         payment_method=payment_method or "bank_transfer",
         payee=payee,
+        store_id=resolved_store,
+        department_id=resolved_dept,
         start_date=start,
         end_date=end_date,
         next_run_at=start,
@@ -775,41 +1256,188 @@ async def create_recurring(
     return row
 
 
+def serialize_recurring(row: m.RecurringExpense) -> dict:
+    return {
+        "id": row.id,
+        "company_id": getattr(row, "company_id", None),
+        "category": row.category,
+        "category_id": row.category_id,
+        "description": row.description,
+        "amount": float(row.amount),
+        "frequency": row.frequency,
+        "payment_method": row.payment_method,
+        "payee": row.payee,
+        "store_id": getattr(row, "store_id", None),
+        "department_id": getattr(row, "department_id", None),
+        "next_run_at": row.next_run_at,
+        "end_date": row.end_date,
+        "is_active": row.is_active,
+        "skip_next": bool(row.skip_next),
+        "next_amount": float(row.next_amount) if row.next_amount is not None else None,
+        "next_description": row.next_description,
+        "last_notified_for": row.last_notified_for,
+        "created_at": row.created_at,
+    }
+
+
+async def list_recurring(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+    company_id: str | None = None,
+) -> list[m.RecurringExpense]:
+    """Stage 125 R1 — is_active / active_only for honest paused-only recurring lists."""
+    stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.RecurringExpense.company_id == company_id)
+    if is_active is not None:
+        stmt = stmt.where(m.RecurringExpense.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.RecurringExpense.is_active.is_(True))
+    stmt = stmt.order_by(m.RecurringExpense.created_at.desc())
+    return list((await db.execute(stmt)).scalars().all())
+
+
+def _clear_occurrence_overrides(row: m.RecurringExpense) -> None:
+    row.skip_next = False
+    row.next_amount = None
+    row.next_description = None
+
+
+async def get_recurring(
+    db: AsyncSession, tenant_id: str, recurring_id: str
+) -> m.RecurringExpense:
+    row = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.id == recurring_id,
+                m.RecurringExpense.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+    return row
+
+
+async def update_recurring(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    recurring_id: str,
+    skip_next: bool | None = None,
+    next_amount: float | None = None,
+    next_description: str | None = None,
+    clear_next_override: bool | None = None,
+    is_active: bool | None = None,
+    amount: float | None = None,
+    description: str | None = None,
+    frequency: str | None = None,
+    payment_method: str | None = None,
+    payee: str | None = None,
+) -> m.RecurringExpense:
+    row = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.id == recurring_id,
+                m.RecurringExpense.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Recurring expense not found")
+
+    if clear_next_override:
+        row.next_amount = None
+        row.next_description = None
+    if skip_next is not None:
+        row.skip_next = bool(skip_next)
+        if row.skip_next:
+            # Skipping cancels a one-off amount/description override for that occurrence.
+            row.next_amount = None
+            row.next_description = None
+    if next_amount is not None:
+        row.next_amount = round(float(next_amount), 2)
+        row.skip_next = False
+    if next_description is not None:
+        row.next_description = next_description
+        row.skip_next = False
+    if is_active is not None:
+        row.is_active = bool(is_active)
+    if amount is not None:
+        row.amount = round(float(amount), 2)
+    if description is not None:
+        row.description = description
+    if frequency is not None:
+        freq = (frequency or "monthly").lower()
+        if freq not in {"daily", "weekly", "monthly", "yearly"}:
+            raise HTTPException(
+                status_code=400,
+                detail="frequency must be daily, weekly, monthly, or yearly",
+            )
+        row.frequency = freq
+    if payment_method is not None:
+        row.payment_method = payment_method
+    if payee is not None:
+        row.payee = payee
+
+    await db.flush()
+    return row
+
+
 async def generate_due_recurring(
     db: AsyncSession,
     *,
     tenant_id: str,
     user_id: str,
+    company_id: str | None = None,
 ) -> list[m.Expense]:
     now = datetime.utcnow()
-    rows = (
-        await db.execute(
-            select(m.RecurringExpense).where(
-                m.RecurringExpense.tenant_id == tenant_id,
-                m.RecurringExpense.is_active == True,  # noqa: E712
-                m.RecurringExpense.next_run_at <= now,
-            )
-        )
-    ).scalars().all()
+    stmt = select(m.RecurringExpense).where(
+        m.RecurringExpense.tenant_id == tenant_id,
+        m.RecurringExpense.is_active == True,  # noqa: E712
+        m.RecurringExpense.next_run_at <= now,
+    )
+    if company_id:
+        stmt = stmt.where(m.RecurringExpense.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
     created: list[m.Expense] = []
     for row in rows:
         if row.end_date and row.end_date < now:
             row.is_active = False
             continue
+        if row.skip_next:
+            _clear_occurrence_overrides(row)
+            row.next_run_at = next_run_date(now, row.frequency)
+            row.last_notified_for = None
+            continue
+        amount = float(row.next_amount) if row.next_amount is not None else float(row.amount)
+        description = (
+            row.next_description
+            if row.next_description is not None
+            else (row.description or f"Recurring {row.category}")
+        )
         expense = await create_expense(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
-            amount=float(row.amount),
-            description=row.description or f"Recurring {row.category}",
+            amount=amount,
+            description=description,
             category_id=row.category_id,
             category=row.category,
             payment_method=row.payment_method,
             payee=row.payee,
+            store_id=getattr(row, "store_id", None),
+            department_id=getattr(row, "department_id", None),
             reference=f"REC-{row.id[:8]}",
             expense_date=now,
+            company_id=getattr(row, "company_id", None) or company_id,
         )
         created.append(expense)
+        _clear_occurrence_overrides(row)
         row.next_run_at = next_run_date(now, row.frequency)
+        row.last_notified_for = None
     await db.flush()
     return created

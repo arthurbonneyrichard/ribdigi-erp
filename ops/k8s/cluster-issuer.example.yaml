@@ -1,0 +1,42 @@
+# Stage 29 T1 — optional cert-manager ClusterIssuer examples (operator only).
+# NOT applied by CI. NOT a claim that Let's Encrypt already issued production certs.
+# See docs/TLS_INGRESS_PACK_MVP.md.
+#
+# Prerequisites: cert-manager installed in the cluster; replace email / solvers.
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    ribdigi.io/stage: "29-t1-example"
+spec:
+  acme:
+    # Staging ACME — use first to avoid rate limits while testing.
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: ops@example.invalid
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    ribdigi.io/stage: "29-t1-example"
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ops@example.invalid
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+
+# Explicitly deferred: live issuance Complete; DNS-01 / multi-cloud solvers without operator proof.

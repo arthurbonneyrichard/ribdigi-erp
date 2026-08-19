@@ -1,0 +1,61 @@
+{
+  "id": "breach-notification-pack-rg-pointers",
+  "stage": 286,
+  "pack": "P1",
+  "doc": "docs/BREACH_NOTIFICATION_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "breach_notification": "docs/BREACH_NOTIFICATION_MVP.md",
+    "accessibility_statement_pack_remaining_gate": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+    "incident_pack_remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+    "vuln_disclosure": "docs/VULN_DISCLOSURE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "breach_drill_claimed": false,
+  "regulatory_filing_claimed": false,
+  "customer_notify_saas_claimed": false,
+  "security_mailbox_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "breach_notification_stage38",
+    "accessibility_statement_pack_remaining_gate_stage285",
+    "incident_pack_remaining_gate_stage211",
+    "vuln_disclosure_stage38",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "bnprp-stage38",
+      "title": "Point to Stage 38 B1 breach notification",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprp-stage285",
+      "title": "Point to Stage 285 accessibility statement pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprp-stage211",
+      "title": "Point to Stage 237/211 incident pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprp-vuln",
+      "title": "Point to Stage 38 V1 vuln disclosure adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bnprp-drill-remaining",
+      "title": "Breach drill Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 286 P1 breach notification pack RG pointers packaging only. Do not claim breach drill Complete."
+}

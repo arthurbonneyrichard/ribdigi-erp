@@ -1,0 +1,333 @@
+{
+  "stage": "32",
+  "workstream": "A1",
+  "doc": "docs/ACCEPTANCE_ARCHIVE_MVP.md",
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "deferred_implemented_claimed": false,
+  "archive_complete": true,
+  "stages_covered": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31
+  ],
+  "entry_count": 31,
+  "entries": [
+    {
+      "stage": 1,
+      "title": "Foundation",
+      "exit_criteria": "docs/STAGE_1_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-008",
+      "freeze_file": "docs/ADR_008_STAGE1_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 2,
+      "title": "Inventory & Supply Chain Hardening",
+      "exit_criteria": "docs/STAGE_2_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-010",
+      "freeze_file": "docs/ADR_010_STAGE2_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 3,
+      "title": "Sales, POS & Financials Hardening",
+      "exit_criteria": "docs/STAGE_3_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-012",
+      "freeze_file": "docs/ADR_012_STAGE3_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 4,
+      "title": "Intelligence, Multi-Store & Scale Hardening",
+      "exit_criteria": "docs/STAGE_4_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-014",
+      "freeze_file": "docs/ADR_014_STAGE4_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 5,
+      "title": "Polish, Security & Launch Hardening",
+      "exit_criteria": "docs/STAGE_5_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-016",
+      "freeze_file": "docs/ADR_016_STAGE5_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 6,
+      "title": "Integrations, Onboarding & Performance",
+      "exit_criteria": "docs/STAGE_6_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-018",
+      "freeze_file": "docs/ADR_018_STAGE6_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 7,
+      "title": "Launch Reliability Closeout",
+      "exit_criteria": "docs/STAGE_7_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-020",
+      "freeze_file": "docs/ADR_020_STAGE7_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 8,
+      "title": "Credit Fidelity & AP Cash Closeout",
+      "exit_criteria": "docs/STAGE_8_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-022",
+      "freeze_file": "docs/ADR_022_STAGE8_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 9,
+      "title": "Report Fidelity & Document Attachments Closeout",
+      "exit_criteria": "docs/STAGE_9_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-024",
+      "freeze_file": "docs/ADR_024_STAGE9_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 10,
+      "title": "Tax Fidelity & Document Workflow Closeout",
+      "exit_criteria": "docs/STAGE_10_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-026",
+      "freeze_file": "docs/ADR_026_STAGE10_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 11,
+      "title": "Purchase-to-Pay Chain Fidelity",
+      "exit_criteria": "docs/STAGE_11_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-028",
+      "freeze_file": "docs/ADR_028_STAGE11_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 12,
+      "title": "Order-to-Cash & POS Chain Fidelity",
+      "exit_criteria": "docs/STAGE_12_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-030",
+      "freeze_file": "docs/ADR_030_STAGE12_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 13,
+      "title": "POS Sale Execution Chain Hardening",
+      "exit_criteria": "docs/STAGE_13_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-032",
+      "freeze_file": "docs/ADR_032_STAGE13_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 14,
+      "title": "Finance Closeout Chain Fidelity",
+      "exit_criteria": "docs/STAGE_14_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-034",
+      "freeze_file": "docs/ADR_034_STAGE14_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 15,
+      "title": "Sales Inventory\u2013Ledger Chain Fidelity",
+      "exit_criteria": "docs/STAGE_15_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-036",
+      "freeze_file": "docs/ADR_036_STAGE15_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 16,
+      "title": "Multi-Store / Reports / Notifications Fidelity",
+      "exit_criteria": "docs/STAGE_16_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-038",
+      "freeze_file": "docs/ADR_038_STAGE16_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 17,
+      "title": "Inventory Catalog & Stock Ops Fidelity",
+      "exit_criteria": "docs/STAGE_17_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-040",
+      "freeze_file": "docs/ADR_040_STAGE17_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 18,
+      "title": "Launch Integrity & Ops Fidelity",
+      "exit_criteria": "docs/STAGE_18_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-042",
+      "freeze_file": "docs/ADR_042_STAGE18_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 19,
+      "title": "API, Settings & Operator Reliability Fidelity",
+      "exit_criteria": "docs/STAGE_19_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-044",
+      "freeze_file": "docs/ADR_044_STAGE19_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 20,
+      "title": "AI Business Assistant Fidelity",
+      "exit_criteria": "docs/STAGE_20_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-046",
+      "freeze_file": "docs/ADR_046_STAGE20_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 21,
+      "title": "Tenant Lifecycle, Org & Dashboard Fidelity",
+      "exit_criteria": "docs/STAGE_21_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-048",
+      "freeze_file": "docs/ADR_048_STAGE21_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 22,
+      "title": "Expenses, Ledger, Credit & Tax Surface Fidelity",
+      "exit_criteria": "docs/STAGE_22_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-050",
+      "freeze_file": "docs/ADR_050_STAGE22_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 23,
+      "title": "Reports Dimension & Commercial MVP Gate Fidelity",
+      "exit_criteria": "docs/STAGE_23_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-052",
+      "freeze_file": "docs/ADR_052_STAGE23_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 24,
+      "title": "Commerce & Ops Gate Fidelity",
+      "exit_criteria": "docs/STAGE_24_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-054",
+      "freeze_file": "docs/ADR_054_STAGE24_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 25,
+      "title": "Actuals \u2192 AI Analysis \u2192 Business Insights",
+      "exit_criteria": "docs/STAGE_25_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-056",
+      "freeze_file": "docs/ADR_056_STAGE25_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 26,
+      "title": "Production Platform & Ops Fidelity",
+      "exit_criteria": "docs/STAGE_26_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-058",
+      "freeze_file": "docs/ADR_058_STAGE26_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 27,
+      "title": "Commercial MVP Release Fidelity",
+      "exit_criteria": "docs/STAGE_27_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-060",
+      "freeze_file": "docs/ADR_060_STAGE27_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 28,
+      "title": "Staging Certification Fidelity",
+      "exit_criteria": "docs/STAGE_28_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-062",
+      "freeze_file": "docs/ADR_062_STAGE28_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 29,
+      "title": "Operator Hardening & Production Cutover Fidelity",
+      "exit_criteria": "docs/STAGE_29_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-064",
+      "freeze_file": "docs/ADR_064_STAGE29_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 30,
+      "title": "Go-Live Support Fidelity",
+      "exit_criteria": "docs/STAGE_30_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-066",
+      "freeze_file": "docs/ADR_066_STAGE30_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    },
+    {
+      "stage": 31,
+      "title": "Commercial MVP Closeout Fidelity",
+      "exit_criteria": "docs/STAGE_31_EXIT_CRITERIA.md",
+      "freeze_adr": "ADR-068",
+      "freeze_file": "docs/ADR_068_STAGE31_FREEZE.md",
+      "scope_frozen": true,
+      "go_live_claimed": false
+    }
+  ],
+  "deferred": [
+    "Live go-live / attestation / \u00a77 because Stage 1\u201331 exit archives exist",
+    "Implementing deferred ADR-001\u2013006 post-MVP scopes",
+    "Re-packaging Stage 26\u201331 packs as new Complete",
+    "Treating acceptance archive as production live certificate"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage32_a1_acceptance_archive.json"
+}

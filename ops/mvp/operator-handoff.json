@@ -1,0 +1,123 @@
+{
+  "stage": "32",
+  "workstream": "H1",
+  "doc": "docs/OPERATOR_HANDOFF_MVP.md",
+  "acceptance_archive": "ops/mvp/acceptance-archive.json",
+  "operator_remaining_register": "ops/mvp/operator-remaining-register.json",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "cutover_checklist": "ops/launch/cutover-checklist.json",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "evidence_ledger": "ops/evidence/ledger.json",
+  "support_map": "ops/support/admin-ops-map.json",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "handoff_complete_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "live_runs_certified": false,
+  "sections_1_3_verified": false,
+  "phases": [
+    {
+      "id": "1",
+      "title": "Read Stage 1–31 acceptance archive + Stage 31 MVP declaration (packaging ≠ live)",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/ACCEPTANCE_ARCHIVE_MVP.md",
+        "docs/MVP_DECLARATION_MVP.md"
+      ],
+      "done": false
+    },
+    {
+      "id": "2",
+      "title": "Review Stage 31 O1 Remaining register — all honesty flags stay false until live verification",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/OPERATOR_REMAINING_MVP.md",
+        "ops/mvp/operator-remaining-register.json"
+      ],
+      "done": false
+    },
+    {
+      "id": "3",
+      "title": "Receive secrets / kubeconfig / JWT / DB / Redis / SMTP / storage out-of-band (never commit)",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "ops/launch/cutover-checklist.json"
+      ],
+      "done": false
+    },
+    {
+      "id": "4",
+      "title": "Walk LAUNCH §§1–3 in the target environment using launch cert + attestation matrix",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/LAUNCH_CERT_MVP.md",
+        "docs/ATTESTATION_PACK_MVP.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "done": false
+    },
+    {
+      "id": "5",
+      "title": "Ops take-over: monitoring / incident / support runbooks (Grafana pack, incident, support)",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/GRAFANA_PACK_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md",
+        "docs/SUPPORT_RUNBOOK_MVP.md"
+      ],
+      "done": false
+    },
+    {
+      "id": "6",
+      "title": "DR / capacity / hardening packs ready for live drills (PITR, 1000-VU, pen-test, soak, TLS)",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/PITR_DRILL_PACK_MVP.md",
+        "docs/LOAD_CERT_PACK_MVP.md",
+        "docs/PENTEST_PACK_MVP.md",
+        "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+        "docs/TLS_INGRESS_PACK_MVP.md"
+      ],
+      "done": false
+    },
+    {
+      "id": "7",
+      "title": "Cutover / promote / smoke / rollback readiness per Stage 29 X1 (main ci.yml stays deploy-free)",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "docs/STAGING_GHA_MVP.md",
+        "ops/k8s/deploy-production.example.yml"
+      ],
+      "done": false
+    },
+    {
+      "id": "8",
+      "title": "Sign LAUNCH §7 Name/Date only after real Engineering / Operations / Product verification",
+      "class": "operator_required",
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/ATTESTATION_PACK_MVP.md"
+      ],
+      "done": false
+    }
+  ],
+  "pass_criteria": [
+    "Acceptance archive + MVP declaration understood as packaging only",
+    "Remaining register flags remain false until live ops evidence",
+    "Secrets handoff recorded out-of-band",
+    "LAUNCH §§1–3 verified in target env before §7",
+    "§7 signed only with real names/dates after success",
+    "Main ci.yml remains deploy-free (Stage 18 C1)"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage32_h1_operator_handoff.json",
+  "deferred": [
+    "Live go-live / handoff Complete claimed by CI packaging",
+    "Forged LAUNCH §7 Name/Date sign-off",
+    "Flipping Stage 31 O1 Remaining flags without ops evidence",
+    "Re-packaging Stage 26–31 packs as new Complete",
+    "Production deploy jobs in main ci.yml"
+  ]
+}

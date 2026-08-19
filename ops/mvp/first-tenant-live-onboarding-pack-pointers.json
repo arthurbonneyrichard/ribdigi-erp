@@ -1,0 +1,59 @@
+{
+  "id": "first-tenant-live-onboarding-pack-pointers",
+  "stage": 194,
+  "pack": "P1",
+  "doc": "docs/FIRST_TENANT_LIVE_ONBOARDING_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+    "first_tenant_onboarding_register": "ops/mvp/first-tenant-onboarding.json",
+    "first_tenant_golive": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+    "first_tenant_golive_register": "ops/mvp/first-tenant-golive.json",
+    "live_migration_remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "first_tenant_onboarding_stage33",
+    "first_tenant_golive_stage66",
+    "live_migration_remaining_gate_stage193",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "fp-onboarding",
+      "title": "Point to Stage 33 first-tenant onboarding",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fp-golive",
+      "title": "Point to Stage 66 first-tenant go-live honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fp-live-migration-gate",
+      "title": "Point to Stage 193 live migration remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fp-no-demo",
+      "title": "Reaffirm demo_tenant_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fp-onboarding-remaining",
+      "title": "First-tenant live onboarding Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 194 P1 first-tenant live onboarding pack pointers packaging only. Do not claim live onboarding Complete."
+}

@@ -1,0 +1,59 @@
+{
+  "id": "platform-principal-pack-rg-pointers",
+  "stage": 269,
+  "pack": "P1",
+  "doc": "docs/PLATFORM_PRINCIPAL_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PLATFORM_PRINCIPAL_PACK_REMAINING_GATE_MVP.md",
+    "platform_principal": "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+    "dual_console_pack_remaining_gate": "docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "tenant_company_console_pack_remaining_gate": "docs/TENANT_COMPANY_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "ribdigi_house_console_pack_remaining_gate": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "platform_ops_live_claimed": false,
+  "cross_principal_leak_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "platform_principal_adr137",
+    "dual_console_pack_remaining_gate_stage268",
+    "tenant_company_console_pack_remaining_gate_stage267",
+    "ribdigi_house_console_pack_remaining_gate_stage266",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ppprp-adr137",
+      "title": "Point to ADR-137 platform principal",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ppprp-stage268",
+      "title": "Point to Stage 268 dual console pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ppprp-stage267",
+      "title": "Point to Stage 267 tenant company console pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ppprp-stage266",
+      "title": "Point to Stage 266 Ribdigi House console pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ppprp-platform-ops-remaining",
+      "title": "Live platform-ops Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 269 P1 platform principal pack RG pointers packaging only. Do not claim live platform-ops Complete."
+}

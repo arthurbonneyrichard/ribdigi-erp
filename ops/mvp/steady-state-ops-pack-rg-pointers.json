@@ -1,0 +1,60 @@
+{
+  "id": "steady-state-ops-pack-rg-pointers",
+  "stage": 258,
+  "pack": "P1",
+  "doc": "docs/STEADY_STATE_OPS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "commercial_acceptance_pack_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_packaging_archive_pack_remaining_gate": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "steady_state_ops_remaining_gate": "docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md",
+    "steady_state_ops_register": "ops/mvp/steady-state-ops.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "steady_state_ops_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "steady_state_ops_stage71_s1",
+    "commercial_acceptance_pack_remaining_gate_stage257",
+    "commercial_packaging_archive_pack_remaining_gate_stage256",
+    "steady_state_ops_remaining_gate_stage198",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ssoprp-stage71",
+      "title": "Point to Stage 71 S1 steady-state ops",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprp-stage257",
+      "title": "Point to Stage 257 commercial acceptance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprp-stage256",
+      "title": "Point to Stage 256 commercial packaging archive pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprp-stage198",
+      "title": "Point to Stage 198 steady-state ops remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprp-steady-remaining",
+      "title": "Steady-state ops live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 258 P1 steady-state ops pack RG pointers packaging only. Do not claim steady-state ops live Complete."
+}

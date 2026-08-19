@@ -1,0 +1,60 @@
+{
+  "id": "sbom-disclosure-pack-rg-pointers",
+  "stage": 314,
+  "pack": "P1",
+  "doc": "docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "sbom_disclosure": "docs/SBOM_DISCLOSURE_MVP.md",
+    "commercial_liability_pack_remaining_gate": "docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md",
+    "status_uptime_pack_remaining_gate": "docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md",
+    "vuln_disclosure_pack_remaining_gate": "docs/VULN_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "sbom_pipeline_live": false,
+  "cosign_signing_claimed": false,
+  "snyk_saas_claimed": false,
+  "dependabot_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "sbom_disclosure_stage40",
+    "commercial_liability_pack_remaining_gate_stage313",
+    "status_uptime_pack_remaining_gate_stage312",
+    "vuln_disclosure_pack_remaining_gate_stage38",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sdprp-stage40",
+      "title": "Point to Stage 40 S1 SBOM disclosure",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprp-stage313",
+      "title": "Point to Stage 313 commercial liability pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprp-stage312",
+      "title": "Point to Stage 312 status uptime pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprp-stage38",
+      "title": "Point to Stage 38 vuln disclosure pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprp-pipeline-remaining",
+      "title": "Live SBOM pipeline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 314 P1 SBOM disclosure pack RG pointers packaging only. Do not claim live SBOM pipeline Complete."
+}

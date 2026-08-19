@@ -1,0 +1,61 @@
+{
+  "id": "cyber-insurance-pack-rg-pointers",
+  "stage": 288,
+  "pack": "P1",
+  "doc": "docs/CYBER_INSURANCE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CYBER_INSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "cyber_insurance": "docs/CYBER_INSURANCE_MVP.md",
+    "vuln_disclosure_pack_remaining_gate": "docs/VULN_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "breach_notification_pack_remaining_gate": "docs/BREACH_NOTIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "liability_indemnity": "docs/LIABILITY_INDEMNITY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "coi_issued_claimed": false,
+  "cyber_insurance_live": false,
+  "insurance_certificate_claimed": false,
+  "broker_attestation_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "cyber_insurance_stage47",
+    "vuln_disclosure_pack_remaining_gate_stage287",
+    "breach_notification_pack_remaining_gate_stage286",
+    "liability_indemnity_stage46",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ciprp-stage47",
+      "title": "Point to Stage 47 I1 cyber insurance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprp-stage287",
+      "title": "Point to Stage 287 vuln disclosure pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprp-stage286",
+      "title": "Point to Stage 286 breach notification pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprp-stage46",
+      "title": "Point to Stage 46 liability indemnity adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ciprp-coi-remaining",
+      "title": "Issued COI Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 288 P1 cyber insurance pack RG pointers packaging only. Do not claim issued COI Complete."
+}

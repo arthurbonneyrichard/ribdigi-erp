@@ -1,0 +1,55 @@
+{
+  "id": "commercial-acceptance-blockers",
+  "stage": 197,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_ACCEPTANCE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "commercial_acceptance": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md"
+  },
+  "packaging_complete": true,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "commercial_acceptance_execution": "REMAINING",
+    "steady_state_ops_live": "REMAINING",
+    "stage71_a1_as_commercial_acceptance": "NON_CLAIM",
+    "stage71_s1_as_commercial_acceptance": "NON_CLAIM",
+    "commercial_acceptance_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cb-acceptance",
+      "title": "Mark commercial acceptance execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-steady-state",
+      "title": "Mark steady-state ops live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage71a1-nonclaim",
+      "title": "Mark Stage 71 A1 commercial acceptance as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage71s1-nonclaim",
+      "title": "Mark Stage 71 S1 steady-state as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-acceptance-remaining",
+      "title": "Commercial acceptance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 197 B1 commercial acceptance blocker matrix packaging only. Commercial acceptance Complete remains MISSING."
+}

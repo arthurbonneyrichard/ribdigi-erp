@@ -1,0 +1,61 @@
+{
+  "id": "release-pipeline-pack-rg-pointers",
+  "stage": 248,
+  "pack": "P1",
+  "doc": "docs/RELEASE_PIPELINE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md",
+    "release_pipeline": "docs/RELEASE_PIPELINE_MVP.md",
+    "implementation_onboarding_pack_remaining_gate": "docs/IMPLEMENTATION_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "business_pilot_pack_remaining_gate": "docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md",
+    "staging_gha_pack_remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+    "release_pipeline_register": "ops/mvp/release-pipeline.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "mvp_release_candidate_signed": false,
+  "release_pipeline_live_claimed": false,
+  "staging_promotion_live_claimed": false,
+  "security_review_signed_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "release_pipeline_stage65_r1",
+    "implementation_onboarding_pack_remaining_gate_stage247",
+    "business_pilot_pack_remaining_gate_stage246",
+    "staging_gha_pack_remaining_gate_stage229",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "rpprp-stage65",
+      "title": "Point to Stage 65 R1 release pipeline",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rpprp-stage247",
+      "title": "Point to Stage 247 implementation onboarding pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rpprp-stage246",
+      "title": "Point to Stage 246 business pilot pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rpprp-stage229",
+      "title": "Point to Stage 229 staging GHA pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rpprp-rc-remaining",
+      "title": "Signed RC / live pipeline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 248 P1 release pipeline pack RG pointers packaging only. Do not claim signed MVP RC or live release pipeline Complete."
+}

@@ -1,0 +1,51 @@
+{
+  "id": "knowledge-base-pack-rg-blockers",
+  "stage": 238,
+  "pack": "B1",
+  "doc": "docs/KNOWLEDGE_BASE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "knowledge_base_register": "ops/mvp/knowledge-base.json"
+  },
+  "packaging_complete": true,
+  "live_knowledge_base_claimed": false,
+  "hosted_kb_saas_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_hosted_knowledge_base_portal": "REMAINING",
+    "hosted_faq_saas": "REMAINING",
+    "stage171_k1_as_live_knowledge_base": "NON_CLAIM",
+    "stage33_t1_as_live_knowledge_base": "NON_CLAIM",
+    "live_knowledge_base_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "kbprb-portal",
+      "title": "Mark live hosted knowledge-base / FAQ portal Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbprb-saas",
+      "title": "Mark hosted FAQ SaaS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbprb-stage171-nonclaim",
+      "title": "Mark Stage 171 K1 as non-claim for live knowledge-base",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbprb-kb-remaining",
+      "title": "Live knowledge-base Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 238 B1 knowledge base pack RG blocker matrix packaging only. Live knowledge-base Complete remains MISSING."
+}

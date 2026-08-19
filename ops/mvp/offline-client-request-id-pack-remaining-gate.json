@@ -1,0 +1,60 @@
+{
+  "id": "offline-client-request-id-pack-remaining-gate",
+  "stage": 389,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage165_fidelity": "docs/STAGE_165_FIDELITY.md",
+    "offline_push_pull_sync_pack_remaining_gate": "docs/OFFLINE_PUSH_PULL_SYNC_PACK_REMAINING_GATE_MVP.md",
+    "offline_indexeddb_queue_pack_remaining_gate": "docs/OFFLINE_INDEXEDDB_QUEUE_PACK_REMAINING_GATE_MVP.md",
+    "sync_idempotency_replay_pack_remaining_gate": "docs/SYNC_IDEMPOTENCY_REPLAY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_client_request_id_complete_claimed": false,
+  "client_request_id_idempotency_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage388_offline_push_pull_sync_pack_remaining_gate": true,
+  "distinct_from_stage387_offline_indexeddb_queue_pack_remaining_gate": true,
+  "distinct_from_stage165_idempotency_completes": true,
+  "distinct_from_sync_idempotency_replay_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ocripr-read-blockers",
+      "title": "Read B1 offline client_request_id pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocripr-follow-pointers",
+      "title": "Follow P1 Stage 388 / Stage 387 / Stage 165 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocripr-checklist-missing",
+      "title": "Reaffirm Offline Complete / offline client-request-id / client_request_id idempotency / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocripr-no-packaging-as-live",
+      "title": "Do not treat Stage 165 / SYNC_IDEMPOTENCY / Stage 388 as Offline Complete or offline client-request-id Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocripr-checklist-remaining",
+      "title": "Offline Complete / offline client-request-id / client_request_id idempotency / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 389 I1 offline client_request_id pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

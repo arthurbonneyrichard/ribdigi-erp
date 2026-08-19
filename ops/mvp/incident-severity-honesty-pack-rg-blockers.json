@@ -1,0 +1,77 @@
+{
+  "id": "incident-severity-honesty-pack-rg-blockers",
+  "stage": 534,
+  "pack": "B1",
+  "doc": "docs/INCIDENT_SEVERITY_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/INCIDENT_SEVERITY_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "incident_severity_pack_remaining_gate": "docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "incident_severity_honesty_complete_claimed": false,
+  "incident_severity_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "incident_severity_honesty_complete_claimed": "REMAINING",
+    "incident_severity_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_incident_severity_honesty": "NON_CLAIM",
+    "incident_severity_pack_as_incident_severity_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "incident_severity_honesty_complete_claimed_flag": "false",
+    "incident_severity_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ishrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ishrb-honesty",
+      "title": "Mark Incident Severity honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ishrb-as-golive",
+      "title": "Mark Incident Severity as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ishrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ishrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ishrb-prior-nonclaim",
+      "title": "Mark INCIDENT_SEVERITY_PACK as non-claim for incident-severity Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ishrb-checklist-remaining",
+      "title": "Offline Complete / Incident Severity / Incident Severity honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 534 B1 Incident Severity Honesty Pack RG blocker matrix packaging only."
+}

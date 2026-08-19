@@ -1,0 +1,49 @@
+{
+  "id": "incident-pack-rg-blockers",
+  "stage": 237,
+  "pack": "B1",
+  "doc": "docs/INCIDENT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+    "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+    "incident_checklist": "ops/incident/incident-checklist.json"
+  },
+  "packaging_complete": true,
+  "live_incident_drill_claimed": false,
+  "live_incident_response_claimed": false,
+  "hosted_pagerduty_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_incident_oncall_drill_execution": "REMAINING",
+    "hosted_pagerduty_live_paging": "REMAINING",
+    "stage30_i1_as_live_incident_drill": "NON_CLAIM",
+    "live_incident_drill_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "iprb-drill",
+      "title": "Mark live incident / on-call drill execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "iprb-pagerduty",
+      "title": "Mark hosted PagerDuty / live paging Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "iprb-stage30-nonclaim",
+      "title": "Mark Stage 30 I1 as non-claim for live incident drill",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "iprb-drill-remaining",
+      "title": "Live incident drill Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 237 B1 incident pack RG blocker matrix packaging only. Live incident drill Complete remains MISSING."
+}

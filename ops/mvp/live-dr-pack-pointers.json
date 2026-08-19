@@ -1,0 +1,61 @@
+{
+  "id": "live-dr-pack-pointers",
+  "stage": 192,
+  "pack": "P1",
+  "doc": "docs/LIVE_DR_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "backup_restore_drill_honesty_register": "ops/mvp/backup-restore-drill-honesty.json",
+    "e2e_backup_restore": "docs/E2E_BACKUP_RESTORE_MVP.md",
+    "e2e_backup_restore_register": "ops/mvp/e2e-backup-restore.json",
+    "pitr_drill_pack": "docs/PITR_DRILL_PACK_MVP.md",
+    "hosted_faq_saas_remaining_gate": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_dr_claimed": false,
+  "live_backup_restore_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "backup_drill_honesty_stage169",
+    "e2e_backup_restore_stage35",
+    "pitr_drill_pack",
+    "hosted_faq_saas_remaining_gate_stage191",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "lp-backup-drill",
+      "title": "Point to Stage 169 backup drill honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-e2e-backup",
+      "title": "Point to Stage 35 E2E backup/restore",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-pitr",
+      "title": "Point to PITR drill pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-hosted-faq-gate",
+      "title": "Point to Stage 191 hosted FAQ SaaS remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lp-dr-remaining",
+      "title": "Live DR Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 192 P1 live DR pack pointers packaging only. Do not claim live DR Complete."
+}

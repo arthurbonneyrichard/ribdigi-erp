@@ -1,0 +1,54 @@
+{
+  "id": "pitr-drill-pack-rg-blockers",
+  "stage": 231,
+  "pack": "B1",
+  "doc": "docs/PITR_DRILL_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md",
+    "pitr_drill_pack": "docs/PITR_DRILL_PACK_MVP.md",
+    "wal_pitr_runbook": "docs/DR_WAL_PITR_RUNBOOK.md"
+  },
+  "packaging_complete": true,
+  "live_pitr_drill_claimed": false,
+  "ci_pitr_replay_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_staging_pitr_drill_execution": "REMAINING",
+    "ci_pitr_replay_certificate": "REMAINING",
+    "stage28_r1_as_live_pitr_drill": "NON_CLAIM",
+    "live_pitr_drill_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "pdprb-exec",
+      "title": "Mark live staging PITR drill execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprb-ci-replay",
+      "title": "Mark CI PITR replay certificate Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprb-stage28-nonclaim",
+      "title": "Mark Stage 28 R1 PITR drill pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprb-claimed-false",
+      "title": "Mark live_pitr_drill_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdprb-drill-remaining",
+      "title": "Live PITR drill Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 231 B1 PITR drill pack RG blocker matrix packaging only. Live PITR drill Complete remains MISSING."
+}

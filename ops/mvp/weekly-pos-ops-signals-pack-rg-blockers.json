@@ -1,0 +1,63 @@
+{
+  "id": "weekly-pos-ops-signals-pack-rg-blockers",
+  "stage": 345,
+  "pack": "B1",
+  "doc": "docs/WEEKLY_POS_OPS_SIGNALS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/WEEKLY_POS_OPS_SIGNALS_PACK_REMAINING_GATE_MVP.md",
+    "weekly_pos_ops_signals": "docs/WEEKLY_POS_OPS_SIGNALS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_zero_conflict_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_zero_conflict_claimed": "REMAINING",
+    "stage176_as_live_weekly_pos_ops_signals": "NON_CLAIM",
+    "stage175_as_live_weekly_pos_ops_signals": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_zero_conflict_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "wposprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wposprb-sla",
+      "title": "Mark support SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wposprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wposprb-stage176-nonclaim",
+      "title": "Mark Stage 176 / Stage 175 as non-claim for live weekly POS ops signals Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wposprb-checklist-remaining",
+      "title": "Live weekly POS ops signals Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 345 B1 weekly POS ops signals pack RG blocker matrix packaging only. Live weekly POS ops signals Completes remain MISSING."
+}

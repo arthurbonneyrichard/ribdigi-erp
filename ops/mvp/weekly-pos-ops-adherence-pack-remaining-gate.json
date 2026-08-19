@@ -1,0 +1,57 @@
+{
+  "id": "weekly-pos-ops-adherence-pack-remaining-gate",
+  "stage": 343,
+  "pack": "I1",
+  "doc": "docs/WEEKLY_POS_OPS_ADHERENCE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/WEEKLY_POS_OPS_ADHERENCE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/WEEKLY_POS_OPS_ADHERENCE_PACK_RG_POINTERS_MVP.md",
+    "weekly_pos_ops_adherence": "docs/WEEKLY_POS_OPS_ADHERENCE_MVP.md",
+    "shift_handover_checklist_pack_remaining_gate": "docs/SHIFT_HANDOVER_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+    "store_close_checklist_pack_remaining_gate": "docs/STORE_CLOSE_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_adherence_claimed": false,
+  "distinct_from_stage176_weekly_pos_ops_adherence": true,
+  "distinct_from_stage342_shift_handover_checklist_pack_remaining_gate": true,
+  "distinct_from_stage341_store_close_checklist_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "wpoapr-read-blockers",
+      "title": "Read B1 weekly POS ops adherence pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoapr-follow-pointers",
+      "title": "Follow P1 Stage 176 / Stage 342 / Stage 341 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoapr-checklist-missing",
+      "title": "Reaffirm live weekly POS ops adherence / Offline Complete / support SLA / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoapr-no-packaging-as-live",
+      "title": "Do not treat Stage 176 / Stage 175 / Stage 342 / Stage 341 / Stage 329 as live weekly POS ops adherence Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "wpoapr-checklist-remaining",
+      "title": "Offline Complete / support SLA / attestation / fabricated 100% adherence / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 343 I1 weekly POS ops adherence pack remaining-gate index packaging only. Do not claim live weekly POS ops adherence Complete."
+}

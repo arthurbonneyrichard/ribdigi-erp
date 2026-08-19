@@ -1,0 +1,62 @@
+{
+  "id": "steady-state-ops-pack-rg-blockers",
+  "stage": 258,
+  "pack": "B1",
+  "doc": "docs/STEADY_STATE_OPS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "steady_state_ops_remaining_gate": "docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md",
+    "steady_state_ops_register": "ops/mvp/steady-state-ops.json"
+  },
+  "packaging_complete": true,
+  "steady_state_ops_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "steady_state_ops_complete": "REMAINING",
+    "commercial_acceptance_complete": "REMAINING",
+    "first_commercial_day_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage71_s1_as_steady_state_live": "NON_CLAIM",
+    "stage198_as_steady_state_live": "NON_CLAIM",
+    "steady_state_ops_claimed": "false",
+    "commercial_acceptance_claimed": "false",
+    "first_commercial_day_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ssoprb-steady",
+      "title": "Mark steady-state ops live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprb-acceptance",
+      "title": "Mark commercial acceptance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprb-first-day",
+      "title": "Mark first commercial day Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprb-stage71-nonclaim",
+      "title": "Mark Stage 71 S1 as non-claim for steady-state ops live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ssoprb-steady-remaining",
+      "title": "Steady-state ops live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 258 B1 steady-state ops pack RG blocker matrix packaging only. Steady-state ops live Completes remain MISSING."
+}

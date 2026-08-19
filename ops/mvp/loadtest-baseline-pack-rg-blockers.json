@@ -1,0 +1,63 @@
+{
+  "id": "loadtest-baseline-pack-rg-blockers",
+  "stage": 328,
+  "pack": "B1",
+  "doc": "docs/LOADTEST_BASELINE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md",
+    "loadtest_baseline_remaining_gate": "docs/LOADTEST_BASELINE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "certified_load_claimed": false,
+  "live_load_capacity_claimed": false,
+  "operator_1000vu_executed": false,
+  "load_cert_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "certified_load_claimed": "REMAINING",
+    "live_load_capacity_claimed": "REMAINING",
+    "operator_1000vu_executed": "REMAINING",
+    "load_cert_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage225_as_live_certified_load": "NON_CLAIM",
+    "stage5_18_as_live_certified_load": "NON_CLAIM",
+    "certified_load_claimed_flag": "false",
+    "live_load_capacity_claimed_flag": "false",
+    "operator_1000vu_executed_flag": "false",
+    "load_cert_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ltbprb-certified",
+      "title": "Mark certified load Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbprb-capacity",
+      "title": "Mark live load capacity Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbprb-1000vu",
+      "title": "Mark operator 1000-VU Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbprb-stage225-nonclaim",
+      "title": "Mark Stage 225 / Stage 5 / Stage 18 as non-claim for live certified load Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbprb-load-remaining",
+      "title": "Live certified load Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 328 B1 loadtest baseline pack RG blocker matrix packaging only. Live certified load Completes remain MISSING."
+}

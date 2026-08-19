@@ -14,15 +14,73 @@ from app.credit import default_due_date
 from app.catalog import resolve_sale_line, stock_out_with_batch
 
 
-def invoice_payment_status(total: float, paid: float) -> str:
-    if paid <= 0:
-        return "posted"
-    if paid + 1e-9 >= total:
+INVOICE_PRINT_TEMPLATES = frozenset({"a4", "thermal_80", "thermal_58"})
+INVOICE_PRINT_FORMATS = frozenset({"text", "pdf", "html"})
+
+
+def calc_sale_line_amounts(
+    spec,
+    quantity: float,
+    unit_price: float,
+    discount: float = 0,
+) -> tuple[float, float, float, float]:
+    """Return (line_sub, line_tax, line_total, discount) with tax on net after line discount.
+
+    Stage 12 C1 — aligns quotations/orders/invoices with POS and Stage 11 PO math.
+    """
+    qty = float(quantity or 0)
+    unit = float(unit_price or 0)
+    disc = round(float(discount or 0), 2)
+    if disc < 0:
+        raise HTTPException(status_code=400, detail="Line discount must be >= 0")
+    gross_before = round(qty * unit, 2)
+    if disc > gross_before + 1e-9:
+        raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
+    taxable = round(gross_before - disc, 2)
+    line_sub, line_tax, line_total = spec.compute_amounts(taxable)
+    return float(line_sub), float(line_tax), float(line_total), disc
+
+
+def invoice_payment_status(total: float, paid: float, *, previous_status: str | None = None) -> str:
+    total_f = float(total or 0)
+    paid_f = float(paid or 0)
+    if paid_f + 1e-9 >= total_f:
         return "paid"
-    return "partial"
+    if paid_f > 0:
+        return "partial"
+    # Unpaid: preserve sent/overdue instead of collapsing back to posted
+    if previous_status in {"sent", "overdue"}:
+        return previous_status
+    return "posted"
 
 
-async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.Party:
+def refresh_invoice_overdue(invoice: m.SalesInvoice, *, now: datetime | None = None) -> bool:
+    """Mark unpaid posted/sent invoices past due_date as overdue. Returns True if changed."""
+    now = now or datetime.utcnow()
+    balance = max(float(invoice.total_amount or 0) - float(invoice.paid_amount or 0), 0)
+    if invoice.status not in {"posted", "sent", "overdue", "partial"}:
+        return False
+    if balance <= 1e-9:
+        return False
+    if not invoice.due_date or invoice.due_date.date() >= now.date():
+        return False
+    if invoice.status == "partial":
+        # Keep partial for partially paid past-due; expose via is_overdue flag in serialize.
+        return False
+    if invoice.status != "overdue":
+        invoice.status = "overdue"
+        invoice.updated_at = now
+        return True
+    return False
+
+
+async def get_customer(
+    db: AsyncSession,
+    tenant_id: str,
+    customer_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Party:
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -34,6 +92,9 @@ async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.
     ).scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(customer, company_id, detail="Customer not found")
     return customer
 
 
@@ -63,34 +124,53 @@ async def list_invoice_items(db: AsyncSession, tenant_id: str, invoice_id: str) 
 
 
 async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
+    refresh_invoice_overdue(invoice)
     items = await list_invoice_items(db, invoice.tenant_id, invoice.id)
+    balance = max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0)
+    now = datetime.utcnow()
+    is_overdue = bool(
+        balance > 1e-9
+        and invoice.due_date
+        and invoice.due_date.date() < now.date()
+        and invoice.status not in {"draft", "cancelled", "paid"}
+    )
     return {
         "id": invoice.id,
+        "company_id": getattr(invoice, "company_id", None),
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
         "store_id": invoice.store_id,
         "status": invoice.status,
+        "is_overdue": is_overdue,
         "subtotal": float(invoice.subtotal),
         "tax_amount": float(invoice.tax_amount),
         "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
         "discount_amount": float(invoice.discount_amount),
         "total_amount": float(invoice.total_amount),
         "paid_amount": float(invoice.paid_amount),
-        "balance_due": max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0),
+        "balance_due": balance,
         "currency": getattr(invoice, "currency", None) or "",
         "exchange_rate": float(getattr(invoice, "exchange_rate", None) or 1),
         "balance_due_base": round(
-            max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0)
-            * float(getattr(invoice, "exchange_rate", None) or 1),
+            balance * float(getattr(invoice, "exchange_rate", None) or 1),
             2,
         ),
         "notes": invoice.notes,
+        "credit_limit_overridden": bool(getattr(invoice, "credit_limit_overridden", False)),
+        "credit_override_reason": getattr(invoice, "credit_override_reason", None),
+        "credit_override_by": getattr(invoice, "credit_override_by", None),
+        "credit_override_at": getattr(invoice, "credit_override_at", None),
         "posted_at": invoice.posted_at,
         "due_date": invoice.due_date,
+        "emailed_at": getattr(invoice, "emailed_at", None),
+        "emailed_to": getattr(invoice, "emailed_to", None),
+        "sales_order_id": invoice.sales_order_id,
+        "quotation_id": invoice.quotation_id,
         "created_at": invoice.created_at,
         "items": [
             {
                 "id": i.id,
+                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": float(i.quantity),
@@ -102,6 +182,433 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
             for i in items
         ],
     }
+
+
+def render_invoice_text(
+    invoice_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
+) -> str:
+    from app.print_branding import header_footer_text_lines
+
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
+    width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
+    cur = currency or invoice_data.get("currency") or "GHS"
+    labels = item_labels or {}
+    lines = [
+        company_name[:width],
+    ]
+    if trading_name:
+        lines.append(f"Trading as {trading_name}"[:width])
+    if has_logo or logo_data_url:
+        lines.append("[Company logo on file]"[:width])
+    if company_address:
+        lines.append(str(company_address)[:width])
+    if company_phone:
+        lines.append(f"Tel: {company_phone}"[:width])
+    if company_email:
+        lines.append(str(company_email)[:width])
+    if tax_registration_number:
+        lines.append(f"Tax #: {tax_registration_number}"[:width])
+    for part in header_footer_text_lines(document_header, width):
+        lines.append(part[:width])
+    lines.extend(
+        [
+            "",
+            f"INVOICE {invoice_data.get('invoice_number')}"[:width],
+            f"Customer: {customer_name}"[:width],
+        ]
+    )
+    if customer_address:
+        lines.append(str(customer_address)[:width])
+    lines.append(f"Status: {invoice_data.get('status')}"[:width])
+    if invoice_data.get("due_date"):
+        lines.append(f"Due: {str(invoice_data['due_date'])[:10]}"[:width])
+    lines.extend(["", f"{'Item':<{max(width - 28, 8)}} {'Qty':>6} {'Total':>10}"[:width], "-" * width])
+    for item in invoice_data.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        desc = str(labels.get(pid) or pid or "Item")[: max(width - 28, 8)]
+        lines.append(
+            f"{desc:<{max(width - 28, 8)}} {float(item.get('quantity') or 0):>6.2f} "
+            f"{float(item.get('line_total') or 0):>10.2f}"[:width]
+        )
+    lines.extend(
+        [
+            "-" * width,
+            f"Subtotal: {cur} {float(invoice_data.get('subtotal') or 0):.2f}"[:width],
+            f"Tax: {cur} {float(invoice_data.get('tax_amount') or 0):.2f}"[:width],
+            f"Discount: {cur} {float(invoice_data.get('discount_amount') or 0):.2f}"[:width],
+            f"TOTAL: {cur} {float(invoice_data.get('total_amount') or 0):.2f}"[:width],
+            f"Paid: {cur} {float(invoice_data.get('paid_amount') or 0):.2f}"[:width],
+            f"Balance: {cur} {float(invoice_data.get('balance_due') or 0):.2f}"[:width],
+        ]
+    )
+    if invoice_data.get("notes"):
+        lines.extend(["", f"Notes: {invoice_data['notes']}"[:width]])
+    footer_lines = header_footer_text_lines(document_footer, width)
+    if footer_lines:
+        lines.append("")
+        lines.extend(part[:width] for part in footer_lines)
+    elif tpl.startswith("thermal"):
+        lines.extend(["", "Thank you!"[:width]])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=width, center=tpl.startswith("thermal")))
+    return "\n".join(lines)
+
+
+def render_invoice_html(
+    invoice_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
+) -> str:
+    from html import escape
+
+    from app.print_branding import brand_html_block, header_footer_html, platform_print_footer_html
+
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
+    cur = escape(currency or invoice_data.get("currency") or "GHS")
+    labels = item_labels or {}
+    max_width = "80mm" if tpl == "thermal_80" else "58mm" if tpl == "thermal_58" else "720px"
+    font = "12px/1.4 monospace" if tpl.startswith("thermal") else "15px/1.45 Georgia, 'Times New Roman', serif"
+    rows = []
+    for item in invoice_data.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        desc = escape(str(labels.get(pid) or pid or "Item"))
+        rows.append(
+            "<tr>"
+            f"<td>{desc}</td>"
+            f"<td style='text-align:right'>{float(item.get('quantity') or 0):.2f}</td>"
+            f"<td style='text-align:right'>{float(item.get('unit_price') or 0):.2f}</td>"
+            f"<td style='text-align:right'>{float(item.get('line_total') or 0):.2f}</td>"
+            "</tr>"
+        )
+    meta = []
+    if company_address:
+        meta.append(escape(str(company_address)))
+    if company_phone:
+        meta.append(f"Tel: {escape(str(company_phone))}")
+    if company_email:
+        meta.append(escape(str(company_email)))
+    if tax_registration_number:
+        meta.append(f"Tax #: {escape(str(tax_registration_number))}")
+    due = str(invoice_data.get("due_date") or "")[:10]
+    due_line = f" · Due {escape(due)}" if due else ""
+    customer_addr_html = f"<br>{escape(str(customer_address))}" if customer_address else ""
+    notes_html = (
+        f"<p class='muted'>Notes: {escape(str(invoice_data.get('notes')))}</p>"
+        if invoice_data.get("notes")
+        else ""
+    )
+    header_html = header_footer_html(document_header, css_class="doc-header")
+    footer_html = header_footer_html(document_footer, css_class="doc-footer")
+    if not footer_html:
+        footer_html = (
+            "<p>Thank you for your business.</p>"
+            if tpl.startswith("thermal")
+            else "<p class='muted' style='margin-top:28px'>Thank you for your business.</p>"
+        )
+    footer_html = f"{footer_html}{platform_print_footer_html()}"
+    meta_html = "<br>".join(meta)
+    rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
+    inv_no = escape(str(invoice_data.get("invoice_number") or ""))
+    status = escape(str(invoice_data.get("status") or ""))
+    brand_block = brand_html_block(
+        company_name=company_name,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        meta_html=meta_html,
+    )
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8"><title>Invoice {inv_no}</title>
+<style>
+  body {{ margin:0; background:#f3f0ea; color:#1c1917; font:{font}; }}
+  .sheet {{ max-width:{max_width}; margin:0 auto; min-height:100vh; padding:28px 32px 40px;
+    background:linear-gradient(180deg,#fffdf8 0%,#f7f1e8 100%); }}
+  h1 {{ font-size:1.8rem; letter-spacing:.04em; margin:0 0 6px; font-weight:700; }}
+  h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
+  .muted {{ color:#57534e; }}
+  .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
+  .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
+  .doc-header {{ margin:8px 0 0; }}
+  .doc-footer {{ margin-top:28px; }}
+  table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
+  th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
+  th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
+  .totals {{ margin-top:18px; width:100%; max-width:280px; margin-left:auto; }}
+  .totals div {{ display:flex; justify-content:space-between; padding:4px 0; }}
+  .totals .grand {{ font-weight:700; border-top:2px solid #292524; margin-top:6px; padding-top:8px; }}
+  .toolbar {{ position:sticky; top:0; background:#fffdf8cc; padding:8px 0 12px; }}
+  @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
+</style></head><body><div class="sheet">
+  <div class="toolbar"><button onclick="window.print()">Print</button></div>
+  {brand_block}
+  {header_html}
+  <h2>Invoice {inv_no}</h2>
+  <div class="muted">Status: {status}{due_line}</div>
+  <p><strong>Bill to</strong><br>{escape(customer_name)}{customer_addr_html}</p>
+  <table>
+    <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>{rows_html}</tbody>
+  </table>
+  <div class="totals">
+    <div><span>Subtotal</span><span>{cur} {float(invoice_data.get("subtotal") or 0):.2f}</span></div>
+    <div><span>Tax</span><span>{cur} {float(invoice_data.get("tax_amount") or 0):.2f}</span></div>
+    <div><span>Discount</span><span>{cur} {float(invoice_data.get("discount_amount") or 0):.2f}</span></div>
+    <div class="grand"><span>Total</span><span>{cur} {float(invoice_data.get("total_amount") or 0):.2f}</span></div>
+    <div><span>Paid</span><span>{cur} {float(invoice_data.get("paid_amount") or 0):.2f}</span></div>
+    <div><span>Balance</span><span>{cur} {float(invoice_data.get("balance_due") or 0):.2f}</span></div>
+  </div>
+  {notes_html}
+  {footer_html}
+</div></body></html>"""
+
+
+def render_invoice_pdf(
+    invoice_data: dict,
+    *,
+    company_name: str,
+    customer_name: str,
+    template: str = "a4",
+    currency: str = "GHS",
+    company_address: str | None = None,
+    company_phone: str | None = None,
+    company_email: str | None = None,
+    tax_registration_number: str | None = None,
+    customer_address: str | None = None,
+    item_labels: dict[str, str] | None = None,
+    logo_data_url: str | None = None,
+    trading_name: str | None = None,
+    legal_name: str | None = None,
+    has_logo: bool = False,
+    document_header: str | None = None,
+    document_footer: str | None = None,
+) -> bytes:
+    """Branded invoice PDF: A4 letter page or narrow thermal page."""
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
+    text = render_invoice_text(
+        invoice_data,
+        company_name=company_name,
+        customer_name=customer_name,
+        template=tpl,
+        currency=currency,
+        company_address=company_address,
+        company_phone=company_phone,
+        company_email=company_email,
+        tax_registration_number=tax_registration_number,
+        customer_address=customer_address,
+        item_labels=item_labels,
+        logo_data_url=logo_data_url,
+        trading_name=trading_name,
+        legal_name=legal_name,
+        has_logo=has_logo,
+        document_header=document_header,
+        document_footer=document_footer,
+    )
+    title = f"INVOICE {invoice_data.get('invoice_number') or ''}"
+    return render_branded_lines_pdf(
+        text.splitlines() or [""],
+        template=tpl,
+        company_name=company_name,
+        title=title,
+    )
+
+
+def render_branded_lines_pdf(
+    lines: list[str],
+    *,
+    template: str = "a4",
+    company_name: str,
+    title: str,
+) -> bytes:
+    """Build a simple branded multi-line PDF (A4 or thermal)."""
+    from app.report_export import _pdf_escape
+
+    tpl = template if template in INVOICE_PRINT_TEMPLATES else "a4"
+    if tpl.startswith("thermal"):
+        page_width = 226 if tpl == "thermal_80" else 164
+        line_height = 11
+        top = 20
+        bottom = 20
+        page_height = max(top + bottom + line_height * (len(lines) + 2), 200)
+        content: list[str] = []
+        y = page_height - top
+        for line in lines:
+            content.append(f"BT /F1 8 Tf 8 {y} Td ({_pdf_escape(line[:80])}) Tj ET")
+            y -= line_height
+            if y < bottom:
+                break
+        stream = "\n".join(content).encode("latin-1", errors="replace")
+        media = f"[0 0 {page_width} {page_height}]"
+    else:
+        page_width, page_height = 612, 792
+        content = []
+        y = 760
+        content.append(
+            f"BT /F2 18 Tf 50 {y} Td ({_pdf_escape(company_name[:60])}) Tj ET"
+        )
+        y -= 22
+        content.append(
+            f"BT /F2 14 Tf 50 {y} Td ({_pdf_escape(str(title)[:50])}) Tj ET"
+        )
+        y -= 28
+        for line in lines[1:]:
+            if y < 48:
+                content.append(
+                    f"BT /F1 9 Tf 50 {y} Td ({_pdf_escape('… continued on request …')}) Tj ET"
+                )
+                break
+            content.append(f"BT /F1 10 Tf 50 {y} Td ({_pdf_escape(line[:95])}) Tj ET")
+            y -= 13
+        stream = "\n".join(content).encode("latin-1", errors="replace")
+        media = f"[0 0 {page_width} {page_height}]"
+
+    objects: list[bytes] = []
+    objects.append(b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n")
+    objects.append(b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n")
+    if tpl.startswith("thermal"):
+        objects.append(
+            (
+                f"3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox {media} "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj\n"
+            ).encode("ascii")
+        )
+    else:
+        objects.append(
+            (
+                f"3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox {media} "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>endobj\n"
+            ).encode("ascii")
+        )
+    objects.append(
+        f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
+        + stream
+        + b"\nendstream\nendobj\n"
+    )
+    if tpl.startswith("thermal"):
+        objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
+    else:
+        objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n")
+        objects.append(b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n")
+
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for obj in objects:
+        offsets.append(len(out))
+        out.extend(obj)
+    xref_pos = len(out)
+    out.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    out.extend(b"0000000000 65535 f \n")
+    for off in offsets[1:]:
+        out.extend(f"{off:010d} 00000 n \n".encode("ascii"))
+    out.extend(
+        f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode(
+            "ascii"
+        )
+    )
+    return bytes(out)
+
+
+async def send_sales_invoice(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    invoice_id: str,
+    to: str | None = None,
+) -> tuple[m.SalesInvoice, dict]:
+    from app import emailer
+
+    invoice = await get_invoice(db, tenant_id, invoice_id)
+    refresh_invoice_overdue(invoice)
+    if invoice.status not in {"posted", "sent", "partial", "overdue", "paid"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot email invoice in status {invoice.status}",
+        )
+    customer = await get_customer(db, tenant_id, invoice.customer_id)
+    recipient = (to or customer.email or "").strip()
+    if not recipient:
+        raise HTTPException(
+            status_code=400,
+            detail="Customer has no email; set customer email or pass to= override",
+        )
+    tenant = await db.get(m.Tenant, tenant_id)
+    company_name = tenant.company_name if tenant else "RIBDIGI ERP"
+    currency = (getattr(invoice, "currency", None) or (tenant.currency if tenant else None) or "GHS")
+    payload = await serialize_invoice(db, invoice)
+    result = await emailer.send_invoice_email(
+        to=recipient,
+        company_name=company_name,
+        currency=currency,
+        customer_name=customer.name,
+        invoice=payload,
+    )
+    if not result.sent:
+        if result.mode == "disabled":
+            raise HTTPException(status_code=503, detail="Email delivery is disabled")
+        raise HTTPException(status_code=502, detail=result.error or "Email send failed")
+
+    now = datetime.utcnow()
+    if invoice.status == "posted":
+        invoice.status = "sent"
+    invoice.emailed_at = now
+    invoice.emailed_to = recipient
+    invoice.updated_at = now
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="sales",
+        action="invoice_sent",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={
+            "invoice_number": invoice.invoice_number,
+            "to": recipient,
+            "mode": result.mode,
+        },
+    )
+    await db.flush()
+    delivery = {
+        "sent": result.sent,
+        "mode": result.mode,
+        "to": recipient,
+        "emailed_at": invoice.emailed_at,
+    }
+    return invoice, delivery
 
 
 async def create_sales_invoice(
@@ -116,10 +623,11 @@ async def create_sales_invoice(
     store_id: str | None = None,
     currency: str | None = None,
     exchange_rate: float | None = None,
+    company_id: str | None = None,
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
-    await get_customer(db, tenant_id, customer_id)
+    await get_customer(db, tenant_id, customer_id, company_id=company_id)
 
     from app.fx import resolve_rate
 
@@ -129,15 +637,23 @@ async def create_sales_invoice(
     if store_id:
         from app import stores as stores_svc
 
-        store = await stores_svc.get_store(db, tenant_id, store_id)
+        store = await stores_svc.get_store(db, tenant_id, store_id, company_id=company_id)
         resolved_store_id = store.id
 
+    from app.customers import customer_group_discount_percent
+
+    group_discount = await customer_group_discount_percent(db, tenant_id, customer_id)
     subtotal = 0.0
     tax_total = 0.0
     reverse_charge_tax = 0.0
     prepared: list[tuple[dict, float]] = []
+    from app.workspace import assert_fk_company
+
     for item in items:
-        product, variant, unit_price = await resolve_sale_line(db, tenant_id, item)
+        product, variant, unit_price = await resolve_sale_line(
+            db, tenant_id, item, group_discount_percent=group_discount
+        )
+        assert_fk_company(product, company_id, detail="Product not found")
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
@@ -145,10 +661,12 @@ async def create_sales_invoice(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_amount = float(item["quantity"]) * float(unit_price)
-        line_sub, line_tax, line_total = spec.compute_amounts(line_amount)
-        discount = float(item.get("discount") or 0)
-        line_total = max(line_total - discount, 0)
+        line_sub, line_tax, line_total, discount = calc_sale_line_amounts(
+            spec,
+            item["quantity"],
+            unit_price,
+            item.get("discount") or 0,
+        )
         subtotal += line_sub
         if spec.is_reverse_charge:
             reverse_charge_tax += line_tax
@@ -163,6 +681,7 @@ async def create_sales_invoice(
                     "unit_price": unit_price,
                     "discount": discount,
                     "tax_rate": spec.rate_pct,
+                    "supply_category": spec.supply_category,
                 },
                 line_total,
             )
@@ -171,9 +690,15 @@ async def create_sales_invoice(
     discount_amount = float(discount_amount or 0)
     total = max(subtotal + tax_total - discount_amount, 0)
 
+    from app.document_numbering import allocate_document_number
+
+    invoice_number = await allocate_document_number(
+        db, tenant_id=tenant_id, doc_key="sales_invoice", company_id=company_id
+    )
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,
-        invoice_number=f"INV-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        company_id=company_id,
+        invoice_number=invoice_number,
         customer_id=customer_id,
         status="draft",
         subtotal=subtotal,
@@ -195,6 +720,7 @@ async def create_sales_invoice(
         db.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 sales_invoice_id=invoice.id,
                 product_id=item["product_id"],
                 variant_id=item.get("variant_id"),
@@ -203,18 +729,20 @@ async def create_sales_invoice(
                 tax_rate=item.get("tax_rate", 0),
                 discount=item.get("discount", 0),
                 line_total=line_total,
+                supply_category=item.get("supply_category") or "standard",
             )
         )
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="invoice_created",
-            entity="sales_invoice",
-            entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="invoice_created",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
+        module='sales',
     )
     return invoice
 
@@ -225,6 +753,10 @@ async def post_sales_invoice(
     tenant_id: str,
     user_id: str,
     invoice_id: str,
+    role: str = "",
+    permissions: dict | None = None,
+    credit_limit_override: bool = False,
+    credit_override_reason: str | None = None,
 ) -> m.SalesInvoice:
     invoice = await get_invoice(db, tenant_id, invoice_id)
     if invoice.status != "draft":
@@ -236,32 +768,70 @@ async def post_sales_invoice(
 
     customer = await get_customer(db, tenant_id, invoice.customer_id)
     from app.fx import doc_rate, to_base
+    from app.credit import enforce_credit_limit
 
     inv_base = to_base(float(invoice.total_amount), doc_rate(invoice))
-    credit_limit = float(customer.credit_limit or 0)
-    if credit_limit > 0:
-        projected = float(customer.balance or 0) + inv_base
-        if projected > credit_limit + 1e-9:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "CREDIT_LIMIT_EXCEEDED",
-                    "message": "Posting this invoice would exceed the customer credit limit",
-                    "credit_limit": credit_limit,
-                    "current_balance": float(customer.balance or 0),
-                    "invoice_total": float(invoice.total_amount),
-                    "invoice_total_base": inv_base,
-                    "currency": getattr(invoice, "currency", None) or "",
-                },
-            )
+    credit_gate = await enforce_credit_limit(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        role=role,
+        permissions=permissions,
+        customer=customer,
+        additional_amount=inv_base,
+        override=credit_limit_override,
+        override_reason=credit_override_reason,
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        module="sales",
+        extra_details={
+            "invoice_total": float(invoice.total_amount),
+            "invoice_total_base": inv_base,
+            "currency": getattr(invoice, "currency", None) or "",
+            "invoice_number": invoice.invoice_number,
+        },
+    )
+    credit_limit = float(credit_gate["credit_limit"] or 0)
 
     warehouse_id = None
     if invoice.store_id:
         from app.stores import warehouse_for_store
         from app.inventory import allocate_unlocated_stock
 
-        wh = await warehouse_for_store(db, tenant_id, invoice.store_id)
+        wh = await warehouse_for_store(
+            db, tenant_id, invoice.store_id, company_id=getattr(invoice, "company_id", None)
+        )
         warehouse_id = wh.id
+
+    # Soft allocations from the source sales order must be consumed before stock-out
+    # so available qty includes this order's reserved quantity.
+    if invoice.sales_order_id:
+        from app.inventory import consume_reservations_for_order
+
+        await consume_reservations_for_order(
+            db,
+            tenant_id=tenant_id,
+            sales_order_id=invoice.sales_order_id,
+            user_id=user_id,
+        )
+
+    # Stage 15 H1 — aggregated fail-fast before stock-out / AR / journal.
+    # On 409 the request session rolls back (no commit), so reservation consume
+    # and any prior work in this post are undone.
+    from app.inventory import assert_outbound_lines_stock_available
+
+    await assert_outbound_lines_stock_available(
+        db,
+        tenant_id=tenant_id,
+        items=[
+            {
+                "product_id": item.product_id,
+                "quantity": float(item.quantity),
+                "variant_id": item.variant_id,
+            }
+            for item in items
+        ],
+    )
 
     for item in items:
         if warehouse_id:
@@ -289,6 +859,11 @@ async def post_sales_invoice(
     invoice.posted_at = datetime.utcnow()
     invoice.due_date = invoice.due_date or default_due_date(invoice.posted_at)
     invoice.updated_at = datetime.utcnow()
+    if credit_gate.get("overridden"):
+        invoice.credit_limit_overridden = True
+        invoice.credit_override_reason = credit_gate.get("override_reason")
+        invoice.credit_override_by = user_id
+        invoice.credit_override_at = datetime.utcnow()
 
     from app.accounting import post_sales_invoice_journal
 
@@ -312,6 +887,7 @@ async def post_sales_invoice(
                 ),
                 entity_type="customer",
                 entity_id=customer.id,
+                company_id=getattr(customer, "company_id", None),
             )
 
     from app.notifications import create_notification
@@ -324,16 +900,36 @@ async def post_sales_invoice(
         message=f"Invoice {invoice.invoice_number} posted for {float(invoice.total_amount):.2f}.",
         entity_type="sales_invoice",
         entity_id=invoice.id,
+        company_id=getattr(invoice, "company_id", None),
     )
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="invoice_posted",
-            entity="sales_invoice",
-            entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number, "total": float(invoice.total_amount)},
-        )
+    from app import audit as audit_svc
+    from app.fx import doc_rate, to_base
+
+    stock_qty = round(sum(float(i.quantity or 0) for i in items), 3)
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="invoice_posted",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={
+            "invoice_number": invoice.invoice_number,
+            "total": float(invoice.total_amount),
+            "total_base": to_base(float(invoice.total_amount), doc_rate(invoice)),
+            "subtotal": float(invoice.subtotal or 0),
+            "tax_amount": float(invoice.tax_amount or 0),
+            "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
+            "currency": getattr(invoice, "currency", None) or "",
+            "exchange_rate": float(getattr(invoice, "exchange_rate", None) or 1),
+            "customer_id": invoice.customer_id,
+            "customer_balance": float(customer.balance or 0),
+            "store_id": getattr(invoice, "store_id", None),
+            "stock_qty_out": stock_qty,
+            "line_count": len(items),
+            "warehouse_id": warehouse_id,
+        },
+        module="sales",
     )
     return invoice
 
@@ -350,15 +946,30 @@ async def cancel_sales_invoice(
         raise HTTPException(status_code=409, detail="Only draft invoices can be cancelled")
     invoice.status = "cancelled"
     invoice.updated_at = datetime.utcnow()
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="invoice_cancelled",
-            entity="sales_invoice",
-            entity_id=invoice.id,
-            details={"invoice_number": invoice.invoice_number},
-        )
+    if invoice.sales_order_id:
+        # Keep soft allocations; reopen the order so it can be re-invoiced.
+        order = (
+            await db.execute(
+                select(m.SalesOrder).where(
+                    m.SalesOrder.id == invoice.sales_order_id,
+                    m.SalesOrder.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if order and order.status == "invoiced":
+            order.status = "confirmed" if order.confirmed_at else "draft"
+            order.converted_invoice_id = None
+            order.updated_at = datetime.utcnow()
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="invoice_cancelled",
+        entity="sales_invoice",
+        entity_id=invoice.id,
+        details={"invoice_number": invoice.invoice_number},
+        module='sales',
     )
     return invoice
 
@@ -381,12 +992,27 @@ async def record_customer_payment(
     liquid_account_id: str | None = None,
     currency: str | None = None,
     exchange_rate: float | None = None,
+    company_id: str | None = None,
 ) -> m.CustomerPayment:
     amount = float(amount)
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
 
+    if liquid_account_id:
+        from app.accounting import resolve_settlement_gl
+
+        await resolve_settlement_gl(
+            db,
+            tenant_id,
+            payment_method or "cash",
+            liquid_account_id=liquid_account_id,
+            outflow=False,
+            company_id=company_id,
+        )
+
     customer = await get_customer(db, tenant_id, customer_id)
+    if company_id and getattr(customer, "company_id", None) and customer.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Customer not found")
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
     ).scalar_one()
@@ -404,6 +1030,8 @@ async def record_customer_payment(
 
     if sales_invoice_id:
         invoice = await get_invoice(db, tenant_id, sales_invoice_id)
+        if company_id and getattr(invoice, "company_id", None) and invoice.company_id != company_id:
+            raise HTTPException(status_code=404, detail="Sales invoice not found")
         if invoice.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Invoice does not belong to this customer")
         if invoice.status not in {"posted", "partial"}:
@@ -434,15 +1062,16 @@ async def record_customer_payment(
                 raise HTTPException(status_code=409, detail="Payment exceeds invoice balance due")
             allocations.append((invoice, amount, 0.0))
     else:
+        open_q = select(m.SalesInvoice).where(
+            m.SalesInvoice.tenant_id == tenant_id,
+            m.SalesInvoice.customer_id == customer_id,
+            m.SalesInvoice.status.in_(["posted", "partial"]),
+        )
+        if company_id:
+            open_q = open_q.where(m.SalesInvoice.company_id == company_id)
         open_invoices = (
             await db.execute(
-                select(m.SalesInvoice)
-                .where(
-                    m.SalesInvoice.tenant_id == tenant_id,
-                    m.SalesInvoice.customer_id == customer_id,
-                    m.SalesInvoice.status.in_(["posted", "partial"]),
-                )
-                .order_by(m.SalesInvoice.due_date.asc(), m.SalesInvoice.posted_at.asc())
+                open_q.order_by(m.SalesInvoice.due_date.asc(), m.SalesInvoice.posted_at.asc())
             )
         ).scalars().all()
         remaining = amount
@@ -509,6 +1138,7 @@ async def record_customer_payment(
     )
     payment = m.CustomerPayment(
         tenant_id=tenant_id,
+        company_id=company_id or getattr(customer, "company_id", None),
         payment_number=f"RCP-{datetime.utcnow():%Y%m%d%H%M%S%f}",
         customer_id=customer_id,
         sales_invoice_id=sales_invoice_id or primary_invoice_id,
@@ -533,7 +1163,11 @@ async def record_customer_payment(
     customer.balance = max(float(customer.balance or 0) - settlement_base, 0)
     for invoice, apply_amt, _disc in allocations:
         invoice.paid_amount = float(invoice.paid_amount or 0) + apply_amt
-        invoice.status = invoice_payment_status(float(invoice.total_amount), float(invoice.paid_amount))
+        invoice.status = invoice_payment_status(
+            float(invoice.total_amount),
+            float(invoice.paid_amount),
+            previous_status=invoice.status,
+        )
         invoice.updated_at = datetime.utcnow()
 
     from app.accounting import post_customer_payment_journal
@@ -558,26 +1192,27 @@ async def record_customer_payment(
         cheque_date=cheque_date,
     )
 
-    db.add(
-        m.AuditLog(
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="customer_payment",
-            entity="customer_payment",
-            entity_id=payment.id,
-            details={
-                "amount": amount,
-                "early_payment_discount": total_discount,
-                "currency": pay_cur,
-                "exchange_rate": pay_rate,
-                "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
-                "customer_id": customer_id,
-                "invoice_id": sales_invoice_id,
-                "allocations": [
-                    {"invoice_id": inv.id, "amount": amt, "discount": disc}
-                    for inv, amt, disc in allocations
-                ],
-            },
-        )
+    from app import audit as audit_svc
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="customer_payment",
+        entity="customer_payment",
+        entity_id=payment.id,
+        details={
+        "amount": amount,
+        "early_payment_discount": total_discount,
+        "currency": pay_cur,
+        "exchange_rate": pay_rate,
+        "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+        "customer_id": customer_id,
+        "invoice_id": sales_invoice_id,
+        "allocations": [
+        {"invoice_id": inv.id, "amount": amt, "discount": disc}
+        for inv, amt, disc in allocations
+        ],
+        },
+        module='sales',
     )
     return payment

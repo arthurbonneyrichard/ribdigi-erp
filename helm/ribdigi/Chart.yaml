@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ribdigi
+description: RIBDIGI BUSINESS ERP — Stage 26 K1 production chart (MVP)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

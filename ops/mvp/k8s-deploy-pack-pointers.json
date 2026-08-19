@@ -1,0 +1,61 @@
+{
+  "id": "k8s-deploy-pack-pointers",
+  "stage": 206,
+  "pack": "P1",
+  "doc": "docs/K8S_DEPLOY_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/K8S_DEPLOY_REMAINING_GATE_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md",
+    "helm_install": "ops/k8s/helm-install-staging.sh.example",
+    "staging_smoke": "ops/k8s/staging-smoke.sh.example",
+    "staging_gha_remaining_gate": "docs/STAGING_GHA_REMAINING_GATE_MVP.md",
+    "ci_workflow": ".github/workflows/ci.yml",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_cluster_deploy_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "live_staging_apply_claimed": false,
+  "topics": [
+    "k8s_deploy_stage26",
+    "helm_install_helper",
+    "staging_smoke_helper",
+    "staging_gha_remaining_gate_stage205",
+    "deploy_free_ci_stage18",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "kp-k8s",
+      "title": "Point to Stage 26 K1 k8s deploy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kp-helm",
+      "title": "Point to helm install helper",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kp-smoke",
+      "title": "Point to staging smoke helper",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kp-sg-gate",
+      "title": "Point to Stage 205 staging GHA remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kp-deploy-remaining",
+      "title": "Live cluster deploy Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 206 P1 k8s deploy pack pointers packaging only. Do not claim live cluster deploy Complete."
+}

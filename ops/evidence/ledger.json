@@ -1,0 +1,194 @@
+{
+  "stage": "30",
+  "workstream": "L1",
+  "doc": "docs/EVIDENCE_LEDGER_MVP.md",
+  "live_runs_certified": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "entries": [
+    {
+      "id": "26-m1",
+      "stage": "26",
+      "workstream": "M1",
+      "pack_doc": "docs/OPS_MONITORING_MVP.md",
+      "test": "backend/tests/test_ops_monitoring_m1.py",
+      "artifact": "/opt/cursor/artifacts/monitoring/stage26_m1_monitoring_fidelity.json",
+      "honesty": {}
+    },
+    {
+      "id": "26-w1",
+      "stage": "26",
+      "workstream": "W1",
+      "pack_doc": "docs/DR_WAL_PITR_RUNBOOK.md",
+      "test": "backend/tests/test_wal_pitr_w1.py",
+      "artifact": "/opt/cursor/artifacts/dr/stage26_w1_wal_pitr_strategy.json",
+      "honesty": {}
+    },
+    {
+      "id": "26-k1",
+      "stage": "26",
+      "workstream": "K1",
+      "pack_doc": "docs/K8S_DEPLOY_MVP.md",
+      "test": "backend/tests/test_k8s_deploy_k1.py",
+      "artifact": "/opt/cursor/artifacts/k8s/stage26_k1_deploy_fidelity.json",
+      "honesty": {}
+    },
+    {
+      "id": "26-c1",
+      "stage": "26",
+      "workstream": "C1",
+      "pack_doc": "docs/LOAD_CAPACITY_MVP.md",
+      "test": "backend/tests/test_load_capacity_c1.py",
+      "artifact": "/opt/cursor/artifacts/loadtest/stage26_c1_capacity_evidence.json",
+      "honesty": {}
+    },
+    {
+      "id": "27-b1",
+      "stage": "27",
+      "workstream": "B1",
+      "pack_doc": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+      "test": "backend/tests/test_backup_offsite_b1.py",
+      "artifact": "/opt/cursor/artifacts/backup/stage27_b1_offsite_upload.json",
+      "honesty": {}
+    },
+    {
+      "id": "27-p1",
+      "stage": "27",
+      "workstream": "P1",
+      "pack_doc": "docs/PGBOUNCER_MVP.md",
+      "test": "backend/tests/test_pgbouncer_p1.py",
+      "artifact": "/opt/cursor/artifacts/db/stage27_p1_pgbouncer.json",
+      "honesty": {}
+    },
+    {
+      "id": "27-s1",
+      "stage": "27",
+      "workstream": "S1",
+      "pack_doc": "docs/SECURITY_SCAN_MVP.md",
+      "test": "backend/tests/test_security_scan_s1.py",
+      "artifact": "/opt/cursor/artifacts/security/stage27_s1_security_scan.json",
+      "honesty": {}
+    },
+    {
+      "id": "27-l1",
+      "stage": "27",
+      "workstream": "L1",
+      "pack_doc": "docs/LAUNCH_CERT_MVP.md",
+      "test": "backend/tests/test_launch_cert_l1.py",
+      "artifact": "/opt/cursor/artifacts/launch/stage27_l1_launch_cert.json",
+      "checklist": "ops/launch/checklist-map.json",
+      "honesty": {
+        "production_signoff_claimed": false
+      }
+    },
+    {
+      "id": "28-r1",
+      "stage": "28",
+      "workstream": "R1",
+      "pack_doc": "docs/PITR_DRILL_PACK_MVP.md",
+      "test": "backend/tests/test_pitr_drill_pack_r1.py",
+      "artifact": "/opt/cursor/artifacts/dr/stage28_r1_pitr_drill_pack.json",
+      "checklist": "ops/postgres/pitr-drill-checklist.json",
+      "honesty": {
+        "operator_pitr_drill_executed": false,
+        "ci_pitr_success_claimed": false
+      }
+    },
+    {
+      "id": "28-g1",
+      "stage": "28",
+      "workstream": "G1",
+      "pack_doc": "docs/STAGING_GHA_MVP.md",
+      "test": "backend/tests/test_staging_gha_g1.py",
+      "artifact": "/opt/cursor/artifacts/k8s/stage28_g1_staging_gha.json",
+      "honesty": {
+        "live_staging_apply_claimed": false,
+        "gha_staging_wired_into_main_ci": false
+      }
+    },
+    {
+      "id": "28-a1",
+      "stage": "28",
+      "workstream": "A1",
+      "pack_doc": "docs/GRAFANA_PACK_MVP.md",
+      "test": "backend/tests/test_grafana_pack_a1.py",
+      "artifact": "/opt/cursor/artifacts/monitoring/stage28_a1_grafana_pack.json",
+      "honesty": {
+        "hosted_grafana_claimed": false
+      }
+    },
+    {
+      "id": "28-c1",
+      "stage": "28",
+      "workstream": "C1",
+      "pack_doc": "docs/LOAD_CERT_PACK_MVP.md",
+      "test": "backend/tests/test_load_cert_pack_c1.py",
+      "artifact": "/opt/cursor/artifacts/loadtest/stage28_c1_load_cert_pack.json",
+      "checklist": "ops/loadtest/1000vu-cert-checklist.json",
+      "honesty": {
+        "operator_1000vu_executed": false,
+        "ci_1000vu_certificate_claimed": false
+      }
+    },
+    {
+      "id": "29-v1",
+      "stage": "29",
+      "workstream": "V1",
+      "pack_doc": "docs/PENTEST_PACK_MVP.md",
+      "test": "backend/tests/test_pentest_pack_v1.py",
+      "artifact": "/opt/cursor/artifacts/security/stage29_v1_pentest_pack.json",
+      "checklist": "ops/security/pentest-engagement-checklist.json",
+      "honesty": {
+        "vendor_pen_test_purchased": false,
+        "live_zap_executed": false,
+        "ci_zap_success_claimed": false
+      }
+    },
+    {
+      "id": "29-b2",
+      "stage": "29",
+      "workstream": "B2",
+      "pack_doc": "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+      "test": "backend/tests/test_pgbouncer_soak_b2.py",
+      "artifact": "/opt/cursor/artifacts/db/stage29_b2_pgbouncer_soak.json",
+      "checklist": "ops/postgres/pgbouncer-soak-checklist.json",
+      "honesty": {
+        "live_soak_executed": false,
+        "helm_pooler_default_claimed": false
+      }
+    },
+    {
+      "id": "29-t1",
+      "stage": "29",
+      "workstream": "T1",
+      "pack_doc": "docs/TLS_INGRESS_PACK_MVP.md",
+      "test": "backend/tests/test_tls_ingress_t1.py",
+      "artifact": "/opt/cursor/artifacts/k8s/stage29_t1_tls_ingress.json",
+      "checklist": "ops/k8s/tls-checklist.json",
+      "honesty": {
+        "letsencrypt_issued": false,
+        "tls_cutover_claimed": false
+      }
+    },
+    {
+      "id": "29-x1",
+      "stage": "29",
+      "workstream": "X1",
+      "pack_doc": "docs/CUTOVER_PACK_MVP.md",
+      "test": "backend/tests/test_cutover_pack_x1.py",
+      "artifact": "/opt/cursor/artifacts/launch/stage29_x1_cutover_pack.json",
+      "checklist": "ops/launch/cutover-checklist.json",
+      "honesty": {
+        "production_cutover_claimed": false,
+        "section_7_signed": false,
+        "gha_prod_wired_into_main_ci": false
+      }
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage30_l1_evidence_ledger.json",
+  "deferred": [
+    "Live operator runs certified by CI via this ledger",
+    "Forged go-live attestation or LAUNCH §7",
+    "Re-packaging Stage 26–29 packs as new Complete"
+  ]
+}

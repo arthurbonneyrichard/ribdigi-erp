@@ -1,0 +1,60 @@
+{
+  "id": "hosted-faq-saas-pack-pointers",
+  "stage": 191,
+  "pack": "P1",
+  "doc": "docs/HOSTED_FAQ_SAAS_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "knowledge_base_register": "ops/mvp/knowledge-base.json",
+    "faq_offline_pos": "docs/FAQ_OFFLINE_POS_MVP.md",
+    "faq_offline_pos_register": "ops/mvp/faq-offline-pos.json",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md",
+    "troubleshooting_index_register": "ops/mvp/troubleshooting-index.json",
+    "offline_materials_remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "hosted_kb_saas_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "knowledge_base_stage171",
+    "faq_offline_pos_stage171",
+    "troubleshooting_index_stage171",
+    "offline_materials_remaining_gate_stage190",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "hp-knowledge-base",
+      "title": "Point to Stage 171 knowledge base",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-faq",
+      "title": "Point to Stage 171 FAQ offline/POS",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-troubleshooting",
+      "title": "Point to Stage 171 troubleshooting index",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-offline-materials-gate",
+      "title": "Point to Stage 190 Offline materials remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hp-saas-remaining",
+      "title": "Hosted FAQ SaaS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 191 P1 hosted FAQ SaaS pack pointers packaging only. Do not claim hosted FAQ SaaS Complete."
+}

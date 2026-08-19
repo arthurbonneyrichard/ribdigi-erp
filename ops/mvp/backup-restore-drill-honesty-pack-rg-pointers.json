@@ -1,0 +1,60 @@
+{
+  "id": "backup-restore-drill-honesty-pack-rg-pointers",
+  "stage": 319,
+  "pack": "P1",
+  "doc": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BACKUP_RESTORE_DRILL_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "k8s_deploy_pack_remaining_gate": "docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md",
+    "pgbouncer_soak_pack_remaining_gate": "docs/PGBOUNCER_SOAK_PACK_REMAINING_GATE_MVP.md",
+    "pitr_drill_pack_remaining_gate": "docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_backup_restore_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "backup_restore_drill_honesty_stage169",
+    "k8s_deploy_pack_remaining_gate_stage318",
+    "pgbouncer_soak_pack_remaining_gate_stage317",
+    "pitr_drill_pack_remaining_gate",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "brdhrp-stage169",
+      "title": "Point to Stage 169 B1 backup restore drill honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhrp-stage318",
+      "title": "Point to Stage 318 k8s deploy pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhrp-stage317",
+      "title": "Point to Stage 317 PgBouncer soak pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhrp-pitr",
+      "title": "Point to Stage PITR drill pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "brdhrp-backup-remaining",
+      "title": "Live backup restore Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 319 P1 backup restore drill honesty pack RG pointers packaging only. Do not claim live backup restore Complete."
+}

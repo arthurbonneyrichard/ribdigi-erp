@@ -1,0 +1,19 @@
+# Stage 26 K1 — Alembic migration Job (run before/alongside rollouts)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ribdigi-migrate
+  labels:
+    app: ribdigi-migrate
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ribdigi/erp-backend:1.0.0
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - secretRef:
+                name: ribdigi-secrets
+  backoffLimit: 1

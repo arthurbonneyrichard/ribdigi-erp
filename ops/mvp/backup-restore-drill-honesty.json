@@ -1,0 +1,63 @@
+{
+  "id": "backup-restore-drill-honesty",
+  "stage": 169,
+  "pack": "B1",
+  "doc": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+  "related": {
+    "e2e_backup_restore": "ops/mvp/e2e-backup-restore.json",
+    "logical_runbook": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+    "e2e_doc": "docs/E2E_BACKUP_RESTORE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_backup_restore_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "live_pitr_drill_claimed": false,
+  "go_live_claimed": false,
+  "demo_tenant_claimed": false,
+  "attestation_claimed": false,
+  "steps": [
+    {
+      "id": "drill-create-backup",
+      "title": "Create encrypted logical backup (test tenant)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drill-checksum",
+      "title": "Record backup_id / checksum honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drill-dry-run",
+      "title": "Dry-run restore (dry_run true)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drill-apply-guarded",
+      "title": "Guarded apply restore (confirm_text=RESTORE) on approved drill env only",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drill-verify",
+      "title": "Post-restore verify / integrity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drill-tenant-isolation",
+      "title": "Confirm cross-tenant restore blocked",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drill-live-remaining",
+      "title": "Live staging PITR / go-live execution Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 169 B1 packages drill honesty only. Do not claim live backup/restore Complete."
+}

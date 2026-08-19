@@ -1,0 +1,62 @@
+{
+  "id": "billing-deferred-pack-rg-blockers",
+  "stage": 271,
+  "pack": "B1",
+  "doc": "docs/BILLING_DEFERRED_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "billing_deferred_adr": "docs/ADR_002_BILLING_DEFERRED.md",
+    "billing_deferred_honesty_register": "ops/mvp/billing-deferred-honesty.json"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "billing_complete": "REMAINING",
+    "payment_provider_complete": "REMAINING",
+    "checkout_success_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage36_b1_as_billing_complete": "NON_CLAIM",
+    "adr002_as_billing_complete": "NON_CLAIM",
+    "billing_complete_claimed": "false",
+    "payment_provider_claimed": "false",
+    "checkout_success_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "bdprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdprb-provider",
+      "title": "Mark payment provider Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdprb-checkout",
+      "title": "Mark checkout success Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdprb-stage36-nonclaim",
+      "title": "Mark Stage 36 B1 as non-claim for paid billing Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bdprb-billing-remaining",
+      "title": "Paid billing Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 271 B1 billing deferred pack RG blocker matrix packaging only. Paid billing Completes remain MISSING."
+}

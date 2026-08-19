@@ -1,0 +1,59 @@
+{
+  "id": "release-notes-pack-rg-pointers",
+  "stage": 283,
+  "pack": "P1",
+  "doc": "docs/RELEASE_NOTES_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RELEASE_NOTES_PACK_REMAINING_GATE_MVP.md",
+    "release_notes": "docs/RELEASE_NOTES_MVP.md",
+    "post_mvp_backlog_pack_remaining_gate": "docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md",
+    "residual_risk_pack_remaining_gate": "docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration": "docs/MVP_DECLARATION_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "production_live_claimed": false,
+  "section_7_signed_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "release_notes_stage32",
+    "post_mvp_backlog_pack_remaining_gate_stage282",
+    "residual_risk_pack_remaining_gate_stage281",
+    "mvp_declaration_stage31",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "rnprp-stage32",
+      "title": "Point to Stage 32 N1 release notes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprp-stage282",
+      "title": "Point to Stage 282 post-MVP backlog pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprp-stage281",
+      "title": "Point to Stage 281 residual risk pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprp-stage31",
+      "title": "Point to Stage 31 C1 MVP declaration adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnprp-production-remaining",
+      "title": "Production live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 283 P1 release notes pack RG pointers packaging only. Do not claim production live Complete."
+}

@@ -1,0 +1,60 @@
+{
+  "id": "ops-monitoring-pack-rg-pointers",
+  "stage": 327,
+  "pack": "P1",
+  "doc": "docs/OPS_MONITORING_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPS_MONITORING_PACK_REMAINING_GATE_MVP.md",
+    "ops_monitoring_remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+    "hosted_faq_saas_pack_remaining_gate": "docs/HOSTED_FAQ_SAAS_PACK_REMAINING_GATE_MVP.md",
+    "golive_pack_remaining_gate": "docs/GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "ops_monitoring": "docs/OPS_MONITORING_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_ops_monitoring_claimed": false,
+  "live_monitoring_claimed": false,
+  "hosted_grafana_claimed": false,
+  "paging_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "ops_monitoring_remaining_gate_stage221",
+    "hosted_faq_saas_pack_remaining_gate_stage326",
+    "golive_pack_remaining_gate_stage325",
+    "ops_monitoring_stage26",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "omprp-stage221",
+      "title": "Point to Stage 221 ops monitoring remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprp-stage326",
+      "title": "Point to Stage 326 hosted FAQ SaaS pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprp-stage325",
+      "title": "Point to Stage 325 golive pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprp-stage26",
+      "title": "Point to Stage 26 M1 ops monitoring packaging adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omprp-monitoring-remaining",
+      "title": "Live ops monitoring Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 327 P1 ops monitoring pack RG pointers packaging only. Do not claim live ops monitoring Complete."
+}

@@ -1,0 +1,154 @@
+{
+  "stage": "39",
+  "workstream": "P1",
+  "doc": "docs/DPA_SUBPROCESSOR_MVP.md",
+  "compliance_questionnaire": "ops/mvp/compliance-questionnaire.json",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "compliance_readiness": "ops/mvp/compliance-readiness-register.json",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "data_portability": "ops/mvp/data-portability.json",
+  "data_portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "erasure_honesty": "ops/mvp/erasure-honesty.json",
+  "erasure_honesty_doc": "docs/ERASURE_HONESTY_MVP.md",
+  "adr_001": "docs/ADR_001_TENANCY.md",
+  "stage39_plan": "docs/STAGE_39_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "dpa_signed_claimed": false,
+  "subprocessor_register_live": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "steps": [
+    {
+      "id": "dpa-compliance-questionnaire",
+      "category": "compliance",
+      "title": "Link Stage 34 C1 privacy / GDPR questionnaire theme to DPA honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "ops/mvp/compliance-questionnaire.json"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "dpa-compliance-readiness",
+      "category": "compliance",
+      "title": "Link Stage 33 C1 data-protection readiness theme to DPA packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "ops/mvp/compliance-readiness-register.json"
+      ],
+      "source": "docs/COMPLIANCE_READINESS_MVP.md"
+    },
+    {
+      "id": "dpa-object-storage",
+      "category": "subprocessor",
+      "title": "Index S3/MinIO object-storage processing role honesty (tenant-scoped keys)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/DEPLOYMENT_GUIDE.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "dpa-smtp-email",
+      "category": "subprocessor",
+      "title": "Index SMTP / email delivery processing role honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "dpa-redis-celery",
+      "category": "subprocessor",
+      "title": "Index Redis / Celery / RabbitMQ processing role honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/DEPLOYMENT_GUIDE.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "dpa-optional-providers",
+      "category": "deferred",
+      "title": "Confirm optional SMS / LLM provider DPA rows remain Remaining when unused",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_39_PLAN.md",
+        "PRODUCTION_READINESS.md"
+      ],
+      "source": "docs/STAGE_39_PLAN.md"
+    },
+    {
+      "id": "dpa-portability-erasure",
+      "category": "data-protection",
+      "title": "Link Stage 37 portability / erasure packs as DPA subject-rights adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_PORTABILITY_MVP.md",
+        "docs/ERASURE_HONESTY_MVP.md",
+        "ops/mvp/data-portability.json"
+      ],
+      "source": "docs/DATA_PORTABILITY_MVP.md"
+    },
+    {
+      "id": "dpa-tenancy-honesty",
+      "category": "data-protection",
+      "title": "Confirm shared-schema MVP tenancy honesty (ADR-001 schema-per-tenant Remaining)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_001_TENANCY.md",
+        "docs/COMPLIANCE_READINESS_MVP.md"
+      ],
+      "source": "docs/ADR_001_TENANCY.md"
+    },
+    {
+      "id": "dpa-signed-remaining",
+      "category": "honesty",
+      "title": "Signed customer DPA Remaining \u2014 packaging \u2260 executed contract",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_39_PLAN.md",
+        "docs/DPA_SUBPROCESSOR_MVP.md"
+      ],
+      "source": "docs/STAGE_39_PLAN.md#P1"
+    },
+    {
+      "id": "dpa-register-live-remaining",
+      "category": "honesty",
+      "title": "Live published subprocessor register Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_39_PLAN.md",
+        "docs/DPA_SUBPROCESSOR_MVP.md"
+      ],
+      "source": "docs/STAGE_39_PLAN.md#P1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage39_p1_dpa_subprocessor.json",
+  "deferred": [
+    "Claiming signed customer DPA Complete because Stage 39 P1 packaging exists",
+    "Live published subprocessor register Complete",
+    "Legal counsel / outside counsel approval Complete",
+    "Live contract execution Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

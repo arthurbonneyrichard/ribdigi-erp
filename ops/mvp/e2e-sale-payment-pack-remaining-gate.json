@@ -1,0 +1,57 @@
+{
+  "id": "e2e-sale-payment-pack-remaining-gate",
+  "stage": 361,
+  "pack": "I1",
+  "doc": "docs/E2E_SALE_PAYMENT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/E2E_SALE_PAYMENT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/E2E_SALE_PAYMENT_PACK_RG_POINTERS_MVP.md",
+    "e2e_sale_payment": "docs/E2E_SALE_PAYMENT_MVP.md",
+    "shift_handover_pointers_pack_remaining_gate": "docs/SHIFT_HANDOVER_POINTERS_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_sale_payment_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "usb_serial_drivers_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage35_e2e_sale_payment": true,
+  "distinct_from_stage360_shift_handover_pointers_pack_remaining_gate": true,
+  "distinct_from_stage320_e2e_backup_restore_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "esppr-read-blockers",
+      "title": "Read B1 E2E sale payment pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "esppr-follow-pointers",
+      "title": "Follow P1 Stage 35 / Stage 360 / Stage 320 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "esppr-checklist-missing",
+      "title": "Reaffirm live sale-payment / E2E smoke / demo tenant / USB-serial MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "esppr-no-packaging-as-live",
+      "title": "Do not treat Stage 35 / Stage 360 / Stage 320 / Stage 329 as live E2E sale-payment Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "esppr-checklist-remaining",
+      "title": "Live sale-payment / E2E smoke / demo tenant / USB-serial / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 361 I1 E2E sale payment pack remaining-gate index packaging only. Do not claim live E2E sale-payment Complete."
+}

@@ -60,7 +60,10 @@ def extract_text_from_pdf(data: bytes) -> str:
         ) from exc
     from io import BytesIO
 
-    reader = PdfReader(BytesIO(data))
+    try:
+        reader = PdfReader(BytesIO(data))
+    except Exception:  # noqa: BLE001 — corrupt/unsupported PDFs
+        return ""
     parts: list[str] = []
     for page in reader.pages:
         try:
@@ -215,20 +218,58 @@ def suggest_from_media(media: storage_svc.MediaObject) -> dict[str, Any]:
         "confidence": parsed["confidence"],
         "raw_text_preview": parsed["raw_text_preview"],
         "warnings": warnings,
-        "apply_hint": "Review suggestions then PATCH /expenses/{id} with confirmed fields",
+        "apply_hint": (
+            "Review suggestions then POST /expenses/{id}/ocr-apply with confirm=true "
+            "and the fields to apply (Stage 10 A1)"
+        ),
     }
 
 
-async def suggest_for_expense(db, *, tenant_id: str, expense_id: str) -> dict[str, Any]:
+async def suggest_for_expense(
+    db, *, tenant_id: str, expense_id: str, company_id: str | None = None
+) -> dict[str, Any]:
     from app import expenses as expenses_svc
+    from app.ai_expenses import suggest_category_from_text
+    from sqlalchemy import select
+    from app import models as m
 
     expense = await expenses_svc.get_expense(db, tenant_id, expense_id)
+    scope_cid = company_id or getattr(expense, "company_id", None)
     if not expense.attachment_url:
         raise HTTPException(status_code=400, detail="Upload a receipt attachment before OCR")
     if "://" in expense.attachment_url:
         raise HTTPException(status_code=400, detail="External attachment URLs cannot be OCR'd")
     media = storage_svc.read_object(expense.attachment_url, tenant_id=tenant_id)
     result = suggest_from_media(media)
+
+    cat_q = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
+    if scope_cid:
+        cat_q = cat_q.where(m.ExpenseCategory.company_id == scope_cid)
+    cats = (await db.execute(cat_q)).scalars().all()
+    if not cats:
+        await expenses_svc.ensure_default_categories(db, tenant_id, company_id=scope_cid)
+        cats = (await db.execute(cat_q)).scalars().all()
+    text_blob = " ".join(
+        filter(
+            None,
+            [
+                result.get("raw_text_preview"),
+                (result.get("suggestions") or {}).get("description"),
+                (result.get("suggestions") or {}).get("payee"),
+                expense.description,
+                expense.payee,
+            ],
+        )
+    )
+    cat_sug = suggest_category_from_text(text_blob, cats)
+    if cat_sug:
+        result["suggestions"] = {
+            **(result.get("suggestions") or {}),
+            "category": cat_sug["name"],
+            "category_id": cat_sug["id"],
+        }
+        result["category_suggestion"] = cat_sug
+
     result["expense_id"] = expense.id
     result["expense_status"] = expense.status
     return result

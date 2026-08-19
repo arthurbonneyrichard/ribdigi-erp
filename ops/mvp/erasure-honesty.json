@@ -1,0 +1,153 @@
+{
+  "stage": "37",
+  "workstream": "E1",
+  "doc": "docs/ERASURE_HONESTY_MVP.md",
+  "adr_003": "docs/ADR_003_USER_DELETE_POLICY.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "deferred_adr_doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "post_mvp_backlog": "ops/mvp/post-mvp-backlog.json",
+  "post_mvp_doc": "docs/POST_MVP_BACKLOG_MVP.md",
+  "data_portability": "ops/mvp/data-portability.json",
+  "data_portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "api_documentation": "docs/API_DOCUMENTATION.md",
+  "stage37_plan": "docs/STAGE_37_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "hard_delete_claimed": false,
+  "erasure_complete_claimed": false,
+  "anonymize_workflow_claimed": false,
+  "deferred_implemented_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "steps": [
+    {
+      "id": "eh-adr003-accepted",
+      "category": "adr",
+      "title": "Index ADR-003 accepted soft-delete-only decision for procurement honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_003_USER_DELETE_POLICY.md",
+        "docs/DEFERRED_ADR_REGISTER_MVP.md"
+      ],
+      "source": "docs/ADR_003_USER_DELETE_POLICY.md"
+    },
+    {
+      "id": "eh-soft-delete-api",
+      "category": "soft-delete",
+      "title": "Map DELETE /users/{id} deactivate + session revoke as MVP erasure surface",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/ADR_003_USER_DELETE_POLICY.md"
+      ],
+      "source": "docs/API_DOCUMENTATION.md"
+    },
+    {
+      "id": "eh-user-deactivated-audit",
+      "category": "soft-delete",
+      "title": "Confirm user_deactivated audit event honesty on soft-delete",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "eh-reactivation",
+      "category": "soft-delete",
+      "title": "Map PATCH /users/{id} is_active=true reactivation honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/ADR_003_USER_DELETE_POLICY.md"
+      ],
+      "source": "docs/ADR_003_USER_DELETE_POLICY.md"
+    },
+    {
+      "id": "eh-no-hard-delete-api",
+      "category": "honesty",
+      "title": "Confirm no hard-delete API / no users row removal endpoint",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_003_USER_DELETE_POLICY.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/ADR_003_USER_DELETE_POLICY.md"
+    },
+    {
+      "id": "eh-self-deactivate-forbidden",
+      "category": "soft-delete",
+      "title": "Confirm users cannot deactivate their own account",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_003_USER_DELETE_POLICY.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/ADR_003_USER_DELETE_POLICY.md"
+    },
+    {
+      "id": "eh-deferred-adr-register",
+      "category": "adr",
+      "title": "Align Stage 31 R1 deferred ADR register ADR-003 soft-delete vs hard-delete Remaining",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "ops/mvp/deferred-adr-register.json",
+        "docs/DEFERRED_ADR_REGISTER_MVP.md"
+      ],
+      "source": "ops/mvp/deferred-adr-register.json"
+    },
+    {
+      "id": "eh-post-mvp-backlog",
+      "category": "deferred",
+      "title": "Index post-MVP backlog hard-delete with archival Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/POST_MVP_BACKLOG_MVP.md",
+        "ops/mvp/post-mvp-backlog.json"
+      ],
+      "source": "docs/POST_MVP_BACKLOG_MVP.md"
+    },
+    {
+      "id": "eh-product-soft-deactivate",
+      "category": "soft-delete",
+      "title": "Note product/catalog soft-deactivate pattern is not user hard-delete Complete",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "PRODUCTION_READINESS.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "eh-hard-delete-remaining",
+      "category": "honesty",
+      "title": "Hard-delete with archival Remaining (BR-3.1 / ADR-003 post-MVP)",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_003_USER_DELETE_POLICY.md",
+        "docs/STAGE_37_PLAN.md",
+        "docs/ERASURE_HONESTY_MVP.md"
+      ],
+      "source": "docs/STAGE_37_PLAN.md#E1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage37_e1_erasure_honesty.json",
+  "deferred": [
+    "Claiming hard-delete with archival Complete because Stage 37 E1 packaging exists",
+    "GDPR right-to-erasure certification Complete",
+    "Anonymize / reassignment workflow Complete",
+    "Deferred ADR-003 implementation Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

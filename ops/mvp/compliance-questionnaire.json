@@ -1,0 +1,175 @@
+{
+  "stage": "34",
+  "workstream": "C1",
+  "doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "compliance_readiness_register": "ops/mvp/compliance-readiness-register.json",
+  "assurance_evidence": "ops/mvp/assurance-evidence.json",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "packaging_complete": true,
+  "soc2_complete_claimed": false,
+  "iso27001_complete_claimed": false,
+  "certification_complete_claimed": false,
+  "questionnaire_answers_certified": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "vendor_pen_test_purchased": false,
+  "themes": [
+    {
+      "id": "cq-access-control",
+      "theme": "access_control",
+      "title": "Access control / RBAC / tenant isolation questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-access-control",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/SECURITY_GUIDE.md",
+        "docs/ADR_001_TENANCY.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-access-control"
+    },
+    {
+      "id": "cq-audit-logging",
+      "theme": "audit_logging",
+      "title": "Audit logging / retention questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-audit-logging",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/ADR_007_AUDIT_RETENTION.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-audit-logging"
+    },
+    {
+      "id": "cq-encryption-tls",
+      "theme": "encryption_tls",
+      "title": "Encryption / TLS questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-encryption-tls",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/TLS_INGRESS_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-encryption-tls"
+    },
+    {
+      "id": "cq-vulnerability",
+      "theme": "vulnerability_mgmt",
+      "title": "Vulnerability management / pen-test questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-vulnerability",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/SECURITY_SCAN_MVP.md",
+        "docs/PENTEST_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-vulnerability"
+    },
+    {
+      "id": "cq-incident",
+      "theme": "incident_response",
+      "title": "Incident response / escalation questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-incident",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-incident"
+    },
+    {
+      "id": "cq-backup-dr",
+      "theme": "backup_dr",
+      "title": "Backup / DR / PITR questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-backup-dr",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/PITR_DRILL_PACK_MVP.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-backup-dr"
+    },
+    {
+      "id": "cq-monitoring",
+      "theme": "monitoring",
+      "title": "Monitoring / alerting questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-monitoring",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/OPS_MONITORING_MVP.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-monitoring"
+    },
+    {
+      "id": "cq-change-ci",
+      "theme": "change_management",
+      "title": "Change management / CI deploy-free boundary questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-change-ci",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/STAGE_34_PLAN.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-change-ci"
+    },
+    {
+      "id": "cq-privacy",
+      "theme": "data_protection",
+      "title": "Privacy / GDPR / data protection questionnaire theme",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-privacy",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-privacy"
+    },
+    {
+      "id": "cq-attestation",
+      "theme": "go_live_attestation",
+      "title": "Go-live attestation / LAUNCH \u00a77 questionnaire theme (Remaining)",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-attestation",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "ops/mvp/compliance-readiness-register.json#cr-attestation"
+    },
+    {
+      "id": "cq-certification-boundary",
+      "theme": "certification_status",
+      "title": "SOC 2 / ISO certification status questionnaire theme (Post-MVP Remaining)",
+      "status": "mapped",
+      "certified": false,
+      "maps_to_control": "cr-residual-risk",
+      "pack_refs": [
+        "docs/COMPLIANCE_READINESS_MVP.md",
+        "docs/SECURITY_GUIDE.md",
+        "docs/ASSURANCE_EVIDENCE_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md#14.3"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage34_c1_compliance_questionnaire.json",
+  "deferred": [
+    "Claiming SOC 2 Type I/II certification Complete from Stage 34 C1 questionnaire packaging",
+    "Claiming ISO 27001 certification Complete from Stage 34 C1 questionnaire packaging",
+    "Treating questionnaire theme mappings as certified audit answers",
+    "Purchased vendor pen-test certificate Complete",
+    "Live go-live / \u00a77 / attestation Complete",
+    "Re-packaging Stage 26\u201333 packs as new Complete"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "run_id": "REPLACE-WITH-OPERATOR-RUN-ID",
+  "started_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "finished_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "base_url": "https://staging.example.invalid",
+  "tool": "locust|httpx",
+  "concurrent_users": 1000,
+  "scenarios": ["health", "login", "products", "dashboard"],
+  "p50_ms": null,
+  "p95_ms": null,
+  "error_rate": null,
+  "passed": false,
+  "operator": "",
+  "notes": "Stage 28 C1 schema example only — do not commit a forged pass. See docs/LOAD_CERT_PACK_MVP.md."
+}

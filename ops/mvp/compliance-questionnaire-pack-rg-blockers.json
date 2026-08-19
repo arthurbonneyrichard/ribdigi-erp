@@ -1,0 +1,60 @@
+{
+  "id": "compliance-questionnaire-pack-rg-blockers",
+  "stage": 279,
+  "pack": "B1",
+  "doc": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMPLIANCE_QUESTIONNAIRE_PACK_REMAINING_GATE_MVP.md",
+    "compliance_questionnaire": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+  },
+  "packaging_complete": true,
+  "soc2_complete_claimed": false,
+  "certification_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "soc2_complete": "REMAINING",
+    "certification_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage34_as_soc2_complete": "NON_CLAIM",
+    "stage278_as_gdpr_complete": "NON_CLAIM",
+    "soc2_complete_claimed": "false",
+    "certification_complete_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cqprb-soc2",
+      "title": "Mark SOC 2 Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprb-certification",
+      "title": "Mark certification Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprb-stage34-nonclaim",
+      "title": "Mark Stage 34 C1 as non-claim for SOC 2 Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprb-soc2-remaining",
+      "title": "SOC 2 Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 279 B1 compliance questionnaire pack RG blocker matrix packaging only. SOC 2 Completes remain MISSING."
+}

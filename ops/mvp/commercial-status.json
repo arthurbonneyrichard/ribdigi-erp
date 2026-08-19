@@ -1,0 +1,156 @@
+{
+  "stage": "74",
+  "workstream": "U1",
+  "doc": "docs/COMMERCIAL_STATUS_MVP.md",
+  "stage74_plan": "docs/STAGE_74_PLAN.md",
+  "status_uptime_doc": "docs/STATUS_UPTIME_MVP.md",
+  "status_uptime": "ops/mvp/status-uptime.json",
+  "support_doc": "docs/COMMERCIAL_SUPPORT_MVP.md",
+  "support": "ops/mvp/commercial-support.json",
+  "assurance_doc": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+  "assurance": "ops/mvp/commercial-assurance.json",
+  "evidence_chain_doc": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+  "evidence_chain": "ops/mvp/commercial-evidence-chain.json",
+  "ops_monitoring_doc": "docs/OPS_MONITORING_MVP.md",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "status_page_live": false,
+  "uptime_sla_claimed": false,
+  "measured_uptime_claimed": false,
+  "commercial_support_claimed": false,
+  "customer_assurance_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage74_u1_commercial_status.json",
+  "steps": [
+    {
+      "id": "cst-owner-outline",
+      "category": "status",
+      "title": "Index owner Commercial Status Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/ADR_154_STAGE74_OPEN.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    },
+    {
+      "id": "cst-status-uptime",
+      "category": "status",
+      "title": "Link Stage 40 status/uptime as adjacency (status_page_live Remaining \u2260 status boundary Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STATUS_UPTIME_MVP.md",
+        "ops/mvp/status-uptime.json"
+      ],
+      "source": "docs/STATUS_UPTIME_MVP.md"
+    },
+    {
+      "id": "cst-support",
+      "category": "status",
+      "title": "Link Stage 74 S1 commercial support as adjacency (support boundary live Remaining \u2260 status live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_SUPPORT_MVP.md",
+        "ops/mvp/commercial-support.json"
+      ],
+      "source": "docs/COMMERCIAL_SUPPORT_MVP.md"
+    },
+    {
+      "id": "cst-assurance",
+      "category": "status",
+      "title": "Link Stage 73 A1 assurance as adjacency (customer assurance Remaining \u2260 status live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_ASSURANCE_MVP.md",
+        "ops/mvp/commercial-assurance.json"
+      ],
+      "source": "docs/COMMERCIAL_ASSURANCE_MVP.md"
+    },
+    {
+      "id": "cst-evidence-chain",
+      "category": "status",
+      "title": "Link Stage 73 E1 evidence chain as adjacency (evidence chain live Remaining \u2260 status live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+        "ops/mvp/commercial-evidence-chain.json"
+      ],
+      "source": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md"
+    },
+    {
+      "id": "cst-monitoring",
+      "category": "status",
+      "title": "Link Stage 26 ops monitoring as adjacency (monitoring packaging \u2260 status page live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPS_MONITORING_MVP.md",
+        "docs/STATUS_UPTIME_MVP.md"
+      ],
+      "source": "docs/OPS_MONITORING_MVP.md"
+    },
+    {
+      "id": "cst-support-sla",
+      "category": "status",
+      "title": "Link Stage 36 support SLA as adjacency (SLA claimed Remaining \u2260 status live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "cst-plan-honesty",
+      "category": "status",
+      "title": "Confirm Stage 74 plan explicitly defers status page live / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/COMMERCIAL_STATUS_MVP.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    },
+    {
+      "id": "cst-status-remaining",
+      "category": "honesty",
+      "title": "Status page live Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/COMMERCIAL_STATUS_MVP.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    },
+    {
+      "id": "cst-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / uptime SLA / support boundary Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/COMMERCIAL_SUPPORT_MVP.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Status page live Complete",
+    "Uptime SLA claimed Complete",
+    "Measured uptime claimed Complete",
+    "Commercial support boundary live Complete",
+    "Live go-live Complete"
+  ]
+}

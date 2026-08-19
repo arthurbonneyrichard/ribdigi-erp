@@ -1,0 +1,18 @@
+{
+  "id": "transfer-soffit-gate-honesty-pack-rg-pointers",
+  "stage": 1230,
+  "pack": "P1",
+  "doc": "docs/TRANSFER_SOFFIT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "hub": "docs/TRANSFER_SOFFIT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "pointers": {
+    "transfer_archivolt_gate_honesty_pack_remaining_gate_stage1229": "docs/TRANSFER_ARCHIVOLT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_springer_gate_honesty_pack_remaining_gate_stage1228": "docs/TRANSFER_SPRINGER_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "change_impact_section_5": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "mvp_product_update_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "message": "Stage 1230 P1 Transfer Soffit Gate Honesty Pack RG pointers packaging only."
+}

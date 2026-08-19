@@ -1,0 +1,61 @@
+{
+  "id": "commercial-security-contact-pack-rg-pointers",
+  "stage": 294,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_SECURITY_CONTACT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_SECURITY_CONTACT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_security_contact": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+    "commercial_terms_pack_remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_dpa_pack_remaining_gate": "docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md",
+    "breach_notification": "docs/BREACH_NOTIFICATION_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "security_contact_live_claimed": false,
+  "breach_drill_claimed": false,
+  "vuln_disclosure_live_claimed": false,
+  "commercial_support_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_security_contact_stage75",
+    "commercial_terms_pack_remaining_gate_stage293",
+    "commercial_dpa_pack_remaining_gate_stage292",
+    "breach_notification_stage38",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cscprp-stage75",
+      "title": "Point to Stage 75 C1 commercial security contact",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprp-stage293",
+      "title": "Point to Stage 293 commercial terms pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprp-stage292",
+      "title": "Point to Stage 292 commercial DPA pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprp-stage38",
+      "title": "Point to Stage 38 breach notification adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cscprp-contact-remaining",
+      "title": "Security contact live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 294 P1 commercial security contact pack RG pointers packaging only. Do not claim security contact live Complete."
+}

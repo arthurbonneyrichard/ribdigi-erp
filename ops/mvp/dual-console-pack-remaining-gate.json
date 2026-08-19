@@ -1,0 +1,58 @@
+{
+  "id": "dual-console-pack-remaining-gate",
+  "stage": 268,
+  "pack": "I1",
+  "doc": "docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/DUAL_CONSOLE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/DUAL_CONSOLE_PACK_RG_POINTERS_MVP.md",
+    "stage68_fidelity": "docs/STAGE_68_FIDELITY.md",
+    "tenant_company_console_pack_remaining_gate": "docs/TENANT_COMPANY_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "ribdigi_house_console_pack_remaining_gate": "docs/RIBDIGI_HOUSE_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "platform_principal": "docs/ADR_137_PLATFORM_PRINCIPAL.md",
+    "ribdigi_house_console": "docs/RIBDIGI_HOUSE_CONSOLE_MVP.md",
+    "tenant_company_console": "docs/TENANT_COMPANY_CONSOLE_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "dual_console_live_claimed": false,
+  "cross_principal_leak_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage68_h1_t1_packaging": true,
+  "distinct_from_stage267_tenant_company_console_pack_remaining_gate": true,
+  "distinct_from_stage266_ribdigi_house_console_pack_remaining_gate": true,
+  "distinct_from_stage68_fidelity_closeout": true,
+  "steps": [
+    {
+      "id": "dcpr-read-blockers",
+      "title": "Read B1 dual console pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcpr-follow-pointers",
+      "title": "Follow P1 Stage 68 / Stage 267 / Stage 266 / ADR-137 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcpr-billing-missing",
+      "title": "Reaffirm paid billing / live dual-console MISSING until real commercial verification ships (ADR-002)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcpr-no-packaging-as-live",
+      "title": "Do not treat Stage 68 H1/T1 / Stage 267 / Stage 266 as live dual-console Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dcpr-dual-console-remaining",
+      "title": "Paid billing / live dual-console / cross-principal leak / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 268 I1 dual console pack remaining-gate index packaging only. Do not claim live dual-console Complete."
+}

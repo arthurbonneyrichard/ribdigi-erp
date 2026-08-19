@@ -1,0 +1,52 @@
+{
+  "id": "store-close-checklist",
+  "stage": 174,
+  "pack": "C1",
+  "doc": "docs/STORE_CLOSE_CHECKLIST_MVP.md",
+  "related": {
+    "drain": "docs/STORE_CLOSE_DRAIN_MVP.md",
+    "triage": "docs/STORE_CLOSE_TRIAGE_MVP.md",
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage173_open": true,
+  "steps": [
+    {
+      "id": "sc-confirm-store",
+      "title": "Confirm store context; stop new carts if closing",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sc-drain",
+      "title": "Complete E1 Hold clear/expiry + sync queue drain",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sc-triage",
+      "title": "Complete T1 conflict triage + catalog age + backup pointer",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sc-escalate",
+      "title": "Hand unresolved P1/P2 to Stage 170 support packs",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sc-offline-dr-remaining",
+      "title": "Offline Complete / live DR Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 174 C1 store-close checklist packaging only. Do not claim Offline Complete or live DR."
+}

@@ -1,0 +1,77 @@
+{
+  "id": "permission-alias-honesty-pack-rg-blockers",
+  "stage": 569,
+  "pack": "B1",
+  "doc": "docs/PERMISSION_ALIAS_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PERMISSION_ALIAS_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "permission_alias_pack_remaining_gate": "docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "permission_alias_honesty_complete_claimed": false,
+  "permission_alias_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "permission_alias_honesty_complete_claimed": "REMAINING",
+    "permission_alias_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_permission_alias_honesty": "NON_CLAIM",
+    "permission_alias_pack_as_permission_alias_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "permission_alias_honesty_complete_claimed_flag": "false",
+    "permission_alias_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "pahrb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pahrb-honesty",
+      "title": "Mark Permission Alias honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pahrb-as-golive",
+      "title": "Mark Permission Alias as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pahrb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pahrb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pahrb-prior-nonclaim",
+      "title": "Mark PERMISSION_ALIAS_PACK as non-claim for permission-alias Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pahrb-checklist-remaining",
+      "title": "Offline Complete / Permission Alias / Permission Alias honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 569 B1 Permission Alias Honesty Pack RG blocker matrix packaging only."
+}

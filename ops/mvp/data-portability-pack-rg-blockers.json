@@ -1,0 +1,60 @@
+{
+  "id": "data-portability-pack-rg-blockers",
+  "stage": 278,
+  "pack": "B1",
+  "doc": "docs/DATA_PORTABILITY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+    "data_portability": "docs/DATA_PORTABILITY_MVP.md"
+  },
+  "packaging_complete": true,
+  "gdpr_complete_claimed": false,
+  "dsar_portal_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "gdpr_complete": "REMAINING",
+    "dsar_portal_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage37_as_gdpr_complete": "NON_CLAIM",
+    "stage277_as_erasure_complete": "NON_CLAIM",
+    "gdpr_complete_claimed": "false",
+    "dsar_portal_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "dpprb-gdpr",
+      "title": "Mark GDPR Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprb-dsar",
+      "title": "Mark live DSAR portal Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprb-stage37-nonclaim",
+      "title": "Mark Stage 37 P1 as non-claim for GDPR Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dpprb-gdpr-remaining",
+      "title": "GDPR Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 278 B1 data portability pack RG blocker matrix packaging only. GDPR Completes remain MISSING."
+}

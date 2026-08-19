@@ -1,0 +1,72 @@
+{
+  "stage": "31",
+  "workstream": "R1",
+  "doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "gate_matrix": "ops/mvp/gate-matrix.json",
+  "deferred_implemented_claimed": false,
+  "billing_complete_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "i18n_packs_claimed": false,
+  "entries": [
+    {
+      "id": "ADR-001",
+      "file": "docs/ADR_001_TENANCY.md",
+      "title": "Tenant Isolation for Commercial MVP",
+      "mvp_status": "accepted_shared_schema",
+      "post_mvp": "schema-per-tenant migration path",
+      "implemented_as_complete": false,
+      "br_refs": ["BR-1.1", "BR-1.4"]
+    },
+    {
+      "id": "ADR-002",
+      "file": "docs/ADR_002_BILLING_DEFERRED.md",
+      "title": "Subscription Billing Deferred for Commercial MVP",
+      "mvp_status": "accepted_billing_deferred",
+      "post_mvp": "paid upgrade/downgrade with real billing provider",
+      "implemented_as_complete": false,
+      "br_refs": ["BR-1.3"]
+    },
+    {
+      "id": "ADR-003",
+      "file": "docs/ADR_003_USER_DELETE_POLICY.md",
+      "title": "User Delete Policy for Commercial MVP",
+      "mvp_status": "accepted_soft_delete_only",
+      "post_mvp": "hard delete with data archival",
+      "implemented_as_complete": false,
+      "br_refs": ["BR-3.1"]
+    },
+    {
+      "id": "ADR-004",
+      "file": "docs/ADR_004_MENU_PERMISSIONS.md",
+      "title": "Menu Permissions Equal Module Permissions",
+      "mvp_status": "accepted_menu_equals_module",
+      "post_mvp": "fine-grained submenu permission flags",
+      "implemented_as_complete": false,
+      "br_refs": ["BR-3.3"]
+    },
+    {
+      "id": "ADR-005",
+      "file": "docs/ADR_005_USER_STORE_ASSIGNMENT.md",
+      "title": "User Store Assignment Deferred",
+      "mvp_status": "accepted_store_manager_model",
+      "post_mvp": "user↔store membership / users.store_id",
+      "implemented_as_complete": false,
+      "br_refs": ["BR-3.1", "BR-13"]
+    },
+    {
+      "id": "ADR-006",
+      "file": "docs/ADR_006_LANGUAGE_I18N.md",
+      "title": "English-only UI for Commercial MVP (i18n scaffold)",
+      "mvp_status": "accepted_english_scaffold",
+      "post_mvp": "non-English UI language packs",
+      "implemented_as_complete": false,
+      "br_refs": ["BR-2.7"]
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage31_r1_deferred_adr_register.json",
+  "deferred": [
+    "Implementing paid billing / schema-per-tenant / i18n packs / store membership / hard-delete as Complete",
+    "Treating this register as proof that deferred ADRs shipped",
+    "Re-packaging Stage 26–30 packs as new Complete"
+  ]
+}

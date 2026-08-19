@@ -1,0 +1,56 @@
+{
+  "id": "offline-accept-client-pack-remaining-gate",
+  "stage": 379,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_ACCEPT_CLIENT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_ACCEPT_CLIENT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_ACCEPT_CLIENT_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage166_fidelity": "docs/STAGE_166_FIDELITY.md",
+    "offline_hold_reserve_pack_remaining_gate": "docs/OFFLINE_HOLD_RESERVE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_accept_client_complete_claimed": false,
+  "accept_client_reapply_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage378_offline_hold_reserve_pack_remaining_gate": true,
+  "distinct_from_stage166_accept_client": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "oacpr-read-blockers",
+      "title": "Read B1 offline accept client pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oacpr-follow-pointers",
+      "title": "Follow P1 Stage 378 / Stage 166 / Stage 329 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oacpr-checklist-missing",
+      "title": "Reaffirm Offline Complete / offline accept_client / accept_client re-apply / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oacpr-no-packaging-as-live",
+      "title": "Do not treat Stage 166 / Stage 378 / Stage 329 as Offline Complete or offline accept_client Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oacpr-checklist-remaining",
+      "title": "Offline Complete / offline accept_client / accept_client re-apply / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 379 I1 offline accept client pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

@@ -1,0 +1,156 @@
+{
+  "stage": "41",
+  "workstream": "C1",
+  "doc": "docs/CHANGE_GOVERNANCE_MVP.md",
+  "admin_manual": "docs/ADMIN_MANUAL.md",
+  "dr_logical_backup": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+  "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+  "cutover_checklist": "ops/launch/cutover-checklist.json",
+  "staging_gha": "docs/STAGING_GHA_MVP.md",
+  "staging_gha_template": "ops/k8s/deploy-staging.example.yml",
+  "release_notes": "docs/RELEASE_NOTES_MVP.md",
+  "release_notes_register": "ops/mvp/release-notes.json",
+  "status_uptime": "ops/mvp/status-uptime.json",
+  "status_uptime_doc": "docs/STATUS_UPTIME_MVP.md",
+  "database_docs": "docs/DATABASE_DOCUMENTATION.md",
+  "deployment_guide": "docs/DEPLOYMENT_GUIDE.md",
+  "accessibility_statement": "ops/mvp/accessibility-statement.json",
+  "stage41_plan": "docs/STAGE_41_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "change_calendar_live": false,
+  "maintenance_portal_claimed": false,
+  "customer_change_notices_live": false,
+  "ops_changelog_saas_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage41_c1_change_governance.json",
+  "steps": [
+    {
+      "id": "cg-admin-maintenance-window",
+      "category": "maintenance",
+      "title": "Bound ADMIN_MANUAL restore maintenance-window warning as honesty packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADMIN_MANUAL.md",
+        "docs/STAGE_41_PLAN.md"
+      ],
+      "source": "docs/ADMIN_MANUAL.md"
+    },
+    {
+      "id": "cg-dr-rto-window",
+      "category": "maintenance",
+      "title": "Link DR logical backup RTO / maintenance-window adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/ADMIN_MANUAL.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "cg-cutover-changelog",
+      "category": "change",
+      "title": "Index Stage 29 cutover / rollback ops change-log adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "ops/launch/cutover-checklist.json"
+      ],
+      "source": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "id": "cg-staging-gha",
+      "category": "deploy",
+      "title": "Link Stage 28 staging GHA deploy pack as operator change path (not main ci.yml)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGING_GHA_MVP.md",
+        "ops/k8s/deploy-staging.example.yml"
+      ],
+      "source": "docs/STAGING_GHA_MVP.md"
+    },
+    {
+      "id": "cg-release-notes",
+      "category": "release",
+      "title": "Link Stage 32 commercial release-notes packaging as change-communication adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RELEASE_NOTES_MVP.md",
+        "ops/mvp/release-notes.json"
+      ],
+      "source": "docs/RELEASE_NOTES_MVP.md"
+    },
+    {
+      "id": "cg-status-uptime-adjacency",
+      "category": "availability",
+      "title": "Align Stage 40 status/uptime maintenance-window step as availability adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STATUS_UPTIME_MVP.md",
+        "ops/mvp/status-uptime.json"
+      ],
+      "source": "docs/STATUS_UPTIME_MVP.md"
+    },
+    {
+      "id": "cg-database-docs",
+      "category": "maintenance",
+      "title": "Index DATABASE_DOCUMENTATION maintenance-window honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATABASE_DOCUMENTATION.md",
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+      ],
+      "source": "docs/DATABASE_DOCUMENTATION.md"
+    },
+    {
+      "id": "cg-deploy-free-ci",
+      "category": "deploy",
+      "title": "Confirm main ci.yml remains deploy-free (Stage 18 C1) for change governance honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEPLOYMENT_GUIDE.md",
+        ".github/workflows/ci.yml"
+      ],
+      "source": "docs/DEPLOYMENT_GUIDE.md"
+    },
+    {
+      "id": "cg-change-calendar-remaining",
+      "category": "honesty",
+      "title": "Public change calendar Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_41_PLAN.md",
+        "docs/CHANGE_GOVERNANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_41_PLAN.md"
+    },
+    {
+      "id": "cg-maintenance-portal-remaining",
+      "category": "honesty",
+      "title": "Live maintenance portal / customer change notices Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_41_PLAN.md",
+        "docs/STATUS_UPTIME_MVP.md"
+      ],
+      "source": "docs/STAGE_41_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Public change calendar / maintenance portal Complete",
+    "Live customer-facing change notices Complete",
+    "Ops change-log SaaS Complete",
+    "Live production cutover / \u00a77 Complete"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "id": "ai-use-disclosure-pack-remaining-gate",
+  "stage": 301,
+  "pack": "I1",
+  "doc": "docs/AI_USE_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/AI_USE_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/AI_USE_DISCLOSURE_PACK_RG_POINTERS_MVP.md",
+    "ai_use_disclosure": "docs/AI_USE_DISCLOSURE_MVP.md",
+    "tos_aup_pack_remaining_gate": "docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md",
+    "commercial_terms_pack_remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "ai_provider_boundary": "docs/AI_PROVIDER_BOUNDARY_MVP.md"
+  },
+  "packaging_complete": true,
+  "ai_certification_claimed": false,
+  "ai_advice_binding_claimed": false,
+  "external_llm_claimed": false,
+  "output_pii_scanner_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage42_ai_use_disclosure": true,
+  "distinct_from_stage300_tos_aup_pack_remaining_gate": true,
+  "distinct_from_stage293_commercial_terms_pack_remaining_gate": true,
+  "distinct_from_stage42_ai_provider_boundary": true,
+  "steps": [
+    {
+      "id": "audpr-read-blockers",
+      "title": "Read B1 AI use disclosure pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audpr-follow-pointers",
+      "title": "Follow P1 Stage 42 A1 / Stage 300 / Stage 293 / Stage 42 P1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audpr-cert-missing",
+      "title": "Reaffirm AI certification / external LLM MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audpr-no-packaging-as-live",
+      "title": "Do not treat Stage 42 A1 / Stage 300 / Stage 293 as AI certification Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "audpr-cert-remaining",
+      "title": "AI certification / advice binding / external LLM / output-PII / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 301 I1 AI use disclosure pack remaining-gate index packaging only. Do not claim AI certification Complete."
+}

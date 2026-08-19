@@ -1,0 +1,54 @@
+{
+  "id": "grafana-pack-blockers",
+  "stage": 222,
+  "pack": "B1",
+  "doc": "docs/GRAFANA_PACK_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/GRAFANA_PACK_REMAINING_GATE_MVP.md",
+    "grafana_pack": "docs/GRAFANA_PACK_MVP.md",
+    "alertmanager_example": "ops/grafana/alertmanager.yml.example"
+  },
+  "packaging_complete": true,
+  "live_grafana_pack_claimed": false,
+  "hosted_grafana_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "hosted_grafana_dashboards_deployed": "REMAINING",
+    "alertmanager_pagerduty_wired": "REMAINING",
+    "stage28_a1_as_hosted_grafana": "NON_CLAIM",
+    "hosted_grafana_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "gpb-dashboards",
+      "title": "Mark hosted Grafana dashboards Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpb-pagerduty",
+      "title": "Mark Alertmanager \u2192 PagerDuty wired Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpb-stage28-nonclaim",
+      "title": "Mark Stage 28 A1 Grafana pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpb-grafana-false",
+      "title": "Mark hosted_grafana_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gpb-grafana-remaining",
+      "title": "Hosted Grafana Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 222 B1 Grafana pack blocker matrix packaging only. Hosted Grafana Complete remains MISSING."
+}

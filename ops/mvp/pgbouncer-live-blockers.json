@@ -1,0 +1,54 @@
+{
+  "id": "pgbouncer-live-blockers",
+  "stage": 226,
+  "pack": "B1",
+  "doc": "docs/PGBOUNCER_LIVE_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PGBOUNCER_LIVE_REMAINING_GATE_MVP.md",
+    "pgbouncer_mvp": "docs/PGBOUNCER_MVP.md",
+    "soak_pack": "docs/PGBOUNCER_SOAK_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_pgbouncer_claimed": false,
+  "helm_pooler_default_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_pgbouncer_data_plane": "REMAINING",
+    "default_helm_pooler": "REMAINING",
+    "stage27_p1_stage29_b2_as_live_pgbouncer": "NON_CLAIM",
+    "live_pgbouncer_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "pblb-live",
+      "title": "Mark live PgBouncer data plane Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblb-helm",
+      "title": "Mark default Helm pooler Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblb-packaging-nonclaim",
+      "title": "Mark Stage 27 P1 / Stage 29 B2 as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblb-claimed-false",
+      "title": "Mark live_pgbouncer_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pblb-live-remaining",
+      "title": "Live PgBouncer Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 226 B1 PgBouncer live blocker matrix packaging only. Live PgBouncer Complete remains MISSING."
+}

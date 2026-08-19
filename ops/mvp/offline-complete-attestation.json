@@ -1,0 +1,25 @@
+{
+  "id": "offline-complete-attestation",
+  "stage": 168,
+  "pack": "F1",
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "verdict": "PARTIAL",
+  "proven": {
+    "sw_static_cache_contract": "COMPLETE",
+    "sync_push_pos_sale_flush_path": "COMPLETE",
+    "offline_queue_no_tokens": "COMPLETE",
+    "device_revoke_mid_queue_honesty": "COMPLETE"
+  },
+  "missing": {
+    "browser_playwright_offline_e2e": "MISSING",
+    "offline_complete_product_claim": "MISSING"
+  },
+  "evidence": [
+    "docs/OFFLINE_COMPLETE_ATTESTATION.md",
+    "backend/tests/test_stage168_sw_contract_w1.py",
+    "backend/tests/test_stage168_flush_proof_f1.py",
+    "backend/tests/test_stage168_revoke_r1.py"
+  ],
+  "message": "Stage 168 attests offline contracts only. Do not claim Offline Complete."
+}

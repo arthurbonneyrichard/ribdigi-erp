@@ -1,0 +1,57 @@
+{
+  "id": "schema-per-tenant-blockers",
+  "stage": 185,
+  "pack": "B1",
+  "doc": "docs/SCHEMA_PER_TENANT_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md",
+    "adr001": "docs/ADR_001_TENANCY.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "schema_per_tenant_claimed": false,
+  "database_per_tenant_claimed": false,
+  "shared_schema_as_schema_per_tenant_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "adr001_schema_per_tenant_migration": "DEFERRED",
+    "database_per_tenant": "REMAINING",
+    "per_tenant_backup_restore_isolation": "REMAINING",
+    "shared_schema_as_schema_per_tenant": "NON_CLAIM",
+    "schema_per_tenant_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sb-adr001",
+      "title": "Mark ADR-001 schema-per-tenant migration Deferred / post-MVP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-db-per-tenant",
+      "title": "Mark database-per-tenant Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-backup-isolation",
+      "title": "Mark per-tenant backup/restore isolation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-shared-nonclaim",
+      "title": "Mark shared-schema Completes as non-claim for schema-per-tenant",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-schema-remaining",
+      "title": "Schema-per-tenant Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 185 B1 schema-per-tenant blocker matrix packaging only. Schema-per-tenant Complete remains MISSING."
+}

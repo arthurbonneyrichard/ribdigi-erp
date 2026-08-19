@@ -1,0 +1,55 @@
+{
+  "id": "ops-monitoring-remaining-gate",
+  "stage": 221,
+  "pack": "I1",
+  "doc": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OPS_MONITORING_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OPS_MONITORING_RG_POINTERS_MVP.md",
+    "ops_monitoring": "docs/OPS_MONITORING_MVP.md",
+    "support_sla_boundary_remaining_gate": "docs/SUPPORT_SLA_BOUNDARY_REMAINING_GATE_MVP.md",
+    "production_hypercare_remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "prometheus_scrape": "ops/prometheus/prometheus.yml"
+  },
+  "packaging_complete": true,
+  "live_ops_monitoring_claimed": false,
+  "live_monitoring_claimed": false,
+  "hosted_grafana_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage26_m1_ops_monitoring": true,
+  "distinct_from_stage220_support_sla_boundary_remaining_gate": true,
+  "distinct_from_stage219_production_hypercare_remaining_gate": true,
+  "steps": [
+    {
+      "id": "om-read-blockers",
+      "title": "Read B1 ops monitoring blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "om-follow-pointers",
+      "title": "Follow P1 Stage 26 / Stage 220 / Stage 219 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "om-monitoring-missing",
+      "title": "Reaffirm live monitoring MISSING until hosted Prometheus/Grafana + paging evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "om-no-packaging-as-monitoring",
+      "title": "Do not treat Stage 26 M1 as live monitoring Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "om-monitoring-remaining",
+      "title": "Live monitoring / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 221 I1 ops monitoring remaining-gate index packaging only. Do not claim live monitoring Complete."
+}

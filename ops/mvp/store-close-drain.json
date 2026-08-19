@@ -1,0 +1,53 @@
+{
+  "id": "store-close-drain",
+  "stage": 174,
+  "pack": "E1",
+  "doc": "docs/STORE_CLOSE_DRAIN_MVP.md",
+  "related": {
+    "store_close_checklist": "docs/STORE_CLOSE_CHECKLIST_MVP.md",
+    "store_open_health": "docs/STORE_OPEN_HEALTH_MVP.md",
+    "cashier_pos_dayone": "docs/CASHIER_POS_DAYONE_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "hold_clear_expiry",
+    "sync_queue_drain"
+  ],
+  "steps": [
+    {
+      "id": "sd-hold-clear",
+      "title": "Resume/discard/expire held carts; release reserved_qty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sd-device-online",
+      "title": "Confirm ONLINE + active device before flush",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sd-queue-drain",
+      "title": "Drain IndexedDB queue via /sync/push",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sd-revoke-note",
+      "title": "Revoked device: bind new before flush (queue kept)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sd-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 174 E1 Hold/queue drain packaging only. Offline Complete remains MISSING."
+}

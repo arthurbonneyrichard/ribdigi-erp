@@ -1,0 +1,54 @@
+{
+  "id": "customer-assurance-remaining-gate",
+  "stage": 195,
+  "pack": "I1",
+  "doc": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CUSTOMER_ASSURANCE_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CUSTOMER_ASSURANCE_PACK_POINTERS_MVP.md",
+    "commercial_assurance": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+    "assurance_evidence": "docs/ASSURANCE_EVIDENCE_MVP.md",
+    "commercial_evidence_chain": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "assurance_claimed": false,
+  "evidence_chain_live_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage73_a1_commercial_assurance": true,
+  "distinct_from_stage34_a1_assurance_evidence": true,
+  "steps": [
+    {
+      "id": "ca-read-blockers",
+      "title": "Read B1 customer assurance blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-follow-pointers",
+      "title": "Follow P1 Stage 73 / Stage 34 / Stage 194 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-assurance-missing",
+      "title": "Reaffirm customer assurance MISSING until executed assurance ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-no-packaging-as-assurance",
+      "title": "Do not treat Stage 73 A1 / Stage 34 A1 as customer assurance Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ca-assurance-remaining",
+      "title": "Customer assurance / evidence chain live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 195 I1 customer assurance remaining-gate index packaging only. Do not claim customer assurance Complete."
+}

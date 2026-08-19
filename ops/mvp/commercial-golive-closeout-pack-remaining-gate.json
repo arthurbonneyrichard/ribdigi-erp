@@ -1,0 +1,57 @@
+{
+  "id": "commercial-golive-closeout-pack-remaining-gate",
+  "stage": 260,
+  "pack": "I1",
+  "doc": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_POINTERS_MVP.md",
+    "commercial_golive_closeout": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+    "first_commercial_day_pack_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md",
+    "steady_state_ops_pack_remaining_gate": "docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout_register": "ops/mvp/commercial-golive-closeout.json"
+  },
+  "packaging_complete": true,
+  "commercial_golive_closeout_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "distinct_from_stage70_g1_commercial_golive_closeout": true,
+  "distinct_from_stage259_first_commercial_day_pack_remaining_gate": true,
+  "distinct_from_stage258_steady_state_ops_pack_remaining_gate": true,
+  "distinct_from_stage200_commercial_golive_closeout_remaining_gate": true,
+  "steps": [
+    {
+      "id": "cgcpr-read-blockers",
+      "title": "Read B1 commercial go-live closeout pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcpr-follow-pointers",
+      "title": "Follow P1 Stage 70 / Stage 259 / Stage 258 / Stage 200 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcpr-closeout-missing",
+      "title": "Reaffirm commercial go-live closeout MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcpr-no-packaging-as-live",
+      "title": "Do not treat Stage 70 G1 / Stage 259 / Stage 200 as commercial go-live closeout Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcpr-closeout-remaining",
+      "title": "Commercial go-live closeout / first commercial day / go-live / section 7 Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 260 I1 commercial go-live closeout pack remaining-gate index packaging only. Do not claim commercial go-live closeout Complete."
+}

@@ -1,0 +1,59 @@
+{
+  "id": "security-scan-pack-pointers",
+  "stage": 210,
+  "pack": "P1",
+  "doc": "docs/SECURITY_SCAN_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SECURITY_SCAN_REMAINING_GATE_MVP.md",
+    "security_scan": "docs/SECURITY_SCAN_MVP.md",
+    "zap_baseline": "ops/security/zap-baseline.example.yml",
+    "security_readme": "ops/security/README.md",
+    "pentest_remaining_gate": "docs/PENTEST_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_security_scan_claimed": false,
+  "live_zap_executed": false,
+  "vendor_pen_test_purchased": false,
+  "go_live_claimed": false,
+  "topics": [
+    "security_scan_stage27",
+    "zap_baseline_template",
+    "security_ops_notes",
+    "pentest_remaining_gate_stage209",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sp-scan-pack",
+      "title": "Point to Stage 27 S1 security scan",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-zap",
+      "title": "Point to ZAP baseline template",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-readme",
+      "title": "Point to security ops notes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-pentest-gate",
+      "title": "Point to Stage 209 pentest remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-scan-remaining",
+      "title": "Live security-scan Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 210 P1 security scan pack pointers packaging only. Do not claim live security-scan Complete."
+}

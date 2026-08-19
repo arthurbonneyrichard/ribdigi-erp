@@ -37,6 +37,12 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_PAYMENT_DUE_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "scan-quotation-expiry": {
+            "task": "app.tasks.scan_quotation_expiry",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
         "generate-recurring-expenses": {
             "task": "app.tasks.generate_recurring_expenses",
             "schedule": schedule(
@@ -65,6 +71,30 @@ celery.conf.update(
             "task": "app.tasks.sync_bank_feeds",
             "schedule": schedule(
                 run_every=max(1, int(settings.CELERY_BANK_FEED_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "generate-ai-low-stock-predictions": {
+            "task": "app.tasks.generate_ai_low_stock_predictions",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AI_PREDICTION_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "generate-ai-insights": {
+            "task": "app.tasks.generate_ai_insights",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AI_INSIGHTS_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "archive-cold-audit-logs": {
+            "task": "app.tasks.archive_cold_audit_logs",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "retry-due-webhooks": {
+            "task": "app.tasks.retry_due_webhooks",
+            "schedule": schedule(
+                run_every=max(5, int(settings.CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS))
             ),
         },
     },

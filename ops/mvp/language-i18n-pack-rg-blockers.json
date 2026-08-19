@@ -1,0 +1,61 @@
+{
+  "id": "language-i18n-pack-rg-blockers",
+  "stage": 274,
+  "pack": "B1",
+  "doc": "docs/LANGUAGE_I18N_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "language_i18n_adr": "docs/ADR_006_LANGUAGE_I18N.md",
+    "i18n_remaining_gate": "docs/I18N_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "multilang_complete_claimed": false,
+  "non_english_packs_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "multilang_complete": "REMAINING",
+    "non_english_packs_complete": "REMAINING",
+    "billing_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "adr006_as_multilang_complete": "NON_CLAIM",
+    "stage184_as_i18n_complete": "NON_CLAIM",
+    "multilang_complete_claimed": "false",
+    "non_english_packs_claimed": "false",
+    "billing_complete_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "liprb-multilang",
+      "title": "Mark multi-language Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprb-non-english",
+      "title": "Mark non-English locale packs Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprb-billing",
+      "title": "Mark paid billing Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprb-adr006-nonclaim",
+      "title": "Mark ADR-006 as non-claim for multi-language Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprb-multilang-remaining",
+      "title": "Multi-language Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 274 B1 language i18n pack RG blocker matrix packaging only. Multi-language Completes remain MISSING."
+}

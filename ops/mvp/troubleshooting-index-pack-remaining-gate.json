@@ -1,0 +1,57 @@
+{
+  "id": "troubleshooting-index-pack-remaining-gate",
+  "stage": 338,
+  "pack": "I1",
+  "doc": "docs/TROUBLESHOOTING_INDEX_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/TROUBLESHOOTING_INDEX_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/TROUBLESHOOTING_INDEX_PACK_RG_POINTERS_MVP.md",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md",
+    "faq_offline_pos_pack_remaining_gate": "docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_runbook_pack_remaining_gate": "docs/OFFLINE_SYNC_RUNBOOK_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage171_troubleshooting_index": true,
+  "distinct_from_stage337_faq_offline_pos_pack_remaining_gate": true,
+  "distinct_from_stage336_offline_sync_runbook_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "tipr-read-blockers",
+      "title": "Read B1 troubleshooting index pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tipr-follow-pointers",
+      "title": "Follow P1 Stage 171 / Stage 337 / Stage 336 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tipr-index-missing",
+      "title": "Reaffirm live troubleshooting index / support-SLA / Offline Complete / live DR MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tipr-no-packaging-as-live",
+      "title": "Do not treat Stage 171 / Stage 169 / Stage 170 / Stage 337 / Stage 336 / Stage 329 as live troubleshooting index Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tipr-index-remaining",
+      "title": "Support-SLA / Offline Complete / live DR / attestation / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 338 I1 troubleshooting index pack remaining-gate index packaging only. Do not claim live troubleshooting index Complete."
+}

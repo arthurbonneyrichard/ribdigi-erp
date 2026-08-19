@@ -1,0 +1,53 @@
+{
+  "id": "commercial-acceptance-pack-pointers",
+  "stage": 197,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_ACCEPTANCE_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "commercial_acceptance": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+    "commercial_acceptance_register": "ops/mvp/commercial-acceptance.json",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "steady_state_ops_register": "ops/mvp/steady-state-ops.json",
+    "residual_risk_remaining_gate": "docs/RESIDUAL_RISK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "first_commercial_day_claimed": false,
+  "topics": [
+    "commercial_acceptance_stage71",
+    "steady_state_ops_stage71",
+    "residual_risk_remaining_gate_stage196",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cp-commercial-acceptance",
+      "title": "Point to Stage 71 commercial acceptance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-steady-state",
+      "title": "Point to Stage 71 steady-state ops",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-residual-risk-gate",
+      "title": "Point to Stage 196 residual risk remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-acceptance-remaining",
+      "title": "Commercial acceptance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 197 P1 commercial acceptance pack pointers packaging only. Do not claim commercial acceptance Complete."
+}

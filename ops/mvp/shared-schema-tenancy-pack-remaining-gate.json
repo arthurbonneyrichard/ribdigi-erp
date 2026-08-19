@@ -1,0 +1,56 @@
+{
+  "id": "shared-schema-tenancy-pack-remaining-gate",
+  "stage": 270,
+  "pack": "I1",
+  "doc": "docs/SHARED_SCHEMA_TENANCY_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SHARED_SCHEMA_TENANCY_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SHARED_SCHEMA_TENANCY_PACK_RG_POINTERS_MVP.md",
+    "tenancy_adr": "docs/ADR_001_TENANCY.md",
+    "platform_principal_pack_remaining_gate": "docs/PLATFORM_PRINCIPAL_PACK_REMAINING_GATE_MVP.md",
+    "dual_console_pack_remaining_gate": "docs/DUAL_CONSOLE_PACK_REMAINING_GATE_MVP.md",
+    "schema_per_tenant_remaining_gate": "docs/SCHEMA_PER_TENANT_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "live_multitenant_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_adr001_tenancy": true,
+  "distinct_from_stage185_schema_per_tenant_remaining_gate": true,
+  "distinct_from_stage269_platform_principal_pack_remaining_gate": true,
+  "distinct_from_stage268_dual_console_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sstpr-read-blockers",
+      "title": "Read B1 shared-schema tenancy pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstpr-follow-pointers",
+      "title": "Follow P1 ADR-001 / Stage 269 / Stage 268 / Stage 185 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstpr-billing-missing",
+      "title": "Reaffirm paid billing / schema-per-tenant MISSING until real commercial verification ships (ADR-002)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstpr-no-packaging-as-live",
+      "title": "Do not treat ADR-001 / Stage 185 / Stage 269 as schema-per-tenant Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sstpr-tenancy-remaining",
+      "title": "Paid billing / schema-per-tenant / live multi-tenant / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 270 I1 shared-schema tenancy pack remaining-gate index packaging only. Do not claim schema-per-tenant Complete."
+}

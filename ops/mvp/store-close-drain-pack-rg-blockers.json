@@ -1,0 +1,63 @@
+{
+  "id": "store-close-drain-pack-rg-blockers",
+  "stage": 353,
+  "pack": "B1",
+  "doc": "docs/STORE_CLOSE_DRAIN_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_CLOSE_DRAIN_PACK_REMAINING_GATE_MVP.md",
+    "store_close_drain": "docs/STORE_CLOSE_DRAIN_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "empty_queue_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "empty_queue_claimed": "REMAINING",
+    "stage174_as_live_store_close_drain": "NON_CLAIM",
+    "stage173_as_live_store_close_drain": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "empty_queue_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "scdprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scdprb-sla",
+      "title": "Mark support SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scdprb-empty-queue",
+      "title": "Mark empty queue Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scdprb-stage174-nonclaim",
+      "title": "Mark Stage 174 / Stage 173 as non-claim for live store-close drain Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "scdprb-checklist-remaining",
+      "title": "Live store-close drain Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 353 B1 store close drain pack RG blocker matrix packaging only. Live store-close drain Completes remain MISSING."
+}

@@ -1,0 +1,56 @@
+{
+  "id": "support-runbook-blockers",
+  "stage": 214,
+  "pack": "B1",
+  "doc": "docs/SUPPORT_RUNBOOK_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_RUNBOOK_REMAINING_GATE_MVP.md",
+    "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_support_runbook_claimed": false,
+  "live_ops_success_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_support_sla_status_page": "REMAINING",
+    "live_ops_success_from_runbook": "REMAINING",
+    "stage30_s1_as_live_support_sla": "NON_CLAIM",
+    "live_ops_success_claimed": "false",
+    "support_sla_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sb-sla",
+      "title": "Mark live support-SLA / status-page Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-ops",
+      "title": "Mark live ops success from runbook Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-stage30-nonclaim",
+      "title": "Mark Stage 30 S1 support runbook as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-sla-false",
+      "title": "Mark support_sla_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-sla-remaining",
+      "title": "Live support-SLA Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 214 B1 support runbook blocker matrix packaging only. Live support-SLA Complete remains MISSING."
+}

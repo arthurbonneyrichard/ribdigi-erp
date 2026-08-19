@@ -1,0 +1,156 @@
+{
+  "stage": "51",
+  "workstream": "M1",
+  "doc": "docs/MARKETPLACE_PRESENCE_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "partner_reseller": "ops/mvp/partner-reseller.json",
+  "partner_reseller_doc": "docs/PARTNER_RESELLER_MVP.md",
+  "referral_program": "ops/mvp/referral-program.json",
+  "referral_program_doc": "docs/REFERRAL_PROGRAM_MVP.md",
+  "pricing_transparency": "ops/mvp/pricing-transparency.json",
+  "pricing_transparency_doc": "docs/PRICING_TRANSPARENCY_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "deferred_adr_register_doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage51_plan": "docs/STAGE_51_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "marketplace_listing_live": false,
+  "app_store_presence_claimed": false,
+  "plugin_marketplace_live": false,
+  "marketplace_revenue_share_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage51_m1_marketplace_presence.json",
+  "steps": [
+    {
+      "id": "mp-product-overview",
+      "category": "marketplace",
+      "title": "Index PRODUCT_OVERVIEW SaaS marketplace / app-store themes as distribution honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_51_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "mp-partner-adjacency",
+      "category": "presence",
+      "title": "Link Stage 49 partner / reseller as channel adjacency (not marketplace listing)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PARTNER_RESELLER_MVP.md",
+        "ops/mvp/partner-reseller.json"
+      ],
+      "source": "docs/PARTNER_RESELLER_MVP.md"
+    },
+    {
+      "id": "mp-referral-adjacency",
+      "category": "marketplace",
+      "title": "Link Stage 50 referral program as acquisition adjacency (not app-store presence)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/REFERRAL_PROGRAM_MVP.md",
+        "ops/mvp/referral-program.json"
+      ],
+      "source": "docs/REFERRAL_PROGRAM_MVP.md"
+    },
+    {
+      "id": "mp-pricing-adjacency",
+      "category": "presence",
+      "title": "Link Stage 49 pricing transparency as list-price adjacency (not marketplace Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRICING_TRANSPARENCY_MVP.md",
+        "ops/mvp/pricing-transparency.json"
+      ],
+      "source": "docs/PRICING_TRANSPARENCY_MVP.md"
+    },
+    {
+      "id": "mp-billing-deferred",
+      "category": "marketplace",
+      "title": "Link Stage 36 billing-deferred honesty as marketplace revenue Remaining adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "mp-deferred-adr",
+      "category": "presence",
+      "title": "Link deferred ADR register / ADR-002 as billing Remaining honesty for marketplace share",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEFERRED_ADR_REGISTER_MVP.md",
+        "ops/mvp/deferred-adr-register.json"
+      ],
+      "source": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+    },
+    {
+      "id": "mp-roadmap-backlog",
+      "category": "marketplace",
+      "title": "Index DEVELOPMENT_ROADMAP marketplace / Phase-3 backlog as presence Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "mp-plan-honesty",
+      "category": "presence",
+      "title": "Confirm Stage 51 plan explicitly defers live marketplace listing / app-store presence",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_51_PLAN.md",
+        "docs/MARKETPLACE_PRESENCE_MVP.md"
+      ],
+      "source": "docs/STAGE_51_PLAN.md"
+    },
+    {
+      "id": "mp-listing-remaining",
+      "category": "honesty",
+      "title": "Live marketplace listing Remaining \u2014 packaging \u2260 operating marketplace presence",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_51_PLAN.md",
+        "docs/MARKETPLACE_PRESENCE_MVP.md"
+      ],
+      "source": "docs/STAGE_51_PLAN.md"
+    },
+    {
+      "id": "mp-appstore-remaining",
+      "category": "honesty",
+      "title": "App-store / plugin marketplace Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_51_PLAN.md",
+        "docs/MARKETPLACE_PRESENCE_MVP.md"
+      ],
+      "source": "docs/STAGE_51_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live marketplace listing Complete",
+    "App-store presence Complete",
+    "Plugin / AI model marketplace live Complete",
+    "Marketplace revenue-share Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

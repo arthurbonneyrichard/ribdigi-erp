@@ -1,0 +1,63 @@
+{
+  "id": "support-readiness-pack-rg-blockers",
+  "stage": 333,
+  "pack": "B1",
+  "doc": "docs/SUPPORT_READINESS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUPPORT_READINESS_PACK_REMAINING_GATE_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "helpdesk_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "support_sla_claimed": "REMAINING",
+    "helpdesk_hosted_claimed": "REMAINING",
+    "oncall_rota_live": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage170_as_live_support_readiness": "NON_CLAIM",
+    "stage36_30_as_live_support_readiness": "NON_CLAIM",
+    "support_sla_claimed_flag": "false",
+    "helpdesk_hosted_claimed_flag": "false",
+    "oncall_rota_live_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "srprb-sla",
+      "title": "Mark support-SLA Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-helpdesk",
+      "title": "Mark helpdesk hosted Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-oncall",
+      "title": "Mark on-call rota live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-stage170-nonclaim",
+      "title": "Mark Stage 170 / Stage 36 / Stage 30 as non-claim for live support readiness Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprb-readiness-remaining",
+      "title": "Live support readiness Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 333 B1 support readiness pack RG blocker matrix packaging only. Live support readiness Completes remain MISSING."
+}

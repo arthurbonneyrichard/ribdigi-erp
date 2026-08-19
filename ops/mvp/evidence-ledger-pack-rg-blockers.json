@@ -1,0 +1,57 @@
+{
+  "id": "evidence-ledger-pack-rg-blockers",
+  "stage": 235,
+  "pack": "B1",
+  "doc": "docs/EVIDENCE_LEDGER_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/EVIDENCE_LEDGER_PACK_REMAINING_GATE_MVP.md",
+    "evidence_ledger": "docs/EVIDENCE_LEDGER_MVP.md",
+    "ledger_map": "ops/evidence/ledger.json"
+  },
+  "packaging_complete": true,
+  "live_go_live_evidence_claimed": false,
+  "live_evidence_ledger_claimed": false,
+  "live_runs_certified": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_operator_run_evidence_artifacts": "REMAINING",
+    "live_evidence_ledger_complete": "REMAINING",
+    "live_runs_certified": "REMAINING",
+    "stage30_l1_as_live_go_live_evidence": "NON_CLAIM",
+    "live_go_live_evidence_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "elprb-artifacts",
+      "title": "Mark live operator-run evidence artifacts Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "elprb-ledger",
+      "title": "Mark live evidence-ledger Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "elprb-runs",
+      "title": "Mark live runs certified Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "elprb-stage30-nonclaim",
+      "title": "Mark Stage 30 L1 as non-claim for live go-live evidence",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "elprb-evidence-remaining",
+      "title": "Live go-live evidence Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 235 B1 evidence ledger pack RG blocker matrix packaging only. Live go-live evidence Complete remains MISSING."
+}

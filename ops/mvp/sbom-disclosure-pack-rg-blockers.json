@@ -1,0 +1,63 @@
+{
+  "id": "sbom-disclosure-pack-rg-blockers",
+  "stage": 314,
+  "pack": "B1",
+  "doc": "docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "sbom_disclosure": "docs/SBOM_DISCLOSURE_MVP.md"
+  },
+  "packaging_complete": true,
+  "sbom_pipeline_live": false,
+  "cosign_signing_claimed": false,
+  "snyk_saas_claimed": false,
+  "dependabot_live": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "sbom_pipeline_live": "REMAINING",
+    "cosign_signing_claimed": "REMAINING",
+    "snyk_saas_claimed": "REMAINING",
+    "dependabot_live": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage40_as_sbom_pipeline": "NON_CLAIM",
+    "stage313_as_liability_cap": "NON_CLAIM",
+    "sbom_pipeline_live_flag": "false",
+    "cosign_signing_claimed_flag": "false",
+    "snyk_saas_claimed_flag": "false",
+    "dependabot_live_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sdprb-pipeline",
+      "title": "Mark live SBOM pipeline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprb-cosign",
+      "title": "Mark Cosign signing Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprb-snyk",
+      "title": "Mark Snyk SaaS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprb-stage40-nonclaim",
+      "title": "Mark Stage 40 S1 as non-claim for live SBOM pipeline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdprb-pipeline-remaining",
+      "title": "Live SBOM pipeline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 314 B1 SBOM disclosure pack RG blocker matrix packaging only. Live SBOM pipeline Completes remain MISSING."
+}

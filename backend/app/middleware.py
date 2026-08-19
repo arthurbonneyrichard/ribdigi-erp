@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -11,10 +13,12 @@ from app.rate_limit import rate_limiter
 
 AUTH_PATH_PREFIXES = (
     "/api/v1/auth/login",
+    "/api/v1/auth/refresh",
     "/api/v1/auth/2fa/verify",
     "/api/v1/auth/password-reset",
     "/api/v1/auth/password-reset-request",
     "/api/v1/auth/verify-email",
+    "/api/v1/auth/resend-verification",
     "/api/v1/tenants",
 )
 
@@ -31,6 +35,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "geolocation=(), microphone=(), camera=()",
         )
         response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        # API responses are JSON; deny active content and framing by default.
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+        )
         if settings.APP_ENV.lower() == "production":
             response.headers.setdefault(
                 "Strict-Transport-Security",
@@ -41,7 +50,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Sliding-window limiter keyed by client IP + route class (auth vs api)."""
+    """Sliding-window limiter keyed by client IP + route class + tenant scope.
+
+    Tenant scope uses ``X-Tenant-ID`` when present so API buckets are isolated
+    per tenant on shared egress IPs (Stage 19 K1 / BR-18.1). Plan-tier caps remain deferred.
+    """
 
     def __init__(self, app):
         super().__init__(app)
@@ -53,6 +66,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.client:
             return request.client.host
         return "unknown"
+
+    def _tenant_scope(self, request: Request) -> str:
+        raw = (request.headers.get("x-tenant-id") or "").strip()
+        return raw or "anon"
 
     def _limit_for_path(self, path: str) -> int:
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
@@ -73,7 +90,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         limit = self._limit_for_path(path)
         kind = "auth" if any(path.startswith(p) for p in AUTH_PATH_PREFIXES) else "api"
-        key = f"{self._client_ip(request)}:{kind}"
+        key = f"{self._client_ip(request)}:{kind}:{self._tenant_scope(request)}"
         allowed, retry_after, remaining = await rate_limiter.allow(key, limit)
         if not allowed:
             return JSONResponse(
@@ -95,4 +112,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(remaining))
         response.headers.setdefault("X-RateLimit-Backend", rate_limiter.backend)
+        return response
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    """Record coarse HTTP counters for /api/v1/metrics (Stage 5 H5)."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        from app import metrics as metrics_svc
+
+        if not metrics_svc.metrics_enabled():
+            return await call_next(request)
+        start = time.perf_counter()
+        response = await call_next(request)
+        metrics_svc.observe_request(
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration_seconds=time.perf_counter() - start,
+        )
         return response

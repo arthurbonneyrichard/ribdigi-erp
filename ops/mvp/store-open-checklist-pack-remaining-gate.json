@@ -1,0 +1,57 @@
+{
+  "id": "store-open-checklist-pack-remaining-gate",
+  "stage": 340,
+  "pack": "I1",
+  "doc": "docs/STORE_OPEN_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STORE_OPEN_CHECKLIST_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STORE_OPEN_CHECKLIST_PACK_RG_POINTERS_MVP.md",
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "cashier_quickstart_pack_remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+    "troubleshooting_index_pack_remaining_gate": "docs/TROUBLESHOOTING_INDEX_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_store_open_claimed": false,
+  "distinct_from_stage173_store_open_checklist": true,
+  "distinct_from_stage339_cashier_quickstart_pack_remaining_gate": true,
+  "distinct_from_stage338_troubleshooting_index_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "socpr-read-blockers",
+      "title": "Read B1 store open checklist pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socpr-follow-pointers",
+      "title": "Follow P1 Stage 173 / Stage 339 / Stage 338 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socpr-checklist-missing",
+      "title": "Reaffirm live store open checklist / Offline Complete / live training / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socpr-no-packaging-as-live",
+      "title": "Do not treat Stage 173 / Stage 172 / Stage 339 / Stage 338 / Stage 329 as live store open checklist Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "socpr-checklist-remaining",
+      "title": "Offline Complete / live training / attestation / fabricated store-open green / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 340 I1 store open checklist pack remaining-gate index packaging only. Do not claim live store open checklist Complete."
+}

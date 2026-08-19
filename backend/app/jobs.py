@@ -81,14 +81,29 @@ async def job_scan_payment_due() -> dict:
     return await _for_each_tenant(work)
 
 
-async def job_generate_recurring_expenses() -> dict:
-    from app import expenses as expenses_svc
+async def job_scan_quotation_expiry() -> dict:
+    from app import notifications as notifications_svc
 
     async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await notifications_svc.scan_quotation_expiry(db, tenant_id)
+
+    return await _for_each_tenant(work)
+
+
+async def job_generate_recurring_expenses() -> dict:
+    from app import expenses as expenses_svc
+    from app import notifications as notifications_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        upcoming = await notifications_svc.scan_recurring_expense_upcoming(db, tenant_id)
         created = await expenses_svc.generate_due_recurring(
             db, tenant_id=tenant_id, user_id=SYSTEM_USER_ID
         )
-        return {"created": len(created), "expense_ids": [e.id for e in created]}
+        return {
+            "notified": int(upcoming.get("reminded") or 0),
+            "created": len(created),
+            "expense_ids": [e.id for e in created],
+        }
 
     return await _for_each_tenant(work)
 
@@ -160,15 +175,59 @@ async def job_sync_bank_feeds() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_generate_ai_low_stock_predictions() -> dict:
+    from app import ai_inventory as ai_inventory_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await ai_inventory_svc.notify_predicted_stockouts(db, tenant_id)
+
+    return await _for_each_tenant(work)
+
+
+async def job_generate_ai_insights() -> dict:
+    from app import ai_insights as ai_insights_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await ai_insights_svc.publish_insights(db, tenant_id)
+
+    return await _for_each_tenant(work)
+
+
+async def job_archive_cold_audit_logs() -> dict:
+    from app import audit as audit_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await audit_svc.archive_cold_logs(
+            db, tenant_id=tenant_id, user_id=SYSTEM_USER_ID
+        )
+
+    return await _for_each_tenant(work)
+
+
+async def job_retry_due_webhooks() -> dict:
+    """Stage 7 W2 — re-attempt pending_retry webhook deliveries that are due."""
+    from app import webhooks as webhooks_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await webhooks_svc.process_due_retries(db, tenant_id=tenant_id)
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
+    "scan_quotation_expiry": job_scan_quotation_expiry,
     "generate_recurring_expenses": job_generate_recurring_expenses,
     "run_due_backups": job_run_due_backups,
     "scan_trial_lifecycle": job_scan_trial_lifecycle,
     "run_due_report_emails": job_run_due_report_emails,
     "refresh_fx_rates": job_refresh_fx_rates,
     "sync_bank_feeds": job_sync_bank_feeds,
+    "generate_ai_low_stock_predictions": job_generate_ai_low_stock_predictions,
+    "generate_ai_insights": job_generate_ai_insights,
+    "archive_cold_audit_logs": job_archive_cold_audit_logs,
+    "retry_due_webhooks": job_retry_due_webhooks,
 }
 
 

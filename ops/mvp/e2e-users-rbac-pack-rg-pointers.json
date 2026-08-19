@@ -1,0 +1,60 @@
+{
+  "id": "e2e-users-rbac-pack-rg-pointers",
+  "stage": 363,
+  "pack": "P1",
+  "doc": "docs/E2E_USERS_RBAC_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/E2E_USERS_RBAC_PACK_REMAINING_GATE_MVP.md",
+    "e2e_users_rbac": "docs/E2E_USERS_RBAC_MVP.md",
+    "e2e_purchase_stock_pack_remaining_gate": "docs/E2E_PURCHASE_STOCK_PACK_REMAINING_GATE_MVP.md",
+    "e2e_backup_restore_pack_remaining_gate": "docs/E2E_BACKUP_RESTORE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_users_provisioned_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "store_membership_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "e2e_users_rbac_stage35",
+    "e2e_purchase_stock_pack_remaining_gate_stage362",
+    "e2e_backup_restore_pack_remaining_gate_stage320",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "eurbprp-stage35",
+      "title": "Point to Stage 35 E2E users-RBAC packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eurbprp-stage362",
+      "title": "Point to Stage 362 E2E purchase stock pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eurbprp-stage320",
+      "title": "Point to Stage 320 E2E backup restore pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eurbprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "eurbprp-checklist-remaining",
+      "title": "Live E2E users-RBAC Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 363 P1 E2E users RBAC pack RG pointers packaging only. Do not claim live E2E users-RBAC Complete."
+}

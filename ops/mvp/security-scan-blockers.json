@@ -1,0 +1,55 @@
+{
+  "id": "security-scan-blockers",
+  "stage": 210,
+  "pack": "B1",
+  "doc": "docs/SECURITY_SCAN_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SECURITY_SCAN_REMAINING_GATE_MVP.md",
+    "security_scan": "docs/SECURITY_SCAN_MVP.md",
+    "security_readme": "ops/security/README.md"
+  },
+  "packaging_complete": true,
+  "live_security_scan_claimed": false,
+  "live_zap_executed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_security_scan_authenticated_staging_zap": "REMAINING",
+    "zap_wired_into_main_ci": "NON_CLAIM",
+    "stage27_s1_as_live_security_scan": "NON_CLAIM",
+    "live_security_scan_claimed": "false",
+    "live_zap_executed": "false"
+  },
+  "steps": [
+    {
+      "id": "sb-scan",
+      "title": "Mark live security-scan / staging ZAP Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-ci-nonclaim",
+      "title": "Mark ZAP wiring into main ci.yml as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-stage27-nonclaim",
+      "title": "Mark Stage 27 S1 security scan as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-zap-false",
+      "title": "Mark live_zap_executed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sb-scan-remaining",
+      "title": "Live security-scan Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 210 B1 security scan blocker matrix packaging only. Live security-scan Complete remains MISSING."
+}

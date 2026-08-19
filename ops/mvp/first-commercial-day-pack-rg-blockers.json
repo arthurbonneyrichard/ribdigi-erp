@@ -1,0 +1,62 @@
+{
+  "id": "first-commercial-day-pack-rg-blockers",
+  "stage": 259,
+  "pack": "B1",
+  "doc": "docs/FIRST_COMMERCIAL_DAY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md",
+    "first_commercial_day": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+    "first_commercial_day_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_REMAINING_GATE_MVP.md",
+    "first_commercial_day_register": "ops/mvp/first-commercial-day.json"
+  },
+  "packaging_complete": true,
+  "first_commercial_day_claimed": false,
+  "steady_state_ops_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "first_commercial_day_complete": "REMAINING",
+    "steady_state_ops_complete": "REMAINING",
+    "commercial_acceptance_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage70_f1_as_first_day_live": "NON_CLAIM",
+    "stage199_as_first_day_live": "NON_CLAIM",
+    "first_commercial_day_claimed": "false",
+    "steady_state_ops_claimed": "false",
+    "commercial_acceptance_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "fcdprb-first-day",
+      "title": "Mark first commercial day live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprb-steady",
+      "title": "Mark steady-state ops Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprb-acceptance",
+      "title": "Mark commercial acceptance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprb-stage70-nonclaim",
+      "title": "Mark Stage 70 F1 as non-claim for first commercial day live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fcdprb-first-day-remaining",
+      "title": "First commercial day live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 259 B1 first commercial day pack RG blocker matrix packaging only. First commercial day live Completes remain MISSING."
+}

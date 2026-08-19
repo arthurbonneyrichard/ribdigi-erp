@@ -1,0 +1,63 @@
+{
+  "id": "offline-sync-runbook-pack-rg-blockers",
+  "stage": 336,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_SYNC_RUNBOOK_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SYNC_RUNBOOK_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "browser_e2e_claimed": false,
+  "go_live_claimed": false,
+  "fabricated_sync_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "browser_e2e_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "fabricated_sync_claimed": "REMAINING",
+    "stage169_as_live_offline_sync_runbook": "NON_CLAIM",
+    "stage163_168_as_live_offline_sync_runbook": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "browser_e2e_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "fabricated_sync_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "osrprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprb-browser-e2e",
+      "title": "Mark browser E2E Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprb-stage169-nonclaim",
+      "title": "Mark Stage 169 / Stage 163-168 as non-claim for live offline sync runbook Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osrprb-runbook-remaining",
+      "title": "Live offline sync runbook Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 336 B1 offline sync runbook pack RG blocker matrix packaging only. Live offline sync runbook Completes remain MISSING."
+}

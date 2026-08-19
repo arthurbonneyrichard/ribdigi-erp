@@ -1,0 +1,63 @@
+{
+  "id": "incident-severity-pack-rg-blockers",
+  "stage": 334,
+  "pack": "B1",
+  "doc": "docs/INCIDENT_SEVERITY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/INCIDENT_SEVERITY_PACK_REMAINING_GATE_MVP.md",
+    "incident_severity_matrix": "docs/INCIDENT_SEVERITY_MATRIX_MVP.md"
+  },
+  "packaging_complete": true,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "pagerduty_hosted_claimed": "REMAINING",
+    "oncall_rota_live": "REMAINING",
+    "incident_drill_executed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage170_as_live_incident_severity": "NON_CLAIM",
+    "stage30_237_as_live_incident_severity": "NON_CLAIM",
+    "pagerduty_hosted_claimed_flag": "false",
+    "oncall_rota_live_flag": "false",
+    "incident_drill_executed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "isprb-pagerduty",
+      "title": "Mark PagerDuty hosted Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "isprb-oncall",
+      "title": "Mark on-call rota live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "isprb-drill",
+      "title": "Mark incident drill Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "isprb-stage170-nonclaim",
+      "title": "Mark Stage 170 / Stage 30 / Stage 237 as non-claim for live incident severity Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "isprb-severity-remaining",
+      "title": "Live incident severity Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 334 B1 incident severity pack RG blocker matrix packaging only. Live incident severity Completes remain MISSING."
+}

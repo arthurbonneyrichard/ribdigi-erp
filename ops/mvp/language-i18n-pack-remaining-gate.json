@@ -1,0 +1,56 @@
+{
+  "id": "language-i18n-pack-remaining-gate",
+  "stage": 274,
+  "pack": "I1",
+  "doc": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LANGUAGE_I18N_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LANGUAGE_I18N_PACK_RG_POINTERS_MVP.md",
+    "language_i18n_adr": "docs/ADR_006_LANGUAGE_I18N.md",
+    "store_membership_pack_remaining_gate": "docs/STORE_MEMBERSHIP_PACK_REMAINING_GATE_MVP.md",
+    "subscription_renewal_pack_remaining_gate": "docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md",
+    "i18n_remaining_gate": "docs/I18N_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "multilang_complete_claimed": false,
+  "non_english_packs_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_adr006_language_i18n": true,
+  "distinct_from_stage184_i18n_remaining_gate": true,
+  "distinct_from_stage273_store_membership_pack_remaining_gate": true,
+  "distinct_from_stage272_subscription_renewal_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "lipr-read-blockers",
+      "title": "Read B1 language i18n pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-follow-pointers",
+      "title": "Follow P1 ADR-006 / Stage 273 / Stage 272 / Stage 184 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-multilang-missing",
+      "title": "Reaffirm multi-language / non-English packs MISSING until real locale packs ship (ADR-006)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-no-packaging-as-live",
+      "title": "Do not treat ADR-006 / Stage 184 / Stage 273 as multi-language Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lipr-multilang-remaining",
+      "title": "Multi-language / non-English packs / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 274 I1 language i18n pack remaining-gate index packaging only. Do not claim multi-language Complete."
+}

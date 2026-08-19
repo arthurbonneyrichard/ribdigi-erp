@@ -678,7 +678,7 @@ CREATE POLICY tenant_isolation ON tenant_abc123.products
 | Cache Type | Key Pattern | TTL | Invalidation |
 |------------|-------------|-----|--------------|
 | **Session** | `session:{jwt_jti}` | 15 min | Logout, password change |
-| **User Permissions** | `perms:{user_id}` | 1 hour | Role change |
+| **User Permissions** | `perms:{user_id}` (physical: `ribdigi:cache:perms:{tenant_id}:{user_id}`) | 1 hour | Role / record_scope change; custom-role sync (Stage 7 C2) |
 | **Product Catalog** | `products:{tenant_id}:{category_id}` | 10 min | Stock change, price update |
 | **Dashboard Metrics** | `dashboard:{tenant_id}:{metric}` | 5 min | Transaction event |
 | **Tax Rates** | `tax:{tenant_id}:{tax_id}` | 24 hours | Tax configuration change |

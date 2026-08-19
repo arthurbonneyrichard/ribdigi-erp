@@ -1,0 +1,60 @@
+{
+  "id": "shift-handover-pointers-pack-rg-pointers",
+  "stage": 360,
+  "pack": "P1",
+  "doc": "docs/SHIFT_HANDOVER_POINTERS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SHIFT_HANDOVER_POINTERS_PACK_REMAINING_GATE_MVP.md",
+    "shift_handover_pointers": "docs/SHIFT_HANDOVER_POINTERS_MVP.md",
+    "shift_handover_snapshot_pack_remaining_gate": "docs/SHIFT_HANDOVER_SNAPSHOT_PACK_REMAINING_GATE_MVP.md",
+    "shift_handover_checklist_pack_remaining_gate": "docs/SHIFT_HANDOVER_CHECKLIST_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "zero_conflict_claimed": false,
+  "topics": [
+    "shift_handover_pointers_stage175",
+    "shift_handover_snapshot_pack_remaining_gate_stage359",
+    "shift_handover_checklist_pack_remaining_gate_stage342",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "shpprp-stage175",
+      "title": "Point to Stage 175 shift handover pointers packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprp-stage359",
+      "title": "Point to Stage 359 shift handover snapshot pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprp-stage342",
+      "title": "Point to Stage 342 shift handover checklist pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprp-checklist-remaining",
+      "title": "Live shift handover pointers Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 360 P1 shift handover pointers pack RG pointers packaging only. Do not claim live shift handover pointers Complete."
+}

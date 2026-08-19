@@ -1,0 +1,52 @@
+{
+  "id": "shift-handover-checklist",
+  "stage": 175,
+  "pack": "H1",
+  "doc": "docs/SHIFT_HANDOVER_CHECKLIST_MVP.md",
+  "related": {
+    "snapshot": "docs/SHIFT_HANDOVER_SNAPSHOT_MVP.md",
+    "pointers": "docs/SHIFT_HANDOVER_POINTERS_MVP.md",
+    "store_open_checklist": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+    "store_close_checklist": "docs/STORE_CLOSE_CHECKLIST_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_open_close": true,
+  "steps": [
+    {
+      "id": "sh-confirm-context",
+      "title": "Outgoing/incoming confirm store/POS context",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-snapshot",
+      "title": "Complete S1 Holds/sync/conflict snapshot",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-pointers",
+      "title": "Complete P1 device bind + open/close pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-escalate",
+      "title": "Escalate unresolved P1/P2 via Stage 170 packs",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sh-offline-complete-remaining",
+      "title": "Offline Complete / live training Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 175 H1 shift-handover checklist packaging only. Do not claim Offline Complete."
+}

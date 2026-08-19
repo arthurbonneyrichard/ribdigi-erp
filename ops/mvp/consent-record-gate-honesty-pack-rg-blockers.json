@@ -1,0 +1,77 @@
+{
+  "id": "consent-record-gate-honesty-pack-rg-blockers",
+  "stage": 830,
+  "pack": "B1",
+  "doc": "docs/CONSENT_RECORD_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CONSENT_RECORD_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "consent_record_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "consent_record_gate_honesty_complete_claimed": false,
+  "consent_record_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "consent_record_gate_honesty_complete_claimed": "REMAINING",
+    "consent_record_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_consent_record_gate_honesty": "NON_CLAIM",
+    "consent_record_gate_pack_as_consent_record_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "consent_record_gate_honesty_complete_claimed_flag": "false",
+    "consent_record_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "crghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghb-honesty",
+      "title": "Mark Consent Record Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghb-as-golive",
+      "title": "Mark Consent Record Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for consent-record-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "crghb-checklist-remaining",
+      "title": "Offline Complete / Consent Record Gate / Consent Record Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 830 B1 Consent Record Gate Honesty Pack RG blocker matrix packaging only."
+}

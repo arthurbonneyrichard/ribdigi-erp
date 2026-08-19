@@ -1,0 +1,55 @@
+{
+  "id": "quarterly-pos-ops-rollup",
+  "stage": 178,
+  "pack": "R1",
+  "doc": "docs/QUARTERLY_POS_OPS_ROLLUP_MVP.md",
+  "related": {
+    "quarterly_review": "docs/QUARTERLY_POS_OPS_REVIEW_MVP.md",
+    "monthly_review": "docs/MONTHLY_POS_OPS_REVIEW_MVP.md",
+    "monthly_trends": "docs/MONTHLY_POS_OPS_TRENDS_MVP.md",
+    "monthly_pointers": "docs/MONTHLY_POS_OPS_POINTERS_MVP.md",
+    "residual_risk": "docs/RESIDUAL_RISK_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "monthly_m1_t1_p1_summary",
+    "hold_conflict_themes",
+    "device_backup_residual_followthrough"
+  ],
+  "steps": [
+    {
+      "id": "qo-monthly-summary",
+      "title": "Summarize each month Stage 177 M1/T1/P1 notes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qo-hold-conflict",
+      "title": "Highlight Hold/soft-reserve and conflict backlog themes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qo-device-backup",
+      "title": "Note revoke/rebind and backup drill pointer follow-through",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qo-residual",
+      "title": "Confirm residual risk honesty re-read (risks_closed false)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qo-offline-golive-remaining",
+      "title": "Offline Complete / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 178 R1 quarterly monthly-outcomes rollup packaging only. Offline Complete remains MISSING."
+}

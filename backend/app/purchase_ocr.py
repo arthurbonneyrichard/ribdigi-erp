@@ -49,7 +49,10 @@ async def suggest_for_purchase_invoice(
         "invoice_id": inv.id,
         "invoice_number": inv.invoice_number,
         "invoice_status": inv.status,
-        "apply_hint": "Review suggestions then PATCH /purchasing/invoices/{id} while status=draft",
+        "apply_hint": (
+            "Review suggestions then POST /purchasing/invoices/{id}/ocr-apply with "
+            "confirm=true while status=draft (Stage 10 A1)"
+        ),
     }
 
 

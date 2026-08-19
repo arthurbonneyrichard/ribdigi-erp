@@ -1,0 +1,61 @@
+# Stage 28 G1 — optional staging GHA deploy (operator / staging only).
+# NOT wired into .github/workflows/ci.yml (Stage 18 C1 deploy-free).
+# Copy to .github/workflows/ when KUBE_CONFIG / registry secrets + a real staging cluster exist.
+#
+# Required secrets (operator):
+#   KUBE_CONFIG          — base64 kubeconfig for staging cluster (or cloud OIDC equivalent)
+#   REGISTRY_USERNAME    — container registry user (optional if public GHCR pull)
+#   REGISTRY_PASSWORD    — container registry token
+#   STAGING_BASE_URL     — https://… used by post-deploy smoke (optional)
+#
+# name: deploy-staging
+#
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       image_tag:
+#         description: "Image tag to deploy (default: github.sha)"
+#         required: false
+#         default: ""
+#
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     environment: staging
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: azure/setup-helm@v4
+#       - uses: azure/setup-kubectl@v4
+#       - name: Configure kubeconfig
+#         run: |
+#           mkdir -p ~/.kube
+#           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+#           chmod 600 ~/.kube/config
+#       - name: Helm upgrade staging
+#         env:
+#           IMAGE_TAG: ${{ inputs.image_tag || github.sha }}
+#         run: |
+#           helm upgrade --install ribdigi-staging ./helm/ribdigi \
+#             -f ./helm/ribdigi/values-staging.yaml \
+#             -n ribdigi-staging --create-namespace \
+#             --set backend.image.tag="$IMAGE_TAG" \
+#             --set frontend.image.tag="$IMAGE_TAG"
+#           # Prefer ops/k8s/helm-install-staging.sh.example when images are pre-pushed.
+#       - name: Staging smoke
+#         run: bash ops/k8s/staging-smoke.sh.example
+#
+# Do not commit fabricated "deploy succeeded" logs. Remaining until a real staging apply exists.
+# Main ci.yml must stay deploy-free (no kubectl / helm upgrade).
+
+name: deploy-staging-example-disabled
+on:
+  workflow_dispatch:
+jobs:
+  note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Operator template only
+        run: |
+          echo "This file lives under ops/k8s/ as a template."
+          echo "Do not treat it as a green staging deploy. See docs/STAGING_GHA_MVP.md."
+          exit 0

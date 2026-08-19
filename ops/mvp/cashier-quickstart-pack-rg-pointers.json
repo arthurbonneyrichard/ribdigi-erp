@@ -1,0 +1,60 @@
+{
+  "id": "cashier-quickstart-pack-rg-pointers",
+  "stage": 339,
+  "pack": "P1",
+  "doc": "docs/CASHIER_QUICKSTART_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md",
+    "troubleshooting_index_pack_remaining_gate": "docs/TROUBLESHOOTING_INDEX_PACK_REMAINING_GATE_MVP.md",
+    "faq_offline_pos_pack_remaining_gate": "docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_cashier_cert_claimed": false,
+  "topics": [
+    "cashier_quickstart_stage172",
+    "troubleshooting_index_pack_remaining_gate_stage338",
+    "faq_offline_pos_pack_remaining_gate_stage337",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cqprp-stage172",
+      "title": "Point to Stage 172 cashier quickstart packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-stage338",
+      "title": "Point to Stage 338 troubleshooting index pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-stage337",
+      "title": "Point to Stage 337 FAQ offline POS pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cqprp-quickstart-remaining",
+      "title": "Live cashier quickstart Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 339 P1 cashier quickstart pack RG pointers packaging only. Do not claim live cashier quickstart Complete."
+}

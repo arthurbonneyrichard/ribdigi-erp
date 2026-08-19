@@ -1,0 +1,60 @@
+{
+  "id": "monthly-pos-ops-review-pack-rg-pointers",
+  "stage": 346,
+  "pack": "P1",
+  "doc": "docs/MONTHLY_POS_OPS_REVIEW_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MONTHLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_review": "docs/MONTHLY_POS_OPS_REVIEW_MVP.md",
+    "weekly_pos_ops_signals_pack_remaining_gate": "docs/WEEKLY_POS_OPS_SIGNALS_PACK_REMAINING_GATE_MVP.md",
+    "weekly_pos_ops_review_pack_remaining_gate": "docs/WEEKLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_monthly_green_claimed": false,
+  "topics": [
+    "monthly_pos_ops_review_stage177",
+    "weekly_pos_ops_signals_pack_remaining_gate_stage345",
+    "weekly_pos_ops_review_pack_remaining_gate_stage344",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "mporprp-stage177",
+      "title": "Point to Stage 177 monthly POS ops review packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprp-stage345",
+      "title": "Point to Stage 345 weekly POS ops signals pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprp-stage344",
+      "title": "Point to Stage 344 weekly POS ops review pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprp-checklist-remaining",
+      "title": "Live monthly POS ops review Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 346 P1 monthly POS ops review pack RG pointers packaging only. Do not claim live monthly POS ops review Complete."
+}

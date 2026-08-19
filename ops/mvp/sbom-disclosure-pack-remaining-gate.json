@@ -1,0 +1,57 @@
+{
+  "id": "sbom-disclosure-pack-remaining-gate",
+  "stage": 314,
+  "pack": "I1",
+  "doc": "docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md",
+    "sbom_disclosure": "docs/SBOM_DISCLOSURE_MVP.md",
+    "commercial_liability_pack_remaining_gate": "docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md",
+    "status_uptime_pack_remaining_gate": "docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md",
+    "vuln_disclosure_pack_remaining_gate": "docs/VULN_DISCLOSURE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "sbom_pipeline_live": false,
+  "cosign_signing_claimed": false,
+  "snyk_saas_claimed": false,
+  "dependabot_live": false,
+  "go_live_claimed": false,
+  "distinct_from_stage40_sbom_disclosure": true,
+  "distinct_from_stage313_commercial_liability_pack_remaining_gate": true,
+  "distinct_from_stage312_status_uptime_pack_remaining_gate": true,
+  "distinct_from_stage38_vuln_disclosure_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sdpr-read-blockers",
+      "title": "Read B1 SBOM disclosure pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdpr-follow-pointers",
+      "title": "Follow P1 Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdpr-pipeline-missing",
+      "title": "Reaffirm live SBOM pipeline / Cosign MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdpr-no-packaging-as-live",
+      "title": "Do not treat Stage 40 S1 / Stage 313 / Stage 312 as live SBOM pipeline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sdpr-pipeline-remaining",
+      "title": "Live SBOM pipeline / Cosign / Snyk / Dependabot / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 314 I1 SBOM disclosure pack remaining-gate index packaging only. Do not claim live SBOM pipeline Complete."
+}

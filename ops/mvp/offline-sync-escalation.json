@@ -1,0 +1,29 @@
+{
+  "id": "offline-sync-escalation",
+  "stage": 170,
+  "pack": "E1",
+  "doc": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+  "related": {
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "attestation": "docs/OFFLINE_COMPLETE_ATTESTATION.md",
+    "severity_matrix": "docs/INCIDENT_SEVERITY_MATRIX_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "incident_checklist": "ops/incident/incident-checklist.json"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "oncall_rota_live": false,
+  "pagerduty_hosted_claimed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "paths": [
+    "offline_sale_queue_flush",
+    "device_revoked_409",
+    "sync_conflicts",
+    "catalog_ttl_expired",
+    "hold_soft_reserve_stuck",
+    "sw_api_cache_suspicion",
+    "cross_tenant_sync_leak"
+  ],
+  "message": "Stage 170 E1 offline/sync escalation packaging only. Offline Complete remains MISSING."
+}

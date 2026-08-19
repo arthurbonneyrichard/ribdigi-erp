@@ -1,0 +1,77 @@
+{
+  "id": "store-open-health-honesty-pack-rg-pointers",
+  "stage": 574,
+  "pack": "P1",
+  "doc": "docs/STORE_OPEN_HEALTH_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STORE_OPEN_HEALTH_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "store_close_checklist_honesty_pack_remaining_gate": "docs/STORE_CLOSE_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "store_open_checklist_honesty_pack_remaining_gate": "docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "store_open_health_pack_remaining_gate": "docs/STORE_OPEN_HEALTH_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "store_open_health_honesty_complete_claimed": false,
+  "store_open_health_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_store_open_health_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "store_close_checklist_honesty_pack_remaining_gate_stage573": "docs/STORE_CLOSE_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "store_open_checklist_honesty_pack_remaining_gate_stage572": "docs/STORE_OPEN_CHECKLIST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "store_open_health_pack_remaining_gate": "docs/STORE_OPEN_HEALTH_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / store_open_health / store_open_health_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "sohhp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Store Open Health Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohhp-stage573",
+      "title": "Point to Stage 573 STORE CLOSE CHECKLIST HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohhp-stage572",
+      "title": "Point to Stage 572 STORE OPEN CHECKLIST HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohhp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohhp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohhp-prior-pack",
+      "title": "Point to Store Open Health Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sohhp-checklist-remaining",
+      "title": "Offline Complete / Store Open Health / Store Open Health honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 574 P1 Store Open Health Honesty Pack RG pointers packaging only."
+}

@@ -1,0 +1,173 @@
+{
+  "stage": "65",
+  "workstream": "P1",
+  "doc": "docs/BUSINESS_PILOT_MVP.md",
+  "stage65_plan": "docs/STAGE_65_PLAN.md",
+  "release_pipeline": "ops/mvp/release-pipeline.json",
+  "release_pipeline_doc": "docs/RELEASE_PIPELINE_MVP.md",
+  "first_tenant": "ops/mvp/first-tenant-onboarding.json",
+  "first_tenant_doc": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+  "implementation_onboarding": "ops/mvp/implementation-onboarding.json",
+  "implementation_onboarding_doc": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+  "e2e_org_bootstrap": "ops/mvp/e2e-org-bootstrap.json",
+  "e2e_org_bootstrap_doc": "docs/E2E_ORG_BOOTSTRAP_MVP.md",
+  "e2e_sale_payment": "ops/mvp/e2e-sale-payment.json",
+  "e2e_sale_payment_doc": "docs/E2E_SALE_PAYMENT_MVP.md",
+  "operator_remaining": "ops/mvp/operator-remaining-register.json",
+  "operator_remaining_doc": "docs/OPERATOR_REMAINING_MVP.md",
+  "customer_training": "ops/mvp/customer-training-cert.json",
+  "customer_training_doc": "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "controlled_business_pilot_live_claimed": false,
+  "real_workflow_feedback_claimed": false,
+  "pilot_bugfix_program_live": false,
+  "business_pilot_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "demo_tenant_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage65_p1_business_pilot.json",
+  "steps": [
+    {
+      "id": "bp-owner-outline",
+      "category": "pilot",
+      "title": "Index owner Controlled Business Pilot \u2192 Real Workflow Feedback \u2192 Bug Fixes path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/ADR_135_STAGE65_OPEN.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    },
+    {
+      "id": "bp-first-tenant",
+      "category": "onboarding",
+      "title": "Link Stage 33 first-tenant onboarding as pilot adjacency (live onboarding Remaining \u2260 pilot Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "ops/mvp/first-tenant-onboarding.json"
+      ],
+      "source": "docs/FIRST_TENANT_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "bp-implementation",
+      "category": "onboarding",
+      "title": "Link Stage 56 implementation onboarding as pilot-delivery adjacency (onsite training Remaining \u2260 pilot Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+        "ops/mvp/implementation-onboarding.json"
+      ],
+      "source": "docs/IMPLEMENTATION_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "bp-e2e-bootstrap",
+      "category": "workflow",
+      "title": "Link Stage 35 E2E org-bootstrap as real-workflow adjacency (E2E smoke Remaining \u2260 feedback Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/E2E_ORG_BOOTSTRAP_MVP.md",
+        "ops/mvp/e2e-org-bootstrap.json"
+      ],
+      "source": "docs/E2E_ORG_BOOTSTRAP_MVP.md"
+    },
+    {
+      "id": "bp-e2e-sale",
+      "category": "workflow",
+      "title": "Link Stage 35 E2E sale-to-payment as commerce-workflow adjacency (live sale Remaining \u2260 pilot feedback)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/E2E_SALE_PAYMENT_MVP.md",
+        "ops/mvp/e2e-sale-payment.json"
+      ],
+      "source": "docs/E2E_SALE_PAYMENT_MVP.md"
+    },
+    {
+      "id": "bp-operator-remaining",
+      "category": "pilot",
+      "title": "Link Stage 31 operator Remaining as certification adjacency (live runs Remaining \u2260 pilot certified)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_REMAINING_MVP.md",
+        "ops/mvp/operator-remaining-register.json"
+      ],
+      "source": "docs/OPERATOR_REMAINING_MVP.md"
+    },
+    {
+      "id": "bp-customer-training",
+      "category": "onboarding",
+      "title": "Link Stage 48 customer training as feedback adjacency (live training Remaining \u2260 workflow feedback)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CUSTOMER_TRAINING_CERT_MVP.md",
+        "ops/mvp/customer-training-cert.json"
+      ],
+      "source": "docs/CUSTOMER_TRAINING_CERT_MVP.md"
+    },
+    {
+      "id": "bp-release-pipeline",
+      "category": "pipeline",
+      "title": "Link Stage 65 R1 release pipeline as RC adjacency (signed RC Remaining \u2260 pilot Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RELEASE_PIPELINE_MVP.md",
+        "ops/mvp/release-pipeline.json"
+      ],
+      "source": "docs/RELEASE_PIPELINE_MVP.md"
+    },
+    {
+      "id": "bp-plan-honesty",
+      "category": "pilot",
+      "title": "Confirm Stage 65 plan explicitly defers live controlled business pilot / real workflow feedback",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/BUSINESS_PILOT_MVP.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    },
+    {
+      "id": "bp-pilot-remaining",
+      "category": "honesty",
+      "title": "Live controlled business pilot Remaining \u2014 packaging \u2260 pilot execution",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/BUSINESS_PILOT_MVP.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    },
+    {
+      "id": "bp-feedback-remaining",
+      "category": "honesty",
+      "title": "Real workflow feedback / pilot bug-fix program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_65_PLAN.md",
+        "docs/BUSINESS_PILOT_MVP.md"
+      ],
+      "source": "docs/STAGE_65_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live controlled business pilot Complete",
+    "Real workflow feedback program Complete",
+    "Pilot bug-fix program live Complete",
+    "Business pilot program live Complete",
+    "Demo / fake pilot tenant success",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

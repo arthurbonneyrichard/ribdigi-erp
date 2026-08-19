@@ -1,0 +1,61 @@
+{
+  "id": "tos-aup-pack-rg-pointers",
+  "stage": 300,
+  "pack": "P1",
+  "doc": "docs/TOS_AUP_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TOS_AUP_PACK_REMAINING_GATE_MVP.md",
+    "tos_aup": "docs/TOS_AUP_MVP.md",
+    "msa_addendum_pack_remaining_gate": "docs/MSA_ADDENDUM_PACK_REMAINING_GATE_MVP.md",
+    "commercial_terms_pack_remaining_gate": "docs/COMMERCIAL_TERMS_PACK_REMAINING_GATE_MVP.md",
+    "msa_addendum": "docs/MSA_ADDENDUM_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "tos_signed_claimed": false,
+  "aup_enforced_claimed": false,
+  "legal_counsel_claimed": false,
+  "clickwrap_live": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "tos_aup_stage43",
+    "msa_addendum_pack_remaining_gate_stage299",
+    "commercial_terms_pack_remaining_gate_stage293",
+    "msa_addendum_stage39",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "taprp-stage43",
+      "title": "Point to Stage 43 T1 ToS/AUP",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprp-stage299",
+      "title": "Point to Stage 299 MSA addendum pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprp-stage293",
+      "title": "Point to Stage 293 commercial terms pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprp-stage39",
+      "title": "Point to Stage 39 A1 MSA addendum adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "taprp-tos-remaining",
+      "title": "Signed ToS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 300 P1 ToS/AUP pack RG pointers packaging only. Do not claim signed ToS Complete."
+}

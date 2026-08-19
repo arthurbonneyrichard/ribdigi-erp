@@ -1,0 +1,58 @@
+{
+  "id": "first-tenant-live-onboarding-blockers",
+  "stage": 194,
+  "pack": "B1",
+  "doc": "docs/FIRST_TENANT_LIVE_ONBOARDING_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "first_tenant_onboarding": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+    "first_tenant_golive": "docs/FIRST_TENANT_GOLIVE_MVP.md"
+  },
+  "packaging_complete": true,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "first_paying_tenant_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_onboarding_success": "REMAINING",
+    "first_tenant_onboarded": "REMAINING",
+    "first_paying_tenant": "REMAINING",
+    "stage33_f1_as_live_onboarding": "NON_CLAIM",
+    "stage66_t1_as_live_onboarding": "NON_CLAIM",
+    "live_onboarding_success_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "fb-live-onboarding",
+      "title": "Mark live onboarding success Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fb-first-tenant",
+      "title": "Mark first tenant onboarded Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fb-paying-tenant",
+      "title": "Mark first paying tenant Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fb-stage33-nonclaim",
+      "title": "Mark Stage 33 F1 onboarding as non-claim for live onboarding",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "fb-onboarding-remaining",
+      "title": "First-tenant live onboarding Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 194 B1 first-tenant live onboarding blocker matrix packaging only. Live onboarding Complete remains MISSING."
+}

@@ -1,0 +1,63 @@
+{
+  "id": "status-uptime-pack-rg-blockers",
+  "stage": 312,
+  "pack": "B1",
+  "doc": "docs/STATUS_UPTIME_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md",
+    "status_uptime": "docs/STATUS_UPTIME_MVP.md"
+  },
+  "packaging_complete": true,
+  "status_page_live": false,
+  "uptime_sla_claimed": false,
+  "measured_uptime_claimed": false,
+  "public_dashboard_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "status_page_live": "REMAINING",
+    "uptime_sla_claimed": "REMAINING",
+    "measured_uptime_claimed": "REMAINING",
+    "public_dashboard_claimed": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage40_as_status_page": "NON_CLAIM",
+    "stage311_as_service_credits": "NON_CLAIM",
+    "status_page_live_flag": "false",
+    "uptime_sla_claimed_flag": "false",
+    "measured_uptime_claimed_flag": "false",
+    "public_dashboard_claimed_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "suprb-page",
+      "title": "Mark live status page Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprb-sla",
+      "title": "Mark uptime SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprb-measured",
+      "title": "Mark measured uptime Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprb-stage40-nonclaim",
+      "title": "Mark Stage 40 U1 as non-claim for live status page Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "suprb-page-remaining",
+      "title": "Live status page Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 312 B1 status uptime pack RG blocker matrix packaging only. Live status page Completes remain MISSING."
+}

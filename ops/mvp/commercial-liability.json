@@ -1,0 +1,125 @@
+{
+  "stage": "77",
+  "workstream": "L1",
+  "doc": "docs/COMMERCIAL_LIABILITY_MVP.md",
+  "stage77_plan": "docs/STAGE_77_PLAN.md",
+  "liability_doc": "docs/LIABILITY_INDEMNITY_MVP.md",
+  "liability": "ops/mvp/liability-indemnity.json",
+  "dpa_commercial_doc": "docs/COMMERCIAL_DPA_MVP.md",
+  "dpa_commercial": "ops/mvp/commercial-dpa.json",
+  "terms_doc": "docs/COMMERCIAL_TERMS_MVP.md",
+  "terms": "ops/mvp/commercial-terms.json",
+  "msa_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "msa": "ops/mvp/msa-addendum.json",
+  "tos_aup_doc": "docs/TOS_AUP_MVP.md",
+  "tos_aup": "ops/mvp/tos-aup.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "liability_cap_claimed": false,
+  "indemnity_signed_claimed": false,
+  "legal_counsel_claimed": false,
+  "contract_liability_live": false,
+  "dpa_signed_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage77_l1_commercial_liability.json",
+  "steps": [
+    {
+      "id": "cli-owner-outline",
+      "category": "liability",
+      "title": "Index owner Commercial Liability Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/ADR_160_STAGE77_OPEN.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    },
+    {
+      "id": "cli-stage46",
+      "category": "liability",
+      "title": "Link Stage 46 liability/indemnity as adjacency (cap signed Remaining ≠ commercial liability live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/LIABILITY_INDEMNITY_MVP.md", "ops/mvp/liability-indemnity.json"],
+      "source": "docs/LIABILITY_INDEMNITY_MVP.md"
+    },
+    {
+      "id": "cli-dpa",
+      "category": "liability",
+      "title": "Link Stage 77 A1 commercial DPA as adjacency (DPA packaging ≠ liability cap signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/COMMERCIAL_DPA_MVP.md", "ops/mvp/commercial-dpa.json"],
+      "source": "docs/COMMERCIAL_DPA_MVP.md"
+    },
+    {
+      "id": "cli-terms",
+      "category": "liability",
+      "title": "Link Stage 76 T1 commercial terms as adjacency (terms packaging ≠ liability cap signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/COMMERCIAL_TERMS_MVP.md", "ops/mvp/commercial-terms.json"],
+      "source": "docs/COMMERCIAL_TERMS_MVP.md"
+    },
+    {
+      "id": "cli-msa",
+      "category": "liability",
+      "title": "Link Stage 39 MSA addendum as adjacency (MSA packaging ≠ liability cap signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/MSA_ADDENDUM_MVP.md", "ops/mvp/msa-addendum.json"],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "cli-tos-aup",
+      "category": "liability",
+      "title": "Link Stage 43 ToS/AUP as adjacency (signed ToS Remaining ≠ liability cap signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/TOS_AUP_MVP.md", "ops/mvp/tos-aup.json"],
+      "source": "docs/TOS_AUP_MVP.md"
+    },
+    {
+      "id": "cli-plan-honesty",
+      "category": "liability",
+      "title": "Confirm Stage 77 plan explicitly defers liability cap signed / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/COMMERCIAL_LIABILITY_MVP.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    },
+    {
+      "id": "cli-counsel-review",
+      "category": "liability",
+      "title": "Index commercial-liability legal counsel Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": ["docs/COMMERCIAL_LIABILITY_MVP.md", "docs/LIABILITY_INDEMNITY_MVP.md"],
+      "source": "docs/COMMERCIAL_LIABILITY_MVP.md"
+    },
+    {
+      "id": "cli-liability-remaining",
+      "category": "honesty",
+      "title": "Commercial liability cap signed Remaining — packaging ≠ live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/COMMERCIAL_LIABILITY_MVP.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    },
+    {
+      "id": "cli-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / indemnity / signed DPA Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": ["docs/STAGE_77_PLAN.md", "docs/LIABILITY_INDEMNITY_MVP.md"],
+      "source": "docs/STAGE_77_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Liability cap signed Complete",
+    "Indemnity signed Complete",
+    "Signed DPA Complete",
+    "Signed ToS Complete",
+    "Live go-live Complete"
+  ]
+}

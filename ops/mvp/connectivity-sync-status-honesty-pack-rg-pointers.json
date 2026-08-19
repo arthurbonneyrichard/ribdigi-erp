@@ -1,0 +1,77 @@
+{
+  "id": "connectivity-sync-status-honesty-pack-rg-pointers",
+  "stage": 462,
+  "pack": "P1",
+  "doc": "docs/CONNECTIVITY_SYNC_STATUS_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CONNECTIVITY_SYNC_STATUS_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "adr005_store_membership_honesty_pack_remaining_gate": "docs/ADR005_STORE_MEMBERSHIP_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "schema_per_tenant_honesty_pack_remaining_gate": "docs/SCHEMA_PER_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "connectivity_sync_status_pack_remaining_gate": "docs/CONNECTIVITY_SYNC_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "connectivity_sync_status_honesty_complete_claimed": false,
+  "connectivity_sync_status_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_connectivity_sync_status_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "adr005_store_membership_honesty_pack_remaining_gate_stage461": "docs/ADR005_STORE_MEMBERSHIP_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "schema_per_tenant_honesty_pack_remaining_gate_stage460": "docs/SCHEMA_PER_TENANT_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "connectivity_sync_status_pack_remaining_gate": "docs/CONNECTIVITY_SYNC_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / connectivity_sync_status / connectivity_sync_status_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "csshprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Connectivity Sync Status honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csshprp-stage461",
+      "title": "Point to Stage 461 ADR-005 Store Membership honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csshprp-stage460",
+      "title": "Point to Stage 460 Schema-per-Tenant honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csshprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csshprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csshprp-css-pack",
+      "title": "Point to Connectivity Sync Status Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "csshprp-checklist-remaining",
+      "title": "Offline Complete / Connectivity Sync Status / Connectivity Sync Status honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 462 P1 Connectivity Sync Status Honesty Pack RG pointers packaging only."
+}

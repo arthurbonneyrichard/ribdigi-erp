@@ -44,9 +44,30 @@ async def db_session(db_engine):
 
 
 async def _seed_two_tenants(db: AsyncSession) -> dict:
-    t1 = m.Tenant(slug="alpha", company_name="Alpha Co", status="active", industry="retail")
-    t2 = m.Tenant(slug="beta", company_name="Beta Co", status="active", industry="retail")
+    t1 = m.Tenant(slug="alpha", company_name="Alpha Co", status="active", industry="retail", max_companies=3)
+    t2 = m.Tenant(slug="beta", company_name="Beta Co", status="active", industry="retail", max_companies=1)
     db.add_all([t1, t2])
+    await db.flush()
+
+    c1 = m.Company(
+        tenant_id=t1.id,
+        code="MAIN",
+        name="Alpha Co",
+        industry="retail",
+        is_active=True,
+        is_default=True,
+        store_limit=5,
+    )
+    c2 = m.Company(
+        tenant_id=t2.id,
+        code="MAIN",
+        name="Beta Co",
+        industry="retail",
+        is_active=True,
+        is_default=True,
+        store_limit=5,
+    )
+    db.add_all([c1, c2])
     await db.flush()
 
     u1 = m.User(
@@ -109,8 +130,22 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     db.add_all([u1, u2, admin1, mgr1, super_u])
     await db.flush()
 
+    for user, company in ((u1, c1), (u2, c2), (admin1, c1), (mgr1, c1), (super_u, c1)):
+        db.add(
+            m.UserCompanyMembership(
+                tenant_id=user.tenant_id,
+                user_id=user.id,
+                company_id=company.id,
+                role=user.role,
+                permissions=user.permissions if isinstance(user.permissions, dict) else None,
+                is_active=True,
+            )
+        )
+    await db.flush()
+
     p1 = m.Product(
         tenant_id=t1.id,
+        company_id=c1.id,
         name="Alpha Widget",
         sku="A-1",
         cost_price=1,
@@ -119,6 +154,7 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     )
     p2 = m.Product(
         tenant_id=t2.id,
+        company_id=c2.id,
         name="Beta Widget",
         sku="B-1",
         cost_price=1,
@@ -127,12 +163,21 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     )
     db.add_all([p1, p2])
 
-    party2 = m.Party(tenant_id=t2.id, name="Beta Customer", kind="customer", credit_limit=0)
-    db.add(party2)
+    party1 = m.Party(
+        tenant_id=t1.id, company_id=c1.id, name="Alpha Customer", kind="customer", credit_limit=100
+    )
+    party2 = m.Party(
+        tenant_id=t2.id, company_id=c2.id, name="Beta Customer", kind="customer", credit_limit=0
+    )
+    supplier2 = m.Party(
+        tenant_id=t2.id, company_id=c2.id, name="Beta Supplier", kind="supplier", credit_limit=0
+    )
+    db.add_all([party1, party2, supplier2])
     await db.flush()
 
     inv2 = m.SalesInvoice(
         tenant_id=t2.id,
+        company_id=c2.id,
         invoice_number="INV-B-1",
         customer_id=party2.id,
         status="draft",
@@ -146,6 +191,8 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     return {
         "t1": t1,
         "t2": t2,
+        "c1": c1,
+        "c2": c2,
         "u1": u1,
         "u2": u2,
         "mgr1": mgr1,
@@ -154,6 +201,9 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
         "super_totp_secret": secret,
         "p1": p1,
         "p2": p2,
+        "party1": party1,
+        "party2": party2,
+        "supplier2": supplier2,
         "inv2": inv2,
     }
 
@@ -172,10 +222,13 @@ async def client(db_engine, seeded, _disable_rate_limit):
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
+    previous_factory = getattr(app.state, "session_factory", None)
+    app.state.session_factory = session_factory
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac, seeded
     app.dependency_overrides.clear()
+    app.state.session_factory = previous_factory
 
 
 async def auth_headers(client: AsyncClient, *, email: str, tenant_slug: str, totp_code: str | None = None):

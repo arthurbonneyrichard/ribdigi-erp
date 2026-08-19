@@ -1,0 +1,53 @@
+{
+  "id": "first-tenant-golive-pack-rg-blockers",
+  "stage": 245,
+  "pack": "B1",
+  "doc": "docs/FIRST_TENANT_GOLIVE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/FIRST_TENANT_GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_golive": "docs/FIRST_TENANT_GOLIVE_MVP.md",
+    "first_tenant_onboarding_pack_remaining_gate": "docs/FIRST_TENANT_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+    "first_tenant_golive_register": "ops/mvp/first-tenant-golive.json"
+  },
+  "packaging_complete": true,
+  "first_paying_tenant_claimed": false,
+  "first_tenant_onboarded_claimed": false,
+  "live_onboarding_success_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "first_paying_tenant_delivery_execution": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage66_t1_as_first_paying_tenant": "NON_CLAIM",
+    "stage66_t1_as_go_live": "NON_CLAIM",
+    "stage244_i1_as_go_live": "NON_CLAIM",
+    "first_paying_tenant_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "ftgprb-paying",
+      "title": "Mark first paying tenant delivery execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgprb-golive",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgprb-stage66-nonclaim",
+      "title": "Mark Stage 66 T1 as non-claim for first paying tenant / go-live",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ftgprb-golive-remaining",
+      "title": "First paying tenant / go-live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 245 B1 first-tenant go-live pack RG blocker matrix packaging only. First paying tenant and go-live Complete remain MISSING."
+}

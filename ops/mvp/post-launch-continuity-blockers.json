@@ -1,0 +1,54 @@
+{
+  "id": "post-launch-continuity-blockers",
+  "stage": 218,
+  "pack": "B1",
+  "doc": "docs/POST_LAUNCH_CONTINUITY_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/POST_LAUNCH_CONTINUITY_REMAINING_GATE_MVP.md",
+    "post_launch_continuity": "docs/POST_LAUNCH_CONTINUITY_MVP.md",
+    "production_hypercare": "docs/PRODUCTION_HYPERCARE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_post_launch_continuity_claimed": false,
+  "post_launch_continuity_live_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_post_launch_continuity_operations": "REMAINING",
+    "customer_success_stabilization": "REMAINING",
+    "stage67_c1_as_live_continuity": "NON_CLAIM",
+    "post_launch_continuity_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "plcb-ops",
+      "title": "Mark live post-launch continuity operations Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcb-css",
+      "title": "Mark customer-success stabilization Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcb-stage67-nonclaim",
+      "title": "Mark Stage 67 C1 post-launch continuity as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcb-continuity-false",
+      "title": "Mark post_launch_continuity_live_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plcb-continuity-remaining",
+      "title": "Live continuity Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 218 B1 post-launch continuity blocker matrix packaging only. Live continuity Complete remains MISSING."
+}

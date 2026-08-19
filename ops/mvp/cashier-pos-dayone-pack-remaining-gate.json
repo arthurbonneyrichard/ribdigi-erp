@@ -1,0 +1,57 @@
+{
+  "id": "cashier-pos-dayone-pack-remaining-gate",
+  "stage": 358,
+  "pack": "I1",
+  "doc": "docs/CASHIER_POS_DAYONE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/CASHIER_POS_DAYONE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/CASHIER_POS_DAYONE_PACK_RG_POINTERS_MVP.md",
+    "cashier_pos_dayone": "docs/CASHIER_POS_DAYONE_MVP.md",
+    "cashier_bind_catalog_pack_remaining_gate": "docs/CASHIER_BIND_CATALOG_PACK_REMAINING_GATE_MVP.md",
+    "cashier_quickstart_pack_remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_conflict_free_claimed": false,
+  "distinct_from_stage172_cashier_pos_dayone": true,
+  "distinct_from_stage357_cashier_bind_catalog_pack_remaining_gate": true,
+  "distinct_from_stage339_cashier_quickstart_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "cpdpr-read-blockers",
+      "title": "Read B1 cashier POS dayone pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdpr-follow-pointers",
+      "title": "Follow P1 Stage 172 / Stage 357 / Stage 339 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdpr-checklist-missing",
+      "title": "Reaffirm live cashier POS day-one / Offline Complete / support SLA / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdpr-no-packaging-as-live",
+      "title": "Do not treat Stage 172 / Stage 171 / Stage 357 / Stage 339 / Stage 329 as live cashier POS day-one Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpdpr-checklist-remaining",
+      "title": "Offline Complete / support SLA / attestation / fabricated conflict-free / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 358 I1 cashier POS dayone pack remaining-gate index packaging only. Do not claim live cashier POS day-one Complete."
+}

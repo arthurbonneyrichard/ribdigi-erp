@@ -1,0 +1,55 @@
+{
+  "id": "tls-ingress-blockers",
+  "stage": 207,
+  "pack": "B1",
+  "doc": "docs/TLS_INGRESS_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TLS_INGRESS_REMAINING_GATE_MVP.md",
+    "tls_ingress_pack": "docs/TLS_INGRESS_PACK_MVP.md",
+    "cluster_issuer": "ops/k8s/cluster-issuer.example.yaml"
+  },
+  "packaging_complete": true,
+  "live_tls_ingress_claimed": false,
+  "letsencrypt_issued": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_tls_ingress_acme_execution": "REMAINING",
+    "cert_manager_dns_http_provision": "REMAINING",
+    "stage29_t1_as_live_tls_ingress": "NON_CLAIM",
+    "live_tls_ingress_claimed": "false",
+    "letsencrypt_issued": "false"
+  },
+  "steps": [
+    {
+      "id": "tb-tls",
+      "title": "Mark live TLS ingress / ACME execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tb-certmanager",
+      "title": "Mark cert-manager / challenge provision Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tb-stage29-nonclaim",
+      "title": "Mark Stage 29 T1 TLS ingress as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tb-letsencrypt-false",
+      "title": "Mark letsencrypt_issued false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tb-tls-remaining",
+      "title": "Live TLS ingress Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 207 B1 TLS ingress blocker matrix packaging only. Live TLS ingress Complete remains MISSING."
+}

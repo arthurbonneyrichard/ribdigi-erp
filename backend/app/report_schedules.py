@@ -17,6 +17,7 @@ FREQUENCIES = frozenset({"daily", "weekly"})
 def serialize_schedule(row: m.ReportSchedule) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "name": row.name,
         "report_type": row.report_type,
         "format": row.format,
@@ -53,29 +54,40 @@ def _normalize_recipients(raw: list[str] | str | None) -> list[str]:
     return unique
 
 
-async def list_schedules(db: AsyncSession, tenant_id: str) -> list[m.ReportSchedule]:
+async def list_schedules(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    enabled: bool | None = None,
+    company_id: str | None = None,
+) -> list[m.ReportSchedule]:
+    """Stage 127 S1 — optional enabled filter for honest schedule lists."""
+    stmt = select(m.ReportSchedule).where(m.ReportSchedule.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.ReportSchedule.company_id == company_id)
+    if enabled is not None:
+        stmt = stmt.where(m.ReportSchedule.enabled.is_(bool(enabled)))
     return list(
-        (
-            await db.execute(
-                select(m.ReportSchedule)
-                .where(m.ReportSchedule.tenant_id == tenant_id)
-                .order_by(m.ReportSchedule.created_at.desc())
-            )
-        )
+        (await db.execute(stmt.order_by(m.ReportSchedule.created_at.desc())))
         .scalars()
         .all()
     )
 
 
-async def get_schedule(db: AsyncSession, tenant_id: str, schedule_id: str) -> m.ReportSchedule:
-    row = (
-        await db.execute(
-            select(m.ReportSchedule).where(
-                m.ReportSchedule.id == schedule_id,
-                m.ReportSchedule.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_schedule(
+    db: AsyncSession,
+    tenant_id: str,
+    schedule_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.ReportSchedule:
+    stmt = select(m.ReportSchedule).where(
+        m.ReportSchedule.id == schedule_id,
+        m.ReportSchedule.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.ReportSchedule.company_id == company_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Report schedule not found")
     return row
@@ -94,6 +106,7 @@ async def create_schedule(
     hour_utc: int = 6,
     recipients: list[str] | str | None = None,
     enabled: bool = True,
+    company_id: str | None = None,
 ) -> m.ReportSchedule:
     name = (name or "").strip()
     if len(name) < 2:
@@ -118,6 +131,7 @@ async def create_schedule(
 
     row = m.ReportSchedule(
         tenant_id=tenant_id,
+        company_id=company_id,
         name=name,
         report_type=report_type,
         format=fmt,
@@ -146,8 +160,9 @@ async def update_schedule(
     hour_utc: int | None = None,
     recipients: list[str] | str | None = None,
     enabled: bool | None = None,
+    company_id: str | None = None,
 ) -> m.ReportSchedule:
-    row = await get_schedule(db, tenant_id, schedule_id)
+    row = await get_schedule(db, tenant_id, schedule_id, company_id=company_id)
     if name is not None:
         name = name.strip()
         if len(name) < 2:
@@ -192,8 +207,14 @@ async def update_schedule(
     return row
 
 
-async def delete_schedule(db: AsyncSession, tenant_id: str, schedule_id: str) -> None:
-    row = await get_schedule(db, tenant_id, schedule_id)
+async def delete_schedule(
+    db: AsyncSession,
+    tenant_id: str,
+    schedule_id: str,
+    *,
+    company_id: str | None = None,
+) -> None:
+    row = await get_schedule(db, tenant_id, schedule_id, company_id=company_id)
     await db.delete(row)
     await db.flush()
 
@@ -238,6 +259,7 @@ async def run_schedule(
             tenant_id,
             schedule.report_type,
             schedule.format,
+            company_id=getattr(schedule, "company_id", None),
         )
         subject = f"RIBDIGI report: {schedule.name} ({schedule.report_type})"
         text = (

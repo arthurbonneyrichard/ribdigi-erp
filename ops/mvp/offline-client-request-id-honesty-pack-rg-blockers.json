@@ -1,0 +1,77 @@
+{
+  "id": "offline-client-request-id-honesty-pack-rg-blockers",
+  "stage": 473,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_CLIENT_REQUEST_ID_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_CLIENT_REQUEST_ID_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_client_request_id_pack_remaining_gate": "docs/OFFLINE_CLIENT_REQUEST_ID_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_client_request_id_honesty_complete_claimed": false,
+  "offline_client_request_id_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_client_request_id_honesty_complete_claimed": "REMAINING",
+    "offline_client_request_id_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_client_request_id_honesty": "NON_CLAIM",
+    "offline_client_request_id_pack_as_client_request_id_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_client_request_id_honesty_complete_claimed_flag": "false",
+    "offline_client_request_id_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "ocrihprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocrihprb-honesty",
+      "title": "Mark Client Request ID honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocrihprb-as-golive",
+      "title": "Mark Client Request ID as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocrihprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocrihprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocrihprb-ocri-nonclaim",
+      "title": "Mark OFFLINE_CLIENT_REQUEST_ID_PACK as non-claim for client-request-id Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocrihprb-checklist-remaining",
+      "title": "Offline Complete / Client Request ID / Client Request ID honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 473 B1 Offline Client Request ID Honesty Pack RG blocker matrix packaging only."
+}

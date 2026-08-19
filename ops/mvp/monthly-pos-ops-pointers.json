@@ -1,0 +1,57 @@
+{
+  "id": "monthly-pos-ops-pointers",
+  "stage": 177,
+  "pack": "P1",
+  "doc": "docs/MONTHLY_POS_OPS_POINTERS_MVP.md",
+  "related": {
+    "monthly_review": "docs/MONTHLY_POS_OPS_REVIEW_MVP.md",
+    "cashier_bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "residual_risk": "docs/RESIDUAL_RISK_MVP.md",
+    "residual_risk_register": "ops/mvp/residual-risk-register.json"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "risks_closed_claimed": false,
+  "topics": [
+    "device_revoke_rebind",
+    "backup_drill_schedule_pointer",
+    "residual_risk_honesty"
+  ],
+  "steps": [
+    {
+      "id": "mp-revoke-rebind",
+      "title": "Review revoke mid-queue and rebind events",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-backup-pointer",
+      "title": "Point to backup restore drill honesty (live DR false)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-residual-risk",
+      "title": "Re-read residual risk register; risks_closed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-quickstart",
+      "title": "Point new cashiers to Stage 172 bind/catalog",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-offline-dr-golive-remaining",
+      "title": "Offline Complete / live DR / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 177 P1 monthly pointers packaging only. Do not claim Offline Complete, live DR, or go-live."
+}

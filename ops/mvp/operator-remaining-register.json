@@ -1,0 +1,171 @@
+{
+  "stage": "31",
+  "workstream": "O1",
+  "doc": "docs/OPERATOR_REMAINING_MVP.md",
+  "evidence_ledger": "ops/evidence/ledger.json",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "support_map": "ops/support/admin-ops-map.json",
+  "live_runs_certified": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "flags": [
+    {
+      "flag": "production_signoff_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#27-l1",
+      "pack_doc": "docs/LAUNCH_CERT_MVP.md"
+    },
+    {
+      "flag": "operator_pitr_drill_executed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#28-r1",
+      "pack_doc": "docs/PITR_DRILL_PACK_MVP.md"
+    },
+    {
+      "flag": "ci_pitr_success_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#28-r1",
+      "pack_doc": "docs/PITR_DRILL_PACK_MVP.md"
+    },
+    {
+      "flag": "live_staging_apply_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#28-g1",
+      "pack_doc": "docs/STAGING_GHA_MVP.md"
+    },
+    {
+      "flag": "gha_staging_wired_into_main_ci",
+      "value": false,
+      "source": "ops/evidence/ledger.json#28-g1",
+      "pack_doc": "docs/STAGING_GHA_MVP.md"
+    },
+    {
+      "flag": "hosted_grafana_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#28-a1",
+      "pack_doc": "docs/GRAFANA_PACK_MVP.md"
+    },
+    {
+      "flag": "operator_1000vu_executed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#28-c1",
+      "pack_doc": "docs/LOAD_CERT_PACK_MVP.md"
+    },
+    {
+      "flag": "ci_1000vu_certificate_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#28-c1",
+      "pack_doc": "docs/LOAD_CERT_PACK_MVP.md"
+    },
+    {
+      "flag": "vendor_pen_test_purchased",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-v1",
+      "pack_doc": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "flag": "live_zap_executed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-v1",
+      "pack_doc": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "flag": "ci_zap_success_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-v1",
+      "pack_doc": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "flag": "live_soak_executed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-b2",
+      "pack_doc": "docs/PGBOUNCER_SOAK_PACK_MVP.md"
+    },
+    {
+      "flag": "helm_pooler_default_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-b2",
+      "pack_doc": "docs/PGBOUNCER_SOAK_PACK_MVP.md"
+    },
+    {
+      "flag": "letsencrypt_issued",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-t1",
+      "pack_doc": "docs/TLS_INGRESS_PACK_MVP.md"
+    },
+    {
+      "flag": "tls_cutover_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-t1",
+      "pack_doc": "docs/TLS_INGRESS_PACK_MVP.md"
+    },
+    {
+      "flag": "production_cutover_claimed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-x1",
+      "pack_doc": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "flag": "section_7_signed",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-x1",
+      "pack_doc": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "flag": "gha_prod_wired_into_main_ci",
+      "value": false,
+      "source": "ops/evidence/ledger.json#29-x1",
+      "pack_doc": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "flag": "pagerduty_hosted_claimed",
+      "value": false,
+      "source": "ops/incident/incident-checklist.json",
+      "pack_doc": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "flag": "oncall_rota_live",
+      "value": false,
+      "source": "ops/incident/incident-checklist.json",
+      "pack_doc": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "flag": "incident_drill_executed",
+      "value": false,
+      "source": "ops/incident/incident-checklist.json",
+      "pack_doc": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "flag": "live_ops_success_claimed",
+      "value": false,
+      "source": "ops/support/admin-ops-map.json",
+      "pack_doc": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "flag": "support_sla_claimed",
+      "value": false,
+      "source": "ops/support/admin-ops-map.json",
+      "pack_doc": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "flag": "attestation_claimed",
+      "value": false,
+      "source": "ops/launch/attestation-matrix.json",
+      "pack_doc": "docs/ATTESTATION_PACK_MVP.md"
+    },
+    {
+      "flag": "sections_1_3_verified",
+      "value": false,
+      "source": "ops/launch/attestation-matrix.json",
+      "pack_doc": "docs/ATTESTATION_PACK_MVP.md"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage31_o1_operator_remaining.json",
+  "deferred": [
+    "Flipping honesty flags without ops change-log evidence",
+    "Forged live PITR / ZAP / soak / ACME / cutover / attestation / §7 success",
+    "Re-packaging Stage 26–30 packs as new Complete"
+  ]
+}

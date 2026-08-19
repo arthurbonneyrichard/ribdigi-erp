@@ -1,0 +1,55 @@
+{
+  "id": "wal-offsite-rg-blockers",
+  "stage": 233,
+  "pack": "B1",
+  "doc": "docs/WAL_OFFSITE_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/WAL_OFFSITE_REMAINING_GATE_MVP.md",
+    "wal_pitr_runbook": "docs/DR_WAL_PITR_RUNBOOK.md",
+    "ribbak_offsite_sync": "ops/backup/sync-ribbak-offsite.sh.example"
+  },
+  "packaging_complete": true,
+  "live_offsite_backup_claimed": false,
+  "live_wal_archive_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_staging_offsite_backup_execution": "REMAINING",
+    "live_wal_archive_to_s3": "REMAINING",
+    "stage26_w1_as_live_offsite": "NON_CLAIM",
+    "stage27_b1_as_live_offsite": "NON_CLAIM",
+    "live_offsite_backup_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "worb-exec",
+      "title": "Mark live staging offsite backup execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "worb-wal-archive",
+      "title": "Mark live WAL archive to S3 Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "worb-stage26-nonclaim",
+      "title": "Mark Stage 26 W1 as non-claim for live offsite",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "worb-stage27-nonclaim",
+      "title": "Mark Stage 27 B1 packaging as non-claim for always-on live offsite",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "worb-offsite-remaining",
+      "title": "Live offsite backup Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 233 B1 WAL offsite RG blocker matrix packaging only. Live offsite backup Complete remains MISSING."
+}

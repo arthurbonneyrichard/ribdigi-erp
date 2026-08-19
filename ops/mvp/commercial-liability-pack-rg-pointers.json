@@ -1,0 +1,60 @@
+{
+  "id": "commercial-liability-pack-rg-pointers",
+  "stage": 313,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_LIABILITY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md",
+    "commercial_liability": "docs/COMMERCIAL_LIABILITY_MVP.md",
+    "status_uptime_pack_remaining_gate": "docs/STATUS_UPTIME_PACK_REMAINING_GATE_MVP.md",
+    "service_credit_warranty_pack_remaining_gate": "docs/SERVICE_CREDIT_WARRANTY_PACK_REMAINING_GATE_MVP.md",
+    "liability_indemnity_pack_remaining_gate": "docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "liability_cap_claimed": false,
+  "indemnity_signed_claimed": false,
+  "legal_counsel_claimed": false,
+  "contract_liability_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_liability_stage77",
+    "status_uptime_pack_remaining_gate_stage312",
+    "service_credit_warranty_pack_remaining_gate_stage311",
+    "liability_indemnity_pack_remaining_gate_stage310",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "clprp-stage77",
+      "title": "Point to Stage 77 L1 commercial liability",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprp-stage312",
+      "title": "Point to Stage 312 status uptime pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprp-stage311",
+      "title": "Point to Stage 311 service credit warranty pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprp-stage310",
+      "title": "Point to Stage 310 liability indemnity pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "clprp-cap-remaining",
+      "title": "Liability-cap signed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 313 P1 commercial liability pack RG pointers packaging only. Do not claim liability-cap signed Complete."
+}

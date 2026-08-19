@@ -1,0 +1,77 @@
+{
+  "id": "assume-role-gate-honesty-pack-rg-blockers",
+  "stage": 768,
+  "pack": "B1",
+  "doc": "docs/ASSUME_ROLE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ASSUME_ROLE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "assume_role_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "assume_role_gate_honesty_complete_claimed": false,
+  "assume_role_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "assume_role_gate_honesty_complete_claimed": "REMAINING",
+    "assume_role_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_assume_role_gate_honesty": "NON_CLAIM",
+    "assume_role_gate_pack_as_assume_role_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "assume_role_gate_honesty_complete_claimed_flag": "false",
+    "assume_role_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "arghb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arghb-honesty",
+      "title": "Mark Assume Role Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arghb-as-golive",
+      "title": "Mark Assume Role Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arghb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arghb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arghb-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for assume-role-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "arghb-checklist-remaining",
+      "title": "Offline Complete / Assume Role Gate / Assume Role Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 768 B1 Assume Role Gate Honesty Pack RG blocker matrix packaging only."
+}

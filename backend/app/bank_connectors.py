@@ -31,6 +31,7 @@ def _decrypt(token: str) -> str:
 def serialize_connection(row: m.BankAccountConnection, *, include_secrets: bool = False) -> dict:
     data = {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "account_id": row.account_id,
         "provider": row.provider,
         "display_name": row.display_name or "Bank connection",
@@ -54,7 +55,11 @@ def serialize_connection(row: m.BankAccountConnection, *, include_secrets: bool 
 
 
 async def get_connection(
-    db: AsyncSession, *, tenant_id: str, connection_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    connection_id: str,
+    company_id: str | None = None,
 ) -> m.BankAccountConnection:
     row = (
         await db.execute(
@@ -66,18 +71,31 @@ async def get_connection(
     ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Bank connection not found")
+    if company_id and row.company_id and row.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Bank connection not found")
     return row
 
 
-async def list_connections(db: AsyncSession, tenant_id: str) -> list[m.BankAccountConnection]:
+async def list_connections(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+    company_id: str | None = None,
+) -> list[m.BankAccountConnection]:
+    """Stage 126 C1 — is_active / active_only for honest inactive-only bank connection lists."""
+    stmt = select(m.BankAccountConnection).where(
+        m.BankAccountConnection.tenant_id == tenant_id
+    )
+    if company_id:
+        stmt = stmt.where(m.BankAccountConnection.company_id == company_id)
+    if is_active is not None:
+        stmt = stmt.where(m.BankAccountConnection.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.BankAccountConnection.is_active.is_(True))
     return list(
-        (
-            await db.execute(
-                select(m.BankAccountConnection)
-                .where(m.BankAccountConnection.tenant_id == tenant_id)
-                .order_by(m.BankAccountConnection.created_at.desc())
-            )
-        )
+        (await db.execute(stmt.order_by(m.BankAccountConnection.created_at.desc())))
         .scalars()
         .all()
     )
@@ -106,10 +124,11 @@ async def create_connection(
     auto_sync: bool = True,
     auto_match_after_sync: bool = True,
     sync_lookback_days: int = 30,
+    company_id: str | None = None,
 ) -> m.BankAccountConnection:
     from app.bank_recon import get_liquid_account
 
-    await get_liquid_account(db, tenant_id, account_id)
+    await get_liquid_account(db, tenant_id, account_id, company_id=company_id)
     existing = (
         await db.execute(
             select(m.BankAccountConnection).where(
@@ -136,6 +155,7 @@ async def create_connection(
     now = datetime.utcnow()
     row = m.BankAccountConnection(
         tenant_id=tenant_id,
+        company_id=company_id,
         account_id=account_id,
         provider=prov,
         display_name=(display_name or "").strip() or None,
@@ -160,8 +180,11 @@ async def update_connection(
     tenant_id: str,
     connection_id: str,
     payload: dict,
+    company_id: str | None = None,
 ) -> m.BankAccountConnection:
-    row = await get_connection(db, tenant_id=tenant_id, connection_id=connection_id)
+    row = await get_connection(
+        db, tenant_id=tenant_id, connection_id=connection_id, company_id=company_id
+    )
     if "display_name" in payload and payload["display_name"] is not None:
         row.display_name = str(payload["display_name"]).strip() or None
     if "external_account_id" in payload and payload["external_account_id"] is not None:
@@ -191,8 +214,16 @@ async def update_connection(
     return row
 
 
-async def delete_connection(db: AsyncSession, *, tenant_id: str, connection_id: str) -> None:
-    row = await get_connection(db, tenant_id=tenant_id, connection_id=connection_id)
+async def delete_connection(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    connection_id: str,
+    company_id: str | None = None,
+) -> None:
+    row = await get_connection(
+        db, tenant_id=tenant_id, connection_id=connection_id, company_id=company_id
+    )
     await db.delete(row)
     await db.flush()
 
@@ -368,6 +399,7 @@ async def sync_connection(
     connection_id: str,
     user_id: str | None = None,
     force: bool = False,
+    company_id: str | None = None,
 ) -> dict:
     """Pull provider transactions and create a bank statement (deduped by external_ref)."""
     if not bool(settings.BANK_FEED_SYNC_ENABLED):
@@ -375,7 +407,9 @@ async def sync_connection(
 
     from app import bank_recon as bank_recon_svc
 
-    row = await get_connection(db, tenant_id=tenant_id, connection_id=connection_id)
+    row = await get_connection(
+        db, tenant_id=tenant_id, connection_id=connection_id, company_id=company_id
+    )
     if not row.is_active and not force:
         raise HTTPException(status_code=400, detail="Bank connection is inactive")
 
@@ -422,6 +456,7 @@ async def sync_connection(
         open_bal = float(opening) if opening is not None else 0.0
         close_bal = float(closing) if closing is not None else round(open_bal + net, 2)
         stmt_date = max(ln["txn_date"] for ln in fresh)
+        stmt_company_id = company_id or row.company_id
 
         stmt = await bank_recon_svc.create_statement(
             db,
@@ -433,6 +468,7 @@ async def sync_connection(
             closing_balance=close_bal,
             notes=f"API sync ({provider}) — {len(fresh)} new lines",
             lines=fresh,
+            company_id=stmt_company_id,
         )
         result["imported"] = len(fresh)
         result["statement_id"] = stmt.id

@@ -1,0 +1,77 @@
+{
+  "id": "refresh-token-gate-honesty-pack-rg-pointers",
+  "stage": 758,
+  "pack": "P1",
+  "doc": "docs/REFRESH_TOKEN_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/REFRESH_TOKEN_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "jwt_claim_gate_honesty_pack_remaining_gate": "docs/JWT_CLAIM_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "token_binding_gate_honesty_pack_remaining_gate": "docs/TOKEN_BINDING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "refresh_token_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "refresh_token_gate_honesty_complete_claimed": false,
+  "refresh_token_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_refresh_token_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "jwt_claim_gate_honesty_pack_remaining_gate_stage757": "docs/JWT_CLAIM_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "token_binding_gate_honesty_pack_remaining_gate_stage756": "docs/TOKEN_BINDING_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "refresh_token_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / refresh_token_gate / refresh_token_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "rtkghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Refresh Token Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghp-stage757",
+      "title": "Point to Stage 757 JWT CLAIM GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghp-stage756",
+      "title": "Point to Stage 756 TOKEN BINDING GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghp-prior-pack",
+      "title": "Point to Refresh Token Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rtkghp-checklist-remaining",
+      "title": "Offline Complete / Refresh Token Gate / Refresh Token Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 758 P1 Refresh Token Gate Honesty Pack RG pointers packaging only."
+}

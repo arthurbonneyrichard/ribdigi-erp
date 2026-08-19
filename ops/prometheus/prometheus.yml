@@ -1,0 +1,37 @@
+# Stage 26 M1 — Prometheus scrape config for RIBDIGI BUSINESS ERP
+# Scrapes existing GET /api/v1/metrics (Stage 5 H5). Not deployed in CI.
+# Run locally: docker run --rm -p 9090:9090 -v "$PWD/ops/prometheus:/etc/prometheus" prom/prometheus
+# See docs/OPS_MONITORING_MVP.md and ops/prometheus/README.md.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts/*.yml
+
+scrape_configs:
+  - job_name: ribdigi-backend
+    metrics_path: /api/v1/metrics
+    static_configs:
+      - targets:
+          - host.docker.internal:8000
+        labels:
+          service: ribdigi-erp
+
+  # Blackbox HTTP probe against readiness (Stage 5 H5 /health/ready).
+  # Requires a blackbox_exporter sidecar; until then, operators may curl the path.
+  - job_name: ribdigi-ready
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://host.docker.internal:8000/api/v1/health/ready
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

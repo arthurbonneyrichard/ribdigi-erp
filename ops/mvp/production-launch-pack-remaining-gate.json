@@ -1,0 +1,57 @@
+{
+  "id": "production-launch-pack-remaining-gate",
+  "stage": 262,
+  "pack": "I1",
+  "doc": "docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PRODUCTION_LAUNCH_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PRODUCTION_LAUNCH_PACK_RG_POINTERS_MVP.md",
+    "production_launch": "docs/PRODUCTION_LAUNCH_MVP.md",
+    "preflight_verification_pack_remaining_gate": "docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout_pack_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md",
+    "production_launch_remaining_gate": "docs/PRODUCTION_LAUNCH_REMAINING_GATE_MVP.md",
+    "production_launch_register": "ops/mvp/production-launch.json"
+  },
+  "packaging_complete": true,
+  "production_launch_live_claimed": false,
+  "production_cutover_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "distinct_from_stage66_l1_production_launch": true,
+  "distinct_from_stage261_preflight_verification_pack_remaining_gate": true,
+  "distinct_from_stage260_commercial_golive_closeout_pack_remaining_gate": true,
+  "distinct_from_stage202_production_launch_remaining_gate": true,
+  "steps": [
+    {
+      "id": "plpr-read-blockers",
+      "title": "Read B1 production launch pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plpr-follow-pointers",
+      "title": "Follow P1 Stage 66 / Stage 261 / Stage 260 / Stage 202 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plpr-launch-missing",
+      "title": "Reaffirm live production launch MISSING until real commercial verification ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plpr-no-packaging-as-live",
+      "title": "Do not treat Stage 66 L1 / Stage 261 / Stage 202 as live production launch Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "plpr-launch-remaining",
+      "title": "Live production launch / production cutover / go-live / section 7 Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 262 I1 production launch pack remaining-gate index packaging only. Do not claim live production launch Complete."
+}

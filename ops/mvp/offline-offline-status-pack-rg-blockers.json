@@ -1,0 +1,69 @@
+{
+  "id": "offline-offline-status-pack-rg-blockers",
+  "stage": 398,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_OFFLINE_STATUS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_OFFLINE_STATUS_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_offline_status_complete_claimed": false,
+  "offline_status_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_offline_status_complete_claimed": "REMAINING",
+    "offline_status_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_offline_status": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_offline_status_complete_claimed_flag": "false",
+    "offline_status_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "oofsprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprb-offline-status",
+      "title": "Mark offline offline-status Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprb-status",
+      "title": "Mark OFFLINE status Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oofsprb-checklist-remaining",
+      "title": "Offline Complete / offline offline-status Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 398 B1 offline OFFLINE status pack RG blocker matrix packaging only."
+}

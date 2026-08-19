@@ -1,0 +1,60 @@
+{
+  "id": "staging-gha-pack-pointers",
+  "stage": 205,
+  "pack": "P1",
+  "doc": "docs/STAGING_GHA_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STAGING_GHA_REMAINING_GATE_MVP.md",
+    "staging_gha": "docs/STAGING_GHA_MVP.md",
+    "staging_gha_template": "ops/k8s/deploy-staging.example.yml",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md",
+    "launch_cert_remaining_gate": "docs/LAUNCH_CERT_REMAINING_GATE_MVP.md",
+    "ci_workflow": ".github/workflows/ci.yml",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_staging_apply_claimed": false,
+  "gha_staging_wired_into_main_ci": false,
+  "go_live_claimed": false,
+  "production_signoff_claimed": false,
+  "topics": [
+    "staging_gha_stage28",
+    "deploy_free_ci_stage18",
+    "k8s_deploy_stage26",
+    "launch_cert_remaining_gate_stage204",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sp-staging-gha",
+      "title": "Point to Stage 28 staging GHA",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-ci-c1",
+      "title": "Point to Stage 18 C1 deploy-free main CI",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-k8s",
+      "title": "Point to Stage 26 K1 k8s packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-launch-gate",
+      "title": "Point to Stage 204 launch-cert remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sp-apply-remaining",
+      "title": "Live staging GHA apply Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 205 P1 staging GHA pack pointers packaging only. Do not claim live staging GHA apply Complete."
+}

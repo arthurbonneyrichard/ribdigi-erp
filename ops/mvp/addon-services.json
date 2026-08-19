@@ -1,0 +1,156 @@
+{
+  "stage": "51",
+  "workstream": "A1",
+  "doc": "docs/ADDON_SERVICES_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "marketplace_presence": "ops/mvp/marketplace-presence.json",
+  "marketplace_presence_doc": "docs/MARKETPLACE_PRESENCE_MVP.md",
+  "pricing_transparency": "ops/mvp/pricing-transparency.json",
+  "pricing_transparency_doc": "docs/PRICING_TRANSPARENCY_MVP.md",
+  "professional_services_sow": "ops/mvp/professional-services-sow.json",
+  "professional_services_sow_doc": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+  "deferred_adr_register": "ops/mvp/deferred-adr-register.json",
+  "deferred_adr_register_doc": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage51_plan": "docs/STAGE_51_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "addon_catalog_live": false,
+  "addon_billing_claimed": false,
+  "sms_email_credits_live": false,
+  "premium_ai_addon_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage51_a1_addon_services.json",
+  "steps": [
+    {
+      "id": "ao-product-overview",
+      "category": "addon",
+      "title": "Index PRODUCT_OVERVIEW SMS/storage/AI/custom-report add-on themes as commercial honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_51_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ao-billing-deferred",
+      "category": "services",
+      "title": "Link Stage 36 billing-deferred honesty as add-on billing Remaining adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "ao-marketplace-adjacency",
+      "category": "addon",
+      "title": "Link Stage 51 M1 marketplace presence as distribution adjacency (not add-on catalog)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MARKETPLACE_PRESENCE_MVP.md",
+        "ops/mvp/marketplace-presence.json"
+      ],
+      "source": "docs/MARKETPLACE_PRESENCE_MVP.md"
+    },
+    {
+      "id": "ao-pricing-adjacency",
+      "category": "services",
+      "title": "Link Stage 49 pricing transparency as list-price adjacency (not add-on SKUs Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRICING_TRANSPARENCY_MVP.md",
+        "ops/mvp/pricing-transparency.json"
+      ],
+      "source": "docs/PRICING_TRANSPARENCY_MVP.md"
+    },
+    {
+      "id": "ao-sow-adjacency",
+      "category": "addon",
+      "title": "Link Stage 48 professional services / SOW as services adjacency (not meterable add-ons)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+        "ops/mvp/professional-services-sow.json"
+      ],
+      "source": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+    },
+    {
+      "id": "ao-deferred-adr",
+      "category": "services",
+      "title": "Link deferred ADR register / ADR-002 as billing Remaining honesty for add-on charges",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEFERRED_ADR_REGISTER_MVP.md",
+        "ops/mvp/deferred-adr-register.json"
+      ],
+      "source": "docs/DEFERRED_ADR_REGISTER_MVP.md"
+    },
+    {
+      "id": "ao-roadmap-backlog",
+      "category": "addon",
+      "title": "Index DEVELOPMENT_ROADMAP add-on / monetization backlog as add-on Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "ao-plan-honesty",
+      "category": "services",
+      "title": "Confirm Stage 51 plan explicitly defers live add-on catalog / add-on billing",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_51_PLAN.md",
+        "docs/ADDON_SERVICES_MVP.md"
+      ],
+      "source": "docs/STAGE_51_PLAN.md"
+    },
+    {
+      "id": "ao-catalog-remaining",
+      "category": "honesty",
+      "title": "Live add-on catalog Remaining \u2014 packaging \u2260 operating add-on storefront",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_51_PLAN.md",
+        "docs/ADDON_SERVICES_MVP.md"
+      ],
+      "source": "docs/STAGE_51_PLAN.md"
+    },
+    {
+      "id": "ao-billing-remaining",
+      "category": "honesty",
+      "title": "Add-on billing Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_51_PLAN.md",
+        "docs/ADDON_SERVICES_MVP.md"
+      ],
+      "source": "docs/STAGE_51_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live add-on catalog Complete",
+    "Add-on billing / payment-provider Complete",
+    "SMS/email credits or extra storage live Complete",
+    "Premium AI / custom-report add-on Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

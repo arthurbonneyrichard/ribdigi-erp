@@ -1,0 +1,77 @@
+{
+  "id": "access-request-gate-honesty-pack-rg-blockers",
+  "stage": 844,
+  "pack": "B1",
+  "doc": "docs/ACCESS_REQUEST_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ACCESS_REQUEST_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "access_request_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "access_request_gate_honesty_complete_claimed": false,
+  "access_request_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "access_request_gate_honesty_complete_claimed": "REMAINING",
+    "access_request_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_access_request_gate_honesty": "NON_CLAIM",
+    "access_request_gate_pack_as_access_request_gate_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "access_request_gate_honesty_complete_claimed_flag": "false",
+    "access_request_gate_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "argh2b-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "argh2b-honesty",
+      "title": "Mark Access Request Gate honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "argh2b-as-golive",
+      "title": "Mark Access Request Gate as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "argh2b-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "argh2b-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "argh2b-prior-nonclaim",
+      "title": "Mark MVP_PRODUCT_UPDATE_PACK as non-claim for access-request-gate Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "argh2b-checklist-remaining",
+      "title": "Offline Complete / Access Request Gate / Access Request Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 844 B1 Access Request Gate Honesty Pack RG blocker matrix packaging only."
+}

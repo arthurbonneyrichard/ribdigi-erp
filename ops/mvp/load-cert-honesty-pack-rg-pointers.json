@@ -1,0 +1,75 @@
+{
+  "id": "load-cert-honesty-pack-rg-pointers",
+  "stage": 422,
+  "pack": "P1",
+  "doc": "docs/LOAD_CERT_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LOAD_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "pgbouncer_soak_honesty_pack_remaining_gate": "docs/PGBOUNCER_SOAK_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "pentest_honesty_pack_remaining_gate": "docs/PENTEST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "load_cert_pack_remaining_gate": "docs/LOAD_CERT_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "load_cert_honesty_complete_claimed": false,
+  "load_cert_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_load_cert_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "pgbouncer_soak_honesty_pack_remaining_gate_stage421": "docs/PGBOUNCER_SOAK_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "pentest_honesty_pack_remaining_gate_stage420": "docs/PENTEST_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "load_cert_pack_remaining_gate_stage28": "docs/LOAD_CERT_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / load_cert / load_cert_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "lchprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Load Cert honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchprp-stage421",
+      "title": "Point to Stage 421 PgBouncer Soak honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchprp-stage420",
+      "title": "Point to Stage 420 Pentest honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchprp-stage28",
+      "title": "Point to Stage 28 Load Cert pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lchprp-checklist-remaining",
+      "title": "Offline Complete / Load Cert / Load Cert honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 422 P1 Load Cert Honesty Pack RG pointers packaging only."
+}

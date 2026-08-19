@@ -1,0 +1,59 @@
+{
+  "id": "offline-sync-error-surface-pack-remaining-gate",
+  "stage": 395,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_SYNC_ERROR_SURFACE_PACK_RG_POINTERS_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_queue_depth_metrics_pack_remaining_gate": "docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "offline_settings_sync_ia_pack_remaining_gate": "docs/OFFLINE_SETTINGS_SYNC_IA_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_sync_error_surface_complete_claimed": false,
+  "sync_error_surface_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage394_offline_queue_depth_metrics_pack_remaining_gate": true,
+  "distinct_from_stage393_offline_settings_sync_ia_pack_remaining_gate": true,
+  "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "osespr-read-blockers",
+      "title": "Read B1 offline SYNC ERROR surface pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osespr-follow-pointers",
+      "title": "Follow P1 Stage 394 / Stage 393 / Stage 392 / CHANGE_IMPACT pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osespr-checklist-missing",
+      "title": "Reaffirm Offline Complete / offline sync-error-surface / SYNC ERROR surface / go-live / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osespr-no-packaging-as-live",
+      "title": "Do not treat Stage 392 / Stage 394 / Stage 393 as Offline Complete or offline sync-error-surface Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osespr-checklist-remaining",
+      "title": "Offline Complete / offline sync-error-surface / SYNC ERROR surface / go-live / attestation Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 395 I1 offline SYNC ERROR surface pack remaining-gate index packaging only. Do not claim Offline Complete."
+}

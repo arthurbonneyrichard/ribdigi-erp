@@ -1,0 +1,52 @@
+{
+  "id": "monthly-pos-ops-review",
+  "stage": 177,
+  "pack": "M1",
+  "doc": "docs/MONTHLY_POS_OPS_REVIEW_MVP.md",
+  "related": {
+    "trends": "docs/MONTHLY_POS_OPS_TRENDS_MVP.md",
+    "pointers": "docs/MONTHLY_POS_OPS_POINTERS_MVP.md",
+    "weekly_review": "docs/WEEKLY_POS_OPS_REVIEW_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "residual_risk": "docs/RESIDUAL_RISK_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_weekly_review": true,
+  "steps": [
+    {
+      "id": "mr-collect-weekly",
+      "title": "Collect Stage 176 weekly review notes for the month",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mr-trends",
+      "title": "Complete T1 weekly outcomes + Hold trends",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mr-pointers",
+      "title": "Complete P1 device/backup/residual pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mr-actions",
+      "title": "Record next-month actions; escalate P1/P2",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mr-offline-dr-golive-remaining",
+      "title": "Offline Complete / live DR / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 177 M1 monthly POS ops rollup packaging only. Do not claim Offline Complete, live DR, or go-live."
+}

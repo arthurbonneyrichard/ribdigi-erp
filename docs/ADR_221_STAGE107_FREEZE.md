@@ -1,0 +1,26 @@
+# ADR-221: Stage 107 Scope Freeze
+
+**Status:** Accepted  
+**Date:** 2026-08-12  
+**Related:** [ADR-220](ADR_220_STAGE107_OPEN.md), [STAGE_107_EXIT_CRITERIA.md](STAGE_107_EXIT_CRITERIA.md), [STAGE_107_FIDELITY.md](STAGE_107_FIDELITY.md)
+
+## Context
+
+Stage 107 Tenant MVP POS Sections, Commerce Filters & Ops Leaves Ops delivered POS sections honesty (P1), commerce filters honesty (S1), ops leaves discoverability (O1), fidelity sync (D1), and exit (H107x). Prior Stage 106 remains frozen under ADR-219.
+
+## Decision
+
+1. **Stage 107 is frozen for new feature scope** (bugfixes / test hardening / doc corrections only).
+2. **Do not open Stage 108** until exit criteria remain accurate and CONTINUE/NEXT with a distinct outline is approved.
+3. Deferred items in Stage 107 exit criteria remain deferred.
+4. **Stage 1–106 freezes remain in force.**
+5. Honesty flags stay false: `mrr_fabricated_claimed`, `billing_complete_claimed`, `subscriptions_live_claimed`, `user_store_membership_claimed`, `hard_delete_claimed`, `sections_1_3_verified`, `section_7_signed`, `go_live_claimed`, `attestation_claimed`.
+
+## Consequences
+
+- Agents treat Stage 107 P1–O1 / D1 / H107x as closed unless fixing a regression.
+- Main `ci.yml` remains deploy-free (**Stage 18 C1**).
+
+## Next stage
+
+Stage 108 opened after CONTINUE/NEXT with a distinct product outline — see [ADR-222](ADR_222_STAGE108_OPEN.md) + [STAGE_108_PLAN.md](STAGE_108_PLAN.md) (Tenant MVP AI Analysis Leaves, Credit Statement & Users Directory Ops). Stage 107 feature scope remains frozen.

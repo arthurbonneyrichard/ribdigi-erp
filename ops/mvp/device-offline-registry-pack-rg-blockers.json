@@ -1,0 +1,69 @@
+{
+  "id": "device-offline-registry-pack-rg-blockers",
+  "stage": 374,
+  "pack": "B1",
+  "doc": "docs/DEVICE_OFFLINE_REGISTRY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DEVICE_OFFLINE_REGISTRY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage164_fidelity": "docs/STAGE_164_FIDELITY.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "device_registry_product_complete_claimed": false,
+  "revoked_device_sync_blocked_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "device_registry_product_complete_claimed": "REMAINING",
+    "revoked_device_sync_blocked_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage164_as_offline_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "device_registry_product_complete_claimed_flag": "false",
+    "revoked_device_sync_blocked_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "dorprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dorprb-registry",
+      "title": "Mark device-registry product Completes Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dorprb-revoked",
+      "title": "Mark revoked-device sync-blocked Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dorprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dorprb-stage164-nonclaim",
+      "title": "Mark Stage 163\u2013165 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dorprb-checklist-remaining",
+      "title": "Offline Complete / device-registry product Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 374 B1 device offline registry pack RG blocker matrix packaging only."
+}

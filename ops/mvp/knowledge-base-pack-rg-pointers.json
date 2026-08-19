@@ -1,0 +1,60 @@
+{
+  "id": "knowledge-base-pack-rg-pointers",
+  "stage": 238,
+  "pack": "P1",
+  "doc": "docs/KNOWLEDGE_BASE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "knowledge_base_remaining_gate": "docs/KNOWLEDGE_BASE_REMAINING_GATE_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "incident_pack_remaining_gate": "docs/INCIDENT_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_base_register": "ops/mvp/knowledge-base.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_knowledge_base_claimed": false,
+  "hosted_kb_saas_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "knowledge_transfer_stage33_t1",
+    "knowledge_base_stage171_k1",
+    "knowledge_base_remaining_gate_stage215",
+    "incident_pack_remaining_gate_stage237",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "kbprp-stage33",
+      "title": "Point to Stage 33 T1 knowledge transfer",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbprp-stage171",
+      "title": "Point to Stage 171 K1 knowledge base",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbprp-stage215",
+      "title": "Point to Stage 215 knowledge base remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbprp-stage237",
+      "title": "Point to Stage 237 incident pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kbprp-kb-remaining",
+      "title": "Live knowledge-base Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 238 P1 knowledge base pack RG pointers packaging only. Do not claim live knowledge-base Complete."
+}

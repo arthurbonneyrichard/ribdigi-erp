@@ -1,0 +1,11 @@
+# Stage 26 K1 — staging overlay
+namespace: ribdigi-staging
+backend:
+  replicaCount: 2
+frontend:
+  replicaCount: 1
+celeryWorker:
+  replicaCount: 1
+ingress:
+  enabled: true
+  host: staging.example.com

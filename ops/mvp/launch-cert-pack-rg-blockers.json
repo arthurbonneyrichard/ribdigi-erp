@@ -1,0 +1,54 @@
+{
+  "id": "launch-cert-pack-rg-blockers",
+  "stage": 230,
+  "pack": "B1",
+  "doc": "docs/LAUNCH_CERT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+    "launch_cert_pack": "docs/LAUNCH_CERT_MVP.md",
+    "staging_gha": "docs/STAGING_GHA_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_signoff_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "production_launch_signoff": "REMAINING",
+    "launch_section_7_signoff": "REMAINING",
+    "stage27_l1_as_production_signoff": "NON_CLAIM",
+    "production_signoff_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "lcprb-signoff",
+      "title": "Mark production / LAUNCH sign-off Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprb-section7",
+      "title": "Mark LAUNCH §7 Name/Date sign-off Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprb-stage27-nonclaim",
+      "title": "Mark Stage 27 L1 launch cert pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprb-claimed-false",
+      "title": "Mark production_signoff_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprb-signoff-remaining",
+      "title": "Production sign-off Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 230 B1 launch cert pack RG blocker matrix packaging only. Production sign-off Complete remains MISSING."
+}

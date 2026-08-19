@@ -1,0 +1,55 @@
+{
+  "stage": "29",
+  "workstream": "B2",
+  "doc": "docs/PGBOUNCER_SOAK_PACK_MVP.md",
+  "pgbouncer_mvp": "docs/PGBOUNCER_MVP.md",
+  "ini": "ops/postgres/pgbouncer.ini.example",
+  "helm_snippet": "ops/postgres/pgbouncer-deployment.example.yaml",
+  "live_soak_executed": false,
+  "helm_pooler_default_claimed": false,
+  "targets": {
+    "show_pools_ok": true,
+    "p95_ms_with_pooler": 500,
+    "error_rate": 0.0,
+    "notes": "Soak targets align with Stage 28 C1 operator 1000-VU aims when sized; CI does not certify them"
+  },
+  "steps": [
+    {
+      "id": "1",
+      "title": "Deploy PgBouncer via compose overlay or optional k8s snippet (not default Helm chart)",
+      "class": "operator_required"
+    },
+    {
+      "id": "2",
+      "title": "Point DATABASE_URL at pgbouncer:6432; set PGBOUNCER_TRANSACTION_MODE if needed",
+      "class": "operator_required"
+    },
+    {
+      "id": "3",
+      "title": "Verify SHOW POOLS / SHOW STATS via admin console; record pool sizes",
+      "class": "operator_required"
+    },
+    {
+      "id": "4",
+      "title": "Run load harness (Stage 26/28) against pooler; record p95 and error rate",
+      "class": "operator_required"
+    },
+    {
+      "id": "5",
+      "title": "Fill soak-evidence.example.json; attach to ops change log",
+      "class": "operator_required"
+    }
+  ],
+  "pass_criteria": [
+    "SHOW POOLS reports active databases for ribdigi_erp",
+    "App health/ready succeeds via pooler URL",
+    "Soak evidence JSON filled after real run (passed only when measured)",
+    "Ops change-log entry recorded"
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/db/stage29_b2_pgbouncer_soak.json",
+  "deferred": [
+    "Live soak numbers certified in CI",
+    "In-cluster Helm PgBouncer as default data plane Complete",
+    "Managed-cloud pooler product substitution as Complete"
+  ]
+}

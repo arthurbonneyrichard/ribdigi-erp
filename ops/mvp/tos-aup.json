@@ -1,0 +1,154 @@
+{
+  "stage": "43",
+  "workstream": "T1",
+  "doc": "docs/TOS_AUP_MVP.md",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "billing_deferred": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "ai_use_disclosure": "ops/mvp/ai-use-disclosure.json",
+  "ai_use_disclosure_doc": "docs/AI_USE_DISCLOSURE_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "release_notes": "ops/mvp/release-notes.json",
+  "release_notes_doc": "docs/RELEASE_NOTES_MVP.md",
+  "dpa_subprocessor": "ops/mvp/dpa-subprocessor.json",
+  "stage43_plan": "docs/STAGE_43_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "tos_signed_claimed": false,
+  "aup_enforced_claimed": false,
+  "legal_counsel_claimed": false,
+  "clickwrap_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage43_t1_tos_aup.json",
+  "steps": [
+    {
+      "id": "ta-msa-adjacency",
+      "category": "terms",
+      "title": "Link Stage 39 MSA security addendum as commercial terms adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "ta-billing-deferred",
+      "category": "commercial",
+      "title": "Link Stage 36 billing-deferred honesty as plan/terms commercial boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "ta-ai-aup",
+      "category": "aup",
+      "title": "Index Stage 42 AI use disclosure assistive-not-binding as AUP adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/AI_USE_DISCLOSURE_MVP.md",
+        "ops/mvp/ai-use-disclosure.json"
+      ],
+      "source": "docs/AI_USE_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "ta-support-sla",
+      "category": "terms",
+      "title": "Link Stage 36 support SLA boundary as customer escalation terms adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "ta-release-notes",
+      "category": "commercial",
+      "title": "Link Stage 32 commercial release-notes packaging as terms communication adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RELEASE_NOTES_MVP.md",
+        "ops/mvp/release-notes.json"
+      ],
+      "source": "docs/RELEASE_NOTES_MVP.md"
+    },
+    {
+      "id": "ta-trial-lifecycle",
+      "category": "commercial",
+      "title": "Index trial / grace / suspend lifecycle as use-boundary honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "ta-no-fake-payment",
+      "category": "aup",
+      "title": "Confirm no fake payment success on plan change as commercial AUP honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "ta-dpa-adjacency",
+      "category": "privacy",
+      "title": "Link Stage 39 DPA / subprocessor as privacy-terms adjacency (not substituting ToS)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DPA_SUBPROCESSOR_MVP.md",
+        "ops/mvp/dpa-subprocessor.json"
+      ],
+      "source": "docs/DPA_SUBPROCESSOR_MVP.md"
+    },
+    {
+      "id": "ta-tos-signed-remaining",
+      "category": "honesty",
+      "title": "Signed customer ToS / AUP Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_43_PLAN.md",
+        "docs/MSA_ADDENDUM_MVP.md"
+      ],
+      "source": "docs/STAGE_43_PLAN.md"
+    },
+    {
+      "id": "ta-clickwrap-remaining",
+      "category": "honesty",
+      "title": "Legal counsel / live clickwrap Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_43_PLAN.md",
+        "docs/MSA_ADDENDUM_MVP.md"
+      ],
+      "source": "docs/STAGE_43_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Signed customer ToS / AUP Complete",
+    "Legal counsel / outside counsel approval Complete",
+    "Live clickwrap / e-sign acceptance Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

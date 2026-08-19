@@ -1,0 +1,160 @@
+{
+  "stage": "46",
+  "workstream": "L1",
+  "doc": "docs/LIABILITY_INDEMNITY_MVP.md",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "tos_aup": "ops/mvp/tos-aup.json",
+  "tos_aup_doc": "docs/TOS_AUP_MVP.md",
+  "dpa_subprocessor": "ops/mvp/dpa-subprocessor.json",
+  "dpa_subprocessor_doc": "docs/DPA_SUBPROCESSOR_MVP.md",
+  "breach_notification": "ops/mvp/breach-notification.json",
+  "breach_notification_doc": "docs/BREACH_NOTIFICATION_MVP.md",
+  "vuln_disclosure": "ops/mvp/vuln-disclosure.json",
+  "vuln_disclosure_doc": "docs/VULN_DISCLOSURE_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "residual_risk": "ops/mvp/residual-risk-register.json",
+  "residual_risk_doc": "docs/RESIDUAL_RISK_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "stage46_plan": "docs/STAGE_46_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "liability_cap_claimed": false,
+  "indemnity_signed_claimed": false,
+  "legal_counsel_claimed": false,
+  "contract_liability_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage46_l1_liability_indemnity.json",
+  "steps": [
+    {
+      "id": "li-msa-adjacency",
+      "category": "liability",
+      "title": "Link Stage 39 MSA security addendum as liability exhibit adjacency (not liability Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "li-tos-adjacency",
+      "category": "liability",
+      "title": "Link Stage 43 ToS / AUP notice pack as customer-facing legal-notice adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/TOS_AUP_MVP.md",
+        "ops/mvp/tos-aup.json"
+      ],
+      "source": "docs/TOS_AUP_MVP.md"
+    },
+    {
+      "id": "li-dpa-adjacency",
+      "category": "indemnity",
+      "title": "Link Stage 39 DPA / subprocessor pack as contract / data-protection adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DPA_SUBPROCESSOR_MVP.md",
+        "ops/mvp/dpa-subprocessor.json"
+      ],
+      "source": "docs/DPA_SUBPROCESSOR_MVP.md"
+    },
+    {
+      "id": "li-breach-adjacency",
+      "category": "indemnity",
+      "title": "Link Stage 38 breach notification pack as indemnity-adjacent risk theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BREACH_NOTIFICATION_MVP.md",
+        "ops/mvp/breach-notification.json"
+      ],
+      "source": "docs/BREACH_NOTIFICATION_MVP.md"
+    },
+    {
+      "id": "li-vuln-adjacency",
+      "category": "indemnity",
+      "title": "Link Stage 38 vulnerability disclosure pack as liability-adjacent disclosure theme",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "ops/mvp/vuln-disclosure.json"
+      ],
+      "source": "docs/VULN_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "li-support-sla",
+      "category": "contract",
+      "title": "Link Stage 36 support SLA boundary as commercial boundary adjacency (not service credits)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "li-residual-risk",
+      "category": "contract",
+      "title": "Link residual risk / compliance readiness as risk-allocation adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RESIDUAL_RISK_MVP.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "docs/RESIDUAL_RISK_MVP.md"
+    },
+    {
+      "id": "li-security-guide",
+      "category": "contract",
+      "title": "Index SECURITY_GUIDE posture narrative for liability / indemnity honesty references",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/COMPLIANCE_READINESS_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "li-cap-remaining",
+      "category": "honesty",
+      "title": "Signed liability-cap Remaining \u2014 packaging \u2260 executed liability schedule",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_46_PLAN.md",
+        "docs/LIABILITY_INDEMNITY_MVP.md"
+      ],
+      "source": "docs/STAGE_46_PLAN.md"
+    },
+    {
+      "id": "li-indemnity-remaining",
+      "category": "honesty",
+      "title": "Indemnity / legal-counsel Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_46_PLAN.md",
+        "docs/LIABILITY_INDEMNITY_MVP.md"
+      ],
+      "source": "docs/STAGE_46_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Signed liability-cap Complete",
+    "Live / countersigned indemnity Complete",
+    "Legal counsel / outside counsel approval Complete",
+    "Live contract liability execution Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

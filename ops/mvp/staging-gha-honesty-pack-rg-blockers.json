@@ -1,0 +1,77 @@
+{
+  "id": "staging-gha-honesty-pack-rg-blockers",
+  "stage": 417,
+  "pack": "B1",
+  "doc": "docs/STAGING_GHA_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STAGING_GHA_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "staging_gha_pack_remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "staging_gha_honesty_complete_claimed": false,
+  "staging_gha_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "staging_gha_honesty_complete_claimed": "REMAINING",
+    "staging_gha_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_staging_gha_honesty": "NON_CLAIM",
+    "stage229_staging_gha_pack_as_staging_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "staging_gha_honesty_complete_claimed_flag": "false",
+    "staging_gha_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "sghprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sghprb-honesty",
+      "title": "Mark Staging GHA honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sghprb-as-golive",
+      "title": "Mark staging GHA as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sghprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sghprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sghprb-stage229-nonclaim",
+      "title": "Mark Stage 229 STAGING_GHA_PACK as non-claim for staging Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sghprb-checklist-remaining",
+      "title": "Offline Complete / staging / Staging GHA honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 417 B1 Staging GHA Honesty Pack RG blocker matrix packaging only."
+}

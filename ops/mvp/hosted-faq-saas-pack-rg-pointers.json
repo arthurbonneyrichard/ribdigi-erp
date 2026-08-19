@@ -1,0 +1,60 @@
+{
+  "id": "hosted-faq-saas-pack-rg-pointers",
+  "stage": 326,
+  "pack": "P1",
+  "doc": "docs/HOSTED_FAQ_SAAS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HOSTED_FAQ_SAAS_PACK_REMAINING_GATE_MVP.md",
+    "hosted_faq_saas_remaining_gate": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md",
+    "golive_pack_remaining_gate": "docs/GOLIVE_PACK_REMAINING_GATE_MVP.md",
+    "customer_assurance_pack_remaining_gate": "docs/CUSTOMER_ASSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "hosted_kb_saas_claimed": false,
+  "helpdesk_saas_claimed": false,
+  "live_training_claimed": false,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "hosted_faq_saas_remaining_gate_stage191",
+    "golive_pack_remaining_gate_stage325",
+    "customer_assurance_pack_remaining_gate_stage324",
+    "knowledge_base_stage171",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "hfsprp-stage191",
+      "title": "Point to Stage 191 hosted FAQ SaaS remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprp-stage325",
+      "title": "Point to Stage 325 golive pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprp-stage324",
+      "title": "Point to Stage 324 customer assurance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprp-stage171",
+      "title": "Point to Stage 171 knowledge base / FAQ adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprp-faq-remaining",
+      "title": "Live hosted FAQ SaaS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 326 P1 hosted FAQ SaaS pack RG pointers packaging only. Do not claim live hosted FAQ SaaS Complete."
+}

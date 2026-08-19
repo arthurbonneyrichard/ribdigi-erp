@@ -1,0 +1,53 @@
+{
+  "id": "release-pipeline-pack-rg-blockers",
+  "stage": 248,
+  "pack": "B1",
+  "doc": "docs/RELEASE_PIPELINE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RELEASE_PIPELINE_PACK_REMAINING_GATE_MVP.md",
+    "release_pipeline": "docs/RELEASE_PIPELINE_MVP.md",
+    "staging_gha_pack_remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+    "release_pipeline_register": "ops/mvp/release-pipeline.json"
+  },
+  "packaging_complete": true,
+  "mvp_release_candidate_signed": false,
+  "release_pipeline_live_claimed": false,
+  "staging_promotion_live_claimed": false,
+  "security_review_signed_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "signed_mvp_release_candidate": "REMAINING",
+    "live_release_pipeline_complete": "REMAINING",
+    "stage65_r1_as_signed_rc": "NON_CLAIM",
+    "stage229_i1_as_signed_rc": "NON_CLAIM",
+    "mvp_release_candidate_signed": "false",
+    "release_pipeline_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "rpprb-rc",
+      "title": "Mark signed MVP Release Candidate Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rpprb-pipeline",
+      "title": "Mark live release pipeline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rpprb-stage65-nonclaim",
+      "title": "Mark Stage 65 R1 as non-claim for signed RC",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rpprb-rc-remaining",
+      "title": "Signed RC / live pipeline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 248 B1 release pipeline pack RG blocker matrix packaging only. Signed MVP RC and live release pipeline Complete remain MISSING."
+}

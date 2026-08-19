@@ -1,0 +1,60 @@
+{
+  "id": "production-hypercare-pack-rg-pointers",
+  "stage": 264,
+  "pack": "P1",
+  "doc": "docs/PRODUCTION_HYPERCARE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PRODUCTION_HYPERCARE_PACK_REMAINING_GATE_MVP.md",
+    "production_hypercare": "docs/PRODUCTION_HYPERCARE_MVP.md",
+    "golive_attestation_pack_remaining_gate": "docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "production_launch_pack_remaining_gate": "docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md",
+    "production_hypercare_remaining_gate": "docs/PRODUCTION_HYPERCARE_REMAINING_GATE_MVP.md",
+    "production_hypercare_register": "ops/mvp/production-hypercare.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "production_hypercare_live_claimed": false,
+  "oncall_rota_live": false,
+  "go_live_claimed": false,
+  "support_sla_claimed": false,
+  "topics": [
+    "production_hypercare_stage67_h1",
+    "golive_attestation_pack_remaining_gate_stage263",
+    "production_launch_pack_remaining_gate_stage262",
+    "production_hypercare_remaining_gate_stage219",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "phprp-stage67",
+      "title": "Point to Stage 67 H1 production hypercare",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprp-stage263",
+      "title": "Point to Stage 263 go-live attestation pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprp-stage262",
+      "title": "Point to Stage 262 production launch pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprp-stage219",
+      "title": "Point to Stage 219 production hypercare remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "phprp-hypercare-remaining",
+      "title": "Live production hypercare Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 264 P1 production hypercare pack RG pointers packaging only. Do not claim live production hypercare Complete."
+}

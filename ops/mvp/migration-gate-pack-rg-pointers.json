@@ -1,0 +1,60 @@
+{
+  "id": "migration-gate-pack-rg-pointers",
+  "stage": 352,
+  "pack": "P1",
+  "doc": "docs/MIGRATION_GATE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MIGRATION_GATE_PACK_REMAINING_GATE_MVP.md",
+    "migration_gate": "docs/MIGRATION_GATE_MVP.md",
+    "quarterly_pos_ops_gates_pack_remaining_gate": "docs/QUARTERLY_POS_OPS_GATES_PACK_REMAINING_GATE_MVP.md",
+    "live_migration_pack_remaining_gate": "docs/LIVE_MIGRATION_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "migration_gate_stage169",
+    "quarterly_pos_ops_gates_pack_remaining_gate_stage351",
+    "live_migration_pack_remaining_gate_stage322",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "mgprp-stage169",
+      "title": "Point to Stage 169 migration gate packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprp-stage351",
+      "title": "Point to Stage 351 quarterly POS ops gates pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprp-stage322",
+      "title": "Point to Stage 322 live migration pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mgprp-checklist-remaining",
+      "title": "Live migration Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 352 P1 migration gate pack RG pointers packaging only. Do not claim live migration Complete."
+}

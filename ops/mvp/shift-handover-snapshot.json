@@ -1,0 +1,55 @@
+{
+  "id": "shift-handover-snapshot",
+  "stage": 175,
+  "pack": "S1",
+  "doc": "docs/SHIFT_HANDOVER_SNAPSHOT_MVP.md",
+  "related": {
+    "handover_checklist": "docs/SHIFT_HANDOVER_CHECKLIST_MVP.md",
+    "store_open_health": "docs/STORE_OPEN_HEALTH_MVP.md",
+    "store_close_drain": "docs/STORE_CLOSE_DRAIN_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "open_holds_count",
+    "pending_sync_depth",
+    "conflict_owners"
+  ],
+  "steps": [
+    {
+      "id": "ss-holds-count",
+      "title": "Count open Holds; note near-expiry soft-reserves",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-sync-depth",
+      "title": "Note pending sync queue depth",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-conflict-owners",
+      "title": "List conflict owners + Accept-client honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-escalate",
+      "title": "Escalate stuck conflicts via Stage 170 E1",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-offline-complete-remaining",
+      "title": "Offline Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 175 S1 shift snapshot packaging only. Offline Complete remains MISSING."
+}

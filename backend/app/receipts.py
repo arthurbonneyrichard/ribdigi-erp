@@ -13,6 +13,26 @@ from app.report_export import _pdf_escape
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
+RECEIPT_PRINT_TEMPLATES = frozenset({"thermal_80", "thermal_58"})
+RECEIPT_TEMPLATE_TO_PAPER = {"thermal_80": "80mm", "thermal_58": "58mm"}
+PAPER_TO_RECEIPT_TEMPLATE = {"80mm": "thermal_80", "58mm": "thermal_58"}
+
+
+def resolve_receipt_paper(
+    tenant: m.Tenant | None,
+    paper: str | None = None,
+    company: m.Company | None = None,
+) -> str:
+    """Resolve POS receipt paper width from explicit paper or company/tenant default template."""
+    if paper in THERMAL_WIDTHS:
+        return paper  # type: ignore[return-value]
+    from app.print_branding import print_templates_for_serialize
+
+    tpl = print_templates_for_serialize(tenant, company)["receipt_print_template"]
+    tpl = (tpl or "thermal_80").strip().lower()
+    if tpl not in RECEIPT_PRINT_TEMPLATES:
+        tpl = "thermal_80"
+    return RECEIPT_TEMPLATE_TO_PAPER[tpl]
 
 
 def _money(value: float) -> str:
@@ -56,7 +76,10 @@ def build_receipt_payload(
     tx: m.Transaction,
     tenant: m.Tenant | None,
     cashier_name: str | None = None,
+    company: m.Company | None = None,
 ) -> dict[str, Any]:
+    from app.print_branding import tenant_document_brand
+
     payload = tx.payload or {}
     items = payload.get("items") or []
     normalized_items = []
@@ -87,19 +110,37 @@ def build_receipt_payload(
                 "variant_id": raw.get("variant_id"),
             }
         )
+    brand = tenant_document_brand(tenant, company)
+    default_paper = resolve_receipt_paper(tenant, company=company)
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
-        "company_name": tenant.company_name if tenant else "RIBDIGI ERP",
-        "company_phone": tenant.phone if tenant else None,
-        "company_address": tenant.address if tenant else None,
-        "currency": tenant.currency if tenant else "GHS",
+        "company_name": brand["company_name"],
+        "legal_name": brand["legal_name"],
+        "trading_name": brand["trading_name"],
+        "has_logo": brand["has_logo"],
+        "logo_data_url": brand["logo_data_url"],
+        "document_header": brand["document_header"],
+        "document_footer": brand["document_footer"],
+        "receipt_print_template": PAPER_TO_RECEIPT_TEMPLATE.get(default_paper, "thermal_80"),
+        "default_paper": default_paper,
+        "company_phone": brand["company_phone"]
+        or (getattr(company, "phone", None) if company else None)
+        or (tenant.phone if tenant else None),
+        "company_address": brand["company_address"]
+        or (getattr(company, "address", None) if company else None)
+        or (tenant.address if tenant else None),
+        "currency": (getattr(company, "currency", None) if company else None)
+        or (tenant.currency if tenant else "GHS"),
         "cashier_name": cashier_name,
+        "customer_name": payload.get("customer_name"),
         "subtotal": float(tx.subtotal or 0),
         "tax": float(tx.tax or 0),
+        "discount_amount": float(payload.get("discount_amount") or 0),
         "total": float(tx.total or 0),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
+        "payments": payload.get("payments") or [],
         "session_id": payload.get("session_id"),
         "created_at": tx.created_at,
         "format": "json",
@@ -107,13 +148,21 @@ def build_receipt_payload(
 
 
 def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
+    from app.print_branding import header_footer_text_lines
+
     width = THERMAL_WIDTHS.get(paper, THERMAL_WIDTHS["80mm"])
     lines: list[str] = []
     lines.append(_center(str(receipt.get("company_name") or "RIBDIGI ERP"), width))
+    if receipt.get("trading_name"):
+        lines.append(_center(f"T/A {receipt['trading_name']}", width))
+    if receipt.get("has_logo") or receipt.get("logo_data_url"):
+        lines.append(_center("[Company logo on file]", width))
     if receipt.get("company_address"):
         lines.extend(_wrap(str(receipt["company_address"]), width))
     if receipt.get("company_phone"):
         lines.append(_center(str(receipt["company_phone"]), width))
+    for part in header_footer_text_lines(receipt.get("document_header"), width):
+        lines.append(_center(part, width))
     lines.append("-" * width)
     lines.append(_lr("Sale", str(receipt.get("reference") or ""), width))
     created = receipt.get("created_at")
@@ -123,6 +172,8 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         lines.append(_lr("Date", str(created)[:16], width))
     if receipt.get("cashier_name"):
         lines.append(_lr("Cashier", str(receipt["cashier_name"])[: width // 2], width))
+    if receipt.get("customer_name"):
+        lines.append(_lr("Customer", str(receipt["customer_name"])[: width // 2], width))
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
@@ -136,11 +187,30 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     currency = receipt.get("currency") or ""
     lines.append(_lr("Subtotal", _money(receipt.get("subtotal") or 0), width))
     lines.append(_lr("Tax", _money(receipt.get("tax") or 0), width))
+    discount = float(receipt.get("discount_amount") or 0)
+    if discount > 0:
+        lines.append(_lr("Discount", _money(discount), width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))
-    lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
+    payments = receipt.get("payments") or []
+    if len(payments) > 1:
+        lines.append(_center("Payments", width))
+        for pay in payments:
+            method = str(pay.get("payment_method") or "cash").upper()
+            lines.append(_lr(method, _money(pay.get("amount") or 0), width))
+    else:
+        lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
     lines.append("-" * width)
-    lines.append(_center("Thank you", width))
-    lines.append(_center("Powered by RIBDIGI", width))
+    footer_lines = header_footer_text_lines(receipt.get("document_footer"), width)
+    if footer_lines:
+        for part in footer_lines:
+            lines.append(_center(part, width))
+    else:
+        lines.append(_center("Thank you", width))
+    from app.print_branding import platform_print_footer_text_lines
+
+    for part in platform_print_footer_text_lines(width=width, center=True):
+        if part:
+            lines.append(part)
     lines.append("")
     return "\n".join(lines)
 
@@ -214,6 +284,7 @@ async def build_sale_receipt(
     tenant_id: str,
     sale_id: str,
     user_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict[str, Any]:
     from sqlalchemy import select
 
@@ -228,9 +299,19 @@ async def build_sale_receipt(
     ).scalar_one_or_none()
     if not tx:
         raise HTTPException(status_code=404, detail="POS sale not found")
+    if company_id and tx.company_id and tx.company_id != company_id:
+        raise HTTPException(status_code=404, detail="POS sale not found")
     tenant = await db.get(m.Tenant, tenant_id)
+    company = None
+    cid = company_id or getattr(tx, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if company and company.tenant_id != tenant_id:
+            company = None
     cashier_name = None
     if user_id:
         user = await db.get(m.User, user_id)
         cashier_name = user.full_name if user else None
-    return build_receipt_payload(tx=tx, tenant=tenant, cashier_name=cashier_name)
+    return build_receipt_payload(
+        tx=tx, tenant=tenant, cashier_name=cashier_name, company=company
+    )

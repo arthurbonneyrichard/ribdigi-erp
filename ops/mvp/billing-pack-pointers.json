@@ -1,0 +1,61 @@
+{
+  "id": "billing-pack-pointers",
+  "stage": 181,
+  "pack": "P1",
+  "doc": "docs/BILLING_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BILLING_REMAINING_GATE_MVP.md",
+    "adr002": "docs/ADR_002_BILLING_DEFERRED.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "billing_deferred_register": "ops/mvp/billing-deferred-honesty.json",
+    "commercial_billing_deferred": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md",
+    "golive_remaining_gate": "docs/GOLIVE_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "mrr_fabricated_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "adr002_billing_deferred",
+    "billing_deferred_honesty",
+    "commercial_billing_deferred",
+    "golive_remaining_gate_stage180",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "bp-adr002",
+      "title": "Point to ADR-002 billing deferred",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bp-honesty",
+      "title": "Point to Stage 36 billing deferred honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bp-commercial",
+      "title": "Point to Stage 76 commercial billing deferred",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bp-golive-gate",
+      "title": "Point to Stage 180 go-live remaining-gate (billing deferred)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bp-billing-remaining",
+      "title": "Billing Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 181 P1 billing pack pointers packaging only. Do not claim billing Complete."
+}

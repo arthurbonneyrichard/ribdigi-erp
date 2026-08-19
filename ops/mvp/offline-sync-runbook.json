@@ -1,0 +1,31 @@
+{
+  "id": "offline-sync-runbook",
+  "stage": 169,
+  "pack": "R1",
+  "doc": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+  "attestation_doc": "docs/OFFLINE_COMPLETE_ATTESTATION.md",
+  "attestation_register": "ops/mvp/offline-complete-attestation.json",
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "procedures": [
+    "register_bind_device",
+    "offline_pos_sale_flush",
+    "offline_catalog_ttl",
+    "conflict_resolve",
+    "device_revoke_mid_queue",
+    "hold_soft_reserve_expiry"
+  ],
+  "stage_refs": [
+    "docs/STAGE_163_FIDELITY.md",
+    "docs/STAGE_164_FIDELITY.md",
+    "docs/STAGE_165_FIDELITY.md",
+    "docs/STAGE_166_FIDELITY.md",
+    "docs/STAGE_167_FIDELITY.md",
+    "docs/STAGE_168_FIDELITY.md"
+  ],
+  "evidence": [
+    "backend/tests/test_stage169_offline_runbook_r1.py"
+  ],
+  "message": "Stage 169 R1 operator runbook packaging only. Offline Complete remains MISSING."
+}

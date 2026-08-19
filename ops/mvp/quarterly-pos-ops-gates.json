@@ -1,0 +1,61 @@
+{
+  "id": "quarterly-pos-ops-gates",
+  "stage": 178,
+  "pack": "G1",
+  "doc": "docs/QUARTERLY_POS_OPS_GATES_MVP.md",
+  "related": {
+    "quarterly_review": "docs/QUARTERLY_POS_OPS_REVIEW_MVP.md",
+    "offline_complete_attestation": "docs/OFFLINE_COMPLETE_ATTESTATION.md",
+    "migration_gate": "docs/MIGRATION_GATE_MVP.md",
+    "migration_gate_register": "ops/mvp/migration-gate.json",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "launch_checklist": "docs/LAUNCH_CHECKLIST.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "attestation_claimed": false,
+  "live_migration_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "sections_1_3_verified": false,
+  "section_7_signed": false,
+  "topics": [
+    "offline_complete_remaining",
+    "migration_gate_schedule_pointer",
+    "support_readiness_residual",
+    "go_live_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "qg-offline-complete",
+      "title": "Re-read Offline Complete attestation; keep claims false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qg-migration-gate",
+      "title": "Point to migration gate before schema upgrades",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qg-support-residual",
+      "title": "Re-read support readiness; support_sla false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qg-golive-nonclaim",
+      "title": "Confirm LAUNCH §§1–3 / §7 / go-live flags false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qg-remaining",
+      "title": "Offline Complete / live migration / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 178 G1 quarterly gate honesty packaging only. Do not claim Offline Complete or go-live."
+}

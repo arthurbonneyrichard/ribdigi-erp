@@ -1,0 +1,159 @@
+{
+  "stage": "62",
+  "workstream": "A1",
+  "doc": "docs/AI_MODEL_MARKETPLACE_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "ai_metrics": "ops/mvp/ai-metrics.json",
+  "ai_metrics_doc": "docs/AI_METRICS_MVP.md",
+  "ai_provider_boundary": "ops/mvp/ai-provider-boundary.json",
+  "ai_provider_boundary_doc": "docs/AI_PROVIDER_BOUNDARY_MVP.md",
+  "ai_use_disclosure": "ops/mvp/ai-use-disclosure.json",
+  "ai_use_disclosure_doc": "docs/AI_USE_DISCLOSURE_MVP.md",
+  "marketplace_presence": "ops/mvp/marketplace-presence.json",
+  "marketplace_presence_doc": "docs/MARKETPLACE_PRESENCE_MVP.md",
+  "addon_services": "ops/mvp/addon-services.json",
+  "addon_services_doc": "docs/ADDON_SERVICES_MVP.md",
+  "iot_integration": "ops/mvp/iot-integration.json",
+  "iot_integration_doc": "docs/IOT_INTEGRATION_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage62_plan": "docs/STAGE_62_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "ai_model_marketplace_live_claimed": false,
+  "industry_prediction_marketplace_claimed": false,
+  "model_vendor_catalog_live": false,
+  "ai_marketplace_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage62_a1_ai_model_marketplace.json",
+  "steps": [
+    {
+      "id": "aim-product-overview",
+      "category": "ai",
+      "title": "Index PRODUCT_OVERVIEW AI model marketplace / industry-prediction Long-Term themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_62_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "aim-ai-metrics",
+      "category": "ai",
+      "title": "Link Stage 58 AI metrics as measurement adjacency (not industry-prediction marketplace live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/AI_METRICS_MVP.md",
+        "ops/mvp/ai-metrics.json"
+      ],
+      "source": "docs/AI_METRICS_MVP.md"
+    },
+    {
+      "id": "aim-provider-boundary",
+      "category": "ai",
+      "title": "Link Stage 42 AI provider boundary as provider adjacency (external LLM Remaining \u2260 model marketplace)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/AI_PROVIDER_BOUNDARY_MVP.md",
+        "ops/mvp/ai-provider-boundary.json"
+      ],
+      "source": "docs/AI_PROVIDER_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "aim-use-disclosure",
+      "category": "ai",
+      "title": "Link Stage 42 AI use disclosure as transparency adjacency (not model-vendor catalog live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/AI_USE_DISCLOSURE_MVP.md",
+        "ops/mvp/ai-use-disclosure.json"
+      ],
+      "source": "docs/AI_USE_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "aim-marketplace-presence",
+      "category": "marketplace",
+      "title": "Link Stage 51 marketplace presence as channel adjacency (SaaS listing \u2260 AI model marketplace)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MARKETPLACE_PRESENCE_MVP.md",
+        "ops/mvp/marketplace-presence.json"
+      ],
+      "source": "docs/MARKETPLACE_PRESENCE_MVP.md"
+    },
+    {
+      "id": "aim-addon-services",
+      "category": "marketplace",
+      "title": "Link Stage 51 add-on services as catalog adjacency (add-ons \u2260 prediction marketplace)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADDON_SERVICES_MVP.md",
+        "ops/mvp/addon-services.json"
+      ],
+      "source": "docs/ADDON_SERVICES_MVP.md"
+    },
+    {
+      "id": "aim-iot-adjacency",
+      "category": "honesty",
+      "title": "Link Stage 62 I1 IoT pack as ops adjacency (sensors \u2260 AI marketplace live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/IOT_INTEGRATION_MVP.md",
+        "ops/mvp/iot-integration.json"
+      ],
+      "source": "docs/IOT_INTEGRATION_MVP.md"
+    },
+    {
+      "id": "aim-plan-honesty",
+      "category": "ai",
+      "title": "Confirm Stage 62 plan explicitly defers live AI model marketplace / industry predictions",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_62_PLAN.md",
+        "docs/AI_MODEL_MARKETPLACE_MVP.md"
+      ],
+      "source": "docs/STAGE_62_PLAN.md"
+    },
+    {
+      "id": "aim-prediction-marketplace-remaining",
+      "category": "honesty",
+      "title": "Live industry-prediction marketplace Remaining \u2014 packaging \u2260 shipped model catalog",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_62_PLAN.md",
+        "docs/AI_MODEL_MARKETPLACE_MVP.md"
+      ],
+      "source": "docs/STAGE_62_PLAN.md"
+    },
+    {
+      "id": "aim-marketplace-program-remaining",
+      "category": "honesty",
+      "title": "Live AI model marketplace / program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_62_PLAN.md",
+        "docs/AI_MODEL_MARKETPLACE_MVP.md"
+      ],
+      "source": "docs/STAGE_62_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live AI model marketplace Complete",
+    "Live industry-specific prediction marketplace Complete",
+    "Live model-vendor catalog Complete",
+    "AI marketplace program live Complete",
+    "External LLM / Prophet / AI certification Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

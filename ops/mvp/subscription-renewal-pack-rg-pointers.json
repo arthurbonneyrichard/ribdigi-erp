@@ -1,0 +1,59 @@
+{
+  "id": "subscription-renewal-pack-rg-pointers",
+  "stage": 272,
+  "pack": "P1",
+  "doc": "docs/SUBSCRIPTION_RENEWAL_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SUBSCRIPTION_RENEWAL_PACK_REMAINING_GATE_MVP.md",
+    "subscription_renewal": "docs/SUBSCRIPTION_RENEWAL_MVP.md",
+    "billing_deferred_pack_remaining_gate": "docs/BILLING_DEFERRED_PACK_REMAINING_GATE_MVP.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "billing_deferred_adr": "docs/ADR_002_BILLING_DEFERRED.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "subscriptions_live_claimed": false,
+  "annual_discount_enforcement_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "subscription_renewal_stage52_r1",
+    "billing_deferred_pack_remaining_gate_stage271",
+    "billing_deferred_honesty_stage36",
+    "billing_deferred_adr002",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "srprp-stage52",
+      "title": "Point to Stage 52 R1 subscription renewal",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-stage271",
+      "title": "Point to Stage 271 billing deferred pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-stage36",
+      "title": "Point to Stage 36 billing-deferred honesty adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-adr002",
+      "title": "Point to ADR-002 billing deferred adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "srprp-subscriptions-remaining",
+      "title": "Live subscriptions Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 272 P1 subscription renewal pack RG pointers packaging only. Do not claim live subscriptions Complete."
+}

@@ -1,0 +1,57 @@
+{
+  "id": "loadtest-baseline-pack-remaining-gate",
+  "stage": 328,
+  "pack": "I1",
+  "doc": "docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LOADTEST_BASELINE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LOADTEST_BASELINE_PACK_RG_POINTERS_MVP.md",
+    "loadtest_baseline_remaining_gate": "docs/LOADTEST_BASELINE_REMAINING_GATE_MVP.md",
+    "ops_monitoring_pack_remaining_gate": "docs/OPS_MONITORING_PACK_REMAINING_GATE_MVP.md",
+    "hosted_faq_saas_pack_remaining_gate": "docs/HOSTED_FAQ_SAAS_PACK_REMAINING_GATE_MVP.md",
+    "load_test_baseline": "docs/LOAD_TEST_BASELINE.md"
+  },
+  "packaging_complete": true,
+  "certified_load_claimed": false,
+  "live_load_capacity_claimed": false,
+  "operator_1000vu_executed": false,
+  "load_cert_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage225_loadtest_baseline_remaining_gate": true,
+  "distinct_from_loadtest_baseline_rg_pointers": true,
+  "distinct_from_load_capacity_pack": true,
+  "distinct_from_stage327_ops_monitoring_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ltbpr-read-blockers",
+      "title": "Read B1 loadtest baseline pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbpr-follow-pointers",
+      "title": "Follow P1 Stage 225 / Stage 327 / Stage 326 / Stage 5 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbpr-load-missing",
+      "title": "Reaffirm certified load / live capacity MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbpr-no-packaging-as-live",
+      "title": "Do not treat Stage 225 / Stage 5 / Stage 18 / Stage 327 as live certified load Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ltbpr-load-remaining",
+      "title": "Certified load / live load capacity / operator 1000-VU / load cert / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 328 I1 loadtest baseline pack remaining-gate index packaging only. Do not claim live certified load Complete."
+}

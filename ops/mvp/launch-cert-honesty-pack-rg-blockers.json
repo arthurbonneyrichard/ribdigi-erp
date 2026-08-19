@@ -1,0 +1,77 @@
+{
+  "id": "launch-cert-honesty-pack-rg-blockers",
+  "stage": 426,
+  "pack": "B1",
+  "doc": "docs/LAUNCH_CERT_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LAUNCH_CERT_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "launch_cert_pack_remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "launch_cert_honesty_complete_claimed": false,
+  "launch_cert_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "launch_cert_honesty_complete_claimed": "REMAINING",
+    "launch_cert_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_launch_cert_honesty": "NON_CLAIM",
+    "stage27_launch_cert_pack_as_launch_cert_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "launch_cert_honesty_complete_claimed_flag": "false",
+    "launch_cert_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "lnchprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lnchprb-honesty",
+      "title": "Mark Launch Cert honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lnchprb-as-golive",
+      "title": "Mark Launch Cert as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lnchprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lnchprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lnchprb-stage27-nonclaim",
+      "title": "Mark Stage 27 LAUNCH_CERT_PACK as non-claim for launch-cert Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lnchprb-checklist-remaining",
+      "title": "Offline Complete / Launch Cert / Launch Cert honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 426 B1 Launch Cert Honesty Pack RG blocker matrix packaging only."
+}

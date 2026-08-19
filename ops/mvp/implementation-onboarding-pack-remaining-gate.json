@@ -1,0 +1,58 @@
+{
+  "id": "implementation-onboarding-pack-remaining-gate",
+  "stage": 247,
+  "pack": "I1",
+  "doc": "docs/IMPLEMENTATION_ONBOARDING_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/IMPLEMENTATION_ONBOARDING_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/IMPLEMENTATION_ONBOARDING_PACK_RG_POINTERS_MVP.md",
+    "implementation_onboarding": "docs/IMPLEMENTATION_ONBOARDING_MVP.md",
+    "business_pilot_pack_remaining_gate": "docs/BUSINESS_PILOT_PACK_REMAINING_GATE_MVP.md",
+    "professional_services_sow_pack_remaining_gate": "docs/PROFESSIONAL_SERVICES_SOW_PACK_REMAINING_GATE_MVP.md",
+    "professional_services_sow": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+    "implementation_onboarding_register": "ops/mvp/implementation-onboarding.json"
+  },
+  "packaging_complete": true,
+  "data_migration_fee_billing_live": false,
+  "onsite_training_delivery_claimed": false,
+  "custom_workflow_sold_claimed": false,
+  "implementation_onboarding_program_live": false,
+  "go_live_claimed": false,
+  "distinct_from_stage56_o1_implementation_onboarding": true,
+  "distinct_from_stage246_business_pilot_pack_remaining_gate": true,
+  "distinct_from_stage243_professional_services_sow_pack_remaining_gate": true,
+  "distinct_from_stage48_professional_services_sow": true,
+  "steps": [
+    {
+      "id": "iopr-read-blockers",
+      "title": "Read B1 implementation onboarding pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "iopr-follow-pointers",
+      "title": "Follow P1 Stage 56 / Stage 246 / Stage 243 / Stage 48 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "iopr-impl-missing",
+      "title": "Reaffirm live implementation onboarding MISSING until real migration fee / on-site training ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "iopr-no-packaging-as-live",
+      "title": "Do not treat Stage 56 O1 / Stage 246 as live implementation onboarding Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "iopr-impl-remaining",
+      "title": "Live implementation onboarding / training delivery / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 247 I1 implementation onboarding pack remaining-gate index packaging only. Do not claim live implementation onboarding Complete."
+}

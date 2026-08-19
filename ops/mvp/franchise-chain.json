@@ -1,0 +1,157 @@
+{
+  "stage": "64",
+  "workstream": "F1",
+  "doc": "docs/FRANCHISE_CHAIN_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "white_label_licensing": "ops/mvp/white-label-licensing.json",
+  "white_label_licensing_doc": "docs/WHITE_LABEL_LICENSING_MVP.md",
+  "partner_reseller": "ops/mvp/partner-reseller.json",
+  "partner_reseller_doc": "docs/PARTNER_RESELLER_MVP.md",
+  "direct_sales": "ops/mvp/direct-sales.json",
+  "direct_sales_doc": "docs/DIRECT_SALES_MVP.md",
+  "industry_partnerships": "ops/mvp/industry-partnerships.json",
+  "industry_partnerships_doc": "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+  "advanced_bi": "ops/mvp/advanced-bi.json",
+  "advanced_bi_doc": "docs/ADVANCED_BI_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage64_plan": "docs/STAGE_64_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "franchise_chain_live_claimed": false,
+  "chain_enterprise_deals_claimed": false,
+  "franchise_deal_program_live": false,
+  "franchise_network_live_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage64_f1_franchise_chain.json",
+  "steps": [
+    {
+      "id": "fc-product-overview",
+      "category": "franchise",
+      "title": "Index PRODUCT_OVERVIEW Phase 3 franchise / chain enterprise deal themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_64_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "fc-white-label",
+      "category": "franchise",
+      "title": "Link Stage 55 white-label licensing as revenue adjacency (franchise share Remaining \u2260 franchise deals Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/WHITE_LABEL_LICENSING_MVP.md",
+        "ops/mvp/white-label-licensing.json"
+      ],
+      "source": "docs/WHITE_LABEL_LICENSING_MVP.md"
+    },
+    {
+      "id": "fc-partner-reseller",
+      "category": "channel",
+      "title": "Link Stage 49 partner / reseller as channel adjacency (partner program Remaining \u2260 franchise network live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PARTNER_RESELLER_MVP.md",
+        "ops/mvp/partner-reseller.json"
+      ],
+      "source": "docs/PARTNER_RESELLER_MVP.md"
+    },
+    {
+      "id": "fc-direct-sales",
+      "category": "channel",
+      "title": "Link Stage 54 direct sales as Enterprise adjacency (pipeline Remaining \u2260 chain enterprise deals)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DIRECT_SALES_MVP.md",
+        "ops/mvp/direct-sales.json"
+      ],
+      "source": "docs/DIRECT_SALES_MVP.md"
+    },
+    {
+      "id": "fc-industry-partnerships",
+      "category": "channel",
+      "title": "Link Stage 52 industry partnerships as association adjacency (signed deals Remaining \u2260 franchise deals)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INDUSTRY_PARTNERSHIPS_MVP.md",
+        "ops/mvp/industry-partnerships.json"
+      ],
+      "source": "docs/INDUSTRY_PARTNERSHIPS_MVP.md"
+    },
+    {
+      "id": "fc-advanced-bi",
+      "category": "analytics",
+      "title": "Link Stage 64 B1 Advanced BI as analytics adjacency (BI packaging \u2260 franchise deals Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADVANCED_BI_MVP.md",
+        "ops/mvp/advanced-bi.json"
+      ],
+      "source": "docs/ADVANCED_BI_MVP.md"
+    },
+    {
+      "id": "fc-plan-honesty",
+      "category": "franchise",
+      "title": "Confirm Stage 64 plan explicitly defers live franchise / chain enterprise deals",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_64_PLAN.md",
+        "docs/FRANCHISE_CHAIN_MVP.md"
+      ],
+      "source": "docs/STAGE_64_PLAN.md"
+    },
+    {
+      "id": "fc-franchise-remaining",
+      "category": "honesty",
+      "title": "Live franchise / chain enterprise deals Remaining \u2014 packaging \u2260 signed franchise network",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_64_PLAN.md",
+        "docs/FRANCHISE_CHAIN_MVP.md"
+      ],
+      "source": "docs/STAGE_64_PLAN.md"
+    },
+    {
+      "id": "fc-chain-deals-remaining",
+      "category": "honesty",
+      "title": "Chain enterprise deals / franchise deal program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_64_PLAN.md",
+        "docs/FRANCHISE_CHAIN_MVP.md"
+      ],
+      "source": "docs/STAGE_64_PLAN.md"
+    },
+    {
+      "id": "fc-network-remaining",
+      "category": "honesty",
+      "title": "Franchise network live / white-label franchise revenue-share Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_64_PLAN.md",
+        "docs/WHITE_LABEL_LICENSING_MVP.md"
+      ],
+      "source": "docs/STAGE_64_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live franchise / chain enterprise deals Complete",
+    "Franchise deal program live Complete",
+    "Franchise network live Complete",
+    "Chain enterprise deals Complete",
+    "Live white-label franchise revenue-share billing Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

@@ -10,12 +10,66 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
+from app.document_numbering import (
+    normalize_document_numbering,
+    preview_document_numbering,
+    merge_document_numbering,
+    numbering_source_for_serialize,
+)
+from app.platform_const import PLATFORM_TENANT_ID
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
+VALID_PLAN_CODES = frozenset({"trial", "starter", "growth", "enterprise"})
 VALID_INDUSTRIES = frozenset(
     {"retail", "pharmacy", "restaurant", "bakery", "wholesale", "manufacturing", "mart"}
 )
 TRIAL_REMINDER_DAYS = (7, 3, 1)
+
+# Stage 89 C1 — commercial metadata catalog only (no prices / checkout / fabricated MRR).
+PLAN_CATALOG: dict[str, dict] = {
+    "trial": {
+        "code": "trial",
+        "label": "Trial",
+        "blurb": "Evaluation window for new customer tenants.",
+        "soft_limits": {"stores": 1, "users": 5},
+    },
+    "starter": {
+        "code": "starter",
+        "label": "Starter",
+        "blurb": "Single-location retail operations metadata tier.",
+        "soft_limits": {"stores": 2, "users": 15},
+    },
+    "growth": {
+        "code": "growth",
+        "label": "Growth",
+        "blurb": "Multi-store growth metadata tier.",
+        "soft_limits": {"stores": 10, "users": 50},
+    },
+    "enterprise": {
+        "code": "enterprise",
+        "label": "Enterprise",
+        "blurb": "Large-org metadata tier (limits negotiated offline).",
+        "soft_limits": {"stores": None, "users": None},
+    },
+}
+
+
+def plan_catalog_items() -> list[dict]:
+    return [dict(PLAN_CATALOG[code]) for code in sorted(VALID_PLAN_CODES)]
+
+
+def industry_catalog_items() -> list[dict]:
+    """Stage 93 M1 — canonical industry catalog for House roster filters/provisioning."""
+    return [{"code": code, "label": code.replace("_", " ").title()} for code in sorted(VALID_INDUSTRIES)]
+
+
+def assert_mutable_customer_tenant(tenant: m.Tenant) -> None:
+    """Refuse lifecycle mutations against the reserved Ribdigi House tenant (ADR-137)."""
+    if tenant.id == PLATFORM_TENANT_ID or (tenant.slug or "") == PLATFORM_TENANT_ID:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot suspend or alter lifecycle of the Ribdigi House platform tenant",
+        )
 
 
 def default_trial_ends_at(from_dt: datetime | None = None) -> datetime:
@@ -35,7 +89,11 @@ def is_read_only(tenant: m.Tenant) -> bool:
     return tenant.status == "grace"
 
 
-def serialize_tenant(tenant: m.Tenant) -> dict:
+def serialize_tenant(tenant: m.Tenant, *, company: m.Company | None = None) -> dict:
+    numbering_raw = numbering_source_for_serialize(tenant, company)
+    from app.print_branding import print_templates_for_serialize
+
+    print_tpl = print_templates_for_serialize(tenant, company)
     now = datetime.utcnow()
     days_left = None
     if tenant.status == "trial":
@@ -52,15 +110,34 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "tax_registration_number": getattr(tenant, "tax_registration_number", None),
         "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
         "status": tenant.status,
+        "plan_code": getattr(tenant, "plan_code", None) or "trial",
+        "billing_deferred": True,
+        "billing_provider": None,
+        "plan_codes": sorted(VALID_PLAN_CODES),
+        "legal_name": getattr(tenant, "legal_name", None),
+        "registration_number": getattr(tenant, "registration_number", None),
         "phone": tenant.phone,
         "email": tenant.email,
         "website": tenant.website,
         "address": tenant.address,
+        "billing_address": getattr(tenant, "billing_address", None),
+        "shipping_address": getattr(tenant, "shipping_address", None),
+        "warehouse_address": getattr(tenant, "warehouse_address", None),
+        "contact_person_name": getattr(tenant, "contact_person_name", None),
+        "contact_person_email": getattr(tenant, "contact_person_email", None),
+        "contact_person_phone": getattr(tenant, "contact_person_phone", None),
+        "inactivity_timeout_minutes": int(getattr(tenant, "inactivity_timeout_minutes", None) or 30),
+        "date_format": getattr(tenant, "date_format", None) or "DD/MM/YYYY",
+        "number_format": getattr(tenant, "number_format", None) or "1,234.56",
+        "time_format": getattr(tenant, "time_format", None) or "24h",
         "timezone": tenant.timezone or "Africa/Accra",
         "fiscal_year_start": tenant.fiscal_year_start or "01-01",
         "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
         "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
         "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
+        "purchase_request_approval_matrix": getattr(
+            tenant, "purchase_request_approval_matrix", None
+        ),
         "early_pay_discount_pct": float(getattr(tenant, "early_pay_discount_pct", None) or 0),
         "early_pay_discount_days": int(getattr(tenant, "early_pay_discount_days", None) or 0),
         "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),
@@ -72,6 +149,16 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "grace_days": int(settings.TRIAL_GRACE_DAYS),
         "logo_url": tenant.logo_url,
         "has_logo": bool(tenant.logo_url),
+        "document_numbering": normalize_document_numbering(numbering_raw),
+        "document_numbering_preview": preview_document_numbering(numbering_raw),
+        "document_numbering_scope": "company" if company is not None else "tenant",
+        "document_numbering_company_id": company.id if company is not None else None,
+        "invoice_print_template": print_tpl["invoice_print_template"],
+        "receipt_print_template": print_tpl["receipt_print_template"],
+        "document_header": print_tpl["document_header"],
+        "document_footer": print_tpl["document_footer"],
+        "print_templates_scope": "company" if company is not None else "tenant",
+        "print_templates_company_id": company.id if company is not None else None,
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "created_at": tenant.created_at,
@@ -134,6 +221,7 @@ async def suspend_tenant(
     *,
     reason: str | None = None,
 ) -> m.Tenant:
+    assert_mutable_customer_tenant(tenant)
     if tenant.status == "suspended":
         raise HTTPException(status_code=400, detail="Tenant is already suspended")
     tenant.status = "suspended"
@@ -147,6 +235,8 @@ async def suspend_tenant(
 
 async def enter_grace(db: AsyncSession, tenant: m.Tenant, *, now: datetime | None = None) -> m.Tenant:
     now = now or datetime.utcnow()
+    if tenant.id == PLATFORM_TENANT_ID:
+        return tenant
     if tenant.status == "grace":
         return tenant
     if tenant.status not in {"trial"}:
@@ -162,6 +252,7 @@ async def enter_grace(db: AsyncSession, tenant: m.Tenant, *, now: datetime | Non
 
 
 async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
+    assert_mutable_customer_tenant(tenant)
     if tenant.status == "active":
         raise HTTPException(status_code=400, detail="Tenant is already active")
     if tenant.status not in {"suspended", "trial", "grace"}:
@@ -174,8 +265,49 @@ async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     return tenant
 
 
+async def extend_trial(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    days: int,
+    now: datetime | None = None,
+) -> m.Tenant:
+    """House ops: extend or reopen trial window (metadata lifecycle — not paid billing)."""
+    assert_mutable_customer_tenant(tenant)
+    days = int(days)
+    if days < 1 or days > 365:
+        raise HTTPException(status_code=400, detail="extend_trial_days must be between 1 and 365")
+    now = now or datetime.utcnow()
+    base = tenant.trial_ends_at or now
+    if base < now:
+        base = now
+    tenant.trial_ends_at = base + timedelta(days=days)
+    # Returning to trial from grace/suspended is an operator lifecycle action (not checkout).
+    if tenant.status in {"grace", "suspended", "trial"}:
+        tenant.status = "trial"
+        tenant.suspended_at = None
+        tenant.suspended_reason = None
+        tenant.grace_ends_at = None
+    elif tenant.status == "active":
+        # Keep active; only push trial_ends_at for roster visibility / future grace.
+        pass
+    else:
+        raise HTTPException(status_code=400, detail=f"Cannot extend trial from status {tenant.status}")
+    await db.flush()
+    return tenant
+
+
 async def ensure_trial_state(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     """Apply overdue trial→grace or grace→suspend transitions (idempotent)."""
+    if tenant.id == PLATFORM_TENANT_ID:
+        # Platform tenant must remain operable for Ribdigi House staff (ADR-137).
+        if tenant.status != "active":
+            tenant.status = "active"
+            tenant.suspended_at = None
+            tenant.suspended_reason = None
+            tenant.grace_ends_at = None
+            await db.flush()
+        return tenant
     now = datetime.utcnow()
     if tenant.status == "trial" and tenant.trial_ends_at and tenant.trial_ends_at <= now:
         await enter_grace(db, tenant, now=now)
@@ -281,6 +413,26 @@ async def update_profile(
     tax_jurisdiction: str | None = None,
     tax_registration_number: str | None = None,
     tax_filing_period: str | None = None,
+    document_numbering: dict | None = None,
+    document_numbering_company: m.Company | None = None,
+    invoice_print_template: str | None = None,
+    receipt_print_template: str | None = None,
+    document_header: str | None = None,
+    document_footer: str | None = None,
+    print_templates_company: m.Company | None = None,
+    plan_code: str | None = None,
+    legal_name: str | None = None,
+    registration_number: str | None = None,
+    billing_address: str | None = None,
+    shipping_address: str | None = None,
+    warehouse_address: str | None = None,
+    contact_person_name: str | None = None,
+    contact_person_email: str | None = None,
+    contact_person_phone: str | None = None,
+    inactivity_timeout_minutes: int | None = None,
+    date_format: str | None = None,
+    number_format: str | None = None,
+    time_format: str | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         name = company_name.strip()
@@ -331,12 +483,180 @@ async def update_profile(
         if period not in {"monthly", "quarterly"}:
             raise HTTPException(status_code=400, detail="tax_filing_period must be monthly or quarterly")
         tenant.tax_filing_period = period
+    if document_numbering is not None:
+        if document_numbering_company is not None:
+            # Seed from tenant if company series empty so merges preserve counters.
+            existing = getattr(document_numbering_company, "document_numbering", None)
+            if not existing:
+                existing = getattr(tenant, "document_numbering", None)
+            document_numbering_company.document_numbering = merge_document_numbering(
+                existing, document_numbering
+            )
+        else:
+            tenant.document_numbering = merge_document_numbering(
+                getattr(tenant, "document_numbering", None), document_numbering
+            )
+    if invoice_print_template is not None:
+        from app.sales import INVOICE_PRINT_TEMPLATES
+
+        tpl = invoice_print_template.strip().lower()
+        if tpl not in INVOICE_PRINT_TEMPLATES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"invoice_print_template must be one of: {sorted(INVOICE_PRINT_TEMPLATES)}",
+            )
+        if print_templates_company is not None:
+            print_templates_company.invoice_print_template = tpl
+        else:
+            tenant.invoice_print_template = tpl
+    if receipt_print_template is not None:
+        from app.receipts import RECEIPT_PRINT_TEMPLATES
+
+        rtpl = receipt_print_template.strip().lower()
+        if rtpl not in RECEIPT_PRINT_TEMPLATES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"receipt_print_template must be one of: {sorted(RECEIPT_PRINT_TEMPLATES)}",
+            )
+        if print_templates_company is not None:
+            print_templates_company.receipt_print_template = rtpl
+        else:
+            tenant.receipt_print_template = rtpl
+    if document_header is not None:
+        header = document_header.strip()
+        if len(header) > 500:
+            raise HTTPException(status_code=400, detail="document_header must be at most 500 characters")
+        if print_templates_company is not None:
+            print_templates_company.document_header = header or None
+        else:
+            tenant.document_header = header or None
+    if document_footer is not None:
+        footer = document_footer.strip()
+        if len(footer) > 500:
+            raise HTTPException(status_code=400, detail="document_footer must be at most 500 characters")
+        if print_templates_company is not None:
+            print_templates_company.document_footer = footer or None
+        else:
+            tenant.document_footer = footer or None
+    if plan_code is not None:
+        plan = plan_code.strip().lower()
+        if plan not in VALID_PLAN_CODES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"plan_code must be one of: {sorted(VALID_PLAN_CODES)}",
+            )
+        tenant.plan_code = plan
+    if legal_name is not None:
+        tenant.legal_name = legal_name.strip() or None
+    if registration_number is not None:
+        tenant.registration_number = registration_number.strip() or None
+    if billing_address is not None:
+        tenant.billing_address = billing_address.strip() or None
+    if shipping_address is not None:
+        tenant.shipping_address = shipping_address.strip() or None
+    if warehouse_address is not None:
+        tenant.warehouse_address = warehouse_address.strip() or None
+    if contact_person_name is not None:
+        tenant.contact_person_name = contact_person_name.strip() or None
+    if contact_person_email is not None:
+        tenant.contact_person_email = contact_person_email.strip() or None
+    if contact_person_phone is not None:
+        tenant.contact_person_phone = contact_person_phone.strip() or None
+    if inactivity_timeout_minutes is not None:
+        minutes = int(inactivity_timeout_minutes)
+        if minutes < 5 or minutes > 480:
+            raise HTTPException(
+                status_code=400,
+                detail="inactivity_timeout_minutes must be between 5 and 480",
+            )
+        tenant.inactivity_timeout_minutes = minutes
+    if date_format is not None:
+        fmt = date_format.strip().upper()
+        if fmt not in {"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"}:
+            raise HTTPException(
+                status_code=400,
+                detail="date_format must be one of: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD",
+            )
+        tenant.date_format = fmt
+    if number_format is not None:
+        nfmt = number_format.strip()
+        if nfmt not in {"1,234.56", "1.234,56", "1 234.56"}:
+            raise HTTPException(
+                status_code=400,
+                detail="number_format must be one of: 1,234.56, 1.234,56, 1 234.56",
+            )
+        tenant.number_format = nfmt
+    if time_format is not None:
+        tfmt = time_format.strip().lower()
+        if tfmt not in {"24h", "12h"}:
+            raise HTTPException(status_code=400, detail="time_format must be 24h or 12h")
+        tenant.time_format = tfmt
+    await db.flush()
+    return tenant
+
+
+VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
+VALID_TIME_FORMATS = frozenset({"24h", "12h"})
+VALID_NUMBER_FORMATS = frozenset({"1,234.56", "1.234,56", "1 234.56"})
+
+
+async def update_smtp_settings(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    smtp_enabled: bool | None = None,
+    smtp_host: str | None = None,
+    smtp_port: int | None = None,
+    smtp_username: str | None = None,
+    smtp_password: str | None = None,
+    clear_password: bool = False,
+    smtp_from_email: str | None = None,
+    smtp_from_name: str | None = None,
+    smtp_use_tls: bool | None = None,
+    smtp_use_ssl: bool | None = None,
+) -> m.Tenant:
+    if smtp_enabled is not None:
+        tenant.smtp_enabled = bool(smtp_enabled)
+    if smtp_host is not None:
+        tenant.smtp_host = smtp_host.strip() or None
+    if smtp_port is not None:
+        port = int(smtp_port)
+        if port < 1 or port > 65535:
+            raise HTTPException(status_code=400, detail="smtp_port must be 1–65535")
+        tenant.smtp_port = port
+    if smtp_username is not None:
+        tenant.smtp_username = smtp_username.strip() or None
+    if clear_password:
+        tenant.smtp_password_enc = None
+    elif smtp_password is not None:
+        from app.totp import encrypt_secret
+
+        pwd = smtp_password.strip()
+        tenant.smtp_password_enc = encrypt_secret(pwd) if pwd else None
+    if smtp_from_email is not None:
+        tenant.smtp_from_email = smtp_from_email.strip() or None
+    if smtp_from_name is not None:
+        tenant.smtp_from_name = smtp_from_name.strip() or None
+    if smtp_use_tls is not None:
+        tenant.smtp_use_tls = bool(smtp_use_tls)
+    if smtp_use_ssl is not None:
+        tenant.smtp_use_ssl = bool(smtp_use_ssl)
+    if tenant.smtp_enabled and not ((tenant.smtp_host or "").strip() and (tenant.smtp_from_email or "").strip()):
+        raise HTTPException(
+            status_code=400,
+            detail="smtp_host and smtp_from_email are required when smtp_enabled is true",
+        )
     await db.flush()
     return tenant
 
 
 async def list_tenants(db: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[m.Tenant]:
-    q = select(m.Tenant).order_by(m.Tenant.created_at.desc()).limit(min(max(limit, 1), 500))
+    q = (
+        select(m.Tenant)
+        .where(m.Tenant.id != PLATFORM_TENANT_ID)
+        .order_by(m.Tenant.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+    )
     if status:
         if status not in VALID_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid status filter")

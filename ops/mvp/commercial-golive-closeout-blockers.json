@@ -1,0 +1,55 @@
+{
+  "id": "commercial-golive-closeout-blockers",
+  "stage": 200,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "commercial_golive_closeout_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "commercial_golive_closeout_execution": "REMAINING",
+    "attestation_section_7_signed": "REMAINING",
+    "stage70_g1_as_commercial_golive_closeout": "NON_CLAIM",
+    "stage69_a1_as_commercial_golive_closeout": "NON_CLAIM",
+    "commercial_golive_closeout_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cb-closeout",
+      "title": "Mark commercial go-live closeout execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-attestation",
+      "title": "Mark attestation / section 7 signed Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage70-nonclaim",
+      "title": "Mark Stage 70 G1 commercial go-live closeout as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-stage69-nonclaim",
+      "title": "Mark Stage 69 A1 go-live attestation as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cb-closeout-remaining",
+      "title": "Commercial go-live closeout Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 200 B1 commercial go-live closeout blocker matrix packaging only. Commercial go-live closeout Complete remains MISSING."
+}

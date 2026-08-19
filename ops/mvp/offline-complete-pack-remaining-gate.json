@@ -1,0 +1,57 @@
+{
+  "id": "offline-complete-pack-remaining-gate",
+  "stage": 329,
+  "pack": "I1",
+  "doc": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/OFFLINE_COMPLETE_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/OFFLINE_COMPLETE_PACK_RG_POINTERS_MVP.md",
+    "offline_complete_remaining_gate": "docs/OFFLINE_COMPLETE_REMAINING_GATE_MVP.md",
+    "loadtest_baseline_pack_remaining_gate": "docs/LOADTEST_BASELINE_PACK_REMAINING_GATE_MVP.md",
+    "ops_monitoring_pack_remaining_gate": "docs/OPS_MONITORING_PACK_REMAINING_GATE_MVP.md",
+    "offline_materials_remaining_gate": "docs/OFFLINE_MATERIALS_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "browser_e2e_claimed": false,
+  "attestation_claimed": false,
+  "product_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage179_offline_complete_remaining_gate": true,
+  "distinct_from_stage179_pack_pointers": true,
+  "distinct_from_stage328_loadtest_baseline_pack_remaining_gate": true,
+  "distinct_from_stage327_ops_monitoring_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ocpr-read-blockers",
+      "title": "Read B1 Offline Complete pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocpr-follow-pointers",
+      "title": "Follow P1 Stage 179 / Stage 328 / Stage 327 / Stage 190 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocpr-offline-missing",
+      "title": "Reaffirm Offline Complete / browser E2E MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocpr-no-packaging-as-live",
+      "title": "Do not treat Stage 179 / Stage 168 / Stage 328 as live Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ocpr-offline-remaining",
+      "title": "Offline Complete / browser E2E / attestation / product acceptance / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 329 I1 Offline Complete pack remaining-gate index packaging only. Do not claim live Offline Complete."
+}

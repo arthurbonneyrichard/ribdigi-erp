@@ -1,0 +1,63 @@
+{
+  "id": "hosted-faq-saas-pack-rg-blockers",
+  "stage": 326,
+  "pack": "B1",
+  "doc": "docs/HOSTED_FAQ_SAAS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/HOSTED_FAQ_SAAS_PACK_REMAINING_GATE_MVP.md",
+    "hosted_faq_saas_remaining_gate": "docs/HOSTED_FAQ_SAAS_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "hosted_kb_saas_claimed": false,
+  "helpdesk_saas_claimed": false,
+  "live_training_claimed": false,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "hosted_kb_saas_claimed": "REMAINING",
+    "helpdesk_saas_claimed": "REMAINING",
+    "live_training_claimed": "REMAINING",
+    "offline_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage191_as_live_hosted_faq": "NON_CLAIM",
+    "stage171_as_live_hosted_faq": "NON_CLAIM",
+    "hosted_kb_saas_claimed_flag": "false",
+    "helpdesk_saas_claimed_flag": "false",
+    "live_training_claimed_flag": "false",
+    "offline_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "hfsprb-hosted",
+      "title": "Mark hosted FAQ SaaS Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprb-helpdesk",
+      "title": "Mark helpdesk SaaS Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprb-training",
+      "title": "Mark live training Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprb-stage191-nonclaim",
+      "title": "Mark Stage 191 / Stage 171 as non-claim for live hosted FAQ SaaS Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "hfsprb-faq-remaining",
+      "title": "Live hosted FAQ SaaS Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 326 B1 hosted FAQ SaaS pack RG blocker matrix packaging only. Live hosted FAQ SaaS Completes remain MISSING."
+}

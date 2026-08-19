@@ -1,0 +1,60 @@
+{
+  "id": "rto-rpo-pack-rg-pointers",
+  "stage": 308,
+  "pack": "P1",
+  "doc": "docs/RTO_RPO_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md",
+    "rto_rpo": "docs/RTO_RPO_MVP.md",
+    "encryption_kms_pack_remaining_gate": "docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md",
+    "data_residency_pack_remaining_gate": "docs/DATA_RESIDENCY_PACK_REMAINING_GATE_MVP.md",
+    "data_retention_return": "docs/DATA_RETENTION_RETURN_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "measured_rto_claimed": false,
+  "measured_rpo_claimed": false,
+  "multi_region_failover_claimed": false,
+  "rto_rpo_sla_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "rto_rpo_stage45",
+    "encryption_kms_pack_remaining_gate_stage307",
+    "data_residency_pack_remaining_gate_stage306",
+    "data_retention_return_stage45",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "rrprp-stage45",
+      "title": "Point to Stage 45 O1 RTO/RPO",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-stage307",
+      "title": "Point to Stage 307 encryption KMS pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-stage306",
+      "title": "Point to Stage 306 data residency pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-stage45t1",
+      "title": "Point to Stage 45 T1 data retention return adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rrprp-rto-remaining",
+      "title": "Measured RTO Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 308 P1 RTO/RPO pack RG pointers packaging only. Do not claim measured RTO Complete."
+}

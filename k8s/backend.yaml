@@ -1,19 +1,81 @@
+# Stage 26 K1 — hardened backend Deployment + Service (kubectl path).
+# Prefer helm/ribdigi for full stack. Probes match live API (Stage 5 H5 / M1).
 apiVersion: apps/v1
 kind: Deployment
-metadata: {name: ribdigi-backend}
+metadata:
+  name: ribdigi-backend
+  labels:
+    app: ribdigi-backend
+    app.kubernetes.io/part-of: ribdigi
 spec:
- replicas: 2
- selector: {matchLabels: {app: ribdigi-backend}}
- template:
-  metadata: {labels: {app: ribdigi-backend}}
-  spec:
-   containers:
-   - name: backend
-     image: ribdigi/erp-backend:1.0.0
-     ports: [{containerPort: 8000}]
-     envFrom: [{secretRef: {name: ribdigi-secrets}}]
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ribdigi-backend
+  template:
+    metadata:
+      labels:
+        app: ribdigi-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: backend
+          image: ribdigi/erp-backend:1.0.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: ribdigi-secrets
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
-metadata: {name: ribdigi-backend}
-spec: {selector: {app: ribdigi-backend}, ports: [{port: 8000,targetPort: 8000}]}
+metadata:
+  name: ribdigi-backend
+  labels:
+    app: ribdigi-backend
+spec:
+  selector:
+    app: ribdigi-backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

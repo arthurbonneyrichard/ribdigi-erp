@@ -1,0 +1,59 @@
+{
+  "id": "faq-offline-pos",
+  "stage": 171,
+  "pack": "F1",
+  "doc": "docs/FAQ_OFFLINE_POS_MVP.md",
+  "related": {
+    "knowledge_base": "docs/KNOWLEDGE_BASE_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md",
+    "backup_restore_drill_honesty": "docs/BACKUP_RESTORE_DRILL_HONESTY_MVP.md",
+    "user_manual": "docs/USER_MANUAL.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "hosted_kb_saas_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "offline_sale_queue",
+    "hold_soft_reserve",
+    "offline_catalog_ttl",
+    "conflict_accept_client",
+    "device_revoke_pending_queue",
+    "backup_drill_link"
+  ],
+  "steps": [
+    {
+      "id": "faq-offline-sale",
+      "title": "Document offline sale queue + device bind",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "faq-hold-reserve",
+      "title": "Document Hold soft-reserve + 4h expiry",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "faq-catalog-ttl",
+      "title": "Document offline catalog TTL / stale stock",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "faq-conflict-revoke",
+      "title": "Document Accept client + revoke mid-queue",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "faq-offline-complete-remaining",
+      "title": "Offline Complete product claim Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 171 F1 FAQ packaging only. Offline Complete remains MISSING."
+}

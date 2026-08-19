@@ -1,0 +1,63 @@
+{
+  "id": "monthly-pos-ops-review-pack-rg-blockers",
+  "stage": 346,
+  "pack": "B1",
+  "doc": "docs/MONTHLY_POS_OPS_REVIEW_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/MONTHLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "monthly_pos_ops_review": "docs/MONTHLY_POS_OPS_REVIEW_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_monthly_green_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "live_dr_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "fabricated_monthly_green_claimed": "REMAINING",
+    "stage177_as_live_monthly_pos_ops_review": "NON_CLAIM",
+    "stage176_as_live_monthly_pos_ops_review": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "live_dr_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "fabricated_monthly_green_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "mporprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprb-dr",
+      "title": "Mark live DR Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprb-attestation",
+      "title": "Mark attestation Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprb-stage177-nonclaim",
+      "title": "Mark Stage 177 / Stage 176 as non-claim for live monthly POS ops review Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mporprb-checklist-remaining",
+      "title": "Live monthly POS ops review Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 346 B1 monthly POS ops review pack RG blocker matrix packaging only. Live monthly POS ops review Completes remain MISSING."
+}

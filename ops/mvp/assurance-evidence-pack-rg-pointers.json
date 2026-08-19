@@ -1,0 +1,60 @@
+{
+  "id": "assurance-evidence-pack-rg-pointers",
+  "stage": 253,
+  "pack": "P1",
+  "doc": "docs/ASSURANCE_EVIDENCE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/ASSURANCE_EVIDENCE_PACK_REMAINING_GATE_MVP.md",
+    "assurance_evidence": "docs/ASSURANCE_EVIDENCE_MVP.md",
+    "operator_remaining_pack_remaining_gate": "docs/OPERATOR_REMAINING_PACK_REMAINING_GATE_MVP.md",
+    "deferred_adr_register_pack_remaining_gate": "docs/DEFERRED_ADR_REGISTER_PACK_REMAINING_GATE_MVP.md",
+    "customer_assurance_remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md",
+    "assurance_evidence_register": "ops/mvp/assurance-evidence.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "assurance_evidence_stage34_a1",
+    "operator_remaining_pack_remaining_gate_stage252",
+    "deferred_adr_register_pack_remaining_gate_stage251",
+    "customer_assurance_remaining_gate_stage195",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "aeprp-stage34",
+      "title": "Point to Stage 34 A1 assurance evidence",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprp-stage252",
+      "title": "Point to Stage 252 operator remaining pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprp-stage251",
+      "title": "Point to Stage 251 deferred ADR register pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprp-stage195",
+      "title": "Point to Stage 195 customer assurance remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aeprp-assurance-remaining",
+      "title": "Customer assurance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 253 P1 assurance evidence pack RG pointers packaging only. Do not claim customer assurance Complete."
+}

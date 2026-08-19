@@ -1,0 +1,77 @@
+{
+  "id": "offline-sale-flush-honesty-pack-rg-blockers",
+  "stage": 482,
+  "pack": "B1",
+  "doc": "docs/OFFLINE_SALE_FLUSH_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_SALE_FLUSH_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "offline_sale_flush_pack_remaining_gate": "docs/OFFLINE_SALE_FLUSH_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_sale_flush_honesty_complete_claimed": false,
+  "offline_sale_flush_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "offline_sale_flush_honesty_complete_claimed": "REMAINING",
+    "offline_sale_flush_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_offline_sale_flush_honesty": "NON_CLAIM",
+    "offline_sale_flush_pack_as_sale_flush_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "offline_sale_flush_honesty_complete_claimed_flag": "false",
+    "offline_sale_flush_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "osfhprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osfhprb-honesty",
+      "title": "Mark Sale Flush honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osfhprb-as-golive",
+      "title": "Mark Sale Flush as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osfhprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osfhprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osfhprb-osf-nonclaim",
+      "title": "Mark OFFLINE_SALE_FLUSH_PACK as non-claim for sale-flush Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "osfhprb-checklist-remaining",
+      "title": "Offline Complete / Sale Flush / Sale Flush honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 482 B1 Offline Sale Flush Honesty Pack RG blocker matrix packaging only."
+}

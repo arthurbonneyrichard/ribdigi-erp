@@ -1,0 +1,60 @@
+{
+  "id": "cashier-bind-catalog-pack-rg-pointers",
+  "stage": 357,
+  "pack": "P1",
+  "doc": "docs/CASHIER_BIND_CATALOG_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CASHIER_BIND_CATALOG_PACK_REMAINING_GATE_MVP.md",
+    "cashier_bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md",
+    "store_open_lowstock_pack_remaining_gate": "docs/STORE_OPEN_LOWSTOCK_PACK_REMAINING_GATE_MVP.md",
+    "cashier_quickstart_pack_remaining_gate": "docs/CASHIER_QUICKSTART_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "offline_stock_authoritative_claimed": false,
+  "usb_serial_claimed": false,
+  "topics": [
+    "cashier_bind_catalog_stage172",
+    "store_open_lowstock_pack_remaining_gate_stage356",
+    "cashier_quickstart_pack_remaining_gate_stage339",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cbcprp-stage172",
+      "title": "Point to Stage 172 cashier bind catalog packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcprp-stage356",
+      "title": "Point to Stage 356 store open lowstock pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcprp-stage339",
+      "title": "Point to Stage 339 cashier quickstart pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cbcprp-checklist-remaining",
+      "title": "Live cashier bind catalog Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 357 P1 cashier bind catalog pack RG pointers packaging only. Do not claim live cashier bind catalog Complete."
+}

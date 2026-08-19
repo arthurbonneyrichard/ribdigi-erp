@@ -1,0 +1,57 @@
+{
+  "id": "data-retention-return-pack-remaining-gate",
+  "stage": 309,
+  "pack": "I1",
+  "doc": "docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/DATA_RETENTION_RETURN_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/DATA_RETENTION_RETURN_PACK_RG_POINTERS_MVP.md",
+    "data_retention_return": "docs/DATA_RETENTION_RETURN_MVP.md",
+    "rto_rpo_pack_remaining_gate": "docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md",
+    "encryption_kms_pack_remaining_gate": "docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md",
+    "audit_retention_remaining_gate": "docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "data_return_portal_claimed": false,
+  "hot_audit_purge_claimed": false,
+  "contract_exit_return_live": false,
+  "offboarding_workflow_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage45_data_retention_return": true,
+  "distinct_from_stage308_rto_rpo_pack_remaining_gate": true,
+  "distinct_from_stage307_encryption_kms_pack_remaining_gate": true,
+  "distinct_from_stage186_audit_retention_remaining_gate": true,
+  "steps": [
+    {
+      "id": "drrp-read-blockers",
+      "title": "Read B1 data retention return pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrp-follow-pointers",
+      "title": "Follow P1 Stage 45 T1 / Stage 308 / Stage 307 / Stage 186 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrp-portal-missing",
+      "title": "Reaffirm data-return portal / offboarding MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrp-no-packaging-as-live",
+      "title": "Do not treat Stage 45 T1 / Stage 308 / Stage 307 as data-return portal Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrp-portal-remaining",
+      "title": "Data-return portal / hot purge / contract-exit / offboarding / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 309 I1 data retention return pack remaining-gate index packaging only. Do not claim data-return portal Complete."
+}

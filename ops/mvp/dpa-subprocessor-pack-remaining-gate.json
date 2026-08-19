@@ -1,0 +1,58 @@
+{
+  "id": "dpa-subprocessor-pack-remaining-gate",
+  "stage": 298,
+  "pack": "I1",
+  "doc": "docs/DPA_SUBPROCESSOR_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/DPA_SUBPROCESSOR_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/DPA_SUBPROCESSOR_PACK_RG_POINTERS_MVP.md",
+    "dpa_subprocessor": "docs/DPA_SUBPROCESSOR_MVP.md",
+    "commercial_assurance_pack_remaining_gate": "docs/COMMERCIAL_ASSURANCE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_dpa_pack_remaining_gate": "docs/COMMERCIAL_DPA_PACK_REMAINING_GATE_MVP.md",
+    "commercial_dpa": "docs/COMMERCIAL_DPA_MVP.md"
+  },
+  "packaging_complete": true,
+  "dpa_signed_claimed": false,
+  "subprocessor_register_live": false,
+  "legal_counsel_claimed": false,
+  "contract_execution_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage39_dpa_subprocessor": true,
+  "distinct_from_stage297_commercial_assurance_pack_remaining_gate": true,
+  "distinct_from_stage292_commercial_dpa_pack_remaining_gate": true,
+  "distinct_from_stage77_commercial_dpa": true,
+  "steps": [
+    {
+      "id": "dspr-read-blockers",
+      "title": "Read B1 DPA subprocessor pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dspr-follow-pointers",
+      "title": "Follow P1 Stage 39 P1 / Stage 297 / Stage 292 / Stage 77 A1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dspr-dpa-missing",
+      "title": "Reaffirm signed DPA / subprocessor register live MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dspr-no-packaging-as-live",
+      "title": "Do not treat Stage 39 P1 / Stage 297 / Stage 292 as signed DPA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dspr-dpa-remaining",
+      "title": "Signed DPA / subprocessor / legal counsel / contract / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 298 I1 DPA subprocessor pack remaining-gate index packaging only. Do not claim signed DPA Complete."
+}

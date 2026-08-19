@@ -1,0 +1,62 @@
+{
+  "id": "preflight-verification-pack-rg-blockers",
+  "stage": 261,
+  "pack": "B1",
+  "doc": "docs/PREFLIGHT_VERIFICATION_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "preflight_verification": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+    "preflight_verification_remaining_gate": "docs/PREFLIGHT_VERIFICATION_REMAINING_GATE_MVP.md",
+    "preflight_verification_register": "ops/mvp/preflight-verification.json"
+  },
+  "packaging_complete": true,
+  "sections_1_3_verified": false,
+  "preflight_verified_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "sections_1_3_verified_complete": "REMAINING",
+    "preflight_verified_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "attestation_complete": "REMAINING",
+    "stage69_v1_as_preflight_live": "NON_CLAIM",
+    "stage201_as_preflight_live": "NON_CLAIM",
+    "sections_1_3_verified": "false",
+    "preflight_verified_claimed": "false",
+    "go_live_claimed": "false",
+    "attestation_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "pvprb-sections",
+      "title": "Mark \u00a7\u00a71\u20133 verified Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprb-preflight",
+      "title": "Mark preflight verified Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprb-go-live",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprb-stage69-nonclaim",
+      "title": "Mark Stage 69 V1 as non-claim for \u00a7\u00a71\u20133 verified Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pvprb-preflight-remaining",
+      "title": "\u00a7\u00a71\u20133 verified Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 261 B1 preflight verification pack RG blocker matrix packaging only. \u00a7\u00a71\u20133 verified Completes remain MISSING."
+}

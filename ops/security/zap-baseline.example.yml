@@ -1,0 +1,43 @@
+# Stage 27 S1 — optional OWASP ZAP baseline (operator / staging only).
+# NOT wired into .github/workflows/ci.yml (Stage 18 C1 deploy-free; needs a real target).
+# Copy to .github/workflows/ when STAGING_BASE_URL (+ auth) secrets exist.
+#
+# name: zap-baseline-staging
+#
+# on:
+#   workflow_dispatch:
+#   schedule:
+#     - cron: "0 4 * * 1"
+#
+# jobs:
+#   zap:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: ZAP baseline (example)
+#         uses: zaproxy/action-baseline@v0.14.0
+#         with:
+#           target: ${{ secrets.STAGING_BASE_URL }}
+#           # cmd_options: "-a"  # only when staging auth is configured
+#           allow_issue_writing: false
+#       - name: Upload ZAP report
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: zap-baseline-report
+#           path: report_html.html
+#
+# Do not commit fabricated ZAP "pass" HTML/JSON. Remaining until a real staging run exists.
+
+name: zap-baseline-example-disabled
+on:
+  workflow_dispatch:
+jobs:
+  note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Operator template only
+        run: |
+          echo "This file lives under ops/security/ as a template."
+          echo "Do not treat it as a green ZAP scan. See docs/SECURITY_SCAN_MVP.md."
+          exit 0

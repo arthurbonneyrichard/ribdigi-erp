@@ -1,0 +1,77 @@
+{
+  "id": "dsr-sla-gate-honesty-pack-rg-pointers",
+  "stage": 874,
+  "pack": "P1",
+  "doc": "docs/DSR_SLA_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DSR_SLA_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "age_assurance_gate_honesty_pack_remaining_gate": "docs/AGE_ASSURANCE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "parental_consent_gate_honesty_pack_remaining_gate": "docs/PARENTAL_CONSENT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "dsr_sla_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "dsr_sla_gate_honesty_complete_claimed": false,
+  "dsr_sla_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_dsr_sla_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "age_assurance_gate_honesty_pack_remaining_gate_stage873": "docs/AGE_ASSURANCE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "parental_consent_gate_honesty_pack_remaining_gate_stage872": "docs/PARENTAL_CONSENT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "dsr_sla_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / dsr_sla_gate / dsr_sla_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "dsrslaghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 DSR SLA Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsrslaghp-stage873",
+      "title": "Point to Stage 873 AGE ASSURANCE GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsrslaghp-stage872",
+      "title": "Point to Stage 872 PARENTAL CONSENT GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsrslaghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsrslaghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsrslaghp-prior-pack",
+      "title": "Point to DSR SLA Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "dsrslaghp-checklist-remaining",
+      "title": "Offline Complete / DSR SLA Gate / DSR SLA Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 874 P1 DSR SLA Gate Honesty Pack RG pointers packaging only."
+}

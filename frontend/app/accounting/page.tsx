@@ -2,18 +2,50 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, authHeaders } from '../../lib/api';
+import { useTabQuery } from '../../lib/tabQuery';
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab = 'ledger' | 'reconcile' | 'cheques';
+const ACCOUNTING_TABS: Tab[] = ['ledger', 'reconcile', 'cheques'];
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>('ledger');
+  const [tab, setTab] = useTabQuery(ACCOUNTING_TABS, 'ledger');
   const [accounts, setAccounts] = useState<any[]>([]);
+  // Stage 123 F1 — account_active → GET /accounting/accounts?is_active=
+  const [accountActiveFilter, setAccountActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('account_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  // Stage 125 L1 — liquid_active → GET /accounting/liquid-accounts?is_active=
+  const [liquidActiveFilter, setLiquidActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('liquid_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  // Stage 126 C1 — bank_conn_active → GET /accounting/bank-connections?is_active=
+  const [bankConnActiveFilter, setBankConnActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('bank_conn_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
+  const [journalStatusFilter, setJournalStatusFilter] = useState('all');
+  const [chequeDirectionFilter, setChequeDirectionFilter] = useState('');
+  const [chequeStatusFilter, setChequeStatusFilter] = useState('');
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
+  const [statementStatusFilter, setStatementStatusFilter] = useState('');
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
   const [error, setError] = useState('');
@@ -35,17 +67,143 @@ export default function Page() {
   const [connProvider, setConnProvider] = useState('mock');
   const [connFeedUrl, setConnFeedUrl] = useState('');
   const [connExtId, setConnExtId] = useState('demo-acct-1');
+  const [liqKind, setLiqKind] = useState<'cash' | 'bank'>('cash');
+  const [liqCode, setLiqCode] = useState('1005');
+  const [liqName, setLiqName] = useState('Petty Cash');
+  const [liqBankName, setLiqBankName] = useState('');
+  const [liqAccountNumber, setLiqAccountNumber] = useState('');
+  const [liqBankBranch, setLiqBankBranch] = useState('');
+  const [xferFrom, setXferFrom] = useState('');
+  const [xferTo, setXferTo] = useState('');
+  const [xferAmount, setXferAmount] = useState('50');
+  const [xferDesc, setXferDesc] = useState('');
+  const [coaCode, setCoaCode] = useState('1050');
+  const [coaName, setCoaName] = useState('Petty Cash Drawer');
+  const [coaType, setCoaType] = useState('asset');
+  const [coaParentId, setCoaParentId] = useState('');
+  const [obAccountId, setObAccountId] = useState('');
+  const [obAmount, setObAmount] = useState('100');
+  const [pnlFrom, setPnlFrom] = useState('');
+  const [pnlTo, setPnlTo] = useState('');
+  const [pnlStoreId, setPnlStoreId] = useState('');
+  const [stores, setStores] = useState<any[]>([]);
+  const [journalStoreId, setJournalStoreId] = useState('');
+  const [manualStoreId, setManualStoreId] = useState('');
+  const [tbAsOf, setTbAsOf] = useState('');
+  const [accountTx, setAccountTx] = useState<any | null>(null);
+  const [txFrom, setTxFrom] = useState('');
+  const [txTo, setTxTo] = useState('');
 
-  async function refresh() {
-    const [a, j, t, p, liq, stmts, chq, conns] = await Promise.all([
-      api('/accounting/accounts'),
-      api('/accounting/journal-entries'),
-      api('/accounting/trial-balance'),
-      api('/accounting/profit-loss'),
-      api('/accounting/liquid-accounts'),
-      api('/accounting/bank-statements'),
-      api('/accounting/cheques'),
-      api('/accounting/bank-connections').catch(() => ({ data: [] })),
+  function accountDepth(row: any, byId: Record<string, any>): number {
+    let depth = 0;
+    let cursor = row.parent_id ? byId[row.parent_id] : null;
+    const seen = new Set<string>();
+    while (cursor && !seen.has(cursor.id)) {
+      seen.add(cursor.id);
+      depth += 1;
+      cursor = cursor.parent_id ? byId[cursor.parent_id] : null;
+    }
+    return depth;
+  }
+
+  function writeAccountingQuery(patch: Record<string, string | null>) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    for (const [key, value] of Object.entries(patch)) {
+      if (!value) url.searchParams.delete(key);
+      else url.searchParams.set(key, value);
+    }
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`);
+  }
+
+  async function refresh(opts?: {
+    journalStatus?: string;
+    journalStoreId?: string;
+    chequeDirection?: string;
+    chequeStatus?: string;
+    statementStatus?: string;
+    accountActive?: string;
+    liquidActive?: string;
+    bankConnActive?: string;
+  }) {
+    const jStatus = opts?.journalStatus !== undefined ? opts.journalStatus : journalStatusFilter;
+    const jStore = opts?.journalStoreId !== undefined ? opts.journalStoreId : journalStoreId;
+    const cDir = opts?.chequeDirection !== undefined ? opts.chequeDirection : chequeDirectionFilter;
+    const cStatus = opts?.chequeStatus !== undefined ? opts.chequeStatus : chequeStatusFilter;
+    const sStatus =
+      opts?.statementStatus !== undefined ? opts.statementStatus : statementStatusFilter;
+    const accountActive =
+      opts?.accountActive !== undefined ? opts.accountActive : accountActiveFilter;
+    const accountQs =
+      accountActive === 'true'
+        ? '?is_active=true&active_only=false'
+        : accountActive === 'false'
+          ? '?is_active=false&active_only=false'
+          : accountActive === 'all'
+            ? '?active_only=false'
+            : '';
+    const liquidActive =
+      opts?.liquidActive !== undefined ? opts.liquidActive : liquidActiveFilter;
+    const liquidQs =
+      liquidActive === 'true'
+        ? '?is_active=true'
+        : liquidActive === 'false'
+          ? '?is_active=false'
+          : liquidActive === 'all'
+            ? '?active_only=false'
+            : '';
+    const bankConnActive =
+      opts?.bankConnActive !== undefined ? opts.bankConnActive : bankConnActiveFilter;
+    const bankConnQs =
+      bankConnActive === 'true'
+        ? '?is_active=true'
+        : bankConnActive === 'false'
+          ? '?is_active=false'
+          : bankConnActive === 'all'
+            ? '?active_only=false'
+            : '';
+    const pnlQs = new URLSearchParams();
+    if (pnlFrom) pnlQs.set('from_date', pnlFrom);
+    if (pnlTo) pnlQs.set('to_date', pnlTo);
+    if (pnlStoreId) pnlQs.set('store_id', pnlStoreId);
+    const pnlPath = pnlQs.toString()
+      ? `/accounting/profit-loss?${pnlQs}`
+      : '/accounting/profit-loss';
+    const journalParams = new URLSearchParams();
+    if (jStore) journalParams.set('store_id', jStore);
+    if (jStatus && jStatus !== 'all') {
+      journalParams.set('status', jStatus);
+    } else if (jStatus === 'all') {
+      journalParams.set('status', 'all');
+    }
+    const journalQs = journalParams.toString()
+      ? `/accounting/journal-entries?${journalParams}`
+      : '/accounting/journal-entries';
+    const chequeParams = new URLSearchParams();
+    if (cDir) chequeParams.set('direction', cDir);
+    if (cStatus) chequeParams.set('status', cStatus);
+    const chequeQs = chequeParams.toString()
+      ? `/accounting/cheques?${chequeParams}`
+      : '/accounting/cheques';
+    const stmtParams = new URLSearchParams();
+    if (sStatus) stmtParams.set('status', sStatus);
+    const stmtQs = stmtParams.toString()
+      ? `/accounting/bank-statements?${stmtParams}`
+      : '/accounting/bank-statements';
+    const tbPath = tbAsOf
+      ? `/accounting/trial-balance?as_of_date=${encodeURIComponent(tbAsOf)}`
+      : '/accounting/trial-balance';
+    const [a, j, t, p, liq, stmts, chq, conns, storeRows] = await Promise.all([
+      api(`/accounting/accounts${accountQs}`),
+      api(journalQs),
+      api(tbPath),
+      api(pnlPath),
+      api(`/accounting/liquid-accounts${liquidQs}`),
+      api(stmtQs),
+      api(chequeQs),
+      api(`/accounting/bank-connections${bankConnQs}`).catch(() => ({ data: [] })),
+      api('/stores').catch(() => ({ data: [] })),
     ]);
     setAccounts(a.data || []);
     setJournals(j.data || []);
@@ -55,12 +213,101 @@ export default function Page() {
     setStatements(stmts.data || []);
     setCheques(chq.data || []);
     setConnections(conns.data || []);
-    if (!reconAccountId && liq.data?.length) setReconAccountId(liq.data[0].id);
+    setStores(storeRows.data || []);
+    const activeLiquid = (liq.data || []).filter((r: any) => r.is_active !== false);
+    if (!reconAccountId && activeLiquid.length) setReconAccountId(activeLiquid[0].id);
+    if (!xferFrom && activeLiquid.length) setXferFrom(activeLiquid[0].id);
+    if (!xferTo && activeLiquid.length > 1) setXferTo(activeLiquid[1].id);
+    if (!obAccountId && a.data?.length) {
+      const cash = a.data.find((r: any) => r.code === '1000') || a.data[0];
+      setObAccountId(cash.id);
+    }
   }
 
+  // Stage 104 A1 / Stage 113 C1 — honor journal status/store_id + cheque_direction/cheque_status URL filters (incl. bounced/cancelled)
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const params = new URLSearchParams(window.location.search);
+    let jStatus = 'all';
+    const st = params.get('status')?.trim() || '';
+    if (['all', 'posted', 'unposted'].includes(st)) {
+      jStatus = st;
+      setJournalStatusFilter(st);
+    }
+    const store = params.get('store_id')?.trim() || '';
+    if (store) setJournalStoreId(store);
+    let cDir = '';
+    const cd = params.get('cheque_direction')?.trim() || '';
+    if (['received', 'issued'].includes(cd)) {
+      cDir = cd;
+      setChequeDirectionFilter(cd);
+    }
+    let cStatus = '';
+    const cs = params.get('cheque_status')?.trim() || '';
+    if (['pending', 'deposited', 'cleared', 'bounced', 'cancelled'].includes(cs)) {
+      cStatus = cs;
+      setChequeStatusFilter(cs);
+    }
+    let liqActive = liquidActiveFilter;
+    const la = params.get('liquid_active')?.trim().toLowerCase() || '';
+    if (la === 'true' || la === 'false') {
+      liqActive = la;
+      setLiquidActiveFilter(la);
+    }
+    let bankActive = bankConnActiveFilter;
+    const ba = params.get('bank_conn_active')?.trim().toLowerCase() || '';
+    if (ba === 'true' || ba === 'false') {
+      bankActive = ba;
+      setBankConnActiveFilter(ba);
+    }
+    let stmtStatus = '';
+    const ss = params.get('statement_status')?.trim().toLowerCase() || '';
+    if (['draft', 'in_progress', 'reconciled'].includes(ss)) {
+      stmtStatus = ss;
+      setStatementStatusFilter(ss);
+    }
+    refresh({
+      journalStatus: jStatus,
+      journalStoreId: store,
+      chequeDirection: cDir,
+      chequeStatus: cStatus,
+      statementStatus: stmtStatus,
+      liquidActive: liqActive,
+      bankConnActive: bankActive,
+    }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Stage 100 G1 / Stage 109 O1 / Stage 111 C1 — ledger hashes + #bank-reconciliation + #cheques
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const ledgerAnchors = [
+      'coa',
+      'journals',
+      'trial-balance',
+      'money-transfer',
+      'opening-balances',
+      'profit-loss',
+    ];
+    if (hash === 'bank-reconciliation' && tab !== 'reconcile') {
+      setTab('reconcile');
+      return;
+    }
+    if (hash === 'cheques' && tab !== 'cheques') {
+      setTab('cheques');
+      return;
+    }
+    if (ledgerAnchors.includes(hash) && tab !== 'ledger') {
+      setTab('ledger');
+      return;
+    }
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [tab, setTab]);
 
   async function postManual() {
     setError('');
@@ -71,6 +318,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           description,
+          store_id: manualStoreId || null,
           lines: [
             { account_code: debitCode, debit: value, credit: 0 },
             { account_code: creditCode, debit: 0, credit: value },
@@ -78,6 +326,189 @@ export default function Page() {
         }),
       });
       setMessage('Journal posted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function unpostJournal(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/journal-entries/${id}/unpost`, { method: 'POST' });
+      setMessage('Journal unposted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function uploadJournalAttachment(id: string, file: File) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
+      }
+      setMessage('Supporting document uploaded');
+      await refresh();
+    } catch (err: any) {
+      setError(typeof err.message === 'string' ? err.message : 'Upload failed');
+    }
+  }
+
+  async function downloadJournalAttachment(id: string) {
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Download failed');
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = match?.[1] || 'journal-attachment';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function removeJournalAttachment(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/journal-entries/${id}/attachment`, { method: 'DELETE' });
+      setMessage('Supporting document removed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createLiquidAccount() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/accounting/liquid-accounts', {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: liqKind,
+          code: liqCode,
+          name: liqName,
+          bank_name: liqKind === 'bank' ? liqBankName || undefined : undefined,
+          account_number: liqKind === 'bank' ? liqAccountNumber || undefined : undefined,
+          bank_branch: liqKind === 'bank' ? liqBankBranch || undefined : undefined,
+        }),
+      });
+      setMessage(`${liqKind === 'cash' ? 'Cash' : 'Bank'} account created`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setLiquidActive(accountId: string, next: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/liquid-accounts/${accountId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: next }),
+      });
+      setMessage(next ? 'Liquid account reactivated' : 'Liquid account deactivated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function postLiquidTransfer() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/accounting/liquid-transfers', {
+        method: 'POST',
+        body: JSON.stringify({
+          from_account_id: xferFrom,
+          to_account_id: xferTo,
+          amount: Number(xferAmount),
+          description: xferDesc || undefined,
+        }),
+      });
+      setMessage(`Posted ${r.data?.source_type || 'liquid transfer'}`);
+      setXferDesc('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createCoaAccount() {
+    setError('');
+    setMessage('');
+    try {
+      await api('/accounting/accounts', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: coaCode,
+          name: coaName,
+          account_type: coaType,
+          parent_id: coaParentId || undefined,
+        }),
+      });
+      setMessage('Account created');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadAccountTransactions(accountId: string) {
+    if (!accountId) return;
+    setError('');
+    try {
+      const qs = new URLSearchParams();
+      if (txFrom) qs.set('from_date', txFrom);
+      if (txTo) qs.set('to_date', txTo);
+      const suffix = qs.toString() ? `?${qs}` : '';
+      const r = await api(`/accounting/accounts/${accountId}/transactions${suffix}`);
+      setAccountTx(r.data);
+      setObAccountId(accountId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function postOpeningBalance() {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/accounts/${obAccountId}/opening-balance`, {
+        method: 'POST',
+        body: JSON.stringify({ amount: Number(obAmount) }),
+      });
+      setMessage('Opening balance posted');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -132,10 +563,7 @@ export default function Page() {
       if (closing !== '' && closing != null) qs.set('closing_balance', String(Number(closing)));
       const res = await fetch(`${apiBase}/accounting/bank-statements/import?${qs}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
+        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -207,6 +635,21 @@ export default function Page() {
     try {
       await api(`/accounting/bank-connections/${id}`, { method: 'DELETE' });
       setMessage('Bank connection removed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setBankConnActive(id: string, next: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/accounting/bank-connections/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: next }),
+      });
+      setMessage(next ? 'Bank connection reactivated' : 'Bank connection deactivated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -346,9 +789,33 @@ export default function Page() {
   return (
     <Shell>
       <h1>Accounting</h1>
-      <p className="muted">Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, and cheques</p>
+      <p className="muted">
+        Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, cheques, and
+        Accounts Receivable / Accounts Payable
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <div
+        className="card"
+        id="ar-ap-surface"
+        style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}
+      >
+        <div>
+          <h3 style={{ marginTop: 0 }}>Accounts Receivable</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Customer aging, outstanding invoices, and collections (Credit engine).
+          </p>
+          <a href="/accounting/receivables">Open Accounts Receivable</a>
+        </div>
+        <div>
+          <h3 style={{ marginTop: 0 }}>Accounts Payable</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Supplier aging, outstanding bills, and payment schedule (Credit engine).
+          </p>
+          <a href="/accounting/payables">Open Accounts Payable</a>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button onClick={() => setTab('ledger')} disabled={tab === 'ledger'}>
@@ -364,6 +831,173 @@ export default function Page() {
 
       {tab === 'ledger' && (
         <>
+          <div className="card" style={{ marginBottom: 16 }} id="money-transfer">
+            <h3>Cash &amp; bank accounts</h3>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Money Transfer — create petty cash / bank accounts; deposit (cash→bank), withdrawal
+              (bank→cash), or transfer between liquid accounts. Filter via{' '}
+              <code>liquid_active</code> → <code>GET /accounting/liquid-accounts?is_active=</code>{' '}
+              (Stage 125 L1).
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              <select
+                value={liquidActiveFilter || 'default'}
+                onChange={(e) => {
+                  const v = e.target.value === 'default' ? '' : e.target.value;
+                  setLiquidActiveFilter(v);
+                  const url = new URL(window.location.href);
+                  if (v === 'true' || v === 'false') url.searchParams.set('liquid_active', v);
+                  else url.searchParams.delete('liquid_active');
+                  window.history.replaceState({}, '', url.toString());
+                  refresh({ liquidActive: v }).catch((err) => setError(err.message));
+                }}
+              >
+                <option value="default">Active filter (default / all)</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+                <option value="all">All (active_only=false)</option>
+              </select>
+              <button
+                type="button"
+                onClick={async () => {
+                  const token = localStorage.getItem('access_token') || '';
+                  const qs = new URLSearchParams();
+                  if (liquidActiveFilter === 'true' || liquidActiveFilter === 'false') {
+                    qs.set('is_active', liquidActiveFilter);
+                  } else if (liquidActiveFilter === 'all') {
+                    qs.set('active_only', 'false');
+                  }
+                  const q = qs.toString();
+                  const res = await fetch(
+                    `${apiBase}/accounting/liquid-accounts/export${q ? `?${q}` : ''}`,
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'liquid_accounts_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Liquid accounts CSV downloaded');
+                }}
+              >
+                Export liquid accounts CSV
+              </button>
+            </div>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+              <select
+                value={liqKind}
+                onChange={(e) => setLiqKind(e.target.value as 'cash' | 'bank')}
+              >
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+              </select>
+              <input value={liqCode} onChange={(e) => setLiqCode(e.target.value)} placeholder="Code" />
+              <input value={liqName} onChange={(e) => setLiqName(e.target.value)} placeholder="Name" />
+              {liqKind === 'bank' && (
+                <>
+                  <input
+                    value={liqBankName}
+                    onChange={(e) => setLiqBankName(e.target.value)}
+                    placeholder="Bank name"
+                  />
+                  <input
+                    value={liqAccountNumber}
+                    onChange={(e) => setLiqAccountNumber(e.target.value)}
+                    placeholder="Account number"
+                  />
+                  <input
+                    value={liqBankBranch}
+                    onChange={(e) => setLiqBankBranch(e.target.value)}
+                    placeholder="Branch"
+                  />
+                </>
+              )}
+              <button type="button" onClick={createLiquidAccount}>
+                Create {liqKind} account
+              </button>
+            </div>
+            <table className="table" style={{ marginBottom: 16 }}>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Kind</th>
+                  <th>Bank</th>
+                  <th>Balance</th>
+                  <th>Active</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liquid.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.code}</td>
+                    <td>{a.name}</td>
+                    <td>{a.is_cash_account ? 'cash' : 'bank'}</td>
+                    <td>
+                      {a.is_bank_account
+                        ? [a.bank_name, a.account_number, a.bank_branch].filter(Boolean).join(' · ') ||
+                          '—'
+                        : '—'}
+                    </td>
+                    <td>{a.balance}</td>
+                    <td>{a.is_active === false ? 'no' : 'yes'}</td>
+                    <td>
+                      {a.is_active === false ? (
+                        <button type="button" onClick={() => setLiquidActive(a.id, true)}>
+                          Reactivate
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => setLiquidActive(a.id, false)}>
+                          Deactivate
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <h4>Deposit / withdrawal / transfer</h4>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
+              <select value={xferFrom} onChange={(e) => setXferFrom(e.target.value)}>
+                {liquid
+                  .filter((a) => a.is_active !== false)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      From {a.code} {a.name} ({a.balance})
+                    </option>
+                  ))}
+              </select>
+              <select value={xferTo} onChange={(e) => setXferTo(e.target.value)}>
+                {liquid
+                  .filter((a) => a.is_active !== false)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      To {a.code} {a.name} ({a.balance})
+                    </option>
+                  ))}
+              </select>
+              <input
+                value={xferAmount}
+                onChange={(e) => setXferAmount(e.target.value)}
+                placeholder="Amount"
+              />
+              <input
+                value={xferDesc}
+                onChange={(e) => setXferDesc(e.target.value)}
+                placeholder="Description (optional)"
+              />
+              <button type="button" onClick={postLiquidTransfer}>
+                Post move
+              </button>
+            </div>
+          </div>
+
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Manual journal</h3>
             <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
@@ -372,6 +1006,18 @@ export default function Page() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
               />
+              <select
+                value={manualStoreId}
+                onChange={(e) => setManualStoreId(e.target.value)}
+                aria-label="Journal store"
+              >
+                <option value="">No store</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+              </select>
               <input
                 value={debitCode}
                 onChange={(e) => setDebitCode(e.target.value)}
@@ -387,54 +1033,452 @@ export default function Page() {
             </div>
           </div>
 
-          <h3>Chart of accounts</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Liquid</th>
-                <th>Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.code}</td>
-                  <td>{r.name}</td>
-                  <td>{r.account_type}</td>
-                  <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
-                  <td>{r.balance}</td>
+          <div className="card" style={{ marginBottom: 16 }} id="coa">
+            <h3>Chart of accounts</h3>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Add non-system accounts with optional parent (same type). Opening balances post a
+              balanced journal against Opening Balances Equity (3900). Filter via{' '}
+              <code>account_active</code> → <code>GET /accounting/accounts?is_active=</code> (Stage
+              123 F1).
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+              <label className="muted">
+                Active status{' '}
+                <select
+                  value={accountActiveFilter}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setAccountActiveFilter(v);
+                    const url = new URL(window.location.href);
+                    if (v === 'true' || v === 'false') url.searchParams.set('account_active', v);
+                    else url.searchParams.delete('account_active');
+                    const qs = url.searchParams.toString();
+                    window.history.replaceState(
+                      {},
+                      '',
+                      `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`
+                    );
+                    refresh({ accountActive: v }).catch((err) => setError(err.message));
+                  }}
+                  aria-label="Account active filter"
+                >
+                  <option value="">Active only (default)</option>
+                  <option value="true">Active only</option>
+                  <option value="false">Inactive only</option>
+                  <option value="all">All</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  // Stage 123 X1 — accounts CSV export
+                  setError('');
+                  try {
+                    const token = localStorage.getItem('token');
+                    const tenant = localStorage.getItem('tenant');
+                    const qs =
+                      accountActiveFilter === 'true'
+                        ? '?is_active=true'
+                        : accountActiveFilter === 'false'
+                          ? '?is_active=false'
+                          : accountActiveFilter === 'all'
+                            ? '?active_only=false'
+                            : '';
+                    const res = await fetch(`${apiBase}/accounting/accounts/export${qs}`, {
+                      headers: authHeaders(),
+                    });
+                    if (!res.ok) throw new Error('Accounts export failed');
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'accounts_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (err: any) {
+                    setError(err.message || 'Accounts export failed');
+                  }
+                }}
+              >
+                Export accounts CSV
+              </button>
+            </div>
+            <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
+              <input value={coaCode} onChange={(e) => setCoaCode(e.target.value)} placeholder="Code" />
+              <input value={coaName} onChange={(e) => setCoaName(e.target.value)} placeholder="Name" />
+              <select value={coaType} onChange={(e) => setCoaType(e.target.value)}>
+                <option value="asset">Asset</option>
+                <option value="liability">Liability</option>
+                <option value="equity">Equity</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+              <select value={coaParentId} onChange={(e) => setCoaParentId(e.target.value)}>
+                <option value="">No parent</option>
+                {accounts
+                  .filter((a) => a.account_type === coaType)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.name}
+                    </option>
+                  ))}
+              </select>
+              <button type="button" onClick={createCoaAccount}>
+                Create account
+              </button>
+            </div>
+            <div
+              style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}
+              id="opening-balances"
+            >
+              <h4 style={{ margin: 0 }}>Opening balance</h4>
+              <select value={obAccountId} onChange={(e) => setObAccountId(e.target.value)}>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.code} — {a.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={obAmount}
+                onChange={(e) => setObAmount(e.target.value)}
+                placeholder="Amount (natural side)"
+              />
+              <button type="button" onClick={postOpeningBalance}>
+                Post opening balance
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+              <span className="muted">Ledger date filter</span>
+              <input type="date" value={txFrom} onChange={(e) => setTxFrom(e.target.value)} />
+              <input type="date" value={txTo} onChange={(e) => setTxTo(e.target.value)} />
+              {obAccountId && (
+                <>
+                  <button type="button" onClick={() => loadAccountTransactions(obAccountId)}>
+                    Refresh ledger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      // Stage 139 A1 — account ledger CSV
+                      setError('');
+                      try {
+                        const token = localStorage.getItem('token');
+                        const tenant = localStorage.getItem('tenant');
+                        const apiBase =
+                          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+                        const qs = new URLSearchParams();
+                        if (txFrom) qs.set('from_date', txFrom);
+                        if (txTo) qs.set('to_date', txTo);
+                        const q = qs.toString();
+                        const res = await fetch(
+                          `${apiBase}/accounting/accounts/${obAccountId}/transactions/export${
+                            q ? `?${q}` : ''
+                          }`,
+                          {
+                            headers: authHeaders(),
+                          },
+                        );
+                        if (!res.ok) throw new Error('Account ledger export failed');
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'account_transactions_export.csv';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        setMessage('Account ledger CSV exported (Stage 139 A1)');
+                      } catch (err: any) {
+                        setError(err.message || 'Account ledger export failed');
+                      }
+                    }}
+                  >
+                    Export account ledger CSV
+                  </button>
+                </>
+              )}
+            </div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>System</th>
+                  <th>Liquid</th>
+                  <th>Balance</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(() => {
+                  const byId = Object.fromEntries(accounts.map((a) => [a.id, a]));
+                  return accounts.map((r) => {
+                    const depth = accountDepth(r, byId);
+                    return (
+                      <tr key={r.id}>
+                        <td style={{ paddingLeft: 8 + depth * 16 }}>{r.code}</td>
+                        <td>{r.name}</td>
+                        <td>{r.account_type}</td>
+                        <td>{r.is_system ? 'yes' : '—'}</td>
+                        <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
+                        <td>{r.balance}</td>
+                        <td>
+                          <button type="button" onClick={() => loadAccountTransactions(r.id)}>
+                            Ledger
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+            {accountTx && (
+              <div style={{ marginTop: 16 }}>
+                <h4 style={{ margin: '0 0 8px' }}>
+                  Account ledger — {accountTx.account?.code} {accountTx.account?.name}{' '}
+                  <span className="muted">
+                    (open {accountTx.opening_balance} → close {accountTx.closing_balance} ·{' '}
+                    {accountTx.transaction_count} lines)
+                  </span>
+                </h4>
+                <p className="muted" style={{ marginBottom: 8 }}>
+                  Line CSV via{' '}
+                  <code>GET /accounting/accounts/&#123;id&#125;/transactions/export</code> (Stage 139
+                  A1).
+                </p>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Entry</th>
+                      <th>Reference</th>
+                      <th>Description</th>
+                      <th>Debit</th>
+                      <th>Credit</th>
+                      <th>Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(accountTx.transactions || []).map((t: any) => (
+                      <tr key={t.line_id}>
+                        <td>
+                          {t.entry_date
+                            ? String(t.entry_date).replace('T', ' ').slice(0, 10)
+                            : '—'}
+                        </td>
+                        <td>
+                          <code>{t.entry_number}</code>
+                        </td>
+                        <td>{t.reference || '—'}</td>
+                        <td>{t.description || '—'}</td>
+                        <td>{t.debit}</td>
+                        <td>{t.credit}</td>
+                        <td>{t.balance}</td>
+                      </tr>
+                    ))}
+                    {!accountTx.transactions?.length && (
+                      <tr>
+                        <td colSpan={7} className="muted">
+                          No posted lines in this range
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           <div className="grid" style={{ marginTop: 16 }}>
-            <div className="card">
+            <div className="card" id="trial-balance">
               <h3>Trial balance</h3>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <input
+                  type="date"
+                  value={tbAsOf}
+                  onChange={(e) => setTbAsOf(e.target.value)}
+                  aria-label="Trial balance as of"
+                />
+                <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
+                  Apply
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const token = localStorage.getItem('token') || '';
+                    const qs = tbAsOf
+                      ? `?as_of_date=${encodeURIComponent(tbAsOf)}`
+                      : '';
+                    const res = await fetch(
+                      `${apiBase}/accounting/trial-balance/export${qs}`,
+                      { headers: { Authorization: `Bearer ${token}` } },
+                    );
+                    if (!res.ok) {
+                      setError(await res.text());
+                      return;
+                    }
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'accounting_trial_balance_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    setMessage('Trial-balance CSV downloaded (Stage 159 B1)');
+                  }}
+                >
+                  Export trial-balance CSV
+                </button>
+              </div>
               <p className="muted">
-                Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr {trial?.total_credit}
+                As of {trial?.as_of || '—'} · Balanced: {String(trial?.balanced)} | Dr{' '}
+                {trial?.total_debit} / Cr {trial?.total_credit}. Export via{' '}
+                <code>GET /accounting/trial-balance/export</code> (Stage 159 B1; path-scoped —
+                distinct from generic <code>/reports/export</code>).
               </p>
             </div>
-            <div className="card">
-              <h3>Profit &amp; Loss</h3>
-              <p>Income: {pnl?.income}</p>
-              <p>Expense: {pnl?.expense}</p>
+            <div className="card" id="profit-loss">
+              <h3>Profit &amp; Loss / Income</h3>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <input type="date" value={pnlFrom} onChange={(e) => setPnlFrom(e.target.value)} />
+                <input type="date" value={pnlTo} onChange={(e) => setPnlTo(e.target.value)} />
+                <select
+                  value={pnlStoreId}
+                  onChange={(e) => setPnlStoreId(e.target.value)}
+                  aria-label="P&L store filter"
+                >
+                  <option value="">All stores</option>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.code} — {s.name}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
+                  Apply
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const token = localStorage.getItem('token') || '';
+                    const params = new URLSearchParams();
+                    if (pnlFrom) params.set('from_date', pnlFrom);
+                    if (pnlTo) params.set('to_date', pnlTo);
+                    if (pnlStoreId) params.set('store_id', pnlStoreId);
+                    const qs = params.toString() ? `?${params}` : '';
+                    const res = await fetch(
+                      `${apiBase}/accounting/profit-loss/export${qs}`,
+                      { headers: { Authorization: `Bearer ${token}` } },
+                    );
+                    if (!res.ok) {
+                      setError(await res.text());
+                      return;
+                    }
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'accounting_profit_loss_export.csv';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    setMessage('Profit-loss CSV downloaded (Stage 160 P1)');
+                  }}
+                >
+                  Export profit-loss CSV
+                </button>
+              </div>
+              <p>Revenue: {pnl?.revenue ?? pnl?.income}</p>
+              <p>COGS: {pnl?.cogs ?? 0}</p>
+              <p>Gross: {pnl?.gross_profit ?? 0}</p>
+              <p>OpEx: {pnl?.operating_expenses ?? 0}</p>
+              <p>Income: {pnl?.income} · Expense: {pnl?.expense}</p>
               <div className="kpi">{pnl?.net_profit}</div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                Export via <code>GET /accounting/profit-loss/export</code> (Stage 160 P1;
+                path-scoped — distinct from generic <code>/reports/export</code>).
+              </p>
             </div>
           </div>
 
+          <div id="journals">
           <h3 style={{ marginTop: 16 }}>Recent journals</h3>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+            <select
+              value={journalStoreId}
+              onChange={(e) => setJournalStoreId(e.target.value)}
+              aria-label="Journal store filter"
+            >
+              <option value="">All stores</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={journalStatusFilter}
+              onChange={(e) => setJournalStatusFilter(e.target.value)}
+              aria-label="Journal status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="posted">Posted</option>
+              <option value="unposted">Unposted</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                writeAccountingQuery({
+                  status: journalStatusFilter === 'all' ? null : journalStatusFilter,
+                  store_id: journalStoreId || null,
+                });
+                refresh().catch((err) => setError(err.message));
+              }}
+            >
+              Apply filter
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const params = new URLSearchParams();
+                if (journalStoreId) params.set('store_id', journalStoreId);
+                if (journalStatusFilter && journalStatusFilter !== 'all') {
+                  params.set('status', journalStatusFilter);
+                } else if (journalStatusFilter === 'all') {
+                  params.set('status', 'all');
+                }
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${apiBase}/accounting/journal-entries/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'journal_entries_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Journal entries CSV downloaded (Stage 131 J1)');
+              }}
+            >
+              Export journals CSV
+            </button>
+          </div>
           <table className="table">
             <thead>
               <tr>
                 <th>Entry</th>
                 <th>Description</th>
+                <th>Store</th>
                 <th>Source</th>
+                <th>Status</th>
                 <th>Debit</th>
                 <th>Credit</th>
+                <th>Document</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -442,22 +1486,67 @@ export default function Page() {
                 <tr key={j.id}>
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
+                  <td>
+                    {j.store_id
+                      ? stores.find((s) => s.id === j.store_id)?.code || j.store_id
+                      : '—'}
+                  </td>
                   <td>{j.source_type || 'manual'}</td>
+                  <td>{j.status || 'posted'}</td>
                   <td>{j.total_debit}</td>
                   <td>{j.total_credit}</td>
+                  <td>
+                    {j.has_attachment ? (
+                      <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button type="button" onClick={() => downloadJournalAttachment(j.id)}>
+                          Download
+                        </button>
+                        <button type="button" onClick={() => removeJournalAttachment(j.id)}>
+                          Remove
+                        </button>
+                      </span>
+                    ) : (
+                      <label style={{ cursor: 'pointer' }}>
+                        <span className="muted">Upload</span>
+                        <input
+                          type="file"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadJournalAttachment(j.id, f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                  </td>
+                  <td>
+                    {(j.status || 'posted') === 'posted' ? (
+                      <button type="button" onClick={() => unpostJournal(j.id)}>
+                        Unpost
+                      </button>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
       {tab === 'reconcile' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
+          <div
+            className="card"
+            style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}
+            id="bank-reconciliation"
+          >
             <h3>New statement</h3>
             <select value={reconAccountId} onChange={(e) => setReconAccountId(e.target.value)}>
-              {liquid.map((a) => (
+              {liquid
+                .filter((a) => a.is_active !== false)
+                .map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.code} — {a.name} ({a.balance})
                 </option>
@@ -493,12 +1582,97 @@ export default function Page() {
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
+            <h3>Bank feed settings</h3>
+            <p className="muted">
+              Capability metadata for bank-feed sync (providers, timeouts). Secrets and connection
+              tokens are never included. Export via <code>GET /settings/bank-feed/export</code>{' '}
+              (Stage 156 F1).
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const tenant = localStorage.getItem('tenant') || '';
+                const res = await fetch(`${apiBase}/settings/bank-feed/export`, {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                  },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'bank_feed_settings_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Bank-feed settings CSV downloaded (Stage 156 F1)');
+              }}
+            >
+              Export bank-feed settings CSV
+            </button>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 640 }}>
             <h3>Bank API connections</h3>
             <p className="muted">
               Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any
               aggregator that returns JSON transactions). Sync creates a reconcilable statement;
-              duplicates are skipped by external ref.
+              duplicates are skipped by external ref. Filter via <code>bank_conn_active</code> →{' '}
+              <code>GET /accounting/bank-connections?is_active=</code> (Stage 126 C1).
             </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <select
+                value={bankConnActiveFilter || 'default'}
+                onChange={(e) => {
+                  const v = e.target.value === 'default' ? '' : e.target.value;
+                  setBankConnActiveFilter(v);
+                  const url = new URL(window.location.href);
+                  if (v === 'true' || v === 'false') url.searchParams.set('bank_conn_active', v);
+                  else url.searchParams.delete('bank_conn_active');
+                  window.history.replaceState({}, '', url.toString());
+                  refresh({ bankConnActive: v }).catch((err) => setError(err.message));
+                }}
+              >
+                <option value="default">Active filter (default / all)</option>
+                <option value="true">Active only</option>
+                <option value="false">Inactive only</option>
+                <option value="all">All (active_only=false)</option>
+              </select>
+              <button
+                type="button"
+                onClick={async () => {
+                  const token = localStorage.getItem('token') || '';
+                  const qs = new URLSearchParams();
+                  if (bankConnActiveFilter === 'true' || bankConnActiveFilter === 'false') {
+                    qs.set('is_active', bankConnActiveFilter);
+                  } else if (bankConnActiveFilter === 'all') {
+                    qs.set('active_only', 'false');
+                  }
+                  const q = qs.toString();
+                  const res = await fetch(
+                    `${apiBase}/accounting/bank-connections/export${q ? `?${q}` : ''}`,
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+                  if (!res.ok) {
+                    setError(await res.text());
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = 'bank_connections_export.csv';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                  setMessage('Bank connections CSV downloaded');
+                }}
+              >
+                Export bank connections CSV
+              </button>
+            </div>
             <input value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
             <select value={connProvider} onChange={(e) => setConnProvider(e.target.value)}>
               <option value="mock">mock (built-in sample feed)</option>
@@ -523,10 +1697,20 @@ export default function Page() {
               {connections.map((c) => (
                 <li key={c.id} style={{ marginBottom: 8 }}>
                   {c.display_name} · {c.provider}
+                  {c.is_active === false ? ' · inactive' : ''}
                   {c.last_sync_status ? ` · last ${c.last_sync_status}` : ''}{' '}
                   <button type="button" onClick={() => syncConnection(c.id)}>
                     Sync now
                   </button>{' '}
+                  {c.is_active === false ? (
+                    <button type="button" onClick={() => setBankConnActive(c.id, true)}>
+                      Reactivate
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => setBankConnActive(c.id, false)}>
+                      Deactivate
+                    </button>
+                  )}{' '}
                   <button type="button" onClick={() => removeConnection(c.id)}>
                     Remove
                   </button>
@@ -536,7 +1720,61 @@ export default function Page() {
             </ul>
           </div>
 
-          <h3>Statements</h3>
+          <h3 id="statements">Statements</h3>
+          <p className="muted">
+            Filter via <code>statement_status</code> → <code>GET /accounting/bank-statements?status=</code>;
+            header list export via <code>/accounting/bank-statements/export</code> (Stage 131 B1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+            <select
+              value={statementStatusFilter}
+              onChange={(e) => setStatementStatusFilter(e.target.value)}
+              aria-label="Bank statement status filter"
+            >
+              <option value="">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="in_progress">In progress</option>
+              <option value="reconciled">Reconciled</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                writeAccountingQuery({
+                  statement_status: statementStatusFilter || null,
+                });
+                refresh({ statementStatus: statementStatusFilter }).catch((err) =>
+                  setError(err.message),
+                );
+              }}
+            >
+              Apply filter
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const params = new URLSearchParams();
+                if (statementStatusFilter) params.set('status', statementStatusFilter);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${apiBase}/accounting/bank-statements/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'bank_statements_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Bank statements CSV downloaded (Stage 131 B1)');
+              }}
+            >
+              Export statements CSV
+            </button>
+          </div>
           <table className="table">
             <thead>
               <tr>
@@ -744,10 +1982,71 @@ export default function Page() {
 
       {tab === 'cheques' && (
         <>
-          <p className="muted">
+          <p className="muted" id="cheques">
             Received cheques post to 1020 then deposit/clear to Bank. Issued cheques post to 2015 until
             cleared against Bank.
           </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8, alignItems: 'center' }}>
+            <select
+              value={chequeDirectionFilter}
+              onChange={(e) => setChequeDirectionFilter(e.target.value)}
+              aria-label="Cheque direction filter"
+            >
+              <option value="">All directions</option>
+              <option value="received">Received</option>
+              <option value="issued">Issued</option>
+            </select>
+            <select
+              value={chequeStatusFilter}
+              onChange={(e) => setChequeStatusFilter(e.target.value)}
+              aria-label="Cheque status filter"
+            >
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="deposited">Deposited</option>
+              <option value="cleared">Cleared</option>
+              <option value="bounced">Bounced</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                writeAccountingQuery({
+                  cheque_direction: chequeDirectionFilter || null,
+                  cheque_status: chequeStatusFilter || null,
+                });
+                refresh().catch((err) => setError(err.message));
+              }}
+            >
+              Apply filter
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const params = new URLSearchParams();
+                if (chequeDirectionFilter) params.set('direction', chequeDirectionFilter);
+                if (chequeStatusFilter) params.set('status', chequeStatusFilter);
+                const qs = params.toString() ? `?${params}` : '';
+                const res = await fetch(`${apiBase}/accounting/cheques/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'cheques_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Cheques CSV downloaded (Stage 130 C1)');
+              }}
+            >
+              Export cheques CSV
+            </button>
+          </div>
           <table className="table">
             <thead>
               <tr>

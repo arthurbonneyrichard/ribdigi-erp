@@ -1,0 +1,12 @@
+# Stage 26 K1 — production overlay (managed data plane assumed)
+namespace: ribdigi-production
+backend:
+  replicaCount: 3
+frontend:
+  replicaCount: 2
+celeryWorker:
+  replicaCount: 2
+ingress:
+  enabled: true
+  host: app.example.com
+  tls: true

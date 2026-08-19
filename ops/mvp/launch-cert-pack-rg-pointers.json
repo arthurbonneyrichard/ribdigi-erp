@@ -1,0 +1,60 @@
+{
+  "id": "launch-cert-pack-rg-pointers",
+  "stage": 230,
+  "pack": "P1",
+  "doc": "docs/LAUNCH_CERT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+    "launch_cert_pack": "docs/LAUNCH_CERT_MVP.md",
+    "checklist_map": "ops/launch/checklist-map.json",
+    "launch_cert_remaining_gate": "docs/LAUNCH_CERT_REMAINING_GATE_MVP.md",
+    "staging_gha_pack_remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+    "staging_gha": "docs/STAGING_GHA_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "production_signoff_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "sections_1_3_verified": false,
+  "topics": [
+    "launch_cert_pack_stage27_l1",
+    "launch_cert_remaining_gate_stage204",
+    "staging_gha_pack_remaining_gate_stage229",
+    "staging_gha_stage28_g1",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "lcprp-pack",
+      "title": "Point to Stage 27 L1 launch cert pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprp-lc-gate",
+      "title": "Point to Stage 204 launch cert remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprp-sgha-gate",
+      "title": "Point to Stage 229 staging GHA pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprp-staging-gha",
+      "title": "Point to Stage 28 G1 staging GHA",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lcprp-signoff-remaining",
+      "title": "Production sign-off Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 230 P1 launch cert pack RG pointers packaging only. Do not claim production sign-off Complete."
+}

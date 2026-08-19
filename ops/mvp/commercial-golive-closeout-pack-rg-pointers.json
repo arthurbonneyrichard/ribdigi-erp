@@ -1,0 +1,60 @@
+{
+  "id": "commercial-golive-closeout-pack-rg-pointers",
+  "stage": 260,
+  "pack": "P1",
+  "doc": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+    "first_commercial_day_pack_remaining_gate": "docs/FIRST_COMMERCIAL_DAY_PACK_REMAINING_GATE_MVP.md",
+    "steady_state_ops_pack_remaining_gate": "docs/STEADY_STATE_OPS_PACK_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout_register": "ops/mvp/commercial-golive-closeout.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "commercial_golive_closeout_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "topics": [
+    "commercial_golive_closeout_stage70_g1",
+    "first_commercial_day_pack_remaining_gate_stage259",
+    "steady_state_ops_pack_remaining_gate_stage258",
+    "commercial_golive_closeout_remaining_gate_stage200",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cgcprp-stage70",
+      "title": "Point to Stage 70 G1 commercial go-live closeout",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprp-stage259",
+      "title": "Point to Stage 259 first commercial day pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprp-stage258",
+      "title": "Point to Stage 258 steady-state ops pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprp-stage200",
+      "title": "Point to Stage 200 commercial go-live closeout remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprp-closeout-remaining",
+      "title": "Commercial go-live closeout Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 260 P1 commercial go-live closeout pack RG pointers packaging only. Do not claim commercial go-live closeout Complete."
+}

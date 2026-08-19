@@ -1,0 +1,57 @@
+{
+  "id": "live-migration-blockers",
+  "stage": 193,
+  "pack": "B1",
+  "doc": "docs/LIVE_MIGRATION_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md",
+    "migration_gate": "docs/MIGRATION_GATE_MVP.md",
+    "quarterly_pos_ops_gates": "docs/QUARTERLY_POS_OPS_GATES_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_migration_execution": "REMAINING",
+    "production_migrate": "REMAINING",
+    "ci_yml_deploy": "REMAINING",
+    "stage169_m1_as_live_migrate": "NON_CLAIM",
+    "stage178_g1_as_live_migrate": "NON_CLAIM",
+    "live_migration_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "mb-live-migrate",
+      "title": "Mark live migration execution Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mb-prod-migrate",
+      "title": "Mark production migrate Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mb-ci-deploy",
+      "title": "Mark main ci.yml deploy Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mb-stage169-nonclaim",
+      "title": "Mark Stage 169 M1 migration gate as non-claim for live migrate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mb-migrate-remaining",
+      "title": "Live migration Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 193 B1 live migration blocker matrix packaging only. Live migration Complete remains MISSING."
+}

@@ -1,0 +1,61 @@
+{
+  "id": "live-migration-pack-pointers",
+  "stage": 193,
+  "pack": "P1",
+  "doc": "docs/LIVE_MIGRATION_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIVE_MIGRATION_REMAINING_GATE_MVP.md",
+    "migration_gate": "docs/MIGRATION_GATE_MVP.md",
+    "migration_gate_register": "ops/mvp/migration-gate.json",
+    "quarterly_pos_ops_gates": "docs/QUARTERLY_POS_OPS_GATES_MVP.md",
+    "quarterly_pos_ops_gates_register": "ops/mvp/quarterly-pos-ops-gates.json",
+    "live_dr_remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "database_documentation": "docs/DATABASE_DOCUMENTATION.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_migration_claimed": false,
+  "production_migrate_claimed": false,
+  "ci_deploy_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "migration_gate_stage169",
+    "quarterly_pos_ops_gates_stage178",
+    "live_dr_remaining_gate_stage192",
+    "database_documentation",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "mp-migration-gate",
+      "title": "Point to Stage 169 migration gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-quarterly-gates",
+      "title": "Point to Stage 178 quarterly POS ops gates",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-live-dr-gate",
+      "title": "Point to Stage 192 live DR remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-database-docs",
+      "title": "Point to DATABASE_DOCUMENTATION migration honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mp-migrate-remaining",
+      "title": "Live migration Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 193 P1 live migration pack pointers packaging only. Do not claim live migration Complete."
+}

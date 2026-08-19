@@ -1,0 +1,60 @@
+{
+  "id": "troubleshooting-index-pack-rg-pointers",
+  "stage": 338,
+  "pack": "P1",
+  "doc": "docs/TROUBLESHOOTING_INDEX_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/TROUBLESHOOTING_INDEX_PACK_REMAINING_GATE_MVP.md",
+    "troubleshooting_index": "docs/TROUBLESHOOTING_INDEX_MVP.md",
+    "faq_offline_pos_pack_remaining_gate": "docs/FAQ_OFFLINE_POS_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_runbook_pack_remaining_gate": "docs/OFFLINE_SYNC_RUNBOOK_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "offline_complete_claimed": false,
+  "live_dr_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": [
+    "troubleshooting_index_stage171",
+    "faq_offline_pos_pack_remaining_gate_stage337",
+    "offline_sync_runbook_pack_remaining_gate_stage336",
+    "offline_complete_pack_remaining_gate_stage329",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "tiprp-stage171",
+      "title": "Point to Stage 171 troubleshooting index packaging",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-stage337",
+      "title": "Point to Stage 337 FAQ offline POS pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-stage336",
+      "title": "Point to Stage 336 offline sync runbook pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "tiprp-index-remaining",
+      "title": "Live troubleshooting index Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 338 P1 troubleshooting index pack RG pointers packaging only. Do not claim live troubleshooting index Complete."
+}

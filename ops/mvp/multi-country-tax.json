@@ -1,0 +1,156 @@
+{
+  "stage": "60",
+  "workstream": "T1",
+  "doc": "docs/MULTI_COUNTRY_TAX_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "geographic_expansion": "ops/mvp/geographic-expansion.json",
+  "geographic_expansion_doc": "docs/GEOGRAPHIC_EXPANSION_MVP.md",
+  "billing_deferred_honesty": "ops/mvp/billing-deferred-honesty.json",
+  "billing_deferred_honesty_doc": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+  "compliance_questionnaire": "ops/mvp/compliance-questionnaire.json",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "advanced_manufacturing": "ops/mvp/advanced-manufacturing.json",
+  "advanced_manufacturing_doc": "docs/ADVANCED_MANUFACTURING_MVP.md",
+  "ecommerce_integration": "ops/mvp/ecommerce-integration.json",
+  "ecommerce_integration_doc": "docs/ECOMMERCE_INTEGRATION_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage60_plan": "docs/STAGE_60_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "multi_country_tax_engine_claimed": false,
+  "tax_efile_portal_live_claimed": false,
+  "gst_vat_sales_tax_compliance_live": false,
+  "multi_country_tax_program_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage60_t1_multi_country_tax.json",
+  "steps": [
+    {
+      "id": "mct-product-overview",
+      "category": "tax",
+      "title": "Index PRODUCT_OVERVIEW GST / VAT / Sales Tax Mid-Term multi-country themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_60_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "mct-geographic",
+      "category": "compliance",
+      "title": "Link Stage 56 geographic expansion as multi-market adjacency (not tax e-file live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/GEOGRAPHIC_EXPANSION_MVP.md",
+        "ops/mvp/geographic-expansion.json"
+      ],
+      "source": "docs/GEOGRAPHIC_EXPANSION_MVP.md"
+    },
+    {
+      "id": "mct-billing-deferred",
+      "category": "tax",
+      "title": "Link billing deferred honesty (ADR-002) as commercial adjacency (not tax portal live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+        "ops/mvp/billing-deferred-honesty.json"
+      ],
+      "source": "docs/BILLING_DEFERRED_HONESTY_MVP.md"
+    },
+    {
+      "id": "mct-compliance-q",
+      "category": "compliance",
+      "title": "Link compliance questionnaire as procurement adjacency (not GST/VAT/Sales Tax engine live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "ops/mvp/compliance-questionnaire.json"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "mct-manufacturing-adjacency",
+      "category": "tax",
+      "title": "Link Stage 60 M1 advanced manufacturing as ops-depth adjacency (not multi-country tax program live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADVANCED_MANUFACTURING_MVP.md",
+        "ops/mvp/advanced-manufacturing.json"
+      ],
+      "source": "docs/ADVANCED_MANUFACTURING_MVP.md"
+    },
+    {
+      "id": "mct-ecommerce-adjacency",
+      "category": "compliance",
+      "title": "Link Stage 59 e-commerce integration as channel adjacency (store connector \u2260 tax compliance)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ECOMMERCE_INTEGRATION_MVP.md",
+        "ops/mvp/ecommerce-integration.json"
+      ],
+      "source": "docs/ECOMMERCE_INTEGRATION_MVP.md"
+    },
+    {
+      "id": "mct-roadmap-backlog",
+      "category": "tax",
+      "title": "Index DEVELOPMENT_ROADMAP tax / localization backlog as Remaining source",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DEVELOPMENT_ROADMAP.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/DEVELOPMENT_ROADMAP.md"
+    },
+    {
+      "id": "mct-plan-honesty",
+      "category": "tax",
+      "title": "Confirm Stage 60 plan explicitly defers live multi-country tax e-file / engine",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_60_PLAN.md",
+        "docs/MULTI_COUNTRY_TAX_MVP.md"
+      ],
+      "source": "docs/STAGE_60_PLAN.md"
+    },
+    {
+      "id": "mct-engine-remaining",
+      "category": "honesty",
+      "title": "Live multi-country tax engine Remaining \u2014 packaging \u2260 global GST/VAT/Sales Tax engine",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_60_PLAN.md",
+        "docs/MULTI_COUNTRY_TAX_MVP.md"
+      ],
+      "source": "docs/STAGE_60_PLAN.md"
+    },
+    {
+      "id": "mct-efile-remaining",
+      "category": "honesty",
+      "title": "Live tax e-file portal Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_60_PLAN.md",
+        "docs/MULTI_COUNTRY_TAX_MVP.md"
+      ],
+      "source": "docs/STAGE_60_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Live multi-country tax engine Complete",
+    "Live GST / VAT / Sales Tax e-file portal Complete",
+    "GST / VAT / Sales Tax compliance program live Complete",
+    "Multi-country tax program live Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

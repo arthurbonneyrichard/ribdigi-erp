@@ -1,0 +1,77 @@
+{
+  "id": "unsubscribe-link-gate-honesty-pack-rg-pointers",
+  "stage": 827,
+  "pack": "P1",
+  "doc": "docs/UNSUBSCRIBE_LINK_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/UNSUBSCRIBE_LINK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "suppression_list_gate_honesty_pack_remaining_gate": "docs/SUPPRESSION_LIST_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "complaint_feedback_gate_honesty_pack_remaining_gate": "docs/COMPLAINT_FEEDBACK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "unsubscribe_link_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "unsubscribe_link_gate_honesty_complete_claimed": false,
+  "unsubscribe_link_gate_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_unsubscribe_link_gate_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "suppression_list_gate_honesty_pack_remaining_gate_stage826": "docs/SUPPRESSION_LIST_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "complaint_feedback_gate_honesty_pack_remaining_gate_stage825": "docs/COMPLAINT_FEEDBACK_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "unsubscribe_link_gate_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / unsubscribe_link_gate / unsubscribe_link_gate_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "ulghp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Unsubscribe Link Gate Honesty Pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ulghp-stage826",
+      "title": "Point to Stage 826 SUPPRESSION LIST GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ulghp-stage825",
+      "title": "Point to Stage 825 COMPLAINT FEEDBACK GATE HONESTY PACK remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ulghp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ulghp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ulghp-prior-pack",
+      "title": "Point to Unsubscribe Link Gate Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ulghp-checklist-remaining",
+      "title": "Offline Complete / Unsubscribe Link Gate / Unsubscribe Link Gate honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 827 P1 Unsubscribe Link Gate Honesty Pack RG pointers packaging only."
+}

@@ -27,6 +27,7 @@ CANCELLED = "cancelled"
 def serialize_cheque(row: m.Cheque) -> dict:
     return {
         "id": row.id,
+        "company_id": getattr(row, "company_id", None),
         "direction": row.direction,
         "status": row.status,
         "cheque_number": row.cheque_number,
@@ -45,13 +46,21 @@ def serialize_cheque(row: m.Cheque) -> dict:
     }
 
 
-async def get_cheque(db: AsyncSession, tenant_id: str, cheque_id: str) -> m.Cheque:
+async def get_cheque(
+    db: AsyncSession,
+    tenant_id: str,
+    cheque_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Cheque:
     row = (
         await db.execute(
             select(m.Cheque).where(m.Cheque.id == cheque_id, m.Cheque.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
     if not row:
+        raise HTTPException(status_code=404, detail="Cheque not found")
+    if company_id and row.company_id and row.company_id != company_id:
         raise HTTPException(status_code=404, detail="Cheque not found")
     return row
 
@@ -62,8 +71,11 @@ async def list_cheques(
     *,
     direction: str | None = None,
     status: str | None = None,
+    company_id: str | None = None,
 ) -> list[m.Cheque]:
     stmt = select(m.Cheque).where(m.Cheque.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.Cheque.company_id == company_id)
     if direction:
         stmt = stmt.where(m.Cheque.direction == direction)
     if status:
@@ -79,6 +91,32 @@ def _cheque_number_from_payment(reference: str | None, payment_number: str) -> s
     return f"CHQ-{payment_number}"[:50]
 
 
+async def assert_cheque_number_available(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    cheque_number: str,
+    direction: str,
+    company_id: str | None = None,
+    exclude_id: str | None = None,
+) -> str:
+    number = (cheque_number or "").strip()
+    if not number:
+        raise HTTPException(status_code=400, detail="cheque_number is required")
+    stmt = select(m.Cheque.id).where(
+        m.Cheque.tenant_id == tenant_id,
+        m.Cheque.cheque_number == number,
+        m.Cheque.direction == direction,
+    )
+    if company_id:
+        stmt = stmt.where(m.Cheque.company_id == company_id)
+    if exclude_id:
+        stmt = stmt.where(m.Cheque.id != exclude_id)
+    if (await db.execute(stmt.limit(1))).scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Cheque number already in use")
+    return number
+
+
 async def create_from_customer_payment(
     db: AsyncSession,
     *,
@@ -91,9 +129,18 @@ async def create_from_customer_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    company_id = getattr(payment, "company_id", None)
+    number = await assert_cheque_number_available(
+        db,
+        tenant_id=tenant_id,
+        cheque_number=cheque_number
+        or _cheque_number_from_payment(payment.reference, payment.payment_number),
+        direction=RECEIVED,
+        company_id=company_id,
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
+        company_id=company_id,
         direction=RECEIVED,
         status=PENDING,
         cheque_number=number,
@@ -122,9 +169,18 @@ async def create_from_supplier_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    company_id = getattr(payment, "company_id", None)
+    number = await assert_cheque_number_available(
+        db,
+        tenant_id=tenant_id,
+        cheque_number=cheque_number
+        or _cheque_number_from_payment(payment.reference, payment.payment_number),
+        direction=ISSUED,
+        company_id=company_id,
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
+        company_id=company_id,
         direction=ISSUED,
         status=PENDING,
         cheque_number=number,
@@ -147,15 +203,17 @@ async def deposit_cheque(
     tenant_id: str,
     user_id: str,
     cheque_id: str,
+    company_id: str | None = None,
 ) -> m.Cheque:
     """Move received cheque from Cheques Receivable (1020) to Bank (1010)."""
-    cheque = await get_cheque(db, tenant_id, cheque_id)
+    cheque = await get_cheque(db, tenant_id, cheque_id, company_id=company_id)
     if cheque.direction != RECEIVED:
         raise HTTPException(status_code=409, detail="Only received cheques can be deposited")
     if cheque.status != PENDING:
         raise HTTPException(status_code=409, detail=f"Cannot deposit cheque in status {cheque.status}")
 
-    await ensure_default_accounts(db, tenant_id)
+    cid = company_id or cheque.company_id
+    await ensure_default_accounts(db, tenant_id, company_id=cid)
     amount = float(cheque.amount)
     await post_journal_entry(
         db,
@@ -165,6 +223,7 @@ async def deposit_cheque(
         reference=cheque.cheque_number,
         source_type="cheque_deposit",
         source_id=cheque.id,
+        company_id=cid,
         lines=[
             {"account_code": "1010", "debit": amount, "credit": 0, "description": "Bank"},
             {"account_code": "1020", "debit": 0, "credit": amount, "description": "Cheques Receivable"},
@@ -182,11 +241,13 @@ async def clear_cheque(
     tenant_id: str,
     user_id: str,
     cheque_id: str,
+    company_id: str | None = None,
 ) -> m.Cheque:
     """Mark cleared. Issued pending cheques also post Bank out of Cheques Payable."""
-    cheque = await get_cheque(db, tenant_id, cheque_id)
+    cheque = await get_cheque(db, tenant_id, cheque_id, company_id=company_id)
     amount = float(cheque.amount)
-    await ensure_default_accounts(db, tenant_id)
+    cid = company_id or cheque.company_id
+    await ensure_default_accounts(db, tenant_id, company_id=cid)
 
     if cheque.direction == RECEIVED:
         if cheque.status not in {PENDING, DEPOSITED}:
@@ -201,6 +262,7 @@ async def clear_cheque(
                 reference=cheque.cheque_number,
                 source_type="cheque_clear",
                 source_id=cheque.id,
+                company_id=cid,
                 lines=[
                     {"account_code": "1010", "debit": amount, "credit": 0, "description": "Bank"},
                     {
@@ -224,6 +286,7 @@ async def clear_cheque(
             reference=cheque.cheque_number,
             source_type="cheque_clear",
             source_id=cheque.id,
+            company_id=cid,
             lines=[
                 {"account_code": "2015", "debit": amount, "credit": 0, "description": "Cheques Payable"},
                 {"account_code": "1010", "debit": 0, "credit": amount, "description": "Bank"},
@@ -332,9 +395,10 @@ async def bounce_cheque(
     user_id: str,
     cheque_id: str,
     reason: str | None = None,
+    company_id: str | None = None,
 ) -> m.Cheque:
     """Dishonour cheque: reverse GL to AR/AP and restore document balances."""
-    cheque = await get_cheque(db, tenant_id, cheque_id)
+    cheque = await get_cheque(db, tenant_id, cheque_id, company_id=company_id)
     if cheque.status in {BOUNCED, CANCELLED}:
         raise HTTPException(status_code=409, detail=f"Cheque already {cheque.status}")
     if cheque.status == CLEARED and cheque.direction == RECEIVED:
@@ -345,7 +409,8 @@ async def bounce_cheque(
     elif cheque.status not in {PENDING, DEPOSITED, CLEARED}:
         raise HTTPException(status_code=409, detail=f"Cannot bounce cheque in status {cheque.status}")
 
-    await ensure_default_accounts(db, tenant_id)
+    cid = company_id or cheque.company_id
+    await ensure_default_accounts(db, tenant_id, company_id=cid)
     amount = float(cheque.amount)
 
     if cheque.direction == RECEIVED:
@@ -466,6 +531,7 @@ async def bounce_cheque(
         reference=cheque.cheque_number,
         source_type="cheque_bounce",
         source_id=cheque.id,
+        company_id=cid,
         lines=lines,
     )
     cheque.status = BOUNCED
@@ -483,15 +549,17 @@ async def cancel_cheque(
     user_id: str,
     cheque_id: str,
     reason: str | None = None,
+    company_id: str | None = None,
 ) -> m.Cheque:
     """Cancel an issued pending cheque (stop payment) before bank clearing."""
-    cheque = await get_cheque(db, tenant_id, cheque_id)
+    cheque = await get_cheque(db, tenant_id, cheque_id, company_id=company_id)
     if cheque.direction != ISSUED:
         raise HTTPException(status_code=409, detail="Only issued cheques can be cancelled; use bounce for received")
     if cheque.status != PENDING:
         raise HTTPException(status_code=409, detail=f"Cannot cancel cheque in status {cheque.status}")
 
-    await ensure_default_accounts(db, tenant_id)
+    cid = company_id or cheque.company_id
+    await ensure_default_accounts(db, tenant_id, company_id=cid)
     amount = float(cheque.amount)
     await post_journal_entry(
         db,
@@ -501,6 +569,7 @@ async def cancel_cheque(
         reference=cheque.cheque_number,
         source_type="cheque_cancel",
         source_id=cheque.id,
+        company_id=cid,
         lines=[
             {
                 "account_code": "2015",

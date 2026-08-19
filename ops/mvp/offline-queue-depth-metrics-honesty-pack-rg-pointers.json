@@ -1,0 +1,77 @@
+{
+  "id": "offline-queue-depth-metrics-honesty-pack-rg-pointers",
+  "stage": 469,
+  "pack": "P1",
+  "doc": "docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OFFLINE_QUEUE_DEPTH_METRICS_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_settings_sync_ia_honesty_pack_remaining_gate": "docs/OFFLINE_SETTINGS_SYNC_IA_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_dashboard_widget_honesty_pack_remaining_gate": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "offline_queue_depth_metrics_pack_remaining_gate": "docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "offline_queue_depth_metrics_honesty_complete_claimed": false,
+  "offline_queue_depth_metrics_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_section5_offline_queue_depth_metrics_honesty": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "offline_settings_sync_ia_honesty_pack_remaining_gate_stage468": "docs/OFFLINE_SETTINGS_SYNC_IA_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_sync_dashboard_widget_honesty_pack_remaining_gate_stage467": "docs/OFFLINE_SYNC_DASHBOARD_WIDGET_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_connectivity_badge_pack_remaining_gate_stage392": "docs/OFFLINE_CONNECTIVITY_BADGE_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "offline_queue_depth_metrics_pack_remaining_gate": "docs/OFFLINE_QUEUE_DEPTH_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "golive_honesty_pack_remaining_gate_stage408": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "offline_complete / queue_depth_metrics / queue_depth_metrics_honesty / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "oqdmhprp-change-impact",
+      "title": "Point to CHANGE_IMPACT \u00a75 Offline Queue Depth Metrics honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmhprp-stage468",
+      "title": "Point to Stage 468 Offline Settings Sync IA honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmhprp-stage467",
+      "title": "Point to Stage 467 Offline Sync Dashboard Widget honesty pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmhprp-stage392",
+      "title": "Point to Stage 392 offline connectivity badge pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmhprp-stage329",
+      "title": "Point to Stage 329 Offline Complete pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmhprp-oqdm-pack",
+      "title": "Point to Offline Queue Depth Metrics Pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "oqdmhprp-checklist-remaining",
+      "title": "Offline Complete / Queue Depth Metrics / Queue Depth Metrics honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 469 P1 Offline Queue Depth Metrics Honesty Pack RG pointers packaging only."
+}

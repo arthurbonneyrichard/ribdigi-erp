@@ -1,0 +1,60 @@
+{
+  "id": "billing-blockers",
+  "stage": 181,
+  "pack": "B1",
+  "doc": "docs/BILLING_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BILLING_REMAINING_GATE_MVP.md",
+    "adr002": "docs/ADR_002_BILLING_DEFERRED.md",
+    "billing_deferred_honesty": "docs/BILLING_DEFERRED_HONESTY_MVP.md",
+    "commercial_billing_deferred": "docs/COMMERCIAL_BILLING_DEFERRED_MVP.md"
+  },
+  "packaging_complete": true,
+  "billing_complete_claimed": false,
+  "payment_provider_claimed": false,
+  "checkout_success_claimed": false,
+  "mrr_fabricated_claimed": false,
+  "subscriptions_live_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "adr002_paid_billing": "DEFERRED",
+    "payment_provider": "DEFERRED",
+    "checkout_success": "NON_CLAIM",
+    "mrr_fabricated": "BANNED",
+    "subscriptions_live": "REMAINING",
+    "billing_complete_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "bb-adr002",
+      "title": "Mark ADR-002 paid billing Deferred",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bb-payment-provider",
+      "title": "Mark payment provider Deferred / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bb-checkout",
+      "title": "Mark checkout success non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bb-mrr-ban",
+      "title": "Mark fabricated MRR Banned",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bb-billing-remaining",
+      "title": "Billing Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 181 B1 billing blocker matrix packaging only. Billing Complete remains MISSING."
+}

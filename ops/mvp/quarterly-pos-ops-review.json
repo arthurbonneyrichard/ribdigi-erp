@@ -1,0 +1,52 @@
+{
+  "id": "quarterly-pos-ops-review",
+  "stage": 178,
+  "pack": "Q1",
+  "doc": "docs/QUARTERLY_POS_OPS_REVIEW_MVP.md",
+  "related": {
+    "rollup": "docs/QUARTERLY_POS_OPS_ROLLUP_MVP.md",
+    "gates": "docs/QUARTERLY_POS_OPS_GATES_MVP.md",
+    "monthly_review": "docs/MONTHLY_POS_OPS_REVIEW_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "offline_complete_attestation": "docs/OFFLINE_COMPLETE_ATTESTATION.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "support_sla_claimed": false,
+  "distinct_from_monthly_rollup": true,
+  "steps": [
+    {
+      "id": "qr-collect-monthly",
+      "title": "Collect Stage 177 monthly rollups for the quarter",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qr-rollup",
+      "title": "Complete R1 monthly outcomes rollup",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qr-gates",
+      "title": "Complete G1 Offline Complete / migration / support / go-live honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qr-actions",
+      "title": "Record next-quarter actions; escalate P1/P2",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "qr-offline-golive-remaining",
+      "title": "Offline Complete / go-live / live SLA Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 178 Q1 quarterly POS ops rollup packaging only. Do not claim Offline Complete or go-live."
+}

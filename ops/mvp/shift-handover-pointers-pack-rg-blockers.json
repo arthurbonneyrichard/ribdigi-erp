@@ -1,0 +1,63 @@
+{
+  "id": "shift-handover-pointers-pack-rg-blockers",
+  "stage": 360,
+  "pack": "B1",
+  "doc": "docs/SHIFT_HANDOVER_POINTERS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SHIFT_HANDOVER_POINTERS_PACK_REMAINING_GATE_MVP.md",
+    "shift_handover_pointers": "docs/SHIFT_HANDOVER_POINTERS_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "zero_conflict_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "support_sla_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "zero_conflict_claimed": "REMAINING",
+    "stage175_as_live_shift_handover_pointers": "NON_CLAIM",
+    "stage174_as_live_shift_handover_pointers": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "support_sla_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false",
+    "zero_conflict_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "shpprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprb-sla",
+      "title": "Mark support SLA Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprb-zero-conflict",
+      "title": "Mark zero-conflict Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprb-stage175-nonclaim",
+      "title": "Mark Stage 175 / Stage 174 as non-claim for live shift handover pointers Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "shpprb-checklist-remaining",
+      "title": "Live shift handover pointers Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 360 B1 shift handover pointers pack RG blocker matrix packaging only. Live shift handover pointers Completes remain MISSING."
+}

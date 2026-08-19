@@ -1,0 +1,54 @@
+{
+  "id": "launch-cert-remaining-gate",
+  "stage": 204,
+  "pack": "I1",
+  "doc": "docs/LAUNCH_CERT_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/LAUNCH_CERT_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/LAUNCH_CERT_PACK_POINTERS_MVP.md",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md",
+    "staging_gha": "docs/STAGING_GHA_MVP.md",
+    "cutover_remaining_gate": "docs/CUTOVER_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_signoff_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "sections_1_3_verified": false,
+  "distinct_from_stage27_l1_launch_cert": true,
+  "distinct_from_stage28_g1_staging_gha": true,
+  "distinct_from_stage201_preflight_remaining_gate": true,
+  "steps": [
+    {
+      "id": "lc-read-blockers",
+      "title": "Read B1 launch cert blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lc-follow-pointers",
+      "title": "Follow P1 Stage 27 / Stage 28 / Stage 203 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lc-cert-missing",
+      "title": "Reaffirm launch certification MISSING until executed production sign-off ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lc-no-packaging-as-cert",
+      "title": "Do not treat Stage 27 L1 / Stage 28 G1 as launch certification Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "lc-cert-remaining",
+      "title": "Launch certification / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 204 I1 launch cert remaining-gate index packaging only. Do not claim LAUNCH certification Complete."
+}

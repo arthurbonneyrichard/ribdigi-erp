@@ -1,0 +1,57 @@
+{
+  "id": "knowledge-transfer-pack-remaining-gate",
+  "stage": 240,
+  "pack": "I1",
+  "doc": "docs/KNOWLEDGE_TRANSFER_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/KNOWLEDGE_TRANSFER_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/KNOWLEDGE_TRANSFER_PACK_RG_POINTERS_MVP.md",
+    "knowledge_transfer": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+    "knowledge_transfer_remaining_gate": "docs/KNOWLEDGE_TRANSFER_REMAINING_GATE_MVP.md",
+    "operator_handoff_pack_remaining_gate": "docs/OPERATOR_HANDOFF_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_base_pack_remaining_gate": "docs/KNOWLEDGE_BASE_PACK_REMAINING_GATE_MVP.md",
+    "knowledge_transfer_register": "ops/mvp/knowledge-transfer.json"
+  },
+  "packaging_complete": true,
+  "live_knowledge_transfer_claimed": false,
+  "live_training_claimed": false,
+  "training_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage33_t1_knowledge_transfer": true,
+  "distinct_from_stage216_knowledge_transfer_remaining_gate": true,
+  "distinct_from_stage239_operator_handoff_pack_remaining_gate": true,
+  "distinct_from_stage238_knowledge_base_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "ktpr-read-blockers",
+      "title": "Read B1 knowledge transfer pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktpr-follow-pointers",
+      "title": "Follow P1 Stage 33 / Stage 216 / Stage 239 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktpr-transfer-missing",
+      "title": "Reaffirm live knowledge-transfer MISSING until real training evidence ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktpr-no-packaging-as-live",
+      "title": "Do not treat Stage 33 T1 as live knowledge-transfer Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ktpr-transfer-remaining",
+      "title": "Live knowledge-transfer / live training / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 240 I1 knowledge transfer pack remaining-gate index packaging only. Do not claim live knowledge-transfer Complete."
+}

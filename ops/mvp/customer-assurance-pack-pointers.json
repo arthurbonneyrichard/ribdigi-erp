@@ -1,0 +1,62 @@
+{
+  "id": "customer-assurance-pack-pointers",
+  "stage": 195,
+  "pack": "P1",
+  "doc": "docs/CUSTOMER_ASSURANCE_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUSTOMER_ASSURANCE_REMAINING_GATE_MVP.md",
+    "commercial_assurance": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+    "commercial_assurance_register": "ops/mvp/commercial-assurance.json",
+    "assurance_evidence": "docs/ASSURANCE_EVIDENCE_MVP.md",
+    "assurance_evidence_register": "ops/mvp/assurance-evidence.json",
+    "commercial_evidence_chain": "docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md",
+    "commercial_evidence_chain_register": "ops/mvp/commercial-evidence-chain.json",
+    "first_tenant_live_onboarding_remaining_gate": "docs/FIRST_TENANT_LIVE_ONBOARDING_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "customer_assurance_claimed": false,
+  "assurance_claimed": false,
+  "evidence_chain_live_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "commercial_assurance_stage73",
+    "assurance_evidence_stage34",
+    "commercial_evidence_chain_stage73",
+    "first_tenant_live_onboarding_remaining_gate_stage194",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cp-commercial-assurance",
+      "title": "Point to Stage 73 commercial assurance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-assurance-evidence",
+      "title": "Point to Stage 34 assurance evidence",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-evidence-chain",
+      "title": "Point to Stage 73 commercial evidence chain",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-first-tenant-gate",
+      "title": "Point to Stage 194 first-tenant live onboarding remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cp-assurance-remaining",
+      "title": "Customer assurance Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 195 P1 customer assurance pack pointers packaging only. Do not claim customer assurance Complete."
+}

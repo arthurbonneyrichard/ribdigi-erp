@@ -1,0 +1,156 @@
+{
+  "stage": "71",
+  "workstream": "A1",
+  "doc": "docs/COMMERCIAL_ACCEPTANCE_MVP.md",
+  "stage71_plan": "docs/STAGE_71_PLAN.md",
+  "gate_matrix_doc": "docs/MVP_GATE_MATRIX_MVP.md",
+  "gate_matrix": "ops/mvp/gate-matrix.json",
+  "mvp_declaration_doc": "docs/MVP_DECLARATION_MVP.md",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "steady_state_doc": "docs/STEADY_STATE_OPS_MVP.md",
+  "steady_state": "ops/mvp/steady-state-ops.json",
+  "closeout_doc": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+  "closeout": "ops/mvp/commercial-golive-closeout.json",
+  "first_commercial_day_doc": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+  "first_commercial_day": "ops/mvp/first-commercial-day.json",
+  "golive_attestation_doc": "docs/GOLIVE_ATTESTATION_MVP.md",
+  "golive_attestation": "ops/mvp/golive-attestation.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "commercial_acceptance_claimed": false,
+  "steady_state_ops_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "first_commercial_day_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage71_a1_commercial_acceptance.json",
+  "steps": [
+    {
+      "id": "ca-owner-outline",
+      "category": "acceptance",
+      "title": "Index owner Commercial Acceptance Gate path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/ADR_148_STAGE71_OPEN.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    },
+    {
+      "id": "ca-gate-matrix",
+      "category": "acceptance",
+      "title": "Link Stage 31 G1 gate matrix as adjacency (gate packaging \u2260 acceptance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MVP_GATE_MATRIX_MVP.md",
+        "ops/mvp/gate-matrix.json"
+      ],
+      "source": "docs/MVP_GATE_MATRIX_MVP.md"
+    },
+    {
+      "id": "ca-mvp-declaration",
+      "category": "acceptance",
+      "title": "Link Stage 31 C1 MVP declaration as adjacency (declared packaging \u2260 acceptance / go-live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MVP_DECLARATION_MVP.md",
+        "ops/mvp/mvp-declaration.json"
+      ],
+      "source": "docs/MVP_DECLARATION_MVP.md"
+    },
+    {
+      "id": "ca-steady-state",
+      "category": "acceptance",
+      "title": "Link Stage 71 S1 steady-state ops as adjacency (steady-state live Remaining \u2260 acceptance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STEADY_STATE_OPS_MVP.md",
+        "ops/mvp/steady-state-ops.json"
+      ],
+      "source": "docs/STEADY_STATE_OPS_MVP.md"
+    },
+    {
+      "id": "ca-closeout",
+      "category": "acceptance",
+      "title": "Link Stage 70 G1 closeout as adjacency (go-live Remaining \u2260 acceptance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+        "ops/mvp/commercial-golive-closeout.json"
+      ],
+      "source": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md"
+    },
+    {
+      "id": "ca-first-day",
+      "category": "acceptance",
+      "title": "Link Stage 70 F1 first commercial day as adjacency (first-day live Remaining \u2260 acceptance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+        "ops/mvp/first-commercial-day.json"
+      ],
+      "source": "docs/FIRST_COMMERCIAL_DAY_MVP.md"
+    },
+    {
+      "id": "ca-attestation",
+      "category": "acceptance",
+      "title": "Link Stage 69 A1 attestation as adjacency (\u00a77 signed Remaining \u2260 acceptance Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/GOLIVE_ATTESTATION_MVP.md",
+        "ops/mvp/golive-attestation.json"
+      ],
+      "source": "docs/GOLIVE_ATTESTATION_MVP.md"
+    },
+    {
+      "id": "ca-plan-honesty",
+      "category": "acceptance",
+      "title": "Confirm Stage 71 plan explicitly defers acceptance / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/COMMERCIAL_ACCEPTANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    },
+    {
+      "id": "ca-acceptance-remaining",
+      "category": "honesty",
+      "title": "Commercial acceptance claimed Remaining \u2014 packaging \u2260 Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/COMMERCIAL_ACCEPTANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    },
+    {
+      "id": "ca-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / \u00a77 / steady-state live Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_71_PLAN.md",
+        "docs/STEADY_STATE_OPS_MVP.md"
+      ],
+      "source": "docs/STAGE_71_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Commercial acceptance Complete",
+    "Steady-state commercial ops live Complete",
+    "Live go-live Complete",
+    "LAUNCH \u00a77 Name/Date signed Complete",
+    "First commercial day live Complete"
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "stage": "35",
+  "workstream": "T1",
+  "doc": "docs/E2E_ORG_BOOTSTRAP_MVP.md",
+  "first_tenant_onboarding": "ops/mvp/first-tenant-onboarding.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "stage21_plan": "docs/STAGE_21_PLAN.md",
+  "api_docs": "docs/API_DOCUMENTATION.md",
+  "packaging_complete": true,
+  "e2e_smoke_executed_claimed": false,
+  "live_bootstrap_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "steps": [
+    {
+      "id": "org-register-tenant",
+      "category": "tenant",
+      "title": "Register real test tenant (company/email/password/industry) \u2014 not demo seed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_21_PLAN.md",
+        "ops/mvp/first-tenant-onboarding.json"
+      ],
+      "source": "docs/STAGE_21_PLAN.md#T1"
+    },
+    {
+      "id": "org-verify-email",
+      "category": "tenant",
+      "title": "Complete email verification for first company admin",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/LAUNCH_CHECKLIST.md#first-admin"
+    },
+    {
+      "id": "org-complete-company",
+      "category": "company",
+      "title": "Complete company profile (currency/tax/logo as required)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/USER_MANUAL.md",
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_21_PLAN.md"
+      ],
+      "source": "docs/USER_MANUAL.md#company-profile"
+    },
+    {
+      "id": "org-create-branch",
+      "category": "org_unit",
+      "title": "Create branch location for the test tenant",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_21_PLAN.md",
+        "docs/USER_MANUAL.md"
+      ],
+      "source": "docs/STAGE_21_PLAN.md#O1"
+    },
+    {
+      "id": "org-create-store",
+      "category": "org_unit",
+      "title": "Create store linked to branch",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_21_PLAN.md",
+        "docs/USER_MANUAL.md"
+      ],
+      "source": "docs/STAGE_21_PLAN.md#O1"
+    },
+    {
+      "id": "org-create-warehouse",
+      "category": "org_unit",
+      "title": "Create warehouse (store-linked or standalone) for stock path",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/API_DOCUMENTATION.md",
+        "docs/STAGE_21_PLAN.md",
+        "docs/USER_MANUAL.md"
+      ],
+      "source": "docs/STAGE_21_PLAN.md#O1"
+    },
+    {
+      "id": "org-verify-links",
+      "category": "org_unit",
+      "title": "Verify store\u2194branch\u2194warehouse linkage for E2E smoke",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_21_PLAN.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "org-tenant-isolation",
+      "category": "security",
+      "title": "Confirm tenant isolation / tenant_id scoping on org units",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ADR_001_TENANCY.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/ADR_001_TENANCY.md"
+    },
+    {
+      "id": "org-no-demo",
+      "category": "honesty",
+      "title": "Confirm no demo tenants, seed passwords, or hard-coded production credentials",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CHECKLIST.md",
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "docs/STAGE_35_PLAN.md"
+      ],
+      "source": "docs/STAGE_35_PLAN.md"
+    },
+    {
+      "id": "org-live-bootstrap-remaining",
+      "category": "honesty",
+      "title": "Live org bootstrap execution Remaining \u2014 packaging \u2260 executed smoke",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_35_PLAN.md",
+        "ops/mvp/first-tenant-onboarding.json"
+      ],
+      "source": "docs/STAGE_35_PLAN.md#T1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage35_t1_e2e_org_bootstrap.json",
+  "deferred": [
+    "Claiming live E2E org bootstrap executed Complete because Stage 35 T1 packaging exists",
+    "Demo tenants / seed passwords as Complete",
+    "Live go-live / \u00a77 / attestation Complete",
+    "Re-packaging Stage 21 / 33 packs as new Complete"
+  ]
+}

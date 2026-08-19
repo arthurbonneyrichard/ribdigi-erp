@@ -1,0 +1,43 @@
+# On-Call / Incident Runbook (Stage 30 I1 example)
+
+> **Operator template only.** NOT proof that PagerDuty is hosted or that an on-call rota already pages production.
+> See `docs/INCIDENT_PACK_MVP.md` · `docs/SECURITY_GUIDE.md` §15 · `ops/grafana/alertmanager.yml.example`.
+
+## When this runbook applies
+
+- Prometheus alert `RibdigiDown`, `RibdigiHighErrorRate`, `RibdigiHighLatency`, `RibdigiNotReady` (Stage 26 M1)
+- Alertmanager `severity=critical` → `critical-ops` (Stage 28 A1; PagerDuty commented until secrets)
+- Security / tenant reports of compromise (SECURITY_GUIDE §15)
+
+## Severity quick reference
+
+| Level | Ack target | Examples |
+|-------|------------|----------|
+| P1 | 15 min | Active breach, ransomware, sustained total outage |
+| P2 | 1 hour | Sustained 5xx / not-ready, credential leak |
+| P3 | 24 hours | Misconfig, expired TLS (live ACME Remaining) |
+| P4 | 7 days | Hardening follow-ups |
+
+## Playbook
+
+1. **Detect** — Alertmanager / Grafana / audit logs / tenant report. Capture `request_id` from `ribdigi.request` logs when available.
+2. **Triage** — Confirm severity; page only if rota is live (do not forge paging from CI).
+3. **Contain** — Isolate tenant if needed; revoke sessions; rate-limit / block abusive sources.
+4. **Eradicate** — Patch, rotate secrets (`ribdigi-secrets` / out-of-band store), remove attacker access.
+5. **Recover** — Prefer logical `.ribbak` / PITR runbooks (`docs/DR_LOGICAL_BACKUP_RUNBOOK.md`, `docs/PITR_DRILL_PACK_MVP.md`) — packaging only until drills execute.
+6. **Post-incident** — RCA notes, SECURITY_GUIDE / threat model update, tenant comms for P1/P2 within 24h; GDPR 72h if applicable.
+
+## Health probes (ops)
+
+```bash
+curl -fsS https://<host>/api/v1/health
+curl -fsS https://<host>/api/v1/health/ready
+# Metrics scrape path: /api/v1/metrics (Stage 26 M1)
+```
+
+## Explicitly deferred
+
+- Hosted PagerDuty / Opsgenie Complete
+- Live on-call rota with measured ack SLAs
+- SIEM incident bus Complete
+- Treating this file as a green paging certificate

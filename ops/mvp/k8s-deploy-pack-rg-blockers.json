@@ -1,0 +1,63 @@
+{
+  "id": "k8s-deploy-pack-rg-blockers",
+  "stage": 318,
+  "pack": "B1",
+  "doc": "docs/K8S_DEPLOY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/K8S_DEPLOY_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_cluster_deploy_claimed": false,
+  "ci_deploy_claimed": false,
+  "live_staging_apply_claimed": false,
+  "managed_data_plane_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_cluster_deploy_claimed": "REMAINING",
+    "ci_deploy_claimed": "REMAINING",
+    "live_staging_apply_claimed": "REMAINING",
+    "managed_data_plane_claimed": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage26_as_live_cluster_deploy": "NON_CLAIM",
+    "stage206_as_live_cluster_deploy": "NON_CLAIM",
+    "live_cluster_deploy_claimed_flag": "false",
+    "ci_deploy_claimed_flag": "false",
+    "live_staging_apply_claimed_flag": "false",
+    "managed_data_plane_claimed_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "kdprb-cluster",
+      "title": "Mark live cluster deploy Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprb-ci",
+      "title": "Mark CI deploy Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprb-staging",
+      "title": "Mark live staging apply Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprb-stage26-nonclaim",
+      "title": "Mark Stage 26 K1 / Stage 206 as non-claim for live cluster deploy Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "kdprb-deploy-remaining",
+      "title": "Live cluster deploy Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 318 B1 k8s deploy pack RG blocker matrix packaging only. Live cluster deploy Completes remain MISSING."
+}

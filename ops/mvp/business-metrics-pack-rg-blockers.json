@@ -1,0 +1,68 @@
+{
+  "id": "business-metrics-pack-rg-blockers",
+  "stage": 371,
+  "pack": "B1",
+  "doc": "docs/BUSINESS_METRICS_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/BUSINESS_METRICS_PACK_REMAINING_GATE_MVP.md",
+    "business_metrics_mvp": "docs/BUSINESS_METRICS_MVP.md"
+  },
+  "packaging_complete": true,
+  "mrr_measured_claimed": false,
+  "paying_customers_measured_claimed": false,
+  "nrr_grr_measured_claimed": false,
+  "business_metrics_program_live_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "mrr_measured_claimed": "REMAINING",
+    "paying_customers_measured_claimed": "REMAINING",
+    "nrr_grr_measured_claimed": "REMAINING",
+    "business_metrics_program_live_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "stage58_as_live_business_metrics": "NON_CLAIM",
+    "mrr_measured_claimed_flag": "false",
+    "paying_customers_measured_claimed_flag": "false",
+    "nrr_grr_measured_claimed_flag": "false",
+    "business_metrics_program_live_claimed_flag": "false",
+    "go_live_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "bmprgb-mrr",
+      "title": "Mark measured MRR Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgb-paying",
+      "title": "Mark measured paying customers Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgb-nrr",
+      "title": "Mark measured NRR/GRR Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgb-program-live",
+      "title": "Mark business-metrics program live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgb-stage58-nonclaim",
+      "title": "Mark Stage 58 as non-claim for live business-metrics Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "bmprgb-checklist-remaining",
+      "title": "Measured MRR / paying customers / NRR\u00b7GRR Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 371 B1 business metrics pack RG blocker matrix packaging only."
+}

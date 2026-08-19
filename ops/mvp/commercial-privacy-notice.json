@@ -1,0 +1,155 @@
+{
+  "stage": "75",
+  "workstream": "P1",
+  "doc": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+  "stage75_plan": "docs/STAGE_75_PLAN.md",
+  "cookie_privacy_doc": "docs/COOKIE_PRIVACY_NOTICE_MVP.md",
+  "cookie_privacy": "ops/mvp/cookie-privacy-notice.json",
+  "portability_doc": "docs/DATA_PORTABILITY_MVP.md",
+  "portability": "ops/mvp/data-portability.json",
+  "security_contact_doc": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+  "security_contact": "ops/mvp/commercial-security-contact.json",
+  "support_doc": "docs/COMMERCIAL_SUPPORT_MVP.md",
+  "support": "ops/mvp/commercial-support.json",
+  "status_doc": "docs/COMMERCIAL_STATUS_MVP.md",
+  "status": "ops/mvp/commercial-status.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "privacy_notice_live": false,
+  "cookie_consent_live": false,
+  "security_contact_live_claimed": false,
+  "commercial_support_claimed": false,
+  "status_page_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage75_p1_commercial_privacy_notice.json",
+  "steps": [
+    {
+      "id": "cpn-owner-outline",
+      "category": "privacy",
+      "title": "Index owner Commercial Privacy Notice Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/ADR_156_STAGE75_OPEN.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    },
+    {
+      "id": "cpn-cookie-privacy",
+      "category": "privacy",
+      "title": "Link Stage 43 cookie/privacy notice as adjacency (consent Remaining ≠ privacy notice live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COOKIE_PRIVACY_NOTICE_MVP.md",
+        "ops/mvp/cookie-privacy-notice.json"
+      ],
+      "source": "docs/COOKIE_PRIVACY_NOTICE_MVP.md"
+    },
+    {
+      "id": "cpn-portability",
+      "category": "privacy",
+      "title": "Link Stage 43 data portability as adjacency (portability Remaining ≠ privacy notice live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_PORTABILITY_MVP.md",
+        "ops/mvp/data-portability.json"
+      ],
+      "source": "docs/DATA_PORTABILITY_MVP.md"
+    },
+    {
+      "id": "cpn-security-contact",
+      "category": "privacy",
+      "title": "Link Stage 75 C1 security contact as adjacency (contact packaging ≠ privacy notice live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md",
+        "ops/mvp/commercial-security-contact.json"
+      ],
+      "source": "docs/COMMERCIAL_SECURITY_CONTACT_MVP.md"
+    },
+    {
+      "id": "cpn-support",
+      "category": "privacy",
+      "title": "Link Stage 74 S1 support as adjacency (support packaging ≠ privacy notice live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_SUPPORT_MVP.md",
+        "ops/mvp/commercial-support.json"
+      ],
+      "source": "docs/COMMERCIAL_SUPPORT_MVP.md"
+    },
+    {
+      "id": "cpn-status",
+      "category": "privacy",
+      "title": "Link Stage 74 U1 status as adjacency (status packaging ≠ privacy notice live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_STATUS_MVP.md",
+        "ops/mvp/commercial-status.json"
+      ],
+      "source": "docs/COMMERCIAL_STATUS_MVP.md"
+    },
+    {
+      "id": "cpn-plan-honesty",
+      "category": "privacy",
+      "title": "Confirm Stage 75 plan explicitly defers privacy notice live / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    },
+    {
+      "id": "cpn-legal-review",
+      "category": "privacy",
+      "title": "Index privacy-notice legal review Remaining as honesty step",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md",
+        "docs/COOKIE_PRIVACY_NOTICE_MVP.md"
+      ],
+      "source": "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md"
+    },
+    {
+      "id": "cpn-privacy-remaining",
+      "category": "honesty",
+      "title": "Commercial privacy notice live Remaining — packaging ≠ live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    },
+    {
+      "id": "cpn-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / cookie consent / security contact Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_75_PLAN.md",
+        "docs/COOKIE_PRIVACY_NOTICE_MVP.md"
+      ],
+      "source": "docs/STAGE_75_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Privacy notice live Complete",
+    "Cookie consent live Complete",
+    "Security contact live Complete",
+    "Support boundary live Complete",
+    "Live go-live Complete"
+  ]
+}

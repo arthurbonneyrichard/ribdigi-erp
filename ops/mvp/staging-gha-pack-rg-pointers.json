@@ -1,0 +1,60 @@
+{
+  "id": "staging-gha-pack-rg-pointers",
+  "stage": 229,
+  "pack": "P1",
+  "doc": "docs/STAGING_GHA_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+    "staging_gha_pack": "docs/STAGING_GHA_MVP.md",
+    "deploy_staging_example": "ops/k8s/deploy-staging.example.yml",
+    "staging_gha_remaining_gate": "docs/STAGING_GHA_REMAINING_GATE_MVP.md",
+    "tls_ingress_pack_remaining_gate": "docs/TLS_INGRESS_PACK_REMAINING_GATE_MVP.md",
+    "k8s_deploy": "docs/K8S_DEPLOY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "live_staging_apply_claimed": false,
+  "gha_staging_wired_into_main_ci": false,
+  "go_live_claimed": false,
+  "live_staging_gha_pack_claimed": false,
+  "topics": [
+    "staging_gha_pack_stage28_g1",
+    "staging_gha_remaining_gate_stage205",
+    "tls_ingress_pack_remaining_gate_stage228",
+    "k8s_deploy_stage26_k1",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "sgprp-pack",
+      "title": "Point to Stage 28 G1 staging GHA pack",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprp-sgha-gate",
+      "title": "Point to Stage 205 staging GHA remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprp-tip-gate",
+      "title": "Point to Stage 228 TLS ingress pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprp-k8s",
+      "title": "Point to Stage 26 K1 K8s deploy",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgprp-apply-remaining",
+      "title": "Live staging apply Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 229 P1 staging GHA pack RG pointers packaging only. Do not claim live staging apply Complete."
+}

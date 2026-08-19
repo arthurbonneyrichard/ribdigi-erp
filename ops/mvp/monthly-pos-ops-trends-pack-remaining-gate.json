@@ -1,0 +1,57 @@
+{
+  "id": "monthly-pos-ops-trends-pack-remaining-gate",
+  "stage": 347,
+  "pack": "I1",
+  "doc": "docs/MONTHLY_POS_OPS_TRENDS_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/MONTHLY_POS_OPS_TRENDS_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/MONTHLY_POS_OPS_TRENDS_PACK_RG_POINTERS_MVP.md",
+    "monthly_pos_ops_trends": "docs/MONTHLY_POS_OPS_TRENDS_MVP.md",
+    "monthly_pos_ops_review_pack_remaining_gate": "docs/MONTHLY_POS_OPS_REVIEW_PACK_REMAINING_GATE_MVP.md",
+    "weekly_pos_ops_signals_pack_remaining_gate": "docs/WEEKLY_POS_OPS_SIGNALS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "hold_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "fabricated_trend_dashboard_claimed": false,
+  "distinct_from_stage177_monthly_pos_ops_trends": true,
+  "distinct_from_stage346_monthly_pos_ops_review_pack_remaining_gate": true,
+  "distinct_from_stage345_weekly_pos_ops_signals_pack_remaining_gate": true,
+  "distinct_from_stage329_offline_complete_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "mpotpr-read-blockers",
+      "title": "Read B1 monthly POS ops trends pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotpr-follow-pointers",
+      "title": "Follow P1 Stage 177 / Stage 346 / Stage 345 / Stage 329 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotpr-checklist-missing",
+      "title": "Reaffirm live monthly POS ops trends / Offline Complete / Hold SLA / attestation MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotpr-no-packaging-as-live",
+      "title": "Do not treat Stage 177 / Stage 176 / Stage 346 / Stage 345 / Stage 329 as live monthly POS ops trends Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "mpotpr-checklist-remaining",
+      "title": "Offline Complete / Hold SLA / attestation / fabricated trend dashboard / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 347 I1 monthly POS ops trends pack remaining-gate index packaging only. Do not claim live monthly POS ops trends Complete."
+}

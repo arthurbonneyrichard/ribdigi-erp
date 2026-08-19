@@ -1,0 +1,62 @@
+{
+  "id": "commercial-golive-closeout-pack-rg-blockers",
+  "stage": 260,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_PACK_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md",
+    "commercial_golive_closeout_remaining_gate": "docs/COMMERCIAL_GOLIVE_CLOSEOUT_REMAINING_GATE_MVP.md",
+    "commercial_golive_closeout_register": "ops/mvp/commercial-golive-closeout.json"
+  },
+  "packaging_complete": true,
+  "commercial_golive_closeout_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "blockers": {
+    "commercial_golive_closeout_complete": "REMAINING",
+    "first_commercial_day_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "section_7_signed_complete": "REMAINING",
+    "stage70_g1_as_closeout_live": "NON_CLAIM",
+    "stage200_as_closeout_live": "NON_CLAIM",
+    "commercial_golive_closeout_claimed": "false",
+    "first_commercial_day_claimed": "false",
+    "go_live_claimed": "false",
+    "section_7_signed": "false"
+  },
+  "steps": [
+    {
+      "id": "cgcprb-closeout",
+      "title": "Mark commercial go-live closeout Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprb-first-day",
+      "title": "Mark first commercial day Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprb-go-live",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprb-stage70-nonclaim",
+      "title": "Mark Stage 70 G1 as non-claim for commercial go-live closeout Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cgcprb-closeout-remaining",
+      "title": "Commercial go-live closeout Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 260 B1 commercial go-live closeout pack RG blocker matrix packaging only. Commercial go-live closeout Completes remain MISSING."
+}

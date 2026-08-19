@@ -1,0 +1,54 @@
+{
+  "id": "cutover-pack-rg-blockers",
+  "stage": 227,
+  "pack": "B1",
+  "doc": "docs/CUTOVER_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/CUTOVER_PACK_REMAINING_GATE_MVP.md",
+    "cutover_pack": "docs/CUTOVER_PACK_MVP.md",
+    "launch_cert": "docs/LAUNCH_CERT_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_cutover_claimed": false,
+  "section_7_signed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_production_cutover_execution": "REMAINING",
+    "launch_section_7_signoff": "REMAINING",
+    "stage29_x1_as_live_cutover": "NON_CLAIM",
+    "production_cutover_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cprb-exec",
+      "title": "Mark live production cutover execution Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprb-section7",
+      "title": "Mark LAUNCH §7 Name/Date sign-off Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprb-stage29-nonclaim",
+      "title": "Mark Stage 29 X1 cutover pack as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprb-claimed-false",
+      "title": "Mark production_cutover_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cprb-cutover-remaining",
+      "title": "Live cutover Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 227 B1 cutover pack RG blocker matrix packaging only. Live cutover Complete remains MISSING."
+}

@@ -1,0 +1,18 @@
+# Stage 26 W1 — PostgreSQL WAL archive settings (operator staging / production)
+# Mount or include via postgresql.conf. Not applied by default docker-compose.
+# See docs/DR_WAL_PITR_RUNBOOK.md and ops/postgres/README.md.
+
+# Continuous archiving prerequisites
+wal_level = replica
+archive_mode = on
+# Replace bucket/prefix and credentials via env in the archive script.
+archive_command = '/usr/local/bin/archive-wal-to-s3.sh %p %f'
+archive_timeout = 60
+
+# Keep local WAL until archive_command succeeds
+max_wal_senders = 3
+wal_keep_size = 1GB
+
+# Base backups (pg_basebackup) should land under the same S3 prefix layout:
+#   s3://<bucket>/ribdigi/postgres/base/
+#   s3://<bucket>/ribdigi/postgres/wal/

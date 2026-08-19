@@ -12,22 +12,15 @@ from app import models as m
 
 
 def serialize_account(account: m.Account) -> dict:
-    return {
-        "id": account.id,
-        "code": account.code,
-        "name": account.name,
-        "account_type": account.account_type,
-        "balance": float(account.balance or 0),
-        "is_cash_account": bool(account.is_cash_account),
-        "is_bank_account": bool(account.is_bank_account),
-        "bank_name": account.bank_name,
-        "account_number": account.account_number,
-    }
+    from app.accounting import serialize_coa_account
+
+    return serialize_coa_account(account)
 
 
 def serialize_line(line: m.BankStatementLine) -> dict:
     return {
         "id": line.id,
+        "company_id": getattr(line, "company_id", None),
         "statement_id": line.statement_id,
         "txn_date": line.txn_date,
         "amount": float(line.amount),
@@ -47,6 +40,7 @@ def serialize_statement(stmt: m.BankStatement, lines: list[m.BankStatementLine] 
     ignored = sum(1 for ln in rows if ln.status == "ignored")
     return {
         "id": stmt.id,
+        "company_id": getattr(stmt, "company_id", None),
         "account_id": stmt.account_id,
         "statement_date": stmt.statement_date,
         "opening_balance": float(stmt.opening_balance or 0),
@@ -69,13 +63,21 @@ def journal_line_signed_amount(line: m.JournalEntryLine) -> float:
     return round(float(line.debit or 0) - float(line.credit or 0), 2)
 
 
-async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) -> m.Account:
+async def get_liquid_account(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.Account:
     account = (
         await db.execute(
             select(m.Account).where(m.Account.id == account_id, m.Account.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
     if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    if company_id and account.company_id and account.company_id != company_id:
         raise HTTPException(status_code=404, detail="Account not found")
     if not (account.is_cash_account or account.is_bank_account):
         raise HTTPException(
@@ -85,24 +87,35 @@ async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) 
     return account
 
 
-async def list_liquid_accounts(db: AsyncSession, tenant_id: str) -> list[m.Account]:
-    return list(
-        (
-            await db.execute(
-                select(m.Account)
-                .where(
-                    m.Account.tenant_id == tenant_id,
-                    or_(m.Account.is_cash_account.is_(True), m.Account.is_bank_account.is_(True)),
-                )
-                .order_by(m.Account.code)
-            )
-        )
-        .scalars()
-        .all()
+async def list_liquid_accounts(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    active_only: bool = False,
+    is_active: bool | None = None,
+    company_id: str | None = None,
+) -> list[m.Account]:
+    """Stage 125 L1 — is_active / active_only for honest inactive-only liquid lists."""
+    stmt = select(m.Account).where(
+        m.Account.tenant_id == tenant_id,
+        or_(m.Account.is_cash_account.is_(True), m.Account.is_bank_account.is_(True)),
     )
+    if company_id:
+        stmt = stmt.where(m.Account.company_id == company_id)
+    if is_active is not None:
+        stmt = stmt.where(m.Account.is_active.is_(bool(is_active)))
+    elif active_only:
+        stmt = stmt.where(m.Account.is_active.is_(True))
+    return list((await db.execute(stmt.order_by(m.Account.code))).scalars().all())
 
 
-async def get_statement(db: AsyncSession, tenant_id: str, statement_id: str) -> m.BankStatement:
+async def get_statement(
+    db: AsyncSession,
+    tenant_id: str,
+    statement_id: str,
+    *,
+    company_id: str | None = None,
+) -> m.BankStatement:
     row = (
         await db.execute(
             select(m.BankStatement).where(
@@ -112,6 +125,8 @@ async def get_statement(db: AsyncSession, tenant_id: str, statement_id: str) -> 
         )
     ).scalar_one_or_none()
     if not row:
+        raise HTTPException(status_code=404, detail="Bank statement not found")
+    if company_id and row.company_id and row.company_id != company_id:
         raise HTTPException(status_code=404, detail="Bank statement not found")
     return row
 
@@ -135,14 +150,18 @@ async def list_statement_lines(
     )
 
 
-async def list_statements(db: AsyncSession, tenant_id: str) -> list[m.BankStatement]:
+async def list_statements(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None = None,
+) -> list[m.BankStatement]:
+    stmt = select(m.BankStatement).where(m.BankStatement.tenant_id == tenant_id)
+    if company_id:
+        stmt = stmt.where(m.BankStatement.company_id == company_id)
     return list(
         (
-            await db.execute(
-                select(m.BankStatement)
-                .where(m.BankStatement.tenant_id == tenant_id)
-                .order_by(m.BankStatement.created_at.desc())
-            )
+            await db.execute(stmt.order_by(m.BankStatement.created_at.desc()))
         )
         .scalars()
         .all()
@@ -171,10 +190,12 @@ async def create_statement(
     closing_balance: float,
     notes: str | None = None,
     lines: list[dict] | None = None,
+    company_id: str | None = None,
 ) -> m.BankStatement:
-    await get_liquid_account(db, tenant_id, account_id)
+    await get_liquid_account(db, tenant_id, account_id, company_id=company_id)
     stmt = m.BankStatement(
         tenant_id=tenant_id,
+        company_id=company_id,
         account_id=account_id,
         statement_date=_parse_dt(statement_date),
         opening_balance=float(opening_balance or 0),
@@ -192,6 +213,7 @@ async def create_statement(
         db.add(
             m.BankStatementLine(
                 tenant_id=tenant_id,
+                company_id=company_id,
                 statement_id=stmt.id,
                 txn_date=_parse_dt(raw.get("txn_date") or statement_date),
                 amount=amount,
@@ -216,6 +238,7 @@ async def import_statement_from_feed(
     closing_balance: float | None = None,
     statement_date: str | datetime | None = None,
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> tuple[m.BankStatement, dict]:
     """Parse CSV/OFX content and create a bank statement."""
     from app.bank_feed import parse_bank_feed
@@ -259,6 +282,7 @@ async def import_statement_from_feed(
         closing_balance=close_bal,
         notes=" · ".join(note_bits),
         lines=lines,
+        company_id=company_id,
     )
     meta = {
         "format": parsed["format"],
@@ -383,6 +407,11 @@ async def match_line(
     ).scalar_one_or_none()
     if not jl:
         raise HTTPException(status_code=404, detail="Journal line not found")
+    from app.workspace import assert_fk_company
+
+    assert_fk_company(
+        jl, getattr(stmt, "company_id", None), detail="Journal line not found"
+    )
     if jl.account_id != stmt.account_id:
         raise HTTPException(status_code=400, detail="Journal line is not on this bank/cash account")
 
@@ -476,8 +505,14 @@ async def ignore_line(db: AsyncSession, *, tenant_id: str, line_id: str) -> m.Ba
     return line
 
 
-async def complete_statement(db: AsyncSession, *, tenant_id: str, statement_id: str) -> m.BankStatement:
-    stmt = await get_statement(db, tenant_id, statement_id)
+async def complete_statement(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    statement_id: str,
+    company_id: str | None = None,
+) -> m.BankStatement:
+    stmt = await get_statement(db, tenant_id, statement_id, company_id=company_id)
     if stmt.status == "reconciled":
         return stmt
     lines = await list_statement_lines(db, tenant_id, statement_id)
@@ -624,8 +659,10 @@ async def apply_auto_matches(
     statement_id: str,
     min_confidence: str = "high",
     date_window_days: int = 7,
+    company_id: str | None = None,
 ) -> dict:
     """Persist suggestions at or above min_confidence (high > medium > low)."""
+    await get_statement(db, tenant_id, statement_id, company_id=company_id)
     order = {"high": 3, "medium": 2, "low": 1}
     floor = order.get((min_confidence or "high").lower(), 3)
     suggestions = await auto_match_suggestions(
@@ -678,6 +715,7 @@ def serialize_clearing_group(
 ) -> dict:
     return {
         "id": group.id,
+        "company_id": getattr(group, "company_id", None),
         "statement_id": group.statement_id,
         "notes": group.notes,
         "created_by": group.created_by,
@@ -765,9 +803,10 @@ async def create_clearing_group(
     statement_line_ids: list[str],
     journal_line_ids: list[str],
     notes: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     """Match N bank lines to M book lines when signed totals are equal."""
-    stmt = await get_statement(db, tenant_id, statement_id)
+    stmt = await get_statement(db, tenant_id, statement_id, company_id=company_id)
     if stmt.status == "reconciled":
         raise HTTPException(status_code=409, detail="Statement is already reconciled")
 
@@ -806,6 +845,8 @@ async def create_clearing_group(
             raise HTTPException(status_code=409, detail=f"Statement line {lid} is not unmatched")
         bank_lines.append(row)
 
+    from app.workspace import assert_fk_company
+
     book_lines: list[m.JournalEntryLine] = []
     for jid in book_ids:
         jl = (
@@ -818,6 +859,11 @@ async def create_clearing_group(
         ).scalar_one_or_none()
         if not jl:
             raise HTTPException(status_code=404, detail=f"Journal line not found: {jid}")
+        assert_fk_company(
+            jl,
+            company_id or getattr(stmt, "company_id", None),
+            detail=f"Journal line not found: {jid}",
+        )
         if jl.account_id != stmt.account_id:
             raise HTTPException(status_code=400, detail="Journal line is not on this bank/cash account")
         already = (
@@ -857,6 +903,7 @@ async def create_clearing_group(
 
     group = m.BankClearingGroup(
         tenant_id=tenant_id,
+        company_id=getattr(stmt, "company_id", None),
         statement_id=statement_id,
         notes=notes,
         created_by=user_id,
@@ -872,6 +919,7 @@ async def create_clearing_group(
         db.add(
             m.BankClearingBookLink(
                 tenant_id=tenant_id,
+                company_id=getattr(stmt, "company_id", None),
                 group_id=group.id,
                 journal_line_id=jl.id,
             )
@@ -893,7 +941,12 @@ async def create_clearing_group(
 
 
 async def dissolve_clearing_group(
-    db: AsyncSession, *, tenant_id: str, group_id: str
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    group_id: str,
+    statement_id: str | None = None,
+    company_id: str | None = None,
 ) -> dict:
     group = (
         await db.execute(
@@ -905,7 +958,13 @@ async def dissolve_clearing_group(
     ).scalar_one_or_none()
     if not group:
         raise HTTPException(status_code=404, detail="Clearing group not found")
-    stmt = await get_statement(db, tenant_id, group.statement_id)
+    if statement_id and group.statement_id != statement_id:
+        raise HTTPException(status_code=404, detail="Clearing group not found")
+    if company_id and group.company_id and group.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Clearing group not found")
+    stmt = await get_statement(
+        db, tenant_id, group.statement_id, company_id=company_id
+    )
     if stmt.status == "reconciled":
         raise HTTPException(status_code=409, detail="Statement is already reconciled")
 

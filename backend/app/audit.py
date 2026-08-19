@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -50,6 +50,7 @@ def serialize_audit(row: m.AuditLog) -> dict:
     return {
         "id": row.id,
         "user_id": row.user_id,
+        "company_id": getattr(row, "company_id", None),
         "module": row.module or "system",
         "action": row.action,
         "entity": row.entity,
@@ -60,6 +61,7 @@ def serialize_audit(row: m.AuditLog) -> dict:
         "prev_hash": row.prev_hash,
         "integrity_hash": row.integrity_hash,
         "created_at": row.created_at,
+        "archived_at": getattr(row, "archived_at", None),
     }
 
 
@@ -90,6 +92,7 @@ async def record_event(
     module: str = "system",
     ip_address: str | None = None,
     user_agent: str | None = None,
+    company_id: str | None = None,
 ) -> m.AuditLog:
     created_at = datetime.utcnow()
     details = details or {}
@@ -107,6 +110,7 @@ async def record_event(
     integrity = compute_integrity_hash(prev, payload)
     row = m.AuditLog(
         tenant_id=tenant_id,
+        company_id=company_id,
         user_id=user_id,
         module=module,
         action=action,
@@ -135,6 +139,7 @@ async def query_logs(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = 200,
+    company_id: str | None = None,
 ) -> list[m.AuditLog]:
     stmt = select(m.AuditLog).where(m.AuditLog.tenant_id == tenant_id)
     if user_id:
@@ -149,6 +154,11 @@ async def query_logs(
         stmt = stmt.where(m.AuditLog.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.AuditLog.created_at <= to_date)
+    # Company workspace: company-scoped rows plus null-company auth/system events.
+    if company_id:
+        stmt = stmt.where(
+            or_(m.AuditLog.company_id == company_id, m.AuditLog.company_id.is_(None))
+        )
     stmt = stmt.order_by(m.AuditLog.created_at.desc()).limit(min(limit, 1000))
     return (await db.execute(stmt)).scalars().all()
 
@@ -183,12 +193,20 @@ async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:
                 "valid": False,
                 "checked": checked,
                 "broken_at": row.id,
+                "broken_created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
                 "action": row.action,
                 "created_at": row.created_at,
+                "verified_at": datetime.utcnow().isoformat() + "Z",
             }
         expected_prev = row.integrity_hash or expected_prev
         checked += 1
-    return {"valid": True, "checked": checked, "broken_at": None}
+    return {
+        "valid": True,
+        "checked": checked,
+        "broken_at": None,
+        "broken_created_at": None,
+        "verified_at": datetime.utcnow().isoformat() + "Z",
+    }
 
 
 def to_csv(rows: list[m.AuditLog]) -> str:
@@ -198,6 +216,7 @@ def to_csv(rows: list[m.AuditLog]) -> str:
         [
             "created_at",
             "user_id",
+            "company_id",
             "module",
             "action",
             "entity",
@@ -212,6 +231,7 @@ def to_csv(rows: list[m.AuditLog]) -> str:
             [
                 row.created_at.isoformat() if row.created_at else "",
                 row.user_id or "",
+                getattr(row, "company_id", None) or "",
                 row.module or "",
                 row.action,
                 row.entity,
@@ -224,8 +244,186 @@ def to_csv(rows: list[m.AuditLog]) -> str:
     return buf.getvalue()
 
 
+def to_pdf(rows: list[m.AuditLog], *, title: str = "Audit Logs") -> bytes:
+    from app.report_export import to_pdf as build_pdf
+
+    lines = [
+        f"{(r.created_at.isoformat() if r.created_at else '')} | {r.module or '-'} | "
+        f"{r.action} | {r.entity}:{r.entity_id or '-'} | user={r.user_id or '-'}"
+        for r in rows
+    ]
+    if not lines:
+        lines = ["No audit events in selection."]
+    return build_pdf(title, lines, subtitle=f"{len(rows)} event(s)")
+
+
 def reject_mutation() -> None:
     raise HTTPException(
         status_code=405,
         detail="Audit logs are append-only and cannot be modified or deleted",
     )
+
+
+def retention_policy() -> dict:
+    """BR-17.2 retention / cold-archive policy (Stage 1 G20)."""
+    from app.config import settings
+
+    years = max(7, int(getattr(settings, "AUDIT_RETENTION_YEARS", 7) or 7))
+    hot_days = max(1, int(getattr(settings, "AUDIT_COLD_ARCHIVE_AFTER_DAYS", 365) or 365))
+    return {
+        "retention_years": years,
+        "retention_days": years * 365,
+        "cold_archive_after_days": hot_days,
+        "purge_allowed": False,
+        "notes": (
+            "Financial/audit records are retained at least 7 years. "
+            "Cold archive writes a checksummed JSONL copy to object storage; "
+            "hot rows are marked archived_at and never deleted in Stage 1."
+        ),
+    }
+
+
+def serialize_cold_archive(row: m.AuditColdArchive) -> dict:
+    return {
+        "id": row.id,
+        "storage_key": row.storage_key,
+        "sha256": row.sha256,
+        "event_count": row.event_count,
+        "from_created_at": row.from_created_at,
+        "to_created_at": row.to_created_at,
+        "byte_size": row.byte_size,
+        "created_by": row.created_by,
+        "created_at": row.created_at,
+    }
+
+
+async def list_cold_archives(
+    db: AsyncSession, *, tenant_id: str, limit: int = 50
+) -> list[m.AuditColdArchive]:
+    return (
+        await db.execute(
+            select(m.AuditColdArchive)
+            .where(m.AuditColdArchive.tenant_id == tenant_id)
+            .order_by(m.AuditColdArchive.created_at.desc())
+            .limit(min(limit, 200))
+        )
+    ).scalars().all()
+
+
+async def archive_cold_logs(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None = None,
+    older_than_days: int | None = None,
+    limit: int = 5000,
+) -> dict:
+    """Export aged, not-yet-archived audit rows to cold storage and mark them.
+
+    Does not delete rows (7-year retention). Returns archive manifest summary.
+    """
+    import hashlib
+    from datetime import timedelta
+
+    from app import storage as storage_svc
+    from app.config import settings
+
+    policy = retention_policy()
+    days = older_than_days if older_than_days is not None else policy["cold_archive_after_days"]
+    days = max(1, int(days))
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+    rows = (
+        await db.execute(
+            select(m.AuditLog)
+            .where(
+                m.AuditLog.tenant_id == tenant_id,
+                m.AuditLog.created_at < cutoff,
+                m.AuditLog.archived_at.is_(None),
+            )
+            .order_by(m.AuditLog.created_at.asc(), m.AuditLog.id.asc())
+            .limit(min(max(limit, 1), 20000))
+        )
+    ).scalars().all()
+    if not rows:
+        return {
+            "archived": 0,
+            "archive_id": None,
+            "storage_key": None,
+            "cutoff": cutoff,
+            "policy": policy,
+        }
+
+    lines: list[str] = []
+    for row in rows:
+        lines.append(
+            json.dumps(
+                {
+                    "id": row.id,
+                    "tenant_id": row.tenant_id,
+                    "user_id": row.user_id,
+                    "module": row.module,
+                    "action": row.action,
+                    "entity": row.entity,
+                    "entity_id": row.entity_id,
+                    "details": row.details or {},
+                    "ip_address": row.ip_address,
+                    "user_agent": row.user_agent,
+                    "prev_hash": row.prev_hash,
+                    "integrity_hash": row.integrity_hash,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                },
+                sort_keys=True,
+                default=str,
+            )
+        )
+    payload = ("\n".join(lines) + "\n").encode("utf-8")
+    digest = hashlib.sha256(payload).hexdigest()
+    stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    key = f"{tenant_id}/audit-cold/{stamp}-{digest[:12]}.jsonl"
+    storage_svc._put_bytes(key, payload, "application/x-ndjson")
+
+    now = datetime.utcnow()
+    archive = m.AuditColdArchive(
+        tenant_id=tenant_id,
+        storage_key=key,
+        sha256=digest,
+        event_count=len(rows),
+        from_created_at=rows[0].created_at,
+        to_created_at=rows[-1].created_at,
+        byte_size=len(payload),
+        created_by=user_id,
+        created_at=now,
+    )
+    db.add(archive)
+    for row in rows:
+        row.archived_at = now
+    await db.flush()
+
+    await record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="audit",
+        action="audit_cold_archived",
+        entity="audit_cold_archive",
+        entity_id=archive.id,
+        details={
+            "event_count": len(rows),
+            "storage_key": key,
+            "sha256": digest,
+            "cold_archive_after_days": days,
+            "retention_years": policy["retention_years"],
+        },
+    )
+    return {
+        "archived": len(rows),
+        "archive_id": archive.id,
+        "storage_key": key,
+        "sha256": digest,
+        "byte_size": len(payload),
+        "cutoff": cutoff,
+        "policy": policy,
+        "from_created_at": rows[0].created_at,
+        "to_created_at": rows[-1].created_at,
+    }

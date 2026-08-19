@@ -1,0 +1,63 @@
+{
+  "id": "security-scan-pack-rg-blockers",
+  "stage": 315,
+  "pack": "B1",
+  "doc": "docs/SECURITY_SCAN_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md",
+    "security_scan": "docs/SECURITY_SCAN_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_security_scan_claimed": false,
+  "live_zap_executed": false,
+  "vendor_pen_test_purchased": false,
+  "zap_ci_wired": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "live_security_scan_claimed": "REMAINING",
+    "live_zap_executed": "REMAINING",
+    "vendor_pen_test_purchased": "REMAINING",
+    "zap_ci_wired": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage27_as_live_security_scan": "NON_CLAIM",
+    "stage210_as_live_security_scan": "NON_CLAIM",
+    "live_security_scan_claimed_flag": "false",
+    "live_zap_executed_flag": "false",
+    "vendor_pen_test_purchased_flag": "false",
+    "zap_ci_wired_flag": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "sscprb-scan",
+      "title": "Mark live security-scan Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprb-zap",
+      "title": "Mark live ZAP Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprb-vendor",
+      "title": "Mark vendor pen-test purchased Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprb-stage27-nonclaim",
+      "title": "Mark Stage 27 S1 / Stage 210 as non-claim for live security-scan Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscprb-scan-remaining",
+      "title": "Live security-scan Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 315 B1 security scan pack RG blocker matrix packaging only. Live security-scan Completes remain MISSING."
+}

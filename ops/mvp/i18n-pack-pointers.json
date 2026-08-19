@@ -1,0 +1,59 @@
+{
+  "id": "i18n-pack-pointers",
+  "stage": 184,
+  "pack": "P1",
+  "doc": "docs/I18N_PACK_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/I18N_REMAINING_GATE_MVP.md",
+    "adr006": "docs/ADR_006_LANGUAGE_I18N.md",
+    "deferred_adr_register": "docs/DEFERRED_ADR_REGISTER_MVP.md",
+    "i18n_scaffold": "frontend/lib/i18n.ts",
+    "hard_delete_remaining_gate": "docs/HARD_DELETE_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "i18n_packs_claimed": false,
+  "multi_language_claimed": false,
+  "non_english_switcher_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "adr006_language_i18n",
+    "deferred_adr_register",
+    "i18n_scaffold",
+    "hard_delete_remaining_gate_stage183",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "ip-adr006",
+      "title": "Point to ADR-006 language / i18n",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-deferred-adr",
+      "title": "Point to deferred ADR register ADR-006 row",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-scaffold",
+      "title": "Point to frontend/lib/i18n.ts scaffold (non-claim)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-hard-delete-gate",
+      "title": "Point to Stage 183 hard-delete remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ip-i18n-remaining",
+      "title": "i18n packs Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 184 P1 i18n pack pointers packaging only. Do not claim i18n packs Complete."
+}

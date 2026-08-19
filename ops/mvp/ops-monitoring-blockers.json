@@ -1,0 +1,54 @@
+{
+  "id": "ops-monitoring-blockers",
+  "stage": 221,
+  "pack": "B1",
+  "doc": "docs/OPS_MONITORING_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPS_MONITORING_REMAINING_GATE_MVP.md",
+    "ops_monitoring": "docs/OPS_MONITORING_MVP.md",
+    "grafana_pack": "docs/GRAFANA_PACK_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_ops_monitoring_claimed": false,
+  "live_monitoring_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "hosted_prometheus_grafana_stack": "REMAINING",
+    "alertmanager_pagerduty_routing": "REMAINING",
+    "stage26_m1_as_live_monitoring": "NON_CLAIM",
+    "live_monitoring_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "omb-stack",
+      "title": "Mark hosted Prometheus / Grafana stack Remaining / false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omb-pagerduty",
+      "title": "Mark Alertmanager \u2192 PagerDuty routing Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omb-stage26-nonclaim",
+      "title": "Mark Stage 26 M1 ops monitoring as non-claim",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omb-monitoring-false",
+      "title": "Mark live_monitoring_claimed false",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "omb-monitoring-remaining",
+      "title": "Live monitoring Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 221 B1 ops monitoring blocker matrix packaging only. Live monitoring Complete remains MISSING."
+}

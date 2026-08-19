@@ -1,0 +1,60 @@
+{
+  "id": "golive-attestation-pack-rg-pointers",
+  "stage": 263,
+  "pack": "P1",
+  "doc": "docs/GOLIVE_ATTESTATION_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "production_launch_pack_remaining_gate": "docs/PRODUCTION_LAUNCH_PACK_REMAINING_GATE_MVP.md",
+    "preflight_verification_pack_remaining_gate": "docs/PREFLIGHT_VERIFICATION_PACK_REMAINING_GATE_MVP.md",
+    "attestation_remaining_gate": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "golive_attestation_register": "ops/mvp/golive-attestation.json",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "golive_attestation_walk_claimed": false,
+  "topics": [
+    "golive_attestation_stage69_a1",
+    "production_launch_pack_remaining_gate_stage262",
+    "preflight_verification_pack_remaining_gate_stage261",
+    "attestation_remaining_gate_stage187",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "gapprp-stage69",
+      "title": "Point to Stage 69 A1 go-live attestation",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprp-stage262",
+      "title": "Point to Stage 262 production launch pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprp-stage261",
+      "title": "Point to Stage 261 preflight verification pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprp-stage187",
+      "title": "Point to Stage 187 attestation remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprp-section7-remaining",
+      "title": "\u00a77 signed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 263 P1 go-live attestation pack RG pointers packaging only. Do not claim \u00a77 signed Complete."
+}

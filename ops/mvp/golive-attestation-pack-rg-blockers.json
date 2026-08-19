@@ -1,0 +1,62 @@
+{
+  "id": "golive-attestation-pack-rg-blockers",
+  "stage": 263,
+  "pack": "B1",
+  "doc": "docs/GOLIVE_ATTESTATION_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/GOLIVE_ATTESTATION_PACK_REMAINING_GATE_MVP.md",
+    "golive_attestation": "docs/GOLIVE_ATTESTATION_MVP.md",
+    "attestation_remaining_gate": "docs/ATTESTATION_REMAINING_GATE_MVP.md",
+    "golive_attestation_register": "ops/mvp/golive-attestation.json"
+  },
+  "packaging_complete": true,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "golive_attestation_walk_claimed": false,
+  "blockers": {
+    "section_7_signed_complete": "REMAINING",
+    "attestation_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "golive_attestation_walk_complete": "REMAINING",
+    "stage69_a1_as_section7_signed": "NON_CLAIM",
+    "stage187_as_attestation_live": "NON_CLAIM",
+    "section_7_signed": "false",
+    "attestation_claimed": "false",
+    "go_live_claimed": "false",
+    "golive_attestation_walk_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "gapprb-section7",
+      "title": "Mark \u00a77 signed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprb-attestation",
+      "title": "Mark attestation Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprb-go-live",
+      "title": "Mark go-live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprb-stage69-nonclaim",
+      "title": "Mark Stage 69 A1 as non-claim for \u00a77 signed Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "gapprb-section7-remaining",
+      "title": "\u00a77 signed Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 263 B1 go-live attestation pack RG blocker matrix packaging only. \u00a77 signed Completes remain MISSING."
+}

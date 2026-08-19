@@ -1,0 +1,62 @@
+{
+  "id": "commercial-packaging-archive-pack-rg-blockers",
+  "stage": 256,
+  "pack": "B1",
+  "doc": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COMMERCIAL_PACKAGING_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_packaging_archive": "docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md",
+    "commercial_acceptance_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md",
+    "commercial_packaging_archive_register": "ops/mvp/commercial-packaging-archive.json"
+  },
+  "packaging_complete": true,
+  "packaging_archive_live_claimed": false,
+  "residual_closed_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "go_live_claimed": false,
+  "blockers": {
+    "packaging_archive_live_complete": "REMAINING",
+    "residual_closed_complete": "REMAINING",
+    "commercial_acceptance_complete": "REMAINING",
+    "go_live_complete": "REMAINING",
+    "stage72_p1_as_archive_live": "NON_CLAIM",
+    "stage197_as_acceptance_complete": "NON_CLAIM",
+    "packaging_archive_live_claimed": "false",
+    "residual_closed_claimed": "false",
+    "commercial_acceptance_claimed": "false",
+    "go_live_claimed": "false"
+  },
+  "steps": [
+    {
+      "id": "cpaprb-archive",
+      "title": "Mark packaging archive live Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpaprb-residual",
+      "title": "Mark residual closed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpaprb-acceptance",
+      "title": "Mark commercial acceptance Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpaprb-stage72-nonclaim",
+      "title": "Mark Stage 72 P1 as non-claim for packaging archive live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpaprb-archive-remaining",
+      "title": "Packaging archive live Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 256 B1 commercial packaging archive pack RG blocker matrix packaging only. Packaging archive live Completes remain MISSING."
+}

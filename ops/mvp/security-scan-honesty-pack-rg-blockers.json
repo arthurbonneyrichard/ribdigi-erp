@@ -1,0 +1,77 @@
+{
+  "id": "security-scan-honesty-pack-rg-blockers",
+  "stage": 425,
+  "pack": "B1",
+  "doc": "docs/SECURITY_SCAN_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/SECURITY_SCAN_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "security_scan_pack_remaining_gate": "docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "security_scan_honesty_complete_claimed": false,
+  "security_scan_as_golive_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "security_scan_honesty_complete_claimed": "REMAINING",
+    "security_scan_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_security_scan_honesty": "NON_CLAIM",
+    "stage27_security_scan_pack_as_security_scan_complete": "NON_CLAIM",
+    "offline_complete_claimed_flag": "false",
+    "security_scan_honesty_complete_claimed_flag": "false",
+    "security_scan_as_golive_complete_claimed_flag": "false",
+    "go_live_claimed_flag": "false",
+    "attestation_claimed_flag": "false"
+  },
+  "steps": [
+    {
+      "id": "sshprb-offline",
+      "title": "Mark Offline Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sshprb-honesty",
+      "title": "Mark Security Scan honesty Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sshprb-as-golive",
+      "title": "Mark Security Scan as go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sshprb-go-live",
+      "title": "Mark go-live Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sshprb-stage392-nonclaim",
+      "title": "Mark Stage 392 as non-claim for Offline Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sshprb-stage27-nonclaim",
+      "title": "Mark Stage 27 SECURITY_SCAN_PACK as non-claim for security-scan Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sshprb-checklist-remaining",
+      "title": "Offline Complete / Security Scan / Security Scan honesty Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 425 B1 Security Scan Honesty Pack RG blocker matrix packaging only."
+}

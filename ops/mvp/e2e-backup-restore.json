@@ -1,0 +1,153 @@
+{
+  "stage": "35",
+  "workstream": "R1",
+  "doc": "docs/E2E_BACKUP_RESTORE_MVP.md",
+  "e2e_verify_financials": "ops/mvp/e2e-verify-financials.json",
+  "logical_runbook": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+  "pitr_drill_pack": "docs/PITR_DRILL_PACK_MVP.md",
+  "wal_pitr_runbook": "docs/DR_WAL_PITR_RUNBOOK.md",
+  "pitr_checklist": "ops/postgres/pitr-drill-checklist.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "live_backup_restore_claimed": false,
+  "e2e_smoke_executed_claimed": false,
+  "demo_tenant_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "live_pitr_drill_claimed": false,
+  "steps": [
+    {
+      "id": "br-create-backup",
+      "category": "backup",
+      "title": "Create encrypted logical .ribbak backup for real test tenant",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/API_DOCUMENTATION.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-checksum",
+      "category": "backup",
+      "title": "Record backup_id / checksum_sha256 (download header honesty)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-dry-run",
+      "category": "restore",
+      "title": "Dry-run restore with dry_run true \u2014 confirm valid/tenant match",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-apply-restore",
+      "category": "restore",
+      "title": "Apply restore with confirm_text=RESTORE (guarded)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/API_DOCUMENTATION.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-verify",
+      "category": "restore",
+      "title": "Post-restore verify / integrity proof",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-schedule",
+      "category": "backup",
+      "title": "Confirm backup schedule / retention / failure-notify honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/LAUNCH_CHECKLIST.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-tenant-isolation",
+      "category": "security",
+      "title": "Confirm cross-tenant restore is blocked",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/SECURITY_GUIDE.md",
+        "ops/mvp/e2e-verify-financials.json"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-audit",
+      "category": "audit",
+      "title": "Confirm restore_dry_run / restore_apply / restore_verify audit events",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+    },
+    {
+      "id": "br-pitr-deferred",
+      "category": "deferred",
+      "title": "Confirm live staging PITR drill execution remains Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/PITR_DRILL_PACK_MVP.md",
+        "docs/DR_WAL_PITR_RUNBOOK.md",
+        "ops/postgres/pitr-drill-checklist.json"
+      ],
+      "source": "docs/PITR_DRILL_PACK_MVP.md"
+    },
+    {
+      "id": "br-live-remaining",
+      "category": "honesty",
+      "title": "Live backup/restore / E2E smoke execution Remaining \u2014 packaging \u2260 executed",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_35_PLAN.md",
+        "ops/mvp/e2e-verify-financials.json",
+        "docs/DR_LOGICAL_BACKUP_RUNBOOK.md"
+      ],
+      "source": "docs/STAGE_35_PLAN.md#R1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage35_r1_e2e_backup_restore.json",
+  "deferred": [
+    "Claiming live backup/restore Complete because Stage 35 R1 packaging exists",
+    "Demo tenants / fake restore success as Complete",
+    "Live staging PITR drill execution Complete",
+    "WAL/S3 PITR production cutover Complete",
+    "Live E2E smoke executed Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

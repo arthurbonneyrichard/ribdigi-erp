@@ -1,0 +1,57 @@
+{
+  "id": "weekly-pos-ops-signals",
+  "stage": 176,
+  "pack": "R1",
+  "doc": "docs/WEEKLY_POS_OPS_SIGNALS_MVP.md",
+  "related": {
+    "weekly_review": "docs/WEEKLY_POS_OPS_REVIEW_MVP.md",
+    "offline_sync_escalation": "docs/OFFLINE_SYNC_ESCALATION_MVP.md",
+    "support_readiness": "docs/SUPPORT_READINESS_MVP.md",
+    "incident_severity": "docs/INCIDENT_SEVERITY_MATRIX_MVP.md",
+    "cashier_bind_catalog": "docs/CASHIER_BIND_CATALOG_MVP.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "support_sla_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "catalog_ttl_hours": 4,
+  "topics": [
+    "conflict_backlog_age",
+    "catalog_ttl_cadence",
+    "support_escalation_pointers"
+  ],
+  "steps": [
+    {
+      "id": "ws-conflict-age",
+      "title": "Review conflict backlog age; Accept-client honesty",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ws-catalog-ttl",
+      "title": "Review offline catalog TTL refresh cadence (4h)",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ws-escalate-pointers",
+      "title": "Point to support readiness + severity matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ws-no-zero-conflict",
+      "title": "Do not claim zero-conflict Completes",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ws-offline-sla-remaining",
+      "title": "Offline Complete / live SLA Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 176 R1 weekly review signals packaging only. Do not claim Offline Complete or live SLA."
+}

@@ -1,0 +1,149 @@
+{
+  "stage": "42",
+  "workstream": "A1",
+  "doc": "docs/AI_USE_DISCLOSURE_MVP.md",
+  "stage20_fidelity": "docs/STAGE_20_FIDELITY.md",
+  "stage20_exit": "docs/STAGE_20_EXIT_CRITERIA.md",
+  "stage20_plan": "docs/STAGE_20_PLAN.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "production_readiness": "PRODUCTION_READINESS.md",
+  "stage42_plan": "docs/STAGE_42_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "ai_certification_claimed": false,
+  "ai_advice_binding_claimed": false,
+  "external_llm_claimed": false,
+  "output_pii_scanner_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage42_a1_ai_use_disclosure.json",
+  "steps": [
+    {
+      "id": "ai-stage20-fidelity",
+      "category": "disclosure",
+      "title": "Bind Stage 20 AI Business Assistant fidelity / BR-21 as use-disclosure packaging",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_20_FIDELITY.md",
+        "docs/STAGE_20_EXIT_CRITERIA.md"
+      ],
+      "source": "docs/STAGE_20_FIDELITY.md"
+    },
+    {
+      "id": "ai-chat-rule-based",
+      "category": "disclosure",
+      "title": "Disclose MVP chat as rule-based ERP assistant (BR-21.1), not external LLM Complete",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_20_FIDELITY.md",
+        "PRODUCTION_READINESS.md"
+      ],
+      "source": "docs/STAGE_20_FIDELITY.md"
+    },
+    {
+      "id": "ai-insights-assistive",
+      "category": "assistive",
+      "title": "Index insights / inventory / sales AI as assistive analytics honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_20_FIDELITY.md",
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+      ],
+      "source": "docs/STAGE_20_FIDELITY.md"
+    },
+    {
+      "id": "ai-ocr-human-confirm",
+      "category": "assistive",
+      "title": "Confirm OCR apply requires human confirm (no silent auto-write) honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/STAGE_20_FIDELITY.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "ai-security-guide",
+      "category": "security",
+      "title": "Link SECURITY_GUIDE \u00a713 AI security / ai_guard adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/STAGE_42_PLAN.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ai-rbac-tenant",
+      "category": "security",
+      "title": "Index AI RBAC require_permission(ai) and tenant-scoped route honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    },
+    {
+      "id": "ai-audit-redaction",
+      "category": "security",
+      "title": "Index AI audit logging with redacted prompt preview honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "PRODUCTION_READINESS.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ai-not-binding-advice",
+      "category": "honesty",
+      "title": "State AI outputs are assistive, not legally binding advice",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/AI_USE_DISCLOSURE_MVP.md",
+        "docs/STAGE_42_PLAN.md"
+      ],
+      "source": "docs/AI_USE_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "ai-certification-remaining",
+      "category": "honesty",
+      "title": "AI certification / third-party AI audit Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_42_PLAN.md",
+        "docs/STAGE_20_FIDELITY.md"
+      ],
+      "source": "docs/STAGE_42_PLAN.md"
+    },
+    {
+      "id": "ai-output-pii-remaining",
+      "category": "honesty",
+      "title": "Output-PII scanner for external LLM providers Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "PRODUCTION_READINESS.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "PRODUCTION_READINESS.md"
+    }
+  ],
+  "deferred": [
+    "AI certification / third-party AI audit Complete",
+    "External LLM / Prophet provider Complete",
+    "Output-PII scanner for external providers Complete",
+    "AI outputs as legally binding advice Complete"
+  ]
+}

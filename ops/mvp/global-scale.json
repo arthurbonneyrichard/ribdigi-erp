@@ -1,0 +1,158 @@
+{
+  "stage": "63",
+  "workstream": "G1",
+  "doc": "docs/GLOBAL_SCALE_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "geographic_expansion": "ops/mvp/geographic-expansion.json",
+  "geographic_expansion_doc": "docs/GEOGRAPHIC_EXPANSION_MVP.md",
+  "multi_country_tax": "ops/mvp/multi-country-tax.json",
+  "multi_country_tax_doc": "docs/MULTI_COUNTRY_TAX_MVP.md",
+  "business_metrics": "ops/mvp/business-metrics.json",
+  "business_metrics_doc": "docs/BUSINESS_METRICS_MVP.md",
+  "success_metrics": "ops/mvp/success-metrics.json",
+  "success_metrics_doc": "docs/SUCCESS_METRICS_MVP.md",
+  "data_residency": "ops/mvp/data-residency.json",
+  "data_residency_doc": "docs/DATA_RESIDENCY_MVP.md",
+  "ipo_readiness": "ops/mvp/ipo-readiness.json",
+  "ipo_readiness_doc": "docs/IPO_READINESS_MVP.md",
+  "development_roadmap": "docs/DEVELOPMENT_ROADMAP.md",
+  "stage63_plan": "docs/STAGE_63_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "global_scale_50k_customers_claimed": false,
+  "twenty_plus_countries_claimed": false,
+  "international_scale_program_live": false,
+  "paying_customers_50k_measured": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage63_g1_global_scale.json",
+  "steps": [
+    {
+      "id": "gs-product-overview",
+      "category": "scale",
+      "title": "Index PRODUCT_OVERVIEW 50,000+ customers / 20+ countries Long-Term themes as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_63_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "gs-geographic",
+      "category": "geographic",
+      "title": "Link Stage 56 geographic expansion as market adjacency (multi-market Remaining \u2260 50k scale)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/GEOGRAPHIC_EXPANSION_MVP.md",
+        "ops/mvp/geographic-expansion.json"
+      ],
+      "source": "docs/GEOGRAPHIC_EXPANSION_MVP.md"
+    },
+    {
+      "id": "gs-multi-country-tax",
+      "category": "geographic",
+      "title": "Link Stage 60 multi-country tax as jurisdiction adjacency (tax engine Remaining \u2260 20-country scale)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MULTI_COUNTRY_TAX_MVP.md",
+        "ops/mvp/multi-country-tax.json"
+      ],
+      "source": "docs/MULTI_COUNTRY_TAX_MVP.md"
+    },
+    {
+      "id": "gs-business-metrics",
+      "category": "metrics",
+      "title": "Link Stage 58 business metrics as growth adjacency (paying customers measured Remaining \u2260 50k)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_METRICS_MVP.md",
+        "ops/mvp/business-metrics.json"
+      ],
+      "source": "docs/BUSINESS_METRICS_MVP.md"
+    },
+    {
+      "id": "gs-success-metrics",
+      "category": "metrics",
+      "title": "Link Stage 57 success metrics as product-metrics adjacency (MAU/NPS Remaining \u2260 global scale)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUCCESS_METRICS_MVP.md",
+        "ops/mvp/success-metrics.json"
+      ],
+      "source": "docs/SUCCESS_METRICS_MVP.md"
+    },
+    {
+      "id": "gs-data-residency",
+      "category": "geographic",
+      "title": "Link Stage 44 data residency as localization adjacency (residency Remaining \u2260 international scale)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/DATA_RESIDENCY_MVP.md",
+        "ops/mvp/data-residency.json"
+      ],
+      "source": "docs/DATA_RESIDENCY_MVP.md"
+    },
+    {
+      "id": "gs-ipo-adjacency",
+      "category": "honesty",
+      "title": "Link Stage 63 P1 IPO readiness as capital adjacency (funding \u2260 customer scale measured)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/IPO_READINESS_MVP.md",
+        "ops/mvp/ipo-readiness.json"
+      ],
+      "source": "docs/IPO_READINESS_MVP.md"
+    },
+    {
+      "id": "gs-plan-honesty",
+      "category": "scale",
+      "title": "Confirm Stage 63 plan explicitly defers measured 50k customers / 20+ countries",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_63_PLAN.md",
+        "docs/GLOBAL_SCALE_MVP.md"
+      ],
+      "source": "docs/STAGE_63_PLAN.md"
+    },
+    {
+      "id": "gs-50k-customers-remaining",
+      "category": "honesty",
+      "title": "Measured 50,000+ paying customers Remaining \u2014 packaging \u2260 shipped scale metric",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_63_PLAN.md",
+        "docs/GLOBAL_SCALE_MVP.md"
+      ],
+      "source": "docs/STAGE_63_PLAN.md"
+    },
+    {
+      "id": "gs-20-countries-remaining",
+      "category": "honesty",
+      "title": "Measured presence across 20+ countries / international scale program Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_63_PLAN.md",
+        "docs/GLOBAL_SCALE_MVP.md"
+      ],
+      "source": "docs/STAGE_63_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Measured 50,000+ paying customers Complete",
+    "Measured presence across 20+ countries Complete",
+    "International scale program live Complete",
+    "Multi-market localization Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

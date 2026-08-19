@@ -1,0 +1,60 @@
+{
+  "id": "liability-indemnity-pack-rg-pointers",
+  "stage": 310,
+  "pack": "P1",
+  "doc": "docs/LIABILITY_INDEMNITY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/LIABILITY_INDEMNITY_PACK_REMAINING_GATE_MVP.md",
+    "liability_indemnity": "docs/LIABILITY_INDEMNITY_MVP.md",
+    "data_retention_return_pack_remaining_gate": "docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md",
+    "rto_rpo_pack_remaining_gate": "docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md",
+    "service_credit_warranty": "docs/SERVICE_CREDIT_WARRANTY_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "liability_cap_claimed": false,
+  "indemnity_signed_claimed": false,
+  "legal_counsel_claimed": false,
+  "contract_liability_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "liability_indemnity_stage46",
+    "data_retention_return_pack_remaining_gate_stage309",
+    "rto_rpo_pack_remaining_gate_stage308",
+    "service_credit_warranty_stage46",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "liprp-stage46",
+      "title": "Point to Stage 46 L1 liability indemnity",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-stage309",
+      "title": "Point to Stage 309 data retention return pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-stage308",
+      "title": "Point to Stage 308 RTO/RPO pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-stage46w1",
+      "title": "Point to Stage 46 W1 service credit warranty adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "liprp-cap-remaining",
+      "title": "Signed liability-cap Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 310 P1 liability indemnity pack RG pointers packaging only. Do not claim signed liability-cap Complete."
+}

@@ -1,0 +1,58 @@
+{
+  "id": "accessibility-statement-pack-remaining-gate",
+  "stage": 285,
+  "pack": "I1",
+  "doc": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/ACCESSIBILITY_STATEMENT_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/ACCESSIBILITY_STATEMENT_PACK_RG_POINTERS_MVP.md",
+    "accessibility_statement": "docs/ACCESSIBILITY_STATEMENT_MVP.md",
+    "acceptance_archive_pack_remaining_gate": "docs/ACCEPTANCE_ARCHIVE_PACK_REMAINING_GATE_MVP.md",
+    "language_i18n_pack_remaining_gate": "docs/LANGUAGE_I18N_PACK_REMAINING_GATE_MVP.md",
+    "adr006": "docs/ADR_006_LANGUAGE_I18N.md"
+  },
+  "packaging_complete": true,
+  "wcag_aa_claimed": false,
+  "accessibility_audit_claimed": false,
+  "conformance_program_live": false,
+  "remediation_complete_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage41_accessibility_statement": true,
+  "distinct_from_stage284_acceptance_archive_pack_remaining_gate": true,
+  "distinct_from_stage274_language_i18n_pack_remaining_gate": true,
+  "distinct_from_adr006_language_i18n": true,
+  "steps": [
+    {
+      "id": "aspr-read-blockers",
+      "title": "Read B1 accessibility statement pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aspr-follow-pointers",
+      "title": "Follow P1 Stage 41 A1 / Stage 284 / Stage 274 / ADR-006 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aspr-wcag-missing",
+      "title": "Reaffirm WCAG AA / accessibility audit MISSING until real audit Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aspr-no-packaging-as-aa",
+      "title": "Do not treat Stage 41 A1 / Stage 284 / Stage 274 as WCAG AA Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "aspr-wcag-remaining",
+      "title": "WCAG AA / accessibility audit / conformance / remediation / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 285 I1 accessibility statement pack remaining-gate index packaging only. Do not claim WCAG AA Complete."
+}

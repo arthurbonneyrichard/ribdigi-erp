@@ -1,0 +1,152 @@
+{
+  "stage": "36",
+  "workstream": "S1",
+  "doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_runbook": "docs/SUPPORT_RUNBOOK_MVP.md",
+  "incident_pack": "docs/INCIDENT_PACK_MVP.md",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "admin_ops_map": "ops/support/admin-ops-map.json",
+  "assurance_evidence": "ops/mvp/assurance-evidence.json",
+  "stage36_plan": "docs/STAGE_36_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "support_sla_claimed": false,
+  "pagerduty_hosted_claimed": false,
+  "oncall_rota_live": false,
+  "incident_drill_executed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "steps": [
+    {
+      "id": "ss-severity-ack-targets",
+      "category": "sla",
+      "title": "Index P1\u2013P4 severity \u2192 ack-target boundary for customer-facing honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "docs/SECURITY_GUIDE.md"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "ss-incident-escalation",
+      "category": "incident",
+      "title": "Map incident escalation path to Stage 30 I1 checklist",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/incident/incident-checklist.json"
+      ],
+      "source": "ops/incident/incident-checklist.json"
+    },
+    {
+      "id": "ss-support-runbook",
+      "category": "support",
+      "title": "Link SUPPORT_RUNBOOK / ADMIN_MANUAL ops map for support boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "ops/support/admin-ops-map.json"
+      ],
+      "source": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "id": "ss-alertmanager-pagerduty",
+      "category": "incident",
+      "title": "Confirm Alertmanager PagerDuty receiver remains commented until secrets",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/grafana/alertmanager.yml.example"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "ss-oncall-remaining",
+      "category": "deferred",
+      "title": "Confirm live on-call rota paging production remains Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "docs/STAGE_36_PLAN.md"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "ss-customer-contact",
+      "category": "support",
+      "title": "Document customer support contact / handoff boundary (no fake helpdesk)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "docs/ASSURANCE_EVIDENCE_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "id": "ss-post-incident-evidence",
+      "category": "support",
+      "title": "Link post-incident notes path to evidence ledger honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/EVIDENCE_LEDGER_MVP.md",
+        "ops/evidence/ledger.json",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/EVIDENCE_LEDGER_MVP.md"
+    },
+    {
+      "id": "ss-helpdesk-saas-deferred",
+      "category": "deferred",
+      "title": "Confirm hosted helpdesk / PagerDuty SaaS remains deferred",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_36_PLAN.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "docs/STAGE_36_PLAN.md"
+    },
+    {
+      "id": "ss-incident-drill-remaining",
+      "category": "honesty",
+      "title": "Live incident drill execution Remaining \u2014 packaging \u2260 drilled",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "docs/STAGE_36_PLAN.md"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "ss-live-sla-remaining",
+      "category": "honesty",
+      "title": "Live support SLA execution Remaining \u2014 packaging \u2260 SLA Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_36_PLAN.md",
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "docs/STAGE_36_PLAN.md#S1"
+    }
+  ],
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage36_s1_support_sla_boundary.json",
+  "deferred": [
+    "Claiming live support SLA Complete because Stage 36 S1 packaging exists",
+    "Hosted PagerDuty / Opsgenie / helpdesk SaaS Complete",
+    "Live on-call rota paging production Complete",
+    "Live incident drill executed Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

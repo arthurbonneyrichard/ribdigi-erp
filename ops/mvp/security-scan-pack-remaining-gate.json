@@ -1,0 +1,57 @@
+{
+  "id": "security-scan-pack-remaining-gate",
+  "stage": 315,
+  "pack": "I1",
+  "doc": "docs/SECURITY_SCAN_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/SECURITY_SCAN_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/SECURITY_SCAN_PACK_RG_POINTERS_MVP.md",
+    "security_scan": "docs/SECURITY_SCAN_MVP.md",
+    "sbom_disclosure_pack_remaining_gate": "docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md",
+    "commercial_liability_pack_remaining_gate": "docs/COMMERCIAL_LIABILITY_PACK_REMAINING_GATE_MVP.md",
+    "security_scan_remaining_gate": "docs/SECURITY_SCAN_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "live_security_scan_claimed": false,
+  "live_zap_executed": false,
+  "vendor_pen_test_purchased": false,
+  "zap_ci_wired": false,
+  "go_live_claimed": false,
+  "distinct_from_stage27_security_scan": true,
+  "distinct_from_stage210_security_scan_remaining_gate": true,
+  "distinct_from_stage314_sbom_disclosure_pack_remaining_gate": true,
+  "distinct_from_stage313_commercial_liability_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sscpr-read-blockers",
+      "title": "Read B1 security scan pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscpr-follow-pointers",
+      "title": "Follow P1 Stage 27 S1 / Stage 314 / Stage 313 / Stage 210 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscpr-scan-missing",
+      "title": "Reaffirm live security-scan / live ZAP MISSING until real Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscpr-no-packaging-as-live",
+      "title": "Do not treat Stage 27 S1 / Stage 210 / Stage 314 as live security-scan Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sscpr-scan-remaining",
+      "title": "Live security-scan / live ZAP / vendor pen-test / ZAP CI / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 315 I1 security scan pack remaining-gate index packaging only. Do not claim live security-scan Complete."
+}

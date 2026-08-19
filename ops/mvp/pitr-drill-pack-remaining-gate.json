@@ -1,0 +1,55 @@
+{
+  "id": "pitr-drill-pack-remaining-gate",
+  "stage": 231,
+  "pack": "I1",
+  "doc": "docs/PITR_DRILL_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/PITR_DRILL_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/PITR_DRILL_PACK_RG_POINTERS_MVP.md",
+    "pitr_drill_pack": "docs/PITR_DRILL_PACK_MVP.md",
+    "live_dr_remaining_gate": "docs/LIVE_DR_REMAINING_GATE_MVP.md",
+    "launch_cert_pack_remaining_gate": "docs/LAUNCH_CERT_PACK_REMAINING_GATE_MVP.md",
+    "pitr_drill_checklist": "ops/postgres/pitr-drill-checklist.json"
+  },
+  "packaging_complete": true,
+  "live_pitr_drill_claimed": false,
+  "ci_pitr_replay_claimed": false,
+  "go_live_claimed": false,
+  "live_dr_claimed": false,
+  "distinct_from_stage28_r1_pitr_drill_pack": true,
+  "distinct_from_stage192_live_dr_remaining_gate": true,
+  "distinct_from_stage230_launch_cert_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "pdpr-read-blockers",
+      "title": "Read B1 PITR drill pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdpr-follow-pointers",
+      "title": "Follow P1 Stage 28 / Stage 230 / Stage 192 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdpr-drill-missing",
+      "title": "Reaffirm live PITR drill MISSING until a real staging WAL replay ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdpr-no-packaging-as-live",
+      "title": "Do not treat Stage 28 R1 as live PITR drill Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "pdpr-drill-remaining",
+      "title": "Live PITR drill / CI replay / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 231 I1 PITR drill pack remaining-gate index packaging only. Do not claim live PITR drill Complete."
+}

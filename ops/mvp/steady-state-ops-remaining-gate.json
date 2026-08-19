@@ -1,0 +1,53 @@
+{
+  "id": "steady-state-ops-remaining-gate",
+  "stage": 198,
+  "pack": "I1",
+  "doc": "docs/STEADY_STATE_OPS_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STEADY_STATE_OPS_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STEADY_STATE_OPS_PACK_POINTERS_MVP.md",
+    "steady_state_ops": "docs/STEADY_STATE_OPS_MVP.md",
+    "first_commercial_day": "docs/FIRST_COMMERCIAL_DAY_MVP.md",
+    "commercial_acceptance_remaining_gate": "docs/COMMERCIAL_ACCEPTANCE_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "steady_state_ops_claimed": false,
+  "first_commercial_day_claimed": false,
+  "go_live_claimed": false,
+  "commercial_acceptance_claimed": false,
+  "distinct_from_stage71_s1_steady_state": true,
+  "distinct_from_stage70_f1_first_commercial_day": true,
+  "steps": [
+    {
+      "id": "ss-read-blockers",
+      "title": "Read B1 steady-state ops blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-follow-pointers",
+      "title": "Follow P1 Stage 71 / Stage 70 / Stage 197 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-ops-missing",
+      "title": "Reaffirm steady-state ops live MISSING until executed ops ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-no-packaging-as-live",
+      "title": "Do not treat Stage 71 S1 / Stage 70 F1 as steady-state ops live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "ss-ops-remaining",
+      "title": "Steady-state ops live / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 198 I1 steady-state ops remaining-gate index packaging only. Do not claim steady-state ops live Complete."
+}

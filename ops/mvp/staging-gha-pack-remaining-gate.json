@@ -1,0 +1,55 @@
+{
+  "id": "staging-gha-pack-remaining-gate",
+  "stage": 229,
+  "pack": "I1",
+  "doc": "docs/STAGING_GHA_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/STAGING_GHA_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/STAGING_GHA_PACK_RG_POINTERS_MVP.md",
+    "staging_gha_pack": "docs/STAGING_GHA_MVP.md",
+    "staging_gha_remaining_gate": "docs/STAGING_GHA_REMAINING_GATE_MVP.md",
+    "tls_ingress_pack_remaining_gate": "docs/TLS_INGRESS_PACK_REMAINING_GATE_MVP.md",
+    "deploy_staging_example": "ops/k8s/deploy-staging.example.yml"
+  },
+  "packaging_complete": true,
+  "live_staging_apply_claimed": false,
+  "gha_staging_wired_into_main_ci": false,
+  "go_live_claimed": false,
+  "live_staging_gha_pack_claimed": false,
+  "distinct_from_stage28_g1_staging_gha_pack": true,
+  "distinct_from_stage205_staging_gha_remaining_gate": true,
+  "distinct_from_stage228_tls_ingress_pack_remaining_gate": true,
+  "steps": [
+    {
+      "id": "sgpr-read-blockers",
+      "title": "Read B1 staging GHA pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgpr-follow-pointers",
+      "title": "Follow P1 Stage 28 / Stage 205 / Stage 228 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgpr-apply-missing",
+      "title": "Reaffirm live staging apply MISSING until a real workflow_dispatch ships",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgpr-no-packaging-as-live",
+      "title": "Do not treat Stage 28 G1 as live staging apply Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "sgpr-apply-remaining",
+      "title": "Live staging apply / main-CI wire / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 229 I1 staging GHA pack remaining-gate index packaging only. Do not claim live staging apply Complete."
+}

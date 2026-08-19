@@ -1,0 +1,159 @@
+{
+  "stage": "47",
+  "workstream": "A1",
+  "doc": "docs/CUSTOMER_AUDIT_RIGHTS_MVP.md",
+  "assurance_evidence": "ops/mvp/assurance-evidence.json",
+  "assurance_evidence_doc": "docs/ASSURANCE_EVIDENCE_MVP.md",
+  "pentest_pack_doc": "docs/PENTEST_PACK_MVP.md",
+  "pentest_checklist": "ops/security/pentest-engagement-checklist.json",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "compliance_questionnaire_doc": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+  "compliance_readiness_doc": "docs/COMPLIANCE_READINESS_MVP.md",
+  "cyber_insurance": "ops/mvp/cyber-insurance.json",
+  "cyber_insurance_doc": "docs/CYBER_INSURANCE_MVP.md",
+  "vuln_disclosure": "ops/mvp/vuln-disclosure.json",
+  "vuln_disclosure_doc": "docs/VULN_DISCLOSURE_MVP.md",
+  "residual_risk": "ops/mvp/residual-risk-register.json",
+  "residual_risk_doc": "docs/RESIDUAL_RISK_MVP.md",
+  "security_guide": "docs/SECURITY_GUIDE.md",
+  "stage47_plan": "docs/STAGE_47_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "customer_audit_rights_live": false,
+  "on_site_audit_claimed": false,
+  "audit_executed_claimed": false,
+  "audit_schedule_live": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage47_a1_customer_audit_rights.json",
+  "steps": [
+    {
+      "id": "ar-assurance-adjacency",
+      "category": "audit",
+      "title": "Link Stage 34 assurance evidence as customer audit-rights source adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ASSURANCE_EVIDENCE_MVP.md",
+        "ops/mvp/assurance-evidence.json"
+      ],
+      "source": "docs/ASSURANCE_EVIDENCE_MVP.md"
+    },
+    {
+      "id": "ar-pentest-adjacency",
+      "category": "audit",
+      "title": "Link Stage 29 pen-test pack as security-assessment adjacency (not customer audit executed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PENTEST_PACK_MVP.md",
+        "ops/security/pentest-engagement-checklist.json"
+      ],
+      "source": "docs/PENTEST_PACK_MVP.md"
+    },
+    {
+      "id": "ar-msa-adjacency",
+      "category": "rights",
+      "title": "Link Stage 39 MSA security addendum as contractual audit-rights exhibit adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "ar-compliance-themes",
+      "category": "rights",
+      "title": "Link compliance questionnaire / readiness themes to audit-rights honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md",
+        "docs/COMPLIANCE_READINESS_MVP.md"
+      ],
+      "source": "docs/COMPLIANCE_QUESTIONNAIRE_MVP.md"
+    },
+    {
+      "id": "ar-insurance-adjacency",
+      "category": "rights",
+      "title": "Link Stage 47 I1 cyber insurance / COI as proof adjacency (not audit rights)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CYBER_INSURANCE_MVP.md",
+        "ops/mvp/cyber-insurance.json"
+      ],
+      "source": "docs/CYBER_INSURANCE_MVP.md"
+    },
+    {
+      "id": "ar-vuln-adjacency",
+      "category": "audit",
+      "title": "Link Stage 38 vulnerability disclosure as security-review adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/VULN_DISCLOSURE_MVP.md",
+        "ops/mvp/vuln-disclosure.json"
+      ],
+      "source": "docs/VULN_DISCLOSURE_MVP.md"
+    },
+    {
+      "id": "ar-residual-risk",
+      "category": "audit",
+      "title": "Link residual risk register as audit-scope honesty adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/RESIDUAL_RISK_MVP.md",
+        "ops/mvp/residual-risk-register.json"
+      ],
+      "source": "docs/RESIDUAL_RISK_MVP.md"
+    },
+    {
+      "id": "ar-security-guide",
+      "category": "rights",
+      "title": "Index SECURITY_GUIDE posture narrative for customer audit-rights honesty references",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SECURITY_GUIDE.md",
+        "docs/ASSURANCE_EVIDENCE_MVP.md"
+      ],
+      "source": "docs/SECURITY_GUIDE.md"
+    },
+    {
+      "id": "ar-executed-remaining",
+      "category": "honesty",
+      "title": "Customer audit executed Remaining \u2014 packaging \u2260 completed customer audit",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_47_PLAN.md",
+        "docs/CUSTOMER_AUDIT_RIGHTS_MVP.md"
+      ],
+      "source": "docs/STAGE_47_PLAN.md"
+    },
+    {
+      "id": "ar-schedule-remaining",
+      "category": "honesty",
+      "title": "Live audit schedule / on-site audit Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_47_PLAN.md",
+        "docs/CUSTOMER_AUDIT_RIGHTS_MVP.md"
+      ],
+      "source": "docs/STAGE_47_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Customer audit executed Complete",
+    "On-site / remote customer audit Complete",
+    "Live contractual audit schedule Complete",
+    "SOC 2 / ISO certification Complete via audit rights packaging",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

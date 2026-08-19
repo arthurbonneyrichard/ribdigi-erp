@@ -1,0 +1,154 @@
+{
+  "stage": "69",
+  "workstream": "A1",
+  "doc": "docs/GOLIVE_ATTESTATION_MVP.md",
+  "stage69_plan": "docs/STAGE_69_PLAN.md",
+  "attestation_doc": "docs/ATTESTATION_PACK_MVP.md",
+  "attestation_matrix": "ops/launch/attestation-matrix.json",
+  "mvp_declaration_doc": "docs/MVP_DECLARATION_MVP.md",
+  "mvp_declaration": "ops/mvp/mvp-declaration.json",
+  "launch_cert_doc": "docs/LAUNCH_CERT_MVP.md",
+  "checklist_map": "ops/launch/checklist-map.json",
+  "preflight_doc": "docs/PREFLIGHT_VERIFICATION_MVP.md",
+  "preflight": "ops/mvp/preflight-verification.json",
+  "production_launch_doc": "docs/PRODUCTION_LAUNCH_MVP.md",
+  "production_launch": "ops/mvp/production-launch.json",
+  "cutover_doc": "docs/CUTOVER_PACK_MVP.md",
+  "cutover_checklist": "ops/launch/cutover-checklist.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "section_7_signed": false,
+  "attestation_claimed": false,
+  "go_live_claimed": false,
+  "sections_1_3_verified": false,
+  "golive_attestation_walk_claimed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage69_a1_golive_attestation.json",
+  "steps": [
+    {
+      "id": "ga-owner-outline",
+      "category": "attestation",
+      "title": "Index owner Go-Live Attestation Walk (\u00a77) path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/ADR_144_STAGE69_OPEN.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    },
+    {
+      "id": "ga-attestation-pack",
+      "category": "attestation",
+      "title": "Link Stage 30 attestation pack as \u00a77 adjacency (attestation Remaining \u2260 \u00a77 signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/ATTESTATION_PACK_MVP.md",
+        "ops/launch/attestation-matrix.json"
+      ],
+      "source": "docs/ATTESTATION_PACK_MVP.md"
+    },
+    {
+      "id": "ga-mvp-declaration",
+      "category": "attestation",
+      "title": "Link Stage 31 MVP declaration as packaging adjacency (declared packaging \u2260 go-live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MVP_DECLARATION_MVP.md",
+        "ops/mvp/mvp-declaration.json"
+      ],
+      "source": "docs/MVP_DECLARATION_MVP.md"
+    },
+    {
+      "id": "ga-launch-cert",
+      "category": "attestation",
+      "title": "Link Stage 27 launch-cert as \u00a77 map adjacency (cert map \u2260 signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LAUNCH_CERT_MVP.md",
+        "ops/launch/checklist-map.json"
+      ],
+      "source": "docs/LAUNCH_CERT_MVP.md"
+    },
+    {
+      "id": "ga-preflight",
+      "category": "attestation",
+      "title": "Link Stage 69 V1 pre-flight as adjacency (\u00a7\u00a71\u20133 verified Remaining \u2260 \u00a77)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PREFLIGHT_VERIFICATION_MVP.md",
+        "ops/mvp/preflight-verification.json"
+      ],
+      "source": "docs/PREFLIGHT_VERIFICATION_MVP.md"
+    },
+    {
+      "id": "ga-production-launch",
+      "category": "attestation",
+      "title": "Link Stage 66 L1 production launch as adjacency (live cutover Remaining \u2260 attestation Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_LAUNCH_MVP.md",
+        "ops/mvp/production-launch.json"
+      ],
+      "source": "docs/PRODUCTION_LAUNCH_MVP.md"
+    },
+    {
+      "id": "ga-cutover",
+      "category": "attestation",
+      "title": "Link Stage 29 cutover pack as sign-off adjacency (cutover Remaining \u2260 \u00a77 signed)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/CUTOVER_PACK_MVP.md",
+        "ops/launch/cutover-checklist.json"
+      ],
+      "source": "docs/CUTOVER_PACK_MVP.md"
+    },
+    {
+      "id": "ga-plan-honesty",
+      "category": "attestation",
+      "title": "Confirm Stage 69 plan explicitly defers \u00a77 signed / attestation claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/GOLIVE_ATTESTATION_MVP.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    },
+    {
+      "id": "ga-section7-remaining",
+      "category": "honesty",
+      "title": "LAUNCH \u00a77 Name/Date signed Remaining \u2014 packaging \u2260 signed Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/ATTESTATION_PACK_MVP.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    },
+    {
+      "id": "ga-attestation-remaining",
+      "category": "honesty",
+      "title": "Go-live attestation claimed / live go-live Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_69_PLAN.md",
+        "docs/GOLIVE_ATTESTATION_MVP.md"
+      ],
+      "source": "docs/STAGE_69_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "LAUNCH \u00a77 Name/Date signed Complete",
+    "Go-live attestation claimed Complete",
+    "Live go-live Complete",
+    "LAUNCH \u00a7\u00a71\u20133 verified Complete"
+  ]
+}

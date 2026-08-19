@@ -1,0 +1,56 @@
+{
+  "id": "release-notes-pack-remaining-gate",
+  "stage": 283,
+  "pack": "I1",
+  "doc": "docs/RELEASE_NOTES_PACK_REMAINING_GATE_MVP.md",
+  "related": {
+    "blockers": "docs/RELEASE_NOTES_PACK_RG_BLOCKERS_MVP.md",
+    "pack_pointers": "docs/RELEASE_NOTES_PACK_RG_POINTERS_MVP.md",
+    "release_notes": "docs/RELEASE_NOTES_MVP.md",
+    "post_mvp_backlog_pack_remaining_gate": "docs/POST_MVP_BACKLOG_PACK_REMAINING_GATE_MVP.md",
+    "residual_risk_pack_remaining_gate": "docs/RESIDUAL_RISK_PACK_REMAINING_GATE_MVP.md",
+    "mvp_declaration": "docs/MVP_DECLARATION_MVP.md"
+  },
+  "packaging_complete": true,
+  "production_live_claimed": false,
+  "section_7_signed_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "distinct_from_stage32_release_notes": true,
+  "distinct_from_stage282_post_mvp_backlog_pack_remaining_gate": true,
+  "distinct_from_stage281_residual_risk_pack_remaining_gate": true,
+  "distinct_from_stage31_mvp_declaration": true,
+  "steps": [
+    {
+      "id": "rnpr-read-blockers",
+      "title": "Read B1 release notes pack blocker matrix",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnpr-follow-pointers",
+      "title": "Follow P1 Stage 32 N1 / Stage 282 / Stage 281 / Stage 31 C1 pointers",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnpr-production-missing",
+      "title": "Reaffirm production live / \u00a77 signed MISSING until real go-live Completes ship",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnpr-no-packaging-as-live",
+      "title": "Do not treat Stage 32 N1 / Stage 282 / Stage 281 as production live Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "rnpr-production-remaining",
+      "title": "Production live / \u00a77 signed / paid billing / go-live Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 283 I1 release notes pack remaining-gate index packaging only. Do not claim production live Complete."
+}

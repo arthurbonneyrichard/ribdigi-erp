@@ -1,0 +1,61 @@
+{
+  "id": "permission-alias-pack-rg-pointers",
+  "stage": 370,
+  "pack": "P1",
+  "doc": "docs/PERMISSION_ALIAS_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/PERMISSION_ALIAS_PACK_REMAINING_GATE_MVP.md",
+    "change_impact": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "sync_conflict_ux_pack": "docs/SYNC_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "adr_004": "docs/ADR_004_MENU_PERMISSIONS.md",
+    "menu_permissions_pack": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "offline_pack": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "permission_rename_complete_claimed": false,
+  "products_stock_alias_map_complete_claimed": false,
+  "offline_complete_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "topics": {
+    "change_impact_p2_permission_aliases": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "sync_conflict_ux_pack_remaining_gate_stage369": "docs/SYNC_CONFLICT_UX_PACK_REMAINING_GATE_MVP.md",
+    "adr_004_menu_permissions": "docs/ADR_004_MENU_PERMISSIONS.md",
+    "menu_permissions_pack_remaining_gate_stage275": "docs/MENU_PERMISSIONS_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate_stage329": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "explicit_non_claim": "permission_rename / products_stock_alias_map / offline_complete / go_live / attestation remain MISSING"
+  },
+  "steps": [
+    {
+      "id": "paprgp-change-impact",
+      "title": "Point to CHANGE_IMPACT P2 permission aliases",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprgp-stage369",
+      "title": "Point to Stage 369 sync conflict UX pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprgp-adr004",
+      "title": "Point to ADR-004 menu permissions",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprgp-stage275",
+      "title": "Point to Stage 275 menu permissions pack remaining-gate",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "paprgp-checklist-remaining",
+      "title": "Permission-rename / products-stock alias-map Completes Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 370 P1 permission alias pack RG pointers packaging only."
+}

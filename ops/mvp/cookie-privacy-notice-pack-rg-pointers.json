@@ -1,0 +1,61 @@
+{
+  "id": "cookie-privacy-notice-pack-rg-pointers",
+  "stage": 290,
+  "pack": "P1",
+  "doc": "docs/COOKIE_PRIVACY_NOTICE_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/COOKIE_PRIVACY_NOTICE_PACK_REMAINING_GATE_MVP.md",
+    "cookie_privacy_notice": "docs/COOKIE_PRIVACY_NOTICE_MVP.md",
+    "change_governance_pack_remaining_gate": "docs/CHANGE_GOVERNANCE_PACK_REMAINING_GATE_MVP.md",
+    "accessibility_statement_pack_remaining_gate": "docs/ACCESSIBILITY_STATEMENT_PACK_REMAINING_GATE_MVP.md",
+    "data_portability_pack_remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "cookie_consent_live": false,
+  "cmp_saas_claimed": false,
+  "privacy_notice_live": false,
+  "legal_counsel_claimed": false,
+  "billing_complete_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "cookie_privacy_notice_stage43",
+    "change_governance_pack_remaining_gate_stage289",
+    "accessibility_statement_pack_remaining_gate_stage285",
+    "data_portability_pack_remaining_gate_stage278",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "cpnprp-stage43",
+      "title": "Point to Stage 43 C1 cookie privacy notice",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-stage289",
+      "title": "Point to Stage 289 change governance pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-stage285",
+      "title": "Point to Stage 285 accessibility statement pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-stage278",
+      "title": "Point to Stage 278 data portability pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "cpnprp-consent-remaining",
+      "title": "Live cookie consent Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 290 P1 cookie privacy notice pack RG pointers packaging only. Do not claim live cookie consent Complete."
+}

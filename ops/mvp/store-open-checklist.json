@@ -1,0 +1,52 @@
+{
+  "id": "store-open-checklist",
+  "stage": 173,
+  "pack": "S1",
+  "doc": "docs/STORE_OPEN_CHECKLIST_MVP.md",
+  "related": {
+    "lowstock": "docs/STORE_OPEN_LOWSTOCK_MVP.md",
+    "health": "docs/STORE_OPEN_HEALTH_MVP.md",
+    "cashier_quickstart": "docs/CASHIER_QUICKSTART_MVP.md",
+    "offline_sync_runbook": "docs/OFFLINE_SYNC_RUNBOOK_MVP.md",
+    "user_manual": "docs/USER_MANUAL.md"
+  },
+  "packaging_complete": true,
+  "offline_complete_claimed": false,
+  "live_training_claimed": false,
+  "go_live_claimed": false,
+  "attestation_claimed": false,
+  "distinct_from_stage172_dayone": true,
+  "steps": [
+    {
+      "id": "so-tenant-store",
+      "title": "Sign in; confirm store-capable role",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "so-lowstock",
+      "title": "Complete L1 store select + low-stock glance",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "so-health",
+      "title": "Complete H1 Hold expiry + device + conflict health",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "so-dayone-if-needed",
+      "title": "New cashier/device: Stage 172 quickstart first",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "so-offline-complete-remaining",
+      "title": "Offline Complete / live training Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 173 S1 store-open checklist packaging only. Do not claim Offline Complete."
+}

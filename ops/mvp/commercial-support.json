@@ -1,0 +1,156 @@
+{
+  "stage": "74",
+  "workstream": "S1",
+  "doc": "docs/COMMERCIAL_SUPPORT_MVP.md",
+  "stage74_plan": "docs/STAGE_74_PLAN.md",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_runbook_doc": "docs/SUPPORT_RUNBOOK_MVP.md",
+  "incident_doc": "docs/INCIDENT_PACK_MVP.md",
+  "incident_checklist": "ops/incident/incident-checklist.json",
+  "assurance_doc": "docs/COMMERCIAL_ASSURANCE_MVP.md",
+  "assurance": "ops/mvp/commercial-assurance.json",
+  "hypercare_doc": "docs/PRODUCTION_HYPERCARE_MVP.md",
+  "hypercare": "ops/mvp/production-hypercare.json",
+  "handoff_doc": "docs/OPERATOR_HANDOFF_MVP.md",
+  "handoff": "ops/mvp/operator-handoff.json",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "commercial_support_claimed": false,
+  "support_boundary_live_claimed": false,
+  "support_sla_claimed": false,
+  "status_page_live": false,
+  "customer_assurance_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage74_s1_commercial_support.json",
+  "steps": [
+    {
+      "id": "cs-owner-outline",
+      "category": "support",
+      "title": "Index owner Commercial Support Boundary path as honesty boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/ADR_154_STAGE74_OPEN.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    },
+    {
+      "id": "cs-support-sla",
+      "category": "support",
+      "title": "Link Stage 36 support SLA as adjacency (SLA claimed Remaining \u2260 support boundary live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "cs-runbook",
+      "category": "support",
+      "title": "Link Stage 30 support runbook as adjacency (runbook packaging \u2260 support boundary live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_RUNBOOK_MVP.md",
+        "docs/INCIDENT_PACK_MVP.md"
+      ],
+      "source": "docs/SUPPORT_RUNBOOK_MVP.md"
+    },
+    {
+      "id": "cs-incident",
+      "category": "support",
+      "title": "Link Stage 30 incident pack as adjacency (incident drill Remaining \u2260 support boundary live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/INCIDENT_PACK_MVP.md",
+        "ops/incident/incident-checklist.json"
+      ],
+      "source": "docs/INCIDENT_PACK_MVP.md"
+    },
+    {
+      "id": "cs-assurance",
+      "category": "support",
+      "title": "Link Stage 73 A1 assurance as adjacency (customer assurance Remaining \u2260 support boundary live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/COMMERCIAL_ASSURANCE_MVP.md",
+        "ops/mvp/commercial-assurance.json"
+      ],
+      "source": "docs/COMMERCIAL_ASSURANCE_MVP.md"
+    },
+    {
+      "id": "cs-hypercare",
+      "category": "support",
+      "title": "Link Stage 67 H1 hypercare as adjacency (hypercare live Remaining \u2260 support boundary live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCTION_HYPERCARE_MVP.md",
+        "ops/mvp/production-hypercare.json"
+      ],
+      "source": "docs/PRODUCTION_HYPERCARE_MVP.md"
+    },
+    {
+      "id": "cs-handoff",
+      "category": "support",
+      "title": "Link Stage 32 operator handoff as adjacency (handoff packaging \u2260 support boundary live)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/OPERATOR_HANDOFF_MVP.md",
+        "ops/mvp/operator-handoff.json"
+      ],
+      "source": "docs/OPERATOR_HANDOFF_MVP.md"
+    },
+    {
+      "id": "cs-plan-honesty",
+      "category": "support",
+      "title": "Confirm Stage 74 plan explicitly defers support boundary live / go-live claimed",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/COMMERCIAL_SUPPORT_MVP.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    },
+    {
+      "id": "cs-support-remaining",
+      "category": "honesty",
+      "title": "Commercial support boundary live Remaining \u2014 packaging \u2260 live Complete",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/COMMERCIAL_SUPPORT_MVP.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    },
+    {
+      "id": "cs-golive-remaining",
+      "category": "honesty",
+      "title": "Go-live / status page / assurance Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_74_PLAN.md",
+        "docs/COMMERCIAL_ASSURANCE_MVP.md"
+      ],
+      "source": "docs/STAGE_74_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Commercial support boundary live Complete",
+    "Support SLA claimed Complete",
+    "Status page live Complete",
+    "Customer assurance Complete",
+    "Live go-live Complete"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "id": "data-residency-pack-rg-pointers",
+  "stage": 306,
+  "pack": "P1",
+  "doc": "docs/DATA_RESIDENCY_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DATA_RESIDENCY_PACK_REMAINING_GATE_MVP.md",
+    "data_residency": "docs/DATA_RESIDENCY_MVP.md",
+    "erasure_honesty_pack_remaining_gate": "docs/ERASURE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "encryption_kms": "docs/ENCRYPTION_KMS_MVP.md",
+    "data_portability_pack_remaining_gate": "docs/DATA_PORTABILITY_PACK_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "multi_region_residency_claimed": false,
+  "schema_per_tenant_claimed": false,
+  "gdpr_residency_cert_claimed": false,
+  "customer_region_pinning_live": false,
+  "go_live_claimed": false,
+  "topics": [
+    "data_residency_stage44",
+    "erasure_honesty_pack_remaining_gate_stage305",
+    "encryption_kms_stage44",
+    "data_portability_pack_remaining_gate",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "drprp-stage44",
+      "title": "Point to Stage 44 R1 data residency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprp-stage305",
+      "title": "Point to Stage 305 erasure honesty pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprp-stage44e1",
+      "title": "Point to Stage 44 E1 encryption KMS adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprp-data-portability-pack",
+      "title": "Point to Stage 37 P1 data portability pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drprp-residency-remaining",
+      "title": "Multi-region residency Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 306 P1 data residency pack RG pointers packaging only. Do not claim multi-region residency Complete."
+}

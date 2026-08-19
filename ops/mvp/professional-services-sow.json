@@ -1,0 +1,156 @@
+{
+  "stage": "48",
+  "workstream": "P1",
+  "doc": "docs/PROFESSIONAL_SERVICES_SOW_MVP.md",
+  "product_overview": "docs/PRODUCT_OVERVIEW.md",
+  "first_tenant_onboarding": "ops/mvp/first-tenant-onboarding.json",
+  "first_tenant_onboarding_doc": "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+  "knowledge_transfer": "ops/mvp/knowledge-transfer.json",
+  "knowledge_transfer_doc": "docs/KNOWLEDGE_TRANSFER_MVP.md",
+  "msa_addendum": "ops/mvp/msa-addendum.json",
+  "msa_addendum_doc": "docs/MSA_ADDENDUM_MVP.md",
+  "support_sla": "ops/mvp/support-sla-boundary.json",
+  "support_sla_doc": "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+  "liability_indemnity": "ops/mvp/liability-indemnity.json",
+  "liability_indemnity_doc": "docs/LIABILITY_INDEMNITY_MVP.md",
+  "business_requirements": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+  "stage48_plan": "docs/STAGE_48_PLAN.md",
+  "launch_checklist": "docs/LAUNCH_CHECKLIST.md",
+  "packaging_complete": true,
+  "signed_sow_claimed": false,
+  "professional_services_live": false,
+  "implementation_delivery_claimed": false,
+  "data_migration_complete_claimed": false,
+  "custom_workflow_delivery_claimed": false,
+  "go_live_claimed": false,
+  "section_7_signed": false,
+  "evidence_artifact": "/opt/cursor/artifacts/launch/stage48_p1_professional_services_sow.json",
+  "steps": [
+    {
+      "id": "ps-product-overview",
+      "category": "sow",
+      "title": "Index PRODUCT_OVERVIEW Implementation & Onboarding as customer-facing services boundary",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/PRODUCT_OVERVIEW.md",
+        "docs/STAGE_48_PLAN.md"
+      ],
+      "source": "docs/PRODUCT_OVERVIEW.md"
+    },
+    {
+      "id": "ps-first-tenant",
+      "category": "services",
+      "title": "Link Stage 33 first-tenant onboarding as operator adjacency (not signed customer SOW)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/FIRST_TENANT_ONBOARDING_MVP.md",
+        "ops/mvp/first-tenant-onboarding.json"
+      ],
+      "source": "docs/FIRST_TENANT_ONBOARDING_MVP.md"
+    },
+    {
+      "id": "ps-knowledge-transfer",
+      "category": "services",
+      "title": "Link Stage 33 knowledge-transfer as curriculum adjacency (not paid services delivery)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/KNOWLEDGE_TRANSFER_MVP.md",
+        "ops/mvp/knowledge-transfer.json"
+      ],
+      "source": "docs/KNOWLEDGE_TRANSFER_MVP.md"
+    },
+    {
+      "id": "ps-msa-adjacency",
+      "category": "sow",
+      "title": "Link Stage 39 MSA security addendum as commercial exhibit adjacency (not SOW Complete)",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/MSA_ADDENDUM_MVP.md",
+        "ops/mvp/msa-addendum.json"
+      ],
+      "source": "docs/MSA_ADDENDUM_MVP.md"
+    },
+    {
+      "id": "ps-support-sla",
+      "category": "services",
+      "title": "Link Stage 36 support SLA boundary as support vs professional-services honesty",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/SUPPORT_SLA_BOUNDARY_MVP.md",
+        "ops/mvp/support-sla-boundary.json"
+      ],
+      "source": "docs/SUPPORT_SLA_BOUNDARY_MVP.md"
+    },
+    {
+      "id": "ps-liability-adjacency",
+      "category": "sow",
+      "title": "Link Stage 46 liability / indemnity as commercial risk-allocation adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/LIABILITY_INDEMNITY_MVP.md",
+        "ops/mvp/liability-indemnity.json"
+      ],
+      "source": "docs/LIABILITY_INDEMNITY_MVP.md"
+    },
+    {
+      "id": "ps-br-onboarding",
+      "category": "services",
+      "title": "Index BUSINESS_REQUIREMENTS onboarding / training-material themes as services adjacency",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md",
+        "docs/PRODUCT_OVERVIEW.md"
+      ],
+      "source": "docs/BUSINESS_REQUIREMENTS_DOCUMENT.md"
+    },
+    {
+      "id": "ps-plan-honesty",
+      "category": "sow",
+      "title": "Confirm Stage 48 plan explicitly defers signed SOW / live implementation delivery",
+      "status": "packaged",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_48_PLAN.md",
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+      ],
+      "source": "docs/STAGE_48_PLAN.md"
+    },
+    {
+      "id": "ps-sow-remaining",
+      "category": "honesty",
+      "title": "Signed SOW Remaining \u2014 packaging \u2260 executed statement of work",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_48_PLAN.md",
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+      ],
+      "source": "docs/STAGE_48_PLAN.md"
+    },
+    {
+      "id": "ps-delivery-remaining",
+      "category": "honesty",
+      "title": "Live implementation / migration delivery Remaining",
+      "status": "remaining",
+      "done": false,
+      "pack_refs": [
+        "docs/STAGE_48_PLAN.md",
+        "docs/PROFESSIONAL_SERVICES_SOW_MVP.md"
+      ],
+      "source": "docs/STAGE_48_PLAN.md"
+    }
+  ],
+  "deferred": [
+    "Signed customer SOW Complete",
+    "Live professional-services delivery Complete",
+    "Data migration / custom workflow delivery Complete",
+    "Live go-live / \u00a77 / attestation Complete"
+  ]
+}

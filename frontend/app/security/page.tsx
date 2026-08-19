@@ -1,8 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Shell from '../../components/Shell';
+import PlatformShell from '../../components/PlatformShell';
 import { api } from '../../lib/api';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, t } from '../../lib/i18n';
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -68,28 +72,420 @@ function credentialToJson(cred: PublicKeyCredential): Record<string, unknown> {
   };
 }
 
+function ApiKeyUsageChart({ series }: { series: { date: string; requests: number }[] }) {
+  const width = 560;
+  const height = 160;
+  const pad = { top: 12, right: 8, bottom: 24, left: 36 };
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const points = series.length ? series : [];
+  const maxY = Math.max(1, ...points.map((p) => Number(p.requests) || 0));
+  const gap = 2;
+  const barW = points.length ? Math.max(2, (innerW - gap * (points.length - 1)) / points.length) : 0;
+
+  if (!points.length) {
+    return <p className="muted">No usage recorded yet</p>;
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label="API key requests per day"
+      style={{ width: '100%', height: 'auto', maxWidth: 640 }}
+    >
+      <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + innerH} stroke="#d6d3d1" />
+      <line
+        x1={pad.left}
+        y1={pad.top + innerH}
+        x2={pad.left + innerW}
+        y2={pad.top + innerH}
+        stroke="#d6d3d1"
+      />
+      <text x={4} y={pad.top + 8} fontSize="10" fill="#57534e">
+        {maxY}
+      </text>
+      {points.map((p, i) => {
+        const h = ((Number(p.requests) || 0) / maxY) * innerH;
+        const x = pad.left + i * (barW + gap);
+        const y = pad.top + innerH - h;
+        return (
+          <g key={p.date}>
+            <rect x={x} y={y} width={barW} height={Math.max(h, 0)} fill="#0f766e" opacity={0.85}>
+              <title>
+                {p.date}: {p.requests}
+              </title>
+            </rect>
+            {(i === 0 || i === points.length - 1 || i === Math.floor(points.length / 2)) && (
+              <text x={x + barW / 2} y={height - 6} fontSize="9" fill="#57534e" textAnchor="middle">
+                {p.date.slice(5)}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function Page() {
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [setup, setSetup] = useState<any>(null);
   const [code, setCode] = useState('');
   const [passkeyName, setPasskeyName] = useState('My passkey');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [disablePassword, setDisablePassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [locale, setLocale] = useState(DEFAULT_LOCALE);
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [apiKeyName, setApiKeyName] = useState('Integration key');
+  const [newApiKeySecret, setNewApiKeySecret] = useState('');
+  const [apiKeyUsage, setApiKeyUsage] = useState<any | null>(null);
+  const [apiKeyUsageId, setApiKeyUsageId] = useState('');
+  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [webhookDeliveries, setWebhookDeliveries] = useState<any[]>([]);
+  const [webhookUrl, setWebhookUrl] = useState('https://');
+  const [webhookEvents, setWebhookEvents] = useState('sale.created,webhook.test');
+  const [newWebhookSecret, setNewWebhookSecret] = useState('');
+  // Stage 126 W1 — webhook_active → GET /webhooks?is_active=
+  const [webhookActiveFilter, setWebhookActiveFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('webhook_active') || '')
+      .trim()
+      .toLowerCase();
+    return v === 'true' || v === 'false' ? v : '';
+  });
+  // Stage 127 K1 — api_key_status → GET /api-keys?status=
+  const [apiKeyStatusFilter, setApiKeyStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('api_key_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['active', 'revoked', 'expired'].includes(v) ? v : '';
+  });
+  // Stage 128 S1 — session_status → GET /auth/sessions?status=
+  const [sessionStatusFilter, setSessionStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('session_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['active', 'revoked', 'all'].includes(v) ? v : '';
+  });
+  // Stage 129 A1 — tenant_session_status → GET /auth/tenant-sessions?status=
+  const [tenantSessionStatusFilter, setTenantSessionStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const v = (new URLSearchParams(window.location.search).get('tenant_session_status') || '')
+      .trim()
+      .toLowerCase();
+    return ['active', 'revoked', 'all'].includes(v) ? v : '';
+  });
+  const [tenantSessions, setTenantSessions] = useState<any[]>([]);
+  const [role, setRole] = useState('');
+  const [principal, setPrincipal] = useState('');
 
-  async function refresh() {
-    const [r, keys] = await Promise.all([
+  async function refresh(opts?: {
+    webhookActive?: string;
+    apiKeyStatus?: string;
+    sessionStatus?: string;
+    tenantSessionStatus?: string;
+  }) {
+    const sessionStatus =
+      opts?.sessionStatus !== undefined ? opts.sessionStatus : sessionStatusFilter;
+    const sessQs =
+      sessionStatus === 'active' || sessionStatus === 'revoked' || sessionStatus === 'all'
+        ? `?status=${sessionStatus}`
+        : '';
+    const [r, keys, sess, me] = await Promise.all([
       api('/auth/2fa/status'),
       api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
+      api(`/auth/sessions${sessQs}`).catch(() => ({ data: [] })),
+      api('/me').catch(() => ({ data: null })),
     ]);
     setStatus(r.data);
     setPasskeys(keys.data || []);
+    setSessions(sess.data || []);
+    const userRole = me.data?.role || r.data?.role || '';
+    setRole(userRole);
+    setPrincipal(me.data?.principal || '');
+    if (me.data?.locale === 'en' || me.data?.preferred_language === 'en') {
+      setLocale('en');
+    }
+    if (userRole === 'company_admin' || userRole === 'super_admin') {
+      try {
+        const apiKeyStatus =
+          opts?.apiKeyStatus !== undefined ? opts.apiKeyStatus : apiKeyStatusFilter;
+        const keyQs =
+          apiKeyStatus === 'active' || apiKeyStatus === 'revoked' || apiKeyStatus === 'expired'
+            ? `?status=${apiKeyStatus}`
+            : apiKeyStatus === 'all'
+              ? ''
+              : '';
+        const listed = await api(`/api-keys${keyQs}`);
+        setApiKeys(listed.data || []);
+      } catch {
+        setApiKeys([]);
+      }
+      try {
+        const webhookActive =
+          opts?.webhookActive !== undefined ? opts.webhookActive : webhookActiveFilter;
+        const whQs =
+          webhookActive === 'true'
+            ? '?is_active=true'
+            : webhookActive === 'false'
+              ? '?is_active=false'
+              : webhookActive === 'all'
+                ? '?active_only=false'
+                : '';
+        const hooks = await api(`/webhooks${whQs}`);
+        setWebhooks(hooks.data || []);
+        try {
+          const deliveries = await api('/webhooks/deliveries');
+          setWebhookDeliveries(deliveries.data || []);
+        } catch {
+          setWebhookDeliveries([]);
+        }
+      } catch {
+        setWebhooks([]);
+        setWebhookDeliveries([]);
+      }
+      try {
+        const tenantSessionStatus =
+          opts?.tenantSessionStatus !== undefined
+            ? opts.tenantSessionStatus
+            : tenantSessionStatusFilter;
+        const tsQs =
+          tenantSessionStatus === 'active' ||
+          tenantSessionStatus === 'revoked' ||
+          tenantSessionStatus === 'all'
+            ? `?status=${tenantSessionStatus}`
+            : '';
+        const tenantSess = await api(`/auth/tenant-sessions${tsQs}`);
+        setTenantSessions(tenantSess.data || []);
+      } catch {
+        setTenantSessions([]);
+      }
+    } else {
+      setApiKeys([]);
+      setWebhooks([]);
+      setWebhookDeliveries([]);
+      setTenantSessions([]);
+    }
+  }
+
+  async function createApiKey() {
+    setError('');
+    setMessage('');
+    setNewApiKeySecret('');
+    try {
+      const r = await api('/api-keys', {
+        method: 'POST',
+        body: JSON.stringify({ name: apiKeyName }),
+      });
+      setNewApiKeySecret(r.data?.api_key || '');
+      setMessage(r.message || 'API key created — copy the secret now');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function revokeApiKey(id: string) {
+    setError('');
+    try {
+      await api(`/api-keys/${id}`, { method: 'DELETE' });
+      setMessage('API key revoked');
+      if (apiKeyUsageId === id) {
+        setApiKeyUsage(null);
+        setApiKeyUsageId('');
+      }
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function loadApiKeyUsage(id: string) {
+    setError('');
+    try {
+      const r = await api(`/api-keys/${id}/usage?days=30`);
+      setApiKeyUsageId(id);
+      setApiKeyUsage(r.data || null);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function downloadApiKeyUsageExport(id: string) {
+    setError('');
+    setMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const tenant = localStorage.getItem('tenant');
+      const res = await fetch(`${apiBase}/api-keys/${id}/usage/export?days=30`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
+      });
+      if (!res.ok) throw new Error('API key usage CSV export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `api_key_${id}_usage_export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('API key usage CSV downloaded (Stage 154 U1)');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    }
+  }
+
+  async function createWebhook() {
+    setError('');
+    setMessage('');
+    setNewWebhookSecret('');
+    try {
+      const events = webhookEvents
+        .split(',')
+        .map((e) => e.trim())
+        .filter(Boolean);
+      const r = await api('/webhooks', {
+        method: 'POST',
+        body: JSON.stringify({ url: webhookUrl, events }),
+      });
+      setNewWebhookSecret(r.data?.secret || '');
+      setMessage(r.message || 'Webhook created — copy the signing secret now');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function testWebhook(id: string) {
+    setError('');
+    try {
+      const r = await api(`/webhooks/${id}/test`, { method: 'POST', body: '{}' });
+      setMessage(`Webhook test: ${r.data?.status || 'attempted'}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function deleteWebhook(id: string) {
+    setError('');
+    try {
+      await api(`/webhooks/${id}`, { method: 'DELETE' });
+      setMessage('Webhook deleted');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function setWebhookActive(id: string, next: boolean) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/webhooks/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: next }),
+      });
+      setMessage(next ? 'Webhook resumed' : 'Webhook paused');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function revokeSession(id: string) {
+    setError('');
+    try {
+      await api(`/auth/sessions/${id}`, { method: 'DELETE' });
+      setMessage('Session revoked');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function changePassword() {
+    setError('');
+    setMessage('');
+    if (newPassword !== confirmPassword) {
+      setError('New password confirmation does not match');
+      return;
+    }
+    try {
+      const r = await api('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setMessage(r.message || 'Password updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const params = new URLSearchParams(window.location.search);
+    let whActive = webhookActiveFilter;
+    const wa = params.get('webhook_active')?.trim().toLowerCase() || '';
+    if (wa === 'true' || wa === 'false') {
+      whActive = wa;
+      setWebhookActiveFilter(wa);
+    }
+    let keyStatus = apiKeyStatusFilter;
+    const ks = params.get('api_key_status')?.trim().toLowerCase() || '';
+    if (['active', 'revoked', 'expired'].includes(ks)) {
+      keyStatus = ks;
+      setApiKeyStatusFilter(ks);
+    }
+    let sessStatus = sessionStatusFilter;
+    const ss = params.get('session_status')?.trim().toLowerCase() || '';
+    if (['active', 'revoked', 'all'].includes(ss)) {
+      sessStatus = ss;
+      setSessionStatusFilter(ss);
+    }
+    let tenantSessStatus = tenantSessionStatusFilter;
+    const tss = params.get('tenant_session_status')?.trim().toLowerCase() || '';
+    if (['active', 'revoked', 'all'].includes(tss)) {
+      tenantSessStatus = tss;
+      setTenantSessionStatusFilter(tss);
+    }
+    refresh({
+      webhookActive: whActive,
+      apiKeyStatus: keyStatus,
+      sessionStatus: sessStatus,
+      tenantSessionStatus: tenantSessStatus,
+    }).catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Stage 103 S1 — honor Shell #passkeys / #totp / #webhooks / #api-keys / #sessions
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = (window.location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(t);
   }, []);
 
   async function startSetup() {
@@ -187,8 +583,11 @@ export default function Page() {
     }
   }
 
+  const ConsoleShell = ({ children }: { children: ReactNode }) =>
+    principal === 'platform' ? <PlatformShell>{children}</PlatformShell> : <Shell>{children}</Shell>;
+
   return (
-    <Shell>
+    <ConsoleShell>
       <h1>Security / 2FA</h1>
       <p className="muted">TOTP authenticator, passkeys, and recovery codes</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -206,9 +605,52 @@ export default function Page() {
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16, maxWidth: 420 }}>
+        <h2>Change password</h2>
+        <p className="muted">Other devices will be signed out after a successful change.</p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Current password"
+          />
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New password"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm new password"
+          />
+          <button type="button" onClick={changePassword}>
+            Update password
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
+        <h2>{t('language.label', locale)}</h2>
+        <p className="muted">{t('language.mvp_only', locale)}</p>
+        <select value={locale} disabled style={{ maxWidth: 220 }}>
+          {SUPPORTED_LOCALES.map((code) => (
+            <option key={code} value={code}>
+              {t('language.english', locale)} ({code})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }} id="passkeys">
         <h2>Passkeys (WebAuthn)</h2>
-        <p className="muted">Register a platform or security-key passkey for passwordless second factor.</p>
+        <p className="muted">
+          Register a platform or security-key passkey for passwordless second factor. Export via{' '}
+          <code>GET /auth/webauthn/credentials/export</code> (Stage 128 P1 — no public keys).
+        </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
             value={passkeyName}
@@ -218,6 +660,28 @@ export default function Page() {
           />
           <button type="button" onClick={registerPasskey}>
             Add passkey
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const res = await fetch(`${apiBase}/auth/webauthn/credentials/export`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'passkeys_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Passkeys CSV downloaded');
+            }}
+          >
+            Export passkeys CSV
           </button>
         </div>
         <ul>
@@ -234,7 +698,7 @@ export default function Page() {
       </div>
 
       {!status?.enabled && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }} id="totp">
           <h2>Enable TOTP</h2>
           {!setup ? (
             <button onClick={startSetup}>Start setup</button>
@@ -258,7 +722,7 @@ export default function Page() {
       )}
 
       {status?.enabled && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }} id="totp">
           <h2>Backup codes</h2>
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Current 2FA code" />
           <button onClick={regenCodes}>Regenerate backup codes</button>
@@ -278,7 +742,7 @@ export default function Page() {
       )}
 
       {backupCodes.length > 0 && (
-        <div className="card">
+        <div className="card" style={{ marginBottom: 16 }}>
           <h2>Save these codes now</h2>
           <ul>
             {backupCodes.map((c) => (
@@ -289,6 +753,518 @@ export default function Page() {
           </ul>
         </div>
       )}
-    </Shell>
+
+      {(role === 'company_admin' || role === 'super_admin') && (
+        <div className="card" style={{ marginBottom: 16 }} id="webhooks">
+          <h2>Webhooks</h2>
+          <p className="muted">
+            Outbound signed events use header <code>X-Ribdigi-Signature</code> (<code>t=…,v1=…</code>{' '}
+            HMAC-SHA256). Filter via <code>webhook_active</code> →{' '}
+            <code>GET /webhooks?is_active=</code> (Stage 126 W1). Delivery attempts via{' '}
+            <code>GET /webhooks/deliveries</code> / <code>/export</code> (Stage 144 W1; payload
+            excluded).
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              value={webhookActiveFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setWebhookActiveFilter(v);
+                const url = new URL(window.location.href);
+                if (v === 'true' || v === 'false') url.searchParams.set('webhook_active', v);
+                else url.searchParams.delete('webhook_active');
+                window.history.replaceState({}, '', url.toString());
+                refresh({ webhookActive: v }).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="default">Active filter (default / all)</option>
+              <option value="true">Active only</option>
+              <option value="false">Paused only</option>
+              <option value="all">All (active_only=false)</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  webhookActiveFilter === 'true'
+                    ? '?is_active=true'
+                    : webhookActiveFilter === 'false'
+                      ? '?is_active=false'
+                      : webhookActiveFilter === 'all'
+                        ? '?active_only=false'
+                        : '';
+                const res = await fetch(`${apiBase}/webhooks/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'webhooks_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Webhooks CSV downloaded');
+              }}
+            >
+              Export webhooks CSV
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                // Stage 144 W1 — webhook deliveries CSV (no payload)
+                const token = localStorage.getItem('token') || '';
+                const res = await fetch(`${apiBase}/webhooks/deliveries/export`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'webhook_deliveries_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Webhook deliveries CSV downloaded (Stage 144 W1)');
+              }}
+            >
+              Export deliveries CSV
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <input
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://your-app.com/webhooks/ribdigi"
+              style={{ minWidth: 280 }}
+            />
+            <input
+              value={webhookEvents}
+              onChange={(e) => setWebhookEvents(e.target.value)}
+              placeholder="sale.created,webhook.test"
+              style={{ minWidth: 200 }}
+            />
+            <button type="button" onClick={createWebhook}>
+              Create webhook
+            </button>
+          </div>
+          {newWebhookSecret && (
+            <p>
+              Signing secret (copy now): <code>{newWebhookSecret}</code>
+            </p>
+          )}
+          <table className="table">
+            <thead>
+              <tr>
+                <th>URL</th>
+                <th>Events</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {webhooks.map((w) => (
+                <tr key={w.id}>
+                  <td className="muted" style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {w.url}
+                  </td>
+                  <td>{(w.events || []).join(', ')}</td>
+                  <td>{w.is_active ? 'active' : 'paused'}</td>
+                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => testWebhook(w.id)}>
+                      Test
+                    </button>
+                    {w.is_active === false ? (
+                      <button type="button" onClick={() => setWebhookActive(w.id, true)}>
+                        Resume
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => setWebhookActive(w.id, false)}>
+                        Pause
+                      </button>
+                    )}
+                    <button type="button" onClick={() => deleteWebhook(w.id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!webhooks.length && (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No webhooks yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <h3 style={{ marginTop: 16 }}>Recent deliveries</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Status</th>
+                <th>Attempts</th>
+                <th>HTTP</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody>
+              {webhookDeliveries.slice(0, 20).map((d) => (
+                <tr key={d.id}>
+                  <td>{d.event}</td>
+                  <td>{d.status}</td>
+                  <td>{d.attempt_count ?? 0}</td>
+                  <td>{d.response_status ?? '—'}</td>
+                  <td>{d.created_at ? String(d.created_at).slice(0, 19) : '—'}</td>
+                </tr>
+              ))}
+              {!webhookDeliveries.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No delivery attempts yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {(role === 'company_admin' || role === 'super_admin') && (
+        <div className="card" style={{ marginBottom: 16 }} id="api-keys">
+          <h2>API keys</h2>
+          <p className="muted">
+            Integration keys authenticate with the <code>X-API-Key</code> header. The secret is shown
+            once. Filter via <code>api_key_status</code> → <code>GET /api-keys?status=</code> (Stage
+            127 K1).
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              value={apiKeyStatusFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setApiKeyStatusFilter(v);
+                const url = new URL(window.location.href);
+                if (['active', 'revoked', 'expired'].includes(v)) {
+                  url.searchParams.set('api_key_status', v);
+                } else url.searchParams.delete('api_key_status');
+                window.history.replaceState({}, '', url.toString());
+                refresh({ apiKeyStatus: v }).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="default">Status filter (default / all)</option>
+              <option value="active">Active only</option>
+              <option value="revoked">Revoked only</option>
+              <option value="expired">Expired only</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  apiKeyStatusFilter === 'active' ||
+                  apiKeyStatusFilter === 'revoked' ||
+                  apiKeyStatusFilter === 'expired'
+                    ? `?status=${apiKeyStatusFilter}`
+                    : '';
+                const res = await fetch(`${apiBase}/api-keys/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'api_keys_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('API keys CSV downloaded');
+              }}
+            >
+              Export API keys CSV
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <input
+              value={apiKeyName}
+              onChange={(e) => setApiKeyName(e.target.value)}
+              placeholder="Key name"
+            />
+            <button type="button" onClick={createApiKey}>
+              Create key
+            </button>
+          </div>
+          {newApiKeySecret && (
+            <p>
+              Secret (copy now): <code>{newApiKeySecret}</code>
+            </p>
+          )}
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Prefix</th>
+                <th>Requests</th>
+                <th>Last used</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {apiKeys.map((k) => (
+                <tr key={k.id}>
+                  <td>{k.name}</td>
+                  <td>
+                    <code>{k.key_prefix}</code>
+                  </td>
+                  <td>{Number(k.request_count || 0)}</td>
+                  <td className="muted">
+                    {k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}
+                  </td>
+                  <td>{k.status}</td>
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => loadApiKeyUsage(k.id)}>
+                      Usage
+                    </button>
+                    {k.status === 'active' && (
+                      <button type="button" onClick={() => revokeApiKey(k.id)}>
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {!apiKeys.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No API keys yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {apiKeyUsage && (
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ margin: '0 0 8px' }}>
+                Requests per day — {apiKeyUsage.name}{' '}
+                <span className="muted">
+                  (last {apiKeyUsage.days} days · Σ {apiKeyUsage.period_requests})
+                </span>
+              </h3>
+              <p className="muted">
+                Export via <code>{'GET /api-keys/{id}/usage/export'}</code> (Stage 154 U1; no raw
+                secrets).
+              </p>
+              <p style={{ margin: '8px 0' }}>
+                <button type="button" onClick={() => downloadApiKeyUsageExport(apiKeyUsageId)}>
+                  Export usage CSV
+                </button>
+              </p>
+              <ApiKeyUsageChart series={apiKeyUsage.series || []} />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="card" id="sessions">
+        <h2>Sessions</h2>
+        <p className="muted">
+          Revoke devices you no longer recognize. Filter via <code>session_status</code> →{' '}
+          <code>GET /auth/sessions?status=</code> (Stage 128 S1).
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <select
+            value={sessionStatusFilter || 'default'}
+            onChange={(e) => {
+              const v = e.target.value === 'default' ? '' : e.target.value;
+              setSessionStatusFilter(v);
+              const url = new URL(window.location.href);
+              if (['active', 'revoked', 'all'].includes(v)) {
+                url.searchParams.set('session_status', v);
+              } else url.searchParams.delete('session_status');
+              window.history.replaceState({}, '', url.toString());
+              refresh({ sessionStatus: v }).catch((err) => setError(err.message));
+            }}
+          >
+            <option value="default">Status filter (default / active)</option>
+            <option value="active">Active only</option>
+            <option value="revoked">Revoked only</option>
+            <option value="all">All sessions</option>
+          </select>
+          <button
+            type="button"
+            onClick={async () => {
+              const token = localStorage.getItem('token') || '';
+              const qs =
+                sessionStatusFilter === 'active' ||
+                sessionStatusFilter === 'revoked' ||
+                sessionStatusFilter === 'all'
+                  ? `?status=${sessionStatusFilter}`
+                  : '';
+              const res = await fetch(`${apiBase}/auth/sessions/export${qs}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) {
+                setError(await res.text());
+                return;
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'sessions_export.csv';
+              a.click();
+              URL.revokeObjectURL(a.href);
+              setMessage('Sessions CSV downloaded');
+            }}
+          >
+            Export sessions CSV
+          </button>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Created</th>
+              <th>Status</th>
+              <th>IP</th>
+              <th>Agent</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((s) => (
+              <tr key={s.id}>
+                <td>{s.created_at ? String(s.created_at) : '—'}</td>
+                <td>{s.status || (s.revoked_at ? 'revoked' : 'active')}</td>
+                <td>{s.ip_address || '—'}</td>
+                <td className="muted" style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {s.user_agent || '—'}
+                  {s.current ? ' (this device)' : ''}
+                </td>
+                <td>
+                  {!s.current && !s.revoked_at && s.status !== 'revoked' && (
+                    <button type="button" onClick={() => revokeSession(s.id)}>
+                      Revoke
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!sessions.length && (
+              <tr>
+                <td colSpan={5} className="muted">
+                  No sessions
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {(role === 'company_admin' || role === 'super_admin') && (
+        <div className="card" style={{ marginTop: 16 }} id="tenant-sessions">
+          <h2>Tenant sessions</h2>
+          <p className="muted">
+            Inventory of all user sessions in this tenant. Filter via{' '}
+            <code>tenant_session_status</code> → <code>GET /auth/tenant-sessions?status=</code>{' '}
+            (Stage 129 A1). Export excludes refresh-token secrets.
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <select
+              value={tenantSessionStatusFilter || 'default'}
+              onChange={(e) => {
+                const v = e.target.value === 'default' ? '' : e.target.value;
+                setTenantSessionStatusFilter(v);
+                const url = new URL(window.location.href);
+                if (['active', 'revoked', 'all'].includes(v)) {
+                  url.searchParams.set('tenant_session_status', v);
+                } else url.searchParams.delete('tenant_session_status');
+                window.history.replaceState({}, '', url.toString());
+                refresh({ tenantSessionStatus: v }).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="default">Status filter (default / active)</option>
+              <option value="active">Active only</option>
+              <option value="revoked">Revoked only</option>
+              <option value="all">All sessions</option>
+            </select>
+            <button
+              type="button"
+              onClick={async () => {
+                const token = localStorage.getItem('token') || '';
+                const qs =
+                  tenantSessionStatusFilter === 'active' ||
+                  tenantSessionStatusFilter === 'revoked' ||
+                  tenantSessionStatusFilter === 'all'
+                    ? `?status=${tenantSessionStatusFilter}`
+                    : '';
+                const res = await fetch(`${apiBase}/auth/tenant-sessions/export${qs}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) {
+                  setError(await res.text());
+                  return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'tenant_sessions_export.csv';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                setMessage('Tenant sessions CSV downloaded');
+              }}
+            >
+              Export tenant sessions CSV
+            </button>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th>IP</th>
+                <th>Agent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tenantSessions.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    {s.user_email || s.user_id || '—'}
+                    {s.user_name ? (
+                      <span className="muted"> · {s.user_name}</span>
+                    ) : null}
+                  </td>
+                  <td>{s.created_at ? String(s.created_at) : '—'}</td>
+                  <td>{s.status || (s.revoked_at ? 'revoked' : 'active')}</td>
+                  <td>{s.ip_address || '—'}</td>
+                  <td
+                    className="muted"
+                    style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {s.user_agent || '—'}
+                  </td>
+                </tr>
+              ))}
+              {!tenantSessions.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No tenant sessions
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </ConsoleShell>
   );
 }

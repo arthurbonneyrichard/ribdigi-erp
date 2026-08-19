@@ -1,0 +1,60 @@
+{
+  "id": "data-retention-return-pack-rg-pointers",
+  "stage": 309,
+  "pack": "P1",
+  "doc": "docs/DATA_RETENTION_RETURN_PACK_RG_POINTERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/DATA_RETENTION_RETURN_PACK_REMAINING_GATE_MVP.md",
+    "data_retention_return": "docs/DATA_RETENTION_RETURN_MVP.md",
+    "rto_rpo_pack_remaining_gate": "docs/RTO_RPO_PACK_REMAINING_GATE_MVP.md",
+    "encryption_kms_pack_remaining_gate": "docs/ENCRYPTION_KMS_PACK_REMAINING_GATE_MVP.md",
+    "audit_retention_remaining_gate": "docs/AUDIT_RETENTION_REMAINING_GATE_MVP.md",
+    "production_readiness": "PRODUCTION_READINESS.md"
+  },
+  "packaging_complete": true,
+  "data_return_portal_claimed": false,
+  "hot_audit_purge_claimed": false,
+  "contract_exit_return_live": false,
+  "offboarding_workflow_claimed": false,
+  "go_live_claimed": false,
+  "topics": [
+    "data_retention_return_stage45",
+    "rto_rpo_pack_remaining_gate_stage308",
+    "encryption_kms_pack_remaining_gate_stage307",
+    "audit_retention_remaining_gate_stage186",
+    "explicit_non_claim"
+  ],
+  "steps": [
+    {
+      "id": "drrpp-stage45",
+      "title": "Point to Stage 45 T1 data retention return",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpp-stage308",
+      "title": "Point to Stage 308 RTO/RPO pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpp-stage307",
+      "title": "Point to Stage 307 encryption KMS pack remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpp-stage186",
+      "title": "Point to Stage 186 audit-retention remaining-gate adjacency",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "drrpp-portal-remaining",
+      "title": "Data-return portal Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 309 P1 data retention return pack RG pointers packaging only. Do not claim data-return portal Complete."
+}

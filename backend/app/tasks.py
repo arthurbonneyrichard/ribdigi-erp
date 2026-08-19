@@ -21,6 +21,13 @@ def scan_payment_due() -> dict:
     return jobs_svc.run_async(jobs_svc.job_scan_payment_due())
 
 
+@celery.task(name="app.tasks.scan_quotation_expiry")
+def scan_quotation_expiry() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_scan_quotation_expiry())
+
+
 @celery.task(name="app.tasks.generate_recurring_expenses")
 def generate_recurring_expenses() -> dict:
     if not settings.CELERY_ENABLED:
@@ -61,6 +68,34 @@ def sync_bank_feeds() -> dict:
     if not settings.CELERY_ENABLED:
         return {"skipped": True, "reason": "CELERY_ENABLED=false"}
     return jobs_svc.run_async(jobs_svc.job_sync_bank_feeds())
+
+
+@celery.task(name="app.tasks.generate_ai_low_stock_predictions")
+def generate_ai_low_stock_predictions() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_generate_ai_low_stock_predictions())
+
+
+@celery.task(name="app.tasks.generate_ai_insights")
+def generate_ai_insights() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_generate_ai_insights())
+
+
+@celery.task(name="app.tasks.archive_cold_audit_logs")
+def archive_cold_audit_logs() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_archive_cold_audit_logs())
+
+
+@celery.task(name="app.tasks.retry_due_webhooks")
+def retry_due_webhooks() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_retry_due_webhooks())
 
 
 @celery.task(name="app.tasks.run_named_job")

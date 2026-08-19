@@ -1,0 +1,62 @@
+{
+  "id": "operator-remaining-pack-rg-blockers",
+  "stage": 252,
+  "pack": "B1",
+  "doc": "docs/OPERATOR_REMAINING_PACK_RG_BLOCKERS_MVP.md",
+  "related": {
+    "remaining_gate": "docs/OPERATOR_REMAINING_PACK_REMAINING_GATE_MVP.md",
+    "operator_remaining": "docs/OPERATOR_REMAINING_MVP.md",
+    "evidence_ledger_pack_remaining_gate": "docs/EVIDENCE_LEDGER_PACK_REMAINING_GATE_MVP.md",
+    "operator_remaining_register": "ops/mvp/operator-remaining-register.json"
+  },
+  "packaging_complete": true,
+  "live_runs_certified": false,
+  "attestation_claimed": false,
+  "section_7_signed": false,
+  "sections_1_3_verified": false,
+  "blockers": {
+    "live_operator_runs": "REMAINING",
+    "attestation_complete": "REMAINING",
+    "section_7_signed_complete": "REMAINING",
+    "sections_1_3_verified_complete": "REMAINING",
+    "stage31_o1_as_live_runs": "NON_CLAIM",
+    "stage235_as_go_live_evidence": "NON_CLAIM",
+    "live_runs_certified": "false",
+    "attestation_claimed": "false",
+    "section_7_signed": "false",
+    "sections_1_3_verified": "false"
+  },
+  "steps": [
+    {
+      "id": "orprb-runs",
+      "title": "Mark live operator runs Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "orprb-attestation",
+      "title": "Mark attestation Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "orprb-s7",
+      "title": "Mark section 7 signed Complete Remaining",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "orprb-stage31-nonclaim",
+      "title": "Mark Stage 31 O1 as non-claim for live runs Complete",
+      "status": "packaged",
+      "done": false
+    },
+    {
+      "id": "orprb-runs-remaining",
+      "title": "Live operator runs Complete Remaining",
+      "status": "remaining",
+      "done": false
+    }
+  ],
+  "message": "Stage 252 B1 operator remaining pack RG blocker matrix packaging only. Live operator runs Completes remain MISSING."
+}
