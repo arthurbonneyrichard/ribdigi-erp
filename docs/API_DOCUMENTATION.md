@@ -1495,8 +1495,8 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 14.5 Email report schedules (BR-14)
 **List:** `GET /reports/schedules` — optional Query `enabled` ∈ `true`|`false` (omit → all; invalid → **422**); optional Query `frequency` ∈ `daily`|`weekly` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Reports Email schedules **Report schedule enabled filter** / **frequency filter** (`scheduleManageFilter` / `scheduleFrequencyFilter`; client filter over full list cache).  
-**Create:** `POST /reports/schedules`  
-**Update:** `PATCH /reports/schedules/{schedule_id}`  
+**Create:** `POST /reports/schedules` — body `recipients` ∈ `ReportScheduleRecipientsValue` (`list[EmailStr]` or comma/`;`-separated string); required ≥1; blank/`bad`/`ops@x.com, bad` → **422** (was free `list[str]|str`; service soft-dropped tokens without `@` then late **400** if empty). Service `_normalize_recipients` remains defense-in-depth (**400**). Reports **Report schedule recipients** input (`aria-label`).  
+**Update:** `PATCH /reports/schedules/{schedule_id}` — optional `recipients` same honesty; omit/`null` → no change; blank/invalid → **422**.  
 **Delete:** `DELETE /reports/schedules/{schedule_id}`  
 **Run now:** `POST /reports/schedules/{schedule_id}/run?force=true`  
 **Run due (tenant):** `POST /reports/schedules/run-due`

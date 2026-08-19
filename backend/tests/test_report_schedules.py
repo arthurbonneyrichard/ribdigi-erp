@@ -31,11 +31,26 @@ async def test_create_and_run_schedule(db_session, seeded):
         format="csv",
         frequency="daily",
         hour_utc=0,
-        recipients=["ops@example.com", "ops@example.com", "bad"],
+        recipients=["ops@example.com", "ops@example.com", "finance@example.com"],
         enabled=True,
     )
     await db_session.commit()
-    assert row.recipients == ["ops@example.com"]
+    assert row.recipients == ["ops@example.com", "finance@example.com"]
+
+    with pytest.raises(Exception) as bad_exc:
+        await schedules_svc.create_schedule(
+            db_session,
+            tenant_id=tenant_id,
+            user_id=seeded["admin1"].id,
+            name="Bad recipients",
+            report_type="summary",
+            format="csv",
+            frequency="daily",
+            hour_utc=0,
+            recipients=["ops@example.com", "bad"],
+            enabled=True,
+        )
+    assert getattr(bad_exc.value, "status_code", None) == 400
 
     result = await schedules_svc.run_schedule(
         db_session, tenant_id=tenant_id, schedule=row, force=True
@@ -45,7 +60,7 @@ async def test_create_and_run_schedule(db_session, seeded):
     assert result["mode"] == "console"
     out = emailer.get_dev_outbox()
     assert len(out) == 1
-    assert out[0]["to"] == ["ops@example.com"]
+    assert out[0]["to"] == ["ops@example.com", "finance@example.com"]
     assert out[0]["attachments"]
     assert out[0]["attachments"][0]["filename"].endswith(".csv")
     assert row.last_run_at is not None

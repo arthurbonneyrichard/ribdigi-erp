@@ -34,13 +34,32 @@ def serialize_schedule(row: m.ReportSchedule) -> dict:
 
 
 def _normalize_recipients(raw: list[str] | str | None) -> list[str]:
+    """Split/de-dupe recipient emails. Schema ReportScheduleRecipientsValue rejects
+    blank/invalid with **422**; this remains defense-in-depth (**400**).
+    """
     if raw is None:
         return []
     if isinstance(raw, str):
         parts = [p.strip() for p in raw.replace(";", ",").split(",")]
     else:
         parts = [str(p).strip() for p in raw]
-    out = [p for p in parts if p and "@" in p]
+    out: list[str] = []
+    for p in parts:
+        if not p:
+            continue
+        # Soft `@` gate was tip #118 pre-state; require a real local@domain shape.
+        if "@" not in p or p.startswith("@") or p.endswith("@") or " " in p:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid recipient email: {p}",
+            )
+        local, _, domain = p.partition("@")
+        if not local or "." not in domain:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid recipient email: {p}",
+            )
+        out.append(p)
     # de-dupe preserve order
     seen: set[str] = set()
     unique: list[str] = []

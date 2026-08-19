@@ -429,7 +429,7 @@ export default function Page() {
           frequency: schedForm.frequency,
           weekday: schedForm.frequency === 'weekly' ? Number(schedForm.weekday) : null,
           hour_utc: Number(schedForm.hour_utc),
-          recipients: schedForm.recipients,
+          recipients: schedForm.recipients.trim(),
           enabled: schedForm.enabled,
         }),
       });
@@ -2143,6 +2143,8 @@ export default function Page() {
               placeholder="Recipients (comma-separated emails)"
               value={schedForm.recipients}
               onChange={(e) => setSchedForm({ ...schedForm, recipients: e.target.value })}
+              aria-label="Report schedule recipients"
+              title="Comma-separated recipient emails"
             />
             <label>
               <input
@@ -2152,7 +2154,9 @@ export default function Page() {
               />{' '}
               Enabled
             </label>
-            <button onClick={createSchedule}>Create schedule</button>
+            <button type="button" onClick={createSchedule} aria-label="Create report schedule">
+              Create schedule
+            </button>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
             <select

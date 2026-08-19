@@ -3156,8 +3156,40 @@ class AiReportTemplateCreateBody(BaseModel):
         return value
 
 
+def coerce_report_schedule_recipients(value: object) -> object:
+    """Pydantic BeforeValidator: str/list → stripped email list; blank → ValueError.
+
+    Comma/`;` separated strings expand to multiple addresses. Empty / whitespace-only
+    → ValueError (422). Each item is then validated as EmailStr (rejects `bad`,
+    `almost@`, etc.). Was free `list[str]|str` with service soft-dropping non-`@`.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        parts = [p.strip() for p in value.replace(";", ",").split(",") if p.strip()]
+    elif isinstance(value, (list, tuple)):
+        parts = [str(p).strip() for p in value if p is not None and str(p).strip()]
+    else:
+        return value
+    if not parts:
+        raise ValueError("at least one recipient email is required")
+    return parts
+
+
+# Create requires ≥1 EmailStr; Update omit/`null` → no change; blank/invalid → **422**.
+ReportScheduleRecipientsValue = Annotated[
+    list[EmailStr],
+    BeforeValidator(coerce_report_schedule_recipients),
+]
+
+
 class ReportScheduleCreate(BaseModel):
-    """Email report schedule create (BR-14)."""
+    """Email report schedule create (BR-14).
+
+    `recipients` ∈ ReportScheduleRecipientsValue (`list[EmailStr]` or comma/`;`
+    string); required ≥1; blank/`bad`/`ops@x.com, bad` → **422** (was free
+    `list[str]|str`; service soft-dropped non-`@` then late **400** if empty).
+    """
 
     name: str = Field(min_length=2)
     # Schema Literal; blank/unknown → 422 (was free str → service 400)
@@ -3167,12 +3199,16 @@ class ReportScheduleCreate(BaseModel):
     frequency: ScheduleFrequencyValue = "daily"
     weekday: int | None = Field(default=None, ge=0, le=6)
     hour_utc: int = Field(default=6, ge=0, le=23)
-    recipients: list[str] | str | None = None
+    recipients: ReportScheduleRecipientsValue
     enabled: bool = True
 
 
 class ReportScheduleUpdate(BaseModel):
-    """Email report schedule patch — omit = no change; blank frequency/format/report_type → 422."""
+    """Email report schedule patch — omit = no change; blank frequency/format/report_type → 422.
+
+    Optional `recipients` ∈ ReportScheduleRecipientsValue; omit/`null` → no change;
+    blank/invalid → **422** (do not clear to empty).
+    """
 
     name: str | None = Field(default=None, min_length=2)
     report_type: ReportTypeValue | None = None
@@ -3180,7 +3216,7 @@ class ReportScheduleUpdate(BaseModel):
     frequency: ScheduleFrequencyValue | None = None
     weekday: int | None = Field(default=None, ge=0, le=6)
     hour_utc: int | None = Field(default=None, ge=0, le=23)
-    recipients: list[str] | str | None = None
+    recipients: ReportScheduleRecipientsValue | None = None
     enabled: bool | None = None
 
 
