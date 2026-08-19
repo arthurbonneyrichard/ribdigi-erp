@@ -283,8 +283,10 @@ async def update_count_items(
             raise HTTPException(status_code=400, detail="counted_qty cannot be negative")
         line = existing[product_id]
         line.counted_qty = round(qty, 3)
-        if raw.get("notes") is not None:
-            line.notes = str(raw.get("notes") or "").strip() or None
+        # Schema StockCountItemNotesValue rejects blank/garbage → 422; explicit null clears.
+        if "notes" in raw:
+            notes_val = raw.get("notes")
+            line.notes = None if notes_val is None else str(notes_val).strip() or None
     await db.flush()
     return count
 

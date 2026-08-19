@@ -3882,7 +3882,8 @@ async def patch_stock_count_items(
         db,
         tenant_id=claims["tenant_id"],
         count_id=count_id,
-        items=[i.model_dump() for i in payload.items],
+        # exclude_unset: omit notes → no change; explicit null → clear (BR-5.2).
+        items=[i.model_dump(exclude_unset=True) for i in payload.items],
     )
     await db.commit()
     return env(await stock_counts_svc.serialize_count(db, count), "Count lines updated")

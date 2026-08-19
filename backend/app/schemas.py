@@ -996,7 +996,9 @@ class StockCountCreate(BaseModel):
 class StockCountItemUpdate(BaseModel):
     product_id: str
     counted_qty: float
-    notes: str | None = None
+    # omit/`null` → no line notes (or clear when sent null); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank silently dropped via strip-to-None / garbage could persist).
+    notes: StockCountItemNotesValue | None = None
 
 
 class StockCountItemsUpdate(BaseModel):
@@ -4722,6 +4724,27 @@ StockCountNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_count_notes_value),
+]
+
+
+def validate_stock_count_item_notes_value(value: str) -> str:
+    """AfterValidator: stock count line notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock count line notes — StockCountItem.notes Text; keep ≤500 at API boundary.
+StockCountItemNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_count_item_notes_value),
 ]
 
 

@@ -131,6 +131,7 @@ export default function Page() {
   const [countWarehouseId, setCountWarehouseId] = useState('');
   const [countNotes, setCountNotes] = useState('');
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
+  const [countLineNotes, setCountLineNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -741,11 +742,14 @@ export default function Page() {
       const r = await api(`/inventory/stock-counts/${id}`);
       setActiveCount(r.data);
       const qtys: Record<string, string> = {};
+      const notes: Record<string, string> = {};
       for (const item of r.data.items || []) {
         qtys[item.product_id] =
           item.counted_qty == null ? String(item.expected_qty ?? 0) : String(item.counted_qty);
+        notes[item.product_id] = item.notes || '';
       }
       setCountQtys(qtys);
+      setCountLineNotes(notes);
     } catch (err: any) {
       setError(err.message);
     }
@@ -758,6 +762,7 @@ export default function Page() {
       const items = (activeCount.items || []).map((item: any) => ({
         product_id: item.product_id,
         counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
+        notes: (countLineNotes[item.product_id] || '').trim() || null,
       }));
       const r = await api(`/inventory/stock-counts/${activeCount.id}/items`, {
         method: 'PATCH',
@@ -3089,6 +3094,7 @@ export default function Page() {
                     <th>Expected</th>
                     <th>Counted</th>
                     <th>Variance</th>
+                    <th>Line notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3110,9 +3116,26 @@ export default function Page() {
                               setCountQtys({ ...countQtys, [item.product_id]: e.target.value })
                             }
                             style={{ width: 90 }}
+                            aria-label={`Counted qty ${item.product_sku || item.product_id}`}
                           />
                         </td>
                         <td>{Number.isFinite(variance) ? variance : '—'}</td>
+                        <td>
+                          <input
+                            value={countLineNotes[item.product_id] ?? ''}
+                            disabled={activeCount.status !== 'draft'}
+                            onChange={(e) =>
+                              setCountLineNotes({
+                                ...countLineNotes,
+                                [item.product_id]: e.target.value,
+                              })
+                            }
+                            placeholder="Line notes (optional)"
+                            aria-label={`Stock count line notes ${item.product_sku || item.product_id}`}
+                            title="Optional line notes (1–500 chars; letters/digits required)"
+                            style={{ width: 180 }}
+                          />
+                        </td>
                       </tr>
                     );
                   })}
@@ -3120,7 +3143,7 @@ export default function Page() {
               </table>
               {activeCount.status === 'draft' && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={saveCountLines}>
+                  <button type="button" onClick={saveCountLines} aria-label="Save count lines">
                     Save counts
                   </button>
                   <button type="button" onClick={completeActiveCount}>
