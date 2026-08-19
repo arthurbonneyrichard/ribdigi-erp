@@ -31,3 +31,7 @@ Stage 1560 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nickelcoat Gate, Transfer Nickelcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1560 opened under **ADR-3127** after CONTINUE/NEXT (Tenant MVP Transfer Tincoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3128**. Stage 1559 feature scope remains frozen.
