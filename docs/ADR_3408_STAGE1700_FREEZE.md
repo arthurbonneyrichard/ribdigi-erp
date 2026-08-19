@@ -31,3 +31,7 @@ Stage 1701 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shigarakiyuglaze Gate, Transfer Shigarakiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1701 opened under **ADR-3409** after CONTINUE/NEXT (Tenant MVP Transfer Minoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3410**. Stage 1700 feature scope remains frozen.
