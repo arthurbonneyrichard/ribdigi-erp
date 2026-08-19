@@ -31,3 +31,7 @@ Stage 1696 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Iwayuglaze Gate, Transfer Iwayuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1696 opened under **ADR-3399** after CONTINUE/NEXT (Tenant MVP Transfer Tambayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3400**. Stage 1695 feature scope remains frozen.
