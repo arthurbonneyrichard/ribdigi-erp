@@ -1723,7 +1723,9 @@ class TaxComponent(BaseModel):
 
 
 class TaxCreate(BaseModel):
-    name: str
+    # Required tax rate label ∈ TaxRateNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on tax rate create).
+    name: TaxRateNameValue
     rate: float = Field(ge=0)
     # BR-12.1 — schema Literal; omit defaults; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] = "vat"
@@ -1735,7 +1737,7 @@ class TaxCreate(BaseModel):
 
 
 class TaxUpdate(BaseModel):
-    name: str | None = None
+    name: TaxRateNameValue | None = None
     rate: float | None = Field(default=None, ge=0)
     # BR-12.1 — omit = no change; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] | None = None
@@ -3084,6 +3086,27 @@ CustomerGroupNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_customer_group_name_value),
+]
+
+
+def validate_tax_rate_name_value(value: str) -> str:
+    """AfterValidator: tax rate display name; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Tax rate display name — matches TaxRate.name String(80).
+TaxRateNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_tax_rate_name_value),
 ]
 
 

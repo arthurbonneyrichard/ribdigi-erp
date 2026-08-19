@@ -85,6 +85,12 @@ export default function Page() {
     if (ctxStoreId) setStoreId(ctxStoreId);
   }, [ctxStoreId]);
   async function createRate() {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Tax rate name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     try {
@@ -96,7 +102,7 @@ export default function Page() {
       await api('/tax/rates', {
         method: 'POST',
         body: JSON.stringify({
-          name,
+          name: trimmedName,
           rate: Number(rate),
           tax_type: taxType,
           pricing_mode: pricingMode,
@@ -268,7 +274,7 @@ export default function Page() {
         <div className="card">
           <h3>Create rate</h3>
           <div style={{ display: 'grid', gap: 8 }}>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+            <input aria-label="Tax rate name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" />
             <select value={taxType} onChange={(e) => setTaxType(e.target.value)}>
               <option value="vat">VAT</option>
@@ -297,7 +303,9 @@ export default function Page() {
               aria-label="Tax rate components JSON"
               title='JSON array of {code,name,rate,basis} with basis net|compound'
             />
-            <button onClick={createRate}>Add rate</button>
+            <button type="button" aria-label="Add tax rate" onClick={createRate} disabled={!name.trim()}>
+              Add rate
+            </button>
           </div>
         </div>
         <div className="card">
