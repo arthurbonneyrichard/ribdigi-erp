@@ -31,3 +31,7 @@ Stage 1564 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Brasscoat Gate, Transfer Brasscoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1564 opened under **ADR-3135** after CONTINUE/NEXT (Tenant MVP Transfer Bronzecoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3136**. Stage 1563 feature scope remains frozen.
