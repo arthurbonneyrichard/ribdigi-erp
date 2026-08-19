@@ -31,3 +31,7 @@ Stage 1703 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Satsumayuglaze Gate, Transfer Satsumayuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1703 opened under **ADR-3413** after CONTINUE/NEXT (Tenant MVP Transfer Kyoyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3414**. Stage 1702 feature scope remains frozen.
