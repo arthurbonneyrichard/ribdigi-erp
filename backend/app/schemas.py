@@ -1015,14 +1015,18 @@ class BrandUpdate(BaseModel):
 
 class UnitOfMeasureCreate(BaseModel):
     code: str
-    name: str
+    # Required UoM label ∈ UnitNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on catalog unit create).
+    name: UnitNameValue
     base_unit_id: str | None = None
     conversion_ratio: float | None = 1
 
 
 class UnitOfMeasureUpdate(BaseModel):
     code: str | None = None
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on unit display name).
+    name: UnitNameValue | None = None
     is_active: bool | None = None
     base_unit_id: str | None = None
     conversion_ratio: float | None = None
@@ -2986,6 +2990,27 @@ CategoryNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_category_name_value),
+]
+
+
+def validate_unit_name_value(value: str) -> str:
+    """AfterValidator: unit-of-measure display name; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Catalog unit-of-measure display name — matches UnitOfMeasure.name String(80).
+UnitNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_unit_name_value),
 ]
 
 

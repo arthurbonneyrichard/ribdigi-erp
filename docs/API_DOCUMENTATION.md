@@ -553,8 +553,8 @@ Responses include `description`, `logo_url`, and `has_logo` (BR-5.1).
 
 ### 5.3 Units
 **List:** `GET /catalog/units` (`is_active=true|false` optional — Catalog manage filter; default returns all)  
-**Create:** `POST /catalog/units`  
-**Update:** `PATCH /catalog/units/{unit_id}` — partial fields include `name`, conversion fields, `is_active` (Inventory Catalog **Activate** when inactive)  
+**Create:** `POST /catalog/units` — `name` ∈ `UnitNameValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory Catalog **Unit name** input.  
+**Update:** `PATCH /catalog/units/{unit_id}` — `name` ∈ `UnitNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); partial fields also include conversion fields, `is_active` (Inventory Catalog **Activate** when inactive)  
 **Deactivate:** `DELETE /catalog/units/{unit_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive units cannot be assigned on product create/PATCH)  
 **Convert preview:** `POST /catalog/units/convert` `{ "product_id", "quantity", "from_unit_id" }`
 

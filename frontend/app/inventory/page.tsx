@@ -2411,7 +2411,13 @@ export default function Page() {
               product&apos;s stock unit.
             </p>
             <input value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="Code" />
-            <input value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="Name" />
+            <input
+              value={unitName}
+              onChange={(e) => setUnitName(e.target.value)}
+              placeholder="Name"
+              aria-label="Unit name"
+              title="Unit name (1–80 chars; letters/digits required)"
+            />
             <select value={unitBaseId} onChange={(e) => setUnitBaseId(e.target.value)}>
               <option value="">Base unit (root / none)</option>
               {units
@@ -2435,8 +2441,8 @@ export default function Page() {
                   await api('/catalog/units', {
                     method: 'POST',
                     body: JSON.stringify({
-                      code: unitCode,
-                      name: unitName,
+                      code: unitCode.trim(),
+                      name: unitName.trim(),
                       base_unit_id: unitBaseId || null,
                       conversion_ratio: unitBaseId ? Number(unitRatio) || 1 : 1,
                     }),
@@ -2451,7 +2457,8 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
-              disabled={!unitCode || !unitName}
+              disabled={!unitCode.trim() || !unitName.trim()}
+              aria-label="Add unit"
             >
               Add unit
             </button>
