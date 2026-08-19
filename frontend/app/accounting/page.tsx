@@ -50,6 +50,7 @@ export default function Page() {
   const [lineTxnDate, setLineTxnDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [pickBank, setPickBank] = useState<string[]>([]);
   const [pickBook, setPickBook] = useState<string[]>([]);
+  const [clearGroupNotes, setClearGroupNotes] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [connections, setConnections] = useState<any[]>([]);
   const [connectionManageFilter, setConnectionManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -780,11 +781,13 @@ export default function Page() {
         body: JSON.stringify({
           statement_line_ids: pickBank,
           journal_line_ids: pickBook,
+          notes: clearGroupNotes.trim() || null,
         }),
       });
       setSelected(r.data);
       setPickBank([]);
       setPickBook([]);
+      setClearGroupNotes('');
       setMessage(
         r.data?.clear_result?.mode === 'group'
           ? `Cleared group (${r.data.clear_result.group.bank_total})`
@@ -1988,6 +1991,14 @@ export default function Page() {
                 <p>
                   Bank picked: {pickBank.length} · Book picked: {pickBook.length}
                 </p>
+                <input
+                  value={clearGroupNotes}
+                  onChange={(e) => setClearGroupNotes(e.target.value)}
+                  placeholder="Clear-group notes (optional)"
+                  aria-label="Clear-group notes"
+                  title="Optional clear-group notes (1–500 chars; letters/digits required)"
+                  style={{ display: 'block', width: '100%', marginBottom: 8 }}
+                />
                 <button
                   onClick={clearGroup}
                   disabled={!pickBank.length || !pickBook.length}

@@ -4333,14 +4333,18 @@ class BankClearGroupBody(BaseModel):
     """POST .../bank-statements/{id}/clear-group (BR-10.3).
 
     Unknown keys → **422**. Empty either id list (after stripping blanks) → **422**
-    (was free `dict` with late **400**).
+    (was free `dict` with late **400**). Optional `notes` ∈ `BankClearGroupNotesValue`;
+    omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank/garbage could persist on clearing group).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     statement_line_ids: list[str] = Field(min_length=1)
     journal_line_ids: list[str] = Field(min_length=1)
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on clearing group).
+    notes: BankClearGroupNotesValue | None = None
 
     @field_validator("statement_line_ids", "journal_line_ids", mode="before")
     @classmethod
@@ -4524,6 +4528,27 @@ BankStatementNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_bank_statement_notes_value),
+]
+
+
+def validate_bank_clear_group_notes_value(value: str) -> str:
+    """AfterValidator: bank clear-group notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Bank clearing-group notes — keep ≤500 at API boundary.
+BankClearGroupNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_clear_group_notes_value),
 ]
 
 
