@@ -1623,6 +1623,8 @@ export default function Page() {
               value={editBarcode}
               onChange={(e) => setEditBarcode(e.target.value)}
               placeholder="Scan or type barcode"
+              aria-label="Edit product barcode"
+              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <select
@@ -1694,7 +1696,7 @@ export default function Page() {
               <option value="exempt">Exempt</option>
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={saveProductEdits}>
+              <button type="button" onClick={saveProductEdits} aria-label="Save product">
                 Save product
               </button>
               {selected?.is_active === false ? (
@@ -1934,6 +1936,8 @@ export default function Page() {
               value={productBarcode}
               onChange={(e) => setProductBarcode(e.target.value)}
               placeholder="Barcode (optional)"
+              aria-label="Product barcode"
+              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
             <textarea
               value={productDescription}
@@ -2552,6 +2556,8 @@ export default function Page() {
               value={variantBarcode}
               onChange={(e) => setVariantBarcode(e.target.value)}
               placeholder="Barcode (optional)"
+              aria-label="Variant barcode"
+              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
             <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
             <input value={variantColor} onChange={(e) => setVariantColor(e.target.value)} placeholder="Color (optional)" />

@@ -926,7 +926,9 @@ class ProductCreate(BaseModel):
     # (was free `str`; blank/garbage could persist on product create).
     name: ProductNameValue
     sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
-    barcode: str | None = None
+    # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
     description: str | None = None
     category: str = "General"
     category_id: str | None = None
@@ -952,7 +954,9 @@ class ProductUpdate(BaseModel):
     # blank late service **400**; garbage could persist on product display name).
     name: ProductNameValue | None = None
     sku: str | None = None
-    barcode: str | None = None
+    # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
     description: str | None = None
     category: str | None = None
     category_id: str | None = None
@@ -1062,7 +1066,9 @@ class ProductVariantCreate(BaseModel):
     # (was free `str`; blank/garbage could persist on product variant create).
     name: VariantNameValue
     sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
-    barcode: str | None = None
+    # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
     size: str | None = None
     color: str | None = None
     flavor: str | None = None
@@ -1076,7 +1082,9 @@ class ProductVariantUpdate(BaseModel):
     # blank/garbage could persist on variant display name).
     name: VariantNameValue | None = None
     sku: str | None = None
-    barcode: str | None = None
+    # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
     size: str | None = None
     color: str | None = None
     flavor: str | None = None
@@ -2948,6 +2956,28 @@ ProductNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_name_value),
+]
+
+
+# Keep aligned with app.barcodes.BARCODE_PATTERN / normalize_barcode (Code 128 family).
+_PRODUCT_BARCODE_RE = re.compile(r"^[A-Za-z0-9\-._]{4,48}$")
+
+
+def validate_product_barcode_value(value: str) -> str:
+    """AfterValidator: product/variant barcode; blank/pattern fail → 422 (4–48)."""
+    if not value:
+        raise ValueError("product barcode must be 4–48 characters (letters, numbers, - . _)")
+    code = value.upper()
+    if not _PRODUCT_BARCODE_RE.match(code):
+        raise ValueError("product barcode must be 4–48 characters (letters, numbers, - . _)")
+    return code
+
+
+# Product / variant barcode — String(100) column; API pattern 4–48 like normalize_barcode.
+ProductBarcodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_barcode_value),
 ]
 
 
