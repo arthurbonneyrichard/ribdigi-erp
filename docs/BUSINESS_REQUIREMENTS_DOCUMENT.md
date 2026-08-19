@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1578 D1 Transfer Graphitecoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1578_FIDELITY.md` (`test_stage1578_fidelity_d1.py`); Offline Complete / Transfer Graphitecoat Gate honesty / go-live still MISSING.
 Stage 1577 D1 Transfer Carboncoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1577_FIDELITY.md` (`test_stage1577_fidelity_d1.py`); Offline Complete / Transfer Carboncoat Gate honesty / go-live still MISSING.
 Stage 1576 D1 Transfer Ironcoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1576_FIDELITY.md` (`test_stage1576_fidelity_d1.py`); Offline Complete / Transfer Ironcoat Gate honesty / go-live still MISSING.
 Stage 1575 D1 Transfer Steelcoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1575_FIDELITY.md` (`test_stage1575_fidelity_d1.py`); Offline Complete / Transfer Steelcoat Gate honesty / go-live still MISSING.
