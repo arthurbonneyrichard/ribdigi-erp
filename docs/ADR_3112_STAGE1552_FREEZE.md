@@ -31,3 +31,7 @@ Stage 1553 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Rubbercoat Gate, Transfer Rubbercoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1553 opened under **ADR-3113** after CONTINUE/NEXT (Tenant MVP Transfer Powdercoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3114**. Stage 1552 feature scope remains frozen.
