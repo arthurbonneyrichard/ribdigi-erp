@@ -929,7 +929,9 @@ class ProductCreate(BaseModel):
     # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
-    description: str | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared / garbage could persist on Product.description Text).
+    description: ProductDescriptionValue | None = None
     category: str = "General"
     category_id: str | None = None
     brand_id: str | None = None
@@ -957,7 +959,9 @@ class ProductUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
-    description: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on Product.description Text).
+    description: ProductDescriptionValue | None = None
     category: str | None = None
     category_id: str | None = None
     brand_id: str | None = None
@@ -2978,6 +2982,27 @@ ProductBarcodeValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_barcode_value),
+]
+
+
+def validate_product_description_value(value: str) -> str:
+    """AfterValidator: product catalog narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Product description — Product.description Text; keep ≤500 at API boundary.
+ProductDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_description_value),
 ]
 
 

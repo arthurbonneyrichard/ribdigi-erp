@@ -1656,6 +1656,8 @@ export default function Page() {
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Product description"
+              aria-label="Edit product description"
+              title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
             <label className="muted">Weight (kg) / dimensions (cm)</label>
@@ -1943,6 +1945,8 @@ export default function Page() {
               value={productDescription}
               onChange={(e) => setProductDescription(e.target.value)}
               placeholder="Description (optional)"
+              aria-label="Product description"
+              title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
             <input value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="Selling price" />
