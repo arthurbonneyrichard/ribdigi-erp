@@ -1289,7 +1289,9 @@ class OpeningStockLine(BaseModel):
 class OpeningStockCreate(BaseModel):
     lines: list[OpeningStockLine] = Field(min_length=1)
     post_journal: bool = True
-    reference: str | None = None
+    # omit/`null` → auto OS-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-numbered / garbage could persist on journal ref).
+    reference: OpeningStockReferenceValue | None = None
     notes: str | None = None
 
 
@@ -4374,6 +4376,27 @@ CashTransferNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_cash_transfer_notes_value),
+]
+
+
+def validate_opening_stock_reference_value(value: str) -> str:
+    """AfterValidator: opening-stock reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Opening stock reference — journal/audit String(100); omit → auto OS-YYYY-NNNN.
+OpeningStockReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_stock_reference_value),
 ]
 
 

@@ -1314,8 +1314,8 @@ export default function Page() {
       const r = await api('/inventory/opening-stock', {
         method: 'POST',
         body: JSON.stringify({
-          reference: openingReference || null,
-          notes: openingNotes || null,
+          reference: openingReference.trim() || null,
+          notes: openingNotes.trim() || null,
           post_journal: openingPostJournal,
           lines: [line],
         }),
@@ -2849,6 +2849,8 @@ export default function Page() {
               value={openingReference}
               onChange={(e) => setOpeningReference(e.target.value)}
               placeholder="Reference (blank = next OS-YYYY-NNNN)"
+              aria-label="Opening stock reference"
+              title="Optional reference (1–100 chars; blank = next OS-YYYY-NNNN)"
             />
             <input
               value={openingNotes}
@@ -2863,7 +2865,13 @@ export default function Page() {
               />
               Post inventory / equity journal
             </label>
-            <button type="button" className="btn-ok" onClick={postOpeningStock} disabled={!selectedId}>
+            <button
+              type="button"
+              className="btn-ok"
+              onClick={postOpeningStock}
+              disabled={!selectedId}
+              aria-label="Post opening stock"
+            >
               Post opening stock
             </button>
           </div>
