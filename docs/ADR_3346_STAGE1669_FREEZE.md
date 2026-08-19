@@ -31,3 +31,7 @@ Stage 1670 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kissetoyuglaze Gate, Transfer Kissetoyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1670 opened under **ADR-3347** after CONTINUE/NEXT (Tenant MVP Transfer Narumioribeyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3348**. Stage 1669 feature scope remains frozen.
