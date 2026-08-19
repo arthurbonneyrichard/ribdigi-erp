@@ -31,3 +31,7 @@ Stage 1705 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nabeshimayuglaze Gate, Transfer Nabeshimayuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1705 opened under **ADR-3417** after CONTINUE/NEXT (Tenant MVP Transfer Kutaniyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3418**. Stage 1704 feature scope remains frozen.
