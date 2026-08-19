@@ -31,3 +31,7 @@ Stage 1562 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Zinccoat Gate, Transfer Zinccoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1562 opened under **ADR-3131** after CONTINUE/NEXT (Tenant MVP Transfer Coppercoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3132**. Stage 1561 feature scope remains frozen.
