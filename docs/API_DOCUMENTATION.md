@@ -1014,6 +1014,8 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 **Update Status:** `PATCH /sales/orders/{order_id}/status`  
 **Convert to Invoice:** `POST /sales/orders/{order_id}/convert-to-invoice`
 
+Optional create/confirm `delivery_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); create omit/`null` → no promised date; confirm omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Sales **SO delivery date** input (`aria-label`); create/confirm send `null` when blank.
+
 Optional create/confirm `delivery_address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no ship-to; confirm omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Sales **SO delivery address** input (`aria-label`); create sends `null` when blank; confirm omits blank. Confirm: `POST /sales/orders/{order_id}/confirm`.
 
 **Numbering:** `GET|PATCH /sales/settings` exposes `sales_order_numbering`. Create (and quotation convert) allocates `{PREFIX}-{YYYY}-{NNNN}` (default `SO`) — not a timestamp stamp (BR-7.3 / BR-20.4).

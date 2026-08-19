@@ -5831,7 +5831,7 @@ async def create_sales_order(
         customer_id=payload.customer_id,
         quotation_id=payload.quotation_id,
         store_id=payload.store_id,
-        delivery_date=payload.delivery_date,
+        delivery_date=reports_svc.parse_date(payload.delivery_date),
         delivery_address=payload.delivery_address,
         discount_amount=payload.discount_amount,
         notes=payload.notes,
@@ -5866,7 +5866,7 @@ async def confirm_sales_order(
         claims["tenant_id"],
         order_id,
         store_id=payload.store_id,
-        delivery_date=payload.delivery_date,
+        delivery_date=reports_svc.parse_date(payload.delivery_date),
         delivery_address=payload.delivery_address,
     )
     await db.commit()

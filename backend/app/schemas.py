@@ -2043,7 +2043,9 @@ class SalesOrderCreate(BaseModel):
     customer_id: str
     quotation_id: str | None = None
     store_id: str | None = None
-    delivery_date: datetime | None = None
+    # omit/`null` → no promised date; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
+    delivery_date: IsoDateQueryValue | None = None
     # omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silent→null; garbage could persist). Same AddressValue as PO.
     delivery_address: AddressValue | None = None
@@ -2054,7 +2056,9 @@ class SalesOrderCreate(BaseModel):
 
 class SalesOrderConfirm(BaseModel):
     store_id: str | None = None
-    delivery_date: datetime | None = None
+    # omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
+    delivery_date: IsoDateQueryValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silent→null; garbage could persist). Same AddressValue as PO.
     delivery_address: AddressValue | None = None
@@ -2498,7 +2502,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + stock-in/opening-stock manufacturing_date/expiry_date + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + stock-in/opening-stock manufacturing_date/expiry_date + SO delivery_date + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),

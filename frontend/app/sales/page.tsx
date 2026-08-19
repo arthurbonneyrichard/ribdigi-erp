@@ -273,7 +273,7 @@ export default function Page() {
   const linePayload = {
     customer_id: customerId,
     store_id: storeId || null,
-    delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
+    delivery_date: deliveryDate.trim() || null,
     // null when blank so Create order does not 422 (AddressValue).
     delivery_address: deliveryAddress.trim() || null,
     discount_amount: hdrDisc,
@@ -1045,10 +1045,12 @@ export default function Page() {
             ))}
           </select>
           <input
-            type="date"
+            aria-label="SO delivery date"
+            type="text"
+            placeholder="YYYY-MM-DD"
+            title="Delivery date (optional YYYY-MM-DD)"
             value={deliveryDate}
             onChange={(e) => setDeliveryDate(e.target.value)}
-            title="Delivery date"
           />
           <input
             value={deliveryAddress}
@@ -1475,9 +1477,7 @@ export default function Page() {
                           storeId || o.store_id
                             ? {
                                 store_id: storeId || o.store_id,
-                                delivery_date: deliveryDate
-                                  ? new Date(deliveryDate).toISOString()
-                                  : null,
+                                delivery_date: deliveryDate.trim() || null,
                                 // Omit blank delivery so Confirm does not 422 (AddressValue).
                                 ...(deliveryAddress.trim()
                                   ? { delivery_address: deliveryAddress.trim() }
