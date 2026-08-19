@@ -3626,13 +3626,37 @@ class JournalLineCreate(BaseModel):
     description: str | None = None
 
 
-class JournalCreate(BaseModel):
-    """Manual journal create — optional entry_date ∈ IsoDateQueryValue (BR-10.2).
+def validate_journal_description_value(value: str) -> str:
+    """AfterValidator: journal narrative; blank/URL/short/garbage → 422 (2–500)."""
+    if not value:
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    if len(value) < 2 or len(value) > 500:
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    return value
 
-    Omit/`null` → service default (now); blank/invalid → **422**.
+
+# Manual journal header narrative (BR-10.2) — Text column; keep ≤500 at API boundary.
+JournalDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_journal_description_value),
+]
+
+
+class JournalCreate(BaseModel):
+    """Manual journal create — description + optional entry_date (BR-10.2).
+
+    `description` ∈ JournalDescriptionValue (strip; 2–500; ≥1 letter/digit; no
+    `://`/`@`); blank/`!!!`/`http://…` → **422** (was free `str`; empty/garbage
+    could persist on the ledger). Optional `entry_date` ∈ IsoDateQueryValue;
+    omit/`null` → now; blank/invalid → **422**.
     """
 
-    description: str
+    description: JournalDescriptionValue
     reference: str | None = None
     # IsoDateQueryValue as expense_date / SO delivery_date / subscription start_at.
     entry_date: IsoDateQueryValue | None = None

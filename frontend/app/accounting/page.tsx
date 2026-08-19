@@ -289,7 +289,7 @@ export default function Page() {
       await api('/accounting/journal-entries', {
         method: 'POST',
         body: JSON.stringify({
-          description,
+          description: description.trim(),
           entry_date: entryDate.trim() || null,
           lines,
         }),
@@ -297,6 +297,7 @@ export default function Page() {
       setMessage('Journal posted');
       setManualLines([emptyManualLine(), emptyManualLine()]);
       setEntryDate('');
+      setDescription('Manual adjusting entry');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -957,6 +958,8 @@ export default function Page() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
+                aria-label="Journal description"
+                title="Journal description (2–500 chars; letters/digits required)"
               />
               <input
                 value={entryDate}
