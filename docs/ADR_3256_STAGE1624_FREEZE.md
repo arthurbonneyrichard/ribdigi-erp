@@ -31,3 +31,7 @@ Stage 1625 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Awaglaze Gate, Transfer Awaglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1625 opened under **ADR-3257** after CONTINUE/NEXT (Tenant MVP Transfer Awajiglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3258**. Stage 1624 feature scope remains frozen.
