@@ -413,8 +413,8 @@ Create body `PlatformStaffCreate` (`extra=forbid`): `email` ∈ `EmailStr` (blan
 
 ### 3.5a Branches (BR-2.2)
 **List:** `GET /branches` (`active_only=true` optional; `is_active=true|false` for Multi-Store manage filter)  
-**Create:** `POST /branches`  
-**Update:** `PATCH /branches/{branch_id}`
+**Create:** `POST /branches` — `name` ∈ `BranchNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Branch name** input.  
+**Update:** `PATCH /branches/{branch_id}` — `name` ∈ `BranchNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit branch name** input.
 
 ```json
 {
@@ -544,8 +544,8 @@ Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rat
 
 ### 5.2 Brands
 **List:** `GET /catalog/brands` (`is_active=true|false` optional — Catalog manage filter; default returns all)  
-**Create:** `POST /catalog/brands` `{ "code", "name", "description"? }`  
-**Update:** `PATCH /catalog/brands/{brand_id}` — partial fields include `name`, `description`, `is_active` (Inventory Catalog **Activate** when inactive)  
+**Create:** `POST /catalog/brands` `{ "code", "name", "description"? }` — `name` ∈ `BrandNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory Catalog **Brand name** input.  
+**Update:** `PATCH /catalog/brands/{brand_id}` — `name` ∈ `BrandNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); partial fields also include `description`, `is_active` (Inventory Catalog **Activate** when inactive)  
 **Deactivate:** `DELETE /catalog/brands/{brand_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive brands cannot be assigned on product create/PATCH)  
 **Logo:** `POST|GET|DELETE /catalog/brands/{brand_id}/logo` (multipart `file` on POST; image types same as company logo)
 

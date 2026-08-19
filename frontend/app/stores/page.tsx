@@ -825,7 +825,13 @@ export default function Page() {
               placeholder="Code"
               disabled={!!editBrId}
             />
-            <input value={brName} onChange={(e) => setBrName(e.target.value)} placeholder="Name" />
+            <input
+              value={brName}
+              onChange={(e) => setBrName(e.target.value)}
+              placeholder="Name"
+              aria-label={editBrId ? 'Edit branch name' : 'Branch name'}
+              title="Branch name (1–150 chars; letters/digits required)"
+            />
             <input
               value={brAddress}
               onChange={(e) => setBrAddress(e.target.value)}
@@ -861,6 +867,7 @@ export default function Page() {
                 type="button"
                 onClick={createBranch}
                 disabled={!brCode.trim() || !brName.trim()}
+                aria-label="Create branch"
               >
                 Create branch
               </button>

@@ -756,7 +756,9 @@ class CashTransferCreate(BaseModel):
 
 class BranchCreate(BaseModel):
     code: str
-    name: str
+    # Required branch label ∈ BranchNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store branch create).
+    name: BranchNameValue
     # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on create). Same AddressValue as Company/Store.
     address: AddressValue | None = None
@@ -768,7 +770,9 @@ class BranchCreate(BaseModel):
 
 
 class BranchUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on branch display name).
+    name: BranchNameValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared; garbage could persist). Same AddressValue as Company/Store.
     address: AddressValue | None = None
@@ -990,13 +994,17 @@ class ProductCategoryUpdate(BaseModel):
 
 class BrandCreate(BaseModel):
     code: str
-    name: str
+    # Required brand label ∈ BrandNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on catalog brand create).
+    name: BrandNameValue
     description: str | None = None
 
 
 class BrandUpdate(BaseModel):
     code: str | None = None
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on brand display name).
+    name: BrandNameValue | None = None
     description: str | None = None
     is_active: bool | None = None
 
@@ -2911,6 +2919,48 @@ WarehouseNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_warehouse_name_value),
+]
+
+
+def validate_branch_name_value(value: str) -> str:
+    """AfterValidator: branch display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Branch display name — matches Branch.name String(150).
+BranchNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_branch_name_value),
+]
+
+
+def validate_brand_name_value(value: str) -> str:
+    """AfterValidator: brand display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Catalog brand display name — matches Brand.name String(120).
+BrandNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_brand_name_value),
 ]
 
 
