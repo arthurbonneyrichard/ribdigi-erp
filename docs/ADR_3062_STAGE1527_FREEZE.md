@@ -31,3 +31,7 @@ Stage 1528 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Silkcoat Gate, Transfer Silkcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1528 opened under **ADR-3063** after CONTINUE/NEXT (Tenant MVP Transfer Satincoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3064**. Stage 1527 feature scope remains frozen.
