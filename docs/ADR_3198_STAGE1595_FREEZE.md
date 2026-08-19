@@ -31,3 +31,7 @@ Stage 1596 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Oribeglaze Gate, Transfer Oribeglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1596 opened under **ADR-3199** after CONTINUE/NEXT (Tenant MVP Transfer Rakuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3200**. Stage 1595 feature scope remains frozen.
