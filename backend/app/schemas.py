@@ -1044,7 +1044,9 @@ class UnitConvertPreview(BaseModel):
 
 
 class ProductVariantCreate(BaseModel):
-    name: str
+    # Required variant label ∈ VariantNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on product variant create).
+    name: VariantNameValue
     sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
     barcode: str | None = None
     size: str | None = None
@@ -1056,7 +1058,9 @@ class ProductVariantCreate(BaseModel):
 
 
 class ProductVariantUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on variant display name).
+    name: VariantNameValue | None = None
     sku: str | None = None
     barcode: str | None = None
     size: str | None = None
@@ -3036,6 +3040,27 @@ DepartmentNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_department_name_value),
+]
+
+
+def validate_variant_name_value(value: str) -> str:
+    """AfterValidator: product variant display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Product variant display name — matches ProductVariant.name String(120).
+VariantNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_variant_name_value),
 ]
 
 

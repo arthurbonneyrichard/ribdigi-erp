@@ -1229,7 +1229,7 @@ export default function Page() {
       const r = await api(`/products/${selectedId}/variants`, {
         method: 'POST',
         body: JSON.stringify({
-          name: variantName,
+          name: variantName.trim(),
           sku: variantSku.trim() || null,
           barcode: variantBarcode.trim() || null,
           size: variantSize.trim() || null,
@@ -2536,7 +2536,13 @@ export default function Page() {
               Size, color, flavor, dosage (pharmacy) with unique SKUs and barcodes (BR-5.1). Use the
               product symbology picker above for Generate / Print on each row.
             </p>
-            <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
+            <input
+              value={variantName}
+              onChange={(e) => setVariantName(e.target.value)}
+              placeholder="Name"
+              aria-label="Variant name"
+              title="Variant name (1–120 chars; letters/digits required)"
+            />
             <input
               value={variantSku}
               onChange={(e) => setVariantSku(e.target.value)}
@@ -2559,7 +2565,11 @@ export default function Page() {
               onChange={(e) => setVariantDosage(e.target.value)}
               placeholder="Dosage (optional)"
             />
-            <button onClick={addVariant} disabled={!selectedId || !variantName.trim()}>
+            <button
+              onClick={addVariant}
+              disabled={!selectedId || !variantName.trim()}
+              aria-label="Create variant"
+            >
               Create variant
             </button>
           </div>
