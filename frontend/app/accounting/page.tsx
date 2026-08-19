@@ -33,8 +33,13 @@ export default function Page() {
   const [unpostReason, setUnpostReason] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
-  type ManualLine = { account_code: string; debit: string; credit: string };
-  const emptyManualLine = (): ManualLine => ({ account_code: '', debit: '', credit: '' });
+  type ManualLine = { account_code: string; debit: string; credit: string; description: string };
+  const emptyManualLine = (): ManualLine => ({
+    account_code: '',
+    debit: '',
+    credit: '',
+    description: '',
+  });
   const [manualLines, setManualLines] = useState<ManualLine[]>([emptyManualLine(), emptyManualLine()]);
   const [description, setDescription] = useState('Manual adjusting entry');
   const [journalRef, setJournalRef] = useState('');
@@ -271,6 +276,7 @@ export default function Page() {
         account_code: l.account_code.trim(),
         debit: Math.max(0, Number(l.debit) || 0),
         credit: Math.max(0, Number(l.credit) || 0),
+        description: l.description.trim() || null,
       }));
       if (lines.length < 2) {
         throw new Error('Journal entry requires at least two lines');
@@ -996,6 +1002,7 @@ export default function Page() {
                     <th>Account code</th>
                     <th>Debit</th>
                     <th>Credit</th>
+                    <th>Line desc</th>
                     <th />
                   </tr>
                 </thead>
@@ -1045,6 +1052,22 @@ export default function Page() {
                           placeholder="0"
                           style={{ width: 100 }}
                           aria-label={`Journal line ${idx + 1} credit`}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          value={line.description}
+                          onChange={(e) =>
+                            setManualLines((prev) =>
+                              prev.map((row, i) =>
+                                i === idx ? { ...row, description: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          placeholder="Optional"
+                          style={{ width: 140 }}
+                          aria-label={`Journal line ${idx + 1} description`}
+                          title="Optional line description (1–500 chars; letters/digits required)"
                         />
                       </td>
                       <td>

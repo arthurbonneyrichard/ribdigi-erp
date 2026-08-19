@@ -4431,11 +4431,20 @@ class NotificationPreferencesUpdate(BaseModel):
 
 
 class JournalLineCreate(BaseModel):
+    """Nested line on `JournalCreate` (BR-10.2).
+
+    Optional `description` ∈ `JournalLineDescriptionValue`; omit/`null` → no line
+    narrative; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
+    could persist on `JournalEntryLine.description`).
+    """
+
     account_id: str | None = None
     account_code: str | None = None
     debit: float = Field(default=0, ge=0)
     credit: float = Field(default=0, ge=0)
-    description: str | None = None
+    # omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on JournalEntryLine.description).
+    description: JournalLineDescriptionValue | None = None
 
 
 def validate_journal_description_value(value: str) -> str:
@@ -4456,6 +4465,27 @@ JournalDescriptionValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_journal_description_value),
+]
+
+
+def validate_journal_line_description_value(value: str) -> str:
+    """AfterValidator: journal line narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Manual journal line narrative — JournalEntryLine.description Text; ≤500 at API.
+JournalLineDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_journal_line_description_value),
 ]
 
 
