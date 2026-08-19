@@ -1234,6 +1234,8 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 
 **Account Types:** `asset`, `liability`, `equity`, `income`, `expense`
 
+**COA opening balances (BR-10.1):** `POST /accounting/opening-balances` — body `{ "lines": [{ "account_id"|"account_code", "amount" }], "reference"?, "notes"? }`. Optional `reference` ∈ `OpeningBalanceReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto `COA-OPEN-YYYYMMDD`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-labeled / garbage could persist on journal `reference`). Accounting Ledger **Opening balance reference** input. Status: `GET /accounting/opening-balances` (`posted` once per tenant; equity plug to 3000).
+
 ### 10.2 Journal Entries
 **List:** `GET /accounting/journal-entries` — optional Query `status` ∈ `posted`|`unposted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Accounting Ledger **Journal status filter** All / Posted / Unposted (`journalManageFilter`; client filter over full cache).  
 **Create:** `POST /accounting/journal-entries` — body `description` ∈ `JournalDescriptionValue` (strip; 2–500 chars; ≥1 letter/digit; no `://` / `@`); blank/`!!!`/`http://…` → **422** (was free `str`; empty/garbage could persist on the ledger). Optional body `entry_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → now; blank/`not-a-date`/`01/02/2024` → **422** (was free `date`; OpenAPI date; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Accounting **Journal description** + **Journal entry date** inputs (`aria-label`s); create sends `null` entry_date when blank.  

@@ -1106,6 +1106,8 @@ export default function Page() {
                   value={coaOpenRef}
                   onChange={(e) => setCoaOpenRef(e.target.value)}
                   placeholder="Reference (e.g. FY2026-OPEN)"
+                  aria-label="Opening balance reference"
+                  title="Optional reference (1–100 chars; blank → auto COA-OPEN-YYYYMMDD)"
                 />
                 {coaOpenLines.length > 0 && (
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
@@ -1124,7 +1126,13 @@ export default function Page() {
                     ))}
                   </ul>
                 )}
-                <button type="button" className="btn-ok" onClick={postCoaOpening} disabled={!coaOpenLines.length}>
+                <button
+                  type="button"
+                  className="btn-ok"
+                  onClick={postCoaOpening}
+                  disabled={!coaOpenLines.length}
+                  aria-label="Post opening balances"
+                >
                   Post opening balances
                 </button>
               </>

@@ -748,7 +748,9 @@ class OpeningBalanceLine(BaseModel):
 
 class OpeningBalanceCreate(BaseModel):
     lines: list[OpeningBalanceLine] = Field(min_length=1)
-    reference: str | None = None
+    # omit/`null` → auto COA-OPEN-YYYYMMDD; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-labeled / garbage could persist on journal reference).
+    reference: OpeningBalanceReferenceValue | None = None
     notes: str | None = None
 
 
@@ -4529,6 +4531,27 @@ CashTransferReferenceValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_cash_transfer_reference_value),
+]
+
+
+def validate_opening_balance_reference_value(value: str) -> str:
+    """AfterValidator: COA opening balance reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# COA opening reference — JournalEntry.reference; omit → auto COA-OPEN-YYYYMMDD.
+OpeningBalanceReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_balance_reference_value),
 ]
 
 
