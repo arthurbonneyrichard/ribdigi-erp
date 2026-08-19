@@ -31,3 +31,7 @@ Stage 1652 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofukiglaze Gate, Transfer Kofukiglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1652 opened under **ADR-3311** after CONTINUE/NEXT (Tenant MVP Transfer Bidoroglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3312**. Stage 1651 feature scope remains frozen.
