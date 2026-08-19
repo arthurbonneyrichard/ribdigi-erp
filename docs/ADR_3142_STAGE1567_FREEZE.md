@@ -31,3 +31,7 @@ Stage 1568 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Platinumcoat Gate, Transfer Platinumcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1568 opened under **ADR-3143** after CONTINUE/NEXT (Tenant MVP Transfer Palladiumcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3144**. Stage 1567 feature scope remains frozen.
