@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 1581 D1 Transfer Silicacoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1581_FIDELITY.md` (`test_stage1581_fidelity_d1.py`); Offline Complete / Transfer Silicacoat Gate honesty / go-live still MISSING.
 Stage 1580 D1 Transfer Quartzcoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1580_FIDELITY.md` (`test_stage1580_fidelity_d1.py`); Offline Complete / Transfer Quartzcoat Gate honesty / go-live still MISSING.
 Stage 1579 D1 Transfer Diamondcoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1579_FIDELITY.md` (`test_stage1579_fidelity_d1.py`); Offline Complete / Transfer Diamondcoat Gate honesty / go-live still MISSING.
 Stage 1578 D1 Transfer Graphitecoat Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_1578_FIDELITY.md` (`test_stage1578_fidelity_d1.py`); Offline Complete / Transfer Graphitecoat Gate honesty / go-live still MISSING.
