@@ -31,3 +31,7 @@ Stage 1589 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Overglaze Gate, Transfer Overglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1589 opened under **ADR-3185** after CONTINUE/NEXT (Tenant MVP Transfer Inglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3186**. Stage 1588 feature scope remains frozen.
