@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 1527 track opened (ADR-3061: `test_stage1527_open.py`, `docs/STAGE_1527_PLAN.md`) — Transfer Silkcoat Gate Honesty Pack Remaining-Gate Index; closed under ADR-3062
+- [x] Transfer Silkcoat Gate Honesty Pack remaining-gate hub (Stage 1527 I1: `test_stage1527_index_i1.py`, `docs/TRANSFER_SILKCOAT_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Silkcoat Gate Honesty Pack blocker matrix (Stage 1527 B1: `test_stage1527_blockers_b1.py`, `docs/TRANSFER_SILKCOAT_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 1526 / Stage 1525 / Stage 392 / CHANGE_IMPACT pointers (Stage 1527 P1: `test_stage1527_pointers_p1.py`, `docs/TRANSFER_SILKCOAT_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 1527 fidelity sync (D1: `test_stage1527_fidelity_d1.py`, `docs/STAGE_1527_FIDELITY.md`)
+- [x] Stage 1527 exit + freeze (H1527x: `test_stage1527_exit_h1527x.py`, `docs/STAGE_1527_EXIT_CRITERIA.md`, ADR-3062)
 Stage 1526 track opened (ADR-3059: `test_stage1526_open.py`, `docs/STAGE_1526_PLAN.md`) — Transfer Dripoff Gate Honesty Pack Remaining-Gate Index; closed under ADR-3060
 - [x] Transfer Dripoff Gate Honesty Pack remaining-gate hub (Stage 1526 I1: `test_stage1526_index_i1.py`, `docs/TRANSFER_DRIPOFF_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Dripoff Gate Honesty Pack blocker matrix (Stage 1526 B1: `test_stage1526_blockers_b1.py`, `docs/TRANSFER_DRIPOFF_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
