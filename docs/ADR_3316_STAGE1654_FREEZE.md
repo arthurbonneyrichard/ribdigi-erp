@@ -31,3 +31,7 @@ Stage 1655 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kissetoglaze Gate, Transfer Kissetoglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1655 opened under **ADR-3317** after CONTINUE/NEXT (Tenant MVP Transfer Mattglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3318**. Stage 1654 feature scope remains frozen.
