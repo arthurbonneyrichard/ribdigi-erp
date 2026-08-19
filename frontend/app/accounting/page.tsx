@@ -37,6 +37,7 @@ export default function Page() {
   const emptyManualLine = (): ManualLine => ({ account_code: '', debit: '', credit: '' });
   const [manualLines, setManualLines] = useState<ManualLine[]>([emptyManualLine(), emptyManualLine()]);
   const [description, setDescription] = useState('Manual adjusting entry');
+  const [entryDate, setEntryDate] = useState('');
   const [message, setMessage] = useState('');
   const [reconAccountId, setReconAccountId] = useState('');
   const [opening, setOpening] = useState('0');
@@ -289,11 +290,13 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           description,
+          entry_date: entryDate.trim() || null,
           lines,
         }),
       });
       setMessage('Journal posted');
       setManualLines([emptyManualLine(), emptyManualLine()]);
+      setEntryDate('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -946,6 +949,13 @@ export default function Page() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
+              />
+              <input
+                value={entryDate}
+                onChange={(e) => setEntryDate(e.target.value)}
+                placeholder="Entry date YYYY-MM-DD (optional)"
+                aria-label="Journal entry date"
+                title="Journal entry date (optional YYYY-MM-DD; blank → now)"
               />
               <table className="table" aria-label="Manual journal lines">
                 <thead>

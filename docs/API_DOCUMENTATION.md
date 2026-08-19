@@ -1230,7 +1230,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 
 ### 10.2 Journal Entries
 **List:** `GET /accounting/journal-entries` — optional Query `status` ∈ `posted`|`unposted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Accounting Ledger **Journal status filter** All / Posted / Unposted (`journalManageFilter`; client filter over full cache).  
-**Create:** `POST /accounting/journal-entries`  
+**Create:** `POST /accounting/journal-entries` — optional body `entry_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → now; blank/`not-a-date`/`01/02/2024` → **422** (was free `date`; OpenAPI date; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Accounting **Journal entry date** input (`aria-label`); create sends `null` when blank.  
 **Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` `{ "reason": "..." }` — manual journals only; reverses account balances; **reason required** (appended to journal `description` as `Unpost: …` and stored in audit `journal_unposted.details.reason`); allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD) **and** not on/before `books_closed_through`. Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected.  
 **Attachment:** `POST|GET|DELETE /accounting/journal-entries/{entry_id}/attachment` — multipart `file` upload (PDF/image); tenant-scoped media key on `journal_entries.attachment_url`.
 
@@ -1255,7 +1255,7 @@ Posting a journal (`POST /accounting/journal-entries`) rejects `entry_date` (def
 }
 ```
 
-`lines` requires **≥2** rows; each line must have `account_id` or `account_code`, a non-zero debit **or** credit (not both), and Σ debit = Σ credit within ±0.01. Accounting Manual journal UI supports Add/Remove lines (default two) with live balance (BR-10.2).
+`lines` requires **≥2** rows; each line must have `account_id` or `account_code`, a non-zero debit **or** credit (not both), and Σ debit = Σ credit within ±0.01. Accounting Manual journal UI supports Add/Remove lines (default two) with live balance (BR-10.2). Optional **Journal entry date** (`aria-label`) posts `entry_date` or `null` when blank.
 
 ### 10.3 Cash & Bank Accounts
 **List liquid:** `GET /accounting/liquid-accounts`  

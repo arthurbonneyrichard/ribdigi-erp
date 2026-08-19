@@ -3533,9 +3533,15 @@ class JournalLineCreate(BaseModel):
 
 
 class JournalCreate(BaseModel):
+    """Manual journal create — optional entry_date ∈ IsoDateQueryValue (BR-10.2).
+
+    Omit/`null` → service default (now); blank/invalid → **422**.
+    """
+
     description: str
     reference: str | None = None
-    entry_date: date | None = None
+    # IsoDateQueryValue as expense_date / SO delivery_date / subscription start_at.
+    entry_date: IsoDateQueryValue | None = None
     lines: list[JournalLineCreate] = Field(min_length=2)
 
 

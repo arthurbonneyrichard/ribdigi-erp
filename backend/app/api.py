@@ -9086,7 +9086,7 @@ async def create_journal(
         user_id=claims["sub"],
         description=payload.description,
         reference=payload.reference,
-        entry_date=payload.entry_date,
+        entry_date=reports_svc.parse_date(payload.entry_date),
         lines=[ln.model_dump() for ln in payload.lines],
     )
     await db.commit()
