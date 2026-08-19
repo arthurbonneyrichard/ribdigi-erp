@@ -1413,13 +1413,15 @@ class ExpenseUpdate(BaseModel):
 
 class ExpenseCategoryCreate(BaseModel):
     code: str
-    name: str
+    # Required category label ∈ ExpenseCategoryNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on expense category create).
+    name: ExpenseCategoryNameValue
     budget_amount: float = Field(default=0, ge=0)
     account_id: str | None = None
 
 
 class ExpenseCategoryUpdate(BaseModel):
-    name: str | None = None
+    name: ExpenseCategoryNameValue | None = None
     budget_amount: float | None = Field(default=None, ge=0)
     is_active: bool | None = None
     account_id: str | None = None
@@ -3107,6 +3109,27 @@ TaxRateNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_tax_rate_name_value),
+]
+
+
+def validate_expense_category_name_value(value: str) -> str:
+    """AfterValidator: expense category display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Expense category display name — matches ExpenseCategory.name String(120).
+ExpenseCategoryNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_category_name_value),
 ]
 
 

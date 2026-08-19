@@ -188,6 +188,12 @@ export default function Page() {
   }, []);
 
   async function createCategory() {
+    const name = newCatName.trim();
+    if (!name) {
+      setError('Expense category name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     try {
@@ -195,7 +201,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           code: newCatCode.trim(),
-          name: newCatName.trim(),
+          name,
           budget_amount: Number(newCatBudget) || 0,
           account_id: newCatAccountId || null,
         }),
@@ -861,6 +867,7 @@ export default function Page() {
             style={{ width: 90 }}
           />
           <input
+            aria-label="Expense category name"
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             placeholder="Name"
@@ -886,6 +893,7 @@ export default function Page() {
           </select>
           <button
             type="button"
+            aria-label="Add expense category"
             onClick={createCategory}
             disabled={!newCatCode.trim() || !newCatName.trim()}
           >
