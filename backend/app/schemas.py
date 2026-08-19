@@ -751,7 +751,9 @@ class OpeningBalanceCreate(BaseModel):
     # omit/`null` → auto COA-OPEN-YYYYMMDD; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently auto-labeled / garbage could persist on journal reference).
     reference: OpeningBalanceReferenceValue | None = None
-    notes: str | None = None
+    # omit/`null` → default journal description; blank/`!!!`/`http://…` → **422** (was
+    # free `str`; blank fell through to default / garbage could persist on description).
+    notes: OpeningBalanceNotesValue | None = None
 
 
 class CashTransferCreate(BaseModel):
@@ -4552,6 +4554,27 @@ OpeningBalanceReferenceValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_opening_balance_reference_value),
+]
+
+
+def validate_opening_balance_notes_value(value: str) -> str:
+    """AfterValidator: COA opening balance notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# COA opening notes — JournalEntry.description; omit → default "COA opening balances …".
+OpeningBalanceNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_balance_notes_value),
 ]
 
 

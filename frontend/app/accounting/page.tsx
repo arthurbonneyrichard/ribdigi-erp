@@ -80,6 +80,7 @@ export default function Page() {
   const [coaOpenAmount, setCoaOpenAmount] = useState('0');
   const [coaOpenLines, setCoaOpenLines] = useState<{ code: string; amount: string }[]>([]);
   const [coaOpenRef, setCoaOpenRef] = useState('');
+  const [coaOpenNotes, setCoaOpenNotes] = useState('');
   const [coaOpenStatus, setCoaOpenStatus] = useState<any>(null);
   const [editAcctId, setEditAcctId] = useState('');
   const [editAcctName, setEditAcctName] = useState('');
@@ -437,7 +438,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           reference: coaOpenRef.trim() || null,
-          notes: 'COA opening balances',
+          notes: coaOpenNotes.trim() || null,
           lines: coaOpenLines.map((l) => ({
             account_code: l.code,
             amount: Number(l.amount),
@@ -452,6 +453,7 @@ export default function Page() {
         `Opening balances posted (${r.data.journal_number})${plug}. Dr ${r.data.total_debit} / Cr ${r.data.total_credit}`,
       );
       setCoaOpenLines([]);
+      setCoaOpenNotes('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1108,6 +1110,13 @@ export default function Page() {
                   placeholder="Reference (e.g. FY2026-OPEN)"
                   aria-label="Opening balance reference"
                   title="Optional reference (1–100 chars; blank → auto COA-OPEN-YYYYMMDD)"
+                />
+                <input
+                  value={coaOpenNotes}
+                  onChange={(e) => setCoaOpenNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  aria-label="Opening balance notes"
+                  title="Optional notes (1–500 chars; letters/digits required)"
                 />
                 {coaOpenLines.length > 0 && (
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
