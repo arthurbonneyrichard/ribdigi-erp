@@ -31,3 +31,7 @@ Stage 1541 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Midcoat Gate, Transfer Midcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1541 opened under **ADR-3089** after CONTINUE/NEXT (Tenant MVP Transfer Sealcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3090**. Stage 1540 feature scope remains frozen.
