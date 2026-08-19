@@ -232,6 +232,7 @@ export default function Page() {
   const [prQty, setPrQty] = useState('10');
   const [prDepartment, setPrDepartment] = useState('');
   const [prNotes, setPrNotes] = useState('');
+  const [prRequiredDate, setPrRequiredDate] = useState('');
   const [prBusy, setPrBusy] = useState('');
   const [prRejectReason, setPrRejectReason] = useState('');
   const [poCancelReason, setPoCancelReason] = useState('');
@@ -1021,11 +1022,13 @@ export default function Page() {
           preferred_supplier_id: prSupplierId || null,
           department: prDepartment.trim() || null,
           notes: prNotes.trim() || null,
+          required_date: prRequiredDate.trim() || null,
           items: [{ product_id: prProductId, quantity: Number(prQty) || 1 }],
         }),
       });
       setMessage(`Created ${r.data.request_number}`);
       setPrNotes('');
+      setPrRequiredDate('');
       await refresh();
       setTab('requests');
     } catch (err: any) {
@@ -1445,6 +1448,14 @@ export default function Page() {
                 value={prDepartment}
                 onChange={(e) => setPrDepartment(e.target.value)}
                 placeholder="Requesting department (optional)"
+              />
+              <input
+                aria-label="Purchase request required date"
+                type="text"
+                placeholder="YYYY-MM-DD"
+                title="Required by date (optional YYYY-MM-DD)"
+                value={prRequiredDate}
+                onChange={(e) => setPrRequiredDate(e.target.value)}
               />
               <input
                 value={prNotes}

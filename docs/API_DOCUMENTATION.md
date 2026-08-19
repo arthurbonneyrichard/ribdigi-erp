@@ -810,7 +810,7 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 
 ### 6.2 Purchase Request
 **List:** `GET /purchasing/requests` — optional Query `status` ∈ `draft`|`pending`|`approved`|`rejected`|`converted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Requests **Purchase request status filter** (`prManageFilter`; client filter over full cache).  
-**Create:** `POST /purchasing/requests`  
+**Create:** `POST /purchasing/requests` — optional `required_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → no needed-by date; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Purchasing **Purchase request required date** input (`aria-label`); create sends `null` when blank.  
 **Get:** `GET /purchasing/requests/{request_id}`  
 **Approve:** `POST /purchasing/requests/{request_id}/approve`  
 **Reject:** `POST /purchasing/requests/{request_id}/reject` — body `{ "reason" }` **required** (non-empty) → `rejection_reason` + audit `pr_rejected.details.reason`; blank/omit → 422/400. Purchasing UI requires typed reason (no hardcoded string) (BR-6.2).

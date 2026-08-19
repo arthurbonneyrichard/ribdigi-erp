@@ -6230,7 +6230,7 @@ async def create_purchase_request(
         user_id=claims["sub"],
         preferred_supplier_id=payload.preferred_supplier_id,
         warehouse_id=payload.warehouse_id,
-        required_date=payload.required_date,
+        required_date=reports_svc.parse_date(payload.required_date),
         department=payload.department,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
