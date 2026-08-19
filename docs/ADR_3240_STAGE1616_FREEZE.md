@@ -31,3 +31,7 @@ Stage 1617 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kasamaglaze Gate, Transfer Kasamaglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1617 opened under **ADR-3241** after CONTINUE/NEXT (Tenant MVP Transfer Ontaglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3242**. Stage 1616 feature scope remains frozen.
