@@ -3240,6 +3240,27 @@ ApiKeyNameValue = Annotated[
 ]
 
 
+def validate_ai_report_template_name_value(value: str) -> str:
+    """AfterValidator: AI report template name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# AI report template display name — matches AiReportTemplate.name String(120).
+AiReportTemplateNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_report_template_name_value),
+]
+
+
 def validate_account_code_value(value: str) -> str:
     """AfterValidator: COA code; blank/garbage → 422 (1–30; alnum/_/-)."""
     if not value:
@@ -3641,21 +3662,23 @@ class AiReportsExportBody(BaseModel):
 class AiReportTemplateCreateBody(BaseModel):
     """POST /ai/reports/templates — typed template create body (BR-21.7).
 
-    Unknown keys → **422** (`extra=forbid`). Blank/omit `name` or `prompt` →
-    **422** (name blank was late service **400**). `format` ∈ csv|pdf|xlsx
-    (omit → derived from prompt; blank/invalid → **422** — was late **400**).
-    Service `create_template` / `parse_prompt` remain defense-in-depth.
+    Unknown keys → **422** (`extra=forbid`). `name` ∈ `AiReportTemplateNameValue`
+    (strip; 1–120; ≥1 letter/digit; no `://`/`@`); blank/`!!!`/`http://…` → **422**
+    (was free `str` min_length=1; punctuation/URL could persist). Blank/omit `prompt` →
+    **422**. `format` ∈ csv|pdf|xlsx (omit → derived from prompt; blank/invalid →
+    **422** — was late **400**). Service `create_template` / `parse_prompt` remain
+    defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(min_length=1, max_length=120)
+    name: AiReportTemplateNameValue
     prompt: str = Field(min_length=1)
     format: ReportExportFormatValue | None = None
 
-    @field_validator("name", "prompt", mode="before")
+    @field_validator("prompt", mode="before")
     @classmethod
-    def _strip_required(cls, value: object) -> object:
+    def _strip_prompt(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip()
         return value

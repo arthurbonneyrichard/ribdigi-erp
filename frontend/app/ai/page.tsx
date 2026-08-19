@@ -316,11 +316,16 @@ export default function Page() {
   }
 
   async function saveReportTemplate() {
+    const name = tmplName.trim();
+    if (!name) {
+      setError('AI report template name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     try {
       const prompt = q.trim() || 'monthly sales for this month';
-      const name = tmplName.trim() || 'Saved report';
       const r = await api('/ai/reports/templates', {
         method: 'POST',
         body: JSON.stringify({ name, prompt, format: 'csv' }),
@@ -499,7 +504,11 @@ export default function Page() {
             aria-label="AI report template name"
             style={{ minWidth: 140 }}
           />
-          <button onClick={saveReportTemplate} aria-label="Save AI report template">
+          <button
+            onClick={saveReportTemplate}
+            aria-label="Save AI report template"
+            disabled={!tmplName.trim()}
+          >
             Save template
           </button>
           <button onClick={customerAssist} aria-label="Customer assist">

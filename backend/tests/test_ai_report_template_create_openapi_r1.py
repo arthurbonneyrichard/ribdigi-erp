@@ -53,6 +53,7 @@ def test_ai_report_template_create_body_schema_forbid():
 def test_ai_report_template_create_ui_and_docs():
     page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI report template name"' in page
+    assert "tmplName.trim()" in page
     assert 'aria-label="Save AI report template"' in page
     assert "saveReportTemplate" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
