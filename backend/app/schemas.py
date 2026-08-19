@@ -1292,7 +1292,9 @@ class OpeningStockCreate(BaseModel):
 class ExpenseCreate(BaseModel):
     category: str | None = None
     category_id: str | None = None
-    description: str = ""
+    # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
+    # `str` default `""`; blank/garbage could persist).
+    description: ExpenseDescriptionValue | None = None
     amount: float = Field(gt=0)
     # BR-9.2 — schema Literal (+ aliases via BeforeValidator); omit → cash;
     # blank/invalid → 422 (no silent cash from garbage).
@@ -1409,7 +1411,9 @@ class AiDocumentPurchaseInvoiceCreate(BaseModel):
 class ExpenseUpdate(BaseModel):
     category: str | None = None
     category_id: str | None = None
-    description: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on expense PATCH).
+    description: ExpenseDescriptionValue | None = None
     amount: float | None = Field(default=None, gt=0)
     # omit = no change; blank/invalid → 422
     payment_method: ExpensePaymentMethod | None = None
@@ -1459,7 +1463,9 @@ class ExpenseReject(BaseModel):
 class RecurringExpenseCreate(BaseModel):
     category: str | None = None
     category_id: str | None = None
-    description: str = ""
+    # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
+    # `str` default `""`; blank/garbage could persist on recurring create).
+    description: ExpenseDescriptionValue | None = None
     amount: float = Field(gt=0)
     # BR-9.5 — schema Literal; omit defaults to monthly; blank/invalid → 422
     frequency: Literal["daily", "weekly", "monthly", "yearly"] = "monthly"
@@ -1475,7 +1481,9 @@ class RecurringExpenseUpdate(BaseModel):
     amount: float | None = Field(default=None, gt=0)
     payee: str | None = None
     clear_payee: bool = False
-    description: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on recurring PATCH).
+    description: ExpenseDescriptionValue | None = None
     payment_method: ExpensePaymentMethod | None = None
     frequency: Literal["daily", "weekly", "monthly", "yearly"] | None = None
     category_id: str | None = None
@@ -4240,6 +4248,27 @@ JournalDescriptionValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_journal_description_value),
+]
+
+
+def validate_expense_description_value(value: str) -> str:
+    """AfterValidator: expense narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Expense / recurring narrative (BR-9.2 / BR-9.5) — Text column; keep ≤500 at API.
+ExpenseDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_description_value),
 ]
 
 

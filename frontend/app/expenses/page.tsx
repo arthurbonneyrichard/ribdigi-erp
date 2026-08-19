@@ -280,7 +280,7 @@ export default function Page() {
         body: JSON.stringify({
           category_id: categoryId || undefined,
           amount: Number(amount),
-          description,
+          description: description.trim() || null,
           payee: payee || undefined,
           // null when blank so Create does not 422 (IsoDateQueryValue); omit → today.
           expense_date: expenseDate.trim() || null,
@@ -316,7 +316,7 @@ export default function Page() {
         body: JSON.stringify({
           category_id: recCategoryId || undefined,
           amount: Number(recAmount),
-          description: recDescription,
+          description: recDescription.trim() || null,
           payee: recPayee || undefined,
           frequency: recFrequency,
           payment_method: recPaymentMethod,
@@ -377,7 +377,7 @@ export default function Page() {
         body: JSON.stringify({
           category_id: recCategoryId || undefined,
           amount,
-          description: recDescription,
+          description: recDescription.trim() || null,
           payee: recPayee.trim() || null,
           clear_payee: !recPayee.trim(),
           frequency: recFrequency,
@@ -643,7 +643,7 @@ export default function Page() {
       const body: Record<string, unknown> = {
         amount,
         payee: editDraft.payee.trim() || null,
-        description: editDraft.description.trim() || '',
+        description: editDraft.description.trim() || null,
         reference: editDraft.reference.trim() || null,
         payment_method: editDraft.payment_method.trim() || 'cash',
       };
@@ -1208,6 +1208,7 @@ export default function Page() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description"
+            aria-label="Expense description"
           />
           <input
             value={reference}
