@@ -190,6 +190,12 @@ export default function Page() {
 
   async function createCustomRole(e: React.FormEvent) {
     e.preventDefault();
+    const label = roleForm.label.trim();
+    if (!label) {
+      setError('Custom role label is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setBusy(true);
@@ -198,7 +204,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           key: roleForm.key.trim(),
-          label: roleForm.label.trim(),
+          label,
           base_role: roleForm.base_role || null,
         }),
       });
@@ -431,7 +437,7 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <button type="submit" disabled={busy} aria-label="Create custom role">
+          <button type="submit" disabled={busy || !roleForm.key.trim() || !roleForm.label.trim()} aria-label="Create custom role">
             {busy ? 'Saving…' : 'Create custom role'}
           </button>
           <select

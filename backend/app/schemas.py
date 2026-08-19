@@ -818,7 +818,9 @@ class CustomRoleCreate(BaseModel):
 
     # Shape via RoleKeyValue → 422 on blank/malformed; collision/super_/system stay service **400**
     key: RoleKeyValue
-    label: str
+    # Required display label ∈ CustomRoleLabelValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on custom role create).
+    label: CustomRoleLabelValue
     permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     # Clone-from system role; omit/null OK when permissions set; blank/unknown/super_admin → 422
     base_role: CustomRoleBaseRoleValue | None = None
@@ -868,7 +870,7 @@ class CustomRoleUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    label: str | None = None
+    label: CustomRoleLabelValue | None = None
     permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     record_scope: RecordScopeValue | None = None
     is_active: bool | None = None
@@ -3153,6 +3155,27 @@ PartyContactNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_party_contact_name_value),
+]
+
+
+def validate_custom_role_label_value(value: str) -> str:
+    """AfterValidator: custom role display label; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Custom role display label — matches CustomRole.label String(120).
+CustomRoleLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_custom_role_label_value),
 ]
 
 
