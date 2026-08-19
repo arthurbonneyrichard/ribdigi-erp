@@ -31,3 +31,7 @@ Stage 1650 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Namakoglaze Gate, Transfer Namakoglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1650 opened under **ADR-3307** after CONTINUE/NEXT (Tenant MVP Transfer Ironglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3308**. Stage 1649 feature scope remains frozen.
