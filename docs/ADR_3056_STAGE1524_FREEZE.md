@@ -31,3 +31,7 @@ Stage 1525 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Glosscoat Gate, Transfer Glosscoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1525 opened under **ADR-3057** after CONTINUE/NEXT (Tenant MVP Transfer Floodcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3058**. Stage 1524 feature scope remains frozen.
