@@ -798,7 +798,7 @@ async def tenant_assign_subscription(
         package_code=payload.package_code,
         term_value=payload.term_value,
         term_unit=payload.term_unit,
-        start_at=payload.start_at,
+        start_at=reports_svc.parse_date(payload.start_at),
         activate=payload.activate,
         enabled_modules=payload.enabled_modules,
         max_stores_override=data.get("max_stores_override"),

@@ -123,6 +123,7 @@ export default function PlatformConsole() {
     package_code: 'professional',
     term_value: 12,
     term_unit: 'months',
+    start_at: '',
     max_stores_override: '' as string,
   });
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
@@ -171,6 +172,7 @@ export default function PlatformConsole() {
       package_code: sel.package_code || sel.subscription?.package_code || 'professional',
       term_value: sel.subscription?.term_value || 12,
       term_unit: sel.subscription?.term_unit || 'months',
+      start_at: '',
       max_stores_override:
         sel.max_stores_override != null
           ? String(sel.max_stores_override)
@@ -295,6 +297,7 @@ export default function PlatformConsole() {
         term_unit: subForm.term_unit,
         activate: true,
       };
+      if (subForm.start_at.trim()) body.start_at = subForm.start_at.trim();
       if (subForm.max_stores_override.trim() !== '') {
         body.max_stores_override = Number(subForm.max_stores_override);
       }
@@ -689,6 +692,17 @@ export default function PlatformConsole() {
                   <option value="months">Months</option>
                   <option value="years">Years</option>
                 </select>
+              </label>
+              <label>
+                <span>Start date</span>
+                <input
+                  aria-label="Subscription start date"
+                  type="text"
+                  placeholder="YYYY-MM-DD (blank = now)"
+                  title="Optional subscription start (YYYY-MM-DD or ISO; blank = now)"
+                  value={subForm.start_at}
+                  onChange={(e) => setSubForm((f) => ({ ...f, start_at: e.target.value }))}
+                />
               </label>
               <label>
                 <span>Store entitlement override</span>

@@ -580,7 +580,10 @@ class TenantSubscriptionAssign(BaseModel):
     term_value: int = Field(..., ge=1, le=120)
     # BR-1.x / platform — schema Literal; omit → months; blank/invalid → 422
     term_unit: Literal["months", "years"] = "months"
-    start_at: datetime | None = None
+    # Optional start ∈ IsoDateQueryValue; omit/`null` → now; blank/invalid → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
+    # API `reports.parse_date` remains defense-in-depth.
+    start_at: IsoDateQueryValue | None = None
     activate: bool = True
     # Packageable modules Literal list; omit/null OK; blank/unknown/platform item → 422
     enabled_modules: list[PackageableModuleValue] | None = None
@@ -2515,7 +2518,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + stock-in/opening-stock manufacturing_date/expiry_date + SO delivery_date + PO amend due_date + PR required_date + API key expires_at + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + stock-in/opening-stock manufacturing_date/expiry_date + SO delivery_date + PO amend due_date + PR required_date + API key expires_at + subscription start_at + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),
