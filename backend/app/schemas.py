@@ -1049,7 +1049,9 @@ class ProductImagePrimaryUpdate(BaseModel):
 
 
 class PartyCreate(BaseModel):
-    name: str
+    # Required party label ∈ PartyNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on customer/supplier).
+    name: PartyNameValue
     code: str | None = None
     # BR-6.1 / BR-7.1 — OpenAPI union Literal; kind-specific allow-list still enforced
     # in _normalize_party_profile. Omit → registered; blank/invalid → 422.
@@ -1074,7 +1076,9 @@ class PartyCreate(BaseModel):
 
 
 class PartyUpdate(BaseModel):
-    name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier PATCH).
+    name: PartyNameValue | None = None
     code: str | None = None
     # omit = no change; blank/invalid → 422 (no silent registered)
     profile_type: (
@@ -2811,6 +2815,27 @@ AccountNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_account_name_value),
+]
+
+
+def validate_party_name_value(value: str) -> str:
+    """AfterValidator: customer/supplier display name; blank/URL/garbage → 422 (1–180)."""
+    if not value:
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    if len(value) > 180:
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    return value
+
+
+# Party (customer/supplier) display name — matches Party.name String(180).
+PartyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_name_value),
 ]
 
 

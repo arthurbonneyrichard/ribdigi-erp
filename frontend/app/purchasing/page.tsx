@@ -390,7 +390,7 @@ export default function Page() {
       const r = await api('/suppliers', {
         method: 'POST',
         body: JSON.stringify({
-          name: supplierName,
+          name: supplierName.trim(),
           code: supplierCode.trim() || null,
           profile_type: supplierProfileType || 'registered',
           category: supplierCategory.trim() || null,
@@ -1601,7 +1601,13 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Quick add supplier</h3>
         <div className="erp-form-grid">
-          <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name" />
+          <input
+            value={supplierName}
+            onChange={(e) => setSupplierName(e.target.value)}
+            placeholder="Supplier name"
+            aria-label="Supplier name"
+            title="Supplier name (1–180 chars; letters/digits required)"
+          />
           <input
             value={supplierCode}
             onChange={(e) => setSupplierCode(e.target.value)}
@@ -1669,7 +1675,12 @@ export default function Page() {
             style={{ width: 90 }}
             title="Payment terms (days)"
           />
-          <button onClick={createSupplier} disabled={!supplierName.trim()}>
+          <button
+            type="button"
+            onClick={createSupplier}
+            disabled={!supplierName.trim()}
+            aria-label="Add supplier"
+          >
             Add
           </button>
         </div>

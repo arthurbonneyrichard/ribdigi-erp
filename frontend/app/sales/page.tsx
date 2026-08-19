@@ -296,7 +296,7 @@ export default function Page() {
       const r = await api('/customers', {
         method: 'POST',
         body: JSON.stringify({
-          name: customerName,
+          name: customerName.trim(),
           code: customerCode.trim() || null,
           profile_type: customerProfileType || 'registered',
           status: customerStatus || 'active',
@@ -1075,7 +1075,13 @@ export default function Page() {
             placeholder="FX rate (optional)"
             style={{ width: 120 }}
           />
-          <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="New customer" />
+          <input
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="New customer"
+            aria-label="Customer name"
+            title="Customer name (1–180 chars; letters/digits required)"
+          />
           <input
             value={customerCode}
             onChange={(e) => setCustomerCode(e.target.value)}
@@ -1145,7 +1151,9 @@ export default function Page() {
             style={{ width: 90 }}
             title="Payment terms (days)"
           />
-          <button onClick={createCustomer}>Add customer</button>
+          <button type="button" onClick={createCustomer} aria-label="Add customer">
+            Add customer
+          </button>
           <button type="button" onClick={assignCustomerGroup}>
             Assign group
           </button>
