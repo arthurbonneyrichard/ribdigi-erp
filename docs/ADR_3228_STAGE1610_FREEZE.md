@@ -31,3 +31,7 @@ Stage 1611 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shigarakiglaze Gate, Transfer Shigarakiglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1611 opened under **ADR-3229** after CONTINUE/NEXT (Tenant MVP Transfer Tokonameglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3230**. Stage 1610 feature scope remains frozen.
