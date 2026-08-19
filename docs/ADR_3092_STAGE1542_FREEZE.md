@@ -31,3 +31,7 @@ Stage 1543 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Waxcoat Gate, Transfer Waxcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1543 opened under **ADR-3093** after CONTINUE/NEXT (Tenant MVP Transfer Oilcoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3094**. Stage 1542 feature scope remains frozen.
