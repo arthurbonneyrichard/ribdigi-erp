@@ -2265,7 +2265,13 @@ export default function Page() {
               Name, description, and logo (BR-5.1).
             </p>
             <input value={brandCode} onChange={(e) => setBrandCode(e.target.value)} placeholder="Code" />
-            <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Name" />
+            <input
+              value={brandName}
+              onChange={(e) => setBrandName(e.target.value)}
+              placeholder="Name"
+              aria-label="Brand name"
+              title="Brand name (1–120 chars; letters/digits required)"
+            />
             <textarea
               value={brandDescription}
               onChange={(e) => setBrandDescription(e.target.value)}
@@ -2279,8 +2285,8 @@ export default function Page() {
                   await api('/catalog/brands', {
                     method: 'POST',
                     body: JSON.stringify({
-                      code: brandCode,
-                      name: brandName,
+                      code: brandCode.trim(),
+                      name: brandName.trim(),
                       description: brandDescription.trim() || null,
                     }),
                   });
@@ -2293,7 +2299,8 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
-              disabled={!brandCode || !brandName}
+              disabled={!brandCode.trim() || !brandName.trim()}
+              aria-label="Add brand"
             >
               Add brand
             </button>
