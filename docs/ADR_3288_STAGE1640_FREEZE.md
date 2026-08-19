@@ -31,3 +31,7 @@ Stage 1641 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kuromonoglaze Gate, Transfer Kuromonoglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1641 opened under **ADR-3289** after CONTINUE/NEXT (Tenant MVP Transfer Shinooribeglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3290**. Stage 1640 feature scope remains frozen.
