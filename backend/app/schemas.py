@@ -694,7 +694,9 @@ class PlatformRevokeAccess(BaseModel):
 
 
 class AccountCreate(BaseModel):
-    code: str
+    # Required COA identity ∈ AccountCodeValue; blank/`!!!`/`a b`/`http://…` → **422**
+    # (was free `str`; blank late service **400**; garbage could persist).
+    code: AccountCodeValue
     # Required COA label ∈ AccountNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank late service **400**; garbage could persist).
     name: AccountNameValue
@@ -2809,6 +2811,27 @@ AccountNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_account_name_value),
+]
+
+
+def validate_account_code_value(value: str) -> str:
+    """AfterValidator: COA code; blank/garbage → 422 (1–30; alnum/_/-)."""
+    if not value:
+        raise ValueError(
+            "account code must be 1–30 chars: letters, digits, underscore, or hyphen"
+        )
+    if len(value) > 30 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,29}", value):
+        raise ValueError(
+            "account code must be 1–30 chars: letters, digits, underscore, or hyphen"
+        )
+    return value
+
+
+# Chart-of-accounts code — matches Account.code String(30); no forced upper.
+AccountCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_account_code_value),
 ]
 
 

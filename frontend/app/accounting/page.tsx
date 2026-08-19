@@ -1470,6 +1470,8 @@ export default function Page() {
                 onChange={(e) => setNewAcctCode(e.target.value)}
                 placeholder="Code (e.g. 1001)"
                 style={{ width: 120 }}
+                aria-label="Account code"
+                title="Account code (1–30 chars: letters, digits, _ or -)"
               />
               <input
                 value={newAcctName}
