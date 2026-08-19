@@ -31,3 +31,7 @@ Stage 1687 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Awayuglaze Gate, Transfer Awayuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1687 opened under **ADR-3381** after CONTINUE/NEXT (Tenant MVP Transfer Oboriyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3382**. Stage 1686 feature scope remains frozen.
