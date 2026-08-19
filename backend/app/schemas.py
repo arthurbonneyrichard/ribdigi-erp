@@ -4454,6 +4454,27 @@ JournalDescriptionValue = Annotated[
 ]
 
 
+def validate_journal_reference_value(value: str) -> str:
+    """AfterValidator: journal reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Manual journal reference — JournalEntry.reference String(100); omit → no reference.
+JournalReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_journal_reference_value),
+]
+
+
 def validate_expense_description_value(value: str) -> str:
     """AfterValidator: expense narrative; blank/URL/garbage → 422 (1–500)."""
     if not value:
@@ -4669,12 +4690,17 @@ class JournalCreate(BaseModel):
 
     `description` ∈ JournalDescriptionValue (strip; 2–500; ≥1 letter/digit; no
     `://`/`@`); blank/`!!!`/`http://…` → **422** (was free `str`; empty/garbage
-    could persist on the ledger). Optional `entry_date` ∈ IsoDateQueryValue;
-    omit/`null` → now; blank/invalid → **422**.
+    could persist on the ledger). Optional `reference` ∈ JournalReferenceValue
+    (strip; 1–100; ≥1 letter/digit; no `://`/`@`); omit/`null` → no reference;
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank silently dropped /
+    garbage could persist on journal `reference`). Optional `entry_date` ∈
+    IsoDateQueryValue; omit/`null` → now; blank/invalid → **422**.
     """
 
     description: JournalDescriptionValue
-    reference: str | None = None
+    # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on JournalEntry.reference).
+    reference: JournalReferenceValue | None = None
     # IsoDateQueryValue as expense_date / SO delivery_date / subscription start_at.
     entry_date: IsoDateQueryValue | None = None
     lines: list[JournalLineCreate] = Field(min_length=2)

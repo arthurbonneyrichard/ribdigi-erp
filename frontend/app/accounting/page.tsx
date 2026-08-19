@@ -37,6 +37,7 @@ export default function Page() {
   const emptyManualLine = (): ManualLine => ({ account_code: '', debit: '', credit: '' });
   const [manualLines, setManualLines] = useState<ManualLine[]>([emptyManualLine(), emptyManualLine()]);
   const [description, setDescription] = useState('Manual adjusting entry');
+  const [journalRef, setJournalRef] = useState('');
   const [entryDate, setEntryDate] = useState('');
   const [message, setMessage] = useState('');
   const [reconAccountId, setReconAccountId] = useState('');
@@ -291,6 +292,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           description: description.trim(),
+          reference: journalRef.trim() || null,
           entry_date: entryDate.trim() || null,
           lines,
         }),
@@ -298,6 +300,7 @@ export default function Page() {
       setMessage('Journal posted');
       setManualLines([emptyManualLine(), emptyManualLine()]);
       setEntryDate('');
+      setJournalRef('');
       setDescription('Manual adjusting entry');
       await refresh();
     } catch (err: any) {
@@ -965,6 +968,13 @@ export default function Page() {
                 title="Journal description (2–500 chars; letters/digits required)"
               />
               <input
+                value={journalRef}
+                onChange={(e) => setJournalRef(e.target.value)}
+                placeholder="Reference (optional)"
+                aria-label="Journal reference"
+                title="Optional reference (1–100 chars; letters/digits required)"
+              />
+              <input
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
                 placeholder="Entry date YYYY-MM-DD (optional)"
@@ -1067,7 +1077,13 @@ export default function Page() {
                   {manualBalanced ? ' · balanced' : ' · unbalanced'}
                 </span>
               </div>
-              <button type="button" className="btn-ok" onClick={postManual} disabled={!manualBalanced}>
+              <button
+                type="button"
+                className="btn-ok"
+                onClick={postManual}
+                disabled={!manualBalanced}
+                aria-label="Post balanced entry"
+              >
                 Post balanced entry
               </button>
             </div>
