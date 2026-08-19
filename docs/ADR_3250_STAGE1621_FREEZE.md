@@ -31,3 +31,7 @@ Stage 1622 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Izumoyakiglaze Gate, Transfer Izumoyakiglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1622 opened under **ADR-3251** after CONTINUE/NEXT (Tenant MVP Transfer Mikawachiglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3252**. Stage 1621 feature scope remains frozen.
