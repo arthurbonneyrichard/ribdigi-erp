@@ -31,3 +31,7 @@ Stage 1577 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ironcoat Gate, Transfer Ironcoat Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1577 opened under **ADR-3161** after CONTINUE/NEXT (Tenant MVP Transfer Carboncoat Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3162**. Stage 1576 feature scope remains frozen.
