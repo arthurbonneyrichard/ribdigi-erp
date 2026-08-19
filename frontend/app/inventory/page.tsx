@@ -129,6 +129,7 @@ export default function Page() {
   >('all');
   const [activeCount, setActiveCount] = useState<any | null>(null);
   const [countWarehouseId, setCountWarehouseId] = useState('');
+  const [countNotes, setCountNotes] = useState('');
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -714,7 +715,10 @@ export default function Page() {
     try {
       const r = await api('/inventory/stock-counts', {
         method: 'POST',
-        body: JSON.stringify({ warehouse_id: countWarehouseId }),
+        body: JSON.stringify({
+          warehouse_id: countWarehouseId,
+          notes: countNotes.trim() || null,
+        }),
       });
       setActiveCount(r.data);
       const qtys: Record<string, string> = {};
@@ -722,6 +726,7 @@ export default function Page() {
         qtys[item.product_id] = String(item.expected_qty ?? 0);
       }
       setCountQtys(qtys);
+      setCountNotes('');
       setMessage(`Count ${r.data.count_number} created`);
       setTab('counts');
       await refresh();
@@ -2960,7 +2965,11 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Start stock count</h3>
-            <select value={countWarehouseId} onChange={(e) => setCountWarehouseId(e.target.value)}>
+            <select
+              value={countWarehouseId}
+              onChange={(e) => setCountWarehouseId(e.target.value)}
+              aria-label="Stock count warehouse"
+            >
               <option value="">Warehouse</option>
               {warehouses
                 .filter((w) => w.is_active !== false)
@@ -2970,7 +2979,20 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <button type="button" onClick={startStockCount} disabled={!countWarehouseId}>
+            <input
+              value={countNotes}
+              onChange={(e) => setCountNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              aria-label="Stock count notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
+            />
+            <button
+              type="button"
+              className="btn-ok"
+              onClick={startStockCount}
+              disabled={!countWarehouseId}
+              aria-label="Create draft count"
+            >
               Create draft count
             </button>
           </div>
