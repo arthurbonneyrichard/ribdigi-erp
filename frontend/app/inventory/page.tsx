@@ -2856,6 +2856,8 @@ export default function Page() {
               value={openingNotes}
               onChange={(e) => setOpeningNotes(e.target.value)}
               placeholder="Notes"
+              aria-label="Opening stock notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
             />
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input

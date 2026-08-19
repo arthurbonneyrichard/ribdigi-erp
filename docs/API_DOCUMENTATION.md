@@ -723,7 +723,7 @@ Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a s
 **Create:** `POST /inventory/opening-stock`  
 **List movements:** `GET /inventory/opening-stock`
 
-Multi-line go-live / fiscal-year stock init with optional warehouse/batch/unit/`unit_cost` and optional Dr 1200 / Cr 3000 journal (`post_journal`). Optional `reference` ∈ `OpeningStockReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto `OS-YYYY-NNNN`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-numbered / garbage could persist). Inventory **Opening stock reference** input.
+Multi-line go-live / fiscal-year stock init with optional warehouse/batch/unit/`unit_cost` and optional Dr 1200 / Cr 3000 journal (`post_journal`). Optional `reference` ∈ `OpeningStockReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto `OS-YYYY-NNNN`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-numbered / garbage could persist). Optional `notes` ∈ `OpeningStockNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory **Opening stock reference** / **Opening stock notes** inputs.
 
 **Numbering:** `GET|PATCH /inventory/settings` exposes `opening_stock_numbering` alongside `stock_transfer_numbering` / `stock_count_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `OS`) when `reference` is omitted; explicit references are kept. Allocated label is returned on the response, stored on the audit event, and used as the journal `reference` when a GL entry is posted (BR-5.2 / BR-20.4).
 

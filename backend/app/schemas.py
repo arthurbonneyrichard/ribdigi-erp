@@ -1292,7 +1292,9 @@ class OpeningStockCreate(BaseModel):
     # omit/`null` → auto OS-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently auto-numbered / garbage could persist on journal ref).
     reference: OpeningStockReferenceValue | None = None
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on movement notes).
+    notes: OpeningStockNotesValue | None = None
 
 
 class ExpenseCreate(BaseModel):
@@ -4397,6 +4399,27 @@ OpeningStockReferenceValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_opening_stock_reference_value),
+]
+
+
+def validate_opening_stock_notes_value(value: str) -> str:
+    """AfterValidator: opening-stock notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Opening stock header notes — merged into StockMovement.notes Text; ≤500 at API.
+OpeningStockNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_stock_notes_value),
 ]
 
 
