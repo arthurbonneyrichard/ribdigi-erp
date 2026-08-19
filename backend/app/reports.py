@@ -38,6 +38,31 @@ def parse_date(value: str | datetime | None, *, end_of_day: bool = False) -> dat
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
+def parse_datetime(value: str | datetime | None) -> datetime | None:
+    """Like parse_date but keeps clock time (API key expiry / wall-clock stamps).
+
+    Schema IsoDateQueryValue rejects blank/invalid → **422**; this remains
+    defense-in-depth (**400**). Date-only `YYYY-MM-DD` → midnight; ISO datetime
+    keeps hours/minutes (tz stripped to naive).
+    """
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None) if value.tzinfo is not None else value
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        if len(text) == 10:
+            return datetime.strptime(text, "%Y-%m-%d")
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid datetime; use YYYY-MM-DD or ISO datetime",
+        ) from exc
+
+
 def day_bounds(day: datetime) -> tuple[datetime, datetime]:
     start = day.replace(hour=0, minute=0, second=0, microsecond=0)
     end = start + timedelta(days=1) - timedelta(microseconds=1)

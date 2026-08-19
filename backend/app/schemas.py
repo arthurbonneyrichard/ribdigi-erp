@@ -2515,7 +2515,7 @@ def validate_iso_date_query_value(value: str) -> str:
     return value
 
 
-# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + stock-in/opening-stock manufacturing_date/expiry_date + SO delivery_date + PO amend due_date + PR required_date + report date Query filters).
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + stock-in/opening-stock manufacturing_date/expiry_date + SO delivery_date + PO amend due_date + PR required_date + API key expires_at + report date Query filters).
 IsoDateQueryValue = Annotated[
     str,
     BeforeValidator(coerce_iso_date_query_value),
@@ -2944,29 +2944,24 @@ class ApiKeyCreate(BaseModel):
     Unknown top-level keys → **422** (`extra=forbid`). Name omit/too short/too long,
     invalid `expires_at`, unknown permission module/action → **422** (was late **400**
     via free `dict`). Omit/null/`{}` `permissions` → service default read map.
+
+    Optional `expires_at` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime);
+    omit/`null` → no expiry; blank/`not-a-date`/`01/02/2024` → **422** (was free
+    `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_datetime` keeps clock time (defense-in-depth).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=2, max_length=120)
     permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
-    expires_at: datetime | None = None
+    expires_at: IsoDateQueryValue | None = None
 
     @field_validator("name", mode="before")
     @classmethod
     def _strip_name(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip()
-        return value
-
-    @field_validator("expires_at", mode="after")
-    @classmethod
-    def _naive_expires_at(cls, value: datetime | None) -> datetime | None:
-        # Persist naive UTC wall-clock like the prior ISO parse path.
-        if value is None:
-            return None
-        if value.tzinfo is not None:
-            return value.replace(tzinfo=None)
         return value
 
     @field_validator("permissions", mode="before")

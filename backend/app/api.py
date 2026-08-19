@@ -11992,7 +11992,7 @@ async def api_keys_create(
         user_id=claims.get("sub"),
         name=payload.name,
         permissions=payload.permissions,
-        expires_at=payload.expires_at,
+        expires_at=reports_svc.parse_datetime(payload.expires_at),
     )
     await audit_svc.record_event(
         db,

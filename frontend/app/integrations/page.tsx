@@ -108,7 +108,8 @@ export default function Page() {
     setBusy(true);
     try {
       const body: Record<string, unknown> = { name: keyName || 'Integration key' };
-      if (keyExpires) body.expires_at = new Date(keyExpires).toISOString();
+      const expiry = keyExpires.trim();
+      if (expiry) body.expires_at = expiry;
       const r = await api('/api-keys', { method: 'POST', body: JSON.stringify(body) });
       setRevealedKey(r.data?.api_key || '');
       setMessage(r.message || 'API key created — copy the secret now');
@@ -354,10 +355,11 @@ export default function Page() {
             style={{ minWidth: 160 }}
           />
           <input
-            type="datetime-local"
+            type="text"
             value={keyExpires}
             onChange={(e) => setKeyExpires(e.target.value)}
-            title="Optional expiry"
+            placeholder="YYYY-MM-DD or ISO datetime"
+            title="Optional expiry (YYYY-MM-DD or ISO datetime)"
             aria-label="API key expiry"
           />
           <button

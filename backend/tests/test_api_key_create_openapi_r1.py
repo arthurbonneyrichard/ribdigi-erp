@@ -28,7 +28,7 @@ def test_api_key_create_schema_forbid_and_bounds():
             "permissions": {"Inventory": ["READ", "write"]},
         }
     )
-    assert with_exp.expires_at == datetime(2030, 1, 15, 12, 0, 0)
+    assert with_exp.expires_at == "2030-01-15T12:00:00Z"
     assert with_exp.permissions == {"inventory": ["read", "write"]}
 
     # Empty permissions map still means defaults (historical create_key behavior).
@@ -45,6 +45,10 @@ def test_api_key_create_schema_forbid_and_bounds():
         ApiKeyCreate.model_validate({"name": "x" * 121})
     with pytest.raises(ValidationError):
         ApiKeyCreate.model_validate({"name": "bad", "expires_at": "not-a-date"})
+    with pytest.raises(ValidationError):
+        ApiKeyCreate.model_validate({"name": "bad", "expires_at": ""})
+    with pytest.raises(ValidationError):
+        ApiKeyCreate.model_validate({"name": "bad", "expires_at": "01/02/2024"})
     with pytest.raises(ValidationError):
         ApiKeyCreate.model_validate(
             {"name": "bad", "permissions": {"not_a_module": ["read"]}}
