@@ -31,3 +31,7 @@ Stage 5104 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwagyajiyuglaze Gate, Transfer Tenwagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5104 opened under **ADR-10215** after CONTINUE/NEXT (Tenant MVP Transfer Tenwanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10216**. Stage 5103 feature scope remains frozen.
