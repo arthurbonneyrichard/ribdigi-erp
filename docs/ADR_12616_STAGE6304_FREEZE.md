@@ -31,3 +31,7 @@ Stage 6305 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraajigyajiyuglaze Gate, Transfer Kamakuraajigyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6305 opened under **ADR-12617** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraajinyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12618**. Stage 6304 feature scope remains frozen.
