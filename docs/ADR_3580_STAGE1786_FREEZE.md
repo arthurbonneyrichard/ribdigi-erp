@@ -31,3 +31,7 @@ Stage 1787 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwajiyuglaze Gate, Transfer Reiwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1787 opened under **ADR-3581** after CONTINUE/NEXT (Tenant MVP Transfer Yayoijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3582**. Stage 1786 feature scope remains frozen.
