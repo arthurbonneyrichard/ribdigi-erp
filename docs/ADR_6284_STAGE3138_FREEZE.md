@@ -31,3 +31,7 @@ Stage 3139 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenaamajiyuglaze Gate, Transfer Manenaamajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3139 opened under **ADR-6285** after CONTINUE/NEXT (Tenant MVP Transfer Manenaarajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6286**. Stage 3138 feature scope remains frozen.
