@@ -31,3 +31,7 @@ Stage 2866 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyoutokusajiyuglaze Gate, Transfer Kyoutokusajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2866 opened under **ADR-5739** after CONTINUE/NEXT (Tenant MVP Transfer Kyoutokutajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5740**. Stage 2865 feature scope remains frozen.
