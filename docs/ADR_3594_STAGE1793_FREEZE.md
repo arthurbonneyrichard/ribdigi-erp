@@ -31,3 +31,7 @@ Stage 1794 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tokugawajiyuglaze Gate, Transfer Tokugawajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1794 opened under **ADR-3595** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3596**. Stage 1793 feature scope remains frozen.
