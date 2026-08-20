@@ -31,3 +31,7 @@ Stage 6714 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwajirajiyuglaze Gate, Transfer Tenwajirajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6714 opened under **ADR-13435** after CONTINUE/NEXT (Tenant MVP Transfer Tenwajizajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13436**. Stage 6713 feature scope remains frozen.
