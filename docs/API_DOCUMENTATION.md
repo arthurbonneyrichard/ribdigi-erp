@@ -869,6 +869,8 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 
 Optional `delivery_address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Stored on the PO, returned on GET/list/serialize, amendable via `POST /purchasing/orders/{id}/amend`, and included in supplier email bodies when set (BR-6.3). Purchasing **PO delivery address** input (`aria-label`); create sends `null` when blank.
 
+Optional `notes` ∈ `PurchaseOrderNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; create omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Amend uses the same type (`null` clears). Purchasing **PO notes** / **PO amend notes** inputs.
+
 Per-line `discount` (≥0, cannot exceed qty×unit_price) is applied after tax on the line (same order as PI). `line_total` and PO `total_amount` reflect discounts; serialize/email include `discount`. Amend via `POST /purchasing/orders/{id}/amend`. Alembic `20260814_0096` (BR-6.3).
 
 Omit `tax_rate` on a line to auto-resolve **product → category (parents) → tenant default** (same as sales; BR-12.2). Explicit `tax_rate` (including `0`) wins. Resolved `%` is snapshotted on the PO/PI line.

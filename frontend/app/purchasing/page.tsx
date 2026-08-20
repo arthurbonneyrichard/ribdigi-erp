@@ -218,6 +218,7 @@ export default function Page() {
   const [unitPrice, setUnitPrice] = useState('0');
   const [lineDiscount, setLineDiscount] = useState('0');
   const [poDeliveryAddress, setPoDeliveryAddress] = useState('');
+  const [poNotes, setPoNotes] = useState('');
   const [amendQty, setAmendQty] = useState('');
   const [amendPrice, setAmendPrice] = useState('');
   const [amendDiscount, setAmendDiscount] = useState('0');
@@ -455,6 +456,7 @@ export default function Page() {
           supplier_id: supplierId,
           // null when blank so Create does not 422 (AddressValue).
           delivery_address: poDeliveryAddress.trim() || null,
+          notes: poNotes.trim() || null,
           items: [
             {
               product_id: productId,
@@ -469,6 +471,7 @@ export default function Page() {
       });
       setMessage(`Created ${r.data.po_number}`);
       setPoDeliveryAddress('');
+      setPoNotes('');
       setLineDiscount('0');
       await refresh();
       setSelected(r.data);
@@ -573,7 +576,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           reason,
-          notes: amendNotes,
+          notes: amendNotes.trim() || null,
           // Omit blank delivery so Amend does not 422 (AddressValue); leave prior.
           ...(amendDeliveryAddress.trim()
             ? { delivery_address: amendDeliveryAddress.trim() }
@@ -1763,7 +1766,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase order</h3>
         <div className="erp-form-grid">
-          <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+          <select
+            value={supplierId}
+            onChange={(e) => setSupplierId(e.target.value)}
+            aria-label="PO supplier"
+          >
             <option value="">Select supplier</option>
             {suppliers
               .filter((s) => s.status !== 'inactive')
@@ -1774,7 +1781,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+          <select
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+            aria-label="PO product"
+          >
             <option value="">Select product</option>
             {products
               .filter((p) => p.is_active !== false)
@@ -1808,7 +1819,18 @@ export default function Page() {
             placeholder="Delivery address (optional)"
             aria-label="PO delivery address"
           />
-          <button onClick={createPo} disabled={!supplierId || !productId}>
+          <input
+            value={poNotes}
+            onChange={(e) => setPoNotes(e.target.value)}
+            placeholder="PO notes (optional)"
+            aria-label="PO notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <button
+            onClick={createPo}
+            disabled={!supplierId || !productId}
+            aria-label="Create draft PO"
+          >
             Create draft PO
           </button>
         </div>
@@ -2192,6 +2214,8 @@ export default function Page() {
                     value={amendNotes}
                     onChange={(e) => setAmendNotes(e.target.value)}
                     placeholder="Notes"
+                    aria-label="PO amend notes"
+                    title="Optional notes (1–500 chars; letters/digits required); blank clears"
                   />
                   <input
                     value={amendDeliveryAddress}

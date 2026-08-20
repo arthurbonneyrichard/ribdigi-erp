@@ -1872,7 +1872,9 @@ class PurchaseOrderItemCreate(BaseModel):
 class PurchaseOrderCreate(BaseModel):
     supplier_id: str
     warehouse_id: str | None = None
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseOrder.notes Text).
+    notes: PurchaseOrderNotesValue | None = None
     # omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silent→null; garbage could persist). Same AddressValue as Party/Store.
     delivery_address: AddressValue | None = None
@@ -1889,7 +1891,9 @@ class PurchaseOrderAmend(BaseModel):
     """
 
     items: list[PurchaseOrderItemCreate] | None = None
-    notes: str | None = None
+    # omit/`null` → no change / clear when null sent; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on PurchaseOrder.notes).
+    notes: PurchaseOrderNotesValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared ship-to; garbage could persist). Same AddressValue.
     delivery_address: AddressValue | None = None
@@ -4777,6 +4781,27 @@ SalesReturnNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_sales_return_notes_value),
+]
+
+
+def validate_purchase_order_notes_value(value: str) -> str:
+    """AfterValidator: purchase order notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase order notes — PurchaseOrder.notes Text; keep ≤500 at API boundary.
+PurchaseOrderNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_order_notes_value),
 ]
 
 
