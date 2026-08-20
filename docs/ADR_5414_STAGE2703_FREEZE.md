@@ -31,3 +31,7 @@ Stage 2704 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Asukawajiyuglaze Gate, Transfer Asukawajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2704 opened under **ADR-5415** after CONTINUE/NEXT (Tenant MVP Transfer Asukakajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5416**. Stage 2703 feature scope remains frozen.
