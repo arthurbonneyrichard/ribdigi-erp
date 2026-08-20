@@ -31,3 +31,7 @@ Stage 10430 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianeehajiyuglaze Gate, Transfer Heianeehajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10430 opened under **ADR-20867** after CONTINUE/NEXT (Tenant MVP Transfer Heianeemajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20868**. Stage 10429 feature scope remains frozen.
