@@ -31,3 +31,7 @@ Stage 1806 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyojiyuglaze Gate, Transfer Enkyojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1806 opened under **ADR-3619** after CONTINUE/NEXT (Tenant MVP Transfer Kanseijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3620**. Stage 1805 feature scope remains frozen.
