@@ -31,3 +31,7 @@ Stage 1927 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokuajiyuglaze Gate, Transfer Genrokuajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1927 opened under **ADR-3861** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3862**. Stage 1926 feature scope remains frozen.
