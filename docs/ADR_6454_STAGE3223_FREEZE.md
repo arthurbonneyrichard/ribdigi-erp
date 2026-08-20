@@ -31,3 +31,7 @@ Stage 3224 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showaasajiyuglaze Gate, Transfer Showaasajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3224 opened under **ADR-6455** after CONTINUE/NEXT (Tenant MVP Transfer Showaatajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6456**. Stage 3223 feature scope remains frozen.
