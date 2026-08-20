@@ -31,3 +31,7 @@ Stage 8965 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseiddeejiyuglaze Gate, Transfer Anseiddeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8965 opened under **ADR-17937** after CONTINUE/NEXT (Tenant MVP Transfer Anseiddojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17938**. Stage 8964 feature scope remains frozen.
