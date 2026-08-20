@@ -31,3 +31,7 @@ Stage 3046 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseiaasajiyuglaze Gate, Transfer Bunseiaasajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3046 opened under **ADR-6099** after CONTINUE/NEXT (Tenant MVP Transfer Bunseiaatajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6100**. Stage 3045 feature scope remains frozen.
