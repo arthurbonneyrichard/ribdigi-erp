@@ -31,3 +31,7 @@ Stage 10987 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsubbaajiyuglaze Gate, Transfer Bakumatsubbaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10987 opened under **ADR-21981** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsubbajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21982**. Stage 10986 feature scope remains frozen.
