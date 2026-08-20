@@ -31,3 +31,7 @@ Stage 7944 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmeiddnyajiyuglaze Gate, Transfer Tenmeiddnyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7944 opened under **ADR-15895** after CONTINUE/NEXT (Tenant MVP Transfer Tenmeieeaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15896**. Stage 7943 feature scope remains frozen.
