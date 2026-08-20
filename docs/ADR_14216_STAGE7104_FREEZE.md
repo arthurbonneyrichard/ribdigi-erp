@@ -31,3 +31,7 @@ Stage 7105 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohobbzajiyuglaze Gate, Transfer Kyohobbzajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7105 opened under **ADR-14217** after CONTINUE/NEXT (Tenant MVP Transfer Kyohobbdajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14218**. Stage 7104 feature scope remains frozen.
