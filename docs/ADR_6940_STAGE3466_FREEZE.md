@@ -31,3 +31,7 @@ Stage 3467 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuaaojiyuglaze Gate, Transfer Sengokuaaojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3467 opened under **ADR-6941** after CONTINUE/NEXT (Tenant MVP Transfer Sengokuaaujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6942**. Stage 3466 feature scope remains frozen.
