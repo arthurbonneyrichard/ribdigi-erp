@@ -31,3 +31,7 @@ Stage 4591 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonkyajiyuglaze Gate, Transfer Jomonkyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4591 opened under **ADR-9189** after CONTINUE/NEXT (Tenant MVP Transfer Jomongyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9190**. Stage 4590 feature scope remains frozen.
