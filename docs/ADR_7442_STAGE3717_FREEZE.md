@@ -31,3 +31,7 @@ Stage 3718 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokujikajiyuglaze Gate, Transfer Genrokujikajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3718 opened under **ADR-7443** after CONTINUE/NEXT (Tenant MVP Transfer Genrokujisajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7444**. Stage 3717 feature scope remains frozen.
