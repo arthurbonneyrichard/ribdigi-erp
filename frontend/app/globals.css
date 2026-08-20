@@ -714,20 +714,24 @@
 }
 
 @media(min-width:901px) and (max-width:1200px){
-  .side{flex:0 0 200px;width:200px;padding:10px 10px 14px}
+  .shell{overflow-x:hidden}
+  .side{flex:0 0 200px;width:200px;max-width:200px;padding:10px 10px 14px}
   .brand{min-height:64px;padding:8px;margin-bottom:12px}
-  .brand-logo{max-height:40px}
+  .brand-logo{max-height:40px;max-width:100%}
   .brand-name{font-size:12px}
   .nav a{font-size:14px;padding:9px 10px;gap:9px}
   .nav-ico{width:20px}
-  .main{padding:20px 18px}
-  .topbar{flex-wrap:nowrap;gap:10px;align-items:center}
+  .menu-btn{display:none}
+  .main{padding:20px 16px;min-width:0;overflow-x:hidden}
+  .topbar{flex-wrap:nowrap;gap:8px;align-items:center;min-width:0}
   .topbar-left{flex:0 0 auto}
   .topbar-context{flex:1 1 auto;justify-content:flex-end;min-width:0}
-  .topbar-right{flex:0 0 auto;flex-wrap:nowrap;gap:8px}
-  .store-switcher{max-width:100%}
-  .store-switcher-select,.main .store-switcher-select{max-width:min(220px,36vw)}
-  .uname{max-width:7rem}
+  .topbar-right{flex:0 0 auto;flex-wrap:nowrap;gap:6px;min-width:0}
+  .store-switcher{max-width:100%;min-width:0}
+  .store-switcher-select,.main .store-switcher-select{max-width:min(200px,32vw)}
+  .uname{max-width:6.5rem}
+  .main .topbar-right .theme-btn{padding:8px 10px}
+  .bell{padding:8px 10px}
   .dash{gap:18px}
   .dash-hero{padding:24px 22px}
   .greet{font-size:26px}
