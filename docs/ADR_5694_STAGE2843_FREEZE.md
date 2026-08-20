@@ -31,3 +31,7 @@ Stage 2844 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpounajiyuglaze Gate, Transfer Kanpounajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2844 opened under **ADR-5695** after CONTINUE/NEXT (Tenant MVP Transfer Kanpouhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5696**. Stage 2843 feature scope remains frozen.
