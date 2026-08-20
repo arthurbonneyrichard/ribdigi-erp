@@ -31,3 +31,7 @@ Stage 3600 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jooaajiyuglaze Gate, Transfer Jooaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3600 opened under **ADR-7207** after CONTINUE/NEXT (Tenant MVP Transfer Jooajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7208**. Stage 3599 feature scope remains frozen.
