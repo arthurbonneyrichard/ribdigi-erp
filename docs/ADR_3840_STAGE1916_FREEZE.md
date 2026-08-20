@@ -31,3 +31,7 @@ Stage 1917 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiajiyuglaze Gate, Transfer Kanseiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1917 opened under **ADR-3841** after CONTINUE/NEXT (Tenant MVP Transfer Enkyouajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3842**. Stage 1916 feature scope remains frozen.
