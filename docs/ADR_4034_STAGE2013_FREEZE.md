@@ -31,3 +31,7 @@ Stage 2014 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoeejiyuglaze Gate, Transfer Enkyoeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2014 opened under **ADR-4035** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4036**. Stage 2013 feature scope remains frozen.
