@@ -31,3 +31,7 @@ Stage 5531 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokujiuujiyuglaze Gate, Transfer Sengokujiuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5531 opened under **ADR-11069** after CONTINUE/NEXT (Tenant MVP Transfer Sengokujiyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11070**. Stage 5530 feature scope remains frozen.
