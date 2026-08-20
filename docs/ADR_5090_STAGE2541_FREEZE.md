@@ -31,3 +31,7 @@ Stage 2542 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyomajiyuglaze Gate, Transfer Enkyomajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2542 opened under **ADR-5091** after CONTINUE/NEXT (Tenant MVP Transfer Enkyorajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5092**. Stage 2541 feature scope remains frozen.
