@@ -31,3 +31,7 @@ Stage 9047 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenbbwajiyuglaze Gate, Transfer Manenbbwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9047 opened under **ADR-18101** after CONTINUE/NEXT (Tenant MVP Transfer Manenbbkajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18102**. Stage 9046 feature scope remains frozen.
