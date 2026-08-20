@@ -15,6 +15,8 @@ from app.credit import default_due_date
 
 PO_EDITABLE = {"draft"}
 PO_RECEIVABLE = {"sent", "partially_received"}
+REQUEST_APPROVABLE = {"pending"}
+REQUEST_CONVERTIBLE = {"approved"}
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
 
@@ -187,6 +189,266 @@ async def create_purchase_order(
         )
     )
     return po
+
+
+async def get_purchase_request(db: AsyncSession, tenant_id: str, request_id: str) -> m.PurchaseRequest:
+    row = (
+        await db.execute(
+            select(m.PurchaseRequest).where(
+                m.PurchaseRequest.id == request_id,
+                m.PurchaseRequest.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Purchase request not found")
+    return row
+
+
+async def list_request_items(
+    db: AsyncSession, tenant_id: str, request_id: str
+) -> list[m.PurchaseRequestItem]:
+    return (
+        await db.execute(
+            select(m.PurchaseRequestItem).where(
+                m.PurchaseRequestItem.tenant_id == tenant_id,
+                m.PurchaseRequestItem.purchase_request_id == request_id,
+            )
+        )
+    ).scalars().all()
+
+
+async def serialize_request(db: AsyncSession, req: m.PurchaseRequest) -> dict:
+    items = await list_request_items(db, req.tenant_id, req.id)
+    return {
+        "id": req.id,
+        "request_number": req.request_number,
+        "request_date": req.request_date,
+        "required_date": req.required_date,
+        "warehouse_id": req.warehouse_id,
+        "status": req.status,
+        "notes": req.notes,
+        "created_by": req.created_by,
+        "approved_by": req.approved_by,
+        "converted_po_id": req.converted_po_id,
+        "created_at": req.created_at,
+        "items": [
+            {
+                "id": i.id,
+                "product_id": i.product_id,
+                "variant_id": i.variant_id,
+                "quantity": float(i.quantity),
+                "notes": i.notes,
+            }
+            for i in items
+        ],
+    }
+
+
+async def create_purchase_request(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    items: list[dict],
+    warehouse_id: str | None = None,
+    required_date: datetime | None = None,
+    notes: str | None = None,
+) -> m.PurchaseRequest:
+    if not items:
+        raise HTTPException(status_code=400, detail="Purchase request requires at least one line item")
+    if warehouse_id:
+        warehouse = (
+            await db.execute(
+                select(m.Warehouse).where(
+                    m.Warehouse.id == warehouse_id,
+                    m.Warehouse.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not warehouse:
+            raise HTTPException(status_code=404, detail="Warehouse not found")
+
+    prepared: list[dict] = []
+    for item in items:
+        product = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.id == item["product_id"],
+                    m.Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+        qty = float(item["quantity"])
+        if qty <= 0:
+            raise HTTPException(status_code=400, detail="Request quantity must be positive")
+        variant_id = item.get("variant_id")
+        if variant_id:
+            variant = (
+                await db.execute(
+                    select(m.ProductVariant).where(
+                        m.ProductVariant.id == variant_id,
+                        m.ProductVariant.tenant_id == tenant_id,
+                        m.ProductVariant.product_id == product.id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if not variant:
+                raise HTTPException(status_code=404, detail="Product variant not found")
+        prepared.append(item)
+
+    req = m.PurchaseRequest(
+        tenant_id=tenant_id,
+        request_number=f"PR-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        request_date=datetime.utcnow(),
+        required_date=required_date,
+        warehouse_id=warehouse_id,
+        status="pending",
+        notes=notes,
+        created_by=user_id,
+    )
+    db.add(req)
+    await db.flush()
+    for item in prepared:
+        db.add(
+            m.PurchaseRequestItem(
+                tenant_id=tenant_id,
+                purchase_request_id=req.id,
+                product_id=item["product_id"],
+                variant_id=item.get("variant_id"),
+                quantity=item["quantity"],
+                notes=item.get("notes"),
+            )
+        )
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="purchasing",
+        action="purchase_request_created",
+        entity="purchase_request",
+        entity_id=req.id,
+        details={"request_number": req.request_number},
+    )
+    return req
+
+
+async def approve_purchase_request(
+    db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
+) -> m.PurchaseRequest:
+    req = await get_purchase_request(db, tenant_id, request_id)
+    if req.status not in REQUEST_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot approve request in status {req.status}")
+    req.status = "approved"
+    req.approved_by = user_id
+    req.updated_at = datetime.utcnow()
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="purchasing",
+        action="purchase_request_approved",
+        entity="purchase_request",
+        entity_id=req.id,
+        details={"request_number": req.request_number},
+    )
+    return req
+
+
+async def reject_purchase_request(
+    db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str, reason: str | None = None
+) -> m.PurchaseRequest:
+    req = await get_purchase_request(db, tenant_id, request_id)
+    if req.status not in REQUEST_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot reject request in status {req.status}")
+    req.status = "rejected"
+    req.approved_by = user_id
+    req.updated_at = datetime.utcnow()
+    if reason:
+        req.notes = f"{req.notes or ''}\nRejected: {reason}".strip()
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="purchasing",
+        action="purchase_request_rejected",
+        entity="purchase_request",
+        entity_id=req.id,
+        details={"request_number": req.request_number, "reason": reason},
+    )
+    return req
+
+
+async def convert_purchase_request_to_po(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    request_id: str,
+    supplier_id: str,
+    item_prices: dict[str, dict] | None = None,
+) -> tuple[m.PurchaseRequest, m.PurchaseOrder]:
+    req = await get_purchase_request(db, tenant_id, request_id)
+    if req.status not in REQUEST_CONVERTIBLE:
+        raise HTTPException(status_code=409, detail=f"Cannot convert request in status {req.status}")
+    items = await list_request_items(db, tenant_id, req.id)
+    if not items:
+        raise HTTPException(status_code=400, detail="Cannot convert empty purchase request")
+
+    prices = item_prices or {}
+    po_items: list[dict] = []
+    for item in items:
+        product = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.id == item.product_id,
+                    m.Product.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one()
+        override = prices.get(item.id) or prices.get(item.product_id) or {}
+        po_items.append(
+            {
+                "product_id": item.product_id,
+                "quantity": float(item.quantity),
+                "unit_price": float(override.get("unit_price", product.cost_price or 0)),
+                "tax_rate": float(override.get("tax_rate", 0)),
+            }
+        )
+
+    po = await create_purchase_order(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        supplier_id=supplier_id,
+        warehouse_id=req.warehouse_id,
+        notes=req.notes,
+        items=po_items,
+    )
+    req.status = "converted"
+    req.converted_po_id = po.id
+    req.updated_at = datetime.utcnow()
+    from app import audit as audit_svc
+
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="purchasing",
+        action="purchase_request_converted",
+        entity="purchase_request",
+        entity_id=req.id,
+        details={"request_number": req.request_number, "po_id": po.id, "po_number": po.po_number},
+    )
+    return req, po
 
 
 async def send_purchase_order(db: AsyncSession, *, tenant_id: str, user_id: str, po_id: str) -> m.PurchaseOrder:

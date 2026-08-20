@@ -288,6 +288,39 @@ class StockTransferCreate(BaseModel):
     items: list[StockTransferItemCreate] = Field(min_length=1)
 
 
+class StockCountCreate(BaseModel):
+    warehouse_id: str
+    product_ids: list[str] | None = None
+    notes: str | None = None
+
+
+class StockCountItemUpdate(BaseModel):
+    actual_qty: float = Field(ge=0)
+    notes: str | None = None
+
+
+class StockCountComplete(BaseModel):
+    treat_uncounted_as_expected: bool = True
+
+
+class PurchaseRequestItemCreate(BaseModel):
+    product_id: str
+    quantity: float = Field(gt=0)
+    variant_id: str | None = None
+    notes: str | None = None
+
+
+class PurchaseRequestCreate(BaseModel):
+    warehouse_id: str | None = None
+    required_date: datetime | None = None
+    notes: str | None = None
+    items: list[PurchaseRequestItemCreate] = Field(min_length=1)
+
+
+class PurchaseRequestReject(BaseModel):
+    reason: str | None = None
+
+
 class TaxCreate(BaseModel):
     name: str
     rate: float = Field(ge=0)
@@ -334,6 +367,11 @@ class PurchaseOrderCreate(BaseModel):
     warehouse_id: str | None = None
     notes: str | None = None
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
+
+
+class PurchaseRequestConvert(BaseModel):
+    supplier_id: str
+    items: list[PurchaseOrderItemCreate] | None = None
 
 
 class GrnItemCreate(BaseModel):

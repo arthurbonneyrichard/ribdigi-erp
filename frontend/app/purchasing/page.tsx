@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'orders' | 'grn' | 'invoices' | 'returns';
+type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
 type Supplier = { id: string; name: string };
 type Product = { id: string; name: string; sku: string; cost_price: number };
 type PoItem = {
@@ -46,7 +46,13 @@ type PurchaseReturn = {
   reason: string;
   total_amount: number;
 };
-type PurchaseInvoice = {
+type PurchaseRequest = {
+  id: string;
+  request_number: string;
+  status: string;
+  converted_po_id?: string | null;
+  items: { id: string; product_id: string; quantity: number }[];
+};
   id: string;
   invoice_number: string;
   supplier_invoice_number?: string;
@@ -66,6 +72,7 @@ type PurchaseInvoice = {
 export default function Page() {
   const [tab, setTab] = useState<Tab>('orders');
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
@@ -100,8 +107,9 @@ export default function Page() {
   const [error, setError] = useState('');
 
   async function refresh() {
-    const [poRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
+    const [poRes, reqRes, supRes, prodRes, grnRes, invRes, retRes] = await Promise.all([
       api('/purchasing/orders'),
+      api('/purchasing/requests'),
       api('/suppliers'),
       api('/products'),
       api('/purchasing/grn'),
@@ -109,6 +117,7 @@ export default function Page() {
       api('/purchasing/returns'),
     ]);
     setOrders(poRes.data || []);
+    setRequests(reqRes.data || []);
     setSuppliers(supRes.data || []);
     setProducts(prodRes.data || []);
     setGrns(grnRes.data || []);
@@ -178,6 +187,65 @@ export default function Page() {
       await refresh();
       setSelected(r.data);
       setTab('orders');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function createRequest() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/purchasing/requests', {
+        method: 'POST',
+        body: JSON.stringify({
+          notes: 'Restock request',
+          items: [{ product_id: productId, quantity: Number(qty) }],
+        }),
+      });
+      setMessage(`Created ${r.data.request_number}`);
+      setTab('requests');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function approveRequest(id: string) {
+    setError('');
+    try {
+      await api(`/purchasing/requests/${id}/approve`, { method: 'POST', body: '{}' });
+      setMessage('Request approved');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function rejectRequest(id: string) {
+    setError('');
+    try {
+      await api(`/purchasing/requests/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Rejected from purchasing' }),
+      });
+      setMessage('Request rejected');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function convertRequest(id: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/requests/${id}/convert`, {
+        method: 'POST',
+        body: JSON.stringify({ supplier_id: supplierId }),
+      });
+      setMessage(`Converted to ${r.data.purchase_order.po_number}`);
+      setTab('orders');
+      await refresh();
     } catch (err: any) {
       setError(err.message);
     }
@@ -421,13 +489,14 @@ export default function Page() {
   return (
     <Shell>
       <h1>Purchasing</h1>
-      <p className="muted">Purchase orders → GRN → invoices → returns</p>
+      <p className="muted">Requests → purchase orders → GRN → invoices → returns</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {(
           [
+            ['requests', 'Requests'],
             ['orders', 'Orders'],
             ['grn', 'GRNs'],
             ['invoices', 'Invoices'],
@@ -473,6 +542,9 @@ export default function Page() {
           <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
           <button onClick={createPo} disabled={!supplierId || !productId}>
             Create draft PO
+          </button>
+          <button onClick={createRequest} disabled={!productId}>
+            Create purchase request
           </button>
         </div>
       </div>
@@ -572,6 +644,43 @@ export default function Page() {
           </button>
         </div>
       </div>
+
+      {tab === 'requests' && (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Request</th>
+              <th>Status</th>
+              <th>Lines</th>
+              <th>PO</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map((req) => (
+              <tr key={req.id}>
+                <td>{req.request_number}</td>
+                <td>{req.status}</td>
+                <td>{req.items?.length || 0}</td>
+                <td>{req.converted_po_id || '—'}</td>
+                <td>
+                  {req.status === 'pending' && (
+                    <>
+                      <button onClick={() => approveRequest(req.id)}>Approve</button>
+                      <button onClick={() => rejectRequest(req.id)}>Reject</button>
+                    </>
+                  )}
+                  {req.status === 'approved' && (
+                    <button onClick={() => convertRequest(req.id)} disabled={!supplierId}>
+                      Convert to PO
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       {tab === 'orders' && (
         <>

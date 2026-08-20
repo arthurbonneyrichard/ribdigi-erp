@@ -30,6 +30,7 @@ from app import tenants as tenants_svc
 from app import storage as storage_svc
 from app import cheques as cheques_svc
 from app import catalog_meta as catalog_meta_svc
+from app import stock_counts as stock_counts_svc
 from app.config import settings
 from app.schemas import (
     BrandCreate,
@@ -63,6 +64,9 @@ from app.schemas import (
     ProductVariantCreate,
     ProfileUpdate,
     PurchaseOrderCreate,
+    PurchaseRequestConvert,
+    PurchaseRequestCreate,
+    PurchaseRequestReject,
     UnitOfMeasureCreate,
     PurchaseInvoiceCreate,
     PurchaseInvoiceUpdate,
@@ -77,6 +81,9 @@ from app.schemas import (
     StockAdjust,
     StockMove,
     StockTransferCreate,
+    StockCountComplete,
+    StockCountCreate,
+    StockCountItemUpdate,
     StoreCreate,
     StoreDrawerSettingsUpdate,
     StoreReorderPolicyUpdate,
@@ -1644,6 +1651,116 @@ async def movements(claims=Depends(require_permission("inventory", "read")), db:
     return env(rows)
 
 
+@api.get("/inventory/stock-counts")
+async def list_stock_counts(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = (
+        await db.execute(
+            select(m.StockCount)
+            .where(m.StockCount.tenant_id == claims["tenant_id"])
+            .order_by(m.StockCount.created_at.desc())
+        )
+    ).scalars().all()
+    return env([await stock_counts_svc.serialize_count(db, row) for row in rows])
+
+
+@api.post("/inventory/stock-counts")
+async def create_stock_count(
+    payload: StockCountCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.create_stock_count(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=payload.warehouse_id,
+        product_ids=payload.product_ids,
+        notes=payload.notes,
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Stock count created")
+
+
+@api.get("/inventory/stock-counts/{count_id}")
+async def get_stock_count(
+    count_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.get_count(db, claims["tenant_id"], count_id)
+    return env(await stock_counts_svc.serialize_count(db, count))
+
+
+@api.post("/inventory/stock-counts/{count_id}/start")
+async def start_stock_count(
+    count_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.start_stock_count(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], count_id=count_id
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Stock count started")
+
+
+@api.patch("/inventory/stock-counts/{count_id}/items/{item_id}")
+async def update_stock_count_item(
+    count_id: str,
+    item_id: str,
+    payload: StockCountItemUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await stock_counts_svc.set_count_item_actual(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        count_id=count_id,
+        item_id=item_id,
+        actual_qty=float(payload.actual_qty),
+        notes=payload.notes,
+    )
+    await db.commit()
+    count = await stock_counts_svc.get_count(db, claims["tenant_id"], count_id)
+    return env(await stock_counts_svc.serialize_count(db, count), "Count line updated")
+
+
+@api.post("/inventory/stock-counts/{count_id}/complete")
+async def complete_stock_count(
+    count_id: str,
+    payload: StockCountComplete | None = None,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    treat = True if payload is None else payload.treat_uncounted_as_expected
+    count = await stock_counts_svc.complete_stock_count(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        count_id=count_id,
+        treat_uncounted_as_expected=treat,
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Stock count completed")
+
+
+@api.post("/inventory/stock-counts/{count_id}/cancel")
+async def cancel_stock_count(
+    count_id: str,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await stock_counts_svc.cancel_stock_count(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], count_id=count_id
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Stock count cancelled")
+
+
 @api.post("/inventory/adjust/{product_id}")
 async def adjust(
     product_id: str,
@@ -2294,6 +2411,109 @@ async def list_purchase_orders(
         )
     ).scalars().all()
     return env([await purchasing_svc.serialize_po(db, po) for po in rows])
+
+
+@api.get("/purchasing/requests")
+async def list_purchase_requests(
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = (
+        await db.execute(
+            select(m.PurchaseRequest)
+            .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
+            .order_by(m.PurchaseRequest.created_at.desc())
+        )
+    ).scalars().all()
+    return env([await purchasing_svc.serialize_request(db, row) for row in rows])
+
+
+@api.post("/purchasing/requests")
+async def create_purchase_request(
+    payload: PurchaseRequestCreate,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    req = await purchasing_svc.create_purchase_request(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=payload.warehouse_id,
+        required_date=payload.required_date,
+        notes=payload.notes,
+        items=[i.model_dump() for i in payload.items],
+    )
+    await db.commit()
+    return env(await purchasing_svc.serialize_request(db, req), "Purchase request created")
+
+
+@api.get("/purchasing/requests/{request_id}")
+async def get_purchase_request(
+    request_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    req = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
+    return env(await purchasing_svc.serialize_request(db, req))
+
+
+@api.post("/purchasing/requests/{request_id}/approve")
+async def approve_purchase_request(
+    request_id: str,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    req = await purchasing_svc.approve_purchase_request(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
+    )
+    await db.commit()
+    return env(await purchasing_svc.serialize_request(db, req), "Purchase request approved")
+
+
+@api.post("/purchasing/requests/{request_id}/reject")
+async def reject_purchase_request(
+    request_id: str,
+    payload: PurchaseRequestReject | None = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    req = await purchasing_svc.reject_purchase_request(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        request_id=request_id,
+        reason=None if payload is None else payload.reason,
+    )
+    await db.commit()
+    return env(await purchasing_svc.serialize_request(db, req), "Purchase request rejected")
+
+
+@api.post("/purchasing/requests/{request_id}/convert")
+async def convert_purchase_request(
+    request_id: str,
+    payload: PurchaseRequestConvert,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    prices = None
+    if payload.items:
+        prices = {i.product_id: {"unit_price": i.unit_price, "tax_rate": i.tax_rate} for i in payload.items}
+    req, po = await purchasing_svc.convert_purchase_request_to_po(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        request_id=request_id,
+        supplier_id=payload.supplier_id,
+        item_prices=prices,
+    )
+    await db.commit()
+    return env(
+        {
+            "request": await purchasing_svc.serialize_request(db, req),
+            "purchase_order": await purchasing_svc.serialize_po(db, po),
+        },
+        "Purchase request converted to PO",
+    )
 
 
 @api.post("/purchasing/orders")

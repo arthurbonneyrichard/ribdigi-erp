@@ -278,6 +278,42 @@ class StockMovement(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class StockCount(Base):
+    """Physical inventory count per warehouse."""
+
+    __tablename__ = "stock_counts"
+    __table_args__ = (UniqueConstraint("tenant_id", "count_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    count_number: Mapped[str] = mapped_column(String(50), index=True)
+    warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
+    # draft -> in_progress -> completed | cancelled
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    counted_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class StockCountItem(Base):
+    __tablename__ = "stock_count_items"
+    __table_args__ = (UniqueConstraint("stock_count_id", "product_id", "variant_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    stock_count_id: Mapped[str] = mapped_column(ForeignKey("stock_counts.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
+    expected_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    actual_qty: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    difference: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Party(Base):
     __tablename__ = "parties"
 
@@ -561,6 +597,39 @@ class AuditLog(Base):
     prev_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     integrity_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class PurchaseRequest(Base):
+    __tablename__ = "purchase_requests"
+    __table_args__ = (UniqueConstraint("tenant_id", "request_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    request_number: Mapped[str] = mapped_column(String(50), index=True)
+    request_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    required_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True)
+    # pending -> approved | rejected | converted
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    converted_po_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PurchaseRequestItem(Base):
+    __tablename__ = "purchase_request_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    purchase_request_id: Mapped[str] = mapped_column(ForeignKey("purchase_requests.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PurchaseOrder(Base):

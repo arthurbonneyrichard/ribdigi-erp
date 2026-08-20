@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
-type Tab = 'products' | 'catalog' | 'variants' | 'batches' | 'expiry';
+type Tab = 'products' | 'catalog' | 'variants' | 'batches' | 'expiry' | 'counts';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -18,6 +18,11 @@ export default function Page() {
   const [variants, setVariants] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [expiring, setExpiring] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [counts, setCounts] = useState<any[]>([]);
+  const [selectedCountId, setSelectedCountId] = useState('');
+  const [countWarehouseId, setCountWarehouseId] = useState('');
+  const [countActuals, setCountActuals] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -44,19 +49,25 @@ export default function Page() {
   const [stockQty, setStockQty] = useState('10');
 
   async function refresh() {
-    const [p, e, c, b, u] = await Promise.all([
+    const [p, e, c, b, u, w, countsRes] = await Promise.all([
       api('/products'),
       api('/inventory/batches/expiring?days=60'),
       api('/catalog/categories'),
       api('/catalog/brands'),
       api('/catalog/units'),
+      api('/warehouses'),
+      api('/inventory/stock-counts'),
     ]);
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
     setCategories(c.data || []);
     setBrands(b.data || []);
     setUnits(u.data || []);
+    setWarehouses(w.data || []);
+    setCounts(countsRes.data || []);
     if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
+    if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
+    if (!selectedCountId && countsRes.data?.length) setSelectedCountId(countsRes.data[0].id);
   }
 
   async function refreshSelected(id: string) {
@@ -172,12 +183,83 @@ export default function Page() {
     }
   }
 
+  async function createCount() {
+    setError('');
+    try {
+      const r = await api('/inventory/stock-counts', {
+        method: 'POST',
+        body: JSON.stringify({
+          warehouse_id: countWarehouseId,
+          product_ids: selectedId ? [selectedId] : undefined,
+        }),
+      });
+      setMessage(`Created ${r.data.count_number}`);
+      setSelectedCountId(r.data.id);
+      setTab('counts');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function startCount(id: string) {
+    setError('');
+    try {
+      await api(`/inventory/stock-counts/${id}/start`, { method: 'POST', body: '{}' });
+      setMessage('Count started');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveCountActual(countId: string, itemId: string) {
+    setError('');
+    try {
+      const qty = Number(countActuals[itemId]);
+      await api(`/inventory/stock-counts/${countId}/items/${itemId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ actual_qty: qty }),
+      });
+      setMessage('Count line saved');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function completeCount(id: string) {
+    setError('');
+    try {
+      const r = await api(`/inventory/stock-counts/${id}/complete`, {
+        method: 'POST',
+        body: JSON.stringify({ treat_uncounted_as_expected: true }),
+      });
+      setMessage(`Completed ${r.data.count_number} — ${r.data.variance_item_count} variance line(s)`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function cancelCount(id: string) {
+    setError('');
+    try {
+      await api(`/inventory/stock-counts/${id}/cancel`, { method: 'POST', body: '{}' });
+      setMessage('Count cancelled');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   const selected = products.find((p) => p.id === selectedId);
+  const selectedCount = counts.find((c) => c.id === selectedCountId);
 
   return (
     <Shell>
       <h1>Inventory</h1>
-      <p className="muted">Products, catalog, variants, batches &amp; expiry</p>
+      <p className="muted">Products, catalog, variants, batches, expiry &amp; physical counts</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
@@ -189,6 +271,7 @@ export default function Page() {
             ['variants', 'Variants'],
             ['batches', 'Batches'],
             ['expiry', 'Expiring'],
+            ['counts', 'Stock counts'],
           ] as const
         ).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
@@ -497,6 +580,109 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {tab === 'counts' && (
+        <>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>
+            <h3>Start physical count</h3>
+            <select value={countWarehouseId} onChange={(e) => setCountWarehouseId(e.target.value)}>
+              <option value="">Warehouse</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.code} — {w.name}
+                </option>
+              ))}
+            </select>
+            <p className="muted">Uses the selected product when one is chosen; otherwise all active products.</p>
+            <button onClick={createCount} disabled={!countWarehouseId}>
+              Create count
+            </button>
+          </div>
+          <table className="table" style={{ marginBottom: 16 }}>
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>Items</th>
+                <th>Variances</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {counts.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <button
+                      onClick={() => setSelectedCountId(c.id)}
+                      style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                    >
+                      {c.count_number}
+                    </button>
+                  </td>
+                  <td>{c.status}</td>
+                  <td>
+                    {c.counted_item_count}/{c.item_count}
+                  </td>
+                  <td>{c.variance_item_count}</td>
+                  <td>
+                    {c.status === 'draft' && <button onClick={() => startCount(c.id)}>Start</button>}
+                    {(c.status === 'draft' || c.status === 'in_progress') && (
+                      <>
+                        <button onClick={() => completeCount(c.id)}>Complete</button>
+                        <button onClick={() => cancelCount(c.id)}>Cancel</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {selectedCount && (
+            <div className="card">
+              <h3>
+                {selectedCount.count_number} — {selectedCount.status}
+              </h3>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Expected</th>
+                    <th>Actual</th>
+                    <th>Difference</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(selectedCount.items || []).map((item: any) => {
+                    const product = products.find((p) => p.id === item.product_id);
+                    return (
+                      <tr key={item.id}>
+                        <td>{product ? `${product.name} (${product.sku})` : item.product_id}</td>
+                        <td>{item.expected_qty}</td>
+                        <td>
+                          <input
+                            value={countActuals[item.id] ?? (item.actual_qty ?? '')}
+                            onChange={(e) =>
+                              setCountActuals((prev) => ({ ...prev, [item.id]: e.target.value }))
+                            }
+                            disabled={selectedCount.status === 'completed' || selectedCount.status === 'cancelled'}
+                          />
+                        </td>
+                        <td>{item.difference ?? '—'}</td>
+                        <td>
+                          {(selectedCount.status === 'draft' || selectedCount.status === 'in_progress') && (
+                            <button onClick={() => saveCountActual(selectedCount.id, item.id)}>Save</button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </Shell>
   );
