@@ -31,3 +31,7 @@ Stage 3275 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Asukaakajiyuglaze Gate, Transfer Asukaakajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3275 opened under **ADR-6557** after CONTINUE/NEXT (Tenant MVP Transfer Asukaasajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6558**. Stage 3274 feature scope remains frozen.
