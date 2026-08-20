@@ -31,3 +31,7 @@ Stage 3933 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseijisajiyuglaze Gate, Transfer Kanseijisajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3933 opened under **ADR-7873** after CONTINUE/NEXT (Tenant MVP Transfer Kanseijitajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7874**. Stage 3932 feature scope remains frozen.
