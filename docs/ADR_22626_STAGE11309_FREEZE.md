@@ -31,3 +31,7 @@ Stage 11310 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiddkajiyuglaze Gate, Transfer Yayoiddkajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11310 opened under **ADR-22627** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiddsajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-22628**. Stage 11309 feature scope remains frozen.
