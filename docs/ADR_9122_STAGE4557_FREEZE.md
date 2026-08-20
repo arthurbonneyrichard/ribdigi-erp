@@ -31,3 +31,7 @@ Stage 4558 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachigajiyuglaze Gate, Transfer Muromachigajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4558 opened under **ADR-9123** after CONTINUE/NEXT (Tenant MVP Transfer Muromachikyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9124**. Stage 4557 feature scope remains frozen.
