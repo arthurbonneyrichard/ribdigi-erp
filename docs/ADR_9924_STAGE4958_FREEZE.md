@@ -31,3 +31,7 @@ Stage 4959 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchiaakyajiyuglaze Gate, Transfer Azuchiaakyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4959 opened under **ADR-9925** after CONTINUE/NEXT (Tenant MVP Transfer Azuchiaagyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9926**. Stage 4958 feature scope remains frozen.
