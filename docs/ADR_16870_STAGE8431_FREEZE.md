@@ -31,3 +31,7 @@ Stage 8432 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseiccdajiyuglaze Gate, Transfer Bunseiccdajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8432 opened under **ADR-16871** after CONTINUE/NEXT (Tenant MVP Transfer Bunseiccbajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16872**. Stage 8431 feature scope remains frozen.
