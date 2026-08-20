@@ -31,3 +31,7 @@ Stage 1790 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunjiyuglaze Gate, Transfer Kofunjiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1790 opened under **ADR-3587** after CONTINUE/NEXT (Tenant MVP Transfer Azuchijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3588**. Stage 1789 feature scope remains frozen.
