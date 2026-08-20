@@ -31,3 +31,7 @@ Stage 8256 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowaffnyajiyuglaze Gate, Transfer Kyowaffnyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8256 opened under **ADR-16519** after CONTINUE/NEXT (Tenant MVP Transfer Bunkabbaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16520**. Stage 8255 feature scope remains frozen.
