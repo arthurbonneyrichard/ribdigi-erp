@@ -31,3 +31,7 @@ Stage 1796 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokujiyuglaze Gate, Transfer Genrokujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1796 opened under **ADR-3599** after CONTINUE/NEXT (Tenant MVP Transfer Tenpojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3600**. Stage 1795 feature scope remains frozen.
