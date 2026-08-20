@@ -31,3 +31,7 @@ Stage 9918 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heiseieekyajiyuglaze Gate, Transfer Heiseieekyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9918 opened under **ADR-19843** after CONTINUE/NEXT (Tenant MVP Transfer Heiseieegyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19844**. Stage 9917 feature scope remains frozen.
