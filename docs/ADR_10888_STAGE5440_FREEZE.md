@@ -31,3 +31,7 @@ Stage 5441 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsujizajiyuglaze Gate, Transfer Bakumatsujizajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5441 opened under **ADR-10889** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsujidajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10890**. Stage 5440 feature scope remains frozen.
