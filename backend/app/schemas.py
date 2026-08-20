@@ -1729,9 +1729,17 @@ class StoreDrawerSettingsUpdate(BaseModel):
 
 
 class PosDrawerOpen(BaseModel):
-    """Manual drawer open — cashier must supply a specific reason (not blank / not 'manual')."""
+    """Manual drawer open — cashier must supply a specific reason (BR-8.1 honesty).
 
-    reason: str = Field(min_length=1, max_length=200)
+    `reason` ∈ PosDrawerOpenReasonValue (strip; 3–200; ≥1 letter/digit; no `://`/`@`;
+    rejects placeholders `manual`/`n/a`/`na`/`none`/`test`); omit/blank/`!!!`/
+    `http://…`/placeholder → **422** (was free `str` with `min_length=1` only —
+    whitespace/placeholders still reached service **400**; punctuation-only /
+    URL-like garbage could be logged on drawer open). Auto-open on cash sale
+    bypasses this body (internal `pos_sale:{id}`).
+    """
+
+    reason: PosDrawerOpenReasonValue
 
 
 class StoreReorderPolicyUpdate(BaseModel):
@@ -4989,6 +4997,30 @@ StockCountCancelReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_count_cancel_reason_value),
+]
+
+
+_POS_DRAWER_PLACEHOLDER_REASONS = frozenset({"manual", "n/a", "na", "none", "test"})
+
+
+def validate_pos_drawer_open_reason_value(value: str) -> str:
+    """AfterValidator: POS manual drawer open reason; blank/URL/garbage/placeholder → 422 (3–200)."""
+    if not value or len(value) < 3 or len(value) > 200:
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    if value.lower() in _POS_DRAWER_PLACEHOLDER_REASONS:
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    return value
+
+
+# POS manual drawer open reason — POST /pos/sessions/{id}/drawer/open (BR-8.1).
+PosDrawerOpenReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_pos_drawer_open_reason_value),
 ]
 
 

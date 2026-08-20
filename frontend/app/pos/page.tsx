@@ -901,11 +901,13 @@ export default function Page() {
                   maxLength={200}
                   autoComplete="off"
                   aria-label="Cash drawer open reason"
+                  title="Specific drawer reason (3–200 chars; not manual/n/a)"
                   style={{ minWidth: 200 }}
                 />
                 <button
                   type="button"
                   className="tpos-btn"
+                  aria-label="Open cash drawer"
                   onClick={async () => {
                     setError('');
                     const cleaned = drawerReason.trim();
