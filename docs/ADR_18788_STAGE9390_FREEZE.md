@@ -31,3 +31,7 @@ Stage 9391 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keioeemajiyuglaze Gate, Transfer Keioeemajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9391 opened under **ADR-18789** after CONTINUE/NEXT (Tenant MVP Transfer Keioeerajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18790**. Stage 9390 feature scope remains frozen.
