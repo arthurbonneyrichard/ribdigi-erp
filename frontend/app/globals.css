@@ -48,7 +48,7 @@
 .st-grace{background:#ffedd5;color:#c2410c}
 .st-suspended{background:#fee2e2;color:#b91c1c}
 
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .stat{position:relative;overflow:hidden;background:var(--white);border-radius:16px;padding:18px;
   box-shadow:0 6px 18px #00302417;border:1px solid var(--line);transition:transform .15s ease,box-shadow .15s ease}
 .stat:hover{transform:translateY(-3px);box-shadow:0 12px 26px #0030241f}
@@ -62,9 +62,7 @@
 .stat.s-exp .ico{background:#fee2e2;color:#b91c1c}.stat.s-exp .rail{background:#fb7185}
 .stat.s-net .ico{background:#ede9fe;color:#6d28d9}.stat.s-net .rail{background:#8b5cf6}
 
-.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-@media(max-width:1100px){.info-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:680px){.info-grid{grid-template-columns:1fr}}
+.info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .panel{background:var(--white);border-radius:16px;padding:20px;box-shadow:0 6px 18px #00302417;border:1px solid var(--line)}
 .panel h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:9px}
 .panel-ico{color:var(--muted);flex:0 0 auto}
@@ -704,8 +702,57 @@
 [data-theme="dark"] .notif-chip{background:var(--ink);border-color:var(--muted);color:var(--line)}
 [data-theme="dark"] .notif-chip.active,[data-theme="dark"] .notif-chip:hover{background:#1e1b4b;border-color:var(--brand);color:#c7d2fe}
 
-/* ---------- Phone / narrow layout (any handset width) ---------- */
-@media(max-width:800px){
+/* ---------- Responsive: phone ≤900 · tablet 901–1200 · laptop ≥1201 ---------- */
+
+/* Laptop+ defaults already use 4-col stats / 3-col info */
+
+/* Tablet + small laptop: slim sidebar, 2×2 KPIs (no orphan 3+1 row), 2-col charts */
+@media(max-width:1200px){
+  .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+}
+
+@media(min-width:901px) and (max-width:1200px){
+  .side{flex:0 0 200px;width:200px;padding:10px 10px 14px}
+  .brand{min-height:64px;padding:8px;margin-bottom:12px}
+  .brand-logo{max-height:40px}
+  .brand-name{font-size:12px}
+  .nav a{font-size:14px;padding:9px 10px;gap:9px}
+  .nav-ico{width:20px}
+  .main{padding:20px 18px}
+  .topbar{flex-wrap:nowrap;gap:10px;align-items:center}
+  .topbar-left{flex:0 0 auto}
+  .topbar-context{flex:1 1 auto;justify-content:flex-end;min-width:0}
+  .topbar-right{flex:0 0 auto;flex-wrap:nowrap;gap:8px}
+  .store-switcher{max-width:100%}
+  .store-switcher-select,.main .store-switcher-select{max-width:min(220px,36vw)}
+  .uname{max-width:7rem}
+  .dash{gap:18px}
+  .dash-hero{padding:24px 22px}
+  .greet{font-size:26px}
+  .stat .val{font-size:24px}
+  .panel{padding:16px}
+  .plat-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .plat-hero{padding:22px 20px}
+  .plat-hero h1{font-size:24px}
+}
+
+/* Wide laptop / desktop: keep 4 KPI columns + comfortable padding */
+@media(min-width:1201px){
+  .stat-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .info-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .main{padding:28px}
+}
+
+@media(min-width:1440px){
+  .main{padding:28px 32px}
+  .dash{gap:24px}
+  .dash-hero{padding:30px 32px}
+}
+
+/* Phone + tablet portrait: drawer nav, stacked topbar */
+@media(max-width:900px){
   .shell{display:block;height:auto;max-height:none;overflow-x:hidden;overflow-y:visible}
   .side{
     position:fixed;top:0;left:0;bottom:0;flex:none;width:min(280px,86vw);height:100vh;max-height:100dvh;
@@ -751,7 +798,6 @@
   .userchip{padding:4px 8px 4px 4px}
   .uname{max-width:5.5rem}
 
-  /* Dashboard */
   .dash{gap:14px}
   .dash-hero{padding:18px 16px;border-radius:16px}
   .dash-hero .sun{width:88px;height:88px;top:-28px;right:-8px;opacity:.65}
@@ -776,9 +822,14 @@
   .bell-panel{right:auto;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 20px))}
 }
 
-@media(min-width:480px) and (max-width:800px){
+/* Phablet / tablet portrait in drawer mode: keep 2-col cards */
+@media(min-width:480px) and (max-width:900px){
   .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .plat-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dash-hero{padding:22px 20px}
+  .greet{font-size:24px;padding-right:96px}
+  .dash-hero .sun{width:110px;height:110px;opacity:.75}
 }
 
 .bell-ico,.logout-ico{display:none;line-height:1}
@@ -793,6 +844,7 @@
   .greet{font-size:20px;padding-right:56px}
   .dash-hero .sun{width:72px;height:72px}
   .plat-stats{grid-template-columns:1fr 1fr}
+  .info-grid{grid-template-columns:1fr}
 }
 
 @media(max-width:360px){
