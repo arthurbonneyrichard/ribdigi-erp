@@ -31,3 +31,7 @@ Stage 4064 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseijirajiyuglaze Gate, Transfer Anseijirajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4064 opened under **ADR-8135** after CONTINUE/NEXT (Tenant MVP Transfer Manenjiaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8136**. Stage 4063 feature scope remains frozen.
