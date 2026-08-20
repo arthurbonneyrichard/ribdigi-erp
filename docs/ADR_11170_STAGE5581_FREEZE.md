@@ -31,3 +31,7 @@ Stage 5582 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kitayamajioojiyuglaze Gate, Transfer Kitayamajioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5582 opened under **ADR-11171** after CONTINUE/NEXT (Tenant MVP Transfer Kitayamajiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11172**. Stage 5581 feature scope remains frozen.
