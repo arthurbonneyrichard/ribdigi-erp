@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 6384 track opened (ADR-12775: `test_stage6384_open.py`, `docs/STAGE_6384_PLAN.md`) — Transfer Bakumatsuaajiaajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-12776
+- [x] Transfer Bakumatsuaajiaajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 6384 I1: `test_stage6384_index_i1.py`, `docs/TRANSFER_BAKUMATSUAAJIAAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Bakumatsuaajiaajiyuglaze Gate Honesty Pack blocker matrix (Stage 6384 B1: `test_stage6384_blockers_b1.py`, `docs/TRANSFER_BAKUMATSUAAJIAAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 6383 / Stage 6382 / Stage 392 / CHANGE_IMPACT pointers (Stage 6384 P1: `test_stage6384_pointers_p1.py`, `docs/TRANSFER_BAKUMATSUAAJIAAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 6384 fidelity sync (D1: `test_stage6384_fidelity_d1.py`, `docs/STAGE_6384_FIDELITY.md`)
+- [x] Stage 6384 exit + freeze (H6384x: `test_stage6384_exit_h6384x.py`, `docs/STAGE_6384_EXIT_CRITERIA.md`, ADR-12776)
 Stage 6383 track opened (ADR-12773: `test_stage6383_open.py`, `docs/STAGE_6383_PLAN.md`) — Transfer Edoaajinyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-12774
 - [x] Transfer Edoaajinyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 6383 I1: `test_stage6383_index_i1.py`, `docs/TRANSFER_EDOAAJINYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Edoaajinyajiyuglaze Gate Honesty Pack blocker matrix (Stage 6383 B1: `test_stage6383_blockers_b1.py`, `docs/TRANSFER_EDOAAJINYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
