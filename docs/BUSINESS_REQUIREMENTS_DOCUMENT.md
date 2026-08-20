@@ -432,7 +432,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Supplier selection and delivery address (`purchase_orders.delivery_address` on create/amend/serialize + supplier email; Purchasing UI)
   - [x] PO status: Draft, Sent, Partially Received, Fully Received (`received`), Cancelled (`POST /purchasing/orders/{id}/cancel` `{ reason }` ∈ `PurchaseOrderCancelReasonValue` → notes + audit; omit/blank/garbage → **422**; `can_cancel`; Purchasing **Purchase order cancel reason** UI; blocked after any receipt)
   - [x] Print/email PO to supplier
-  - [x] PO amendment tracking (`POST /purchasing/orders/{id}/amend` `{ reason }` **required** → amendment row + audit `po_amended.details.reason`; Purchasing **Required amendment reason** UI; blocked after any receipt)
+  - [x] PO amendment tracking (`POST /purchasing/orders/{id}/amend` `{ reason }` ∈ `PurchaseOrderAmendReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/blank/garbage → **422**) → amendment row + audit `po_amended.details.reason`; Purchasing **Purchase order amend reason** UI (`aria-label`); blocked after any receipt)
 
 #### BR-6.4 Goods Received Note (GRN)
 - **Description:** Record goods received against PO.

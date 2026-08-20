@@ -1936,6 +1936,11 @@ class PurchaseOrderAmend(BaseModel):
     blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time;
     padded dates inconsistent). `clear_due_date=True` clears. API `reports.parse_date`
     remains defense-in-depth.
+
+    `reason` ∈ PurchaseOrderAmendReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on amendment history / audit).
     """
 
     items: list[PurchaseOrderItemCreate] | None = None
@@ -1947,8 +1952,7 @@ class PurchaseOrderAmend(BaseModel):
     delivery_address: AddressValue | None = None
     due_date: IsoDateQueryValue | None = None
     clear_due_date: bool = False
-    # Required typed reason (BR-6.3 honesty); no silent amend
-    reason: str = Field(min_length=1, max_length=500)
+    reason: PurchaseOrderAmendReasonValue
     notify_supplier: bool = False
     to: EmailStr | None = None
 
@@ -5090,6 +5094,27 @@ PurchaseOrderCancelReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_purchase_order_cancel_reason_value),
+]
+
+
+def validate_purchase_order_amend_reason_value(value: str) -> str:
+    """AfterValidator: purchase order amend reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase order amend reason — purchase_order_amendments.reason + audit po_amended (BR-6.3).
+PurchaseOrderAmendReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_order_amend_reason_value),
 ]
 
 

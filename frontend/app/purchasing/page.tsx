@@ -1981,7 +1981,11 @@ export default function Page() {
                       </button>
                     )}
                     {o.can_amend && (
-                      <button type="button" onClick={() => openAmend(o)}>
+                      <button
+                        type="button"
+                        onClick={() => openAmend(o)}
+                        aria-label={`Amend purchase order ${o.id}`}
+                      >
                         Amend
                       </button>
                     )}
@@ -2273,6 +2277,7 @@ export default function Page() {
                     value={amendQty}
                     onChange={(e) => setAmendQty(e.target.value)}
                     placeholder="Quantity"
+                    aria-label="PO amend quantity"
                   />
                   <input
                     value={amendPrice}
@@ -2312,6 +2317,8 @@ export default function Page() {
                     value={amendReason}
                     onChange={(e) => setAmendReason(e.target.value)}
                     placeholder="Required amendment reason"
+                    title="Required amendment reason (1–500 chars; letters/digits required)"
+                    aria-label="Purchase order amend reason"
                   />
                   <p className="muted" style={{ margin: 0 }}>
                     Required — stored on amendment history and audit (<code>po_amended.details.reason</code>).
@@ -2334,7 +2341,7 @@ export default function Page() {
                       aria-label="PO amend email override to"
                     />
                   )}
-                  <button type="button" onClick={amendPo}>
+                  <button type="button" onClick={amendPo} aria-label="Save purchase order amendment">
                     Save amendment
                   </button>
                 </div>

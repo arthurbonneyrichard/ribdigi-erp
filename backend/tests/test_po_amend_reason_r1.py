@@ -20,6 +20,9 @@ def test_po_amend_reason_ui_wired():
     page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "amendReason" in page
     assert "Required amendment reason" in page
+    assert 'aria-label="Purchase order amend reason"' in page
+    assert 'aria-label="Save purchase order amendment"' in page
+    assert "aria-label={`Amend purchase order ${o.id}`}" in page
     assert "Enter an amendment reason before saving" in page
     assert "reason: amendReason.trim() || null" not in page
     assert "reason," in page or "reason\n" in page
@@ -123,8 +126,7 @@ async def test_po_amend_requires_reason(client, db_session):
             ],
         },
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422
 
     ok = await ac.post(
         f"/api/v1/purchasing/orders/{po_id}/amend",
