@@ -31,3 +31,7 @@ Stage 8140 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowabbtajiyuglaze Gate, Transfer Kyowabbtajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8140 opened under **ADR-16287** after CONTINUE/NEXT (Tenant MVP Transfer Kyowabbnajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16288**. Stage 8139 feature scope remains frozen.
