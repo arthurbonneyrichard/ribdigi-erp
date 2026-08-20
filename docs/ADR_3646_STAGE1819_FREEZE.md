@@ -31,3 +31,7 @@ Stage 1820 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shohojiyuglaze Gate, Transfer Shohojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1820 opened under **ADR-3647** after CONTINUE/NEXT (Tenant MVP Transfer Keianjiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3648**. Stage 1819 feature scope remains frozen.
