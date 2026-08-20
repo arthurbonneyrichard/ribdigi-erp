@@ -31,3 +31,7 @@ Stage 6039 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwaaazajiyuglaze Gate, Transfer Tenwaaazajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6039 opened under **ADR-12085** after CONTINUE/NEXT (Tenant MVP Transfer Tenwaaadajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12086**. Stage 6038 feature scope remains frozen.
