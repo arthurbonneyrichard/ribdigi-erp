@@ -31,3 +31,7 @@ Stage 3445 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunaaoojiyuglaze Gate, Transfer Kofunaaoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3445 opened under **ADR-6897** after CONTINUE/NEXT (Tenant MVP Transfer Kofunaauujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6898**. Stage 3444 feature scope remains frozen.
