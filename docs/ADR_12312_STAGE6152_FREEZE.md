@@ -31,3 +31,7 @@ Stage 6153 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ritsuryoiijiyuglaze Gate, Transfer Ritsuryoiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6153 opened under **ADR-12313** after CONTINUE/NEXT (Tenant MVP Transfer Ritsuryooojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12314**. Stage 6152 feature scope remains frozen.
