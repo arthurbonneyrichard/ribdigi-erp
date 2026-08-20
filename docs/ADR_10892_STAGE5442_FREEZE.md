@@ -31,3 +31,7 @@ Stage 5443 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsujibajiyuglaze Gate, Transfer Bakumatsujibajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5443 opened under **ADR-10893** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsujipajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10894**. Stage 5442 feature scope remains frozen.
