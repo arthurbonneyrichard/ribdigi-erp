@@ -31,3 +31,7 @@ Stage 7094 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohobbojiyuglaze Gate, Transfer Kyohobbojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7094 opened under **ADR-14195** after CONTINUE/NEXT (Tenant MVP Transfer Kyohobbujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14196**. Stage 7093 feature scope remains frozen.
