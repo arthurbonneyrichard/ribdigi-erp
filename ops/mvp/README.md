@@ -1129,6 +1129,9 @@ Authoritative MVP docs:
 - `docs/STAGE_447_EXIT_CRITERIA.md` / `docs/ADR_902_STAGE447_FREEZE.md` (`backend/tests/test_stage447_exit_h447x.py`) — Stage 447 H447x
 - `docs/STAGE_447_FIDELITY.md` (`backend/tests/test_stage447_fidelity_d1.py`) — Stage 447 D1
 - `docs/STAGE_447_PLAN.md` (`backend/tests/test_stage447_open.py`) — Stage 447 open (ADR-901)
+- `docs/TRANSFER_KOUKAEEKAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/transfer-koukaeekajiyuglaze-gate-honesty-pack-remaining-gate.json` — Stage 8735 I1
+- `docs/TRANSFER_KOUKAEEKAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/transfer-koukaeekajiyuglaze-gate-honesty-pack-rg-blockers.json` — Stage 8735 B1
+- `docs/TRANSFER_KOUKAEEKAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/transfer-koukaeekajiyuglaze-gate-honesty-pack-rg-pointers.json` — Stage 8735 P1
 - `docs/TRANSFER_KOUKAEEWAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `ops/mvp/transfer-koukaeewajiyuglaze-gate-honesty-pack-remaining-gate.json` — Stage 8734 I1
 - `docs/TRANSFER_KOUKAEEWAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` / `ops/mvp/transfer-koukaeewajiyuglaze-gate-honesty-pack-rg-blockers.json` — Stage 8734 B1
 - `docs/TRANSFER_KOUKAEEWAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md` / `ops/mvp/transfer-koukaeewajiyuglaze-gate-honesty-pack-rg-pointers.json` — Stage 8734 P1
