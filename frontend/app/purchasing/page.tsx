@@ -1895,6 +1895,8 @@ export default function Page() {
                 value={poCancelReason}
                 onChange={(e) => setPoCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Purchase order cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1989,7 +1991,12 @@ export default function Page() {
                       </button>
                     )}
                     {o.can_cancel && (
-                      <button type="button" className="btn-danger" onClick={() => cancelPo(o)}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => cancelPo(o)}
+                        aria-label={`Cancel purchase order ${o.id}`}
+                      >
                         Cancel
                       </button>
                     )}
@@ -2016,7 +2023,12 @@ export default function Page() {
               </h3>
               {selected.can_cancel && (
                 <p style={{ marginTop: 0 }}>
-                  <button type="button" className="btn-danger" onClick={() => cancelPo(selected)}>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => cancelPo(selected)}
+                    aria-label={`Cancel purchase order ${selected.id}`}
+                  >
                     Cancel PO
                   </button>
                   <span className="muted" style={{ marginLeft: 8 }}>

@@ -1948,9 +1948,16 @@ class PurchaseOrderAmend(BaseModel):
 
 
 class PurchaseOrderCancel(BaseModel):
-    """PO cancel — typed reason required (BR-6.3 honesty)."""
+    """PO cancel — typed reason required (BR-6.3 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ PurchaseOrderCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to PO `notes` / audit).
+    """
+
+    reason: PurchaseOrderCancelReasonValue
+
 
 class PurchaseRequestItemCreate(BaseModel):
     """Purchase request line — optional notes ∈ PurchaseRequestNotesValue (BR-6.2).
@@ -5023,6 +5030,27 @@ SalesReturnCancelReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_sales_return_cancel_reason_value),
+]
+
+
+def validate_purchase_order_cancel_reason_value(value: str) -> str:
+    """AfterValidator: purchase order cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase order cancel reason — appended to PurchaseOrder.notes + audit po_cancelled (BR-6.3).
+PurchaseOrderCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_order_cancel_reason_value),
 ]
 
 

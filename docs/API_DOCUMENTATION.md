@@ -878,7 +878,7 @@ Omit `tax_rate` on a line to auto-resolve **product → category (parents) → t
 
 **Status Flow:** `draft` → `sent` → `partially_received` → `received` (Fully Received); branch to `cancelled`
 
-**Cancel:** `POST /purchasing/orders/{po_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to PO `notes` as `Cancel: …` and stored in audit `po_cancelled.details.reason`); allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel` + `notes`. Purchasing Orders **Cancel reason** UI (BR-6.3).
+**Cancel:** `POST /purchasing/orders/{po_id}/cancel` `{ "reason" }` ∈ `PurchaseOrderCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to PO `notes` as `Cancel: …` and stored in audit `po_cancelled.details.reason`; allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel` + `notes`. Purchasing Orders **Purchase order cancel reason** (`aria-label`; BR-6.3).
 
 **Send / resend:** `POST /purchasing/orders/{po_id}/send` — emails supplier (SMTP/console); draft → `sent`. Optional Query `to` ∈ `EmailStr`; omit → supplier email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Purchasing **Purchase order email override to** + **Email purchase order** / **Resend purchase order email**.
 
