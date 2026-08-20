@@ -31,3 +31,7 @@ Stage 1912 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meirekiajiyuglaze Gate, Transfer Meirekiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1912 opened under **ADR-3831** after CONTINUE/NEXT (Tenant MVP Transfer Keiouajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3832**. Stage 1911 feature scope remains frozen.
