@@ -31,3 +31,7 @@ Stage 4116 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiojihajiyuglaze Gate, Transfer Keiojihajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4116 opened under **ADR-8239** after CONTINUE/NEXT (Tenant MVP Transfer Keiojimajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8240**. Stage 4115 feature scope remains frozen.
