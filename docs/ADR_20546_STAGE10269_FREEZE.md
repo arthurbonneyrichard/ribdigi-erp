@@ -31,3 +31,7 @@ Stage 10270 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraddkajiyuglaze Gate, Transfer Naraddkajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10270 opened under **ADR-20547** after CONTINUE/NEXT (Tenant MVP Transfer Naraddsajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20548**. Stage 10269 feature scope remains frozen.
