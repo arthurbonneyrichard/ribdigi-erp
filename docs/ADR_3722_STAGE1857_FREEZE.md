@@ -31,3 +31,7 @@ Stage 1858 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchimomoyamajiyuglaze Gate, Transfer Azuchimomoyamajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1858 opened under **ADR-3723** after CONTINUE/NEXT (Tenant MVP Transfer Keichoujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3724**. Stage 1857 feature scope remains frozen.
