@@ -31,3 +31,7 @@ Stage 5142 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohojigajiyuglaze Gate, Transfer Kyohojigajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5142 opened under **ADR-10291** after CONTINUE/NEXT (Tenant MVP Transfer Kyohojikyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10292**. Stage 5141 feature scope remains frozen.
