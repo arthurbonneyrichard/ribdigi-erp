@@ -31,3 +31,7 @@ Stage 5930 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keianaatajiyuglaze Gate, Transfer Keianaatajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5930 opened under **ADR-11867** after CONTINUE/NEXT (Tenant MVP Transfer Keianaanajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11868**. Stage 5929 feature scope remains frozen.
