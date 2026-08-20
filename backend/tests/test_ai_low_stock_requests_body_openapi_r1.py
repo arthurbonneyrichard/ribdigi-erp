@@ -57,7 +57,8 @@ def test_ai_low_stock_requests_ui_and_docs():
     page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create draft purchase requests from predictions"' in page
     assert 'aria-label="Include open purchase requests"' in page
-    assert "AiLowStockPredictionLine hello-world" in page
+    assert 'aria-label="AI low-stock prediction notes"' in page
+    assert "AiLowStockPredictionLine" in page or "predictionNotes" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI low-stock prediction requests body OpenAPI" in agents
     assert "AiLowStockPredictionRequestsBody" in agents

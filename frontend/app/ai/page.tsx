@@ -17,6 +17,7 @@ export default function Page() {
   const [lastAtRisk, setLastAtRisk] = useState<any[]>([]);
   const [includeOpenPr, setIncludeOpenPr] = useState(false);
   const [predictionNotes, setPredictionNotes] = useState('');
+  const [predictionRiskReason, setPredictionRiskReason] = useState('');
   const [lastDocExtract, setLastDocExtract] = useState<any | null>(null);
   const [documentType, setDocumentType] = useState<'auto' | 'receipt' | 'invoice' | 'purchase_order'>('auto');
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
@@ -153,7 +154,11 @@ export default function Page() {
           warehouse_id: x.warehouse_id,
           preferred_supplier_id: x.preferred_supplier_id,
           notes: x.notes || null,
-          risk_reason: x.risk_reason,
+          // Optional UI override; else prediction risk_reason; blank → null (omit).
+          risk_reason:
+            predictionRiskReason.trim() ||
+            (typeof x.risk_reason === 'string' ? x.risk_reason.trim() : '') ||
+            null,
         }));
       }
       const r = await api('/ai/inventory/low-stock-prediction/requests', {
@@ -168,6 +173,7 @@ export default function Page() {
           `Created draft PR(s): ${nums || created.length}. Open Purchasing → Requests to submit.`
         );
         setPredictionNotes('');
+        setPredictionRiskReason('');
         setA(
           [
             `Draft purchase request(s) created: ${nums || created.length}`,
@@ -604,6 +610,14 @@ export default function Page() {
             placeholder="Prediction notes (optional)"
             aria-label="AI low-stock prediction notes"
             title="Optional notes for draft PRs (1–500 chars; letters/digits required)"
+            style={{ minWidth: 200 }}
+          />
+          <input
+            value={predictionRiskReason}
+            onChange={(e) => setPredictionRiskReason(e.target.value)}
+            placeholder="Risk reason override (optional)"
+            aria-label="AI prediction risk reason"
+            title="Optional risk_reason override for prediction lines (1–500 chars; letters/digits required)"
             style={{ minWidth: 200 }}
           />
           <label

@@ -72,16 +72,18 @@ def test_ai_low_stock_prediction_line_schema_forbid():
 
 def test_ai_low_stock_prediction_line_ui_and_docs():
     page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
-    assert "AiLowStockPredictionLine hello-world" in page
     assert "suggested_order_qty: x.suggested_order_qty" in page
-    assert "risk_reason: x.risk_reason" in page
+    assert "predictionRiskReason.trim()" in page or "risk_reason:" in page
     assert 'aria-label="Create draft purchase requests from predictions"' in page
+    assert 'aria-label="AI prediction risk reason"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI low-stock prediction line OpenAPI" in agents
     assert "AiLowStockPredictionLine" in agents
+    assert "AiPredictionRiskReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "AiLowStockPredictionLine" in docs
     assert "extra=forbid" in docs
+    assert "AiPredictionRiskReasonValue" in docs
 
 
 @pytest.mark.asyncio

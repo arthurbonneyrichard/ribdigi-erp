@@ -2030,6 +2030,9 @@ class AiLowStockPredictionLine(BaseModel):
     Unknown keys → **422** (`extra=forbid`). Required non-blank `product_id`.
     Optional confidence 0–1 and order qty ≥0. Aligns with fields read by
     `create_requests_from_predictions` (not the full GET prediction shape).
+    Optional `risk_reason` ∈ AiPredictionRiskReasonValue; omit/`null` → service
+    defaults line note to `at_risk`; blank/`!!!`/`http://…` → **422** (was free
+    `str` stripped to null; garbage could land in draft PR line notes).
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -2043,13 +2046,15 @@ class AiLowStockPredictionLine(BaseModel):
     # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`
     # stripped to null; blank/garbage could persist onto draft PR line notes).
     notes: PurchaseRequestNotesValue | None = None
-    risk_reason: str | None = None
+    # omit/`null` → service uses `at_risk` in generated line notes; blank/`!!!`/
+    # `http://…` → **422** (was free `str`; blank silently dropped / garbage could
+    # embed into PurchaseRequestItem.notes via create_requests_from_predictions).
+    risk_reason: AiPredictionRiskReasonValue | None = None
 
     @field_validator(
         "product_id",
         "warehouse_id",
         "preferred_supplier_id",
-        "risk_reason",
         mode="before",
     )
     @classmethod
@@ -5012,11 +5017,32 @@ def validate_purchase_request_notes_value(value: str) -> str:
     return value
 
 
-# Purchase request notes — PurchaseRequest.notes Text; keep ≤500 at API boundary.
+# Purchase request notes — PurchaseRequest.notes column; keep ≤500 at API boundary.
 PurchaseRequestNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_purchase_request_notes_value),
+]
+
+
+def validate_ai_prediction_risk_reason_value(value: str) -> str:
+    """AfterValidator: AI prediction risk_reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# AI low-stock prediction line risk_reason — embeds into draft PR line notes (BR-21.4).
+AiPredictionRiskReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_prediction_risk_reason_value),
 ]
 
 
