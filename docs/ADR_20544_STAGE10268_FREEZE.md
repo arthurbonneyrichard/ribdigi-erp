@@ -31,3 +31,7 @@ Stage 10269 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraddwajiyuglaze Gate, Transfer Naraddwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10269 opened under **ADR-20545** after CONTINUE/NEXT (Tenant MVP Transfer Naraddkajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20546**. Stage 10268 feature scope remains frozen.
