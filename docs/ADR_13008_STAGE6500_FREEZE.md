@@ -31,3 +31,7 @@ Stage 6501 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuaajisajiyuglaze Gate, Transfer Sengokuaajisajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6501 opened under **ADR-13009** after CONTINUE/NEXT (Tenant MVP Transfer Sengokuaajitajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13010**. Stage 6500 feature scope remains frozen.
