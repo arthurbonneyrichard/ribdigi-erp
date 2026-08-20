@@ -31,3 +31,7 @@ Stage 6405 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuaajibajiyuglaze Gate, Transfer Bakumatsuaajibajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6405 opened under **ADR-12817** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuaajipajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12818**. Stage 6404 feature scope remains frozen.
