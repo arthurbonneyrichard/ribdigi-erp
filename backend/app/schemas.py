@@ -1817,7 +1817,10 @@ class WarehouseCreate(BaseModel):
     # Required warehouse label ∈ WarehouseNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on multi-store warehouse create).
     name: WarehouseNameValue
-    code: str
+    # Required warehouse code ∈ WarehouseCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_warehouse **409**.
+    code: WarehouseCodeValue
     store_id: str | None = None
     # BR-2.4 — schema Literal; omit defaults to retail; blank/invalid → 422
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] = "retail"
@@ -3486,6 +3489,27 @@ WarehouseNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_warehouse_name_value),
+]
+
+
+def validate_warehouse_code_value(value: str) -> str:
+    """AfterValidator: warehouse code; blank/URL/garbage → 422 (1–50)."""
+    if not value:
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    if len(value) > 50:
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    return value
+
+
+# Warehouse code — matches Warehouse.code String(50); uniqueness in create_warehouse.
+WarehouseCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_warehouse_code_value),
 ]
 
 

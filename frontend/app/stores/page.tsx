@@ -994,6 +994,8 @@ export default function Page() {
               value={whCode}
               onChange={(e) => setWhCode(e.target.value)}
               placeholder="Code"
+              aria-label="Warehouse code"
+              title="Warehouse code (1–50 chars; letters/digits required)"
               disabled={!!editWhId}
             />
             <input
