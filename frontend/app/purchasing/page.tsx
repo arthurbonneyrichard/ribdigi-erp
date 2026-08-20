@@ -1520,6 +1520,8 @@ export default function Page() {
                 value={prRejectReason}
                 onChange={(e) => setPrRejectReason(e.target.value)}
                 placeholder="Required before Reject"
+                aria-label="Purchase request reject reason"
+                title="Required reason for Reject (1–500 chars; letters/digits required)"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1605,8 +1607,14 @@ export default function Page() {
                         <button
                           type="button"
                           className="btn-danger"
-                          disabled={prBusy === `reject:${r.id}`}
+                          disabled={prBusy === `reject:${r.id}` || !prRejectReason.trim()}
                           onClick={() => prAction(r.id, 'reject')}
+                          aria-label={`Reject purchase request ${r.id}`}
+                          title={
+                            prRejectReason.trim()
+                              ? 'Reject purchase request'
+                              : 'Enter a reject reason before rejecting'
+                          }
                         >
                           Reject
                         </button>

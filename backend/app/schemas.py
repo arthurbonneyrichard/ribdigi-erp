@@ -1973,9 +1973,15 @@ class PurchaseRequestCreate(BaseModel):
 
 
 class PurchaseRequestReject(BaseModel):
-    """Purchase request reject — typed reason required (BR-6.2 honesty)."""
+    """Purchase request reject — typed reason required (BR-6.2 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ PurchaseRequestRejectReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `PurchaseRequest.rejection_reason`).
+    """
+
+    reason: PurchaseRequestRejectReasonValue
 
 
 class PurchaseRequestConvert(BaseModel):
@@ -4831,6 +4837,27 @@ ExpenseRejectReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_reject_reason_value),
+]
+
+
+def validate_purchase_request_reject_reason_value(value: str) -> str:
+    """AfterValidator: PR reject reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase request reject reason — PurchaseRequest.rejection_reason column (BR-6.2).
+PurchaseRequestRejectReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_request_reject_reason_value),
 ]
 
 

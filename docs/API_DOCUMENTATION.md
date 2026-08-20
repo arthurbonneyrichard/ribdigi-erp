@@ -822,7 +822,7 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 **From low-stock suggestions:** `POST /purchasing/requests/from-low-stock` — typed body `LowStockSuggestionsCreate` `{ lines[], notes?, department?, include_open? }`. Header + nested `LowStockSuggestionLine.notes` ∈ `PurchaseRequestNotesValue` (omit/`null` → service default header note / no line notes; blank/`!!!`/`http://…` → **422** — was free `str`). Reports Inventory **Low-stock suggestion notes** + **Create draft PR from low-stock suggestions** (`aria-label`s; blank omitted as `null`).  
 **Get:** `GET /purchasing/requests/{request_id}`  
 **Approve:** `POST /purchasing/requests/{request_id}/approve`  
-**Reject:** `POST /purchasing/requests/{request_id}/reject` — body `{ "reason" }` **required** (non-empty) → `rejection_reason` + audit `pr_rejected.details.reason`; blank/omit → 422/400. Purchasing UI requires typed reason (no hardcoded string) (BR-6.2).
+**Reject:** `POST /purchasing/requests/{request_id}/reject` — body `{ "reason" }` ∈ `PurchaseRequestRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → `rejection_reason` + audit `pr_rejected.details.reason`. Omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Purchasing UI **Purchase request reject reason** (`aria-label`; no hardcoded string) (BR-6.2).
 
 **Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_request_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PREQ`) — not a daily `R{yymmdd}-NNN` stamp (BR-6.2 / BR-20.4).
 
