@@ -31,3 +31,7 @@ Stage 4294 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachijitajiyuglaze Gate, Transfer Muromachijitajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4294 opened under **ADR-8595** after CONTINUE/NEXT (Tenant MVP Transfer Muromachijinajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8596**. Stage 4293 feature scope remains frozen.
