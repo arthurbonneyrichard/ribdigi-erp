@@ -31,3 +31,7 @@ Stage 2977 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmeiaatajiyuglaze Gate, Transfer Tenmeiaatajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2977 opened under **ADR-5961** after CONTINUE/NEXT (Tenant MVP Transfer Tenmeiaanajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5962**. Stage 2976 feature scope remains frozen.
