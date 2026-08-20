@@ -31,3 +31,7 @@ Stage 5135 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shotokukyajiyuglaze Gate, Transfer Shotokukyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5135 opened under **ADR-10277** after CONTINUE/NEXT (Tenant MVP Transfer Shotokugyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10278**. Stage 5134 feature scope remains frozen.
