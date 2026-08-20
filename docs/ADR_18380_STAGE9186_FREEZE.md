@@ -31,3 +31,7 @@ Stage 9187 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyubbbajiyuglaze Gate, Transfer Bunkyubbbajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9187 opened under **ADR-18381** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyubbpajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18382**. Stage 9186 feature scope remains frozen.
