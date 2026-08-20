@@ -31,3 +31,7 @@ Stage 5496 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoijipajiyuglaze Gate, Transfer Yayoijipajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5496 opened under **ADR-10999** after CONTINUE/NEXT (Tenant MVP Transfer Yayoijigajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11000**. Stage 5495 feature scope remains frozen.
