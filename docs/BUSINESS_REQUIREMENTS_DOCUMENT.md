@@ -1031,6 +1031,7 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`); 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`); Stage 312 I1 / B1 / P1.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`); Stage 313 I1 / B1 / P1.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`); Stage 314 I1 / B1 / P1.
+Stage 5561 D1 Transfer Nanbokujiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_5561_FIDELITY.md` (`test_stage5561_fidelity_d1.py`); Offline Complete / Transfer Nanbokujiijiyuglaze Gate honesty / go-live still MISSING.
 Stage 5560 D1 Transfer Nanbokujiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_5560_FIDELITY.md` (`test_stage5560_fidelity_d1.py`); Offline Complete / Transfer Nanbokujiujiyuglaze Gate honesty / go-live still MISSING.
 Stage 5559 D1 Transfer Nanbokujiojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_5559_FIDELITY.md` (`test_stage5559_fidelity_d1.py`); Offline Complete / Transfer Nanbokujiojiyuglaze Gate honesty / go-live still MISSING.
 Stage 5558 D1 Transfer Nanbokujieejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — `docs/STAGE_5558_FIDELITY.md` (`test_stage5558_fidelity_d1.py`); Offline Complete / Transfer Nanbokujieejiyuglaze Gate honesty / go-live still MISSING.
