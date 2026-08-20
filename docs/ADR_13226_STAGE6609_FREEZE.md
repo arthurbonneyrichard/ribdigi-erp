@@ -31,3 +31,7 @@ Stage 6610 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keianjirajiyuglaze Gate, Transfer Keianjirajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6610 opened under **ADR-13227** after CONTINUE/NEXT (Tenant MVP Transfer Keianjizajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13228**. Stage 6609 feature scope remains frozen.
