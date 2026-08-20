@@ -31,3 +31,7 @@ Stage 8020 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseibbkyajiyuglaze Gate, Transfer Kanseibbkyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8020 opened under **ADR-16047** after CONTINUE/NEXT (Tenant MVP Transfer Kanseibbgyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16048**. Stage 8019 feature scope remains frozen.
