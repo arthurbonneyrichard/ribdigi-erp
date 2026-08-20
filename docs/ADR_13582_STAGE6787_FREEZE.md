@@ -31,3 +31,7 @@ Stage 6788 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanenjitajiyuglaze Gate, Transfer Kanenjitajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6788 opened under **ADR-13583** after CONTINUE/NEXT (Tenant MVP Transfer Kanenjinajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13584**. Stage 6787 feature scope remains frozen.
