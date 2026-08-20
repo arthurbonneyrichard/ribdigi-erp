@@ -31,3 +31,7 @@ Stage 7323 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoffiijiyuglaze Gate, Transfer Kanpoffiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7323 opened under **ADR-14653** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoffoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14654**. Stage 7322 feature scope remains frozen.
