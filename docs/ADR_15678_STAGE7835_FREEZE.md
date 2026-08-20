@@ -31,3 +31,7 @@ Stage 7836 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneieepajiyuglaze Gate, Transfer Aneieepajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7836 opened under **ADR-15679** after CONTINUE/NEXT (Tenant MVP Transfer Aneieegajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15680**. Stage 7835 feature scope remains frozen.
