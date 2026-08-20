@@ -31,3 +31,7 @@ Stage 7531 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hourekiddiijiyuglaze Gate, Transfer Hourekiddiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7531 opened under **ADR-15069** after CONTINUE/NEXT (Tenant MVP Transfer Hourekiddoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15070**. Stage 7530 feature scope remains frozen.
