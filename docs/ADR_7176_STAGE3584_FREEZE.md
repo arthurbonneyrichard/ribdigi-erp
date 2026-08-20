@@ -31,3 +31,7 @@ Stage 3585 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keianoojiyuglaze Gate, Transfer Keianoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3585 opened under **ADR-7177** after CONTINUE/NEXT (Tenant MVP Transfer Keianuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7178**. Stage 3584 feature scope remains frozen.
