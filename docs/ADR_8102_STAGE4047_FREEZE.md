@@ -31,3 +31,7 @@ Stage 4048 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseijiajiyuglaze Gate, Transfer Anseijiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4048 opened under **ADR-8103** after CONTINUE/NEXT (Tenant MVP Transfer Anseijiiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8104**. Stage 4047 feature scope remains frozen.
