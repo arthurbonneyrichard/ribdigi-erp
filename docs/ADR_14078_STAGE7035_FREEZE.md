@@ -31,3 +31,7 @@ Stage 7036 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeieeajiyuglaze Gate, Transfer Houeieeajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7036 opened under **ADR-14079** after CONTINUE/NEXT (Tenant MVP Transfer Houeieeiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14080**. Stage 7035 feature scope remains frozen.
