@@ -31,3 +31,7 @@ Stage 8108 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiffojiyuglaze Gate, Transfer Kanseiffojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8108 opened under **ADR-16223** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiffujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16224**. Stage 8107 feature scope remains frozen.
