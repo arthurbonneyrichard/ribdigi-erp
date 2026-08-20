@@ -381,8 +381,7 @@ RoleKeyValue = Annotated[
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
     if bool(getattr(model, "override_credit_limit", False)):
-        reason = (getattr(model, "override_reason", None) or "").strip()
-        if not reason:
+        if not getattr(model, "override_reason", None):
             raise ValueError(
                 "override_reason is required when override_credit_limit is true"
             )
@@ -1240,7 +1239,10 @@ class TransactionCreate(BaseModel):
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(default_factory=list)
     override_credit_limit: bool = False
-    override_reason: str | None = Field(default=None, max_length=500)
+    # omit/`null` OK when not overriding; blank/`!!!`/`http://…` → **422**;
+    # required when override_credit_limit=true (was free `str` max_length only —
+    # whitespace failed model_validator, but garbage could land in audit).
+    override_reason: CreditOverrideReasonValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):
@@ -1248,10 +1250,17 @@ class TransactionCreate(BaseModel):
 
 
 class CreditLimitOverrideBody(BaseModel):
-    """Optional body for posting sales that may exceed credit limit (BR-11.1)."""
+    """Optional body for posting sales that may exceed credit limit (BR-11.1).
+
+    `override_reason` ∈ CreditOverrideReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/`null` OK when `override_credit_limit` is false; blank/`!!!`/
+    `http://…` → **422**; required when flag is true (was free `str` with
+    `max_length=500` only — whitespace failed model_validator, but punctuation-
+    only / URL-like garbage could land in audit `credit_limit_override.details.reason`).
+    """
 
     override_credit_limit: bool = False
-    override_reason: str | None = Field(default=None, max_length=500)
+    override_reason: CreditOverrideReasonValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):
@@ -5577,6 +5586,27 @@ GrnRejectionReasonValue = Annotated[
 ]
 
 
+def validate_credit_override_reason_value(value: str) -> str:
+    """AfterValidator: credit override_reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Credit limit override reason — sales invoice post / POS / legacy sale (BR-11.1).
+CreditOverrideReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_credit_override_reason_value),
+]
+
+
 def validate_purchase_invoice_notes_value(value: str) -> str:
     """AfterValidator: purchase invoice notes; blank/URL/garbage → 422 (1–500)."""
     if not value:
@@ -5845,7 +5875,9 @@ class PosSaleCreate(BaseModel):
     payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(min_length=1)
     override_credit_limit: bool = False
-    override_reason: str | None = Field(default=None, max_length=500)
+    # omit/`null` OK when not overriding; blank/`!!!`/`http://…` → **422**;
+    # required when override_credit_limit=true (same CreditOverrideReasonValue).
+    override_reason: CreditOverrideReasonValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):

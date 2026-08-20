@@ -686,7 +686,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Set per-customer credit limit
-  - [x] Block sales that exceed credit limit (with override permission) (`override_credit_limit` + required `override_reason` on Sales Post / POS credit; API `400 CREDIT_OVERRIDE_REASON_REQUIRED` when override without reason; no canned `window.prompt` default; audit `credit_limit_override`)
+  - [x] Block sales that exceed credit limit (with override permission) (`override_credit_limit` + `override_reason` ∈ `CreditOverrideReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; required when overriding; omit/blank/garbage → **422**) on Sales Post / POS credit; API `400 CREDIT_OVERRIDE_REASON_REQUIRED` defense in depth; no canned `window.prompt` default; audit `credit_limit_override`; Sales/POS **Credit override reason** UI)
   - [x] Display outstanding balance on customer profile
   - [x] Record payment collections with date, amount, method, reference
   - [x] Allocate payments to specific invoices or auto-allocate (oldest first)

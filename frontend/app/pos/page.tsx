@@ -1509,6 +1509,8 @@ export default function Page() {
                   placeholder="Required if credit sale exceeds limit"
                   maxLength={500}
                   autoComplete="off"
+                  title="Required on over-limit credit sale (1–500 chars; letters/digits required)"
+                  aria-label="Credit override reason"
                 />
               </label>
               <label className="tpos-field">

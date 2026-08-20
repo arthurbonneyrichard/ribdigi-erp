@@ -1624,6 +1624,8 @@ export default function Page() {
                 onChange={(e) => setCreditOverrideReason(e.target.value)}
                 placeholder="Required when posting over credit limit"
                 style={{ minWidth: 300 }}
+                title="Required on over-limit confirm (1–500 chars; letters/digits required)"
+                aria-label="Credit override reason"
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
@@ -1717,7 +1719,12 @@ export default function Page() {
                   <button onClick={() => setSelected(inv)}>View</button>
                   {inv.status === 'draft' && (
                     <>
-                      <button type="button" className="btn-ok" onClick={() => postInvoice(inv)}>
+                      <button
+                        type="button"
+                        className="btn-ok"
+                        onClick={() => postInvoice(inv)}
+                        aria-label={`Post sales invoice ${inv.id}`}
+                      >
                         Post
                       </button>
                       <button

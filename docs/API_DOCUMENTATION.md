@@ -1329,7 +1329,7 @@ Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "exp
 ```json
 { "override_credit_limit": true, "override_reason": "Approved by store manager" }
 ```
-Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. When `override_credit_limit` is true, **`override_reason` is required** (non-empty) — schema `model_validator` → **422** on omit/blank; service still returns `400` `CREDIT_OVERRIDE_REASON_REQUIRED` if reached. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override` with `details.reason`. Sales Invoices + POS UIs require a typed **Credit override reason** (no canned `window.prompt` default).
+Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. When `override_credit_limit` is true, **`override_reason`** ∈ `CreditOverrideReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`) is **required** — omit/`null` OK when flag is false; blank/`!!!`/`http://…` → **422** (was free `str` `max_length=500` only — whitespace failed model_validator, but garbage could land in audit). Schema field validators + `model_validator`; service still returns `400` `CREDIT_OVERRIDE_REASON_REQUIRED` if reached. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override` with `details.reason`. Sales Invoices + POS UIs **Credit override reason** (`aria-label`; no canned `window.prompt` default).
 
 **Response:**
 ```json
