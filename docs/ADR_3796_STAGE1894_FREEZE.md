@@ -31,3 +31,7 @@ Stage 1895 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kakyouajiyuglaze Gate, Transfer Kakyouajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1895 opened under **ADR-3797** after CONTINUE/NEXT (Tenant MVP Transfer Eishouajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3798**. Stage 1894 feature scope remains frozen.
