@@ -31,3 +31,7 @@ Stage 11513 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokubbeejiyuglaze Gate, Transfer Sengokubbeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11513 opened under **ADR-23033** after CONTINUE/NEXT (Tenant MVP Transfer Sengokubbojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-23034**. Stage 11512 feature scope remains frozen.
