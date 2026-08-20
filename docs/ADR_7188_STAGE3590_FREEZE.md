@@ -31,3 +31,7 @@ Stage 3591 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keianijiyuglaze Gate, Transfer Keianijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3591 opened under **ADR-7189** after CONTINUE/NEXT (Tenant MVP Transfer Keianwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7190**. Stage 3590 feature scope remains frozen.
