@@ -31,3 +31,7 @@ Stage 5268 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseijibajiyuglaze Gate, Transfer Anseijibajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5268 opened under **ADR-10543** after CONTINUE/NEXT (Tenant MVP Transfer Anseijipajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10544**. Stage 5267 feature scope remains frozen.
