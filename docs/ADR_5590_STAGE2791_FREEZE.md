@@ -31,3 +31,7 @@ Stage 2792 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuwajiyuglaze Gate, Transfer Sengokuwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2792 opened under **ADR-5591** after CONTINUE/NEXT (Tenant MVP Transfer Sengokukajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5592**. Stage 2791 feature scope remains frozen.
