@@ -31,3 +31,7 @@ Stage 4270 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakurajiojiyuglaze Gate, Transfer Kamakurajiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4270 opened under **ADR-8547** after CONTINUE/NEXT (Tenant MVP Transfer Kamakurajiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8548**. Stage 4269 feature scope remains frozen.
