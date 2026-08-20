@@ -31,3 +31,7 @@ Stage 7341 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoffbajiyuglaze Gate, Transfer Kanpoffbajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7341 opened under **ADR-14689** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoffpajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14690**. Stage 7340 feature scope remains frozen.
