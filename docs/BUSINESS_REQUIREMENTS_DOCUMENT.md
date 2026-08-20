@@ -454,7 +454,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Invoice number, date, due date (tenant series `GET|PATCH /purchasing/settings` → `purchase_invoice_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `PINV`; date/due via party payment terms)
   - [x] Line items with quantity, rate, tax, discount (`items[].discount` + header `discount_amount` on create; from-GRN inherits proportional PO line discount; Purchasing create + detail UI; tax before line discount)
   - [x] Attach supplier invoice document (PDF/image) (`POST|GET|DELETE /purchasing/invoices/{id}/attachment`; Purchasing Upload/Preview)
-  - [x] Status: Draft, Approved (`unpaid`), Paid, Partially Paid, Overdue, Cancelled (`POST /purchasing/invoices/{id}/cancel` `{ reason }` required → notes + audit; `can_cancel` when unpaid with zero payments; Purchasing **Cancel reason** UI)
+  - [x] Status: Draft, Approved (`unpaid`), Paid, Partially Paid, Overdue, Cancelled (`POST /purchasing/invoices/{id}/cancel` `{ reason }` ∈ `PurchaseInvoiceCancelReasonValue` → notes + audit; omit/blank/garbage → **422**; `can_cancel` when unpaid with zero payments; Purchasing **Purchase invoice cancel reason** UI)
   - [x] Auto-update Accounts Payable
     - Complete (MVP): GRN path posts AP via `post_grn_journal` + supplier balance; manual PI posts AP on approve (skips double-post when from GRN)
 

@@ -2618,6 +2618,8 @@ export default function Page() {
               value={piCancelReason}
               onChange={(e) => setPiCancelReason(e.target.value)}
               placeholder="Required before Cancel"
+              title="Required cancel reason (1–500 chars; letters/digits required)"
+              aria-label="Purchase invoice cancel reason"
               style={{ minWidth: 280 }}
             />
           </label>
@@ -2711,7 +2713,12 @@ export default function Page() {
                     <button className="btn-ok" onClick={() => approveInvoice(inv.id)}>Approve</button>
                   )}
                   {inv.can_cancel && (
-                    <button type="button" className="btn-danger" onClick={() => cancelInvoice(inv)}>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => cancelInvoice(inv)}
+                      aria-label={`Cancel purchase invoice ${inv.id}`}
+                    >
                       Cancel
                     </button>
                   )}
@@ -2773,7 +2780,12 @@ export default function Page() {
             </h3>
             {selectedInvoice.can_cancel && (
               <p style={{ marginTop: 0 }}>
-                <button type="button" className="btn-danger" onClick={() => cancelInvoice(selectedInvoice)}>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={() => cancelInvoice(selectedInvoice)}
+                  aria-label={`Cancel purchase invoice ${selectedInvoice.id}`}
+                >
                   Cancel invoice
                 </button>
                 <span className="muted" style={{ marginLeft: 8 }}>
