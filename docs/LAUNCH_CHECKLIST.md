@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 5811 track opened (ADR-11629: `test_stage5811_open.py`, `docs/STAGE_5811_PLAN.md`) — Transfer Choukyouaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-11630
+- [x] Transfer Choukyouaanyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 5811 I1: `test_stage5811_index_i1.py`, `docs/TRANSFER_CHOUKYOUAANYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Choukyouaanyajiyuglaze Gate Honesty Pack blocker matrix (Stage 5811 B1: `test_stage5811_blockers_b1.py`, `docs/TRANSFER_CHOUKYOUAANYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 5810 / Stage 5809 / Stage 392 / CHANGE_IMPACT pointers (Stage 5811 P1: `test_stage5811_pointers_p1.py`, `docs/TRANSFER_CHOUKYOUAANYAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 5811 fidelity sync (D1: `test_stage5811_fidelity_d1.py`, `docs/STAGE_5811_FIDELITY.md`)
+- [x] Stage 5811 exit + freeze (H5811x: `test_stage5811_exit_h5811x.py`, `docs/STAGE_5811_EXIT_CRITERIA.md`, ADR-11630)
 Stage 5810 track opened (ADR-11627: `test_stage5810_open.py`, `docs/STAGE_5810_PLAN.md`) — Transfer Choukyouaagyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-11628
 - [x] Transfer Choukyouaagyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 5810 I1: `test_stage5810_index_i1.py`, `docs/TRANSFER_CHOUKYOUAAGYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Choukyouaagyajiyuglaze Gate Honesty Pack blocker matrix (Stage 5810 B1: `test_stage5810_blockers_b1.py`, `docs/TRANSFER_CHOUKYOUAAGYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)

@@ -31,3 +31,7 @@ Stage 5811 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Choukyouaagyajiyuglaze Gate, Transfer Choukyouaagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5811 opened under **ADR-11629** after CONTINUE/NEXT (Tenant MVP Transfer Choukyouaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11630**. Stage 5810 feature scope remains frozen.
