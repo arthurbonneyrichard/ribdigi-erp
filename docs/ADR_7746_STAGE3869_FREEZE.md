@@ -31,3 +31,7 @@ Stage 3870 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwajioojiyuglaze Gate, Transfer Meiwajioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3870 opened under **ADR-7747** after CONTINUE/NEXT (Tenant MVP Transfer Meiwajiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7748**. Stage 3869 feature scope remains frozen.
