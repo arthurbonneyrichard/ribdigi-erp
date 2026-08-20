@@ -31,3 +31,7 @@ Stage 2733 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakurahajiyuglaze Gate, Transfer Kamakurahajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2733 opened under **ADR-5473** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuramajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5474**. Stage 2732 feature scope remains frozen.
