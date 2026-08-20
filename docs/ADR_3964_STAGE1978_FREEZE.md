@@ -31,3 +31,7 @@ Stage 1979 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeiajiyuglaze Gate, Transfer Houeiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1979 opened under **ADR-3965** after CONTINUE/NEXT (Tenant MVP Transfer Houeiiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3966**. Stage 1978 feature scope remains frozen.
