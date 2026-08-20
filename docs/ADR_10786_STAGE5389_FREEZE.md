@@ -31,3 +31,7 @@ Stage 5390 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchijidajiyuglaze Gate, Transfer Azuchijidajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5390 opened under **ADR-10787** after CONTINUE/NEXT (Tenant MVP Transfer Azuchijibajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10788**. Stage 5389 feature scope remains frozen.
