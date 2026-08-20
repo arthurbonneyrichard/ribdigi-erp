@@ -31,3 +31,7 @@ Stage 2612 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Temponajiyuglaze Gate, Transfer Temponajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2612 opened under **ADR-5231** after CONTINUE/NEXT (Tenant MVP Transfer Tempohajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5232**. Stage 2611 feature scope remains frozen.
