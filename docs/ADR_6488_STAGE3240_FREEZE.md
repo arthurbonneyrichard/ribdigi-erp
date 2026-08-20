@@ -31,3 +31,7 @@ Stage 3241 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heiseiaakajiyuglaze Gate, Transfer Heiseiaakajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3241 opened under **ADR-6489** after CONTINUE/NEXT (Tenant MVP Transfer Heiseiaasajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6490**. Stage 3240 feature scope remains frozen.
