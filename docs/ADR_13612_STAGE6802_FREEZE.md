@@ -31,3 +31,7 @@ Stage 6803 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Horekijiiijiyuglaze Gate, Transfer Horekijiiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6803 opened under **ADR-13613** after CONTINUE/NEXT (Tenant MVP Transfer Horekijioojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13614**. Stage 6802 feature scope remains frozen.
