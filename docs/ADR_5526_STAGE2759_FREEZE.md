@@ -31,3 +31,7 @@ Stage 2760 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuwajiyuglaze Gate, Transfer Bakumatsuwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2760 opened under **ADR-5527** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsukajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5528**. Stage 2759 feature scope remains frozen.
