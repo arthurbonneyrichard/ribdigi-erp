@@ -31,3 +31,7 @@ Stage 1940 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edoajiyuglaze Gate, Transfer Edoajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1940 opened under **ADR-3887** after CONTINUE/NEXT (Tenant MVP Transfer Meijiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3888**. Stage 1939 feature scope remains frozen.
