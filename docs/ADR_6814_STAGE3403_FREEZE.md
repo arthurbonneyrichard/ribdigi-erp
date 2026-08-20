@@ -31,3 +31,7 @@ Stage 3404 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuaamajiyuglaze Gate, Transfer Bakumatsuaamajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3404 opened under **ADR-6815** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuaarajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6816**. Stage 3403 feature scope remains frozen.
