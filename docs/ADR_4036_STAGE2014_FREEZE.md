@@ -31,3 +31,7 @@ Stage 2015 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoojiyuglaze Gate, Transfer Enkyoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2015 opened under **ADR-4037** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4038**. Stage 2014 feature scope remains frozen.
