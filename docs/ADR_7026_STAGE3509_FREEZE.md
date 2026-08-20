@@ -31,3 +31,7 @@ Stage 3510 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kitayamaahajiyuglaze Gate, Transfer Kitayamaahajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3510 opened under **ADR-7027** after CONTINUE/NEXT (Tenant MVP Transfer Kitayamaamajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7028**. Stage 3509 feature scope remains frozen.
