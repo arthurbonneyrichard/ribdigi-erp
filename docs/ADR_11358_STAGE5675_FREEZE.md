@@ -31,3 +31,7 @@ Stage 5676 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genbunaadajiyuglaze Gate, Transfer Genbunaadajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5676 opened under **ADR-11359** after CONTINUE/NEXT (Tenant MVP Transfer Genbunaabajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11360**. Stage 5675 feature scope remains frozen.
