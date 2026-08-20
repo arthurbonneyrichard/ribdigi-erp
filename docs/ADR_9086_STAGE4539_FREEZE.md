@@ -31,3 +31,7 @@ Stage 4540 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianbajiyuglaze Gate, Transfer Heianbajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4540 opened under **ADR-9087** after CONTINUE/NEXT (Tenant MVP Transfer Heianpajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9088**. Stage 4539 feature scope remains frozen.
