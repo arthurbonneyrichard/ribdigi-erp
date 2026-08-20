@@ -31,3 +31,7 @@ Stage 9998 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwaccnyajiyuglaze Gate, Transfer Reiwaccnyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9998 opened under **ADR-20003** after CONTINUE/NEXT (Tenant MVP Transfer Reiwaddaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20004**. Stage 9997 feature scope remains frozen.
