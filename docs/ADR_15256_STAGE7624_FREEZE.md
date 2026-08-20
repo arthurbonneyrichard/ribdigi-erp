@@ -31,3 +31,7 @@ Stage 7625 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwabbzajiyuglaze Gate, Transfer Meiwabbzajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7625 opened under **ADR-15257** after CONTINUE/NEXT (Tenant MVP Transfer Meiwabbdajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15258**. Stage 7624 feature scope remains frozen.
