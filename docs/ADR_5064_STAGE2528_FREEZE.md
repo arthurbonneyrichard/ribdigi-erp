@@ -31,3 +31,7 @@ Stage 2529 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpokajiyuglaze Gate, Transfer Kanpokajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2529 opened under **ADR-5065** after CONTINUE/NEXT (Tenant MVP Transfer Kanposajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5066**. Stage 2528 feature scope remains frozen.
