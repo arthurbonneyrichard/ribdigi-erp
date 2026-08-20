@@ -31,3 +31,7 @@ Stage 5013 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nanbokuaapajiyuglaze Gate, Transfer Nanbokuaapajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5013 opened under **ADR-10033** after CONTINUE/NEXT (Tenant MVP Transfer Nanbokuaagajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10034**. Stage 5012 feature scope remains frozen.
