@@ -31,3 +31,7 @@ Stage 9474 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijiccpajiyuglaze Gate, Transfer Meijiccpajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9474 opened under **ADR-18955** after CONTINUE/NEXT (Tenant MVP Transfer Meijiccgajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18956**. Stage 9473 feature scope remains frozen.
