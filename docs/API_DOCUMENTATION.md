@@ -415,7 +415,7 @@ Create body `PlatformStaffCreate` (`extra=forbid`): `email` ∈ `EmailStr` (blan
 
 ### 3.5a Branches (BR-2.2)
 **List:** `GET /branches` (`active_only=true` optional; `is_active=true|false` for Multi-Store manage filter)  
-**Create:** `POST /branches` — `name` ∈ `BranchNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Branch name** input.  
+**Create:** `POST /branches` — `code` ∈ `BranchCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/invalid reached service **400** via `_clean_code`). Multi-Store **Branch code** input. `name` ∈ `BranchNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Branch name** input. Duplicate code → **409**. (`code` is create-only.)  
 **Update:** `PATCH /branches/{branch_id}` — `name` ∈ `BranchNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit branch name** input.
 
 ```json

@@ -778,7 +778,11 @@ class CashTransferCreate(BaseModel):
 
 
 class BranchCreate(BaseModel):
-    code: str
+    # Required branch code ∈ BranchCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/invalid reached service **400** via `_clean_code`;
+    # punctuation/URL could otherwise slip past OpenAPI). Tenant uniqueness remains
+    # create_branch **409**.
+    code: BranchCodeValue
     # Required branch label ∈ BranchNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on multi-store branch create).
     name: BranchNameValue
@@ -3531,6 +3535,27 @@ BranchNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_branch_name_value),
+]
+
+
+def validate_branch_code_value(value: str) -> str:
+    """AfterValidator: branch code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Branch code — matches Branch.code String(40); uniqueness in create_branch.
+BranchCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_branch_code_value),
 ]
 
 

@@ -823,6 +823,8 @@ export default function Page() {
               value={brCode}
               onChange={(e) => setBrCode(e.target.value)}
               placeholder="Code"
+              aria-label="Branch code"
+              title="Branch code (1–40 chars; letters/digits required)"
               disabled={!!editBrId}
             />
             <input
