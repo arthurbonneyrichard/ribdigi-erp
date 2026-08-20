@@ -31,3 +31,7 @@ Stage 3761 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohojiaajiyuglaze Gate, Transfer Kyohojiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3761 opened under **ADR-7529** after CONTINUE/NEXT (Tenant MVP Transfer Kyohojiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7530**. Stage 3760 feature scope remains frozen.
