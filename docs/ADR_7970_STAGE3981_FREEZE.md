@@ -31,3 +31,7 @@ Stage 3982 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseijiojiyuglaze Gate, Transfer Bunseijiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3982 opened under **ADR-7971** after CONTINUE/NEXT (Tenant MVP Transfer Bunseijiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7972**. Stage 3981 feature scope remains frozen.
