@@ -31,3 +31,7 @@ Stage 9225 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyuddeejiyuglaze Gate, Transfer Bunkyuddeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9225 opened under **ADR-18457** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyuddojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18458**. Stage 9224 feature scope remains frozen.
