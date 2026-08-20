@@ -1,6 +1,6 @@
 {
   "id": "transfer-hourekiajiyuglaze-gate-honesty-pack-rg-blockers",
-  "stage": 1996,
+  "stage": 2046,
   "pack": "B1",
   "doc": "docs/TRANSFER_HOUREKIAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
   "hub": "docs/TRANSFER_HOUREKIAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
@@ -16,5 +16,5 @@
     "packaging_as_offline_complete": "NON_CLAIM"
   },
   "packaging_complete": true,
-  "message": "Stage 1996 B1 Transfer Hourekiajiyuglaze Gate Honesty Pack blocker matrix packaging only."
+  "message": "Stage 2046 B1 Transfer Hourekiajiyuglaze Gate Honesty Pack blocker matrix packaging only."
 }
