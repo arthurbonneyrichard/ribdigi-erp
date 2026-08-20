@@ -31,3 +31,7 @@ Stage 7283 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoddnajiyuglaze Gate, Transfer Kanpoddnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7283 opened under **ADR-14573** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoddhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14574**. Stage 7282 feature scope remains frozen.
