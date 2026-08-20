@@ -31,3 +31,7 @@ Stage 2691 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heiseitajiyuglaze Gate, Transfer Heiseitajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2691 opened under **ADR-5389** after CONTINUE/NEXT (Tenant MVP Transfer Heiseinajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5390**. Stage 2690 feature scope remains frozen.
