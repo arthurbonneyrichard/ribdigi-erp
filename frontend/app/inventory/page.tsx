@@ -2084,7 +2084,13 @@ export default function Page() {
               Hierarchical parent/child categories with codes. Optional category tax rate applies when
               a product has no product-level rate (nearest parent wins). Product rate still overrides.
             </p>
-            <input value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="Code" />
+            <input
+              value={catCode}
+              onChange={(e) => setCatCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Category code"
+              title="Category code (1–40 chars; letters/digits required)"
+            />
             <input
               value={catName}
               onChange={(e) => setCatName(e.target.value)}

@@ -1025,7 +1025,10 @@ class StockCountCancel(BaseModel):
 
 
 class ProductCategoryCreate(BaseModel):
-    code: str
+    # Required category code ∈ CategoryCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_category **409**.
+    code: CategoryCodeValue
     # Required category label ∈ CategoryNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog category create).
     name: CategoryNameValue
@@ -1034,7 +1037,9 @@ class ProductCategoryCreate(BaseModel):
 
 
 class ProductCategoryUpdate(BaseModel):
-    code: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on ProductCategory.code).
+    code: CategoryCodeValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on category display name).
     name: CategoryNameValue | None = None
@@ -3510,6 +3515,27 @@ CategoryNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_category_name_value),
+]
+
+
+def validate_category_code_value(value: str) -> str:
+    """AfterValidator: product category code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Catalog category code — matches ProductCategory.code String(40); uniqueness in service.
+CategoryCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_category_code_value),
 ]
 
 
