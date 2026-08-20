@@ -31,3 +31,7 @@ Stage 3435 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiaakajiyuglaze Gate, Transfer Yayoiaakajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3435 opened under **ADR-6877** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiaasajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6878**. Stage 3434 feature scope remains frozen.
