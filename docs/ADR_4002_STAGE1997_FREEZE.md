@@ -31,3 +31,7 @@ Stage 1998 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoaajiyuglaze Gate, Transfer Kanpoaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1998 opened under **ADR-4003** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4004**. Stage 1997 feature scope remains frozen.
