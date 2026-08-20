@@ -31,3 +31,7 @@ Stage 9592 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishoccijiyuglaze Gate, Transfer Taishoccijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9592 opened under **ADR-19191** after CONTINUE/NEXT (Tenant MVP Transfer Taishoccwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19192**. Stage 9591 feature scope remains frozen.
