@@ -31,3 +31,7 @@ Stage 3504 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kitayamaaijiyuglaze Gate, Transfer Kitayamaaijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3504 opened under **ADR-7015** after CONTINUE/NEXT (Tenant MVP Transfer Kitayamaawajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7016**. Stage 3503 feature scope remains frozen.
