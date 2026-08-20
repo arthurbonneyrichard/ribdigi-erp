@@ -31,3 +31,7 @@ Stage 1986 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoiijiyuglaze Gate, Transfer Kanpoiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1986 opened under **ADR-3979** after CONTINUE/NEXT (Tenant MVP Transfer Kanpooojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3980**. Stage 1985 feature scope remains frozen.
