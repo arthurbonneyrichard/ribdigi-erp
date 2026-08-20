@@ -31,3 +31,7 @@ Stage 11190 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonddpajiyuglaze Gate, Transfer Jomonddpajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11190 opened under **ADR-22387** after CONTINUE/NEXT (Tenant MVP Transfer Jomonddgajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-22388**. Stage 11189 feature scope remains frozen.
