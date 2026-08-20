@@ -1069,7 +1069,7 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0) w
 
 Optional create `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; strip/upper) — omit/`null` → tenant base via `resolve_rate`; blank/`EURO`/`gh` → **422** (was free `str`; blank silently became base). Optional `exchange_rate` (>0) pairs with non-base currency. Sales **Currency** input (`aria-label="Sales invoice currency"`).
 
-**Cancel:** `POST /sales/invoices/{invoice_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to invoice `notes` as `Cancel: …` and stored in audit `invoice_cancelled.details.reason`); **draft only** (posted/sent/paid → 409). Sales Invoices **Cancel reason** UI (BR-7.4).
+**Cancel:** `POST /sales/invoices/{invoice_id}/cancel` `{ "reason" }` ∈ `SalesInvoiceCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to invoice `notes` as `Cancel: …` and stored in audit `invoice_cancelled.details.reason`; **draft only** (posted/sent/paid → 409). Sales Invoices **Sales invoice cancel reason** (`aria-label`; BR-7.4).
 
 Optional header `is_reverse_charge: true` forces reverse-charge memo for all lines (tax excluded from customer total / `tax_amount`; stored on `reverse_charge_tax` and `sales_invoices.is_reverse_charge`). Same pattern as purchase invoices; Create sale checkbox. Rate-level RC still applies when header is false.
 

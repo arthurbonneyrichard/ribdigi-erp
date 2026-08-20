@@ -518,7 +518,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Product lines with quantity, unit price, tax, discount, total (`items[].discount` + header `discount_amount` on create; Sales Create sale + detail KPI; tax before line discount)
   - [x] Customer selection with auto-filled details
   - [x] Multiple print templates (A4, thermal receipt) via `GET /sales/invoices/{id}/print?template=a4|thermal`
-  - [x] Status: Draft, Posted (approved), Sent (emailed), Partial, Paid, Overdue, Cancelled (`POST /sales/invoices/{id}/cancel` `{ reason }` required for draft → notes + audit; Sales **Cancel reason** UI; overdue derived from due date; payment-due scan refreshes overdue)
+  - [x] Status: Draft, Posted (approved), Sent (emailed), Partial, Paid, Overdue, Cancelled (`POST /sales/invoices/{id}/cancel` `{ reason }` ∈ `SalesInvoiceCancelReasonValue` for draft → notes + audit; omit/blank/garbage → **422**; Sales **Sales invoice cancel reason** UI; overdue derived from due date; payment-due scan refreshes overdue)
   - [x] Auto-update Accounts Receivable
   - [x] Support credit sales with credit limit check
   - [x] Email posted/sent/partial/paid/overdue invoice to customer (SMTP/console) with optional `to=` override; stamp `emailed_at`/`emailed_to`; unpaid → `sent` on first email; resend without changing payment status

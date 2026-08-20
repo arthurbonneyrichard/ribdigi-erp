@@ -1638,6 +1638,8 @@ export default function Page() {
                 value={siCancelReason}
                 onChange={(e) => setSiCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Sales invoice cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1718,7 +1720,13 @@ export default function Page() {
                       <button type="button" className="btn-ok" onClick={() => postInvoice(inv)}>
                         Post
                       </button>
-                      <button className="btn-danger" onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}
+                        aria-label={`Cancel sales invoice ${inv.id}`}
+                      >
+                        Cancel
+                      </button>
                     </>
                   )}
                   {inv.can_print && (
