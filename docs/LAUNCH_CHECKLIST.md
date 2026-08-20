@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 6487 track opened (ADR-12981: `test_stage6487_open.py`, `docs/STAGE_6487_PLAN.md`) — Transfer Kofunaajinyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-12982
+- [x] Transfer Kofunaajinyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 6487 I1: `test_stage6487_index_i1.py`, `docs/TRANSFER_KOFUNAAJINYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Kofunaajinyajiyuglaze Gate Honesty Pack blocker matrix (Stage 6487 B1: `test_stage6487_blockers_b1.py`, `docs/TRANSFER_KOFUNAAJINYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 6486 / Stage 6485 / Stage 392 / CHANGE_IMPACT pointers (Stage 6487 P1: `test_stage6487_pointers_p1.py`, `docs/TRANSFER_KOFUNAAJINYAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 6487 fidelity sync (D1: `test_stage6487_fidelity_d1.py`, `docs/STAGE_6487_FIDELITY.md`)
+- [x] Stage 6487 exit + freeze (H6487x: `test_stage6487_exit_h6487x.py`, `docs/STAGE_6487_EXIT_CRITERIA.md`, ADR-12982)
 Stage 6486 track opened (ADR-12979: `test_stage6486_open.py`, `docs/STAGE_6486_PLAN.md`) — Transfer Kofunaajigyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-12980
 - [x] Transfer Kofunaajigyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 6486 I1: `test_stage6486_index_i1.py`, `docs/TRANSFER_KOFUNAAJIGYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Kofunaajigyajiyuglaze Gate Honesty Pack blocker matrix (Stage 6486 B1: `test_stage6486_blockers_b1.py`, `docs/TRANSFER_KOFUNAAJIGYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
