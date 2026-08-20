@@ -31,3 +31,7 @@ Stage 4103 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiojiiijiyuglaze Gate, Transfer Keiojiiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4103 opened under **ADR-8213** after CONTINUE/NEXT (Tenant MVP Transfer Keiojioojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8214**. Stage 4102 feature scope remains frozen.
