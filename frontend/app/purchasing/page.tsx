@@ -253,6 +253,7 @@ export default function Page() {
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
   const [invNotes, setInvNotes] = useState('');
+  const [grnNotes, setGrnNotes] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
   const [manualInvProductId, setManualInvProductId] = useState('');
   const [manualInvQty, setManualInvQty] = useState('1');
@@ -646,9 +647,14 @@ export default function Page() {
       }
       const r = await api('/purchasing/grn', {
         method: 'POST',
-        body: JSON.stringify({ purchase_order_id: po.id, items }),
+        body: JSON.stringify({
+          purchase_order_id: po.id,
+          notes: grnNotes.trim() || null,
+          items,
+        }),
       });
       setMessage(`Posted ${r.data.grn_number}`);
+      setGrnNotes('');
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
@@ -709,7 +715,11 @@ export default function Page() {
       }
       const r = await api('/purchasing/grn', {
         method: 'POST',
-        body: JSON.stringify({ purchase_order_id: po.id, items }),
+        body: JSON.stringify({
+          purchase_order_id: po.id,
+          notes: grnNotes.trim() || null,
+          items,
+        }),
       });
       const rejectedLines = (r.data.items || []).filter((x: GrnItem) => (x.rejected_qty || 0) > 0);
       setMessage(
@@ -717,6 +727,7 @@ export default function Page() {
           ? `Posted ${r.data.grn_number} (${rejectedLines.length} line(s) with rejected qty)`
           : `Posted ${r.data.grn_number}`
       );
+      setGrnNotes('');
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
@@ -2179,15 +2190,29 @@ export default function Page() {
               </table>
               {(selected.status === 'sent' || selected.status === 'partially_received') &&
                 selected.items.some((i) => i.outstanding_qty > 0) && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input
+                      value={grnNotes}
+                      onChange={(e) => setGrnNotes(e.target.value)}
+                      placeholder="GRN notes (optional)"
+                      aria-label="GRN notes"
+                      title="Optional notes (1–500 chars; letters/digits required)"
+                      style={{ minWidth: 220 }}
+                    />
                     <button
                       type="button"
                       className="btn-ok"
                       onClick={() => postPartialReceive(selected)}
+                      aria-label="Post GRN"
                     >
                       Post GRN (accept / reject)
                     </button>
-                    <button type="button" className="btn-ok" onClick={() => receiveAll(selected)}>
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => receiveAll(selected)}
+                      aria-label="Receive all accepted"
+                    >
                       Receive all accepted
                     </button>
                     <span className="muted">
