@@ -31,3 +31,7 @@ Stage 5764 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyoutokuaaoojiyuglaze Gate, Transfer Kyoutokuaaoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5764 opened under **ADR-11535** after CONTINUE/NEXT (Tenant MVP Transfer Kyoutokuaauujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11536**. Stage 5763 feature scope remains frozen.
