@@ -31,3 +31,7 @@ Stage 2328 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamaojiyuglaze Gate, Transfer Higashiyamaojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2328 opened under **ADR-4663** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamaujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4664**. Stage 2327 feature scope remains frozen.
