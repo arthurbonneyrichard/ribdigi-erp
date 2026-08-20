@@ -31,3 +31,7 @@ Stage 2900 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keichoaanajiyuglaze Gate, Transfer Keichoaanajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2900 opened under **ADR-5807** after CONTINUE/NEXT (Tenant MVP Transfer Keichoaahajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5808**. Stage 2899 feature scope remains frozen.
