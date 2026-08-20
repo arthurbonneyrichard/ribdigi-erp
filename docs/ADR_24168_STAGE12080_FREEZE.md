@@ -31,3 +31,7 @@ Stage 12081 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenpouddiijiyuglaze Gate, Transfer Tenpouddiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12081 opened under **ADR-24169** after CONTINUE/NEXT (Tenant MVP Transfer Tenpouddoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-24170**. Stage 12080 feature scope remains frozen.
