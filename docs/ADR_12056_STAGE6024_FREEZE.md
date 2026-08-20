@@ -31,3 +31,7 @@ Stage 6025 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwaaauujiyuglaze Gate, Transfer Tenwaaauujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6025 opened under **ADR-12057** after CONTINUE/NEXT (Tenant MVP Transfer Tenwaaayajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12058**. Stage 6024 feature scope remains frozen.
