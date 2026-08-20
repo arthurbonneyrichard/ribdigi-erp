@@ -2445,7 +2445,13 @@ export default function Page() {
               Optional base + ratio: 1 of this unit = ratio × base (e.g. BOX = 12 PCS). Stock stays in the
               product&apos;s stock unit.
             </p>
-            <input value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="Code" />
+            <input
+              value={unitCode}
+              onChange={(e) => setUnitCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Unit code"
+              title="Unit code (1–20 chars; letters/digits required)"
+            />
             <input
               value={unitName}
               onChange={(e) => setUnitName(e.target.value)}

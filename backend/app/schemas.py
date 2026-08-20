@@ -1075,7 +1075,10 @@ class BrandUpdate(BaseModel):
 
 
 class UnitOfMeasureCreate(BaseModel):
-    code: str
+    # Required UoM code ∈ UnitCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_unit **409**.
+    code: UnitCodeValue
     # Required UoM label ∈ UnitNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog unit create).
     name: UnitNameValue
@@ -1084,7 +1087,9 @@ class UnitOfMeasureCreate(BaseModel):
 
 
 class UnitOfMeasureUpdate(BaseModel):
-    code: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank reached service **400**; punctuation/URL could persist on UnitOfMeasure.code).
+    code: UnitCodeValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on unit display name).
     name: UnitNameValue | None = None
@@ -3562,6 +3567,27 @@ BrandCodeValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_brand_code_value),
+]
+
+
+def validate_unit_code_value(value: str) -> str:
+    """AfterValidator: unit-of-measure code; blank/URL/garbage → 422 (1–20)."""
+    if not value:
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    if len(value) > 20:
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    return value
+
+
+# Catalog UoM code — matches UnitOfMeasure.code String(20); uniqueness in service.
+UnitCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_unit_code_value),
 ]
 
 
