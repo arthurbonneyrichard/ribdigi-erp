@@ -31,3 +31,7 @@ Stage 5003 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuaadajiyuglaze Gate, Transfer Sengokuaadajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5003 opened under **ADR-10013** after CONTINUE/NEXT (Tenant MVP Transfer Sengokuaabajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10014**. Stage 5002 feature scope remains frozen.
