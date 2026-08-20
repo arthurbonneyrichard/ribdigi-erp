@@ -31,3 +31,7 @@ Stage 9640 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishoeeyajiyuglaze Gate, Transfer Taishoeeyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9640 opened under **ADR-19287** after CONTINUE/NEXT (Tenant MVP Transfer Taishoeeeejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19288**. Stage 9639 feature scope remains frozen.
