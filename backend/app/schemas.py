@@ -1422,7 +1422,9 @@ class AiDocumentExpenseCreate(BaseModel):
     # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on AI draft expense).
     payee: ExpensePayeeValue | None = None
-    description: str | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on AI draft expense).
+    description: ExpenseDescriptionValue | None = None
     # omit/`null` → auto / service default; blank/`!!!`/`http://…` → **422** (was
     # free `str`; blank/garbage could persist on AI draft expense).
     reference: ExpenseReferenceValue | None = None

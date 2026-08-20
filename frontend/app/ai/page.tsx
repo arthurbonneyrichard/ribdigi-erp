@@ -24,6 +24,7 @@ export default function Page() {
   const [analysisFromDate, setAnalysisFromDate] = useState('');
   const [analysisToDate, setAnalysisToDate] = useState('');
   const [draftDocDate, setDraftDocDate] = useState('');
+  const [draftDocDescription, setDraftDocDescription] = useState('');
 
   async function go() {
     setError('');
@@ -382,6 +383,7 @@ export default function Page() {
       setLastDocExtract(d);
       const rawDate = String(d.extracted?.expense_date || '').trim();
       setDraftDocDate(rawDate.length >= 10 ? rawDate.slice(0, 10) : '');
+      setDraftDocDescription(String(d.extracted?.description || '').trim());
       setA(
         [
           `type=${d.document_type} engine=${d.engine} conf=${d.confidence}`,
@@ -417,7 +419,7 @@ export default function Page() {
         body: JSON.stringify({
           amount: Number(ex.amount),
           payee: ex.payee || null,
-          description: ex.description || null,
+          description: draftDocDescription.trim() || null,
           reference: ex.reference || null,
           expense_date: expenseDate,
           category_id: ex.category_id || lastDocExtract.category_suggestion?.category_id || null,
@@ -548,6 +550,14 @@ export default function Page() {
             onChange={(e) => setDraftDocDate(e.target.value)}
             title="Draft expense / purchase invoice date (YYYY-MM-DD)"
             aria-label="AI document draft date"
+          />
+          <input
+            value={draftDocDescription}
+            onChange={(e) => setDraftDocDescription(e.target.value)}
+            placeholder="Expense description (optional)"
+            title="Optional AI draft expense description (1–500 chars; letters/digits required)"
+            aria-label="AI document expense description"
+            style={{ minWidth: 200 }}
           />
           <button
             type="button"
