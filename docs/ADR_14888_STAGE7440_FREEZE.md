@@ -31,3 +31,7 @@ Stage 7441 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoeemajiyuglaze Gate, Transfer Enkyoeemajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7441 opened under **ADR-14889** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoeerajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14890**. Stage 7440 feature scope remains frozen.
