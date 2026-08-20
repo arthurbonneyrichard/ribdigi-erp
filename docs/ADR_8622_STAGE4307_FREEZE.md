@@ -31,3 +31,7 @@ Stage 4308 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanbunbajiyuglaze Gate, Transfer Kanbunbajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4308 opened under **ADR-8623** after CONTINUE/NEXT (Tenant MVP Transfer Kanbunpajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8624**. Stage 4307 feature scope remains frozen.
