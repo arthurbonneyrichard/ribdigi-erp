@@ -31,3 +31,7 @@ Stage 6660 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manjijihajiyuglaze Gate, Transfer Manjijihajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6660 opened under **ADR-13327** after CONTINUE/NEXT (Tenant MVP Transfer Manjijimajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13328**. Stage 6659 feature scope remains frozen.
