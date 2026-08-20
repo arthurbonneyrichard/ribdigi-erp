@@ -31,3 +31,7 @@ Stage 3280 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Asukaamajiyuglaze Gate, Transfer Asukaamajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3280 opened under **ADR-6567** after CONTINUE/NEXT (Tenant MVP Transfer Asukaarajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6568**. Stage 3279 feature scope remains frozen.
