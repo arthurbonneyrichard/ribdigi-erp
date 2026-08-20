@@ -31,3 +31,7 @@ Stage 2590 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowamajiyuglaze Gate, Transfer Kyowamajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2590 opened under **ADR-5187** after CONTINUE/NEXT (Tenant MVP Transfer Kyowarajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5188**. Stage 2589 feature scope remains frozen.
