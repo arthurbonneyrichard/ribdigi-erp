@@ -31,3 +31,7 @@ Stage 3080 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukaakajiyuglaze Gate, Transfer Koukaakajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3080 opened under **ADR-6167** after CONTINUE/NEXT (Tenant MVP Transfer Koukaasajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6168**. Stage 3079 feature scope remains frozen.
