@@ -31,3 +31,7 @@ Stage 5430 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsujiojiyuglaze Gate, Transfer Bakumatsujiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5430 opened under **ADR-10867** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsujiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10868**. Stage 5429 feature scope remains frozen.
