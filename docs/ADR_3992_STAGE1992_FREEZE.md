@@ -31,3 +31,7 @@ Stage 1993 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyooojiyuglaze Gate, Transfer Enkyooojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1993 opened under **ADR-3993** after CONTINUE/NEXT (Tenant MVP Transfer Enkyouujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3994**. Stage 1992 feature scope remains frozen.
