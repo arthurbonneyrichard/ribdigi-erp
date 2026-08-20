@@ -31,3 +31,7 @@ Stage 9736 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showacckyajiyuglaze Gate, Transfer Showacckyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9736 opened under **ADR-19479** after CONTINUE/NEXT (Tenant MVP Transfer Showaccgyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19480**. Stage 9735 feature scope remains frozen.
