@@ -31,3 +31,7 @@ Stage 6499 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuaajiwajiyuglaze Gate, Transfer Sengokuaajiwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6499 opened under **ADR-13005** after CONTINUE/NEXT (Tenant MVP Transfer Sengokuaajikajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13006**. Stage 6498 feature scope remains frozen.
