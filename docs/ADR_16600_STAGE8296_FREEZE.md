@@ -31,3 +31,7 @@ Stage 8297 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkaccnajiyuglaze Gate, Transfer Bunkaccnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8297 opened under **ADR-16601** after CONTINUE/NEXT (Tenant MVP Transfer Bunkacchajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16602**. Stage 8296 feature scope remains frozen.
