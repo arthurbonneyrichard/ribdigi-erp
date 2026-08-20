@@ -31,3 +31,7 @@ Stage 2062 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiojiyuglaze Gate, Transfer Kanseiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2062 opened under **ADR-4131** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4132**. Stage 2061 feature scope remains frozen.
