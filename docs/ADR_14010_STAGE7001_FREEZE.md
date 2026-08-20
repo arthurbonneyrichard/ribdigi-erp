@@ -31,3 +31,7 @@ Stage 7002 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeiccdajiyuglaze Gate, Transfer Houeiccdajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7002 opened under **ADR-14011** after CONTINUE/NEXT (Tenant MVP Transfer Houeiccbajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14012**. Stage 7001 feature scope remains frozen.
