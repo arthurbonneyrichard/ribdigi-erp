@@ -31,3 +31,7 @@ Stage 9999 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwaddaajiyuglaze Gate, Transfer Reiwaddaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9999 opened under **ADR-20005** after CONTINUE/NEXT (Tenant MVP Transfer Reiwaddajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20006**. Stage 9998 feature scope remains frozen.
