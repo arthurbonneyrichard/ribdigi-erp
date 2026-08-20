@@ -31,3 +31,7 @@ Stage 3212 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishoaarajiyuglaze Gate, Transfer Taishoaarajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3212 opened under **ADR-6431** after CONTINUE/NEXT (Tenant MVP Transfer Showaaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6432**. Stage 3211 feature scope remains frozen.
