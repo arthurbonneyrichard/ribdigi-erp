@@ -1683,6 +1683,8 @@ export default function Page() {
             value={supplierCategory}
             onChange={(e) => setSupplierCategory(e.target.value)}
             placeholder="Category"
+            aria-label="Supplier category"
+            title="Supplier category (optional; 1–80 chars; letters/digits required)"
             style={{ width: 120 }}
           />
           <select value={supplierStatus} onChange={(e) => setSupplierStatus(e.target.value)} title="Status">

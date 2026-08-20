@@ -1141,7 +1141,9 @@ class PartyCreate(BaseModel):
     profile_type: Literal[
         "walk_in", "registered", "trade", "manufacturer", "service", "other"
     ] = "registered"
-    category: str | None = None
+    # omit/`null` → no category; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared via `_normalize_party_profile`; punctuation/URL could persist).
+    category: PartyCategoryValue | None = None
     status: Literal["active", "inactive"] = "active"
     email: EmailStr | None = None
     # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
@@ -1167,7 +1169,9 @@ class PartyUpdate(BaseModel):
     profile_type: (
         Literal["walk_in", "registered", "trade", "manufacturer", "service", "other"] | None
     ) = None
-    category: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; punctuation/URL could persist on Party.category).
+    category: PartyCategoryValue | None = None
     status: Literal["active", "inactive"] | None = None
     email: EmailStr | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
@@ -3177,6 +3181,27 @@ PartyNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_party_name_value),
+]
+
+
+def validate_party_category_value(value: str) -> str:
+    """AfterValidator: party category label; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Customer/supplier category — matches Party.category String(80).
+PartyCategoryValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_category_value),
 ]
 
 

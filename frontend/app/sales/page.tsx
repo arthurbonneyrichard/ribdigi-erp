@@ -89,6 +89,7 @@ export default function Page() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerProfileType, setCustomerProfileType] = useState('registered');
+  const [customerCategory, setCustomerCategory] = useState('');
   const [customerStatus, setCustomerStatus] = useState('active');
   const [customerLat, setCustomerLat] = useState('');
   const [customerLng, setCustomerLng] = useState('');
@@ -303,6 +304,7 @@ export default function Page() {
           name: customerName.trim(),
           code: customerCode.trim() || null,
           profile_type: customerProfileType || 'registered',
+          category: customerCategory.trim() || null,
           status: customerStatus || 'active',
           email: customerEmail || null,
           phone: customerPhone.trim() || null,
@@ -322,6 +324,7 @@ export default function Page() {
       setCustomerPhone('');
       setCustomerAddress('');
       setCustomerProfileType('registered');
+      setCustomerCategory('');
       setCustomerStatus('active');
       setCustomerLat('');
       setCustomerLng('');
@@ -1116,6 +1119,14 @@ export default function Page() {
             <option value="registered">Registered</option>
             <option value="walk_in">Walk-in</option>
           </select>
+          <input
+            value={customerCategory}
+            onChange={(e) => setCustomerCategory(e.target.value)}
+            placeholder="Category"
+            aria-label="Customer category"
+            title="Customer category (optional; 1–80 chars; letters/digits required)"
+            style={{ width: 120 }}
+          />
           <select value={customerStatus} onChange={(e) => setCustomerStatus(e.target.value)} title="Status">
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
