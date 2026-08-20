@@ -31,3 +31,7 @@ Stage 2698 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwasajiyuglaze Gate, Transfer Reiwasajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2698 opened under **ADR-5403** after CONTINUE/NEXT (Tenant MVP Transfer Reiwatajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5404**. Stage 2697 feature scope remains frozen.
