@@ -31,3 +31,7 @@ Stage 7425 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoeeaajiyuglaze Gate, Transfer Enkyoeeaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7425 opened under **ADR-14857** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoeeajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14858**. Stage 7424 feature scope remains frozen.
