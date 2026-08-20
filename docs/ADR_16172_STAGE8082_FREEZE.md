@@ -31,3 +31,7 @@ Stage 8083 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseieeujiyuglaze Gate, Transfer Kanseieeujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8083 opened under **ADR-16173** after CONTINUE/NEXT (Tenant MVP Transfer Kanseieeijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16174**. Stage 8082 feature scope remains frozen.
