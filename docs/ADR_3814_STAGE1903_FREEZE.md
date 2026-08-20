@@ -31,3 +31,7 @@ Stage 1904 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchimomoyamaajiyuglaze Gate, Transfer Azuchimomoyamaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1904 opened under **ADR-3815** after CONTINUE/NEXT (Tenant MVP Transfer Keichouajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3816**. Stage 1903 feature scope remains frozen.
