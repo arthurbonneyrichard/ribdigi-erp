@@ -31,3 +31,7 @@ Stage 8117 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiffmajiyuglaze Gate, Transfer Kanseiffmajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8117 opened under **ADR-16241** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiffrajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16242**. Stage 8116 feature scope remains frozen.
