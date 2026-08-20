@@ -31,3 +31,7 @@ Stage 3791 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genbunjisajiyuglaze Gate, Transfer Genbunjisajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3791 opened under **ADR-7589** after CONTINUE/NEXT (Tenant MVP Transfer Genbunjitajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7590**. Stage 3790 feature scope remains frozen.
