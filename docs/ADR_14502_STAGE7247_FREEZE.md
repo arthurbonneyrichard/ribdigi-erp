@@ -31,3 +31,7 @@ Stage 7248 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoccyajiyuglaze Gate, Transfer Kanpoccyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7248 opened under **ADR-14503** after CONTINUE/NEXT (Tenant MVP Transfer Kanpocceejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14504**. Stage 7247 feature scope remains frozen.
