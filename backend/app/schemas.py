@@ -1993,16 +1993,33 @@ class PurchaseApprovalSettingsUpdate(BaseModel):
 
 
 class LowStockSuggestionLine(BaseModel):
+    """One low-stock suggestion line for draft PR creation (BR-6.2).
+
+    Optional `notes` ∈ PurchaseRequestNotesValue; omit/`null` → no line notes;
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist).
+    """
+
     product_id: str
     quantity: float | None = Field(default=None, gt=0)
     warehouse_id: str | None = None
     preferred_supplier_id: str | None = None
-    notes: str | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseRequestItem.notes).
+    notes: PurchaseRequestNotesValue | None = None
 
 
 class LowStockSuggestionsCreate(BaseModel):
+    """POST /purchasing/requests/from-low-stock (BR-6.2).
+
+    Optional header `notes` ∈ PurchaseRequestNotesValue; omit/`null` → service
+    default; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
+    could persist on draft PREQ notes).
+    """
+
     lines: list[LowStockSuggestionLine] = Field(min_length=1)
-    notes: str | None = None
+    # omit/`null` → service default note; blank/`!!!`/`http://…` → **422** (was
+    # free `str`; blank/garbage could persist on PurchaseRequest.notes).
+    notes: PurchaseRequestNotesValue | None = None
     department: str | None = None
     include_open: bool = False
 

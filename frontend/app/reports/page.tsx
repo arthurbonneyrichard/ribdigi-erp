@@ -140,6 +140,7 @@ export default function Page() {
   });
   const [suggestSelected, setSuggestSelected] = useState<Record<string, boolean>>({});
   const [suggestBusy, setSuggestBusy] = useState(false);
+  const [suggestNotes, setSuggestNotes] = useState('');
 
   function qs(extra: Record<string, string> = {}) {
     const params = new URLSearchParams();
@@ -330,7 +331,7 @@ export default function Page() {
             warehouse_id: ln.warehouse_id || null,
             preferred_supplier_id: ln.preferred_supplier_id || null,
           })),
-          notes: 'Created from low-stock suggestions',
+          notes: suggestNotes.trim() || null,
         }),
       });
       const created = r.data?.created || [];
@@ -340,6 +341,7 @@ export default function Page() {
           ? `Created draft PR(s): ${nums}. Open Purchasing → Requests to submit.`
           : r.message || 'Done'
       );
+      setSuggestNotes('');
       await load('inventory');
     } catch (err: any) {
       setError(err.message);
@@ -1134,13 +1136,24 @@ export default function Page() {
               <h3 style={{ margin: 0 }}>
                 Low-stock suggestions ({data.suggestions?.count ?? data.lowStock?.count ?? 0})
               </h3>
-              <button
-                type="button"
-                onClick={createDraftPrsFromSuggestions}
-                disabled={suggestBusy || !(data.suggestions?.lines || []).length}
-              >
-                {suggestBusy ? 'Creating…' : 'Create draft PR'}
-              </button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  value={suggestNotes}
+                  onChange={(e) => setSuggestNotes(e.target.value)}
+                  placeholder="Draft PR notes (optional)"
+                  aria-label="Low-stock suggestion notes"
+                  title="Optional notes for draft PRs (1–500 chars; letters/digits required)"
+                  style={{ minWidth: 200 }}
+                />
+                <button
+                  type="button"
+                  onClick={createDraftPrsFromSuggestions}
+                  disabled={suggestBusy || !(data.suggestions?.lines || []).length}
+                  aria-label="Create draft PR from low-stock suggestions"
+                >
+                  {suggestBusy ? 'Creating…' : 'Create draft PR'}
+                </button>
+              </div>
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
               Select lines to raise draft purchase requests. Submit/approve remains in Purchasing.
