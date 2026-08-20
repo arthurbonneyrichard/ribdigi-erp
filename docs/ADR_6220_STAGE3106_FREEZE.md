@@ -31,3 +31,7 @@ Stage 3107 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseiaaiijiyuglaze Gate, Transfer Anseiaaiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3107 opened under **ADR-6221** after CONTINUE/NEXT (Tenant MVP Transfer Anseiaaoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6222**. Stage 3106 feature scope remains frozen.
