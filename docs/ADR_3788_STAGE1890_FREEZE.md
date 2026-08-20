@@ -31,3 +31,7 @@ Stage 1891 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunrokuajiyuglaze Gate, Transfer Bunrokuajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1891 opened under **ADR-3789** after CONTINUE/NEXT (Tenant MVP Transfer Kakeiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3790**. Stage 1890 feature scope remains frozen.
