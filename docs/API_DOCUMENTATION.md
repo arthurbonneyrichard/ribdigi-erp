@@ -1114,7 +1114,7 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 }
 ```
 
-**Close Shift:** `POST /pos/sessions/{session_id}/close`
+**Close Shift:** `POST /pos/sessions/{session_id}/close` — required `actual_cash` (≥0); optional `notes` ∈ `PosSessionCloseNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on shift notes). POS **POS shift close notes** input (`aria-label`); Close shift sends `null` when blank.
 
 ```json
 {

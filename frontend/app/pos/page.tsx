@@ -236,6 +236,7 @@ export default function Page() {
   const [session, setSession] = useState<Session | null>(null);
   const [openingCash, setOpeningCash] = useState('100');
   const [actualCash, setActualCash] = useState('');
+  const [closeNotes, setCloseNotes] = useState('');
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
@@ -373,7 +374,9 @@ export default function Page() {
         }
       })
       .catch(() => setStores([]));
-  }, [browse, ctxStoreId, setCtxStoreId]);
+    // setCtxStoreId intentionally omitted: stable setter (see storeContext noops);
+    // including an unstable fallback previously caused a mount request storm.
+  }, [browse, ctxStoreId]);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -467,6 +470,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           actual_cash: Number(actualCash || session.expected_cash),
+          notes: closeNotes.trim() || null,
         }),
       });
       setSession(null);
@@ -475,6 +479,7 @@ export default function Page() {
         `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`
       );
       setActualCash('');
+      setCloseNotes('');
       setCart([]);
       await loadSessions();
     } catch (err: any) {
@@ -848,7 +853,21 @@ export default function Page() {
                   placeholder={`Count ${session.expected_cash}`}
                   aria-label="Counted cash"
                 />
-                <button type="button" className="tpos-btn" onClick={closeShift}>
+                <input
+                  className="tpos-input"
+                  value={closeNotes}
+                  onChange={(e) => setCloseNotes(e.target.value)}
+                  placeholder="Close notes (optional)"
+                  aria-label="POS shift close notes"
+                  title="Optional notes (1–500 chars; letters/digits required)"
+                  style={{ minWidth: 180 }}
+                />
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  onClick={closeShift}
+                  aria-label="Close shift"
+                >
                   Close shift
                 </button>
                 <button

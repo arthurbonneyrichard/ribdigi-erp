@@ -3547,6 +3547,27 @@ PosCustomerNameValue = Annotated[
 ]
 
 
+def validate_pos_session_close_notes_value(value: str) -> str:
+    """AfterValidator: POS shift close notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# POS session close notes — PosSession.notes Text; keep ≤500 at API boundary.
+PosSessionCloseNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_pos_session_close_notes_value),
+]
+
+
 def validate_api_key_name_value(value: str) -> str:
     """AfterValidator: API key display name; blank/URL/garbage/short → 422 (2–120)."""
     if not value or len(value) < 2 or len(value) > 120:
@@ -5155,7 +5176,9 @@ class PosSessionOpen(BaseModel):
 class PosSessionClose(BaseModel):
     actual_cash: float = Field(ge=0)
     closing_cash: float | None = None
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PosSession.notes Text).
+    notes: PosSessionCloseNotesValue | None = None
 
 
 class PosPaymentLine(BaseModel):
