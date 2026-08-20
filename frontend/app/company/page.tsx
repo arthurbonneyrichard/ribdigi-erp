@@ -523,6 +523,8 @@ export default function Page() {
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}
                 placeholder="Required before Suspend"
+                title="Required suspend reason (1–500 chars; letters/digits required)"
+                aria-label="Tenant suspend reason"
                 disabled={!!tenant.read_only}
               />
             </label>
@@ -534,7 +536,12 @@ export default function Page() {
             <button className="btn-ok" onClick={activate}>Activate</button>
           )}
           {tenant.status !== 'suspended' && (
-            <button className="btn-danger" onClick={suspend} disabled={!!tenant.read_only}>
+            <button
+              className="btn-danger"
+              onClick={suspend}
+              disabled={!!tenant.read_only}
+              aria-label="Suspend company"
+            >
               Suspend
             </button>
           )}

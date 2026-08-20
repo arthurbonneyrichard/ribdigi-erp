@@ -20,6 +20,8 @@ def test_platform_suspend_reason_ui_wired():
     assert "Suspended_reason" not in plat  # typo guard
     assert "suspended_reason" in plat
     assert "Required before Suspend" in plat
+    assert 'aria-label="Tenant suspend reason"' in plat
+    assert "aria-label={`Suspend tenant ${t.id}`}" in plat
     # Suspend path must not use window.prompt
     assert "window.prompt" not in plat
     assert "window.confirm(`Suspend ${row.company_name}?`)" in plat
@@ -47,7 +49,14 @@ async def test_platform_suspend_requires_and_persists_reason(client):
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/tenants/{slug}/suspend",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         f"/api/v1/tenants/{slug}/suspend",

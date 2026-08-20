@@ -568,9 +568,17 @@ class TenantProfileUpdate(BaseModel):
 
 
 class TenantSuspendRequest(BaseModel):
-    """Tenant suspend — typed reason required (honesty)."""
+    """Tenant suspend — typed reason required (honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ TenantSuspendReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `Tenant.suspended_reason`).
+    Shared by platform `POST /tenants/{ref}/suspend` and company
+    `POST /tenants/me/suspend`.
+    """
+
+    reason: TenantSuspendReasonValue
 
 
 class TenantSubscriptionAssign(BaseModel):
@@ -4913,6 +4921,27 @@ StockTransferRejectReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_transfer_reject_reason_value),
+]
+
+
+def validate_tenant_suspend_reason_value(value: str) -> str:
+    """AfterValidator: tenant suspend reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Tenant suspend reason — Tenant.suspended_reason (platform + company self-suspend).
+TenantSuspendReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_tenant_suspend_reason_value),
 ]
 
 

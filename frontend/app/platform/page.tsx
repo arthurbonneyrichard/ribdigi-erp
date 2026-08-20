@@ -521,6 +521,8 @@ export default function PlatformConsole() {
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}
                 placeholder="Required before Suspend"
+                title="Required suspend reason (1–500 chars; letters/digits required)"
+                aria-label="Tenant suspend reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -599,6 +601,7 @@ export default function PlatformConsole() {
                             className="btn-danger"
                             disabled={busy === t.id}
                             onClick={() => suspendTenant(t)}
+                            aria-label={`Suspend tenant ${t.id}`}
                           >
                             Suspend
                           </button>

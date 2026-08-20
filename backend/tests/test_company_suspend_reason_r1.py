@@ -21,6 +21,8 @@ def test_company_suspend_reason_ui_wired():
     assert "Suspend reason (required)" in company
     assert "Required before Suspend" in company
     assert "suspended_reason" in company
+    assert 'aria-label="Tenant suspend reason"' in company
+    assert 'aria-label="Suspend company"' in company
 
 
 async def _admin(ac, seed):
@@ -44,7 +46,14 @@ async def test_company_me_suspend_requires_and_persists_reason(client):
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        "/api/v1/tenants/me/suspend",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         "/api/v1/tenants/me/suspend",

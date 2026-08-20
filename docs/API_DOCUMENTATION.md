@@ -312,8 +312,8 @@ Service `apply_print_branding_update` remains defense-in-depth **400**. Read pat
 
 ### 3.4 Tenant Status Management
 **List (platform):** `GET /tenants?status=` — Query `status` ∈ `trial`|`active`|`grace`|`suspended` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Service `list_tenants` remains defense-in-depth. Platform console **Tenant status** chips (client filter over full cache; API also supports `?status=`).  
-**Self-suspend:** `POST /tenants/me/suspend` — body `{ "reason" }` **required** (`TenantSuspendRequest`; omit/empty → 422; whitespace → 400) for company_admin/super_admin; stores `suspended_reason`, revokes sessions, emits `tenant.suspended`. Company page **Suspend reason** input (no hardcoded `"Admin requested"`).  
-**Suspend:** `POST /tenants/{tenant_ref}/suspend` — body `{ "reason" }` **required** (same schema) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Suspend reason** input (no `window.prompt`).  
+**Self-suspend:** `POST /tenants/me/suspend` — body `{ "reason" }` ∈ `TenantSuspendReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) for company_admin/super_admin; omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Stores `suspended_reason`, revokes sessions, emits `tenant.suspended`. Company page **Tenant suspend reason** (`aria-label`; no hardcoded `"Admin requested"`).  
+**Suspend:** `POST /tenants/{tenant_ref}/suspend` — body `{ "reason" }` ∈ `TenantSuspendReasonValue` (same schema) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Tenant suspend reason** (`aria-label`; no `window.prompt`).  
 **Activate:** `POST /tenants/{tenant_ref}/activate`  
 (`tenant_ref` = id or slug; platform `platform_tenants:write` / legacy **super_admin** for cross-tenant)
 

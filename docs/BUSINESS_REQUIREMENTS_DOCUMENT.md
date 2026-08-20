@@ -163,7 +163,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Support statuses: Trial, Active, Suspended
-    - Complete (MVP): also `grace`; platform list/filter + suspend/activate with required **Suspend reason** (`POST /tenants/{ref}/suspend` `{ reason }` → `suspended_reason`; Platform console input — no `window.prompt`) + Company self-suspend reason (`POST /tenants/me/suspend` required reason; Company page input — no hardcoded `"Admin requested"`)
+    - Complete (MVP): also `grace`; platform list/filter + suspend/activate with required **Suspend reason** (`POST /tenants/{ref}/suspend` `{ reason }` ∈ `TenantSuspendReasonValue` → `suspended_reason`; omit/blank/garbage → **422**; Platform console **Tenant suspend reason** — no `window.prompt`) + Company self-suspend reason (`POST /tenants/me/suspend` same Value type; Company page **Tenant suspend reason** — no hardcoded `"Admin requested"`)
   - [x] Automatic trial expiration notification (7 days, 3 days, 1 day before)
     - Complete (MVP): Celery `scan_trial_lifecycle` + in-app billing notices
   - [x] Grace period handling for suspended tenants (read-only access)

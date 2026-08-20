@@ -3,8 +3,8 @@
 Runtime already enforced reasons; empty body previously bypassed schema via
 optional payload / Optional reason and returned service 400. Align with PREQ /
 Skip-next style so omit/empty → 422. ExpenseReject / SalesQuotationReject /
-StockTransferReject use typed *RejectReasonValue (full narrative honesty
-including garbage → 422).
+StockTransferReject / TenantSuspendRequest use typed *ReasonValue (full
+narrative honesty including garbage → 422).
 """
 
 from __future__ import annotations
@@ -24,13 +24,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_reject_suspend_reason_schemas_required():
-    field = TenantSuspendRequest.model_fields["reason"]
-    assert field.is_required()
-    assert field.annotation is str
-
     from pydantic import ValidationError
 
     for cls, sample, bad in (
+        (TenantSuspendRequest, "ok suspend reason", "!!!!"),
         (ExpenseReject, "ok expense reason", "!!!!"),
         (SalesQuotationReject, "ok quote reason", "!!!!"),
         (StockTransferReject, "ok transfer reason", "!!!!"),
