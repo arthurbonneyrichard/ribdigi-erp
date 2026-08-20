@@ -31,3 +31,7 @@ Stage 6067 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jokyoaabajiyuglaze Gate, Transfer Jokyoaabajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6067 opened under **ADR-12141** after CONTINUE/NEXT (Tenant MVP Transfer Jokyoaapajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12142**. Stage 6066 feature scope remains frozen.
