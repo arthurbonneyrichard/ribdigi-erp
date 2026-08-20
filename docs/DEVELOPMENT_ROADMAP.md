@@ -4400,6 +4400,14 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 8712 D1 (2026-08-14):** Transfer Koukaddnajiyuglaze Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_8712_FIDELITY.md` (`test_stage8712_fidelity_d1.py`). Open ADR: `docs/ADR_17431_STAGE8712_OPEN.md`; plan `docs/STAGE_8712_PLAN.md`.
+
+**Stage 8712 exit (2026-08-14):** I1, B1, P1, D1, H8712x met — `docs/STAGE_8712_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_17432_STAGE8712_FREEZE.md`. Fidelity: `docs/STAGE_8712_FIDELITY.md`.
+
+**Stage 8711 D1 (2026-08-14):** Transfer Koukaddtajiyuglaze Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_8711_FIDELITY.md` (`test_stage8711_fidelity_d1.py`). Open ADR: `docs/ADR_17429_STAGE8711_OPEN.md`; plan `docs/STAGE_8711_PLAN.md`.
+
+**Stage 8711 exit (2026-08-14):** I1, B1, P1, D1, H8711x met — `docs/STAGE_8711_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_17430_STAGE8711_FREEZE.md`. Fidelity: `docs/STAGE_8711_FIDELITY.md`.
+
 **Stage 8710 D1 (2026-08-14):** Transfer Koukaddsajiyuglaze Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_8710_FIDELITY.md` (`test_stage8710_fidelity_d1.py`). Open ADR: `docs/ADR_17427_STAGE8710_OPEN.md`; plan `docs/STAGE_8710_PLAN.md`.
 
 **Stage 8710 exit (2026-08-14):** I1, B1, P1, D1, H8710x met — `docs/STAGE_8710_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_17428_STAGE8710_FREEZE.md`. Fidelity: `docs/STAGE_8710_FIDELITY.md`.
