@@ -31,3 +31,7 @@ Stage 4559 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachikyajiyuglaze Gate, Transfer Muromachikyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4559 opened under **ADR-9125** after CONTINUE/NEXT (Tenant MVP Transfer Muromachigyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9126**. Stage 4558 feature scope remains frozen.
