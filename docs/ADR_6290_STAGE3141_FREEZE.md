@@ -31,3 +31,7 @@ Stage 3142 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyuaaajiyuglaze Gate, Transfer Bunkyuaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3142 opened under **ADR-6291** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyuaaiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6292**. Stage 3141 feature scope remains frozen.
