@@ -31,3 +31,7 @@ Stage 9580 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishobbkyajiyuglaze Gate, Transfer Taishobbkyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9580 opened under **ADR-19167** after CONTINUE/NEXT (Tenant MVP Transfer Taishobbgyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19168**. Stage 9579 feature scope remains frozen.
