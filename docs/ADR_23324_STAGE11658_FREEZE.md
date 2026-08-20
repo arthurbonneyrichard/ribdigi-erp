@@ -31,3 +31,7 @@ Stage 11659 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nanbokubbgajiyuglaze Gate, Transfer Nanbokubbgajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11659 opened under **ADR-23325** after CONTINUE/NEXT (Tenant MVP Transfer Nanbokubbkyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-23326**. Stage 11658 feature scope remains frozen.
