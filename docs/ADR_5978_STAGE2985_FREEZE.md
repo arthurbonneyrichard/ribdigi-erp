@@ -31,3 +31,7 @@ Stage 2986 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiaauujiyuglaze Gate, Transfer Kanseiaauujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2986 opened under **ADR-5979** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiaayajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5980**. Stage 2985 feature scope remains frozen.
