@@ -31,3 +31,7 @@ Stage 3650 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanbunjihajiyuglaze Gate, Transfer Kanbunjihajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3650 opened under **ADR-7307** after CONTINUE/NEXT (Tenant MVP Transfer Kanbunjimajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7308**. Stage 3649 feature scope remains frozen.
