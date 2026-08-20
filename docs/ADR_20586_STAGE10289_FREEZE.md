@@ -31,3 +31,7 @@ Stage 10290 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraeeyajiyuglaze Gate, Transfer Naraeeyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10290 opened under **ADR-20587** after CONTINUE/NEXT (Tenant MVP Transfer Naraeeeejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20588**. Stage 10289 feature scope remains frozen.
