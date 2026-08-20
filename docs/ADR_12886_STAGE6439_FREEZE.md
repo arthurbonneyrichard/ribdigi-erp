@@ -31,3 +31,7 @@ Stage 6440 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiaajioojiyuglaze Gate, Transfer Yayoiaajioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6440 opened under **ADR-12887** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiaajiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12888**. Stage 6439 feature scope remains frozen.
