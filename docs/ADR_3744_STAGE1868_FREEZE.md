@@ -31,3 +31,7 @@ Stage 1869 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenijiyuglaze Gate, Transfer Manenijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1869 opened under **ADR-3745** after CONTINUE/NEXT (Tenant MVP Transfer Kaeiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3746**. Stage 1868 feature scope remains frozen.
