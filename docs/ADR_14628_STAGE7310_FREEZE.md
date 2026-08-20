@@ -31,3 +31,7 @@ Stage 7311 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoeemajiyuglaze Gate, Transfer Kanpoeemajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7311 opened under **ADR-14629** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoeerajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14630**. Stage 7310 feature scope remains frozen.
