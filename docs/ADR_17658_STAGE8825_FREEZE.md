@@ -31,3 +31,7 @@ Stage 8826 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeicckyajiyuglaze Gate, Transfer Kaeicckyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8826 opened under **ADR-17659** after CONTINUE/NEXT (Tenant MVP Transfer Kaeiccgyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17660**. Stage 8825 feature scope remains frozen.
