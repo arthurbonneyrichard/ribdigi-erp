@@ -1,0 +1,34 @@
+"""Stage 2234 open — ADR-4475 + STAGE_2234_PLAN + ADR-4474 amendment."""
+from __future__ import annotations
+from pathlib import Path
+import pytest
+ROOT = Path(__file__).resolve().parents[2]
+DOCS = ROOT / "docs"
+
+@pytest.mark.parametrize("rel", [
+    "docs/ADR_4475_STAGE2234_OPEN.md", "docs/STAGE_2234_PLAN.md",
+    "docs/ADR_4474_STAGE2233_FREEZE.md", "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "docs/TRANSFER_MUROMACHIIIJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "docs/TRANSFER_MUROMACHIIIJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+    "docs/TRANSFER_MUROMACHIIIJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+])
+def test_stage2234_open_artifacts_exist(rel: str) -> None:
+    assert (ROOT / rel).is_file(), f"missing {rel}"
+
+def test_adr4475_opens_stage2234() -> None:
+    text = (DOCS / "ADR_4475_STAGE2234_OPEN.md").read_text(encoding="utf-8")
+    assert "ADR-4475" in text and "Stage 2234" in text
+    for token in ("I1", "B1", "P1", "D1", "H2234x"):
+        assert token in text, token
+
+def test_stage2234_plan_structure() -> None:
+    text = (DOCS / "STAGE_2234_PLAN.md").read_text(encoding="utf-8")
+    assert "Stage 2234" in text
+    for token in ("I1", "B1", "P1", "D1", "H2234x"):
+        assert token in text, token
+
+def test_adr4474_amended_for_stage2234() -> None:
+    text = (DOCS / "ADR_4474_STAGE2233_FREEZE.md").read_text(encoding="utf-8")
+    assert "Stage 2234" in text
+    assert "ADR-4475" in text or "ADR_4475" in text
+    assert "CONTINUE/NEXT" in text
