@@ -2578,17 +2578,33 @@ export default function Page() {
               aria-label="Variant barcode"
               title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
-            <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
-            <input value={variantColor} onChange={(e) => setVariantColor(e.target.value)} placeholder="Color (optional)" />
+            <input
+              value={variantSize}
+              onChange={(e) => setVariantSize(e.target.value)}
+              placeholder="Size (optional)"
+              aria-label="Variant size"
+              title="Optional size (1–80 chars; letters/digits required)"
+            />
+            <input
+              value={variantColor}
+              onChange={(e) => setVariantColor(e.target.value)}
+              placeholder="Color (optional)"
+              aria-label="Variant color"
+              title="Optional color (1–80 chars; letters/digits required)"
+            />
             <input
               value={variantFlavor}
               onChange={(e) => setVariantFlavor(e.target.value)}
               placeholder="Flavor (optional)"
+              aria-label="Variant flavor"
+              title="Optional flavor (1–80 chars; letters/digits required)"
             />
             <input
               value={variantDosage}
               onChange={(e) => setVariantDosage(e.target.value)}
               placeholder="Dosage (optional)"
+              aria-label="Variant dosage"
+              title="Optional dosage (1–80 chars; letters/digits required)"
             />
             <button
               onClick={addVariant}

@@ -1098,10 +1098,12 @@ class ProductVariantCreate(BaseModel):
     # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
-    size: str | None = None
-    color: str | None = None
-    flavor: str | None = None
-    dosage: str | None = None
+    # omit/`null` → no attr; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared via `_clean_attr`; punctuation/URL could persist).
+    size: VariantAttrValue | None = None
+    color: VariantAttrValue | None = None
+    flavor: VariantAttrValue | None = None
+    dosage: VariantAttrValue | None = None
     cost_price: float | None = None
     selling_price: float | None = None
 
@@ -1114,10 +1116,12 @@ class ProductVariantUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
-    size: str | None = None
-    color: str | None = None
-    flavor: str | None = None
-    dosage: str | None = None
+    # omit → no change; `null` → clear; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared; punctuation/URL could persist).
+    size: VariantAttrValue | None = None
+    color: VariantAttrValue | None = None
+    flavor: VariantAttrValue | None = None
+    dosage: VariantAttrValue | None = None
     cost_price: float | None = None
     selling_price: float | None = None
     is_active: bool | None = None
@@ -3501,6 +3505,27 @@ VariantNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_variant_name_value),
+]
+
+
+def validate_variant_attr_value(value: str) -> str:
+    """AfterValidator: variant size/color/flavor/dosage; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Product variant attrs — matches ProductVariant.size|color|flavor|dosage String(80).
+VariantAttrValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_variant_attr_value),
 ]
 
 
