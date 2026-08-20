@@ -31,3 +31,7 @@ Stage 10143 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Asukaddnajiyuglaze Gate, Transfer Asukaddnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10143 opened under **ADR-20293** after CONTINUE/NEXT (Tenant MVP Transfer Asukaddhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20294**. Stage 10142 feature scope remains frozen.
