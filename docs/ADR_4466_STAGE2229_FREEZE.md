@@ -31,3 +31,7 @@ Stage 2230 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraeejiyuglaze Gate, Transfer Kamakuraeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2230 opened under **ADR-4467** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4468**. Stage 2229 feature scope remains frozen.
