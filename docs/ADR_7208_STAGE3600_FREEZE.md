@@ -31,3 +31,7 @@ Stage 3601 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jooajiyuglaze Gate, Transfer Jooajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3601 opened under **ADR-7209** after CONTINUE/NEXT (Tenant MVP Transfer Jooiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7210**. Stage 3600 feature scope remains frozen.
