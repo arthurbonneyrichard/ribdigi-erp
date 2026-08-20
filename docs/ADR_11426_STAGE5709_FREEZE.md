@@ -31,3 +31,7 @@ Stage 5710 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyouaaajiyuglaze Gate, Transfer Enkyouaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5710 opened under **ADR-11427** after CONTINUE/NEXT (Tenant MVP Transfer Enkyouaaiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11428**. Stage 5709 feature scope remains frozen.
