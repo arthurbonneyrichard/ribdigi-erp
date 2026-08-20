@@ -31,3 +31,7 @@ Stage 7394 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoccpajiyuglaze Gate, Transfer Enkyoccpajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7394 opened under **ADR-14795** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoccgajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14796**. Stage 7393 feature scope remains frozen.
