@@ -31,3 +31,7 @@ Stage 9310 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiobbtajiyuglaze Gate, Transfer Keiobbtajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9310 opened under **ADR-18627** after CONTINUE/NEXT (Tenant MVP Transfer Keiobbnajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18628**. Stage 9309 feature scope remains frozen.
