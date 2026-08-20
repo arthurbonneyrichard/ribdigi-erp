@@ -31,3 +31,7 @@ Stage 5966 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jooaakyajiyuglaze Gate, Transfer Jooaakyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5966 opened under **ADR-11939** after CONTINUE/NEXT (Tenant MVP Transfer Jooaagyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11940**. Stage 5965 feature scope remains frozen.
