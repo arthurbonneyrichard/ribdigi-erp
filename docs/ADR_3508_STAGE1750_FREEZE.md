@@ -31,3 +31,7 @@ Stage 1751 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nabeshimajiyuglaze Gate, Transfer Nabeshimajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1751 opened under **ADR-3509** after CONTINUE/NEXT (Tenant MVP Transfer Hizenjiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3510**. Stage 1750 feature scope remains frozen.
