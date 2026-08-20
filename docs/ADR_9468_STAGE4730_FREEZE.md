@@ -31,3 +31,7 @@ Stage 4731 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohoaadajiyuglaze Gate, Transfer Kyohoaadajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4731 opened under **ADR-9469** after CONTINUE/NEXT (Tenant MVP Transfer Kyohoaabajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9470**. Stage 4730 feature scope remains frozen.
