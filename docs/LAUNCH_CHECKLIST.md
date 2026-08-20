@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 3393 track opened (ADR-6793: `test_stage3393_open.py`, `docs/STAGE_3393_PLAN.md`) — Transfer Bakumatsuaaeejiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-6794
+- [x] Transfer Bakumatsuaaeejiyuglaze Gate Honesty Pack remaining-gate hub (Stage 3393 I1: `test_stage3393_index_i1.py`, `docs/TRANSFER_BAKUMATSUAAEEJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Bakumatsuaaeejiyuglaze Gate Honesty Pack blocker matrix (Stage 3393 B1: `test_stage3393_blockers_b1.py`, `docs/TRANSFER_BAKUMATSUAAEEJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 3392 / Stage 3391 / Stage 392 / CHANGE_IMPACT pointers (Stage 3393 P1: `test_stage3393_pointers_p1.py`, `docs/TRANSFER_BAKUMATSUAAEEJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 3393 fidelity sync (D1: `test_stage3393_fidelity_d1.py`, `docs/STAGE_3393_FIDELITY.md`)
+- [x] Stage 3393 exit + freeze (H3393x: `test_stage3393_exit_h3393x.py`, `docs/STAGE_3393_EXIT_CRITERIA.md`, ADR-6794)
 Stage 3392 track opened (ADR-6791: `test_stage3392_open.py`, `docs/STAGE_3392_PLAN.md`) — Transfer Bakumatsuaayajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-6792
 - [x] Transfer Bakumatsuaayajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 3392 I1: `test_stage3392_index_i1.py`, `docs/TRANSFER_BAKUMATSUAAYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Bakumatsuaayajiyuglaze Gate Honesty Pack blocker matrix (Stage 3392 B1: `test_stage3392_blockers_b1.py`, `docs/TRANSFER_BAKUMATSUAAYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
