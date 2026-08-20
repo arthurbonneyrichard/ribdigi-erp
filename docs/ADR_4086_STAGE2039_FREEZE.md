@@ -31,3 +31,7 @@ Stage 2040 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneiuujiyuglaze Gate, Transfer Aneiuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2040 opened under **ADR-4087** after CONTINUE/NEXT (Tenant MVP Transfer Aneiyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4088**. Stage 2039 feature scope remains frozen.
