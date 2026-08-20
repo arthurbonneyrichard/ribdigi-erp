@@ -31,3 +31,7 @@ Stage 1722 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Celadonyuglaze Gate, Transfer Celadonyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1722 opened under **ADR-3451** after CONTINUE/NEXT (Tenant MVP Transfer Amayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3452**. Stage 1721 feature scope remains frozen.
