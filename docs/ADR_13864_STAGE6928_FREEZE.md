@@ -31,3 +31,7 @@ Stage 6929 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokueegyajiyuglaze Gate, Transfer Genrokueegyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6929 opened under **ADR-13865** after CONTINUE/NEXT (Tenant MVP Transfer Genrokueenyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13866**. Stage 6928 feature scope remains frozen.
