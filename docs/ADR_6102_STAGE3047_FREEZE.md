@@ -31,3 +31,7 @@ Stage 3048 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseiaanajiyuglaze Gate, Transfer Bunseiaanajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3048 opened under **ADR-6103** after CONTINUE/NEXT (Tenant MVP Transfer Bunseiaahajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6104**. Stage 3047 feature scope remains frozen.
