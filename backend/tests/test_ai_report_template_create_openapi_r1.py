@@ -42,6 +42,10 @@ def test_ai_report_template_create_body_schema_forbid():
         )
     with pytest.raises(ValidationError):
         AiReportTemplateCreateBody.model_validate(
+            {"name": "x", "prompt": "!!!"}
+        )
+    with pytest.raises(ValidationError):
+        AiReportTemplateCreateBody.model_validate(
             {"name": "x", "prompt": "monthly sales", "extra": True}
         )
     with pytest.raises(ValidationError):
@@ -54,11 +58,13 @@ def test_ai_report_template_create_ui_and_docs():
     page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI report template name"' in page
     assert "tmplName.trim()" in page
+    assert "AI report prompt is required" in page
     assert 'aria-label="Save AI report template"' in page
     assert "saveReportTemplate" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI report template create body OpenAPI" in agents
     assert "AiReportTemplateCreateBody" in agents
+    assert "AiReportPromptValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "AiReportTemplateCreateBody" in docs
     assert "POST /ai/reports/templates" in docs
@@ -90,6 +96,13 @@ async def test_ai_report_template_create_api_unknown_422(client):
         json={"name": "X", "prompt": ""},
     )
     assert blank_prompt.status_code == 422, blank_prompt.text
+
+    punct_prompt = await ac.post(
+        "/api/v1/ai/reports/templates",
+        headers=headers,
+        json={"name": "X", "prompt": "!!!"},
+    )
+    assert punct_prompt.status_code == 422, punct_prompt.text
 
     bad_fmt = await ac.post(
         "/api/v1/ai/reports/templates",

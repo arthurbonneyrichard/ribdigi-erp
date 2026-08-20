@@ -37,6 +37,8 @@ def test_ai_reports_generate_body_schema_forbid():
     with pytest.raises(ValidationError):
         AiReportsGenerateBody.model_validate({"prompt": ""})
     with pytest.raises(ValidationError):
+        AiReportsGenerateBody.model_validate({"prompt": "!!!"})
+    with pytest.raises(ValidationError):
         AiReportsGenerateBody.model_validate({"prompt": "hi", "extra": True})
     with pytest.raises(ValidationError):
         AiReportsGenerateBody.model_validate({"prompt": "hi", "format": "docx"})

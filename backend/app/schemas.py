@@ -3791,6 +3791,27 @@ AiReportTemplateNameValue = Annotated[
 ]
 
 
+def validate_ai_report_prompt_value(value: str) -> str:
+    """AfterValidator: AI report prompt; blank/URL/garbage → 422 (1–16000)."""
+    if not value:
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    if len(value) > 16000:
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    return value
+
+
+# AI report NL prompt — templates / generate / export (align AI_MAX_MESSAGE_CHARS).
+AiReportPromptValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_report_prompt_value),
+]
+
+
 def validate_account_code_value(value: str) -> str:
     """AfterValidator: COA code; blank/garbage → 422 (1–30; alnum/_/-)."""
     if not value:
@@ -4125,7 +4146,10 @@ class AiReportsGenerateBody(BaseModel):
     """POST /ai/reports/generate — typed report generator body (BR-21.7).
 
     Unknown keys → **422** (`extra=forbid`). Must provide `prompt`, `template_id`,
-    or `report_type` (schema **422**; was late service **422**). Invalid
+    or `report_type` (schema **422**; was late service **422**). Optional `prompt` ∈
+    `AiReportPromptValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); omit/`null`
+    OK when template_id|report_type present; blank/`!!!`/`http://…` → **422** (was free
+    `str` stripped to null — punctuation/URL could reach parse_prompt). Invalid
     `format` / `report_type` → **422** (format garbage was silently remapped to
     csv; unknown report_type was late **400**). `params` is an alias for
     `filters`. Service `generate_report` / `parse_prompt` remain defense-in-depth.
@@ -4133,7 +4157,7 @@ class AiReportsGenerateBody(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    prompt: str | None = None
+    prompt: AiReportPromptValue | None = None
     format: ReportExportFormatValue | None = None
     template_id: str | None = None
     report_type: ReportTypeValue | None = None
@@ -4141,7 +4165,7 @@ class AiReportsGenerateBody(BaseModel):
     filters: dict[str, Any] | None = None
     params: dict[str, Any] | None = None
 
-    @field_validator("prompt", "template_id", "period", mode="before")
+    @field_validator("template_id", "period", mode="before")
     @classmethod
     def _strip_optional(cls, value: object) -> object:
         if isinstance(value, str):
@@ -4160,21 +4184,24 @@ class AiReportsExportBody(BaseModel):
     """POST /ai/reports/export — typed export body (BR-21.7).
 
     Unknown keys → **422** (`extra=forbid`). Must provide `prompt`, `template_id`,
-    or `report_type`. `format` ∈ csv|pdf|xlsx (omit → **csv**; blank/invalid →
-    **422** — was free `dict` with `or "csv"`). Invalid `report_type` → **422**.
-    Service `export_from_intent` remains defense-in-depth.
+    or `report_type`. Optional `prompt` ∈ `AiReportPromptValue` (strip; 1–16000; ≥1
+    letter/digit; no `://`/`@`); omit/`null` OK when template_id|report_type present;
+    blank/`!!!`/`http://…` → **422** (was free `str` stripped to null). `format` ∈
+    csv|pdf|xlsx (omit → **csv**; blank/invalid → **422** — was free `dict` with
+    `or "csv"`). Invalid `report_type` → **422**. Service `export_from_intent`
+    remains defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    prompt: str | None = None
+    prompt: AiReportPromptValue | None = None
     format: ReportExportFormatValue = "csv"
     template_id: str | None = None
     report_type: ReportTypeValue | None = None
     filters: dict[str, Any] | None = None
     params: dict[str, Any] | None = None
 
-    @field_validator("prompt", "template_id", mode="before")
+    @field_validator("template_id", mode="before")
     @classmethod
     def _strip_optional(cls, value: object) -> object:
         if isinstance(value, str):
@@ -4194,24 +4221,19 @@ class AiReportTemplateCreateBody(BaseModel):
 
     Unknown keys → **422** (`extra=forbid`). `name` ∈ `AiReportTemplateNameValue`
     (strip; 1–120; ≥1 letter/digit; no `://`/`@`); blank/`!!!`/`http://…` → **422**
-    (was free `str` min_length=1; punctuation/URL could persist). Blank/omit `prompt` →
-    **422**. `format` ∈ csv|pdf|xlsx (omit → derived from prompt; blank/invalid →
-    **422** — was late **400**). Service `create_template` / `parse_prompt` remain
-    defense-in-depth.
+    (was free `str` min_length=1; punctuation/URL could persist). `prompt` ∈
+    `AiReportPromptValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); blank/
+    omit/`!!!`/`http://…` → **422** (was free `str` min_length=1; punctuation/URL
+    could persist on templates). `format` ∈ csv|pdf|xlsx (omit → derived from
+    prompt; blank/invalid → **422** — was late **400**). Service `create_template` /
+    `parse_prompt` remain defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     name: AiReportTemplateNameValue
-    prompt: str = Field(min_length=1)
+    prompt: AiReportPromptValue
     format: ReportExportFormatValue | None = None
-
-    @field_validator("prompt", mode="before")
-    @classmethod
-    def _strip_prompt(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()
-        return value
 
 
 def coerce_report_schedule_recipients(value: object) -> object:

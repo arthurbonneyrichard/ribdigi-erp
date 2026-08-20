@@ -331,10 +331,15 @@ export default function Page() {
       setMessage('');
       return;
     }
+    const prompt = q.trim();
+    if (!prompt) {
+      setError('AI report prompt is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     try {
-      const prompt = q.trim() || 'monthly sales for this month';
       const r = await api('/ai/reports/templates', {
         method: 'POST',
         body: JSON.stringify({ name, prompt, format: 'csv' }),
