@@ -31,3 +31,7 @@ Stage 9966 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwabbdajiyuglaze Gate, Transfer Reiwabbdajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9966 opened under **ADR-19939** after CONTINUE/NEXT (Tenant MVP Transfer Reiwabbbajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19940**. Stage 9965 feature scope remains frozen.
