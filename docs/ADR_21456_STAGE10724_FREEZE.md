@@ -31,3 +31,7 @@ Stage 10725 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachiffgyajiyuglaze Gate, Transfer Muromachiffgyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10725 opened under **ADR-21457** after CONTINUE/NEXT (Tenant MVP Transfer Muromachiffnyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21458**. Stage 10724 feature scope remains frozen.
