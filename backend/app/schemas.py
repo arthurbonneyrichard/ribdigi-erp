@@ -2166,13 +2166,20 @@ class GrnItemCreate(BaseModel):
     Optional `manufacturing_date` / `expiry_date`; omit/`null` → no batch dates;
     blank/invalid → **422** (was free `datetime`; OpenAPI date-time; padded dates
     inconsistent). API `reports.parse_date` remains defense-in-depth.
+
+    Optional `rejection_reason` ∈ GrnRejectionReasonValue when rejecting stock
+    (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` OK when no reject;
+    blank/`!!!`/`http://…` → **422** even if unused (was free `str`; blank still
+    failed model_validator when rejected, but punctuation-only / URL-like garbage
+    could persist on GRN line `rejection_reason`). Required when `rejected_qty > 0`
+    (or inferred reject from accepted < received).
     """
 
     po_item_id: str
     received_qty: float = Field(gt=0)
     accepted_qty: float | None = None
     rejected_qty: float = Field(default=0, ge=0)
-    rejection_reason: str | None = None
+    rejection_reason: GrnRejectionReasonValue | None = None
     # Optional lot for accepted stock (BR-6.4); required when product.tracks_batches
     batch_number: str | None = None
     manufacturing_date: IsoDateQueryValue | None = None
@@ -2186,7 +2193,7 @@ class GrnItemCreate(BaseModel):
         accepted = self.accepted_qty
         if rejected <= 1e-9 and accepted is not None and float(accepted) < received - 1e-9:
             rejected = round(received - float(accepted), 6)
-        if rejected > 1e-9 and not (self.rejection_reason or "").strip():
+        if rejected > 1e-9 and not self.rejection_reason:
             raise ValueError("rejection_reason is required when rejected_qty > 0")
         return self
 
@@ -5546,6 +5553,27 @@ AiPredictionRiskReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_ai_prediction_risk_reason_value),
+]
+
+
+def validate_grn_rejection_reason_value(value: str) -> str:
+    """AfterValidator: GRN line rejection_reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# GRN line rejection_reason — when rejected_qty > 0 / inferred reject (BR-6.4).
+GrnRejectionReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_grn_rejection_reason_value),
 ]
 
 

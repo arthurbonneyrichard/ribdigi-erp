@@ -444,7 +444,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Handle partial receipts (multiple GRNs per PO) (`po_item.received_qty` accumulates; PO → `partially_received` / `received`; Receive remains while partial)
   - [x] Auto-update inventory on GRN approval
     - Complete (MVP): GRN posts on create (`status=posted`) → `stock_in_with_batch` + `post_grn_journal` (no separate draft→approve step)
-  - [x] Handle rejected/damaged goods with reason (`rejected_qty` + required `rejection_reason` on GRN lines; only accepted stocked; Purchasing receive UI)
+  - [x] Handle rejected/damaged goods with reason (`rejected_qty` + `rejection_reason` ∈ `GrnRejectionReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; required when reject; omit/blank/garbage → **422**) on GRN lines; only accepted stocked; Purchasing receive **GRN rejection reason** UI)
 
 #### BR-6.5 Purchase Invoice
 - **Description:** Supplier billing and payable recording.

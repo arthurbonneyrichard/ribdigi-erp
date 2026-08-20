@@ -912,7 +912,7 @@ Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number`
 }
 ```
 
-`accepted_qty + rejected_qty` must equal `received_qty` (rejected may be inferred when omitted and accepted < received). `rejection_reason` is **required** when `rejected_qty > 0` (or inferred reject) — schema `model_validator` → **422** on omit/blank; service still 400 if reached. Only accepted qty is stocked; full `received_qty` reduces PO outstanding (BR-6.4).
+`accepted_qty + rejected_qty` must equal `received_qty` (rejected may be inferred when omitted and accepted < received). `rejection_reason` ∈ `GrnRejectionReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`) is **required** when `rejected_qty > 0` (or inferred reject) — omit/`null` OK when no reject; blank/`!!!`/`http://…` → **422** (was free `str`; blank failed model_validator when rejected, but garbage could persist on GRN line). Schema field validators + `model_validator`; service still 400 if reached. Only accepted qty is stocked; full `received_qty` reduces PO outstanding (BR-6.4). Purchasing receive **GRN rejection reason ${po_item_id}** (`aria-label`) + **Post GRN**.
 
 ### 6.5 Purchase Invoice
 **List:** `GET /purchasing/invoices` — optional Query `status` ∈ `draft`|`unpaid`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Invoices **Purchase invoice status filter** (`piManageFilter`; client filter over full cache).  

@@ -2121,6 +2121,7 @@ export default function Page() {
                                 <input
                                   style={{ width: 72 }}
                                   value={draft.accepted}
+                                  aria-label={`GRN accepted qty ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -2137,6 +2138,7 @@ export default function Page() {
                                 <input
                                   style={{ width: 72 }}
                                   value={draft.rejected}
+                                  aria-label={`GRN rejected qty ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -2154,6 +2156,8 @@ export default function Page() {
                                   style={{ minWidth: 140 }}
                                   value={draft.reason}
                                   placeholder="Damaged / wrong item…"
+                                  title="Required when rejecting qty (1–500 chars; letters/digits required)"
+                                  aria-label={`GRN rejection reason ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
