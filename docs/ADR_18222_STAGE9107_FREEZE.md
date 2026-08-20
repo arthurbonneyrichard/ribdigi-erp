@@ -31,3 +31,7 @@ Stage 9108 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manendddajiyuglaze Gate, Transfer Manendddajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9108 opened under **ADR-18223** after CONTINUE/NEXT (Tenant MVP Transfer Manenddbajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18224**. Stage 9107 feature scope remains frozen.
