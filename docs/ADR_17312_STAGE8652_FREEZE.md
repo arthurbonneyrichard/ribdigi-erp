@@ -31,3 +31,7 @@ Stage 8653 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukabbeejiyuglaze Gate, Transfer Koukabbeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8653 opened under **ADR-17313** after CONTINUE/NEXT (Tenant MVP Transfer Koukabbojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17314**. Stage 8652 feature scope remains frozen.
