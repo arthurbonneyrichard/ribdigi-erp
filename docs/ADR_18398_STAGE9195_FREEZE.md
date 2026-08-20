@@ -31,3 +31,7 @@ Stage 9196 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyuccoojiyuglaze Gate, Transfer Bunkyuccoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9196 opened under **ADR-18399** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyuccuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18400**. Stage 9195 feature scope remains frozen.
