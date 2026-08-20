@@ -31,3 +31,7 @@ Stage 5436 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsujitajiyuglaze Gate, Transfer Bakumatsujitajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5436 opened under **ADR-10879** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsujinajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10880**. Stage 5435 feature scope remains frozen.
