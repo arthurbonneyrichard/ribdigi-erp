@@ -31,3 +31,7 @@ Stage 4263 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakurajiaajiyuglaze Gate, Transfer Kamakurajiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4263 opened under **ADR-8533** after CONTINUE/NEXT (Tenant MVP Transfer Kamakurajiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8534**. Stage 4262 feature scope remains frozen.
