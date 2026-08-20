@@ -31,3 +31,7 @@ Stage 3676 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwayajiyuglaze Gate, Transfer Tenwayajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3676 opened under **ADR-7359** after CONTINUE/NEXT (Tenant MVP Transfer Tenwaeejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7360**. Stage 3675 feature scope remains frozen.
