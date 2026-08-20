@@ -31,3 +31,7 @@ Stage 7141 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohoddiijiyuglaze Gate, Transfer Kyohoddiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7141 opened under **ADR-14289** after CONTINUE/NEXT (Tenant MVP Transfer Kyohoddoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14290**. Stage 7140 feature scope remains frozen.
