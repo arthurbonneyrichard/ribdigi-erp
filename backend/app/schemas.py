@@ -2322,9 +2322,15 @@ class SalesOrderConfirm(BaseModel):
 
 
 class SalesOrderCancel(BaseModel):
-    """Sales order cancel — typed reason required (BR-7.3 honesty)."""
+    """Sales order cancel — typed reason required (BR-7.3 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ SalesOrderCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to order `notes` / audit).
+    """
+
+    reason: SalesOrderCancelReasonValue
 
 
 class SalesInvoiceCancel(BaseModel):
@@ -4942,6 +4948,27 @@ TenantSuspendReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_tenant_suspend_reason_value),
+]
+
+
+def validate_sales_order_cancel_reason_value(value: str) -> str:
+    """AfterValidator: sales order cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales order cancel reason — appended to SalesOrder.notes + audit so_cancelled (BR-7.3).
+SalesOrderCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_order_cancel_reason_value),
 ]
 
 

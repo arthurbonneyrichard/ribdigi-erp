@@ -505,7 +505,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Create order from quotation or directly (order_number via tenant series `GET|PATCH /sales/settings` → `sales_order_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `SO`; Sales Document numbering UI)
   - [x] Line + header discounts on create (`items[].discount` + `discount_amount`; Sales Create sale UI + detail)
   - [x] Reserve inventory (soft allocation) on confirm against store warehouse (`stock_reservations`); cancel releases; invoice post consumes then hard stock-out
-  - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (plus `invoiced` after convert-to-invoice; cancel allowed through processing; required typed `reason` on `POST /sales/orders/{id}/cancel` → notes + audit; Sales **Cancel reason** UI)
+  - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (plus `invoiced` after convert-to-invoice; cancel allowed through processing; `{ reason }` ∈ `SalesOrderCancelReasonValue` on `POST /sales/orders/{id}/cancel` → notes + audit; omit/blank/garbage → **422**; Sales **Sales order cancel reason** UI)
   - [x] Delivery date and address
   - [x] Convert to invoice with one click
 

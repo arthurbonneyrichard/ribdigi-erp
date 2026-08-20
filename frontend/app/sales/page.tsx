@@ -1451,6 +1451,8 @@ export default function Page() {
                 value={soCancelReason}
                 onChange={(e) => setSoCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Sales order cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1587,7 +1589,11 @@ export default function Page() {
                     </button>
                   )}
                   {o.can_cancel && (
-                    <button className="btn-danger" onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>
+                    <button
+                      className="btn-danger"
+                      onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}
+                      aria-label={`Cancel sales order ${o.id}`}
+                    >
                       Cancel
                     </button>
                   )}

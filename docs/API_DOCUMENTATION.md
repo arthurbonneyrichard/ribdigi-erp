@@ -1031,7 +1031,7 @@ Optional create/confirm `delivery_address` ∈ `AddressValue` (strip; 1–500 ch
 
 **Numbering:** `GET|PATCH /sales/settings` exposes `sales_order_numbering`. Create (and quotation convert) allocates `{PREFIX}-{YYYY}-{NNNN}` (default `SO`) — not a timestamp stamp (BR-7.3 / BR-20.4).
 
-**Cancel:** `POST /sales/orders/{order_id}/cancel` `{ "reason": "..." }` — **reason required** (appended to order `notes` as `Cancel: …` and stored in audit `so_cancelled.details.reason`); allowed for `draft` / `confirmed` / `processing` (`can_cancel`); releases soft reservations; blocked after ship/deliver/invoiced. Sales Orders **Cancel reason** UI (BR-7.3).
+**Cancel:** `POST /sales/orders/{order_id}/cancel` `{ "reason" }` ∈ `SalesOrderCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to order `notes` as `Cancel: …` and stored in audit `so_cancelled.details.reason`; allowed for `draft` / `confirmed` / `processing` (`can_cancel`); releases soft reservations; blocked after ship/deliver/invoiced. Sales Orders **Sales order cancel reason** (`aria-label`; BR-7.3).
 
 **Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `invoiced`; branch to `cancelled`
 
