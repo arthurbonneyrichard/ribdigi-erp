@@ -31,3 +31,7 @@ Stage 5068 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Joobajiyuglaze Gate, Transfer Joobajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5068 opened under **ADR-10143** after CONTINUE/NEXT (Tenant MVP Transfer Joopajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10144**. Stage 5067 feature scope remains frozen.
