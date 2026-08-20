@@ -31,3 +31,7 @@ Stage 4440 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukagyajiyuglaze Gate, Transfer Koukagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4440 opened under **ADR-8887** after CONTINUE/NEXT (Tenant MVP Transfer Koukanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8888**. Stage 4439 feature scope remains frozen.
