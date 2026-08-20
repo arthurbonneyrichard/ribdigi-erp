@@ -31,3 +31,7 @@ Stage 9480 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijiddajiyuglaze Gate, Transfer Meijiddajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9480 opened under **ADR-18967** after CONTINUE/NEXT (Tenant MVP Transfer Meijiddiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18968**. Stage 9479 feature scope remains frozen.
