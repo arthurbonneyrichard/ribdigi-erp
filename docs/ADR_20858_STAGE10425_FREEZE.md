@@ -31,3 +31,7 @@ Stage 10426 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianeekajiyuglaze Gate, Transfer Heianeekajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10426 opened under **ADR-20859** after CONTINUE/NEXT (Tenant MVP Transfer Heianeesajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20860**. Stage 10425 feature scope remains frozen.
