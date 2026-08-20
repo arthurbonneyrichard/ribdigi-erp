@@ -31,3 +31,7 @@ Stage 9040 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenbboojiyuglaze Gate, Transfer Manenbboojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9040 opened under **ADR-18087** after CONTINUE/NEXT (Tenant MVP Transfer Manenbbuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18088**. Stage 9039 feature scope remains frozen.
