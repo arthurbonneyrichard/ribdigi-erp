@@ -31,3 +31,7 @@ Stage 2650 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyusajiyuglaze Gate, Transfer Bunkyusajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2650 opened under **ADR-5307** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyutajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5308**. Stage 2649 feature scope remains frozen.
