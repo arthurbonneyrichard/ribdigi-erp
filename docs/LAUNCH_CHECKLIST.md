@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 5611 track opened (ADR-11229: `test_stage5611_open.py`, `docs/STAGE_5611_PLAN.md`) — Transfer Higashiyamajiojiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-11230
+- [x] Transfer Higashiyamajiojiyuglaze Gate Honesty Pack remaining-gate hub (Stage 5611 I1: `test_stage5611_index_i1.py`, `docs/TRANSFER_HIGASHIYAMAJIOJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Higashiyamajiojiyuglaze Gate Honesty Pack blocker matrix (Stage 5611 B1: `test_stage5611_blockers_b1.py`, `docs/TRANSFER_HIGASHIYAMAJIOJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 5610 / Stage 5609 / Stage 392 / CHANGE_IMPACT pointers (Stage 5611 P1: `test_stage5611_pointers_p1.py`, `docs/TRANSFER_HIGASHIYAMAJIOJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 5611 fidelity sync (D1: `test_stage5611_fidelity_d1.py`, `docs/STAGE_5611_FIDELITY.md`)
+- [x] Stage 5611 exit + freeze (H5611x: `test_stage5611_exit_h5611x.py`, `docs/STAGE_5611_EXIT_CRITERIA.md`, ADR-11230)
 Stage 5610 track opened (ADR-11227: `test_stage5610_open.py`, `docs/STAGE_5610_PLAN.md`) — Transfer Higashiyamajieejiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-11228
 - [x] Transfer Higashiyamajieejiyuglaze Gate Honesty Pack remaining-gate hub (Stage 5610 I1: `test_stage5610_index_i1.py`, `docs/TRANSFER_HIGASHIYAMAJIEEJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Higashiyamajieejiyuglaze Gate Honesty Pack blocker matrix (Stage 5610 B1: `test_stage5610_blockers_b1.py`, `docs/TRANSFER_HIGASHIYAMAJIEEJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
