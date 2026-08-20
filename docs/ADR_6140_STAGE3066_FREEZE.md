@@ -31,3 +31,7 @@ Stage 3067 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempoaahajiyuglaze Gate, Transfer Tempoaahajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3067 opened under **ADR-6141** after CONTINUE/NEXT (Tenant MVP Transfer Tempoaamajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6142**. Stage 3066 feature scope remains frozen.
