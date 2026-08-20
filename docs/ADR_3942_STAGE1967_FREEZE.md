@@ -31,3 +31,7 @@ Stage 1968 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokuiijiyuglaze Gate, Transfer Genrokuiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1968 opened under **ADR-3943** after CONTINUE/NEXT (Tenant MVP Transfer Genrokuoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3944**. Stage 1967 feature scope remains frozen.
