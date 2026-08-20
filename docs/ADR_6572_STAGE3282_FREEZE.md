@@ -31,3 +31,7 @@ Stage 3283 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraaiijiyuglaze Gate, Transfer Naraaiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3283 opened under **ADR-6573** after CONTINUE/NEXT (Tenant MVP Transfer Naraaoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6574**. Stage 3282 feature scope remains frozen.
