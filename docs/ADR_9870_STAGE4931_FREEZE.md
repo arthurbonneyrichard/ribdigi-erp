@@ -31,3 +31,7 @@ Stage 4932 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianaabajiyuglaze Gate, Transfer Heianaabajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4932 opened under **ADR-9871** after CONTINUE/NEXT (Tenant MVP Transfer Heianaapajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9872**. Stage 4931 feature scope remains frozen.
