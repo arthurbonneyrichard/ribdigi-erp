@@ -31,3 +31,7 @@ Stage 4007 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempojinajiyuglaze Gate, Transfer Tempojinajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4007 opened under **ADR-8021** after CONTINUE/NEXT (Tenant MVP Transfer Tempojihajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8022**. Stage 4006 feature scope remains frozen.
