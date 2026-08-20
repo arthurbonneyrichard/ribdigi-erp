@@ -31,3 +31,7 @@ Stage 7761 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneibbgyajiyuglaze Gate, Transfer Aneibbgyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7761 opened under **ADR-15529** after CONTINUE/NEXT (Tenant MVP Transfer Aneibbnyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15530**. Stage 7760 feature scope remains frozen.
