@@ -31,3 +31,7 @@ Stage 4029 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeijiaajiyuglaze Gate, Transfer Kaeijiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4029 opened under **ADR-8065** after CONTINUE/NEXT (Tenant MVP Transfer Kaeijiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8066**. Stage 4028 feature scope remains frozen.
