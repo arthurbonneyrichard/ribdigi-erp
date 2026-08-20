@@ -249,6 +249,7 @@ export default function Page() {
   const [grnItemId, setGrnItemId] = useState('');
   const [returnQty, setReturnQty] = useState('1');
   const [returnReason, setReturnReason] = useState('');
+  const [returnNotes, setReturnNotes] = useState('');
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
@@ -762,11 +763,13 @@ export default function Page() {
         body: JSON.stringify({
           goods_receipt_id: grnId,
           reason: returnReason,
+          notes: returnNotes.trim() || null,
           items: [{ goods_receipt_item_id: grnItemId, quantity: Number(returnQty) }],
         }),
       });
       setMessage(`Return ${r.data.return_number} drafted`);
       setReturnReason('');
+      setReturnNotes('');
       setTab('returns');
       await refresh();
     } catch (err: any) {
@@ -2806,7 +2809,18 @@ export default function Page() {
             <option value="other">Other</option>
           </select>
           <input value={returnQty} onChange={(e) => setReturnQty(e.target.value)} placeholder="Return qty" />
-          <button onClick={createReturn} disabled={!grnId || !grnItemId || !returnReason}>
+          <input
+            value={returnNotes}
+            onChange={(e) => setReturnNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Purchase return notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <button
+            onClick={createReturn}
+            disabled={!grnId || !grnItemId || !returnReason}
+            aria-label="Create purchase return"
+          >
             Draft return
           </button>
         </div>

@@ -2105,7 +2105,9 @@ class PurchaseReturnCreate(BaseModel):
     goods_receipt_id: str
     # Required coded reason (BR-6.6); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damaged", "wrong_item", "expiry", "quality", "other"]
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseReturn.notes Text).
+    notes: PurchaseReturnNotesValue | None = None
     items: list[PurchaseReturnItemCreate] = Field(min_length=1)
 
 
@@ -4835,6 +4837,27 @@ SalesReturnNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_sales_return_notes_value),
+]
+
+
+def validate_purchase_return_notes_value(value: str) -> str:
+    """AfterValidator: purchase return notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase return header notes — PurchaseReturn.notes Text; keep ≤500 at API boundary.
+PurchaseReturnNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_return_notes_value),
 ]
 
 

@@ -933,7 +933,7 @@ Response lines include `line_subtotal`, `line_tax`, and optional `tax_components
 
 ### 6.6 Purchase Return
 **List:** `GET /purchasing/returns` — optional Query `status` ∈ `draft`|`posted`|`cancelled` (same `ReturnReportStatusValue` as return report; omit → all; blank/invalid → **422**). Purchasing **Purchase return status filter** (`returnManageFilter`; client filter over full cache).  
-**Create:** `POST /purchasing/returns`  
+**Create:** `POST /purchasing/returns` — body requires `goods_receipt_id`, coded `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (schema `Literal`; omit/blank/invalid → **422**), `items[]` with `goods_receipt_item_id` + qty, optional `notes` ∈ `PurchaseReturnNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Purchasing **Purchase return notes** input (`aria-label`); Draft return sends `null` when blank.  
 **Get:** `GET /purchasing/returns/{return_id}`  
 **Post:** `POST /purchasing/returns/{return_id}/post` — draft only; stock/AP/journal on post.  
 **Cancel:** `POST /purchasing/returns/{return_id}/cancel` — body `{ "reason" }` **required** (non-empty). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `purchase_return_cancelled.details.reason`. Serialize includes `can_cancel`. Purchasing **Cancel reason** input (BR-6.6). No stock/AP on cancel.
