@@ -31,3 +31,7 @@ Stage 2288 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunoojiyuglaze Gate, Transfer Kofunoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2288 opened under **ADR-4583** after CONTINUE/NEXT (Tenant MVP Transfer Kofunuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4584**. Stage 2287 feature scope remains frozen.
