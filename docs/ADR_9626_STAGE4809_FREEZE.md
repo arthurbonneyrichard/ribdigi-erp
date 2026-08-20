@@ -31,3 +31,7 @@ Stage 4810 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseiaazajiyuglaze Gate, Transfer Bunseiaazajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4810 opened under **ADR-9627** after CONTINUE/NEXT (Tenant MVP Transfer Bunseiaadajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9628**. Stage 4809 feature scope remains frozen.
