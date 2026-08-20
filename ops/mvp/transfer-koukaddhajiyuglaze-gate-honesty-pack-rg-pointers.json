@@ -1,0 +1,18 @@
+{
+  "id": "transfer-koukaddhajiyuglaze-gate-honesty-pack-rg-pointers",
+  "stage": 8713,
+  "pack": "P1",
+  "doc": "docs/TRANSFER_KOUKADDHAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "hub": "docs/TRANSFER_KOUKADDHAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "pointers": {
+    "transfer_koukaddnajiyuglaze_gate_honesty_pack_remaining_gate_stage8712": "docs/TRANSFER_KOUKADDNAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_koukaddtajiyuglaze_gate_honesty_pack_remaining_gate_stage8711": "docs/TRANSFER_KOUKADDTAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "change_impact_section_5": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "mvp_product_update_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "message": "Stage 8713 P1 Transfer Koukaddhajiyuglaze Gate Honesty Pack RG pointers packaging only."
+}
