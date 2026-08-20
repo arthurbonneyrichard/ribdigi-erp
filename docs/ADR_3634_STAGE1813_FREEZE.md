@@ -31,3 +31,7 @@ Stage 1814 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Horekijiyuglaze Gate, Transfer Horekijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1814 opened under **ADR-3635** after CONTINUE/NEXT (Tenant MVP Transfer Meiwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3636**. Stage 1813 feature scope remains frozen.
