@@ -31,3 +31,7 @@ Stage 2132 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenojiyuglaze Gate, Transfer Manenojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2132 opened under **ADR-4271** after CONTINUE/NEXT (Tenant MVP Transfer Manenujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4272**. Stage 2131 feature scope remains frozen.
