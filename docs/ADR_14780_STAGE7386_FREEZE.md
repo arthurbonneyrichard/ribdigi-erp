@@ -31,3 +31,7 @@ Stage 7387 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoccnajiyuglaze Gate, Transfer Enkyoccnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7387 opened under **ADR-14781** after CONTINUE/NEXT (Tenant MVP Transfer Enkyocchajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14782**. Stage 7386 feature scope remains frozen.
