@@ -31,3 +31,7 @@ Stage 9043 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenbbeejiyuglaze Gate, Transfer Manenbbeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9043 opened under **ADR-18093** after CONTINUE/NEXT (Tenant MVP Transfer Manenbbojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18094**. Stage 9042 feature scope remains frozen.
