@@ -31,3 +31,7 @@ Stage 6426 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonaajihajiyuglaze Gate, Transfer Jomonaajihajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6426 opened under **ADR-12859** after CONTINUE/NEXT (Tenant MVP Transfer Jomonaajimajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12860**. Stage 6425 feature scope remains frozen.
