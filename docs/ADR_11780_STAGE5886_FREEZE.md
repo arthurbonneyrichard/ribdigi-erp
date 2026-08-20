@@ -31,3 +31,7 @@ Stage 5887 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaneiaagajiyuglaze Gate, Transfer Kaneiaagajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5887 opened under **ADR-11781** after CONTINUE/NEXT (Tenant MVP Transfer Kaneiaakyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11782**. Stage 5886 feature scope remains frozen.
