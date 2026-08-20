@@ -31,3 +31,7 @@ Stage 5301 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijijipajiyuglaze Gate, Transfer Meijijipajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5301 opened under **ADR-10609** after CONTINUE/NEXT (Tenant MVP Transfer Meijijigajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10610**. Stage 5300 feature scope remains frozen.
