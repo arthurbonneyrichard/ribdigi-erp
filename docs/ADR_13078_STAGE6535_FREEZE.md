@@ -31,3 +31,7 @@ Stage 6536 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gennajipajiyuglaze Gate, Transfer Gennajipajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6536 opened under **ADR-13079** after CONTINUE/NEXT (Tenant MVP Transfer Gennajigajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13080**. Stage 6535 feature scope remains frozen.
