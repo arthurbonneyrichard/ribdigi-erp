@@ -31,3 +31,7 @@ Stage 1745 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Mikawachijiyuglaze Gate, Transfer Mikawachijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1745 opened under **ADR-3497** after CONTINUE/NEXT (Tenant MVP Transfer Minojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3498**. Stage 1744 feature scope remains frozen.
