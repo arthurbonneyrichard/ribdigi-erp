@@ -210,6 +210,7 @@ export default function Page() {
   const [openingExpiry, setOpeningExpiry] = useState('');
   const [openingReference, setOpeningReference] = useState('');
   const [openingNotes, setOpeningNotes] = useState('');
+  const [openingLineNotes, setOpeningLineNotes] = useState('');
   const [openingPostJournal, setOpeningPostJournal] = useState(true);
   const [openingHistory, setOpeningHistory] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
@@ -1319,6 +1320,7 @@ export default function Page() {
         batch_number: openingBatch || null,
         manufacturing_date: openingMfg.trim() || null,
         expiry_date: openingExpiry.trim() || null,
+        notes: openingLineNotes.trim() || null,
       };
       if (openingUnitCost !== '') line.unit_cost = Number(openingUnitCost);
       const r = await api('/inventory/opening-stock', {
@@ -1338,6 +1340,7 @@ export default function Page() {
       setOpeningMfg('');
       setOpeningExpiry('');
       setOpeningNotes('');
+      setOpeningLineNotes('');
       await refresh();
       await refreshSelected(selectedId);
       setTab('opening');
@@ -2888,6 +2891,13 @@ export default function Page() {
               placeholder="Notes"
               aria-label="Opening stock notes"
               title="Optional notes (1–500 chars; letters/digits required)"
+            />
+            <input
+              value={openingLineNotes}
+              onChange={(e) => setOpeningLineNotes(e.target.value)}
+              placeholder="Line notes (optional)"
+              aria-label="Opening stock line notes"
+              title="Optional per-line notes (1–500 chars; letters/digits required)"
             />
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input

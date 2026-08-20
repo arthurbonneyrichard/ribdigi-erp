@@ -1313,7 +1313,10 @@ class OpeningStockLine(BaseModel):
     manufacturing_date: IsoDateQueryValue | None = None
     expiry_date: IsoDateQueryValue | None = None
     unit_cost: float | None = Field(default=None, ge=0)  # defaults to product.cost_price
-    notes: str | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could merge onto StockMovement.notes). Same `OpeningStockNotesValue`
+    # as header notes.
+    notes: OpeningStockNotesValue | None = None
 
 
 class OpeningStockCreate(BaseModel):
