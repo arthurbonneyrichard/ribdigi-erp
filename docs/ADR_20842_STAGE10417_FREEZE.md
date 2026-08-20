@@ -31,3 +31,7 @@ Stage 10418 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianeeoojiyuglaze Gate, Transfer Heianeeoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10418 opened under **ADR-20843** after CONTINUE/NEXT (Tenant MVP Transfer Heianeeuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20844**. Stage 10417 feature scope remains frozen.
