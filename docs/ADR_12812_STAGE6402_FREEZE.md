@@ -31,3 +31,7 @@ Stage 6403 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuaajizajiyuglaze Gate, Transfer Bakumatsuaajizajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6403 opened under **ADR-12813** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuaajidajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12814**. Stage 6402 feature scope remains frozen.
