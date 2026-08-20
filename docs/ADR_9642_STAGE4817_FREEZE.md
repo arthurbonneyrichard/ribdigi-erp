@@ -31,3 +31,7 @@ Stage 4818 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempoaazajiyuglaze Gate, Transfer Tempoaazajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4818 opened under **ADR-9643** after CONTINUE/NEXT (Tenant MVP Transfer Tempoaadajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9644**. Stage 4817 feature scope remains frozen.
