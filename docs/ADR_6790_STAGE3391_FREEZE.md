@@ -31,3 +31,7 @@ Stage 3392 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuaauujiyuglaze Gate, Transfer Bakumatsuaauujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3392 opened under **ADR-6791** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuaayajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6792**. Stage 3391 feature scope remains frozen.
