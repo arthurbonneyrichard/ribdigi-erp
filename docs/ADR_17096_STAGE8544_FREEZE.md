@@ -31,3 +31,7 @@ Stage 8545 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempocciijiyuglaze Gate, Transfer Tempocciijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8545 opened under **ADR-17097** after CONTINUE/NEXT (Tenant MVP Transfer Tempoccoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17098**. Stage 8544 feature scope remains frozen.
