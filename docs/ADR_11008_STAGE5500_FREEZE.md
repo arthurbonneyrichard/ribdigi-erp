@@ -31,3 +31,7 @@ Stage 5501 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunjiaajiyuglaze Gate, Transfer Kofunjiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5501 opened under **ADR-11009** after CONTINUE/NEXT (Tenant MVP Transfer Kofunjiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11010**. Stage 5500 feature scope remains frozen.
