@@ -31,3 +31,7 @@ Stage 4323 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokudajiyuglaze Gate, Transfer Genrokudajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4323 opened under **ADR-8653** after CONTINUE/NEXT (Tenant MVP Transfer Genrokubajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8654**. Stage 4322 feature scope remains frozen.
