@@ -988,7 +988,7 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 
 ### 7.3 Quotations
 **List:** `GET /sales/quotations` — optional Query `status` ∈ `draft`|`sent`|`accepted`|`rejected`|`expired`|`converted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Quotations **Quotation status filter** (`quotationManageFilter`; client filter over full cache).  
-**Create:** `POST /sales/quotations`  
+**Create:** `POST /sales/quotations` — optional `notes` ∈ `SalesDocumentNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Sales **Sales document notes** input (`aria-label`); Create quotation sends `null` when blank.  
 **Get:** `GET /sales/quotations/{quote_id}`  
 **Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`. Optional Query `to` ∈ `EmailStr`; omit → customer email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Sales **Document email override to** + **Email quotation** / **Resend quotation email**.
 **Accept:** `POST /sales/quotations/{quote_id}/accept` — draft/sent only → `accepted`  
@@ -1019,7 +1019,7 @@ Create accepts header `discount_amount` and per-line `items[].discount` (≥0). 
 
 ### 7.4 Sales Orders
 **List:** `GET /sales/orders` — optional Query `status` ∈ `draft`|`confirmed`|`processing`|`shipped`|`delivered`|`invoiced`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Orders **Sales order status filter** (`orderManageFilter`; client filter over full cache).  
-**Create:** `POST /sales/orders`  
+**Create:** `POST /sales/orders` — optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/invoices; omit/`null` → no notes; blank/garbage → **422**). Sales **Sales document notes** input; Create order sends `null` when blank.  
 **Get:** `GET /sales/orders/{order_id}`  
 **Update Status:** `PATCH /sales/orders/{order_id}/status`  
 **Convert to Invoice:** `POST /sales/orders/{order_id}/convert-to-invoice`
@@ -1036,7 +1036,7 @@ Optional create/confirm `delivery_address` ∈ `AddressValue` (strip; 1–500 ch
 
 ### 7.5 Invoices
 **List:** `GET /sales/invoices` — optional Query `status` ∈ `draft`|`posted`|`sent`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Invoices **Sales invoice status filter** (`invoiceManageFilter`; client filter over full cache).  
-**Create:** `POST /sales/invoices`  
+**Create:** `POST /sales/invoices` — optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/orders; omit/`null` → no notes; blank/garbage → **422**). Sales **Sales document notes** input; Create invoice sends `null` when blank.  
 **Get:** `GET /sales/invoices/{invoice_id}`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
 **Print:** `GET /sales/invoices/{invoice_id}/print` — query `template` ∈ a4|thermal (omit → company print branding default; blank/invalid → **422**); `format` ∈ pdf|text|json (omit → `pdf`; blank/invalid → **422**); `paper` ∈ 58mm|80mm for thermal (omit → branding default; blank/invalid → **422**, no silent branding fallback for garbage). Sales Print A4 / thermal controls.

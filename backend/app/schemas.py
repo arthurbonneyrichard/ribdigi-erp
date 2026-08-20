@@ -2185,7 +2185,9 @@ class SalesInvoiceItemCreate(BaseModel):
 class SalesInvoiceCreate(BaseModel):
     customer_id: str
     discount_amount: float = Field(default=0, ge=0)
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesInvoice.notes Text).
+    notes: SalesDocumentNotesValue | None = None
     store_id: str | None = None
     # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
@@ -2197,7 +2199,9 @@ class SalesInvoiceCreate(BaseModel):
 class SalesQuotationCreate(BaseModel):
     customer_id: str
     discount_amount: float = Field(default=0, ge=0)
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesQuotation.notes Text).
+    notes: SalesDocumentNotesValue | None = None
     valid_days: int = Field(default=14, ge=1, le=365)
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
@@ -2219,7 +2223,9 @@ class SalesOrderCreate(BaseModel):
     # blank silent→null; garbage could persist). Same AddressValue as PO.
     delivery_address: AddressValue | None = None
     discount_amount: float = Field(default=0, ge=0)
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesOrder.notes Text).
+    notes: SalesDocumentNotesValue | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 
@@ -4847,6 +4853,27 @@ SalesReturnNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_sales_return_notes_value),
+]
+
+
+def validate_sales_document_notes_value(value: str) -> str:
+    """AfterValidator: sales invoice/quotation/order notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Shared QT/SO/SI header notes — Text columns; keep ≤500 at API boundary.
+SalesDocumentNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_document_notes_value),
 ]
 
 

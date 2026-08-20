@@ -119,6 +119,7 @@ export default function Page() {
   const [returnReason, setReturnReason] = useState('');
   const [returnCondition, setReturnCondition] = useState('');
   const [returnNotes, setReturnNotes] = useState('');
+  const [docNotes, setDocNotes] = useState('');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -278,6 +279,7 @@ export default function Page() {
     // null when blank so Create order does not 422 (AddressValue).
     delivery_address: deliveryAddress.trim() || null,
     discount_amount: hdrDisc,
+    notes: docNotes.trim() || null,
     items: lineItems,
   };
 
@@ -286,6 +288,7 @@ export default function Page() {
     store_id: storeId || null,
     items: lineItems,
     discount_amount: hdrDisc,
+    notes: docNotes.trim() || null,
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
     is_reverse_charge: invoiceReverseCharge,
@@ -432,6 +435,7 @@ export default function Page() {
       setSelected(r.data);
       setLineDiscount('');
       setHeaderDiscount('');
+      setDocNotes('');
       setTab('invoices');
       await refresh();
     } catch (err: any) {
@@ -524,6 +528,7 @@ export default function Page() {
       setSelected(r.data);
       setLineDiscount('');
       setHeaderDiscount('');
+      setDocNotes('');
       setTab('quotations');
       await refresh();
     } catch (err: any) {
@@ -539,6 +544,7 @@ export default function Page() {
       setSelected(r.data);
       setLineDiscount('');
       setHeaderDiscount('');
+      setDocNotes('');
       setTab('orders');
       await refresh();
     } catch (err: any) {
@@ -1259,6 +1265,14 @@ export default function Page() {
             style={{ width: 120 }}
             title="Document-level discount amount"
           />
+          <input
+            value={docNotes}
+            onChange={(e) => setDocNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Sales document notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+            style={{ minWidth: 180 }}
+          />
         </div>
         <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
           Line discount is stored on the line (tax before discount). Header discount reduces the
@@ -1273,9 +1287,15 @@ export default function Page() {
           Reverse charge (tax memo only — not charged to customer)
         </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={createQuotation}>Create quotation</button>
-          <button onClick={createOrder}>Create order</button>
-          <button onClick={createInvoice}>Create invoice</button>
+          <button onClick={createQuotation} aria-label="Create quotation">
+            Create quotation
+          </button>
+          <button onClick={createOrder} aria-label="Create order">
+            Create order
+          </button>
+          <button onClick={createInvoice} aria-label="Create invoice">
+            Create invoice
+          </button>
         </div>
           </div>
         </div>
