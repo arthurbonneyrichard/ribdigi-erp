@@ -2038,7 +2038,9 @@ class PurchaseRequestCreate(BaseModel):
     preferred_supplier_id: str | None = None
     warehouse_id: str | None = None
     required_date: IsoDateQueryValue | None = None
-    department: str | None = None
+    # omit/`null` → no department label; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on PurchaseRequest.department).
+    department: PurchaseRequestDepartmentValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on PurchaseRequest.notes Text).
     notes: PurchaseRequestNotesValue | None = None
@@ -2118,7 +2120,9 @@ class LowStockSuggestionsCreate(BaseModel):
     # omit/`null` → service default note; blank/`!!!`/`http://…` → **422** (was
     # free `str`; blank/garbage could persist on PurchaseRequest.notes).
     notes: PurchaseRequestNotesValue | None = None
-    department: str | None = None
+    # omit/`null` → no department; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on draft PREQ department).
+    department: PurchaseRequestDepartmentValue | None = None
     include_open: bool = False
 
 
@@ -5707,6 +5711,35 @@ PurchaseRequestNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_purchase_request_notes_value),
+]
+
+
+def validate_purchase_request_department_value(value: str) -> str:
+    """AfterValidator: PR requesting department label; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    if len(value) > 120:
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    return value
+
+
+# Requesting department free-text — matches PurchaseRequest.department String(120).
+PurchaseRequestDepartmentValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_request_department_value),
 ]
 
 

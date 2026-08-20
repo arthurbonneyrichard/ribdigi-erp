@@ -1481,6 +1481,8 @@ export default function Page() {
                 value={prDepartment}
                 onChange={(e) => setPrDepartment(e.target.value)}
                 placeholder="Requesting department (optional)"
+                aria-label="Purchase request department"
+                title="Requesting department (optional; 1–120 chars; letters/digits required)"
               />
               <input
                 aria-label="Purchase request required date"
