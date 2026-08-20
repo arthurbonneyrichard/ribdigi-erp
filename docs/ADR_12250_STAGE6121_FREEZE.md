@@ -31,3 +31,7 @@ Stage 6122 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanenaakyajiyuglaze Gate, Transfer Kanenaakyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6122 opened under **ADR-12251** after CONTINUE/NEXT (Tenant MVP Transfer Kanenaagyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12252**. Stage 6121 feature scope remains frozen.
