@@ -31,3 +31,7 @@ Stage 2027 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwaaajiyuglaze Gate, Transfer Meiwaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2027 opened under **ADR-4061** after CONTINUE/NEXT (Tenant MVP Transfer Meiwaiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4062**. Stage 2026 feature scope remains frozen.
