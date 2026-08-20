@@ -31,3 +31,7 @@ Stage 3620 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manjioojiyuglaze Gate, Transfer Manjioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3620 opened under **ADR-7247** after CONTINUE/NEXT (Tenant MVP Transfer Manjiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7248**. Stage 3619 feature scope remains frozen.
