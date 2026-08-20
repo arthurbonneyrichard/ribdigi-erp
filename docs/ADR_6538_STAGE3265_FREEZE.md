@@ -31,3 +31,7 @@ Stage 3266 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Asukaaiijiyuglaze Gate, Transfer Asukaaiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3266 opened under **ADR-6539** after CONTINUE/NEXT (Tenant MVP Transfer Asukaaoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6540**. Stage 3265 feature scope remains frozen.
