@@ -1923,10 +1923,18 @@ class PurchaseOrderCancel(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 class PurchaseRequestItemCreate(BaseModel):
+    """Purchase request line — optional notes ∈ PurchaseRequestNotesValue (BR-6.2).
+
+    Optional `notes`; omit/`null` → no line notes; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank/garbage could persist on `PurchaseRequestItem.notes`).
+    """
+
     product_id: str
     quantity: float = Field(gt=0)
     variant_id: str | None = None
-    notes: str | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseRequestItem.notes Text).
+    notes: PurchaseRequestNotesValue | None = None
 
 
 class PurchaseRequestCreate(BaseModel):

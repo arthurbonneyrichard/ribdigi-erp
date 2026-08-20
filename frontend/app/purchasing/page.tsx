@@ -233,6 +233,7 @@ export default function Page() {
   const [prQty, setPrQty] = useState('10');
   const [prDepartment, setPrDepartment] = useState('');
   const [prNotes, setPrNotes] = useState('');
+  const [prItemNotes, setPrItemNotes] = useState('');
   const [prRequiredDate, setPrRequiredDate] = useState('');
   const [prBusy, setPrBusy] = useState('');
   const [prRejectReason, setPrRejectReason] = useState('');
@@ -1046,11 +1047,18 @@ export default function Page() {
           department: prDepartment.trim() || null,
           notes: prNotes.trim() || null,
           required_date: prRequiredDate.trim() || null,
-          items: [{ product_id: prProductId, quantity: Number(prQty) || 1 }],
+          items: [
+            {
+              product_id: prProductId,
+              quantity: Number(prQty) || 1,
+              notes: prItemNotes.trim() || null,
+            },
+          ],
         }),
       });
       setMessage(`Created ${r.data.request_number}`);
       setPrNotes('');
+      setPrItemNotes('');
       setPrRequiredDate('');
       await refresh();
       setTab('requests');
@@ -1486,6 +1494,13 @@ export default function Page() {
                 placeholder="Notes (optional)"
                 aria-label="Purchase request notes"
                 title="Optional notes (1–500 chars; letters/digits required)"
+              />
+              <input
+                value={prItemNotes}
+                onChange={(e) => setPrItemNotes(e.target.value)}
+                placeholder="Line notes (optional)"
+                aria-label="Purchase request line notes"
+                title="Optional per-line notes (1–500 chars; letters/digits required)"
               />
               <button
                 onClick={createRequest}
