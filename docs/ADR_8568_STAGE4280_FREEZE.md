@@ -31,3 +31,7 @@ Stage 4281 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachijiaajiyuglaze Gate, Transfer Muromachijiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4281 opened under **ADR-8569** after CONTINUE/NEXT (Tenant MVP Transfer Muromachijiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8570**. Stage 4280 feature scope remains frozen.
