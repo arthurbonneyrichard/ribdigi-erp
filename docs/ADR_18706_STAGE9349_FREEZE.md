@@ -31,3 +31,7 @@ Stage 9350 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keioddajiyuglaze Gate, Transfer Keioddajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9350 opened under **ADR-18707** after CONTINUE/NEXT (Tenant MVP Transfer Keioddiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18708**. Stage 9349 feature scope remains frozen.
