@@ -31,3 +31,7 @@ Stage 6703 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwajieejiyuglaze Gate, Transfer Tenwajieejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6703 opened under **ADR-13413** after CONTINUE/NEXT (Tenant MVP Transfer Tenwajiojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13414**. Stage 6702 feature scope remains frozen.
