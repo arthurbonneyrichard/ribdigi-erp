@@ -1109,6 +1109,8 @@ export default function Page() {
             value={customerCode}
             onChange={(e) => setCustomerCode(e.target.value)}
             placeholder="Code"
+            aria-label="Customer code"
+            title="Customer code (optional; 1–64 chars; letters/digits required)"
             style={{ width: 100 }}
           />
           <select

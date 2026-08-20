@@ -1135,7 +1135,10 @@ class PartyCreate(BaseModel):
     # Required party label ∈ PartyNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on customer/supplier).
     name: PartyNameValue
-    code: str | None = None
+    # omit/`null` → no code; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared via `_normalize_party_profile`; punctuation/URL could persist).
+    # Tenant uniqueness remains `_ensure_party_code_unique` (defense-in-depth).
+    code: PartyCodeValue | None = None
     # BR-6.1 / BR-7.1 — OpenAPI union Literal; kind-specific allow-list still enforced
     # in _normalize_party_profile. Omit → registered; blank/invalid → 422.
     profile_type: Literal[
@@ -1164,7 +1167,10 @@ class PartyUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on customer/supplier PATCH).
     name: PartyNameValue | None = None
-    code: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; punctuation/URL could persist on Party.code).
+    # Tenant uniqueness remains `_ensure_party_code_unique` (defense-in-depth).
+    code: PartyCodeValue | None = None
     # omit = no change; blank/invalid → 422 (no silent registered)
     profile_type: (
         Literal["walk_in", "registered", "trade", "manufacturer", "service", "other"] | None
@@ -3202,6 +3208,27 @@ PartyCategoryValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_party_category_value),
+]
+
+
+def validate_party_code_value(value: str) -> str:
+    """AfterValidator: party code; blank/URL/garbage → 422 (1–64)."""
+    if not value:
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    if len(value) > 64:
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    return value
+
+
+# Customer/supplier code — matches Party.code String(64); uniqueness stays in API.
+PartyCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_code_value),
 ]
 
 

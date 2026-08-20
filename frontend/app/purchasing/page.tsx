@@ -1666,6 +1666,8 @@ export default function Page() {
             value={supplierCode}
             onChange={(e) => setSupplierCode(e.target.value)}
             placeholder="Code"
+            aria-label="Supplier code"
+            title="Supplier code (optional; 1–64 chars; letters/digits required)"
             style={{ width: 100 }}
           />
           <select
