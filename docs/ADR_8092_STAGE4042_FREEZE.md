@@ -31,3 +31,7 @@ Stage 4043 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeijinajiyuglaze Gate, Transfer Kaeijinajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4043 opened under **ADR-8093** after CONTINUE/NEXT (Tenant MVP Transfer Kaeijihajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8094**. Stage 4042 feature scope remains frozen.
