@@ -31,3 +31,7 @@ Stage 8443 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseidduujiyuglaze Gate, Transfer Bunseidduujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8443 opened under **ADR-16893** after CONTINUE/NEXT (Tenant MVP Transfer Bunseiddyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16894**. Stage 8442 feature scope remains frozen.
