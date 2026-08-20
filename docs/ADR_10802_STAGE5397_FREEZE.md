@@ -31,3 +31,7 @@ Stage 5398 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edojiajiyuglaze Gate, Transfer Edojiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5398 opened under **ADR-10803** after CONTINUE/NEXT (Tenant MVP Transfer Edojiiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10804**. Stage 5397 feature scope remains frozen.
