@@ -380,6 +380,7 @@ Settings opens **Company** (`/company`). Warehouse deep-links to **Stores** (`/s
 
 **SBOM disclosure pack remaining-gate index (Stage 314):** Status index is `docs/SBOM_DISCLOSURE_PACK_REMAINING_GATE_MVP.md` → blockers `docs/SBOM_DISCLOSURE_PACK_RG_BLOCKERS_MVP.md` → Stage 40/313/312/38 pointers `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`. Live SBOM pipeline Complete and Cosign signing Complete remain MISSING (not claimed). Prefixed `SBOM_DISCLOSURE_PACK_*` remaining-gate docs (≠ Stage 40 S1 `SBOM_DISCLOSURE_MVP.md`).
 
+Stage 5094 Transfer Enpokyajiyuglaze Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_ENPOKYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_ENPOKYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 5093 Transfer Enpogajiyuglaze Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_ENPOGAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_ENPOGAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 5092 Transfer Enpopajiyuglaze Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_ENPOPAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_ENPOPAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).
 Stage 5091 Transfer Enpobajiyuglaze Gate Honesty Pack remaining-gate index fidelity — `TRANSFER_ENPOBAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md` / `TRANSFER_ENPOBAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md` (packaging only; Completes MISSING).

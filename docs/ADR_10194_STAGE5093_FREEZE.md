@@ -31,3 +31,7 @@ Stage 5094 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enpogajiyuglaze Gate, Transfer Enpogajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5094 opened under **ADR-10195** after CONTINUE/NEXT (Tenant MVP Transfer Enpokyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10196**. Stage 5093 feature scope remains frozen.
