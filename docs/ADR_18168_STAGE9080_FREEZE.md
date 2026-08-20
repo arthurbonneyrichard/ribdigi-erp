@@ -31,3 +31,7 @@ Stage 9081 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manencczajiyuglaze Gate, Transfer Manencczajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9081 opened under **ADR-18169** after CONTINUE/NEXT (Tenant MVP Transfer Manenccdajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18170**. Stage 9080 feature scope remains frozen.
