@@ -31,3 +31,7 @@ Stage 1813 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jokyojiyuglaze Gate, Transfer Jokyojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1813 opened under **ADR-3633** after CONTINUE/NEXT (Tenant MVP Transfer Horekijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3634**. Stage 1812 feature scope remains frozen.
