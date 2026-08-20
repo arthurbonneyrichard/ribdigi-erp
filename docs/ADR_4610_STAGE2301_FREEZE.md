@@ -31,3 +31,7 @@ Stage 2302 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nanbokuajiyuglaze Gate, Transfer Nanbokuajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2302 opened under **ADR-4611** after CONTINUE/NEXT (Tenant MVP Transfer Nanbokuiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4612**. Stage 2301 feature scope remains frozen.
