@@ -31,3 +31,7 @@ Stage 2813 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kitayamahajiyuglaze Gate, Transfer Kitayamahajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2813 opened under **ADR-5633** after CONTINUE/NEXT (Tenant MVP Transfer Kitayamamajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5634**. Stage 2812 feature scope remains frozen.
