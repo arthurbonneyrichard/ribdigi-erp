@@ -31,3 +31,7 @@ Stage 2913 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohoaakajiyuglaze Gate, Transfer Kyohoaakajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2913 opened under **ADR-5833** after CONTINUE/NEXT (Tenant MVP Transfer Kyohoaasajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5834**. Stage 2912 feature scope remains frozen.
