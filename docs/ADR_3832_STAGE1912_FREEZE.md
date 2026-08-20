@@ -31,3 +31,7 @@ Stage 1913 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiouajiyuglaze Gate, Transfer Keiouajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1913 opened under **ADR-3833** after CONTINUE/NEXT (Tenant MVP Transfer Manenajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3834**. Stage 1912 feature scope remains frozen.
