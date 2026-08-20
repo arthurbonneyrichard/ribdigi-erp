@@ -31,3 +31,7 @@ Stage 11473 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofuneezajiyuglaze Gate, Transfer Kofuneezajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11473 opened under **ADR-22953** after CONTINUE/NEXT (Tenant MVP Transfer Kofuneedajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-22954**. Stage 11472 feature scope remains frozen.
