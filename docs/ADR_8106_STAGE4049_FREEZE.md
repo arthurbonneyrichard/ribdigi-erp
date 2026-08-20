@@ -31,3 +31,7 @@ Stage 4050 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseijioojiyuglaze Gate, Transfer Anseijioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4050 opened under **ADR-8107** after CONTINUE/NEXT (Tenant MVP Transfer Anseijiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8108**. Stage 4049 feature scope remains frozen.
