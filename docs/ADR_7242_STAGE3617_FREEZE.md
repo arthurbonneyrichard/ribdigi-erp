@@ -31,3 +31,7 @@ Stage 3618 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manjiajiyuglaze Gate, Transfer Manjiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3618 opened under **ADR-7243** after CONTINUE/NEXT (Tenant MVP Transfer Manjiiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7244**. Stage 3617 feature scope remains frozen.
