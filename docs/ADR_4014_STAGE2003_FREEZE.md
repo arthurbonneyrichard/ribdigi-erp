@@ -31,3 +31,7 @@ Stage 2004 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoeejiyuglaze Gate, Transfer Kanpoeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2004 opened under **ADR-4015** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4016**. Stage 2003 feature scope remains frozen.
