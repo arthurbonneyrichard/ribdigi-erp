@@ -31,3 +31,7 @@ Stage 4304 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchijiyajiyuglaze Gate, Transfer Azuchijiyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4304 opened under **ADR-8615** after CONTINUE/NEXT (Tenant MVP Transfer Azuchijieejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8616**. Stage 4303 feature scope remains frozen.
