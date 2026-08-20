@@ -31,3 +31,7 @@ Stage 5595 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kitayamajimajiyuglaze Gate, Transfer Kitayamajimajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5595 opened under **ADR-11197** after CONTINUE/NEXT (Tenant MVP Transfer Kitayamajirajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11198**. Stage 5594 feature scope remains frozen.
