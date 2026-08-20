@@ -31,3 +31,7 @@ Stage 5318 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showajigajiyuglaze Gate, Transfer Showajigajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5318 opened under **ADR-10643** after CONTINUE/NEXT (Tenant MVP Transfer Showajikyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10644**. Stage 5317 feature scope remains frozen.
