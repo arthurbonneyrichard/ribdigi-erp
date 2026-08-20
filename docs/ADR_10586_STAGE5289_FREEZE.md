@@ -31,3 +31,7 @@ Stage 5290 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiojizajiyuglaze Gate, Transfer Keiojizajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5290 opened under **ADR-10587** after CONTINUE/NEXT (Tenant MVP Transfer Keiojidajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10588**. Stage 5289 feature scope remains frozen.
