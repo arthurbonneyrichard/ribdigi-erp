@@ -31,3 +31,7 @@ Stage 9096 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenddojiyuglaze Gate, Transfer Manenddojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9096 opened under **ADR-18199** after CONTINUE/NEXT (Tenant MVP Transfer Manenddujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18200**. Stage 9095 feature scope remains frozen.
