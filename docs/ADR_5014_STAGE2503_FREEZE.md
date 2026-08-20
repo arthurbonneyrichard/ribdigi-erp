@@ -31,3 +31,7 @@ Stage 2504 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokuwajiyuglaze Gate, Transfer Genrokuwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2504 opened under **ADR-5015** after CONTINUE/NEXT (Tenant MVP Transfer Genrokukajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5016**. Stage 2503 feature scope remains frozen.
