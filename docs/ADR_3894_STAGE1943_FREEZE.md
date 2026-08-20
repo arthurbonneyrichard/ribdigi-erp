@@ -31,3 +31,7 @@ Stage 1944 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heiseiajiyuglaze Gate, Transfer Heiseiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1944 opened under **ADR-3895** after CONTINUE/NEXT (Tenant MVP Transfer Reiwaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3896**. Stage 1943 feature scope remains frozen.
