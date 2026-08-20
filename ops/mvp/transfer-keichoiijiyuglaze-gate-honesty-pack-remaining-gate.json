@@ -1,6 +1,6 @@
 {
   "id": "transfer-keichoiijiyuglaze-gate-honesty-pack-remaining-gate",
-  "stage": 1961,
+  "stage": 2011,
   "pack": "I1",
   "doc": "docs/TRANSFER_KEICHOIIJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
   "related": {
@@ -21,8 +21,8 @@
   "transfer_keichoiijiyuglaze_gate_as_golive_complete_claimed": false,
   "go_live_claimed": false,
   "attestation_claimed": false,
-  "distinct_from_stage1960_transfer_keichoajiyuglaze_gate_honesty_pack_remaining_gate": true,
-  "distinct_from_stage1959_transfer_keichoaajiyuglaze_gate_honesty_pack_remaining_gate": true,
+  "distinct_from_stage2010_transfer_keichoajiyuglaze_gate_honesty_pack_remaining_gate": true,
+  "distinct_from_stage2009_transfer_keichoaajiyuglaze_gate_honesty_pack_remaining_gate": true,
   "distinct_from_stage408_golive_honesty_pack_remaining_gate": true,
   "distinct_from_transfer_keichoiijiyuglaze_gate_pack_remaining_gate": true,
   "distinct_from_stage392_offline_connectivity_badge_pack_remaining_gate": true,
@@ -36,7 +36,7 @@
     },
     {
       "id": "tkeichoiijiyuglazegh-follow-pointers",
-      "title": "Follow P1 Stage 1960 / Stage 1959 / Stage 392 / CHANGE_IMPACT pointers",
+      "title": "Follow P1 Stage 2010 / Stage 2009 / Stage 392 / CHANGE_IMPACT pointers",
       "status": "packaged",
       "done": false
     },
@@ -59,5 +59,5 @@
       "done": false
     }
   ],
-  "message": "Stage 1961 I1 Transfer Keichoiijiyuglaze Gate Honesty Pack remaining-gate index packaging only. Do not claim Offline Complete or go-live Completes."
+  "message": "Stage 2011 I1 Transfer Keichoiijiyuglaze Gate Honesty Pack remaining-gate index packaging only. Do not claim Offline Complete or go-live Completes."
 }
