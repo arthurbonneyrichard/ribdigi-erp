@@ -31,3 +31,7 @@ Stage 3311 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianaasajiyuglaze Gate, Transfer Heianaasajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3311 opened under **ADR-6629** after CONTINUE/NEXT (Tenant MVP Transfer Heianaatajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6630**. Stage 3310 feature scope remains frozen.
