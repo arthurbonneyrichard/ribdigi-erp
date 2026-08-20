@@ -31,3 +31,7 @@ Stage 4736 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohoaagyajiyuglaze Gate, Transfer Kyohoaagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4736 opened under **ADR-9479** after CONTINUE/NEXT (Tenant MVP Transfer Kyohoaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9480**. Stage 4735 feature scope remains frozen.
