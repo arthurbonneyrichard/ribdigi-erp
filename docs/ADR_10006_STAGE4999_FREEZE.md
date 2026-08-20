@@ -31,3 +31,7 @@ Stage 5000 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunaagyajiyuglaze Gate, Transfer Kofunaagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5000 opened under **ADR-10007** after CONTINUE/NEXT (Tenant MVP Transfer Kofunaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10008**. Stage 4999 feature scope remains frozen.
