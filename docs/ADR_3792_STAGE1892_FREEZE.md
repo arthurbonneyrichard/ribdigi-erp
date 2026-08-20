@@ -31,3 +31,7 @@ Stage 1893 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Oueiajiyuglaze Gate, Transfer Oueiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1893 opened under **ADR-3793** after CONTINUE/NEXT (Tenant MVP Transfer Shitokuajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3794**. Stage 1892 feature scope remains frozen.
