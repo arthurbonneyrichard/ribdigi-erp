@@ -31,3 +31,7 @@ Stage 3306 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianaaojiyuglaze Gate, Transfer Heianaaojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3306 opened under **ADR-6619** after CONTINUE/NEXT (Tenant MVP Transfer Heianaaujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6620**. Stage 3305 feature scope remains frozen.
