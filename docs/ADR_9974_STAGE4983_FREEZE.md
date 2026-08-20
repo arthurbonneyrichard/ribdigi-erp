@@ -31,3 +31,7 @@ Stage 4984 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonaagyajiyuglaze Gate, Transfer Jomonaagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4984 opened under **ADR-9975** after CONTINUE/NEXT (Tenant MVP Transfer Jomonaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9976**. Stage 4983 feature scope remains frozen.
