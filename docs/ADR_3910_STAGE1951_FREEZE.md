@@ -31,3 +31,7 @@ Stage 1952 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokuaajiyuglaze Gate, Transfer Genrokuaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1952 opened under **ADR-3911** after CONTINUE/NEXT (Tenant MVP Transfer Tenpouaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3912**. Stage 1951 feature scope remains frozen.
