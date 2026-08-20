@@ -31,3 +31,7 @@ Stage 7618 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwabbkajiyuglaze Gate, Transfer Meiwabbkajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7618 opened under **ADR-15243** after CONTINUE/NEXT (Tenant MVP Transfer Meiwabbsajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15244**. Stage 7617 feature scope remains frozen.
