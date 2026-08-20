@@ -16,6 +16,7 @@ export default function Page() {
   const [draftPrBusy, setDraftPrBusy] = useState(false);
   const [lastAtRisk, setLastAtRisk] = useState<any[]>([]);
   const [includeOpenPr, setIncludeOpenPr] = useState(false);
+  const [predictionNotes, setPredictionNotes] = useState('');
   const [lastDocExtract, setLastDocExtract] = useState<any | null>(null);
   const [documentType, setDocumentType] = useState<'auto' | 'receipt' | 'invoice' | 'purchase_order'>('auto');
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
@@ -138,7 +139,7 @@ export default function Page() {
     try {
       const body: Record<string, unknown> = {
         days_ahead: 14,
-        notes: 'AiLowStockPredictionLine hello-world',
+        notes: predictionNotes.trim() || null,
         include_open: includeOpenPr,
       };
       // Prefer lines already loaded so the UI matches what the user saw.
@@ -151,7 +152,7 @@ export default function Page() {
           recommended_order_qty: x.recommended_order_qty,
           warehouse_id: x.warehouse_id,
           preferred_supplier_id: x.preferred_supplier_id,
-          notes: x.notes,
+          notes: x.notes || null,
           risk_reason: x.risk_reason,
         }));
       }
@@ -166,6 +167,7 @@ export default function Page() {
         setMessage(
           `Created draft PR(s): ${nums || created.length}. Open Purchasing → Requests to submit.`
         );
+        setPredictionNotes('');
         setA(
           [
             `Draft purchase request(s) created: ${nums || created.length}`,
@@ -581,7 +583,11 @@ export default function Page() {
           <button onClick={emailInsightDigest} disabled={digestBusy}>
             {digestBusy ? 'Emailing digest…' : 'Email digest to me'}
           </button>
-          <button onClick={loadInventoryPredictions} disabled={predBusy}>
+          <button
+            onClick={loadInventoryPredictions}
+            disabled={predBusy}
+            aria-label="Inventory predictions"
+          >
             {predBusy ? 'Loading predictions…' : 'Inventory predictions'}
           </button>
           <button
@@ -592,6 +598,14 @@ export default function Page() {
           >
             {draftPrBusy ? 'Creating draft PR(s)…' : 'Create draft PR(s)'}
           </button>
+          <input
+            value={predictionNotes}
+            onChange={(e) => setPredictionNotes(e.target.value)}
+            placeholder="Prediction notes (optional)"
+            aria-label="AI low-stock prediction notes"
+            title="Optional notes for draft PRs (1–500 chars; letters/digits required)"
+            style={{ minWidth: 200 }}
+          />
           <label
             style={{ display: 'inline-flex', gap: 4, alignItems: 'center', fontSize: 13 }}
             title="Allow creating another draft PR even if the product is already on an open request"

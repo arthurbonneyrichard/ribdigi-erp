@@ -2023,14 +2023,15 @@ class AiLowStockPredictionLine(BaseModel):
     recommended_order_qty: float | None = Field(default=None, ge=0)
     warehouse_id: str | None = None
     preferred_supplier_id: str | None = None
-    notes: str | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`
+    # stripped to null; blank/garbage could persist onto draft PR line notes).
+    notes: PurchaseRequestNotesValue | None = None
     risk_reason: str | None = None
 
     @field_validator(
         "product_id",
         "warehouse_id",
         "preferred_supplier_id",
-        "notes",
         "risk_reason",
         mode="before",
     )
@@ -2066,16 +2067,10 @@ class AiLowStockPredictionRequestsBody(BaseModel):
     lines: list[AiLowStockPredictionLine] | None = None
     days_ahead: int = Field(default=14, ge=1, le=365)
     min_confidence: float = Field(default=0, ge=0, le=1)
-    notes: str | None = None
+    # omit/`null` → no header notes; blank/`!!!`/`http://…` → **422** (was free
+    # `str` stripped to null; blank/garbage could persist on draft PREQ notes).
+    notes: PurchaseRequestNotesValue | None = None
     include_open: bool = False
-
-    @field_validator("notes", mode="before")
-    @classmethod
-    def _strip_notes(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
-        return value
 
 
 class GrnItemCreate(BaseModel):
