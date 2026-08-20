@@ -31,3 +31,7 @@ Stage 3202 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishoaaojiyuglaze Gate, Transfer Taishoaaojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3202 opened under **ADR-6411** after CONTINUE/NEXT (Tenant MVP Transfer Taishoaaujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6412**. Stage 3201 feature scope remains frozen.
