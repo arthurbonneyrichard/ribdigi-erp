@@ -31,3 +31,7 @@ Stage 3437 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiaatajiyuglaze Gate, Transfer Yayoiaatajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3437 opened under **ADR-6881** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiaanajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6882**. Stage 3436 feature scope remains frozen.
