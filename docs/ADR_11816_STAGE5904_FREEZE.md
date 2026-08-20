@@ -31,3 +31,7 @@ Stage 5905 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shohoaanajiyuglaze Gate, Transfer Shohoaanajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5905 opened under **ADR-11817** after CONTINUE/NEXT (Tenant MVP Transfer Shohoaahajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11818**. Stage 5904 feature scope remains frozen.
