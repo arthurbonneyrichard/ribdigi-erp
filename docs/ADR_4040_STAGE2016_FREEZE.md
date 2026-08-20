@@ -31,3 +31,7 @@ Stage 2017 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hourekiaajiyuglaze Gate, Transfer Hourekiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2017 opened under **ADR-4041** after CONTINUE/NEXT (Tenant MVP Transfer Hourekiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4042**. Stage 2016 feature scope remains frozen.
