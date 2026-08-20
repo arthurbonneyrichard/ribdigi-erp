@@ -31,3 +31,7 @@ Stage 3532 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gennaoojiyuglaze Gate, Transfer Gennaoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3532 opened under **ADR-7071** after CONTINUE/NEXT (Tenant MVP Transfer Gennauujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7072**. Stage 3531 feature scope remains frozen.
