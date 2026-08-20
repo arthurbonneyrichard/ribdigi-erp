@@ -31,3 +31,7 @@ Stage 3548 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaneiajiyuglaze Gate, Transfer Kaneiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3548 opened under **ADR-7103** after CONTINUE/NEXT (Tenant MVP Transfer Kaneiiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7104**. Stage 3547 feature scope remains frozen.
