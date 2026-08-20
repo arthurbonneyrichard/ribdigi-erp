@@ -31,3 +31,7 @@ Stage 8041 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseicczajiyuglaze Gate, Transfer Kanseicczajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8041 opened under **ADR-16089** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiccdajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16090**. Stage 8040 feature scope remains frozen.
