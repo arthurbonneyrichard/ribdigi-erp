@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.inventory import allocate_unlocated_stock, apply_stock_change, get_or_create_warehouse_stock
+from app.workspace import company_id_match
 
 
 async def get_warehouse(
@@ -23,8 +24,9 @@ async def get_warehouse(
         m.Warehouse.id == warehouse_id,
         m.Warehouse.tenant_id == tenant_id,
     )
-    if company_id:
-        stmt = stmt.where(m.Warehouse.company_id == company_id)
+    match = company_id_match(m.Warehouse.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     wh = (await db.execute(stmt)).scalar_one_or_none()
     if not wh:
         raise HTTPException(status_code=404, detail="Warehouse not found")
@@ -42,8 +44,9 @@ async def get_count(
         m.StockCount.id == count_id,
         m.StockCount.tenant_id == tenant_id,
     )
-    if company_id:
-        stmt = stmt.where(m.StockCount.company_id == company_id)
+    match = company_id_match(m.StockCount.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Stock count not found")
@@ -179,8 +182,9 @@ async def _resolve_product_ids(
         m.WarehouseStock.tenant_id == tenant_id,
         m.WarehouseStock.warehouse_id == warehouse_id,
     )
-    if company_id:
-        stock_q = stock_q.where(m.WarehouseStock.company_id == company_id)
+    match = company_id_match(m.WarehouseStock.company_id, company_id)
+    if match is not None:
+        stock_q = stock_q.where(match)
     stock_rows = (await db.execute(stock_q)).scalars().all()
     ids = list(dict.fromkeys(stock_rows))
 
@@ -190,8 +194,9 @@ async def _resolve_product_ids(
         m.Product.is_active == True,  # noqa: E712
         m.Product.stock_qty > 0,
     )
-    if company_id:
-        active_q = active_q.where(m.Product.company_id == company_id)
+    match = company_id_match(m.Product.company_id, company_id)
+    if match is not None:
+        active_q = active_q.where(match)
     active = (await db.execute(active_q)).scalars().all()
     for product in active:
         if product.id not in ids:
@@ -203,8 +208,9 @@ async def _resolve_product_ids(
             m.Product.tenant_id == tenant_id,
             m.Product.is_active == True,  # noqa: E712
         )
-        if company_id:
-            empty_q = empty_q.where(m.Product.company_id == company_id)
+        match = company_id_match(m.Product.company_id, company_id)
+        if match is not None:
+            empty_q = empty_q.where(match)
         ids = list((await db.execute(empty_q)).scalars().all())
     if not ids:
         raise HTTPException(status_code=400, detail="No products available for stock count")

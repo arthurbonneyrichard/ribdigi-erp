@@ -89,18 +89,19 @@ async def create_store(
     company_id: str | None = None,
 ) -> m.Store:
     from app import store_entitlements as store_ent_svc
+    from app import workspace as workspace_svc
 
-    if not company_id:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "code": "COMPANY_WORKSPACE_REQUIRED",
-                "message": "Store creation requires an active company workspace.",
-            },
-        )
     tenant = await db.get(m.Tenant, tenant_id)
-    company = await db.get(m.Company, company_id)
-    if not tenant or not company or company.tenant_id != tenant_id:
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Company not found")
+    # Service-layer callers (and legacy tests) may omit company_id; bind to the
+    # tenant default company. HTTP routes still require company workspace via RBAC.
+    if not company_id:
+        company = await workspace_svc.ensure_default_company(db, tenant)
+        company_id = company.id
+    else:
+        company = await db.get(m.Company, company_id)
+    if not company or company.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Company not found")
 
     async with store_ent_svc.store_capacity_lock(tenant_id, company_id):

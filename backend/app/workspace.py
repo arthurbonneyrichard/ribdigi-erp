@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.rbac import permissions_for_role
+
+
+def company_id_match(column, company_id: str | None):
+    """Match active company workspace, including legacy NULL-scoped rows.
+
+    Cross-company stamped rows stay isolated. Unscoped (NULL) rows remain
+    visible until backfilled — same pattern as audit company scoping.
+    """
+    if not company_id:
+        return None
+    return or_(column == company_id, column.is_(None))
 
 
 def _default_company_store_limit(tenant: m.Tenant) -> int:
@@ -331,7 +342,9 @@ def company_scope_filter(model, claims: dict):
     clauses = [model.tenant_id == claims["tenant_id"]]
     company_id = claims.get("company_id")
     if company_id and hasattr(model, "company_id"):
-        clauses.append(model.company_id == company_id)
+        match = company_id_match(model.company_id, company_id)
+        if match is not None:
+            clauses.append(match)
     return clauses
 
 

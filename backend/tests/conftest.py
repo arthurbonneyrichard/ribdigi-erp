@@ -231,7 +231,15 @@ async def client(db_engine, seeded, _disable_rate_limit):
     app.state.session_factory = previous_factory
 
 
-async def auth_headers(client: AsyncClient, *, email: str, tenant_slug: str, totp_code: str | None = None):
+async def auth_headers(
+    client: AsyncClient,
+    *,
+    email: str,
+    tenant_slug: str,
+    totp_code: str | None = None,
+    company_id: str | None = None,
+    workspace_kind: str | None = None,
+):
     body = {"email": email, "password": "SecurePass123!", "tenant_id": tenant_slug}
     if totp_code:
         body["totp_code"] = totp_code
@@ -242,4 +250,31 @@ async def auth_headers(client: AsyncClient, *, email: str, tenant_slug: str, tot
         raise AssertionError("2FA challenge unexpected without totp_code")
     token = data["access_token"]
     tenant_id = data["user"]["tenant_id"]
-    return {"Authorization": f"Bearer {token}", "X-Tenant-ID": tenant_id}
+    headers = {"Authorization": f"Bearer {token}", "X-Tenant-ID": tenant_id}
+    if company_id:
+        headers["X-Company-ID"] = company_id
+        headers["X-Workspace-Kind"] = workspace_kind or "company"
+    elif workspace_kind:
+        headers["X-Workspace-Kind"] = workspace_kind
+    return headers
+
+
+async def company_auth_headers(
+    client: AsyncClient,
+    seed: dict,
+    *,
+    email: str,
+    tenant_slug: str | None = None,
+    totp_code: str | None = None,
+    company_key: str = "c1",
+):
+    """Login + explicit company workspace (ADR-490) for operational module tests."""
+    slug = tenant_slug or ("alpha" if company_key == "c1" else "beta")
+    return await auth_headers(
+        client,
+        email=email,
+        tenant_slug=slug,
+        totp_code=totp_code,
+        company_id=seed[company_key].id,
+        workspace_kind="company",
+    )

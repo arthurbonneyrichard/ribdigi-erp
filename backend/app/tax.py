@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.workspace import company_id_match
 
 
 def normalize_components(raw: list | None) -> list[dict[str, Any]] | None:
@@ -257,8 +258,9 @@ async def get_default_tax_rate(
         m.TaxRate.is_active == True,  # noqa: E712
         m.TaxRate.is_default == True,  # noqa: E712
     )
-    if company_id:
-        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    match = company_id_match(m.TaxRate.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
@@ -270,8 +272,9 @@ async def get_tax_rate(
     company_id: str | None = None,
 ) -> m.TaxRate:
     stmt = select(m.TaxRate).where(m.TaxRate.id == tax_rate_id, m.TaxRate.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    match = company_id_match(m.TaxRate.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Tax rate not found")
@@ -284,8 +287,9 @@ async def clear_default_flags(
     stmt = select(m.TaxRate).where(
         m.TaxRate.tenant_id == tenant_id, m.TaxRate.is_default == True  # noqa: E712
     )
-    if company_id:
-        stmt = stmt.where(m.TaxRate.company_id == company_id)
+    match = company_id_match(m.TaxRate.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     rows = (await db.execute(stmt)).scalars().all()
     for row in rows:
         row.is_default = False
@@ -515,7 +519,9 @@ async def tax_filing_pack(
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
     if company_id:
-        inv_stmt = inv_stmt.where(m.SalesInvoice.company_id == company_id)
+        inv_stmt = inv_stmt.where(
+            company_id_match(m.SalesInvoice.company_id, company_id)
+        )
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
@@ -579,7 +585,9 @@ async def tax_filing_pack(
         m.Transaction.tx_type == "pos_sale",
     )
     if company_id:
-        pos_stmt = pos_stmt.where(m.Transaction.company_id == company_id)
+        pos_stmt = pos_stmt.where(
+            company_id_match(m.Transaction.company_id, company_id)
+        )
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -632,7 +640,9 @@ async def tax_filing_pack(
         m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
     )
     if company_id:
-        pi_stmt = pi_stmt.where(m.PurchaseInvoice.company_id == company_id)
+        pi_stmt = pi_stmt.where(
+            company_id_match(m.PurchaseInvoice.company_id, company_id)
+        )
     if from_date:
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
     if to_date:
@@ -676,7 +686,9 @@ async def tax_filing_pack(
             m.PurchaseOrder.status.in_(["received", "partial", "sent", "closed"]),
         )
         if company_id:
-            po_stmt = po_stmt.where(m.PurchaseOrder.company_id == company_id)
+            po_stmt = po_stmt.where(
+                company_id_match(m.PurchaseOrder.company_id, company_id)
+            )
         if from_date:
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
         if to_date:

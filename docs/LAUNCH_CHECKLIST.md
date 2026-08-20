@@ -133,7 +133,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Tax configuration fidelity (Stage 22 T1: `test_tax_config_fidelity_t1.py` — tax types, inclusive/exclusive, compound tax)
 - [x] Stage 22 fidelity sync (D1: `test_stage22_fidelity_d1.py`, `docs/STAGE_22_FIDELITY.md` — BR-9–12 + finance readiness + USER_MANUAL / API / launch)
 - [x] Stage 22 exit + freeze (H22x: `test_stage22_exit_h22x.py`, ADR-050)
-- [x] Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (closed: `docs/STAGE_23_PLAN.md`, ADR-052) — F1–D1 / H23x complete
+- [x] Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (opened ADR-051; closed: `docs/STAGE_23_PLAN.md`, ADR-052) — F1–D1 / H23x complete
 - [x] Financial report dimension filters (Stage 23 F1: `test_financial_report_filters_f1.py` — balance sheet / P&L / cash-flow `store_id` + `branch_id`)
 - [x] Financial comparative fidelity (Stage 23 C1: `test_financial_comparative_c1.py` — P&L / cash-flow / BS `compare=true` prior period + change_pct)
 - [x] Isolation matrix residual (Stage 23 I1: `test_isolation_matrix_i1.py` — liquid accounts/transfers, expense categories/recurring, report dimensions, mismatched header)

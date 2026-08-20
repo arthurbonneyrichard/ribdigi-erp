@@ -13,6 +13,7 @@ from app import credit as credit_svc
 from app import models as m
 from app.rbac import apply_created_by_scope
 from app.session_passkey_doc_export import _cell
+from app.workspace import company_id_match
 
 CUSTOMER_PAYMENT_EXPORT_COLUMNS = [
     "payment_number",
@@ -199,8 +200,9 @@ async def list_customer_payments(
         .limit(min(max(limit, 1), 500))
     )
     company_id = claims.get("company_id")
-    if company_id:
-        stmt = stmt.where(m.CustomerPayment.company_id == company_id)
+    match = company_id_match(m.CustomerPayment.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     if customer_id:
         stmt = stmt.where(m.CustomerPayment.customer_id == customer_id.strip())
     if method:
@@ -226,8 +228,9 @@ async def list_supplier_payments(
         .limit(min(max(limit, 1), 500))
     )
     company_id = claims.get("company_id")
-    if company_id:
-        stmt = stmt.where(m.SupplierPayment.company_id == company_id)
+    match = company_id_match(m.SupplierPayment.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     if supplier_id:
         stmt = stmt.where(m.SupplierPayment.supplier_id == supplier_id.strip())
     if method:

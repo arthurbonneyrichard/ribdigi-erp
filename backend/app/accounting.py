@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.workspace import company_id_match
 
 DEFAULT_ACCOUNTS = [
     ("1000", "Cash", "asset", True, False),
@@ -2053,8 +2054,9 @@ async def account_balances_through(
 ) -> tuple[list[m.Account], dict[str, float]]:
     """Natural-side balances per account; as_of / store_ids rebuild from posted journals."""
     aq = select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
-    if company_id:
-        aq = aq.where(m.Account.company_id == company_id)
+    match = company_id_match(m.Account.company_id, company_id)
+    if match is not None:
+        aq = aq.where(match)
     accounts = (await db.execute(aq)).scalars().all()
     if as_of is None and store_ids is None:
         return accounts, {a.id: float(a.balance or 0) for a in accounts}
@@ -2073,8 +2075,9 @@ async def account_balances_through(
             m.JournalEntry.status == "posted",
         )
     )
-    if company_id:
-        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+    je_match = company_id_match(m.JournalEntry.company_id, company_id)
+    if je_match is not None:
+        stmt = stmt.where(je_match)
     if as_of is not None:
         stmt = stmt.where(m.JournalEntry.entry_date <= as_of)
     if store_ids is not None:
@@ -2190,8 +2193,12 @@ async def profit_and_loss(
         )
     )
     if company_id:
-        stmt = stmt.where(m.JournalEntry.company_id == company_id)
-        stmt = stmt.where(m.Account.company_id == company_id)
+        je_match = company_id_match(m.JournalEntry.company_id, company_id)
+        acct_match = company_id_match(m.Account.company_id, company_id)
+        if je_match is not None:
+            stmt = stmt.where(je_match)
+        if acct_match is not None:
+            stmt = stmt.where(acct_match)
     if from_date:
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:

@@ -1051,7 +1051,7 @@ Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_p
 
 Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers). Optional `store_id` / `branch_id` (Stage 14 A1 / Stage 23 F1). Stage 23 C1: `compare=true` prior-period `comparison` block (same semantics as P&L).
 
-**Trial Balance:** `GET /reports/trial-balance?as_of_date=&store_id=&branch_id=` (also `GET /accounting/trial-balance`)  
+**Trial Balance (Stage 14 A2):** `GET /reports/trial-balance?as_of_date=&store_id=&branch_id=` (also `GET /accounting/trial-balance`)  
 
 When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances (tenant-wide only). Optional `store_id` / `branch_id` rebuild from posted journals tagged with those stores (same semantics as balance sheet; Stage 23 F1 leftover). Foreign store/branch → `404`. Store not in branch → `400 STORE_BRANCH_MISMATCH`. Empty branch (no stores) returns a zeroed balanced trial. Response includes `as_of`, `store_id`, `branch_id`. Path CSV exports accept the same filters.
 
