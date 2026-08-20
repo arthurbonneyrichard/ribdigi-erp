@@ -31,3 +31,7 @@ Stage 8709 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukaddwajiyuglaze Gate, Transfer Koukaddwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8709 opened under **ADR-17425** after CONTINUE/NEXT (Tenant MVP Transfer Koukaddkajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17426**. Stage 8708 feature scope remains frozen.
