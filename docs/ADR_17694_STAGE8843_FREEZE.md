@@ -31,3 +31,7 @@ Stage 8844 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeiddhajiyuglaze Gate, Transfer Kaeiddhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8844 opened under **ADR-17695** after CONTINUE/NEXT (Tenant MVP Transfer Kaeiddmajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17696**. Stage 8843 feature scope remains frozen.
