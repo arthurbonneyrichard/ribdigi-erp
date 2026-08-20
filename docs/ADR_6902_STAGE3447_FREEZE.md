@@ -31,3 +31,7 @@ Stage 3448 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunaaeejiyuglaze Gate, Transfer Kofunaaeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3448 opened under **ADR-6903** after CONTINUE/NEXT (Tenant MVP Transfer Kofunaaojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6904**. Stage 3447 feature scope remains frozen.
