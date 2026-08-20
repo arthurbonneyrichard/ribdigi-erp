@@ -31,3 +31,7 @@ Stage 3635 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanbunjiaajiyuglaze Gate, Transfer Kanbunjiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3635 opened under **ADR-7277** after CONTINUE/NEXT (Tenant MVP Transfer Kanbunjiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7278**. Stage 3634 feature scope remains frozen.
