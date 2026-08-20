@@ -31,3 +31,7 @@ Stage 9705 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showabbzajiyuglaze Gate, Transfer Showabbzajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9705 opened under **ADR-19417** after CONTINUE/NEXT (Tenant MVP Transfer Showabbdajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19418**. Stage 9704 feature scope remains frozen.
