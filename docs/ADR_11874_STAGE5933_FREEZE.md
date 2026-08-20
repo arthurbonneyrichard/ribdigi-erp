@@ -31,3 +31,7 @@ Stage 5934 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keianaarajiyuglaze Gate, Transfer Keianaarajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5934 opened under **ADR-11875** after CONTINUE/NEXT (Tenant MVP Transfer Keianaazajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11876**. Stage 5933 feature scope remains frozen.
