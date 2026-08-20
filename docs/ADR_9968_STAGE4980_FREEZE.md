@@ -31,3 +31,7 @@ Stage 4981 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonaapajiyuglaze Gate, Transfer Jomonaapajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4981 opened under **ADR-9969** after CONTINUE/NEXT (Tenant MVP Transfer Jomonaagajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9970**. Stage 4980 feature scope remains frozen.
