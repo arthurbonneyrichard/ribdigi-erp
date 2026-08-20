@@ -31,3 +31,7 @@ Stage 8729 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukaeeuujiyuglaze Gate, Transfer Koukaeeuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8729 opened under **ADR-17465** after CONTINUE/NEXT (Tenant MVP Transfer Koukaeeyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17466**. Stage 8728 feature scope remains frozen.
