@@ -31,3 +31,7 @@ Stage 7804 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneiddhajiyuglaze Gate, Transfer Aneiddhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7804 opened under **ADR-15615** after CONTINUE/NEXT (Tenant MVP Transfer Aneiddmajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15616**. Stage 7803 feature scope remains frozen.
