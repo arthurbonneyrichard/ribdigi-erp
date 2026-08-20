@@ -31,3 +31,7 @@ Stage 1841 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyotokujiyuglaze Gate, Transfer Kyotokujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1841 opened under **ADR-3689** after CONTINUE/NEXT (Tenant MVP Transfer Koshojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3690**. Stage 1840 feature scope remains frozen.
