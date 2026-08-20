@@ -31,3 +31,7 @@ Stage 5893 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shohoaaiijiyuglaze Gate, Transfer Shohoaaiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5893 opened under **ADR-11793** after CONTINUE/NEXT (Tenant MVP Transfer Shohoaaoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11794**. Stage 5892 feature scope remains frozen.
