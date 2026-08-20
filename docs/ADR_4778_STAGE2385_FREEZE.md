@@ -31,3 +31,7 @@ Stage 2386 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Choukyouoojiyuglaze Gate, Transfer Choukyouoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2386 opened under **ADR-4779** after CONTINUE/NEXT (Tenant MVP Transfer Choukyouuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4780**. Stage 2385 feature scope remains frozen.
