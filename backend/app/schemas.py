@@ -2269,8 +2269,12 @@ class CustomerPaymentCreate(BaseModel):
     sales_invoice_id: str | None = None
     # BR-11.1 — schema Literal (+ aliases); omit → cash; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "cash"
-    reference: str | None = None
-    notes: str | None = None
+    # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on CustomerPayment.reference String(100)).
+    reference: PaymentReferenceValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on CustomerPayment.notes Text).
+    notes: PaymentNotesValue | None = None
     # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
     # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
     cheque_number: ChequeNumberValue | None = None
@@ -4373,8 +4377,12 @@ class SupplierPaymentCreate(BaseModel):
     purchase_invoice_id: str | None = None
     # BR-11.2 — same settlement Literal; omit → bank_transfer; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "bank_transfer"
-    reference: str | None = None
-    notes: str | None = None
+    # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SupplierPayment.reference).
+    reference: PaymentReferenceValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SupplierPayment.notes Text).
+    notes: PaymentNotesValue | None = None
     # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
     # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
     cheque_number: ChequeNumberValue | None = None
@@ -4676,6 +4684,48 @@ ExpenseReferenceValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_reference_value),
+]
+
+
+def validate_payment_reference_value(value: str) -> str:
+    """AfterValidator: AR/AP payment reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Customer/supplier payment reference — String(100); omit → no reference.
+PaymentReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_payment_reference_value),
+]
+
+
+def validate_payment_notes_value(value: str) -> str:
+    """AfterValidator: AR/AP payment notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Customer/supplier payment notes — Text column; keep ≤500 at API boundary.
+PaymentNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_payment_notes_value),
 ]
 
 

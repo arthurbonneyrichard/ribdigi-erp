@@ -18,6 +18,8 @@ export default function Page() {
   const [schedule, setSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
+  const [payReference, setPayReference] = useState('');
+  const [payNotes, setPayNotes] = useState('');
   const [payChequeNumber, setPayChequeNumber] = useState('');
   const [payChequeBankName, setPayChequeBankName] = useState('');
   const [payChequeDate, setPayChequeDate] = useState('');
@@ -179,6 +181,8 @@ export default function Page() {
             customer_id: partyId,
             amount: Number(payAmount),
             payment_method: payMethod,
+            reference: payReference.trim() || null,
+            notes: payNotes.trim() || null,
             apply_early_discount: applyEarly,
             liquid_account_id: liquidAccountId || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
@@ -192,6 +196,8 @@ export default function Page() {
             supplier_id: partyId,
             amount: Number(payAmount),
             payment_method: payMethod === 'cash' ? 'bank_transfer' : payMethod,
+            reference: payReference.trim() || null,
+            notes: payNotes.trim() || null,
             apply_early_discount: applyEarly,
             liquid_account_id: liquidAccountId || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
@@ -205,6 +211,8 @@ export default function Page() {
           : 'Payment recorded (oldest open docs first)',
       );
       setPayAmount('');
+      setPayReference('');
+      setPayNotes('');
       setPayChequeNumber('');
       setPayChequeBankName('');
       setPayChequeDate('');
@@ -483,6 +491,22 @@ export default function Page() {
               <option value="card">Card</option>
               <option value="cheque">Cheque</option>
             </select>
+            <input
+              value={payReference}
+              onChange={(e) => setPayReference(e.target.value)}
+              placeholder="Payment reference (optional)"
+              aria-label="Payment reference"
+              title="Optional reference (1–100 chars; letters/digits required)"
+              style={{ width: 180 }}
+            />
+            <input
+              value={payNotes}
+              onChange={(e) => setPayNotes(e.target.value)}
+              placeholder="Payment notes (optional)"
+              aria-label="Payment notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
+              style={{ width: 180 }}
+            />
             {payMethod === 'cheque' ? (
               <>
                 <input
@@ -527,7 +551,9 @@ export default function Page() {
               style={{ width: 110 }}
               title="Optional payment exchange rate (same currency as invoice)"
             />
-            <button onClick={recordPayment}>Pay</button>
+            <button onClick={recordPayment} aria-label="Record payment">
+              Pay
+            </button>
           </div>
           {(kind === 'receivable' || kind === 'payable') && (
             <label className="muted" style={{ display: 'block', marginTop: 8 }}>
