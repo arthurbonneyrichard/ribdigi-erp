@@ -31,3 +31,7 @@ Stage 6337 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchiaajiuujiyuglaze Gate, Transfer Azuchiaajiuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6337 opened under **ADR-12681** after CONTINUE/NEXT (Tenant MVP Transfer Azuchiaajiyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12682**. Stage 6336 feature scope remains frozen.
