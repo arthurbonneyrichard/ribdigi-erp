@@ -31,3 +31,7 @@ Stage 8100 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseieenyajiyuglaze Gate, Transfer Kanseieenyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8100 opened under **ADR-16207** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiffaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16208**. Stage 8099 feature scope remains frozen.
