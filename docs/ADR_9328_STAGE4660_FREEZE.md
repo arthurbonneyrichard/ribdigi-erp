@@ -31,3 +31,7 @@ Stage 4661 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoupajiyuglaze Gate, Transfer Kanpoupajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4661 opened under **ADR-9329** after CONTINUE/NEXT (Tenant MVP Transfer Kanpougajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9330**. Stage 4660 feature scope remains frozen.
