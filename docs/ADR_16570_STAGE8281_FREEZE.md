@@ -31,3 +31,7 @@ Stage 8282 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkabbnyajiyuglaze Gate, Transfer Bunkabbnyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8282 opened under **ADR-16571** after CONTINUE/NEXT (Tenant MVP Transfer Bunkaccaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16572**. Stage 8281 feature scope remains frozen.
