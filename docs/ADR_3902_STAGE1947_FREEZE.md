@@ -31,3 +31,7 @@ Stage 1948 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nanbokuaajiyuglaze Gate, Transfer Nanbokuaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1948 opened under **ADR-3903** after CONTINUE/NEXT (Tenant MVP Transfer Sengokuaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3904**. Stage 1947 feature scope remains frozen.
