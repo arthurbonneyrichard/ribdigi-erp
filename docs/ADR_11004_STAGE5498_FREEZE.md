@@ -31,3 +31,7 @@ Stage 5499 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoijigyajiyuglaze Gate, Transfer Yayoijigyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5499 opened under **ADR-11005** after CONTINUE/NEXT (Tenant MVP Transfer Yayoijinyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11006**. Stage 5498 feature scope remains frozen.
