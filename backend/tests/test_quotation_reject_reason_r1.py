@@ -18,7 +18,10 @@ def test_quotation_reject_reason_ui_wired():
     assert "Enter a reject reason before rejecting a quotation" in sales
     assert "rejection_reason" in sales
     assert "Required before Reject" in sales
+    assert 'aria-label="Quotation reject reason"' in sales
     assert "body = { ...body, reason }" in sales or "reason" in sales
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "SalesQuotationRejectReasonValue" in agents
 
 
 @pytest.mark.asyncio
@@ -49,7 +52,15 @@ async def test_quotation_reject_requires_and_persists_reason(client):
         headers=headers,
         json={"reason": "  "},
     )
-    assert blank.status_code == 400, blank.text
+    # OpenAPI honesty: strip + SalesQuotationRejectReasonValue → 422 (was service 400).
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/sales/quotations/{qid}/reject",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         f"/api/v1/sales/quotations/{qid}/reject",

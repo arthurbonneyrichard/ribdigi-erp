@@ -27,22 +27,24 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_reject_suspend_reason_schemas_required():
     for cls in (
         TenantSuspendRequest,
-        SalesQuotationReject,
         StockTransferReject,
     ):
         field = cls.model_fields["reason"]
         assert field.is_required()
         assert field.annotation is str
 
-    exp = ExpenseReject.model_fields["reason"]
-    assert exp.is_required()
-    # ForwardRef under from __future__ import annotations; validate end-to-end.
-    ok = ExpenseReject.model_validate({"reason": "ok reason"})
-    assert ok.reason == "ok reason"
     from pydantic import ValidationError
 
-    with pytest.raises(ValidationError):
-        ExpenseReject.model_validate({"reason": "!!!!"})
+    for cls, sample, bad in (
+        (ExpenseReject, "ok expense reason", "!!!!"),
+        (SalesQuotationReject, "ok quote reason", "!!!!"),
+    ):
+        field = cls.model_fields["reason"]
+        assert field.is_required()
+        ok = cls.model_validate({"reason": sample})
+        assert ok.reason == sample
+        with pytest.raises(ValidationError):
+            cls.model_validate({"reason": bad})
 
 
 def test_expense_reject_schema_separate_from_approve_decision():

@@ -1310,6 +1310,8 @@ export default function Page() {
                 value={quoteRejectReason}
                 onChange={(e) => setQuoteRejectReason(e.target.value)}
                 placeholder="Required before Reject"
+                aria-label="Quotation reject reason"
+                title="Required reason for Reject (1–500 chars; letters/digits required)"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1394,7 +1396,19 @@ export default function Page() {
                   {['draft', 'sent'].includes(q.status) && (
                     <>
                       <button className="btn-ok" onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
-                      <button className="btn-danger" onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}>Reject</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}
+                        aria-label={`Reject quotation ${q.id}`}
+                        disabled={!quoteRejectReason.trim()}
+                        title={
+                          quoteRejectReason.trim()
+                            ? 'Reject quotation'
+                            : 'Enter a reject reason before rejecting'
+                        }
+                      >
+                        Reject
+                      </button>
                       <button
                         type="button"
                         className="btn-ok"

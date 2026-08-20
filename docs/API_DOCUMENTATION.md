@@ -993,7 +993,7 @@ When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is 
 **Get:** `GET /sales/quotations/{quote_id}`  
 **Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`. Optional Query `to` ∈ `EmailStr`; omit → customer email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Sales **Document email override to** + **Email quotation** / **Resend quotation email**.
 **Accept:** `POST /sales/quotations/{quote_id}/accept` — draft/sent only → `accepted`  
-**Reject:** `POST /sales/quotations/{quote_id}/reject` — body `{ "reason" }` **required** (`SalesQuotationReject`; omit/empty → 422) → `rejected` + `rejection_reason` (Sales Quotations **Reject reason** input; 409 if already accepted/rejected/converted/expired)  
+**Reject:** `POST /sales/quotations/{quote_id}/reject` — body `{ "reason" }` ∈ `SalesQuotationRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → `rejected` + `rejection_reason`. Omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Sales Quotations **Quotation reject reason** (`aria-label`; 409 if already accepted/rejected/converted/expired).  
 **Convert to Order:** `POST /sales/quotations/{quote_id}/convert-order`  
 **Convert to Invoice:** `POST /sales/quotations/{quote_id}/convert-invoice`
 
