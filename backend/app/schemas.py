@@ -2238,7 +2238,9 @@ class SalesReturnCreate(BaseModel):
     # Required coded reason (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damaged", "wrong_item", "defective", "customer_change", "other"]
     restock: bool = True
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesReturn.notes Text).
+    notes: SalesReturnNotesValue | None = None
     items: list[SalesReturnItemCreate] = Field(min_length=1)
 
 
@@ -4754,6 +4756,27 @@ StockCountNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_count_notes_value),
+]
+
+
+def validate_sales_return_notes_value(value: str) -> str:
+    """AfterValidator: sales return notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales return header notes — SalesReturn.notes Text; keep ≤500 at API boundary.
+SalesReturnNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_return_notes_value),
 ]
 
 

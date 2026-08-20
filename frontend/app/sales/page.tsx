@@ -118,6 +118,7 @@ export default function Page() {
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('');
   const [returnCondition, setReturnCondition] = useState('');
+  const [returnNotes, setReturnNotes] = useState('');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -154,7 +155,7 @@ export default function Page() {
         api('/sales/quotations'),
         api('/sales/orders'),
         api('/sales/returns'),
-        api('/stores'),
+        api('/stores').catch(() => ({ data: [] })),
         api('/sales/settings').catch(() => ({ data: null })),
         api('/customers/groups').catch(() => ({ data: [] })),
         api('/tenants/me').catch(() => ({ data: null })),
@@ -563,6 +564,7 @@ export default function Page() {
           sales_invoice_id: invoiceId,
           reason: returnReason,
           restock,
+          notes: returnNotes.trim() || null,
           items: [
             {
               product_id: productId,
@@ -577,6 +579,7 @@ export default function Page() {
       setSelected(r.data);
       setReturnReason('');
       setReturnCondition('');
+      setReturnNotes('');
       setTab('returns');
       await refresh();
     } catch (err: any) {
@@ -1189,7 +1192,11 @@ export default function Page() {
           <h3>Create sale</h3>
           <div className="erp-stack" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+          <select
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+            aria-label="Sales product"
+          >
             <option value="">Product</option>
             {products
               .filter((p) => p.is_active !== false)
@@ -1753,7 +1760,11 @@ export default function Page() {
             <h3>Create return</h3>
             <div className="erp-form-grid">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)}>
+          <select
+            value={invoiceId}
+            onChange={(e) => setInvoiceId(e.target.value)}
+            aria-label="Return from invoice"
+          >
             <option value="">Return from invoice</option>
             {invoices
               .filter((i) => ['posted', 'sent', 'partial', 'overdue', 'paid'].includes(i.status))
@@ -1787,9 +1798,18 @@ export default function Page() {
           <label>
             <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock
           </label>
+          <input
+            value={returnNotes}
+            onChange={(e) => setReturnNotes(e.target.value)}
+            placeholder="Return notes (optional)"
+            aria-label="Sales return notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+            style={{ minWidth: 220 }}
+          />
           <button
             onClick={createReturn}
             disabled={!invoiceId || !productId || !returnReason || !returnCondition}
+            aria-label="Create sales return"
           >
             Create return
           </button>
