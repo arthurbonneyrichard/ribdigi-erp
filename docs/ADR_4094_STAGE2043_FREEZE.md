@@ -31,3 +31,7 @@ Stage 2044 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyouujiyuglaze Gate, Transfer Enkyouujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2044 opened under **ADR-4095** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4096**. Stage 2043 feature scope remains frozen.
