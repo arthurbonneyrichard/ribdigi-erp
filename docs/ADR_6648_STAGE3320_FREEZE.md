@@ -31,3 +31,7 @@ Stage 3321 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraayajiyuglaze Gate, Transfer Kamakuraayajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3321 opened under **ADR-6649** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraaeejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6650**. Stage 3320 feature scope remains frozen.
