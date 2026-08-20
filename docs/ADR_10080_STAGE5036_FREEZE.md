@@ -31,3 +31,7 @@ Stage 5037 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gennapajiyuglaze Gate, Transfer Gennapajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5037 opened under **ADR-10081** after CONTINUE/NEXT (Tenant MVP Transfer Gennagajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10082**. Stage 5036 feature scope remains frozen.
