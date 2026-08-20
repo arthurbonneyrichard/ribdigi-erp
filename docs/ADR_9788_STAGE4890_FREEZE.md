@@ -31,3 +31,7 @@ Stage 4891 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showaadajiyuglaze Gate, Transfer Showaadajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4891 opened under **ADR-9789** after CONTINUE/NEXT (Tenant MVP Transfer Showaabajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9790**. Stage 4890 feature scope remains frozen.
