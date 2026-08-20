@@ -31,3 +31,7 @@ Stage 5466 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonjirajiyuglaze Gate, Transfer Jomonjirajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5466 opened under **ADR-10939** after CONTINUE/NEXT (Tenant MVP Transfer Jomonjizajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10940**. Stage 5465 feature scope remains frozen.
