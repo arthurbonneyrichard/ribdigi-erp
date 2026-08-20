@@ -31,3 +31,7 @@ Stage 8790 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeibbtajiyuglaze Gate, Transfer Kaeibbtajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8790 opened under **ADR-17587** after CONTINUE/NEXT (Tenant MVP Transfer Kaeibbnajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17588**. Stage 8789 feature scope remains frozen.
