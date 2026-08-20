@@ -31,3 +31,7 @@ Stage 5242 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempojizajiyuglaze Gate, Transfer Tempojizajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5242 opened under **ADR-10491** after CONTINUE/NEXT (Tenant MVP Transfer Tempojidajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10492**. Stage 5241 feature scope remains frozen.
