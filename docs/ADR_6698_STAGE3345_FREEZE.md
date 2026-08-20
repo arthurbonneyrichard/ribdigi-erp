@@ -31,3 +31,7 @@ Stage 3346 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachiaasajiyuglaze Gate, Transfer Muromachiaasajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3346 opened under **ADR-6699** after CONTINUE/NEXT (Tenant MVP Transfer Muromachiaatajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6700**. Stage 3345 feature scope remains frozen.
