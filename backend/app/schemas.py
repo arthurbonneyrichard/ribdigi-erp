@@ -2365,9 +2365,15 @@ class SalesReturnCreate(BaseModel):
 
 
 class SalesReturnCancel(BaseModel):
-    """Draft sales return cancel — typed reason required (BR-7.5 honesty)."""
+    """Draft sales return cancel — typed reason required (BR-7.5 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ SalesReturnCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to return `notes` / audit).
+    """
+
+    reason: SalesReturnCancelReasonValue
 
 
 class SalesReturnPost(BaseModel):
@@ -4996,6 +5002,27 @@ SalesInvoiceCancelReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_sales_invoice_cancel_reason_value),
+]
+
+
+def validate_sales_return_cancel_reason_value(value: str) -> str:
+    """AfterValidator: sales return cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales return cancel reason — appended to SalesReturn.notes + audit sales_return_cancelled (BR-7.5).
+SalesReturnCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_return_cancel_reason_value),
 ]
 
 

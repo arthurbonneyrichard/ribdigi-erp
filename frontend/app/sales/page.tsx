@@ -1871,6 +1871,8 @@ export default function Page() {
                 value={srCancelReason}
                 onChange={(e) => setSrCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Sales return cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1950,7 +1952,11 @@ export default function Page() {
                       >
                         Post + refund
                       </button>
-                      <button className="btn-danger" onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}>
+                      <button
+                        className="btn-danger"
+                        onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}
+                        aria-label={`Cancel sales return ${r.id}`}
+                      >
                         Cancel
                       </button>
                     </>

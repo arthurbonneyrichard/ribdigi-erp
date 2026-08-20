@@ -532,7 +532,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Restock or discard returned items
   - [x] Generate credit note (`credit_note_number` on post via tenant series `GET|PATCH /sales/settings` → `credit_note_numbering`; return `return_number` series on create; unique per tenant; Sales Document numbering UI)
   - [x] Refund or adjust customer balance (`settlement_method=adjust|refund`; refund required/optional when return exceeds open invoice AR; cash/bank refund journal)
-  - [x] Cancel draft return with required reason (`POST /sales/returns/{id}/cancel` `{ reason }` → `status=cancelled`; appends to `notes` + audit `sales_return_cancelled`; Sales **Cancel reason** UI; no stock/AR change)
+  - [x] Cancel draft return with required reason (`POST /sales/returns/{id}/cancel` `{ reason }` ∈ `SalesReturnCancelReasonValue` → `status=cancelled`; appends to `notes` + audit `sales_return_cancelled`; omit/blank/garbage → **422**; Sales **Sales return cancel reason** UI; no stock/AR change)
 
 ---
 
