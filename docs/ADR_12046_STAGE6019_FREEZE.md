@@ -31,3 +31,7 @@ Stage 6020 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enpoaanyajiyuglaze Gate, Transfer Enpoaanyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6020 opened under **ADR-12047** after CONTINUE/NEXT (Tenant MVP Transfer Tenwaaaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12048**. Stage 6019 feature scope remains frozen.
