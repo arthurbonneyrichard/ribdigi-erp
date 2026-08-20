@@ -31,3 +31,7 @@ Stage 2909 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeiaahajiyuglaze Gate, Transfer Houeiaahajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2909 opened under **ADR-5825** after CONTINUE/NEXT (Tenant MVP Transfer Houeiaamajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5826**. Stage 2908 feature scope remains frozen.
