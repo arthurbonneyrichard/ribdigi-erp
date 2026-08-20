@@ -31,3 +31,7 @@ Stage 2460 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoaaojiyuglaze Gate, Transfer Enkyoaaojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2460 opened under **ADR-4927** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoaaujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4928**. Stage 2459 feature scope remains frozen.
