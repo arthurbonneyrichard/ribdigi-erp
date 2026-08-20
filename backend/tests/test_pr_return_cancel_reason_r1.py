@@ -23,6 +23,8 @@ def test_pr_return_cancel_reason_ui_wired():
     assert "Enter a cancel reason before cancelling a purchase return" in page
     assert "cancelReturn" in page
     assert "/purchasing/returns/${ret.id}/cancel" in page or "/purchasing/returns/${" in page
+    assert 'aria-label="Purchase return cancel reason"' in page
+    assert "aria-label={`Cancel purchase return ${r.id}`}" in page
 
 
 async def _super(ac, seed):
@@ -141,8 +143,14 @@ async def test_purchase_return_cancel_requires_reason_and_persists(client, db_se
         headers=io,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/purchasing/returns/{rid}/cancel",
+        headers=io,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         f"/api/v1/purchasing/returns/{rid}/cancel",

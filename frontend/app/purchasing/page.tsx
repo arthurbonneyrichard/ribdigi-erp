@@ -2936,6 +2936,8 @@ export default function Page() {
             value={prCancelReason}
             onChange={(e) => setPrCancelReason(e.target.value)}
             placeholder="Required before Cancel"
+            title="Required cancel reason (1–500 chars; letters/digits required)"
+            aria-label="Purchase return cancel reason"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -2991,7 +2993,13 @@ export default function Page() {
                       <button type="button" className="btn-ok" onClick={() => postReturn(r.id)}>
                         Post
                       </button>
-                      <button className="btn-danger" onClick={() => cancelReturn(r)}>Cancel</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => cancelReturn(r)}
+                        aria-label={`Cancel purchase return ${r.id}`}
+                      >
+                        Cancel
+                      </button>
                     </>
                   )}
                 </td>

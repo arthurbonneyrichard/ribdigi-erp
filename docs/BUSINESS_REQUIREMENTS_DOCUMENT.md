@@ -467,7 +467,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Deduct returned quantity from inventory (`post_purchase_return` → `apply_stock_change` negative qty + AP/inventory journal)
   - [x] Generate debit note (`debit_note_number` allocated on post via tenant series `GET|PATCH /purchasing/settings` → `debit_note_numbering`; return `return_number` series on create; unique per tenant; Purchasing Document numbering UI)
   - [x] Update supplier balance (post credits AP using return `total_amount`, which inherits proportional PO line discount: `accepted return_qty / ordered × PO discount`; tax before discount; Purchasing Returns Discount column)
-  - [x] Cancel draft return with required reason (`POST /purchasing/returns/{id}/cancel` `{ reason }` → `status=cancelled`; appends to `notes` + audit `purchase_return_cancelled`; Purchasing **Cancel reason** UI; no stock/AP change; cancelled excluded from returned-qty)
+  - [x] Cancel draft return with required reason (`POST /purchasing/returns/{id}/cancel` `{ reason }` ∈ `PurchaseReturnCancelReasonValue` → `status=cancelled`; appends to `notes` + audit `purchase_return_cancelled`; omit/blank/garbage → **422**; Purchasing **Purchase return cancel reason** UI; no stock/AP change; cancelled excluded from returned-qty)
 
 ---
 

@@ -2198,9 +2198,15 @@ class PurchaseReturnCreate(BaseModel):
 
 
 class PurchaseReturnCancel(BaseModel):
-    """Draft purchase return cancel — typed reason required (BR-6.6 honesty)."""
+    """Draft purchase return cancel — typed reason required (BR-6.6 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ PurchaseReturnCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to return `notes` / audit).
+    """
+
+    reason: PurchaseReturnCancelReasonValue
 
 
 class PurchaseInvoiceItemCreate(BaseModel):
@@ -5078,6 +5084,27 @@ PurchaseInvoiceCancelReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_purchase_invoice_cancel_reason_value),
+]
+
+
+def validate_purchase_return_cancel_reason_value(value: str) -> str:
+    """AfterValidator: purchase return cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase return cancel reason — appended to PurchaseReturn.notes + audit purchase_return_cancelled (BR-6.6).
+PurchaseReturnCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_return_cancel_reason_value),
 ]
 
 
