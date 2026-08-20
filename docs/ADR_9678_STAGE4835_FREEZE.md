@@ -31,3 +31,7 @@ Stage 4836 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeiaabajiyuglaze Gate, Transfer Kaeiaabajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4836 opened under **ADR-9679** after CONTINUE/NEXT (Tenant MVP Transfer Kaeiaapajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9680**. Stage 4835 feature scope remains frozen.
