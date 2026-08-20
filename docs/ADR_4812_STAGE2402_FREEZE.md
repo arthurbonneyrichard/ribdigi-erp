@@ -31,3 +31,7 @@ Stage 2403 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanbunaaaajiyuglaze Gate, Transfer Kanbunaaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2403 opened under **ADR-4813** after CONTINUE/NEXT (Tenant MVP Transfer Kanbunaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4814**. Stage 2402 feature scope remains frozen.
