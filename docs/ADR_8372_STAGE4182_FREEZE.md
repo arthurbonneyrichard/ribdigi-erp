@@ -31,3 +31,7 @@ Stage 4183 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heiseijiwajiyuglaze Gate, Transfer Heiseijiwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4183 opened under **ADR-8373** after CONTINUE/NEXT (Tenant MVP Transfer Heiseijikajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8374**. Stage 4182 feature scope remains frozen.
