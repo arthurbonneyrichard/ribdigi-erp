@@ -31,3 +31,7 @@ Stage 6674 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enpojioojiyuglaze Gate, Transfer Enpojioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6674 opened under **ADR-13355** after CONTINUE/NEXT (Tenant MVP Transfer Enpojiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13356**. Stage 6673 feature scope remains frozen.
