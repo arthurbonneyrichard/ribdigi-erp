@@ -31,3 +31,7 @@ Stage 2681 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showakajiyuglaze Gate, Transfer Showakajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2681 opened under **ADR-5369** after CONTINUE/NEXT (Tenant MVP Transfer Showasajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5370**. Stage 2680 feature scope remains frozen.
