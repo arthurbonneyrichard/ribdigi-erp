@@ -31,3 +31,7 @@ Stage 1937 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianajiyuglaze Gate, Transfer Heianajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1937 opened under **ADR-3881** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3882**. Stage 1936 feature scope remains frozen.
