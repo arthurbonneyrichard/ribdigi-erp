@@ -31,3 +31,7 @@ Stage 6960 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeibboojiyuglaze Gate, Transfer Houeibboojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6960 opened under **ADR-13927** after CONTINUE/NEXT (Tenant MVP Transfer Houeibbuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13928**. Stage 6959 feature scope remains frozen.
