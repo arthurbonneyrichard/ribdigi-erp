@@ -31,3 +31,7 @@ Stage 1731 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmokuyuglaze Gate, Transfer Tenmokuyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1731 opened under **ADR-3469** after CONTINUE/NEXT (Tenant MVP Transfer Bizenyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3470**. Stage 1730 feature scope remains frozen.
