@@ -31,3 +31,7 @@ Stage 6293 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraajisajiyuglaze Gate, Transfer Kamakuraajisajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6293 opened under **ADR-12593** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraajitajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12594**. Stage 6292 feature scope remains frozen.
