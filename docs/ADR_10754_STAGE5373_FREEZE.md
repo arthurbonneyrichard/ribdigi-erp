@@ -31,3 +31,7 @@ Stage 5374 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachijigajiyuglaze Gate, Transfer Muromachijigajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5374 opened under **ADR-10755** after CONTINUE/NEXT (Tenant MVP Transfer Muromachijikyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10756**. Stage 5373 feature scope remains frozen.
