@@ -31,3 +31,7 @@ Stage 9009 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseieegyajiyuglaze Gate, Transfer Anseieegyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9009 opened under **ADR-18025** after CONTINUE/NEXT (Tenant MVP Transfer Anseieenyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18026**. Stage 9008 feature scope remains frozen.
