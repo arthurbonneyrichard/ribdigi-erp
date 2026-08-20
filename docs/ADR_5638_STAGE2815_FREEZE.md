@@ -31,3 +31,7 @@ Stage 2816 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamawajiyuglaze Gate, Transfer Higashiyamawajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2816 opened under **ADR-5639** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamakajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5640**. Stage 2815 feature scope remains frozen.
