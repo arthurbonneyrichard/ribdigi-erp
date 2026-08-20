@@ -31,3 +31,7 @@ Stage 1766 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Celadonjiyuglaze Gate, Transfer Celadonjiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1766 opened under **ADR-3539** after CONTINUE/NEXT (Tenant MVP Transfer Amajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3540**. Stage 1765 feature scope remains frozen.
