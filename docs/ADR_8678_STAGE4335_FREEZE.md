@@ -31,3 +31,7 @@ Stage 4336 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeigyajiyuglaze Gate, Transfer Houeigyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4336 opened under **ADR-8679** after CONTINUE/NEXT (Tenant MVP Transfer Houeinyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8680**. Stage 4335 feature scope remains frozen.
