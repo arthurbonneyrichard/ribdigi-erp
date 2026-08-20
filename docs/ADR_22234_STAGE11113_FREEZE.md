@@ -31,3 +31,7 @@ Stage 11114 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuffkyajiyuglaze Gate, Transfer Bakumatsuffkyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11114 opened under **ADR-22235** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuffgyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-22236**. Stage 11113 feature scope remains frozen.
