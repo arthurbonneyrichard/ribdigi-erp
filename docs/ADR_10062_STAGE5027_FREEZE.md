@@ -31,3 +31,7 @@ Stage 5028 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamaabajiyuglaze Gate, Transfer Higashiyamaabajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5028 opened under **ADR-10063** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamaapajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10064**. Stage 5027 feature scope remains frozen.
