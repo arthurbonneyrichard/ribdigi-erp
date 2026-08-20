@@ -31,3 +31,7 @@ Stage 9958 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwabbkajiyuglaze Gate, Transfer Reiwabbkajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9958 opened under **ADR-19923** after CONTINUE/NEXT (Tenant MVP Transfer Reiwabbsajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19924**. Stage 9957 feature scope remains frozen.
