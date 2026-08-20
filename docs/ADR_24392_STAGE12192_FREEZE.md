@@ -31,3 +31,7 @@ Stage 12193 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genbunccwajiyuglaze Gate, Transfer Genbunccwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12193 opened under **ADR-24393** after CONTINUE/NEXT (Tenant MVP Transfer Genbuncckajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-24394**. Stage 12192 feature scope remains frozen.
