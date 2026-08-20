@@ -31,3 +31,7 @@ Stage 2309 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nanbokuujiyuglaze Gate, Transfer Nanbokuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2309 opened under **ADR-4625** after CONTINUE/NEXT (Tenant MVP Transfer Nanbokuijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4626**. Stage 2308 feature scope remains frozen.
