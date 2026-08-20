@@ -31,3 +31,7 @@ Stage 7041 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeieeeejiyuglaze Gate, Transfer Houeieeeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7041 opened under **ADR-14089** after CONTINUE/NEXT (Tenant MVP Transfer Houeieeojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14090**. Stage 7040 feature scope remains frozen.
