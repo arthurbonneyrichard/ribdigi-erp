@@ -31,3 +31,7 @@ Stage 3997 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempojiuujiyuglaze Gate, Transfer Tempojiuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3997 opened under **ADR-8001** after CONTINUE/NEXT (Tenant MVP Transfer Tempojiyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8002**. Stage 3996 feature scope remains frozen.
