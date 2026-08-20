@@ -31,3 +31,7 @@ Stage 1740 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ontajiyuglaze Gate, Transfer Ontajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1740 opened under **ADR-3487** after CONTINUE/NEXT (Tenant MVP Transfer Rakujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3488**. Stage 1739 feature scope remains frozen.
