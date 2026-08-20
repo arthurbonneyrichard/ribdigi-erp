@@ -31,3 +31,7 @@ Stage 1780 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachijiyuglaze Gate, Transfer Muromachijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1780 opened under **ADR-3567** after CONTINUE/NEXT (Tenant MVP Transfer Momoyamajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3568**. Stage 1779 feature scope remains frozen.
