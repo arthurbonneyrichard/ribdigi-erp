@@ -31,3 +31,7 @@ Stage 3950 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowajikajiyuglaze Gate, Transfer Kyowajikajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3950 opened under **ADR-7907** after CONTINUE/NEXT (Tenant MVP Transfer Kyowajisajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7908**. Stage 3949 feature scope remains frozen.
