@@ -31,3 +31,7 @@ Stage 3732 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hoeijiojiyuglaze Gate, Transfer Hoeijiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3732 opened under **ADR-7471** after CONTINUE/NEXT (Tenant MVP Transfer Hoeijiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7472**. Stage 3731 feature scope remains frozen.
