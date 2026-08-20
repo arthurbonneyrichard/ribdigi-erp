@@ -1464,8 +1464,14 @@ export default function Page() {
                 value={prNotes}
                 onChange={(e) => setPrNotes(e.target.value)}
                 placeholder="Notes (optional)"
+                aria-label="Purchase request notes"
+                title="Optional notes (1–500 chars; letters/digits required)"
               />
-              <button onClick={createRequest} disabled={!prProductId}>
+              <button
+                onClick={createRequest}
+                disabled={!prProductId}
+                aria-label="Create draft purchase request"
+              >
                 Create draft PR
               </button>
             </div>

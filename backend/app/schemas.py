@@ -1923,13 +1923,17 @@ class PurchaseRequestCreate(BaseModel):
     Optional `required_date`; omit/`null` → no needed-by date; blank/invalid → **422**
     (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API
     `reports.parse_date` remains defense-in-depth.
+    Optional `notes` ∈ PurchaseRequestNotesValue; omit/`null` → no notes; blank/`!!!`/
+    `http://…` → **422** (was free `str`; blank/garbage could persist on PREQ).
     """
 
     preferred_supplier_id: str | None = None
     warehouse_id: str | None = None
     required_date: IsoDateQueryValue | None = None
     department: str | None = None
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseRequest.notes Text).
+    notes: PurchaseRequestNotesValue | None = None
     items: list[PurchaseRequestItemCreate] = Field(min_length=1)
 
 
@@ -4852,6 +4856,27 @@ PurchaseOrderNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_purchase_order_notes_value),
+]
+
+
+def validate_purchase_request_notes_value(value: str) -> str:
+    """AfterValidator: purchase request notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase request notes — PurchaseRequest.notes Text; keep ≤500 at API boundary.
+PurchaseRequestNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_request_notes_value),
 ]
 
 
