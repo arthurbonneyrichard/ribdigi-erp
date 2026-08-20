@@ -31,3 +31,7 @@ Stage 4132 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijijitajiyuglaze Gate, Transfer Meijijitajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4132 opened under **ADR-8271** after CONTINUE/NEXT (Tenant MVP Transfer Meijijinajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8272**. Stage 4131 feature scope remains frozen.
