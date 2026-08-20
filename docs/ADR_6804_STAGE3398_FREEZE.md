@@ -31,3 +31,7 @@ Stage 3399 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuaakajiyuglaze Gate, Transfer Bakumatsuaakajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3399 opened under **ADR-6805** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuaasajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6806**. Stage 3398 feature scope remains frozen.
