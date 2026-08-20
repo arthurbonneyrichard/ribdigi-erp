@@ -31,3 +31,7 @@ Stage 5549 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokujigajiyuglaze Gate, Transfer Sengokujigajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5549 opened under **ADR-11105** after CONTINUE/NEXT (Tenant MVP Transfer Sengokujikyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11106**. Stage 5548 feature scope remains frozen.
