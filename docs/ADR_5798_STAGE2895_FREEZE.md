@@ -31,3 +31,7 @@ Stage 2896 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keichoaawajiyuglaze Gate, Transfer Keichoaawajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2896 opened under **ADR-5799** after CONTINUE/NEXT (Tenant MVP Transfer Keichoaakajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5800**. Stage 2895 feature scope remains frozen.
