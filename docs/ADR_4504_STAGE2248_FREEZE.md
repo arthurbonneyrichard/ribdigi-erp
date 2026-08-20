@@ -31,3 +31,7 @@ Stage 2249 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchiojiyuglaze Gate, Transfer Azuchiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2249 opened under **ADR-4505** after CONTINUE/NEXT (Tenant MVP Transfer Azuchiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4506**. Stage 2248 feature scope remains frozen.
