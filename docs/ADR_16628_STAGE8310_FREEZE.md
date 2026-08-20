@@ -31,3 +31,7 @@ Stage 8311 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkaddiijiyuglaze Gate, Transfer Bunkaddiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8311 opened under **ADR-16629** after CONTINUE/NEXT (Tenant MVP Transfer Bunkaddoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16630**. Stage 8310 feature scope remains frozen.
