@@ -31,3 +31,7 @@ Stage 2931 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyoaatajiyuglaze Gate, Transfer Enkyoaatajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2931 opened under **ADR-5869** after CONTINUE/NEXT (Tenant MVP Transfer Enkyoaanajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5870**. Stage 2930 feature scope remains frozen.
