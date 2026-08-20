@@ -31,3 +31,7 @@ Stage 7945 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmeieeaajiyuglaze Gate, Transfer Tenmeieeaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7945 opened under **ADR-15897** after CONTINUE/NEXT (Tenant MVP Transfer Tenmeieeajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15898**. Stage 7944 feature scope remains frozen.
