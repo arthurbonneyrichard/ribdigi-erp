@@ -31,3 +31,7 @@ Stage 3460 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuaaaajiyuglaze Gate, Transfer Sengokuaaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3460 opened under **ADR-6927** after CONTINUE/NEXT (Tenant MVP Transfer Sengokuaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6928**. Stage 3459 feature scope remains frozen.
