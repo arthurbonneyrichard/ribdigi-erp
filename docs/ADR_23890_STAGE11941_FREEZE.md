@@ -31,3 +31,7 @@ Stage 11942 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamaccdajiyuglaze Gate, Transfer Higashiyamaccdajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11942 opened under **ADR-23891** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamaccbajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-23892**. Stage 11941 feature scope remains frozen.
