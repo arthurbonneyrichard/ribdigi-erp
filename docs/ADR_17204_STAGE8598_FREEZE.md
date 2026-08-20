@@ -31,3 +31,7 @@ Stage 8599 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempoeeuujiyuglaze Gate, Transfer Tempoeeuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8599 opened under **ADR-17205** after CONTINUE/NEXT (Tenant MVP Transfer Tempoeeyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17206**. Stage 8598 feature scope remains frozen.
