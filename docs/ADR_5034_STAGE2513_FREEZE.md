@@ -31,3 +31,7 @@ Stage 2514 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeisajiyuglaze Gate, Transfer Houeisajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2514 opened under **ADR-5035** after CONTINUE/NEXT (Tenant MVP Transfer Houeitajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5036**. Stage 2513 feature scope remains frozen.
