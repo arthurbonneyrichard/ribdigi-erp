@@ -31,3 +31,7 @@ Stage 10136 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Asukaddojiyuglaze Gate, Transfer Asukaddojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10136 opened under **ADR-20279** after CONTINUE/NEXT (Tenant MVP Transfer Asukaddujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20280**. Stage 10135 feature scope remains frozen.
