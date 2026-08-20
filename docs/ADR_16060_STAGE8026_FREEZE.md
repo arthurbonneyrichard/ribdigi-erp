@@ -31,3 +31,7 @@ Stage 8027 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiccuujiyuglaze Gate, Transfer Kanseiccuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8027 opened under **ADR-16061** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiccyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16062**. Stage 8026 feature scope remains frozen.
