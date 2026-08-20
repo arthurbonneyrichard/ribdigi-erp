@@ -31,3 +31,7 @@ Stage 4637 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamapajiyuglaze Gate, Transfer Higashiyamapajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4637 opened under **ADR-9281** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamagajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9282**. Stage 4636 feature scope remains frozen.
