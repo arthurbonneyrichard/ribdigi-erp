@@ -31,3 +31,7 @@ Stage 8541 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempobbgyajiyuglaze Gate, Transfer Tempobbgyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8541 opened under **ADR-17089** after CONTINUE/NEXT (Tenant MVP Transfer Tempobbnyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17090**. Stage 8540 feature scope remains frozen.
