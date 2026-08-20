@@ -31,3 +31,7 @@ Stage 9505 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijieeaajiyuglaze Gate, Transfer Meijieeaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9505 opened under **ADR-19017** after CONTINUE/NEXT (Tenant MVP Transfer Meijieeajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19018**. Stage 9504 feature scope remains frozen.
