@@ -31,3 +31,7 @@ Stage 3797 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpojiaajiyuglaze Gate, Transfer Kanpojiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3797 opened under **ADR-7601** after CONTINUE/NEXT (Tenant MVP Transfer Kanpojiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7602**. Stage 3796 feature scope remains frozen.
