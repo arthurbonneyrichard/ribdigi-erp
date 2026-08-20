@@ -31,3 +31,7 @@ Stage 3432 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiaaujiyuglaze Gate, Transfer Yayoiaaujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3432 opened under **ADR-6871** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiaaijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6872**. Stage 3431 feature scope remains frozen.
