@@ -31,3 +31,7 @@ Stage 10509 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraccmajiyuglaze Gate, Transfer Kamakuraccmajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10509 opened under **ADR-21025** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraccrajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21026**. Stage 10508 feature scope remains frozen.
