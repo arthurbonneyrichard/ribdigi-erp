@@ -2551,8 +2551,16 @@ class PosSettingsUpdate(BaseModel):
 
 
 class PrintBrandingUpdate(BaseModel):
-    header_text: str | None = Field(default=None, max_length=200)
-    footer_text: str | None = Field(default=None, max_length=300)
+    """PATCH /settings/print — branded header/footer + template defaults (BR-20.4).
+
+    Optional `header_text` ∈ PrintHeaderTextValue (strip; 1–200; ≥1 letter/digit; no
+    `://`/`@`); omit → no change; `null` → clear; blank/`!!!`/`http://…` → **422**
+    (was free `str` max_length=200; blank/garbage could persist on print branding).
+    Optional `footer_text` ∈ PrintFooterTextValue (strip; 1–300; same honesty).
+    """
+
+    header_text: PrintHeaderTextValue | None = None
+    footer_text: PrintFooterTextValue | None = None
     # BR-20.4 — schema Literals; omit = no change; blank/invalid → 422
     # (read path still coerces stored garbage to a4/80mm defaults)
     default_invoice_template: InvoiceTemplateValue | None = None
@@ -5604,6 +5612,45 @@ CreditOverrideReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_credit_override_reason_value),
+]
+
+
+def validate_print_header_text_value(value: str) -> str:
+    """AfterValidator: print branding header_text; blank/URL/garbage → 422 (1–200)."""
+    if not value:
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    return value
+
+
+def validate_print_footer_text_value(value: str) -> str:
+    """AfterValidator: print branding footer_text; blank/URL/garbage → 422 (1–300)."""
+    if not value:
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    if len(value) > 300:
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    return value
+
+
+# Print branding header/footer — invoices, receipts, branded emails (BR-20.4).
+PrintHeaderTextValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_print_header_text_value),
+]
+PrintFooterTextValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_print_footer_text_value),
 ]
 
 

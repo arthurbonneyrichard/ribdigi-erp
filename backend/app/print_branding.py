@@ -58,10 +58,13 @@ def print_branding_settings(tenant: m.Tenant | None) -> dict[str, Any]:
 
 def apply_print_branding_update(tenant: m.Tenant, payload: dict[str, Any]) -> dict[str, Any]:
     current = dict(getattr(tenant, "print_branding", None) or {})
-    if "header_text" in payload and payload["header_text"] is not None:
-        current["header_text"] = str(payload["header_text"]).strip()[:200]
-    if "footer_text" in payload and payload["footer_text"] is not None:
-        current["footer_text"] = str(payload["footer_text"]).strip()[:300]
+    # Key present + null → clear; key present + value → set (schema already validated).
+    if "header_text" in payload:
+        val = payload["header_text"]
+        current["header_text"] = "" if val is None else str(val).strip()[:200]
+    if "footer_text" in payload:
+        val = payload["footer_text"]
+        current["footer_text"] = "" if val is None else str(val).strip()[:300]
     if payload.get("default_invoice_template") is not None:
         # Defense in depth: PrintBrandingUpdate Literal rejects blank/unknown with 422.
         # Read path still coerces garbage to a4 silently.

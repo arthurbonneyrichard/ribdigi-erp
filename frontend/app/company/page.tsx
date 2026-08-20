@@ -579,6 +579,8 @@ export default function Page() {
           value={printHeader}
           onChange={(e) => setPrintHeader(e.target.value)}
           placeholder="Tagline under company name"
+          title="Optional header (1–200 chars; letters/digits required); blank clears"
+          aria-label="Print branding header text"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <label className="muted">Footer text</label>
@@ -586,19 +588,29 @@ export default function Page() {
           value={printFooter}
           onChange={(e) => setPrintFooter(e.target.value)}
           placeholder="Thank you line"
+          title="Optional footer (1–300 chars; letters/digits required); blank clears"
+          aria-label="Print branding footer text"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <label>
             Invoice template{' '}
-            <select value={invTemplate} onChange={(e) => setInvTemplate(e.target.value)}>
+            <select
+              value={invTemplate}
+              onChange={(e) => setInvTemplate(e.target.value)}
+              aria-label="Default invoice template"
+            >
               <option value="a4">A4</option>
               <option value="thermal">Thermal</option>
             </select>
           </label>
           <label>
             Receipt paper{' '}
-            <select value={receiptPaper} onChange={(e) => setReceiptPaper(e.target.value)}>
+            <select
+              value={receiptPaper}
+              onChange={(e) => setReceiptPaper(e.target.value)}
+              aria-label="Default receipt paper"
+            >
               <option value="80mm">80mm</option>
               <option value="58mm">58mm</option>
             </select>
@@ -606,14 +618,16 @@ export default function Page() {
         </div>
         <button
           type="button"
+          aria-label="Save print branding"
           onClick={async () => {
             setError('');
             try {
               const r = await api('/settings/print', {
                 method: 'PATCH',
                 body: JSON.stringify({
-                  header_text: printHeader,
-                  footer_text: printFooter,
+                  // null clears; blank would 422 (PrintHeader/FooterTextValue)
+                  header_text: printHeader.trim() || null,
+                  footer_text: printFooter.trim() || null,
                   default_invoice_template: invTemplate,
                   default_receipt_paper: receiptPaper,
                 }),

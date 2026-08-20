@@ -306,9 +306,11 @@ Company UI selects match. Service validators remain defense-in-depth **400** (an
 Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
 **Print branding (BR-20.4):** `GET|PATCH /settings/print` — `{ header_text?, footer_text?, default_invoice_template?, default_receipt_paper? }`.  
+`header_text` ∈ `PrintHeaderTextValue` (strip; 1–200; ≥1 letter/digit; no `://`/`@`); omit → no change; `null` → clear; blank/`!!!`/`http://…` → **422** (was free `str` max_length=200; blank/garbage could persist).  
+`footer_text` ∈ `PrintFooterTextValue` (strip; 1–300; same honesty; was free `str` max_length=300).  
 `default_invoice_template` schema `Literal["a4","thermal"]` (omit = no change; blank/invalid → **422**).  
 `default_receipt_paper` schema `Literal["58mm","80mm"]` (omit = no change; blank/invalid → **422**).  
-Service `apply_print_branding_update` remains defense-in-depth **400**. Read path still coerces stored garbage to `a4` / `80mm`. Company page Invoice template / Receipt paper selects match.
+Service `apply_print_branding_update` remains defense-in-depth **400** for template/paper. Read path still coerces stored garbage to `a4` / `80mm`. Company page **Print branding header text** / **footer text** + Invoice template / Receipt paper selects + **Save print branding** (`aria-label`s); Save sends `null` when header/footer blank.
 
 ### 3.4 Tenant Status Management
 **List (platform):** `GET /tenants?status=` — Query `status` ∈ `trial`|`active`|`grace`|`suspended` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Service `list_tenants` remains defense-in-depth. Platform console **Tenant status** chips (client filter over full cache; API also supports `?status=`).  
