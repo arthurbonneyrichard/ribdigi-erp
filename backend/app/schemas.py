@@ -1501,9 +1501,15 @@ class ExpenseCategoryUpdate(BaseModel):
 
 
 class ExpenseDecision(BaseModel):
-    """Approve path — optional typed comment (BR-9.3)."""
+    """Approve path — optional typed comment (BR-9.3).
 
-    comment: str | None = None
+    Optional `comment` ∈ ExpenseApproveCommentValue; omit/`null` → no typed comment
+    (service may still set a level-awaiting system note); blank/`!!!`/`http://…` →
+    **422** (was free `str`; blank/garbage could persist on `approval_comment`).
+    """
+
+    # omit/`null` → no typed comment; blank/`!!!`/`http://…` → **422**
+    comment: ExpenseApproveCommentValue | None = None
 
 
 class ExpenseReject(BaseModel):
@@ -4664,6 +4670,27 @@ ExpenseDescriptionValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_description_value),
+]
+
+
+def validate_expense_approve_comment_value(value: str) -> str:
+    """AfterValidator: expense approve comment; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Expense approve comment — Expense.approval_comment Text; keep ≤500 at API boundary.
+ExpenseApproveCommentValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_approve_comment_value),
 ]
 
 

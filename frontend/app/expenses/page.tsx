@@ -1310,6 +1310,8 @@ export default function Page() {
             value={approveComment}
             onChange={(e) => setApproveComment(e.target.value)}
             placeholder="Optional — stored as approval_comment"
+            aria-label="Expense approve comment"
+            title="Optional comment (1–500 chars; letters/digits required); blank omits"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -1550,7 +1552,12 @@ export default function Page() {
                 )}
                 {r.status === 'pending' && (
                   <>
-                    <button className="btn-ok" onClick={() => approve(r.id)} style={{ marginRight: 8 }}>
+                    <button
+                      className="btn-ok"
+                      onClick={() => approve(r.id)}
+                      style={{ marginRight: 8 }}
+                      aria-label="Approve expense"
+                    >
                       Approve
                     </button>
                     <button className="btn-danger" onClick={() => reject(r.id)}>Reject</button>

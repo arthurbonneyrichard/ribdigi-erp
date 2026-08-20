@@ -1202,7 +1202,7 @@ Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_appr
 
 **Approval settings:** `GET|PATCH /expenses/settings` — thresholds + `levels[]` (`ApprovalLevelUpdate`: `min_amount`, `roles[]`, `label?`). `roles[]` items ∈ system roles (`SystemRoleValue` / `rbac.VALID_ROLES`; strip/lower; blank/unknown → **422** — was late service **400**). Body `extra=forbid`. Expenses **Approval matrix** roles inputs (`aria-label`s + system-role datalist). Same `SystemRoleValue` honesty on `PATCH /purchasing/requests/settings` PR matrix (`PurchaseApprovalLevelUpdate`).
 
-**Approve:** `POST /expenses/{expense_id}/approve` — body `{ "comment"? }` (optional typed comment → `approval_comment`; Expenses UI **Approve comment** — no hardcoded `"Approved"`) → advances approval step or final `approved` + journal; no self-approve (except `super_admin`).  
+**Approve:** `POST /expenses/{expense_id}/approve` — body `{ "comment"? }` optional `comment` ∈ `ExpenseApproveCommentValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null`/empty body → no typed comment (service may still set a level-awaiting system note); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on `approval_comment`). Expenses UI **Expense approve comment** input (`aria-label`); Approve omits blank (no hardcoded `"Approved"`) → advances approval step or final `approved` + journal; no self-approve (except `super_admin`).  
 **Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }` **required** (`ExpenseReject`; omit/empty → 422; no `comment` fallback) → `rejected` + `rejection_reason` (Expenses UI requires typed reason; no hardcoded `"Rejected"`). Role-gated to the awaiting matrix step.
 
 ### 9.3 Recurring Expenses
