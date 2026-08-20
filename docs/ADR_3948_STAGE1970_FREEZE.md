@@ -31,3 +31,7 @@ Stage 1971 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Genrokuiijiyuglaze Gate, Transfer Genrokuiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1971 opened under **ADR-3949** after CONTINUE/NEXT (Tenant MVP Transfer Genrokuoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3950**. Stage 1970 feature scope remains frozen.
