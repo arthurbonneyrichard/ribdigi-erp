@@ -31,3 +31,7 @@ Stage 2998 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiaamajiyuglaze Gate, Transfer Kanseiaamajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2998 opened under **ADR-6003** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiaarajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6004**. Stage 2997 feature scope remains frozen.
