@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from collections import defaultdict
 from datetime import datetime
 
 from sqlalchemy import select
@@ -266,6 +267,7 @@ class BusinessIntelligenceService:
 
         await self._persist_important(insights)
         await self._notify_critical(insights)
+        await self.db.commit()
 
         return {
             "generated_at": datetime.utcnow().isoformat(),
@@ -335,20 +337,111 @@ class BusinessIntelligenceService:
         await self.db.commit()
 
     async def _notify_critical(self, insights: list[dict]) -> None:
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         for item in insights:
             if item.get("priority") != "CRITICAL":
+                continue
+            entity_id = item.get("related_entity_id") or item.get("insight_type")
+            title = item["title"][:160]
+            existing = (
+                await self.db.execute(
+                    select(m.Notification).where(
+                        m.Notification.tenant_id == self.tenant_id,
+                        m.Notification.category == "business_insight",
+                        m.Notification.status == "unread",
+                        m.Notification.entity_id == entity_id,
+                        m.Notification.title == title,
+                        m.Notification.created_at >= today,
+                    )
+                )
+            ).scalar_one_or_none()
+            if existing:
                 continue
             await create_notification(
                 self.db,
                 tenant_id=self.tenant_id,
-                title=item["title"][:160],
+                title=title,
                 message=item["message"][:500],
                 category="business_insight",
-                user_id=self.claims.get("sub"),
+                user_id=self.claims.get("sub")
+                if self.claims.get("sub") not in (None, "system")
+                else None,
                 entity_type=item.get("related_entity_type"),
-                entity_id=item.get("related_entity_id"),
+                entity_id=entity_id,
                 company_id=self.company_id,
             )
+
+    async def create_reorder_purchase_requests(
+        self,
+        *,
+        product_ids: list[str] | None = None,
+        supplier_id: str | None = None,
+        warehouse_id: str | None = None,
+        notes: str | None = None,
+    ) -> dict:
+        """Create draft purchase requests from Smart Reorder Recommendations.
+
+        Groups lines by last PO supplier (or an explicit fallback). Skips products
+        with no supplier, qty <= 0, or an existing open purchase request.
+        """
+        from app import purchasing as purchasing_svc
+
+        metrics = await self._metrics()
+        recs = await metrics.reorder_recommendations()
+        wanted = {pid for pid in (product_ids or []) if pid} or None
+        if wanted:
+            recs = [r for r in recs if r.get("product_id") in wanted]
+
+        pids = [r["product_id"] for r in recs if r.get("product_id")]
+        already = await metrics.open_purchase_request_product_ids(pids)
+
+        skipped: list[dict] = []
+        grouped: dict[str, list[dict]] = defaultdict(list)
+        for row in recs:
+            pid = row.get("product_id")
+            qty = int(row.get("recommended_reorder_qty") or 0)
+            if not pid:
+                continue
+            if qty <= 0:
+                skipped.append({"product_id": pid, "reason": "recommended_qty_zero"})
+                continue
+            if pid in already:
+                skipped.append({"product_id": pid, "reason": "open_purchase_request"})
+                continue
+            sid = row.get("last_supplier_id") or supplier_id
+            if not sid:
+                skipped.append({"product_id": pid, "reason": "no_supplier"})
+                continue
+            grouped[sid].append(
+                {
+                    "product_id": pid,
+                    "quantity": qty,
+                    "notes": f"Smart Reorder Recommendation (days left: {row.get('estimated_days_remaining')})",
+                }
+            )
+
+        created: list[dict] = []
+        note = (notes or "").strip() or "Created from Smart Reorder Recommendation"
+        for sid, items in grouped.items():
+            pr = await purchasing_svc.create_purchase_request(
+                self.db,
+                tenant_id=self.tenant_id,
+                user_id=self.claims.get("sub") or "system",
+                supplier_id=sid,
+                warehouse_id=warehouse_id,
+                notes=note,
+                items=items,
+                company_id=self.company_id,
+            )
+            created.append(await purchasing_svc.serialize_pr(self.db, pr))
+        await self.db.commit()
+        return {
+            "created": created,
+            "skipped": skipped,
+            "created_count": len(created),
+            "skipped_count": len(skipped),
+            "external_ai_required": False,
+        }
 
     async def list_history(self, *, status: str | None = None, limit: int = 50) -> list[dict]:
         q = select(m.BusinessInsight).where(
@@ -419,3 +512,27 @@ class BusinessIntelligenceService:
             "acknowledged_at": r.acknowledged_at.isoformat() if r.acknowledged_at else None,
             "resolved_at": r.resolved_at.isoformat() if r.resolved_at else None,
         }
+
+
+async def scan_tenant_business_insights(db: AsyncSession, tenant_id: str) -> dict:
+    """Persist Layer 1 CRITICAL/WARNING insights for each active company (scheduled)."""
+    companies = (
+        await db.execute(
+            select(m.Company.id).where(
+                m.Company.tenant_id == tenant_id,
+                m.Company.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalars().all()
+    scanned = 0
+    for company_id in companies:
+        claims = {
+            "tenant_id": tenant_id,
+            "company_id": company_id,
+            "sub": "system",
+            "role": "company_admin",
+            "permissions": {"*": ["*"]},
+        }
+        await BusinessIntelligenceService(db, claims).build_bundle()
+        scanned += 1
+    return {"companies": scanned, "engine": "Smart Business Intelligence Layer 1"}

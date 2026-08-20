@@ -9,6 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.rbac import permissions_for_role
 
+
+def _default_company_store_limit(tenant: m.Tenant) -> int:
+    """First-company allocation uses the effective tenant cap (override-aware).
+
+    Do not treat ``max_stores=0`` as missing — ``or 5`` would silently raise the cap.
+    """
+    from app import store_entitlements as store_ent_svc
+
+    return int(store_ent_svc.effective_tenant_store_limit(tenant))
+
 # Modules usable in tenant workspace (SaaS account admin — not company ops).
 TENANT_WORKSPACE_MODULES = frozenset(
     {
@@ -88,7 +98,7 @@ async def ensure_default_company(db: AsyncSession, tenant: m.Tenant) -> m.Compan
         logo_url=tenant.logo_url,
         is_active=True,
         is_default=True,
-        store_limit=int(getattr(tenant, "max_stores", 5) or 5),
+        store_limit=_default_company_store_limit(tenant),
     )
     db.add(co)
     await db.flush()

@@ -90,6 +90,7 @@ export default function Page() {
   const [journalStoreId, setJournalStoreId] = useState('');
   const [manualStoreId, setManualStoreId] = useState('');
   const [tbAsOf, setTbAsOf] = useState('');
+  const [tbStoreId, setTbStoreId] = useState('');
   const [accountTx, setAccountTx] = useState<any | null>(null);
   const [txFrom, setTxFrom] = useState('');
   const [txTo, setTxTo] = useState('');
@@ -191,8 +192,11 @@ export default function Page() {
     const stmtQs = stmtParams.toString()
       ? `/accounting/bank-statements?${stmtParams}`
       : '/accounting/bank-statements';
-    const tbPath = tbAsOf
-      ? `/accounting/trial-balance?as_of_date=${encodeURIComponent(tbAsOf)}`
+    const tbParams = new URLSearchParams();
+    if (tbAsOf) tbParams.set('as_of_date', tbAsOf);
+    if (tbStoreId) tbParams.set('store_id', tbStoreId);
+    const tbPath = tbParams.toString()
+      ? `/accounting/trial-balance?${tbParams}`
       : '/accounting/trial-balance';
     const [a, j, t, p, liq, stmts, chq, conns, storeRows] = await Promise.all([
       api(`/accounting/accounts${accountQs}`),
@@ -1301,6 +1305,18 @@ export default function Page() {
                   onChange={(e) => setTbAsOf(e.target.value)}
                   aria-label="Trial balance as of"
                 />
+                <select
+                  value={tbStoreId}
+                  onChange={(e) => setTbStoreId(e.target.value)}
+                  aria-label="Trial balance store filter"
+                >
+                  <option value="">All stores</option>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.code} — {s.name}
+                    </option>
+                  ))}
+                </select>
                 <button type="button" onClick={() => refresh().catch((err) => setError(err.message))}>
                   Apply
                 </button>
@@ -1308,9 +1324,10 @@ export default function Page() {
                   type="button"
                   onClick={async () => {
                     const token = localStorage.getItem('token') || '';
-                    const qs = tbAsOf
-                      ? `?as_of_date=${encodeURIComponent(tbAsOf)}`
-                      : '';
+                    const params = new URLSearchParams();
+                    if (tbAsOf) params.set('as_of_date', tbAsOf);
+                    if (tbStoreId) params.set('store_id', tbStoreId);
+                    const qs = params.toString() ? `?${params}` : '';
                     const res = await fetch(
                       `${apiBase}/accounting/trial-balance/export${qs}`,
                       { headers: { Authorization: `Bearer ${token}` } },
@@ -1332,10 +1349,14 @@ export default function Page() {
                 </button>
               </div>
               <p className="muted">
-                As of {trial?.as_of || '—'} · Balanced: {String(trial?.balanced)} | Dr{' '}
-                {trial?.total_debit} / Cr {trial?.total_credit}. Export via{' '}
-                <code>GET /accounting/trial-balance/export</code> (Stage 159 B1; path-scoped —
-                distinct from generic <code>/reports/export</code>).
+                As of {trial?.as_of || '—'}
+                {trial?.store_id
+                  ? ` · store ${stores.find((s) => s.id === trial.store_id)?.code || trial.store_id}`
+                  : ''}{' '}
+                · Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr{' '}
+                {trial?.total_credit}. Store filter rebuilds from posted journals (same as
+                balance sheet). Export via <code>GET /accounting/trial-balance/export</code>{' '}
+                (Stage 159 B1; path-scoped — distinct from generic <code>/reports/export</code>).
               </p>
             </div>
             <div className="card" id="profit-loss">

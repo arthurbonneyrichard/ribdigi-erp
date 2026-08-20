@@ -102,11 +102,21 @@ async def serialize_count(db: AsyncSession, count: m.StockCount) -> dict:
         ).scalars().all()
         products = {p.id: p for p in rows}
     counted_lines = sum(1 for i in items if i.counted_qty is not None)
+    warehouse = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.id == count.warehouse_id,
+                m.Warehouse.tenant_id == count.tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
     return {
         "id": count.id,
         "company_id": getattr(count, "company_id", None),
         "count_number": count.count_number,
         "warehouse_id": count.warehouse_id,
+        "warehouse_code": warehouse.code if warehouse else None,
+        "warehouse_name": warehouse.name if warehouse else None,
         "status": count.status,
         "notes": count.notes,
         "created_by": count.created_by,
@@ -284,6 +294,82 @@ async def update_count_items(
         line.counted_qty = round(qty, 3)
         if raw.get("notes") is not None:
             line.notes = str(raw.get("notes") or "").strip() or None
+    await db.flush()
+    return count
+
+
+async def add_count_item(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    count_id: str,
+    product_id: str,
+    counted_qty: float | None = None,
+    notes: str | None = None,
+    company_id: str | None = None,
+) -> m.StockCount:
+    """Add a product found during a draft count that was not on the original sheet."""
+    from app.workspace import assert_fk_company
+
+    count = await get_count(db, tenant_id, count_id, company_id=company_id)
+    if count.status != "draft":
+        raise HTTPException(status_code=409, detail=f"Cannot add lines in status {count.status}")
+
+    pid = (product_id or "").strip()
+    if not pid:
+        raise HTTPException(status_code=400, detail="product_id is required")
+
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == pid,
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail=f"Product not found: {pid}")
+    assert_fk_company(product, company_id, detail=f"Product not found: {pid}")
+
+    existing = {i.product_id: i for i in await list_count_items(db, tenant_id, count_id)}
+    if pid in existing:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "COUNT_LINE_EXISTS",
+                "message": "Product is already on this stock count",
+                "product_id": pid,
+            },
+        )
+
+    qty: float | None = None
+    if counted_qty is not None:
+        try:
+            qty = float(counted_qty)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="counted_qty must be a number") from exc
+        if qty < 0:
+            raise HTTPException(status_code=400, detail="counted_qty cannot be negative")
+        qty = round(qty, 3)
+
+    await allocate_unlocated_stock(
+        db, tenant_id=tenant_id, warehouse_id=count.warehouse_id, product_id=pid
+    )
+    stock = await get_or_create_warehouse_stock(
+        db, tenant_id=tenant_id, warehouse_id=count.warehouse_id, product_id=pid
+    )
+    db.add(
+        m.StockCountItem(
+            tenant_id=tenant_id,
+            company_id=company_id,
+            stock_count_id=count.id,
+            product_id=pid,
+            expected_qty=float(stock.quantity or 0),
+            counted_qty=qty,
+            notes=(notes or "").strip() or None,
+        )
+    )
     await db.flush()
     return count
 

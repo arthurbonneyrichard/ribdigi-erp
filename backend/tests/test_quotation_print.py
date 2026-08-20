@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from app.emailer import clear_dev_outbox, get_dev_outbox
 from app.sales_docs import render_quotation_html, render_quotation_pdf, render_quotation_text
 from tests.conftest import auth_headers
 
@@ -116,4 +117,83 @@ async def test_quotation_print_formats_and_foreign_404(client):
     # Cross-tenant: beta user cannot print alpha quotation
     beta = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")
     foreign = await ac.get(f"/api/v1/sales/quotations/{quote_id}/print", headers=beta)
+    assert foreign.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_quotation_send_attaches_print_pdf_and_foreign_404(client, monkeypatch):
+    ac, seed = client
+    headers = await _mgr(ac)
+    clear_dev_outbox()
+    monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
+    monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "")
+    monkeypatch.setattr("app.emailer.settings.SMTP_FROM_EMAIL", "noreply@localhost")
+
+    cust = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={
+            "name": "Quote Mail Buyer",
+            "email": "quote-buyer@example.com",
+            "credit_limit": 1000,
+        },
+    )
+    assert cust.status_code == 200, cust.text
+    customer_id = cust.json()["data"]["id"]
+
+    created = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=headers,
+        json={
+            "customer_id": customer_id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 15}],
+        },
+    )
+    assert created.status_code == 200, created.text
+    quote_id = created.json()["data"]["id"]
+    number = created.json()["data"]["quotation_number"]
+
+    sent = await ac.post(
+        f"/api/v1/sales/quotations/{quote_id}/send",
+        headers=headers,
+        json={"template": "a4"},
+    )
+    assert sent.status_code == 200, sent.text
+    data = sent.json()["data"]
+    assert data["status"] == "sent"
+    assert data["emailed_to"] == "quote-buyer@example.com"
+    assert data["delivery"]["mode"] == "console"
+    assert data["delivery"]["template"] == "a4"
+    attach = data["delivery"]["attachment"]
+    assert attach["filename"].startswith("quotation_")
+    assert attach["filename"].endswith(".pdf")
+    assert number.replace("/", "-") in attach["filename"]
+    assert attach["content_type"] == "application/pdf"
+    assert attach["size_bytes"] > 4
+
+    out = get_dev_outbox()
+    assert out and number in out[0]["subject"]
+    assert out[0]["attachments"][0]["filename"] == attach["filename"]
+    assert "branded PDF" in (out[0].get("text_body") or "")
+
+    resend = await ac.post(
+        f"/api/v1/sales/quotations/{quote_id}/send",
+        headers=headers,
+        json={"to": "override@example.com", "template": "thermal_58"},
+    )
+    assert resend.status_code == 200, resend.text
+    assert resend.json()["data"]["emailed_to"] == "override@example.com"
+    assert resend.json()["data"]["delivery"]["template"] == "thermal_58"
+
+    bad_tpl = await ac.post(
+        f"/api/v1/sales/quotations/{quote_id}/send",
+        headers=headers,
+        json={"template": "poster"},
+    )
+    assert bad_tpl.status_code == 400
+
+    foreign = await ac.post(
+        f"/api/v1/sales/quotations/{seed['inv2'].id}/send",
+        headers=headers,
+    )
     assert foreign.status_code == 404

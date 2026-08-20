@@ -150,6 +150,8 @@ async def get_tenant_store_entitlement(db: AsyncSession, tenant: m.Tenant) -> di
     unlimited = is_unlimited(limit)
     remaining = None if unlimited else max(0, limit - used)
     unallocated = None if unlimited else max(0, limit - allocated)
+    over_entitlement = (not unlimited) and used > limit
+    over_allocated = (not unlimited) and allocated > limit
     return {
         "max_stores": limit,
         "max_stores_unlimited": unlimited,
@@ -160,7 +162,8 @@ async def get_tenant_store_entitlement(db: AsyncSession, tenant: m.Tenant) -> di
         "allocated_to_companies": allocated,
         "remaining": remaining,
         "unallocated": unallocated,
-        "over_entitlement": (not unlimited) and used > limit,
+        "over_entitlement": over_entitlement,
+        "over_allocated": over_allocated,
         "billing_deferred": True,
     }
 
@@ -188,6 +191,7 @@ async def get_company_store_entitlement(
             "used": tenant_ent["used"],
             "remaining": tenant_ent["remaining"],
             "over_entitlement": tenant_ent["over_entitlement"],
+            "over_allocated": tenant_ent["over_allocated"],
             "unallocated": tenant_ent["unallocated"],
         },
         "can_create_store": await can_create_store(db, tenant=tenant, company=company),
@@ -405,6 +409,38 @@ async def set_company_store_limit(
     company.store_limit = int(store_limit)
     await db.flush()
     return company
+
+
+async def assign_initial_company_store_limit(
+    db: AsyncSession,
+    *,
+    tenant: m.Tenant,
+    company: m.Company,
+    requested_limit: int | None,
+) -> m.Company:
+    """Lock + validate a new company's allocation.
+
+    Explicit ``store_limit`` is rejected when it exceeds remaining entitlement.
+    Default (None) assigns 1 slot when unallocated capacity exists, otherwise 0.
+    """
+    await db.execute(select(m.Tenant).where(m.Tenant.id == tenant.id).with_for_update())
+    tenant = await db.get(m.Tenant, tenant.id) or tenant
+    if requested_limit is not None:
+        return await set_company_store_limit(
+            db, tenant=tenant, company=company, store_limit=int(requested_limit)
+        )
+    tenant_limit = effective_tenant_store_limit(tenant)
+    if is_unlimited(tenant_limit):
+        default_limit = 1
+    else:
+        others = await sum_company_store_allocations(
+            db, tenant_id=tenant.id, exclude_company_id=company.id
+        )
+        remaining = max(0, tenant_limit - others)
+        default_limit = 1 if remaining >= 1 else 0
+    return await set_company_store_limit(
+        db, tenant=tenant, company=company, store_limit=default_limit
+    )
 
 
 def apply_plan_store_defaults(tenant: m.Tenant, plan_code: str) -> dict:

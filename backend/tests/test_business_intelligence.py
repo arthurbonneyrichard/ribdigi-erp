@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pyotp
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -302,3 +303,229 @@ async def test_bi_acknowledge_and_dismiss(client, db_session: AsyncSession):
     )
     assert dismiss.status_code == 200, dismiss.text
     assert dismiss.json()["status"] == "DISMISSED"
+
+
+async def _cashier_headers(http, seed) -> dict:
+    headers = await auth_headers(
+        http, email=seed["u1"].email, tenant_slug="alpha"
+    )
+    headers["X-Company-ID"] = seed["c1"].id
+    headers["X-Workspace-Kind"] = "company"
+    return headers
+
+
+async def _make_p1_out_of_stock(db_session: AsyncSession, seed, *, reorder_level: float = 8):
+    p1 = await db_session.get(m.Product, seed["p1"].id)
+    p1.stock_qty = 0
+    p1.reorder_level = reorder_level
+    await db_session.commit()
+
+
+@pytest.mark.asyncio
+async def test_reorder_requests_skips_without_supplier(client, db_session: AsyncSession):
+    http, seed = client
+    await _make_p1_out_of_stock(db_session, seed)
+    headers = await _mgr_headers(http, seed)
+    res = await http.post("/api/v1/business-insights/reorder-requests", headers=headers, json={})
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["created_count"] == 0
+    assert body["external_ai_required"] is False
+    reasons = {s["reason"] for s in body["skipped"]}
+    assert "no_supplier" in reasons
+
+
+@pytest.mark.asyncio
+async def test_reorder_requests_creates_draft_pr_from_last_supplier(
+    client, db_session: AsyncSession
+):
+    http, seed = client
+    await _make_p1_out_of_stock(db_session, seed, reorder_level=8)
+    headers = await _mgr_headers(http, seed)
+
+    supplier = await http.post(
+        "/api/v1/suppliers", headers=headers, json={"name": "Reorder Supplier"}
+    )
+    assert supplier.status_code == 200, supplier.text
+    supplier_id = supplier.json()["data"]["id"]
+
+    po = await http.post(
+        "/api/v1/purchasing/orders",
+        headers=headers,
+        json={
+            "supplier_id": supplier_id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 4}],
+        },
+    )
+    assert po.status_code == 200, po.text
+
+    overview = await http.get("/api/v1/business-insights/overview", headers=headers)
+    assert overview.status_code == 200, overview.text
+    recs = overview.json()["reorder_recommendations"]
+    match = [r for r in recs if r["product_id"] == seed["p1"].id]
+    assert match, recs
+    assert match[0]["last_supplier_id"] == supplier_id
+    assert match[0]["recommended_reorder_qty"] >= 1
+
+    created = await http.post(
+        "/api/v1/business-insights/reorder-requests", headers=headers, json={}
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()
+    assert body["created_count"] == 1
+    pr = body["created"][0]
+    assert pr["status"] == "draft"
+    assert pr["supplier_id"] == supplier_id
+    assert pr["items"][0]["product_id"] == seed["p1"].id
+    assert float(pr["items"][0]["quantity"]) == float(match[0]["recommended_reorder_qty"])
+
+    again = await http.post(
+        "/api/v1/business-insights/reorder-requests", headers=headers, json={}
+    )
+    assert again.status_code == 200, again.text
+    assert again.json()["created_count"] == 0
+    assert any(s["reason"] == "open_purchase_request" for s in again.json()["skipped"])
+
+
+@pytest.mark.asyncio
+async def test_reorder_requests_fallback_supplier_and_foreign_404(
+    client, db_session: AsyncSession
+):
+    http, seed = client
+    await _make_p1_out_of_stock(db_session, seed, reorder_level=5)
+    headers = await _mgr_headers(http, seed)
+
+    foreign = await http.post(
+        "/api/v1/business-insights/reorder-requests",
+        headers=headers,
+        json={"supplier_id": seed["supplier2"].id},
+    )
+    assert foreign.status_code == 404
+
+    local = await http.post(
+        "/api/v1/suppliers", headers=headers, json={"name": "Fallback Supplier"}
+    )
+    assert local.status_code == 200, local.text
+    sid = local.json()["data"]["id"]
+    ok = await http.post(
+        "/api/v1/business-insights/reorder-requests",
+        headers=headers,
+        json={"supplier_id": sid, "product_ids": [seed["p1"].id]},
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["created_count"] == 1
+    assert ok.json()["created"][0]["supplier_id"] == sid
+
+
+@pytest.mark.asyncio
+async def test_reorder_requests_cashier_forbidden(client):
+    http, seed = client
+    headers = await _cashier_headers(http, seed)
+    res = await http.post("/api/v1/business-insights/reorder-requests", headers=headers, json={})
+    assert res.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_bi_critical_notifications_deduped(client, db_session: AsyncSession):
+    http, seed = client
+    p1 = await db_session.get(m.Product, seed["p1"].id)
+    p1.stock_qty = -3
+    await db_session.commit()
+    tenant_id = seed["t1"].id
+    headers = await _mgr_headers(http, seed)
+
+    first = await http.get("/api/v1/business-insights/overview", headers=headers)
+    assert first.status_code == 200, first.text
+    second = await http.get("/api/v1/business-insights/overview", headers=headers)
+    assert second.status_code == 200, second.text
+
+    notes = (
+        await db_session.execute(
+            select(m.Notification).where(
+                m.Notification.tenant_id == tenant_id,
+                m.Notification.category == "business_insight",
+                m.Notification.title == "Negative stock detected",
+            )
+        )
+    ).scalars().all()
+    assert len(notes) == 1
+
+
+@pytest.mark.asyncio
+async def test_scan_tenant_business_insights_persists(client, db_session: AsyncSession):
+    from app.bi_service import scan_tenant_business_insights
+
+    http, seed = client
+    tenant_id = seed["t1"].id
+    p1 = await db_session.get(m.Product, seed["p1"].id)
+    p1.stock_qty = -2
+    await db_session.commit()
+
+    result = await scan_tenant_business_insights(db_session, tenant_id)
+    assert result["companies"] >= 1
+
+    rows = (
+        await db_session.execute(
+            select(m.BusinessInsight).where(
+                m.BusinessInsight.tenant_id == tenant_id,
+                m.BusinessInsight.insight_type == "negative_stock",
+            )
+        )
+    ).scalars().all()
+    assert rows
+    assert rows[0].priority == "CRITICAL"
+
+
+@pytest.mark.asyncio
+async def test_reorder_subtracts_open_po_incoming(client, db_session: AsyncSession):
+    http, seed = client
+    await _make_p1_out_of_stock(db_session, seed, reorder_level=8)
+    headers = await _mgr_headers(http, seed)
+
+    supplier = await http.post(
+        "/api/v1/suppliers", headers=headers, json={"name": "Incoming Supplier"}
+    )
+    assert supplier.status_code == 200, supplier.text
+    supplier_id = supplier.json()["data"]["id"]
+    po = await http.post(
+        "/api/v1/purchasing/orders",
+        headers=headers,
+        json={
+            "supplier_id": supplier_id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 8, "unit_price": 4}],
+        },
+    )
+    assert po.status_code == 200, po.text
+    sent = await http.post(
+        f"/api/v1/purchasing/orders/{po.json()['data']['id']}/send", headers=headers
+    )
+    assert sent.status_code == 200, sent.text
+
+    overview = await http.get("/api/v1/business-insights/overview", headers=headers)
+    assert overview.status_code == 200, overview.text
+    recs = [
+        r
+        for r in overview.json()["reorder_recommendations"]
+        if r["product_id"] == seed["p1"].id
+    ]
+    assert recs == []
+
+
+def test_bi_ui_history_settings_and_incoming():
+    from pathlib import Path
+
+    page_path = (
+        Path(__file__).resolve().parents[2]
+        / "frontend"
+        / "app"
+        / "business-insights"
+        / "page.tsx"
+    )
+    if not page_path.exists():
+        pytest.skip("frontend tree is not mounted in this test environment")
+    page = page_path.read_text(encoding="utf-8")
+    assert "Insight history" in page
+    assert "Threshold settings" in page
+    assert "pending_incoming_qty" in page
+    assert "/business-insights/history" in page
+    assert "Save thresholds" in page

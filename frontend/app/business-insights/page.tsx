@@ -7,6 +7,7 @@ import { api, ApiError } from '../../lib/api';
 import { formatNumber } from '../../lib/format';
 
 type Insight = {
+  id?: string;
   insight_type: string;
   category: string;
   priority: string;
@@ -17,7 +18,21 @@ type Insight = {
   action_cta?: string;
   metric_value?: number | null;
   percentage_change?: number | null;
+  status?: string;
+  created_at?: string | null;
 };
+
+type BiSettings = {
+  slow_moving_days: number;
+  dead_stock_days: number;
+  safety_stock_days: number;
+  default_lead_time_days: number;
+  sales_decline_warning_pct: number;
+  expense_increase_warning_pct: number;
+  expense_to_sales_warning_pct: number;
+};
+
+type FormulaDoc = { metric: string; formula: string; source: string; notes?: string };
 
 type Bundle = {
   generated_at: string;
@@ -92,6 +107,13 @@ export default function BusinessInsightsPage() {
   const [data, setData] = useState<Bundle | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingPr, setCreatingPr] = useState(false);
+  const [prResult, setPrResult] = useState<string | null>(null);
+  const [history, setHistory] = useState<Insight[]>([]);
+  const [settings, setSettings] = useState<BiSettings | null>(null);
+  const [formulas, setFormulas] = useState<FormulaDoc[]>([]);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,6 +121,29 @@ export default function BusinessInsightsPage() {
     try {
       const res = await api<Bundle>('/business-insights/overview');
       setData(res);
+      try {
+        const hist = await api<{ items: Insight[] }>('/business-insights/history');
+        setHistory(hist.items || []);
+      } catch {
+        setHistory([]);
+      }
+      try {
+        const cfg = await api<{ settings: BiSettings; formulas: FormulaDoc[] }>(
+          '/business-insights/settings'
+        );
+        setSettings({
+          slow_moving_days: Number(cfg.settings.slow_moving_days),
+          dead_stock_days: Number(cfg.settings.dead_stock_days),
+          safety_stock_days: Number(cfg.settings.safety_stock_days),
+          default_lead_time_days: Number(cfg.settings.default_lead_time_days),
+          sales_decline_warning_pct: Number(cfg.settings.sales_decline_warning_pct),
+          expense_increase_warning_pct: Number(cfg.settings.expense_increase_warning_pct),
+          expense_to_sales_warning_pct: Number(cfg.settings.expense_to_sales_warning_pct),
+        });
+        setFormulas(cfg.formulas || []);
+      } catch {
+        setFormulas([]);
+      }
     } catch (e) {
       const msg =
         e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Failed to load insights';
@@ -111,6 +156,72 @@ export default function BusinessInsightsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const createReorderRequests = useCallback(async () => {
+    setCreatingPr(true);
+    setPrResult(null);
+    setError(null);
+    try {
+      const res = await api<{ created_count: number; skipped_count: number }>(
+        '/business-insights/reorder-requests',
+        { method: 'POST', body: JSON.stringify({}) }
+      );
+      const created = res.created_count || 0;
+      const skipped = res.skipped_count || 0;
+      setPrResult(
+        created
+          ? `Created ${created} draft purchase request${created === 1 ? '' : 's'}` +
+            (skipped ? ` · skipped ${skipped}` : '') +
+            '.'
+          : skipped
+            ? `No purchase requests created (${skipped} line${skipped === 1 ? '' : 's'} skipped — need a last supplier or an explicit supplier).`
+            : 'No reorder recommendations to convert.'
+      );
+      await load();
+    } catch (e) {
+      const msg =
+        e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Failed to create requests';
+      setError(msg);
+    } finally {
+      setCreatingPr(false);
+    }
+  }, [load]);
+
+  const updateInsight = useCallback(
+    async (id: string, action: 'acknowledge' | 'dismiss') => {
+      setError(null);
+      try {
+        await api(`/business-insights/${id}/${action}`, { method: 'POST' });
+        await load();
+      } catch (e) {
+        const msg =
+          e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Failed to update insight';
+        setError(msg);
+      }
+    },
+    [load]
+  );
+
+  const saveSettings = useCallback(async () => {
+    if (!settings) return;
+    setSavingSettings(true);
+    setSettingsMsg(null);
+    setError(null);
+    try {
+      await api('/business-insights/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      });
+      setSettingsMsg('Thresholds saved. Insights recalculated.');
+      await load();
+    } catch (e) {
+      const msg =
+        e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Failed to save settings';
+      setError(msg);
+    } finally {
+      setSavingSettings(false);
+    }
+  }, [load, settings]);
 
   const sales = (data?.sales || {}) as Record<string, number | null>;
   const inventory = (data?.inventory || {}) as Record<string, number>;
@@ -301,18 +412,39 @@ export default function BusinessInsightsPage() {
           </section>
 
           <section style={{ marginTop: 28 }}>
-            <h2>Smart Reorder Recommendations</h2>
-            <p className="muted" style={{ fontSize: 12 }}>
-              Deterministic stock + velocity recommendations — not ML predictions.
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <div>
+                <h2 style={{ margin: 0 }}>Smart Reorder Recommendations</h2>
+                <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  Deterministic stock + velocity recommendations — not ML predictions.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void createReorderRequests()}
+                disabled={creatingPr || !data.reorder_recommendations?.length}
+              >
+                {creatingPr ? 'Creating…' : 'Create purchase requests'}
+              </button>
+            </div>
+            {prResult ? (
+              <p style={{ marginTop: 8 }}>
+                {prResult}{' '}
+                <Link href="/purchasing">Open Purchasing</Link>
+              </p>
+            ) : null}
             <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
               {(data.reorder_recommendations || []).slice(0, 8).map((row, idx) => (
                 <div className="card" key={`reorder-${idx}`}>
                   <strong>{String(row.name || row.product_name || row.sku || 'Product')}</strong>
                   <p className="muted" style={{ marginTop: 6 }}>
-                    Stock {String(row.current_stock ?? row.stock_qty ?? '—')} · Days left{' '}
+                    Stock {String(row.current_stock ?? row.stock_qty ?? '—')} · Incoming{' '}
+                    {String(row.pending_incoming_qty ?? 0)} · Days left{' '}
                     {String(row.estimated_days_remaining ?? '—')} · Suggest qty{' '}
                     {String(row.recommended_reorder_qty ?? row.recommended_qty ?? '—')}
+                  </p>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                    Last supplier: {String(row.last_supplier_name || 'none — skipped unless you set a fallback')}
                   </p>
                 </div>
               ))}
@@ -346,6 +478,105 @@ export default function BusinessInsightsPage() {
               {!data.opportunities?.length ? (
                 <div className="card muted">No opportunity insights right now.</div>
               ) : null}
+            </div>
+          </section>
+
+          <section style={{ marginTop: 28 }}>
+            <h2>Insight history</h2>
+            <p className="muted" style={{ fontSize: 12 }}>
+              Persisted CRITICAL and WARNING insights. Acknowledge or dismiss after you have acted.
+            </p>
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
+              {history.map((item) => (
+                <div key={item.id || `${item.insight_type}-${item.created_at}`}>
+                  <InsightCard item={item} />
+                  <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                    {item.status || 'ACTIVE'}
+                    {item.created_at ? ` · ${item.created_at}` : ''}
+                  </p>
+                  {item.id && (item.status || 'ACTIVE') === 'ACTIVE' ? (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button type="button" onClick={() => void updateInsight(item.id as string, 'acknowledge')}>
+                        Acknowledge
+                      </button>
+                      <button type="button" onClick={() => void updateInsight(item.id as string, 'dismiss')}>
+                        Dismiss
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+              {!history.length ? (
+                <div className="card muted">No persisted insights yet.</div>
+              ) : null}
+            </div>
+          </section>
+
+          <section style={{ marginTop: 28 }}>
+            <h2>Threshold settings</h2>
+            <p className="muted" style={{ fontSize: 12 }}>
+              Company thresholds for Layer 1 rules. Saving recalculates the overview.
+            </p>
+            {settings ? (
+              <>
+                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
+                  {(
+                    [
+                      ['slow_moving_days', 'Slow-moving days'],
+                      ['dead_stock_days', 'Dead-stock days'],
+                      ['safety_stock_days', 'Safety stock days'],
+                      ['default_lead_time_days', 'Lead time days'],
+                      ['sales_decline_warning_pct', 'Sales decline %'],
+                      ['expense_increase_warning_pct', 'Expense increase %'],
+                      ['expense_to_sales_warning_pct', 'Expense / sales %'],
+                    ] as Array<[keyof BiSettings, string]>
+                  ).map(([key, label]) => (
+                    <label key={key} className="card" style={{ display: 'block' }}>
+                      <span className="muted" style={{ fontSize: 12 }}>
+                        {label}
+                      </span>
+                      <input
+                        type="number"
+                        value={settings[key]}
+                        onChange={(e) =>
+                          setSettings({ ...settings, [key]: Number(e.target.value) })
+                        }
+                        style={{ width: '100%', marginTop: 6 }}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void saveSettings()}
+                  disabled={savingSettings}
+                  style={{ marginTop: 12 }}
+                >
+                  {savingSettings ? 'Saving…' : 'Save thresholds'}
+                </button>
+                {settingsMsg ? <p style={{ marginTop: 8 }}>{settingsMsg}</p> : null}
+              </>
+            ) : (
+              <p className="muted">Thresholds unavailable.</p>
+            )}
+          </section>
+
+          <section style={{ marginTop: 28 }}>
+            <h2>Formulas</h2>
+            <p className="muted" style={{ fontSize: 12 }}>
+              Documented Layer 1 calculations — no external AI.
+            </p>
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
+              {formulas.map((f) => (
+                <div className="card" key={f.metric}>
+                  <strong>{f.metric}</strong>
+                  <p style={{ marginTop: 6, fontFamily: 'monospace', fontSize: 12 }}>{f.formula}</p>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Source: {f.source}
+                  </p>
+                </div>
+              ))}
+              {!formulas.length ? <div className="card muted">No formula docs loaded.</div> : null}
             </div>
           </section>
 

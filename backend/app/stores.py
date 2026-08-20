@@ -581,6 +581,87 @@ async def list_transfer_items(
     ).scalars().all()
 
 
+def _fmt_transfer_print_date(value) -> str | None:
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()[:10]
+    text = str(value).strip()
+    return text[:10] if text else None
+
+
+def render_stock_transfer_text(
+    transfer_data: dict,
+    *,
+    company_name: str,
+    from_label: str,
+    to_label: str,
+    product_labels: dict[str, str] | None = None,
+) -> str:
+    """Warehouse / inter-store transfer slip for ship and receive desks."""
+    labels = product_labels or {}
+    lines = [
+        f"{company_name}",
+        f"STOCK TRANSFER {transfer_data.get('transfer_number')}",
+        f"Status: {transfer_data.get('status')}",
+        f"From: {from_label}",
+        f"To: {to_label}",
+    ]
+    created = _fmt_transfer_print_date(transfer_data.get("created_at"))
+    if created:
+        lines.append(f"Created: {created}")
+    shipped = _fmt_transfer_print_date(transfer_data.get("shipped_at"))
+    if shipped:
+        lines.append(f"Shipped: {shipped}")
+    received = _fmt_transfer_print_date(transfer_data.get("received_at"))
+    if received:
+        lines.append(f"Received: {received}")
+    lines.extend(
+        [
+            "",
+            f"{'Product':<36} {'Req':>10} {'Ship':>10} {'Recv':>10}",
+            "-" * 70,
+        ]
+    )
+    for item in transfer_data.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        label = (labels.get(pid) or pid)[:36]
+        lines.append(
+            f"{label:<36} {float(item.get('quantity') or 0):>10.3f} "
+            f"{float(item.get('shipped_qty') or 0):>10.3f} "
+            f"{float(item.get('received_qty') or 0):>10.3f}"
+        )
+    lines.append("-" * 70)
+    if transfer_data.get("notes"):
+        lines.extend(["", f"Notes: {transfer_data['notes']}"])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=70))
+    return "\n".join(lines)
+
+
+async def transfer_location_label(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str | None,
+    warehouse_id: str | None,
+) -> str:
+    parts: list[str] = []
+    if store_id:
+        store = await db.get(m.Store, store_id)
+        if store and store.tenant_id == tenant_id:
+            parts.append(f"Store {store.name}")
+    if warehouse_id:
+        warehouse = await db.get(m.Warehouse, warehouse_id)
+        if warehouse and warehouse.tenant_id == tenant_id:
+            code = (warehouse.code or "").strip()
+            name = (warehouse.name or "").strip()
+            wh = f"{code} {name}".strip() if code else name
+            parts.append(f"Warehouse {wh or warehouse_id}")
+    return " / ".join(parts) if parts else "—"
+
+
 async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dict:
     items = await list_transfer_items(db, transfer.tenant_id, transfer.id)
     from_manager_id = None

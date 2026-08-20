@@ -18,6 +18,85 @@ INVOICE_PRINT_TEMPLATES = frozenset({"a4", "thermal_80", "thermal_58"})
 INVOICE_PRINT_FORMATS = frozenset({"text", "pdf", "html"})
 
 
+async def product_item_labels(
+    db: AsyncSession, tenant_id: str, items: list[dict] | None
+) -> dict[str, str]:
+    product_ids = [str(i.get("product_id")) for i in (items or []) if i.get("product_id")]
+    if not product_ids:
+        return {}
+    products = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.id.in_(product_ids),
+            )
+        )
+    ).scalars().all()
+    return {p.id: p.name for p in products}
+
+
+async def workspace_company(
+    db: AsyncSession, tenant_id: str, company_id: str | None
+) -> m.Company | None:
+    if not company_id:
+        return None
+    company = await db.get(m.Company, company_id)
+    if not company or company.tenant_id != tenant_id:
+        return None
+    return company
+
+
+def resolve_sales_print_template(
+    template: str | None,
+    doc_brand: dict,
+    allowed: frozenset[str],
+) -> str:
+    tpl = (template or doc_brand.get("invoice_print_template") or "a4").strip().lower()
+    if tpl not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"template must be one of: {sorted(allowed)}",
+        )
+    return tpl
+
+
+def print_brand_kwargs(
+    doc_brand: dict,
+    *,
+    customer_name: str,
+    template: str,
+    currency: str,
+    customer_address: str | None,
+    item_labels: dict[str, str],
+) -> dict:
+    return dict(
+        company_name=doc_brand["company_name"],
+        customer_name=customer_name,
+        template=template,
+        currency=currency,
+        company_address=doc_brand["company_address"],
+        company_phone=doc_brand["company_phone"],
+        company_email=doc_brand["company_email"],
+        tax_registration_number=doc_brand["tax_registration_number"],
+        customer_address=customer_address,
+        item_labels=item_labels,
+        logo_data_url=doc_brand["logo_data_url"],
+        trading_name=doc_brand["trading_name"],
+        legal_name=doc_brand["legal_name"],
+        has_logo=doc_brand["has_logo"],
+        document_header=doc_brand["document_header"],
+        document_footer=doc_brand["document_footer"],
+    )
+
+
+def branded_pdf_attachment(*, filename: str, content: bytes) -> dict:
+    return {
+        "filename": filename.replace("/", "-"),
+        "content": content,
+        "content_type": "application/pdf",
+    }
+
+
 def calc_sale_line_amounts(
     spec,
     quantity: float,
@@ -546,8 +625,10 @@ async def send_sales_invoice(
     user_id: str,
     invoice_id: str,
     to: str | None = None,
+    template: str | None = None,
 ) -> tuple[m.SalesInvoice, dict]:
     from app import emailer
+    from app.print_branding import tenant_document_brand
 
     invoice = await get_invoice(db, tenant_id, invoice_id)
     refresh_invoice_overdue(invoice)
@@ -564,15 +645,40 @@ async def send_sales_invoice(
             detail="Customer has no email; set customer email or pass to= override",
         )
     tenant = await db.get(m.Tenant, tenant_id)
-    company_name = tenant.company_name if tenant else "RIBDIGI ERP"
-    currency = (getattr(invoice, "currency", None) or (tenant.currency if tenant else None) or "GHS")
+    company = await workspace_company(db, tenant_id, getattr(invoice, "company_id", None))
+    doc_brand = tenant_document_brand(tenant, company)
     payload = await serialize_invoice(db, invoice)
+    currency = (
+        payload.get("currency")
+        or (company.currency if company and getattr(company, "currency", None) else None)
+        or (tenant.currency if tenant else None)
+        or "GHS"
+    )
+    tpl = resolve_sales_print_template(template, doc_brand, INVOICE_PRINT_TEMPLATES)
+    labels = await product_item_labels(db, tenant_id, payload.get("items"))
+    brand = print_brand_kwargs(
+        doc_brand,
+        customer_name=customer.name,
+        template=tpl,
+        currency=currency,
+        customer_address=getattr(customer, "address", None),
+        item_labels=labels,
+    )
+    pdf = render_invoice_pdf(payload, **brand)
+    attachment = branded_pdf_attachment(
+        filename=f"invoice_{(payload.get('invoice_number') or invoice_id)}.pdf",
+        content=pdf,
+    )
+    company_name = doc_brand["company_name"] or (tenant.company_name if tenant else None) or "RIBDIGI ERP"
     result = await emailer.send_invoice_email(
         to=recipient,
         company_name=company_name,
         currency=currency,
         customer_name=customer.name,
         invoice=payload,
+        item_labels=labels,
+        attachments=[attachment],
+        tenant=tenant,
     )
     if not result.sent:
         if result.mode == "disabled":
@@ -587,6 +693,11 @@ async def send_sales_invoice(
     invoice.updated_at = now
     from app import audit as audit_svc
 
+    attachment_meta = {
+        "filename": attachment["filename"],
+        "content_type": "application/pdf",
+        "size_bytes": len(pdf),
+    }
     await audit_svc.record_event(
         db,
         tenant_id=tenant_id,
@@ -599,6 +710,8 @@ async def send_sales_invoice(
             "invoice_number": invoice.invoice_number,
             "to": recipient,
             "mode": result.mode,
+            "template": tpl,
+            "attachment": attachment_meta,
         },
     )
     await db.flush()
@@ -606,7 +719,9 @@ async def send_sales_invoice(
         "sent": result.sent,
         "mode": result.mode,
         "to": recipient,
-        "emailed_at": invoice.emailed_at,
+        "emailed_at": invoice.emailed_at.isoformat() + "Z" if invoice.emailed_at else None,
+        "template": tpl,
+        "attachment": attachment_meta,
     }
     return invoice, delivery
 

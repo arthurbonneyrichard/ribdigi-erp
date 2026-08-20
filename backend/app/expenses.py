@@ -208,6 +208,41 @@ async def notify_expense_approvers(
     return notified
 
 
+async def notify_expense_submitter(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    expense: m.Expense,
+    title: str,
+    message: str,
+    entity_type: str,
+    exclude_user_ids: set[str] | frozenset[str] | None = None,
+) -> int:
+    """Dashboard + email (default on) to the expense submitter on approve/reject."""
+    submitter_id = getattr(expense, "created_by", None)
+    if not submitter_id:
+        return 0
+    if submitter_id in set(exclude_user_ids or ()):
+        return 0
+    user = await db.get(m.User, submitter_id)
+    if not user or user.tenant_id != tenant_id or not user.is_active:
+        return 0
+    from app.notifications import create_notification
+
+    note = await create_notification(
+        db,
+        tenant_id=tenant_id,
+        user_id=user.id,
+        category="expense_decision",
+        title=title,
+        message=message,
+        entity_type=entity_type,
+        entity_id=expense.id,
+        company_id=getattr(expense, "company_id", None),
+    )
+    return 1 if note is not None else 0
+
+
 def next_run_date(from_dt: datetime, frequency: str) -> datetime:
     freq = (frequency or "monthly").lower()
     if freq == "daily":
@@ -931,6 +966,18 @@ async def approve_expense(
     from app.accounting import post_expense_journal
 
     await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+    await notify_expense_submitter(
+        db,
+        tenant_id=tenant_id,
+        expense=expense,
+        title="Expense Approved",
+        message=(
+            f"Your expense {expense.category} of {float(expense.amount):.2f} was approved"
+            + (f" ({comment})." if comment else ".")
+        ),
+        entity_type="expense_approved",
+        exclude_user_ids={user_id},
+    )
     await audit_svc.record_event(
         db,
         tenant_id=tenant_id,
@@ -983,6 +1030,18 @@ async def reject_expense(
     expense.approved_by = user_id
     expense.approved_at = datetime.utcnow()
     expense.rejection_reason = reason.strip()
+    await notify_expense_submitter(
+        db,
+        tenant_id=tenant_id,
+        expense=expense,
+        title="Expense Rejected",
+        message=(
+            f"Your expense {expense.category} of {float(expense.amount):.2f} was rejected: "
+            f"{expense.rejection_reason}. Correct it and resubmit."
+        ),
+        entity_type="expense_rejected",
+        exclude_user_ids={user_id},
+    )
     from app import audit as audit_svc
 
     await audit_svc.record_event(
@@ -997,6 +1056,113 @@ async def reject_expense(
             "amount": float(expense.amount),
             "reason": expense.rejection_reason,
             "step": step,
+        },
+        module="expenses",
+    )
+    await db.flush()
+    return expense
+
+
+async def resubmit_expense(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    expense_id: str,
+    comment: str | None = None,
+) -> m.Expense:
+    """Re-open a rejected expense for a new approval cycle (or auto-approve under threshold)."""
+    expense = await get_expense(db, tenant_id, expense_id)
+    if expense.status != "rejected":
+        raise HTTPException(status_code=409, detail="Only rejected expenses can be resubmitted")
+
+    settings = await get_approval_settings(db, tenant_id)
+    auto_t = settings["expense_approval_threshold"]
+    steps = steps_required_from_matrix(float(expense.amount), settings["levels"])
+    note = (comment or "").strip() or "Resubmitted after rejection"
+
+    await _record_action(
+        db,
+        tenant_id=tenant_id,
+        expense_id=expense.id,
+        step=0,
+        action="resubmit",
+        actor_id=user_id,
+        comment=note,
+    )
+
+    expense.rejection_reason = None
+    expense.approved_by = None
+    expense.approved_at = None
+    expense.approval_comment = note
+
+    from app import audit as audit_svc
+
+    if steps == 0:
+        expense.status = "approved"
+        expense.approved_by = user_id
+        expense.approved_at = datetime.utcnow()
+        expense.approval_comment = "Auto-approved under threshold after resubmit"
+        expense.approval_step = 0
+        expense.approval_steps_required = 0
+        await _record_action(
+            db,
+            tenant_id=tenant_id,
+            expense_id=expense.id,
+            step=0,
+            action="auto_approve",
+            actor_id=user_id,
+            comment="Auto-approved under threshold after resubmit",
+        )
+        from app.accounting import post_expense_journal
+
+        await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_auto_approved",
+            entity="expense",
+            entity_id=expense.id,
+            details={
+                "category": expense.category,
+                "amount": float(expense.amount),
+                "reason": "under_threshold_after_resubmit",
+            },
+            module="expenses",
+        )
+        await db.flush()
+        return expense
+
+    expense.status = "pending"
+    expense.approval_step = 1
+    expense.approval_steps_required = steps
+    await notify_expense_approvers(
+        db,
+        tenant_id=tenant_id,
+        expense=expense,
+        step=1,
+        title="Expense Approval Required",
+        message=(
+            f"Expense {expense.category} of {float(expense.amount):.2f} was resubmitted "
+            f"and awaits level-1 review"
+            + (f" (of {steps} levels)." if steps > 1 else ".")
+        ),
+        exclude_user_ids={user_id},
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action="expense_resubmitted",
+        entity="expense",
+        entity_id=expense.id,
+        details={
+            "category": expense.category,
+            "amount": float(expense.amount),
+            "approval_steps_required": steps,
+            "threshold": float(auto_t),
+            "comment": note,
         },
         module="expenses",
     )
@@ -1194,6 +1360,18 @@ async def update_expense(
                 expense.rejection_reason = None
                 expense.approved_by = None
                 expense.approved_at = None
+                await notify_expense_approvers(
+                    db,
+                    tenant_id=tenant_id,
+                    expense=expense,
+                    step=1,
+                    title="Expense Approval Required",
+                    message=(
+                        f"Expense {expense.category} of {float(expense.amount):.2f} was "
+                        f"corrected after rejection and awaits level-1 review."
+                    ),
+                    exclude_user_ids={user_id},
+                )
 
     await db.flush()
     return expense

@@ -149,6 +149,19 @@ function PageInner() {
     }
   }
 
+  async function scanLowStock() {
+    setError('');
+    try {
+      const r = await api('/notifications/scan-low-stock', { method: 'POST' });
+      setMessage(`Low-stock alerts created: ${r.data?.created ?? r.data?.low_stock ?? 0}`);
+      setStatus('unread');
+      syncUrl({ status: 'unread' });
+      await refresh({ status: 'unread' });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function togglePref(category: string, channel: string) {
     if (!prefs) return;
     const next = {
@@ -225,6 +238,7 @@ function PageInner() {
         </select>
         <button onClick={markAll}>Mark all read</button>
         <button onClick={scanDue}>Scan payment due</button>
+        <button onClick={scanLowStock}>Scan low stock</button>
         <button
           type="button"
           onClick={async () => {

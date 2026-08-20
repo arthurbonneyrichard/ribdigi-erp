@@ -577,6 +577,7 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
   - [x] Multi-level approval chain — Stage 22 A1 (`approval_steps_required` + L1/L2 `POST /expenses/{id}/approve`)
   - [x] Approval/rejection with comments — Stage 22 A1 (`comment` on approve; `reason`/`comment` on reject; `approval_actions`)
   - [x] Email notification to approvers — Stage 22 A1 (in-app `expense_approval` on submit) + `test_expense_approval_notify.py` (email channel)
+  - [x] Resubmit rejected expenses + submitter decision notify — `POST /expenses/{id}/resubmit`; `expense_decision` on reject/final approve (`test_expense_resubmit_r1.py`)
 
 #### BR-9.4 Expense Attachments
 - **Description:** Digital receipt storage.
@@ -672,6 +673,7 @@ Fidelity sync: Stage 21 D1 — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fideli
   - [x] Record payment collections with date, amount, method, reference — Stage 22 R1 (`POST /customers/{id}/payments` amount/method/reference)
   - [x] Allocate payments to specific invoices or auto-allocate (oldest first) — Stage 14 R1 Credit UI + API `sales_invoice_id` / supplier `purchase_invoice_id`
   - [x] Customer statement generation (all transactions + balance) — Stage 22 R1 (`GET /credit/customers/{id}/statement` invoices + payments + balance)
+  - [x] Customer collection schedule (overdue / due today / upcoming) — `GET /customers/{id}/collection-schedule`; aging includes `sent`/`overdue` (`test_customer_collection_schedule_c1.py`)
 
 #### BR-11.2 Supplier Credit
 - **Description:** Manage supplier payable tracking.
@@ -809,6 +811,7 @@ Fidelity sync: Stage 16 R1 suite — prior BR-14.1/14.4/14.5. Stage 23 D1/H23x �
   - [x] **Credit Limit Reached:** When customer exceeds credit threshold — Stage 16 N1 (`credit_limit` on invoice post ≥80% utilization)
   - [x] **Shift Variance:** When cash reconciliation shows discrepancy — Stage 16 N1 (`shift_variance`; prefs suppress)
   - [x] **Expense Approval Required:** When expense exceeds threshold — `expense_approval` (`test_expense_approval_notify.py`)
+  - [x] **Expense Decision:** Submitter notified on reject/final approve — `expense_decision` (`test_expense_resubmit_r1.py`)
 
 #### BR-15.2 Notification Channels
 - **Description:** Multi-channel alert delivery.

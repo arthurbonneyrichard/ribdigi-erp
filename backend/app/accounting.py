@@ -2095,11 +2095,20 @@ async def trial_balance(
     tenant_id: str,
     *,
     as_of: datetime | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     company_id: str | None = None,
 ) -> dict:
-    """Trial balance; optional as_of rebuilds balances from posted journals through that date."""
+    """Trial balance; optional as_of / store / branch rebuild from posted journals."""
+    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+        db,
+        tenant_id=tenant_id,
+        store_id=store_id,
+        branch_id=branch_id,
+        company_id=company_id,
+    )
     accounts, bal_by_id = await account_balances_through(
-        db, tenant_id, as_of=as_of, company_id=company_id
+        db, tenant_id, as_of=as_of, store_ids=store_ids, company_id=company_id
     )
     rows = []
     debit_total = 0.0
@@ -2126,6 +2135,8 @@ async def trial_balance(
     as_of_date = (as_of or datetime.utcnow()).date().isoformat()
     return {
         "as_of": as_of_date,
+        "store_id": resolved_store,
+        "branch_id": resolved_branch,
         "rows": rows,
         "total_debit": round(debit_total, 2),
         "total_credit": round(credit_total, 2),

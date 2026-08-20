@@ -117,6 +117,8 @@ export default function Page() {
   const [categoryTree, setCategoryTree] = useState<any[]>([]);
   const [importReport, setImportReport] = useState<any | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [variantImportReport, setVariantImportReport] = useState<any | null>(null);
+  const [variantImportFile, setVariantImportFile] = useState<File | null>(null);
   const [stockImportReport, setStockImportReport] = useState<any | null>(null);
   const [stockImportFile, setStockImportFile] = useState<File | null>(null);
   const [labelCopies, setLabelCopies] = useState('1');
@@ -141,6 +143,8 @@ export default function Page() {
   const [variantName, setVariantName] = useState('');
   const [variantSku, setVariantSku] = useState('');
   const [variantSize, setVariantSize] = useState('');
+  const [variantColor, setVariantColor] = useState('');
+  const [variantFlavor, setVariantFlavor] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [stockQty, setStockQty] = useState('10');
@@ -648,6 +652,42 @@ export default function Page() {
     }
   }
 
+  function applyCountPayload(data: any) {
+    setActiveCount(data);
+    const qtys: Record<string, string> = {};
+    for (const item of data.items || []) {
+      qtys[item.product_id] =
+        item.counted_qty == null ? String(item.expected_qty ?? 0) : String(item.counted_qty);
+    }
+    setCountQtys(qtys);
+  }
+
+  async function cancelStockCount(id: string) {
+    setError('');
+    try {
+      const r = await api(`/inventory/stock-counts/${id}/cancel`, { method: 'POST' });
+      if (activeCount?.id === id) applyCountPayload(r.data);
+      setMessage(`Count ${r.data.count_number} cancelled`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function addCountProduct(productId: string, countedQty?: number) {
+    if (!activeCount || activeCount.status !== 'draft') return null;
+    setError('');
+    const body: { product_id: string; counted_qty?: number } = { product_id: productId };
+    if (countedQty != null) body.counted_qty = countedQty;
+    const r = await api(`/inventory/stock-counts/${activeCount.id}/items`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    applyCountPayload(r.data);
+    await refresh();
+    return r.data;
+  }
+
   async function downloadCountVariance(countId: string, format: 'csv' | 'pdf') {
     setError('');
     try {
@@ -705,9 +745,12 @@ export default function Page() {
         return;
       }
       const productId = exact.product_id || exact.id;
-      const item = (activeCount.items || []).find((i: any) => i.product_id === productId);
+      let item = (activeCount.items || []).find((i: any) => i.product_id === productId);
       if (!item) {
-        setError(`${exact.name || exact.sku} is not on this count sheet`);
+        const added = await addCountProduct(productId, 1);
+        if (!added) return;
+        setMessage(`Added ${exact.name || exact.sku} to count (found during count)`);
+        setCountScan('');
         return;
       }
       let next = '1';
@@ -809,6 +852,25 @@ export default function Page() {
       await api(`/inventory/stock-transfers/${id}/${action}`, { method: 'POST' });
       setMessage(`Transfer ${action} completed`);
       await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function printStockTransfer(id: string) {
+    setError('');
+    try {
+      const r = await api(`/inventory/stock-transfers/${id}/print`);
+      const text = r.data?.text || '';
+      const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
+      if (win) {
+        win.document.write(
+          `<pre style="font:14px/1.4 monospace;padding:16px">${text.replace(/</g, '&lt;')}</pre>`,
+        );
+        win.document.close();
+        win.focus();
+      }
+      setMessage(`Transfer print ready for ${r.data?.transfer?.transfer_number || 'TR'}`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -1167,6 +1229,45 @@ export default function Page() {
     }
   }
 
+  async function downloadVariantImportTemplate() {
+    setError('');
+    try {
+      const res = await fetch(`${apiBase}/products/variants/import/template`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('Variant template download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'variant_import_template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function importVariantsCsv(file: File, dryRun: boolean) {
+    setError('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${apiBase}/products/variants/import?dry_run=${dryRun}`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || body.message || 'Variant import failed');
+      setVariantImportReport(body.data);
+      setMessage(body.message || (dryRun ? 'Variant dry-run complete' : 'Variant import complete'));
+      if (!dryRun) await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   function renderCategoryNodes(nodes: any[], depth = 0): any {
     return nodes.map((node) => {
       const rate = taxRates.find((r) => r.id === node.tax_rate_id);
@@ -1213,6 +1314,8 @@ export default function Page() {
           name: variantName,
           sku: variantSku,
           size: variantSize || undefined,
+          color: variantColor || undefined,
+          flavor: variantFlavor || undefined,
           barcode: variantBarcode || undefined,
         }),
       });
@@ -1220,6 +1323,8 @@ export default function Page() {
       setVariantName('');
       setVariantSku('');
       setVariantSize('');
+      setVariantColor('');
+      setVariantFlavor('');
       setVariantBarcode('');
       await refreshSelected(selectedId);
       setTab('variants');
@@ -2014,7 +2119,9 @@ export default function Page() {
             Filter via <code>variant_active</code> → <code>GET /products/&#123;id&#125;/variants?is_active=</code>{' '}
             (Stage 124 V1). Path-scoped export via{' '}
             <code>{'GET /products/{id}/variants/export'}</code> (Stage 156 V1); tenant roster remains{' '}
-            <code>/products/variants/export</code> (Stage 124 X1).
+            <code>/products/variants/export</code> (Stage 124 X1). Import via{' '}
+            <code>GET/POST /products/variants/import[/template]</code> (create or update catalog
+            fields; stock is not imported).
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
             <label className="muted">
@@ -2099,11 +2206,60 @@ export default function Page() {
               Export product variants CSV
             </button>
           </div>
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 520 }}>
+            <h3>Import variants (CSV)</h3>
+            <p className="muted">
+              Download the template or reuse a variants export. Dry-run validates, then import
+              creates or updates catalog fields (size/color/flavor/prices). Stock quantity is ignored.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={downloadVariantImportTemplate}>
+                Download variant template
+              </button>
+            </div>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setVariantImportFile(file);
+                  await importVariantsCsv(file, true);
+                }
+                e.target.value = '';
+              }}
+            />
+            {variantImportReport && (
+              <div className="muted">
+                <p>
+                  Rows {variantImportReport.total_rows}: {variantImportReport.valid_rows} valid,{' '}
+                  {variantImportReport.error_rows} errors
+                  {variantImportReport.dry_run ? ' (dry-run)' : ''}
+                </p>
+                {variantImportReport.errors?.length > 0 && (
+                  <ul>
+                    {variantImportReport.errors.slice(0, 8).map((err: any) => (
+                      <li key={`${err.row}-${err.sku}`}>
+                        Row {err.row} {err.sku || ''}: {(err.errors || []).join('; ')}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {variantImportReport.dry_run && variantImportReport.valid_rows > 0 && variantImportFile && (
+                  <button type="button" onClick={() => importVariantsCsv(variantImportFile, false)}>
+                    Import valid variants
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 480 }}>
             <h3>Add variant</h3>
             <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
             <input value={variantSku} onChange={(e) => setVariantSku(e.target.value)} placeholder="SKU" />
             <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
+            <input value={variantColor} onChange={(e) => setVariantColor(e.target.value)} placeholder="Color (optional)" />
+            <input value={variantFlavor} onChange={(e) => setVariantFlavor(e.target.value)} placeholder="Flavor (optional)" />
             <input value={variantBarcode} onChange={(e) => setVariantBarcode(e.target.value)} placeholder="Barcode (optional)" />
             <button onClick={addVariant} disabled={!selectedId || !variantName || !variantSku}>
               Create variant
@@ -2116,6 +2272,8 @@ export default function Page() {
                 <th>SKU</th>
                 <th>Barcode</th>
                 <th>Size</th>
+                <th>Color</th>
+                <th>Flavor</th>
                 <th>Stock</th>
                 <th>Price</th>
                 <th>Active</th>
@@ -2136,6 +2294,8 @@ export default function Page() {
                     )}
                   </td>
                   <td>{v.size || '—'}</td>
+                  <td>{v.color || '—'}</td>
+                  <td>{v.flavor || '—'}</td>
                   <td>{v.stock_qty}</td>
                   <td>
                     <input
@@ -2355,6 +2515,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th>Number</th>
+                <th>Warehouse</th>
                 <th>Status</th>
                 <th>Items</th>
                 <th></th>
@@ -2364,6 +2525,11 @@ export default function Page() {
               {counts.map((c) => (
                 <tr key={c.id}>
                   <td>{c.count_number}</td>
+                  <td>
+                    {c.warehouse_code ||
+                      warehouses.find((w) => w.id === c.warehouse_id)?.code ||
+                      c.warehouse_id}
+                  </td>
                   <td>{c.status}</td>
                   <td>
                     {c.counted_item_count}/{c.item_count}
@@ -2372,6 +2538,11 @@ export default function Page() {
                     <button type="button" onClick={() => openCount(c.id)}>
                       Open
                     </button>
+                    {c.status === 'draft' && (
+                      <button type="button" onClick={() => cancelStockCount(c.id)}>
+                        Cancel
+                      </button>
+                    )}
                     {c.status === 'completed' && (
                       <>
                         <button type="button" onClick={() => downloadCountVariance(c.id, 'csv')}>
@@ -2458,12 +2629,31 @@ export default function Page() {
                 </tbody>
               </table>
               {activeCount.status === 'draft' && (
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!selectedId) return;
+                      try {
+                        await addCountProduct(selectedId);
+                        const p = products.find((x) => x.id === selectedId);
+                        setMessage(`Added ${p?.name || p?.sku || selectedId} to count`);
+                      } catch (err: any) {
+                        setError(err.message);
+                      }
+                    }}
+                    disabled={!selectedId}
+                  >
+                    Add selected product
+                  </button>
                   <button type="button" onClick={saveCountLines}>
                     Save counts
                   </button>
                   <button type="button" onClick={completeActiveCount}>
                     Complete &amp; post variances
+                  </button>
+                  <button type="button" onClick={() => cancelStockCount(activeCount.id)}>
+                    Cancel draft
                   </button>
                 </div>
               )}
@@ -3010,6 +3200,9 @@ export default function Page() {
                       {fromName} → {toName}
                     </td>
                     <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => printStockTransfer(t.id)}>
+                        Print
+                      </button>
                       {(t.status === 'requested' || t.status === 'draft') && (
                         <button type="button" onClick={() => transferAction(t.id, 'ship')}>
                           Ship

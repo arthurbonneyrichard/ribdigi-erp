@@ -13,6 +13,7 @@ from app import models as m
 DEFAULT_PREFERENCES = {
     "low_stock": {"dashboard": True, "email": False, "sms": False},
     "expense_approval": {"dashboard": True, "email": True, "sms": False},
+    "expense_decision": {"dashboard": True, "email": True, "sms": False},
     "shift_variance": {"dashboard": True, "email": False, "sms": False},
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "new_order": {"dashboard": True, "email": False, "sms": False},
@@ -39,6 +40,7 @@ CATEGORY_GROUPS: dict[str, frozenset[str]] = {
             "purchase_received",
             "quotation_expiry",
             "expense_approval",
+            "expense_decision",
             "recurring_expense",
         }
     ),
@@ -226,7 +228,13 @@ async def list_notifications(
 ) -> list[m.Notification]:
     stmt = select(m.Notification).where(m.Notification.tenant_id == tenant_id)
     if company_id:
-        stmt = stmt.where(m.Notification.company_id == company_id)
+        # Match mark-read ownership: company rows plus tenant-wide (null company) alerts.
+        stmt = stmt.where(
+            or_(
+                m.Notification.company_id == company_id,
+                m.Notification.company_id.is_(None),
+            )
+        )
     if user_id:
         stmt = stmt.where(
             or_(m.Notification.user_id == user_id, m.Notification.user_id.is_(None))
@@ -452,27 +460,43 @@ async def notify_warehouse_low_stock_if_needed(
     )
 
 
-async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
+async def scan_low_stock(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None = None,
+) -> int:
     """Create unread low-stock notifications for products and warehouse policies."""
-    products = (
-        await db.execute(select(m.Product).where(m.Product.tenant_id == tenant_id))
-    ).scalars().all()
+    prod_q = select(m.Product).where(
+        m.Product.tenant_id == tenant_id,
+        m.Product.is_active == True,  # noqa: E712
+    )
+    if company_id:
+        prod_q = prod_q.where(m.Product.company_id == company_id)
+    products = (await db.execute(prod_q)).scalars().all()
     created = 0
     for product in products:
         note = await notify_low_stock_if_needed(db, tenant_id=tenant_id, product=product)
         if note:
             created += 1
 
-    rows = (
-        await db.execute(
-            select(m.WarehouseStock, m.Product)
-            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-            .where(
-                m.WarehouseStock.tenant_id == tenant_id,
-                (m.WarehouseStock.reorder_level > 0) | (m.WarehouseStock.minimum_stock > 0),
+    stock_q = (
+        select(m.WarehouseStock, m.Product)
+        .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+        .where(
+            m.WarehouseStock.tenant_id == tenant_id,
+            m.Product.is_active == True,  # noqa: E712
+            (m.WarehouseStock.reorder_level > 0) | (m.WarehouseStock.minimum_stock > 0),
+        )
+    )
+    if company_id:
+        stock_q = stock_q.where(
+            or_(
+                m.WarehouseStock.company_id == company_id,
+                m.Product.company_id == company_id,
             )
         )
-    ).all()
+    rows = (await db.execute(stock_q)).all()
     for stock, product in rows:
         note = await notify_warehouse_low_stock_if_needed(
             db, tenant_id=tenant_id, product=product, stock=stock

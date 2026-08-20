@@ -397,6 +397,7 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
 **Get:** `GET /products/{product_id}`  
 **Update:** `PATCH /products/{product_id}` (set `is_active=false` to soft-deactivate)  
 **Import:** `GET /products/import/template`, `POST /products/import?dry_run=true|false`  
+**Variant import:** `GET /products/variants/import/template`, `POST /products/variants/import?dry_run=true|false` (create or update catalog fields by SKU; `stock_qty` is not imported)  
 **Warehouse stock:** `GET /products/{product_id}/warehouse-stock`  
 **Barcode lookup:** `GET /inventory/products/lookup?q=&barcode=`
 
@@ -458,6 +459,7 @@ Stage 17 W1: inter-warehouse create → submit/ship → receive updates `Warehou
 ```
 
 **List:** `GET /inventory/stock-transfers` (filters: `status`, `store_id`, dates, `scope`, `limit`)  
+**Print:** `GET /inventory/stock-transfers/{transfer_id}/print` — branded text slip (`inventory:read`) with from/to locations, requested/shipped/received qty.  
 **Submit / Ship / Receive / Cancel:** `POST /inventory/stock-transfers/{transfer_id}/submit|ship|receive|cancel`  
 (No status PATCH — use action POSTs.)
 
@@ -470,6 +472,7 @@ Stage 17 S2 proves create → enter counted qty → complete (posts `adjustment`
 **List:** `GET /inventory/stock-counts`  
 **Get:** `GET /inventory/stock-counts/{count_id}` — includes items + line `variance`  
 **Update counts:** `PATCH /inventory/stock-counts/{count_id}/items` — `{ items: [{ product_id, counted_qty, notes? }] }` (draft only)  
+**Add found product:** `POST /inventory/stock-counts/{count_id}/items` — `{ product_id, counted_qty?, notes? }` (draft only; `409 COUNT_LINE_EXISTS` if already on the sheet)  
 **Complete:** `POST /inventory/stock-counts/{count_id}/complete` — posts non-zero variances; `status=completed`  
 **Cancel:** `POST /inventory/stock-counts/{count_id}/cancel` — draft only → `cancelled`  
 **Variance report:** `GET /inventory/stock-counts/{count_id}/variance-report?format=csv|pdf|json` — requires `completed` (`409 COUNT_NOT_COMPLETED` otherwise)
@@ -619,7 +622,8 @@ Stage 19 S1 purchasing fidelity: `test_sales_purchases_api_s1.py` (BR-18.5).
 ### 6.4 Goods Received Note (GRN)
 **List:** `GET /purchasing/grn`  
 **Create:** `POST /purchasing/grn`  
-**Get:** `GET /purchasing/grn/{grn_id}`
+**Get:** `GET /purchasing/grn/{grn_id}`  
+**Print:** `GET /purchasing/grn/{grn_id}/print` — branded text slip (`purchasing:read`) with PO, warehouse, accepted/rejected qty, batch number, and expiry.
 
 **Create GRN** (posts immediately — stock ↑, supplier balance ↑, Dr 1200 / Cr 2000):
 ```json
@@ -713,6 +717,8 @@ Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-K
 **List:** `GET /sales/quotations`  
 **Create:** `POST /sales/quotations`  
 **Get:** `GET /sales/quotations/{quote_id}`  
+**Print:** `GET /sales/quotations/{quote_id}/print` — `format=text|html|pdf`, `template=a4|thermal_80|thermal_58`  
+**Send:** `POST /sales/quotations/{quote_id}/send` — emails the customer and attaches the branded print PDF. Optional JSON `{ "to", "template" }`. Query `to=` remains accepted.  
 **Convert to Order:** `POST /sales/quotations/{quote_id}/convert-to-order`
 
 **Create Quotation:**
@@ -749,7 +755,8 @@ Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-K
 **Get:** `GET /sales/invoices/{invoice_id}`  
 **Post:** `POST /sales/invoices/{invoice_id}/post`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
-**Print:** `GET /sales/invoices/{invoice_id}/print`
+**Print:** `GET /sales/invoices/{invoice_id}/print` — `format=text|html|pdf`, `template=a4|thermal_80|thermal_58`  
+**Send:** `POST /sales/invoices/{invoice_id}/send` — emails the customer and attaches the branded print PDF (same renderer as print). Optional JSON `{ "to", "template" }`. Posted invoices become `sent`. Honors tenant SMTP override.
 
 **Post stock integrity (Stage 15 H1):** Aggregated line quantities are checked before stock-out / AR / journal. Insufficient available stock → `409` with `detail.code = INSUFFICIENT_STOCK`; invoice stays `draft` (no movements, AR bump, or JE).
 
@@ -913,12 +920,13 @@ Create/update accept optional `account_id` (tenant expense-type COA; Stage 14 E1
 **Update:** `PATCH /expenses/{expense_id}`  
 **Approve:** `POST /expenses/{expense_id}/approve`  
 **Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }`  
+**Resubmit:** `POST /expenses/{expense_id}/resubmit` — `expenses:write`; rejected only; body `{ "comment" }` optional; re-notifies approvers or auto-approves under threshold  
 **Delete:** `DELETE /expenses/{expense_id}`  
 **Approval settings (Stage 22 A1):** `GET/PATCH /expenses/settings` — levels, thresholds, role gates (expense approval matrix)  
 **OCR suggest:** `POST /expenses/{expense_id}/ocr-suggest` — requires `expenses:write`  
 **OCR apply (Stage 10 A1):** `POST /expenses/{expense_id}/ocr-apply` — requires `expenses:write`
 
-Create/update accept optional `store_id`, `department_id`, `payee` (Stage 14 E2). Foreign store/department → `404`. Approve/reject emit domain audit `expense_approved` / `expense_rejected` (`module=expenses`); submit pending → `expense_submitted`; under-threshold → `expense_auto_approved`; mid-level → `expense_level_approved` (Stage 14 A3). Final/auto approve also posts `journal_posted` with `source_type=expense`.
+Create/update accept optional `store_id`, `department_id`, `payee` (Stage 14 E2). Foreign store/department → `404`. Approve/reject emit domain audit `expense_approved` / `expense_rejected` (`module=expenses`); submit pending → `expense_submitted`; under-threshold → `expense_auto_approved`; mid-level → `expense_level_approved`; rejected resubmit → `expense_resubmitted` (Stage 14 A3). Final/auto approve also posts `journal_posted` with `source_type=expense`. Reject/final approve notify the submitter (`expense_decision`); resubmit re-notifies approvers (`expense_approval`).
 
 ```json
 {
@@ -1043,9 +1051,9 @@ Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_p
 
 Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers). Optional `store_id` / `branch_id` (Stage 14 A1 / Stage 23 F1). Stage 23 C1: `compare=true` prior-period `comparison` block (same semantics as P&L).
 
-**Trial Balance:** `GET /reports/trial-balance?as_of_date=` (also `GET /accounting/trial-balance`)  
+**Trial Balance:** `GET /reports/trial-balance?as_of_date=&store_id=&branch_id=` (also `GET /accounting/trial-balance`)  
 
-When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances. Response includes `as_of` (Stage 14 A2).
+When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances (tenant-wide only). Optional `store_id` / `branch_id` rebuild from posted journals tagged with those stores (same semantics as balance sheet; Stage 23 F1 leftover). Foreign store/branch → `404`. Store not in branch → `400 STORE_BRANCH_MISMATCH`. Empty branch (no stores) returns a zeroed balanced trial. Response includes `as_of`, `store_id`, `branch_id`. Path CSV exports accept the same filters.
 
 **Balance Sheet (Stage 23 F1/C1):** `GET /reports/balance-sheet?as_of_date=&store_id=&branch_id=&compare=`  
 
@@ -1087,6 +1095,10 @@ Stage 22 D1 fidelity for BR-11: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidel
 **Get Outstanding Bills (Stage 8 S2):** `GET /customers/{customer_id}/outstanding`
 
 Returns open AR invoices (`posted` / `partial` / `sent` / `overdue` with balance > 0): `{ invoice_id, invoice_number, amount, due_date, status, document_type: "sales_invoice" }`. Requires `credit:read`; 404 if customer missing.
+
+**Collection Schedule:** `GET /customers/{customer_id}/collection-schedule`
+
+Returns `{ customer_id, customer_name, as_of, total_due, overdue_total, upcoming_total, early_pay, items[] }`. Each item is an open sales invoice with `days_until_due`, `days_overdue`, `is_overdue`, `schedule_bucket` (`overdue` | `due_today` | `upcoming` | `unscheduled`), and `early_discount` quote. Sorted overdue → due today → upcoming. Export: `GET /customers/{customer_id}/collection-schedule/export?schedule_bucket=`. Requires `credit:read`. AR aging (`GET /credit/aging?kind=receivable`) includes `sent` and `overdue` open invoices and `overdue_total`.
 
 **Record Payment:** `POST /customers/{customer_id}/payments` (alias `POST /sales/payments`)
 
@@ -1301,7 +1313,7 @@ Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_
 }
 ```
 
-Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_received`, `shift_variance`, `transfer`) default **email/sms false**; enable per user via this API. `payment_due` / `expense_approval` default email on.
+Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_received`, `shift_variance`, `transfer`) default **email/sms false**; enable per user via this API. `payment_due` / `expense_approval` / `expense_decision` default email on.
 
 **Channel delivery (Stage 16 N2):** After the dashboard notification is written, `create_notification` best-effort sends email/SMS to recipients with that channel enabled for the category. Broadcast alerts (`user_id` null) target active `company_admin` / `super_admin`. SMTP unset → email `mode=console` outbox attempt; Twilio unset → SMS `mode=console`. Carrier `delivered` is only recorded for real SMTP/Twilio sends.
 ---

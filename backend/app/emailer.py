@@ -321,12 +321,22 @@ def _fmt_money(value: Any) -> str:
         return "0.00"
 
 
+def _item_desc(item: dict[str, Any], item_labels: dict[str, str] | None) -> str:
+    pid = str(item.get("product_id") or "")
+    desc = (item_labels or {}).get(pid) or pid or "Item"
+    vid = item.get("variant_id")
+    if vid:
+        desc = f"{desc} (variant {str(vid)[:8]})"
+    return desc
+
+
 def render_quotation_bodies(
     *,
     company_name: str,
     currency: str,
     customer_name: str,
     quotation: dict[str, Any],
+    item_labels: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     number = quotation.get("quotation_number") or ""
     valid = quotation.get("valid_until")
@@ -341,9 +351,7 @@ def render_quotation_bodies(
     ]
     html_rows = []
     for item in quotation.get("items") or []:
-        desc = item.get("product_id") or "Item"
-        if item.get("variant_id"):
-            desc = f"{desc} (variant {item['variant_id'][:8]})"
+        desc = _item_desc(item, item_labels)
         qty = item.get("quantity")
         price = _fmt_money(item.get("unit_price"))
         total = _fmt_money(item.get("line_total"))
@@ -387,6 +395,9 @@ async def send_quotation_email(
     currency: str,
     customer_name: str,
     quotation: dict[str, Any],
+    item_labels: dict[str, str] | None = None,
+    attachments: list[dict[str, Any]] | None = None,
+    tenant: Any | None = None,
 ) -> EmailResult:
     number = quotation.get("quotation_number") or ""
     subject = f"Quotation {number} from {company_name}"
@@ -395,8 +406,19 @@ async def send_quotation_email(
         currency=currency,
         customer_name=customer_name,
         quotation=quotation,
+        item_labels=item_labels,
     )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    if attachments:
+        text += "\n\nA branded PDF copy is attached."
+        html += "<p>A branded PDF copy is attached.</p>"
+    return await send_email(
+        to=to,
+        subject=subject,
+        text_body=text,
+        html_body=html,
+        attachments=attachments,
+        tenant=tenant,
+    )
 
 
 def render_invoice_bodies(
@@ -405,6 +427,7 @@ def render_invoice_bodies(
     currency: str,
     customer_name: str,
     invoice: dict[str, Any],
+    item_labels: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     number = invoice.get("invoice_number") or ""
     due = invoice.get("due_date")
@@ -420,9 +443,7 @@ def render_invoice_bodies(
     ]
     html_rows = []
     for item in invoice.get("items") or []:
-        desc = item.get("product_id") or "Item"
-        if item.get("variant_id"):
-            desc = f"{desc} (variant {str(item['variant_id'])[:8]})"
+        desc = _item_desc(item, item_labels)
         qty = item.get("quantity")
         price = _fmt_money(item.get("unit_price"))
         total = _fmt_money(item.get("line_total"))
@@ -470,6 +491,9 @@ async def send_invoice_email(
     currency: str,
     customer_name: str,
     invoice: dict[str, Any],
+    item_labels: dict[str, str] | None = None,
+    attachments: list[dict[str, Any]] | None = None,
+    tenant: Any | None = None,
 ) -> EmailResult:
     number = invoice.get("invoice_number") or ""
     subject = f"Invoice {number} from {company_name}"
@@ -478,8 +502,19 @@ async def send_invoice_email(
         currency=currency,
         customer_name=customer_name,
         invoice=invoice,
+        item_labels=item_labels,
     )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=html)
+    if attachments:
+        text += "\n\nA branded PDF copy is attached."
+        html += "<p>A branded PDF copy is attached.</p>"
+    return await send_email(
+        to=to,
+        subject=subject,
+        text_body=text,
+        html_body=html,
+        attachments=attachments,
+        tenant=tenant,
+    )
 
 
 async def send_purchase_order_email(

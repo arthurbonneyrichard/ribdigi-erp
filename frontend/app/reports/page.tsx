@@ -788,6 +788,8 @@ export default function Page() {
                   const tenant = localStorage.getItem('tenant');
                   const params = new URLSearchParams();
                   if (toDate) params.set('as_of_date', toDate);
+                  if (storeId) params.set('store_id', storeId);
+                  if (branchId) params.set('branch_id', branchId);
                   const qs = params.toString() ? `?${params}` : '';
                   const res = await fetch(`${base}/reports/trial-balance/export${qs}`, {
                     headers: authHeaders(),

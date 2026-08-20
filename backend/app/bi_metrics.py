@@ -12,6 +12,7 @@ from app import models as m
 from app.bi_defaults import (
     APPROVED_EXPENSE_STATUS,
     OPEN_PO_STATUSES,
+    OPEN_PR_STATUSES,
     POSTED_PURCHASE_STATUSES,
     POSTED_SALES_STATUSES,
 )
@@ -341,24 +342,31 @@ class BusinessMetricsService:
         lead = int(self.settings.get("default_lead_time_days", 7))
         safety = int(self.settings.get("safety_stock_days", 7))
         period = 30
-        results = []
-        seen = set()
+        unique: list[dict] = []
+        seen: set[str] = set()
         for row in candidates:
             pid = row["product_id"]
             if pid in seen:
                 continue
             seen.add(pid)
+            unique.append(row)
+        incoming_map = await self.pending_incoming_qty([r["product_id"] for r in unique])
+
+        results = []
+        for row in unique:
+            pid = row["product_id"]
             qty_sold = await self.product_sales_qty(pid, days=period)
             avg_daily = qty_sold / period if period else 0.0
             stock = float(row["stock_qty"])
+            incoming = float(incoming_map.get(pid) or 0)
             days_remaining = (
                 round(stock / avg_daily, 1) if avg_daily > 0 else None
             )
             target = avg_daily * (lead + safety) if avg_daily > 0 else float(
                 row.get("reorder_level") or row.get("minimum_stock") or 0
             )
-            recommended = max(0, ceil(target - stock))
-            if recommended <= 0 and stock > 0:
+            recommended = max(0, ceil(target - stock - incoming))
+            if recommended <= 0:
                 continue
             results.append(
                 {
@@ -369,6 +377,7 @@ class BusinessMetricsService:
                     "estimated_days_remaining": days_remaining,
                     "lead_time_days": lead,
                     "safety_stock_days": safety,
+                    "pending_incoming_qty": round(incoming, 3),
                     "recommended_reorder_qty": int(recommended),
                     "label": "Smart Reorder Recommendation",
                     "not_ml_prediction": True,
@@ -376,7 +385,102 @@ class BusinessMetricsService:
             )
             if len(results) >= limit:
                 break
+        await self._attach_last_suppliers(results)
         return results
+
+    async def pending_incoming_qty(self, product_ids: list[str]) -> dict[str, float]:
+        """Open PO remaining qty (sent / partially received) per product."""
+        if not product_ids:
+            return {}
+        remaining = m.PurchaseOrderItem.quantity - func.coalesce(
+            m.PurchaseOrderItem.received_qty, 0
+        )
+        stmt = (
+            select(
+                m.PurchaseOrderItem.product_id,
+                func.coalesce(func.sum(remaining), 0),
+            )
+            .join(
+                m.PurchaseOrder,
+                m.PurchaseOrder.id == m.PurchaseOrderItem.purchase_order_id,
+            )
+            .where(
+                m.PurchaseOrder.tenant_id == self.tenant_id,
+                m.PurchaseOrder.status.in_(list(OPEN_PO_STATUSES)),
+                m.PurchaseOrderItem.product_id.in_(list(product_ids)),
+            )
+            .group_by(m.PurchaseOrderItem.product_id)
+        )
+        stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, self.company_id)
+        return {
+            pid: float(qty or 0)
+            for pid, qty in (await self.db.execute(stmt)).all()
+        }
+
+    async def last_suppliers_for_products(
+        self, product_ids: list[str]
+    ) -> dict[str, dict]:
+        """Most recent non-cancelled PO supplier per product (tenant/company scoped)."""
+        if not product_ids:
+            return {}
+        stmt = (
+            select(
+                m.PurchaseOrderItem.product_id,
+                m.PurchaseOrder.supplier_id,
+                m.PurchaseOrder.created_at,
+                m.Party.name,
+            )
+            .join(
+                m.PurchaseOrder,
+                m.PurchaseOrder.id == m.PurchaseOrderItem.purchase_order_id,
+            )
+            .join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id)
+            .where(
+                m.PurchaseOrder.tenant_id == self.tenant_id,
+                m.PurchaseOrderItem.product_id.in_(list(product_ids)),
+                m.PurchaseOrder.status != "cancelled",
+            )
+        )
+        stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, self.company_id)
+        best: dict[str, tuple] = {}
+        for pid, sid, created, name in (await self.db.execute(stmt)).all():
+            prev = best.get(pid)
+            if prev is None or (created and created > prev[0]):
+                best[pid] = (created, sid, name)
+        return {
+            pid: {"supplier_id": sid, "supplier_name": name}
+            for pid, (_, sid, name) in best.items()
+        }
+
+    async def _attach_last_suppliers(self, rows: list[dict]) -> None:
+        mapping = await self.last_suppliers_for_products(
+            [r["product_id"] for r in rows if r.get("product_id")]
+        )
+        for row in rows:
+            info = mapping.get(row.get("product_id") or "")
+            row["last_supplier_id"] = info["supplier_id"] if info else None
+            row["last_supplier_name"] = info["supplier_name"] if info else None
+
+    async def open_purchase_request_product_ids(
+        self, product_ids: list[str]
+    ) -> set[str]:
+        """Products already on a draft/pending/approved purchase request."""
+        if not product_ids:
+            return set()
+        stmt = (
+            select(m.PurchaseRequestItem.product_id)
+            .join(
+                m.PurchaseRequest,
+                m.PurchaseRequest.id == m.PurchaseRequestItem.purchase_request_id,
+            )
+            .where(
+                m.PurchaseRequest.tenant_id == self.tenant_id,
+                m.PurchaseRequest.status.in_(list(OPEN_PR_STATUSES)),
+                m.PurchaseRequestItem.product_id.in_(list(product_ids)),
+            )
+        )
+        stmt = apply_company_filter(stmt, m.PurchaseRequest.company_id, self.company_id)
+        return set((await self.db.execute(stmt)).scalars().all())
 
     async def expiry_overview(self) -> dict:
         now = datetime.utcnow()

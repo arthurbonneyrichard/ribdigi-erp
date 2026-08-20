@@ -2748,8 +2748,9 @@ For adjustments, accruals, and corrections:
 - **Go to:** Accounting → Reports → Trial Balance
 - **Shows:** All accounts with debit and credit balances
 - **As of:** Optional date rebuilds balances from posted journals through that day (Stage 14 A2)
+- **Filters:** Store and branch (same as balance sheet — rebuilds from posted journals tagged with store)
 - **Validation:** Total Debits must equal Total Credits
-- **Export:** PDF, Excel (Stage 22 P1)
+- **Export:** PDF, Excel (Stage 22 P1); accounting/reports path CSV honors the same store/branch filters
 - Used for period-end verification
 
 #### Balance Sheet
@@ -2776,6 +2777,7 @@ Stage 22 R1 proves customer credit limit, block+override, collections, and state
 - Customer profile shows real-time outstanding amount
 - **Credit Utilization:** (Outstanding / Limit) × 100
 - System blocks new credit sales if limit is exceeded (override requires `credit:approve` + reason — Stage 22 R1)
+- **Collection schedule** on **Credit → Accounts Receivable** lists overdue, due-today, and upcoming invoices (export CSV from the same card)
 
 #### Recording Payments
 1. Go to **Sales → Customers → [Customer] → Record Payment**

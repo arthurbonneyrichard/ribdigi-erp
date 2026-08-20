@@ -1198,6 +1198,17 @@ export default function Page() {
             <button type="button" onClick={() => downloadPipelineExport('quotations', quoteStatusFilter)}>
               Export quotations CSV
             </button>
+            <label className="muted">Print template</label>
+            <select
+              value={printTemplate}
+              onChange={(e) => setPrintTemplate(e.target.value)}
+              aria-label="Quotation print template"
+            >
+              <option value="">Tenant default</option>
+              <option value="a4">A4</option>
+              <option value="thermal_80">Thermal 80mm</option>
+              <option value="thermal_58">Thermal 58mm</option>
+            </select>
           </div>
           <table className="table">
             <thead>
@@ -1225,12 +1236,28 @@ export default function Page() {
                       PDF
                     </button>
                     {q.status === 'draft' && (
-                      <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}>
+                      <button
+                        onClick={() =>
+                          act(
+                            `/sales/quotations/${q.id}/send`,
+                            'Quotation emailed with PDF',
+                            printTemplate ? { template: printTemplate } : {},
+                          )
+                        }
+                      >
                         Email
                       </button>
                     )}
                     {q.status === 'sent' && (
-                      <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}>
+                      <button
+                        onClick={() =>
+                          act(
+                            `/sales/quotations/${q.id}/send`,
+                            'Quotation re-emailed with PDF',
+                            printTemplate ? { template: printTemplate } : {},
+                          )
+                        }
+                      >
                         Resend
                       </button>
                     )}
@@ -1430,7 +1457,8 @@ export default function Page() {
                         onClick={() =>
                           act(
                             `/sales/invoices/${inv.id}/send`,
-                            inv.emailed_at ? 'Invoice re-emailed' : 'Invoice emailed'
+                            inv.emailed_at ? 'Invoice re-emailed with PDF' : 'Invoice emailed with PDF',
+                            printTemplate ? { template: printTemplate } : {},
                           )
                         }
                       >
