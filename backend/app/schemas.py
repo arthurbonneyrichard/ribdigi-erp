@@ -1224,7 +1224,10 @@ class CustomerGroupCreate(BaseModel):
     # Required group label ∈ CustomerGroupNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on customer group create).
     name: CustomerGroupNameValue
-    code: str | None = None
+    # omit/`null` → service slugs from name; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently fell through to name-slug; punctuation/URL could persist).
+    # Uniqueness remains create_group 409 (defense-in-depth).
+    code: CustomerGroupCodeValue | None = None
     discount_percent: float = 0
 
 
@@ -3608,6 +3611,27 @@ CustomerGroupNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_customer_group_name_value),
+]
+
+
+def validate_customer_group_code_value(value: str) -> str:
+    """AfterValidator: customer group code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Customer group code — matches CustomerGroup.code String(40); omit → slug from name.
+CustomerGroupCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_customer_group_code_value),
 ]
 
 

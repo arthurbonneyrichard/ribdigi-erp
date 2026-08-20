@@ -103,6 +103,7 @@ export default function Page() {
   const [docEmailTo, setDocEmailTo] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupCode, setNewGroupCode] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
   const [groupDiscountDrafts, setGroupDiscountDrafts] = useState<Record<string, string>>({});
   const [useGroupPrice, setUseGroupPrice] = useState(true);
@@ -371,10 +372,12 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           name,
+          code: newGroupCode.trim() || null,
           discount_percent: Number(newGroupDiscount) || 0,
         }),
       });
       setNewGroupName('');
+      setNewGroupCode('');
       setNewGroupDiscount('0');
       await refresh();
       setMessage('Customer group created');
@@ -947,6 +950,14 @@ export default function Page() {
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="New group name"
+            />
+            <input
+              aria-label="Customer group code"
+              value={newGroupCode}
+              onChange={(e) => setNewGroupCode(e.target.value)}
+              placeholder="Code (optional)"
+              title="Customer group code (optional; 1–40 chars; blank → slug from name)"
+              style={{ width: 140 }}
             />
             <input
               value={newGroupDiscount}
