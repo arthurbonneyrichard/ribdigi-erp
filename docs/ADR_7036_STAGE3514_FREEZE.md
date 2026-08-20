@@ -31,3 +31,7 @@ Stage 3515 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamaaoojiyuglaze Gate, Transfer Higashiyamaaoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3515 opened under **ADR-7037** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamaauujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7038**. Stage 3514 feature scope remains frozen.
