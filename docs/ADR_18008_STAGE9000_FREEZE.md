@@ -31,3 +31,7 @@ Stage 9001 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseieemajiyuglaze Gate, Transfer Anseieemajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9001 opened under **ADR-18009** after CONTINUE/NEXT (Tenant MVP Transfer Anseieerajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18010**. Stage 9000 feature scope remains frozen.
