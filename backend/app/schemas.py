@@ -5129,6 +5129,27 @@ JournalUnpostReasonValue = Annotated[
 ]
 
 
+def validate_cheque_lifecycle_reason_value(value: str) -> str:
+    """AfterValidator: cheque bounce/cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Cheque bounce/cancel reason — appended to Cheque.notes + journal description (BR-10.4).
+ChequeLifecycleReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_cheque_lifecycle_reason_value),
+]
+
+
 def validate_expense_payee_value(value: str) -> str:
     """AfterValidator: expense payee label; blank/URL/garbage → 422 (1–150)."""
     if not value:
@@ -5604,9 +5625,16 @@ class JournalUnpost(BaseModel):
 
 
 class ChequeLifecycleReason(BaseModel):
-    """Cheque bounce / cancel — typed reason required (BR-10.4 honesty)."""
+    """Cheque bounce / cancel — typed reason required (BR-10.4 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ ChequeLifecycleReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to cheque `notes` / journal).
+    Shared by bounce and cancel endpoints.
+    """
+
+    reason: ChequeLifecycleReasonValue
 
 
 class PeriodCloseBody(BaseModel):

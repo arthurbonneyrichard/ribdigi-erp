@@ -1292,7 +1292,7 @@ Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "exp
 **Cheques (BR-10.4):**  
 **List:** `GET /accounting/cheques` — optional Query `direction` ∈ `received`|`issued`; `status` ∈ `pending`|`deposited`|`cleared`|`bounced`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no silent empty list from garbage). Accounting Cheques **Direction** / **Status** filters.  
 **Deposit / Clear:** `POST /accounting/cheques/{id}/deposit|clear`  
-**Bounce / Cancel:** `POST /accounting/cheques/{id}/bounce|cancel` — body `{ "reason" }` **required** (`ChequeLifecycleReason`; omit/empty → 422; whitespace → 400). Appended to notes (`Bounce:` / `Cancel:`) + journal description. Accounting Cheques UI requires typed reason for Bounce/Cancel (BR-10.4).
+**Bounce / Cancel:** `POST /accounting/cheques/{id}/bounce|cancel` — body `{ "reason" }` ∈ `ChequeLifecycleReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to notes (`Bounce:` / `Cancel:`) + journal description. Accounting Cheques **Cheque bounce cancel reason** (`aria-label`; BR-10.4).
 
 **Bank feed connections (reconcile):**  
 **List:** `GET /accounting/bank-connections` — optional `?is_active=true|false` filters soft-deactivated connections (omit = all; Accounting Reconcile manage status filter).  

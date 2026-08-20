@@ -2206,6 +2206,8 @@ export default function Page() {
                 value={chequeActionReason}
                 onChange={(e) => setChequeActionReason(e.target.value)}
                 placeholder="Required before Bounce or Cancel"
+                title="Required bounce/cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Cheque bounce cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -2244,10 +2246,22 @@ export default function Page() {
                       <button className="btn-ok" onClick={() => chequeAction(c.id, 'clear')}>Clear</button>
                     )}
                     {c.status !== 'bounced' && c.status !== 'cancelled' && (
-                      <button className="btn-danger" onClick={() => chequeAction(c.id, 'bounce')}>Bounce</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => chequeAction(c.id, 'bounce')}
+                        aria-label={`Bounce cheque ${c.id}`}
+                      >
+                        Bounce
+                      </button>
                     )}
                     {c.direction === 'issued' && c.status === 'pending' && (
-                      <button className="btn-danger" onClick={() => chequeAction(c.id, 'cancel')}>Cancel</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => chequeAction(c.id, 'cancel')}
+                        aria-label={`Cancel cheque ${c.id}`}
+                      >
+                        Cancel
+                      </button>
                     )}
                   </td>
                 </tr>

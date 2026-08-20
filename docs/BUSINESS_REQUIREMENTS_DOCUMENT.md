@@ -646,7 +646,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Create bank accounts with bank name, account number, branch
   - [x] Record deposits, withdrawals, transfers between accounts (`reference` via tenant series `GET|PATCH /accounting/settings` → `cash_transfer_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `XFER` when omitted; Accounting Document numbering Transfer/XFER row)
   - [x] Bank reconciliation (system balance vs statement)
-  - [x] Cheque management (issue, deposit, bounce tracking) (`POST /accounting/cheques/{id}/bounce|cancel` `{ reason }` **required**; omit/empty → 422; Accounting Cheques Bounce/Cancel reason field → notes + journal description)
+  - [x] Cheque management (issue, deposit, bounce tracking) (`POST /accounting/cheques/{id}/bounce|cancel` `{ reason }` ∈ `ChequeLifecycleReasonValue`; omit/blank/garbage → **422**; Accounting Cheques **Cheque bounce cancel reason** → notes + journal description)
 
 #### BR-10.4 Accounts Receivable (AR)
 - **Description:** Track money owed by customers.
