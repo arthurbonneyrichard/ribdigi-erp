@@ -31,3 +31,7 @@ Stage 9305 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiobbujiyuglaze Gate, Transfer Keiobbujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9305 opened under **ADR-18617** after CONTINUE/NEXT (Tenant MVP Transfer Keiobbijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18618**. Stage 9304 feature scope remains frozen.
