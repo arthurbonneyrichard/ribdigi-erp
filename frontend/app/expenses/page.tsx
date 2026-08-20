@@ -1329,6 +1329,8 @@ export default function Page() {
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Required before Reject"
+            aria-label="Expense reject reason"
+            title="Required reason for Reject (1–500 chars; letters/digits required)"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -1565,7 +1567,19 @@ export default function Page() {
                     >
                       Approve
                     </button>
-                    <button className="btn-danger" onClick={() => reject(r.id)}>Reject</button>
+                    <button
+                      className="btn-danger"
+                      onClick={() => reject(r.id)}
+                      aria-label={`Reject expense ${r.id}`}
+                      disabled={!rejectReason.trim()}
+                      title={
+                        rejectReason.trim()
+                          ? 'Reject expense'
+                          : 'Enter a reject reason before rejecting'
+                      }
+                    >
+                      Reject
+                    </button>
                   </>
                 )}
               </td>

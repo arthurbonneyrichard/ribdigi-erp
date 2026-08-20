@@ -1,16 +1,21 @@
-"""OpenAPI hygiene: reject/suspend bodies require reason (Field min_length=1).
+"""OpenAPI hygiene: reject/suspend bodies require reason.
 
 Runtime already enforced reasons; empty body previously bypassed schema via
 optional payload / Optional reason and returned service 400. Align with PREQ /
-Skip-next style so omit/empty → 422 and whitespace → 400.
+Skip-next style so omit/empty → 422. ExpenseReject uses ExpenseRejectReasonValue
+(full narrative honesty including garbage → 422).
 """
 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import get_args, get_origin
+
+import pytest
 
 from app.schemas import (
     ExpenseReject,
+    ExpenseRejectReasonValue,
     SalesQuotationReject,
     StockTransferReject,
     TenantSuspendRequest,
@@ -24,11 +29,20 @@ def test_reject_suspend_reason_schemas_required():
         TenantSuspendRequest,
         SalesQuotationReject,
         StockTransferReject,
-        ExpenseReject,
     ):
         field = cls.model_fields["reason"]
         assert field.is_required()
         assert field.annotation is str
+
+    exp = ExpenseReject.model_fields["reason"]
+    assert exp.is_required()
+    # ForwardRef under from __future__ import annotations; validate end-to-end.
+    ok = ExpenseReject.model_validate({"reason": "ok reason"})
+    assert ok.reason == "ok reason"
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        ExpenseReject.model_validate({"reason": "!!!!"})
 
 
 def test_expense_reject_schema_separate_from_approve_decision():

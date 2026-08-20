@@ -1518,9 +1518,15 @@ class ExpenseDecision(BaseModel):
 
 
 class ExpenseReject(BaseModel):
-    """Expense reject — typed reason required (BR-9.3 honesty)."""
+    """Expense reject — typed reason required (BR-9.3 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ ExpenseRejectReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `Expense.rejection_reason`).
+    """
+
+    reason: ExpenseRejectReasonValue
 
 
 class RecurringExpenseCreate(BaseModel):
@@ -4804,6 +4810,27 @@ RecurringSkipReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_recurring_skip_reason_value),
+]
+
+
+def validate_expense_reject_reason_value(value: str) -> str:
+    """AfterValidator: expense reject reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Expense reject reason — Expense.rejection_reason column (BR-9.3).
+ExpenseRejectReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_reject_reason_value),
 ]
 
 
