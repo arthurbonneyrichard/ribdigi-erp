@@ -31,3 +31,7 @@ Stage 7012 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeiddoojiyuglaze Gate, Transfer Houeiddoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7012 opened under **ADR-14031** after CONTINUE/NEXT (Tenant MVP Transfer Houeidduujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14032**. Stage 7011 feature scope remains frozen.
