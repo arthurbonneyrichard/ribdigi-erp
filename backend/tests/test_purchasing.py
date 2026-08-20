@@ -2,13 +2,14 @@ from types import SimpleNamespace
 
 from app.purchasing import (
     PURCHASE_RETURN_REASONS,
-    compute_line_total,
     derive_po_status,
     purchase_invoice_status,
 )
+from app.tax import compute_line_total
 
 
 def test_compute_line_total_with_tax():
+    # Line totals live in app.tax; purchasing uses TaxSpec / resolve_product_tax.
     subtotal, tax, total = compute_line_total(10, 5, 10)
     assert subtotal == 50
     assert tax == 5
