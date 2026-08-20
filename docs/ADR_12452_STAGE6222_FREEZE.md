@@ -31,3 +31,7 @@ Stage 6223 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hakuhobajiyuglaze Gate, Transfer Hakuhobajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6223 opened under **ADR-12453** after CONTINUE/NEXT (Tenant MVP Transfer Hakuhopajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12454**. Stage 6222 feature scope remains frozen.
