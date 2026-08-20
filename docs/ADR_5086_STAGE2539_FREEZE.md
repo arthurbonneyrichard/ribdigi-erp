@@ -31,3 +31,7 @@ Stage 2540 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyonajiyuglaze Gate, Transfer Enkyonajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2540 opened under **ADR-5087** after CONTINUE/NEXT (Tenant MVP Transfer Enkyohajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5088**. Stage 2539 feature scope remains frozen.
