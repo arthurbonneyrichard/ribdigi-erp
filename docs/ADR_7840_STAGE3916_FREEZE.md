@@ -31,3 +31,7 @@ Stage 3917 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmeijinajiyuglaze Gate, Transfer Tenmeijinajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3917 opened under **ADR-7841** after CONTINUE/NEXT (Tenant MVP Transfer Tenmeijihajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7842**. Stage 3916 feature scope remains frozen.
