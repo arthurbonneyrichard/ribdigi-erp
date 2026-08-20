@@ -31,3 +31,7 @@ Stage 4611 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokudajiyuglaze Gate, Transfer Sengokudajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4611 opened under **ADR-9229** after CONTINUE/NEXT (Tenant MVP Transfer Sengokubajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9230**. Stage 4610 feature scope remains frozen.
