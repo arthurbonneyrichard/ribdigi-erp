@@ -31,3 +31,7 @@ Stage 4092 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyujijiyuglaze Gate, Transfer Bunkyujijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4092 opened under **ADR-8191** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyujwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8192**. Stage 4091 feature scope remains frozen.
