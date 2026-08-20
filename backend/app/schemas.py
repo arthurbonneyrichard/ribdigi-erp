@@ -5223,12 +5223,19 @@ class PosSessionClose(BaseModel):
 
 
 class PosPaymentLine(BaseModel):
-    """One tender toward a POS sale total (supports split payments)."""
+    """One tender toward a POS sale total (supports split payments).
+
+    Optional `reference` ∈ PaymentReferenceValue; omit/`null` → no tender
+    reference; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
+    could persist on POS payment `reference`).
+    """
 
     # BR-8.1 — schema Literal (+ wallet aliases via BeforeValidator); blank/invalid → 422
     payment_method: PosTenderMethod = "cash"
     amount: float = Field(gt=0)
-    reference: str | None = None
+    # omit/`null` → no tender reference; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on POS payment reference).
+    reference: PaymentReferenceValue | None = None
     liquid_account_id: str | None = None
 
 

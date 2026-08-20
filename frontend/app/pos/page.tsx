@@ -244,6 +244,7 @@ export default function Page() {
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
   const [cardTender, setCardTender] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
   const [paper, setPaper] = useState('80mm');
   const [receiptTo, setReceiptTo] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -667,11 +668,13 @@ export default function Page() {
       customer_name: name || null,
       items,
     };
-    let payments: { payment_method: string; amount: number }[] | null = null;
+    let payments: { payment_method: string; amount: number; reference?: string | null }[] | null =
+      null;
+    const tenderRef = paymentReference.trim() || null;
     if (splitTender) {
       payments = [
-        { payment_method: 'cash', amount: Number(cashTender) || 0 },
-        { payment_method: 'card', amount: Number(cardTender) || 0 },
+        { payment_method: 'cash', amount: Number(cashTender) || 0, reference: null },
+        { payment_method: 'card', amount: Number(cardTender) || 0, reference: tenderRef },
       ].filter((p) => p.amount > 0);
       if (payments.length < 2) {
         setError('Split tender needs cash and card amounts');
@@ -679,6 +682,17 @@ export default function Page() {
       }
       body.payments = payments;
       body.payment_method = 'split';
+    } else if (tenderRef) {
+      // PosPaymentLine.reference only applies on payments[]; wrap single tender.
+      payments = [
+        {
+          payment_method: paymentMethod,
+          amount: cartTotal,
+          reference: tenderRef,
+        },
+      ];
+      body.payments = payments;
+      body.payment_method = paymentMethod;
     } else {
       body.payment_method = paymentMethod;
     }
@@ -741,6 +755,7 @@ export default function Page() {
       clearCart();
       clearCustomer();
       setSplitTender(false);
+      setPaymentReference('');
       setLastSale({ id: r.data.id, reference: r.data.reference });
       await refreshSession();
       await browse(q);
@@ -1470,6 +1485,20 @@ export default function Page() {
               )}
 
               <label className="tpos-field">
+                <span>Payment reference</span>
+                <input
+                  className="tpos-input"
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="Card/auth ref (optional)"
+                  aria-label="POS payment reference"
+                  title="Optional tender reference (1–100 chars; letters/digits required)"
+                  maxLength={100}
+                  autoComplete="off"
+                />
+              </label>
+
+              <label className="tpos-field">
                 <span>Credit override reason</span>
                 <input
                   className="tpos-input"
@@ -1502,6 +1531,7 @@ export default function Page() {
                   className="tpos-btn tpos-btn-pay"
                   onClick={checkout}
                   disabled={!cart.length || !session || busy}
+                  aria-label="Charge complete sale"
                 >
                   {busy ? 'Processing…' : 'Charge · Complete sale'}
                 </button>
