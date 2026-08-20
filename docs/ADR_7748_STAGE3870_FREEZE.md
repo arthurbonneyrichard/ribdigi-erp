@@ -31,3 +31,7 @@ Stage 3871 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwajiuujiyuglaze Gate, Transfer Meiwajiuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3871 opened under **ADR-7749** after CONTINUE/NEXT (Tenant MVP Transfer Meiwajiyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7750**. Stage 3870 feature scope remains frozen.
