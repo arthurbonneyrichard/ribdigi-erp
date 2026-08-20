@@ -31,3 +31,7 @@ Stage 8394 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseibbojiyuglaze Gate, Transfer Bunseibbojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8394 opened under **ADR-16795** after CONTINUE/NEXT (Tenant MVP Transfer Bunseibbujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16796**. Stage 8393 feature scope remains frozen.
