@@ -31,3 +31,7 @@ Stage 2647 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenrajiyuglaze Gate, Transfer Manenrajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2647 opened under **ADR-5301** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyuwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5302**. Stage 2646 feature scope remains frozen.
