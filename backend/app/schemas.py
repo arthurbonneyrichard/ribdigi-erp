@@ -813,7 +813,11 @@ class BranchUpdate(BaseModel):
 
 
 class DepartmentCreate(BaseModel):
-    code: str
+    # Required department code ∈ DepartmentCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/invalid reached service **400** via `_clean_code`;
+    # punctuation/URL could otherwise slip past OpenAPI). Tenant uniqueness remains
+    # create_department **409**.
+    code: DepartmentCodeValue
     # Required department label ∈ DepartmentNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on multi-store department create).
     name: DepartmentNameValue
@@ -3703,6 +3707,27 @@ DepartmentNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_department_name_value),
+]
+
+
+def validate_department_code_value(value: str) -> str:
+    """AfterValidator: department code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Department code — matches Department.code String(40); uniqueness in create_department.
+DepartmentCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_department_code_value),
 ]
 
 

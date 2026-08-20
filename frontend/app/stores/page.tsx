@@ -883,6 +883,8 @@ export default function Page() {
               value={deptCode}
               onChange={(e) => setDeptCode(e.target.value)}
               placeholder="Code"
+              aria-label="Department code"
+              title="Department code (1–40 chars; letters/digits required)"
               disabled={!!editDeptId}
             />
             <input
