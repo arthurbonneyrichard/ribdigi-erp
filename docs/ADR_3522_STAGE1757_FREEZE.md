@@ -31,3 +31,7 @@ Stage 1758 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kinrandejiyuglaze Gate, Transfer Kinrandejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1758 opened under **ADR-3523** after CONTINUE/NEXT (Tenant MVP Transfer Genemonjiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3524**. Stage 1757 feature scope remains frozen.
