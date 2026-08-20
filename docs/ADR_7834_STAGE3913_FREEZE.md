@@ -31,3 +31,7 @@ Stage 3914 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmeijikajiyuglaze Gate, Transfer Tenmeijikajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3914 opened under **ADR-7835** after CONTINUE/NEXT (Tenant MVP Transfer Tenmeijisajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7836**. Stage 3913 feature scope remains frozen.
