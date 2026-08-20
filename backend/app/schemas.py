@@ -1572,14 +1572,17 @@ class ApprovalLevelUpdate(BaseModel):
 
     Unknown keys → **422** (`extra=forbid`). `roles[]` ∈ system roles
     (`SystemRoleValue` / `rbac.VALID_ROLES`); blank/unknown role → **422**
-    (was late service **400**).
+    (was late service **400**). Optional `label` ∈ ApprovalLevelLabelValue;
+    omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank/garbage could persist in tenant expense approval matrix JSON).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     min_amount: float = Field(gt=0)
     roles: list[SystemRoleValue] = Field(min_length=1)
-    label: str | None = None
+    # omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`).
+    label: ApprovalLevelLabelValue | None = None
     step: int | None = None
 
 
@@ -1972,12 +1975,16 @@ class PurchaseApprovalLevelUpdate(BaseModel):
 
     Unknown keys → **422** (`extra=forbid`). Same `roles[]` honesty as expense
     matrix (`SystemRoleValue`); blank/unknown → **422** (was late **400**).
+    Optional `label` ∈ ApprovalLevelLabelValue; omit/`null` → no label;
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could
+    persist in tenant PR approval matrix JSON).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     roles: list[SystemRoleValue] = Field(min_length=1)
-    label: str | None = None
+    # omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`).
+    label: ApprovalLevelLabelValue | None = None
     step: int | None = None
 
 
@@ -3539,6 +3546,27 @@ CustomRoleLabelValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_custom_role_label_value),
+]
+
+
+def validate_approval_level_label_value(value: str) -> str:
+    """AfterValidator: approval matrix level label; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Expense / PR approval matrix level label — stored in tenant settings JSON.
+ApprovalLevelLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_approval_level_label_value),
 ]
 
 

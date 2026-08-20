@@ -1076,7 +1076,8 @@ export default function Page() {
         body: JSON.stringify({
           levels: prLevels.map((l) => ({
             roles: l.roles,
-            label: l.label || undefined,
+            // null when blank so Save does not 422 (ApprovalLevelLabelValue).
+            label: (l.label || '').trim() || null,
           })),
         }),
       });
@@ -1401,6 +1402,7 @@ export default function Page() {
                   value={lvl.label || ''}
                   onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
                   placeholder="Label"
+                  title="Optional level label (1–120 chars; letters/digits required)"
                   style={{ width: 160 }}
                   aria-label={`PR approval level ${idx + 1} label`}
                 />

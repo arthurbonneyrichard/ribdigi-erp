@@ -670,7 +670,8 @@ export default function Page() {
           levels: levels.map((l) => ({
             min_amount: Number(l.min_amount),
             roles: l.roles,
-            label: l.label || undefined,
+            // null when blank so Save does not 422 (ApprovalLevelLabelValue).
+            label: (l.label || '').trim() || null,
           })),
         }),
       });
@@ -808,6 +809,7 @@ export default function Page() {
               value={lvl.label || ''}
               onChange={(e) => updateLevel(idx, { label: e.target.value })}
               placeholder="Label"
+              title="Optional level label (1–120 chars; letters/digits required)"
               style={{ width: 140 }}
               aria-label={`Expense approval level ${idx + 1} label`}
             />
