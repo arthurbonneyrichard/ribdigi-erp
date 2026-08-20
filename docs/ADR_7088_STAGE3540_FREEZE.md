@@ -31,3 +31,7 @@ Stage 3541 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gennasajiyuglaze Gate, Transfer Gennasajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3541 opened under **ADR-7089** after CONTINUE/NEXT (Tenant MVP Transfer Gennatajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7090**. Stage 3540 feature scope remains frozen.
