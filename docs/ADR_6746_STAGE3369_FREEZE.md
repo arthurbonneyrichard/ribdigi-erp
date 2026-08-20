@@ -31,3 +31,7 @@ Stage 3370 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edoaaaajiyuglaze Gate, Transfer Edoaaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3370 opened under **ADR-6747** after CONTINUE/NEXT (Tenant MVP Transfer Edoaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6748**. Stage 3369 feature scope remains frozen.
