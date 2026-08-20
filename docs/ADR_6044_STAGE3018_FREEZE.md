@@ -31,3 +31,7 @@ Stage 3019 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkaaoojiyuglaze Gate, Transfer Bunkaaoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3019 opened under **ADR-6045** after CONTINUE/NEXT (Tenant MVP Transfer Bunkaauujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6046**. Stage 3018 feature scope remains frozen.
