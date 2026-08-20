@@ -31,3 +31,7 @@ Stage 3008 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowaaijiyuglaze Gate, Transfer Kyowaaijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3008 opened under **ADR-6023** after CONTINUE/NEXT (Tenant MVP Transfer Kyowaawajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6024**. Stage 3007 feature scope remains frozen.
