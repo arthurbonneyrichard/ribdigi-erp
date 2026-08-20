@@ -31,3 +31,7 @@ Stage 3330 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraanajiyuglaze Gate, Transfer Kamakuraanajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3330 opened under **ADR-6667** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraahajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6668**. Stage 3329 feature scope remains frozen.
