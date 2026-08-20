@@ -31,3 +31,7 @@ Stage 11380 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunbboojiyuglaze Gate, Transfer Kofunbboojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 11380 opened under **ADR-22767** after CONTINUE/NEXT (Tenant MVP Transfer Kofunbbuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-22768**. Stage 11379 feature scope remains frozen.
