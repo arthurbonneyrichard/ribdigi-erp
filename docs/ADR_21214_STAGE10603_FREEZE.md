@@ -31,3 +31,7 @@ Stage 10604 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachibbojiyuglaze Gate, Transfer Muromachibbojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10604 opened under **ADR-21215** after CONTINUE/NEXT (Tenant MVP Transfer Muromachibbujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21216**. Stage 10603 feature scope remains frozen.
