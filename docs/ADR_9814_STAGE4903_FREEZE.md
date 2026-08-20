@@ -31,3 +31,7 @@ Stage 4904 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heiseiaagyajiyuglaze Gate, Transfer Heiseiaagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4904 opened under **ADR-9815** after CONTINUE/NEXT (Tenant MVP Transfer Heiseiaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9816**. Stage 4903 feature scope remains frozen.
