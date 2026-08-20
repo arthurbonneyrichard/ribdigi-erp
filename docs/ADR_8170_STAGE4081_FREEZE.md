@@ -31,3 +31,7 @@ Stage 4082 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenjirajiyuglaze Gate, Transfer Manenjirajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4082 opened under **ADR-8171** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyujaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8172**. Stage 4081 feature scope remains frozen.
