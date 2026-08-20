@@ -31,3 +31,7 @@ Stage 9790 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showaeenyajiyuglaze Gate, Transfer Showaeenyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9790 opened under **ADR-19587** after CONTINUE/NEXT (Tenant MVP Transfer Showaffaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19588**. Stage 9789 feature scope remains frozen.
