@@ -31,3 +31,7 @@ Stage 9748 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showaddijiyuglaze Gate, Transfer Showaddijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9748 opened under **ADR-19503** after CONTINUE/NEXT (Tenant MVP Transfer Showaddwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19504**. Stage 9747 feature scope remains frozen.
