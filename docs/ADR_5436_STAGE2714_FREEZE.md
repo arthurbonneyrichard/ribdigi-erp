@@ -31,3 +31,7 @@ Stage 2715 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naratajiyuglaze Gate, Transfer Naratajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2715 opened under **ADR-5437** after CONTINUE/NEXT (Tenant MVP Transfer Naranajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5438**. Stage 2714 feature scope remains frozen.
