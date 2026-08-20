@@ -31,3 +31,7 @@ Stage 6362 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edoaajioojiyuglaze Gate, Transfer Edoaajioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6362 opened under **ADR-12731** after CONTINUE/NEXT (Tenant MVP Transfer Edoaajiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12732**. Stage 6361 feature scope remains frozen.
