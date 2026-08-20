@@ -31,3 +31,7 @@ Stage 4925 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraapajiyuglaze Gate, Transfer Naraapajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4925 opened under **ADR-9857** after CONTINUE/NEXT (Tenant MVP Transfer Naraagajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9858**. Stage 4924 feature scope remains frozen.
