@@ -31,3 +31,7 @@ Stage 7814 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneiddnyajiyuglaze Gate, Transfer Aneiddnyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7814 opened under **ADR-15635** after CONTINUE/NEXT (Tenant MVP Transfer Aneieeaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15636**. Stage 7813 feature scope remains frozen.
