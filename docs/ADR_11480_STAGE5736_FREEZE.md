@@ -31,3 +31,7 @@ Stage 5737 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houekiaaiijiyuglaze Gate, Transfer Houekiaaiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5737 opened under **ADR-11481** after CONTINUE/NEXT (Tenant MVP Transfer Houekiaaoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11482**. Stage 5736 feature scope remains frozen.
