@@ -31,3 +31,7 @@ Stage 8063 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiddnajiyuglaze Gate, Transfer Kanseiddnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8063 opened under **ADR-16133** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiddhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16134**. Stage 8062 feature scope remains frozen.
