@@ -31,3 +31,7 @@ Stage 3614 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Joohajiyuglaze Gate, Transfer Joohajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3614 opened under **ADR-7235** after CONTINUE/NEXT (Tenant MVP Transfer Joomajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7236**. Stage 3613 feature scope remains frozen.
