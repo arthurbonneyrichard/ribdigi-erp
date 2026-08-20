@@ -31,3 +31,7 @@ Stage 10318 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraffojiyuglaze Gate, Transfer Naraffojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10318 opened under **ADR-20643** after CONTINUE/NEXT (Tenant MVP Transfer Naraffujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20644**. Stage 10317 feature scope remains frozen.
