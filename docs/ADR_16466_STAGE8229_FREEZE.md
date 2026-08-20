@@ -31,3 +31,7 @@ Stage 8230 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowaeenyajiyuglaze Gate, Transfer Kyowaeenyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8230 opened under **ADR-16467** after CONTINUE/NEXT (Tenant MVP Transfer Kyowaffaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16468**. Stage 8229 feature scope remains frozen.
