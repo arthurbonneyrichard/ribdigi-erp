@@ -637,11 +637,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
             >
-              <span aria-hidden>{'\u2630'}</span> Menu
+              <span aria-hidden>{'\u2630'}</span>
+              <span className="menu-btn-label">Menu</span>
             </button>
           </div>
+          {!isPlatformOwner ? (
+            <div className="topbar-context">
+              <StoreSwitcher visible />
+            </div>
+          ) : (
+            <div className="topbar-context topbar-context-spacer" aria-hidden />
+          )}
           <div className="topbar-right">
-            <StoreSwitcher visible={!isPlatformOwner} />
             <button
               type="button"
               className="theme-btn"
@@ -661,7 +668,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   aria-haspopup="dialog"
                   onClick={() => openBell()}
                 >
-                  Alerts
+                  <span className="bell-ico" aria-hidden>
+                    {'\ud83d\udd14'}
+                  </span>
+                  <span className="bell-label">Alerts</span>
                   {unread > 0 ? <span className="bell-badge">{unread > 99 ? '99+' : unread}</span> : null}
                 </button>
                 {bellOpen && (
@@ -714,8 +724,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <span className="uname">{fullName.trim().split(/\s+/)[0]}</span>
               </span>
             )}
-            <button type="button" className="logout-btn" onClick={logout}>
-              Log out
+            <button type="button" className="logout-btn" onClick={logout} aria-label="Log out" title="Log out">
+              <span className="logout-ico" aria-hidden>
+                {'\u21a9'}
+              </span>
+              <span className="logout-label">Log out</span>
             </button>
           </div>
         </div>
