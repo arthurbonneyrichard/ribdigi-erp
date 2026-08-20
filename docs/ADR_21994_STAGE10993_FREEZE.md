@@ -31,3 +31,7 @@ Stage 10994 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsubbojiyuglaze Gate, Transfer Bakumatsubbojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10994 opened under **ADR-21995** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsubbujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21996**. Stage 10993 feature scope remains frozen.
