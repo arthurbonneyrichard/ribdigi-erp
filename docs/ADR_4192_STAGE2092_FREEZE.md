@@ -31,3 +31,7 @@ Stage 2093 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempooojiyuglaze Gate, Transfer Tempooojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2093 opened under **ADR-4193** after CONTINUE/NEXT (Tenant MVP Transfer Tempouujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4194**. Stage 2092 feature scope remains frozen.
