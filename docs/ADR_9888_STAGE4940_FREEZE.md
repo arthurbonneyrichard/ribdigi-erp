@@ -31,3 +31,7 @@ Stage 4941 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraapajiyuglaze Gate, Transfer Kamakuraapajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4941 opened under **ADR-9889** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraagajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9890**. Stage 4940 feature scope remains frozen.
