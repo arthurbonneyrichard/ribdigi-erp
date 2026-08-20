@@ -31,3 +31,7 @@ Stage 1908 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ouanajiyuglaze Gate, Transfer Ouanajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1908 opened under **ADR-3823** after CONTINUE/NEXT (Tenant MVP Transfer Eikyouajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3824**. Stage 1907 feature scope remains frozen.
