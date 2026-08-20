@@ -31,3 +31,7 @@ Stage 6178 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taikaajiyuglaze Gate, Transfer Taikaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6178 opened under **ADR-12363** after CONTINUE/NEXT (Tenant MVP Transfer Taikaiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12364**. Stage 6177 feature scope remains frozen.
