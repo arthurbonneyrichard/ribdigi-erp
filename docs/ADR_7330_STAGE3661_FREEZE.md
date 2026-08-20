@@ -31,3 +31,7 @@ Stage 3662 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enpoijiyuglaze Gate, Transfer Enpoijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3662 opened under **ADR-7331** after CONTINUE/NEXT (Tenant MVP Transfer Enpowajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7332**. Stage 3661 feature scope remains frozen.
