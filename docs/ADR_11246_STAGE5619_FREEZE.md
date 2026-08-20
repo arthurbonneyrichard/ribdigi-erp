@@ -31,3 +31,7 @@ Stage 5620 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamajihajiyuglaze Gate, Transfer Higashiyamajihajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5620 opened under **ADR-11247** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamajimajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11248**. Stage 5619 feature scope remains frozen.
