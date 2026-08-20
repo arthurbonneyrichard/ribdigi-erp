@@ -31,3 +31,7 @@ Stage 1892 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kakeiajiyuglaze Gate, Transfer Kakeiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1892 opened under **ADR-3791** after CONTINUE/NEXT (Tenant MVP Transfer Oueiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3792**. Stage 1891 feature scope remains frozen.
