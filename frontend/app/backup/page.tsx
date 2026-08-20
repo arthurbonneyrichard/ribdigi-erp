@@ -16,6 +16,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [dryReport, setDryReport] = useState<any>(null);
+  const [backupNotes, setBackupNotes] = useState('');
 
   async function refresh() {
     const [list, cfg] = await Promise.all([api('/backup'), api('/backup/settings')]);
@@ -34,10 +35,15 @@ export default function Page() {
 
   async function createBackup() {
     setError('');
+    setMessage('');
     setBusy(true);
     try {
-      const r = await api('/backup', { method: 'POST', body: JSON.stringify({ notes: 'manual' }) });
+      const r = await api('/backup', {
+        method: 'POST',
+        body: JSON.stringify({ notes: backupNotes.trim() || null }),
+      });
       setMessage(r.message || 'Backup created');
+      setBackupNotes('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -170,6 +176,14 @@ export default function Page() {
               style={{ width: 100 }}
             />
             <button onClick={saveSettings}>Save settings</button>
+            <input
+              value={backupNotes}
+              onChange={(e) => setBackupNotes(e.target.value)}
+              placeholder="Backup notes (optional)"
+              aria-label="Backup notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
+              style={{ minWidth: 180 }}
+            />
             <button disabled={busy} onClick={createBackup} aria-label="Create backup now">
               {busy ? 'Working…' : 'Create backup now'}
             </button>

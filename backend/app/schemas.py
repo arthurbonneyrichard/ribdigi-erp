@@ -2439,11 +2439,18 @@ class BackupSettingsUpdate(BaseModel):
 
 
 class BackupCreateBody(BaseModel):
-    """POST /backup — typed create body (BR-16)."""
+    """POST /backup — typed create body (BR-16).
+
+    Optional `notes` ∈ BackupNotesValue; omit/`null` → no notes; blank/`!!!`/
+    `http://…` → **422** (was free `str` max_length=500; blank/garbage could
+    persist on BackupJob.notes).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    notes: str | None = Field(default=None, max_length=500)
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`
+    # max_length=500; blank/garbage could persist on BackupJob.notes).
+    notes: BackupNotesValue | None = None
 
 
 class BackupVerifyBody(BaseModel):
@@ -5124,6 +5131,27 @@ OpeningStockNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_opening_stock_notes_value),
+]
+
+
+def validate_backup_notes_value(value: str) -> str:
+    """AfterValidator: backup job notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Backup job notes — BackupJob.notes Text; keep ≤500 at API boundary.
+BackupNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_backup_notes_value),
 ]
 
 
