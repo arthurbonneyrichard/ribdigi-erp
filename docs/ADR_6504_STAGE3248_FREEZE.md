@@ -31,3 +31,7 @@ Stage 3249 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwaaiijiyuglaze Gate, Transfer Reiwaaiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3249 opened under **ADR-6505** after CONTINUE/NEXT (Tenant MVP Transfer Reiwaaoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6506**. Stage 3248 feature scope remains frozen.
