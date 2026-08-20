@@ -31,3 +31,7 @@ Stage 6568 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shohojiajiyuglaze Gate, Transfer Shohojiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6568 opened under **ADR-13143** after CONTINUE/NEXT (Tenant MVP Transfer Shohojiiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13144**. Stage 6567 feature scope remains frozen.
