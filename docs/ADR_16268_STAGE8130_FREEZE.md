@@ -31,3 +31,7 @@ Stage 8131 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowabbuujiyuglaze Gate, Transfer Kyowabbuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8131 opened under **ADR-16269** after CONTINUE/NEXT (Tenant MVP Transfer Kyowabbyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16270**. Stage 8130 feature scope remains frozen.
