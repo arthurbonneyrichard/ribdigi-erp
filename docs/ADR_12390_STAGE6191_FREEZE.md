@@ -31,3 +31,7 @@ Stage 6192 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taikahajiyuglaze Gate, Transfer Taikahajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6192 opened under **ADR-12391** after CONTINUE/NEXT (Tenant MVP Transfer Taikamajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12392**. Stage 6191 feature scope remains frozen.
