@@ -31,3 +31,7 @@ Stage 6367 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edoaajiujiyuglaze Gate, Transfer Edoaajiujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6367 opened under **ADR-12741** after CONTINUE/NEXT (Tenant MVP Transfer Edoaajiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12742**. Stage 6366 feature scope remains frozen.
