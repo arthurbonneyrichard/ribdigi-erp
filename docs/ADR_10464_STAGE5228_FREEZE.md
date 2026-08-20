@@ -31,3 +31,7 @@ Stage 5229 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkajipajiyuglaze Gate, Transfer Bunkajipajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5229 opened under **ADR-10465** after CONTINUE/NEXT (Tenant MVP Transfer Bunkajigajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10466**. Stage 5228 feature scope remains frozen.
