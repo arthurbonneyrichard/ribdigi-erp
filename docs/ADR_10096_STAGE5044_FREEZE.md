@@ -31,3 +31,7 @@ Stage 5045 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaneipajiyuglaze Gate, Transfer Kaneipajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5045 opened under **ADR-10097** after CONTINUE/NEXT (Tenant MVP Transfer Kaneigajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10098**. Stage 5044 feature scope remains frozen.
