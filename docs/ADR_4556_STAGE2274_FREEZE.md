@@ -31,3 +31,7 @@ Stage 2275 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonujiyuglaze Gate, Transfer Jomonujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2275 opened under **ADR-4557** after CONTINUE/NEXT (Tenant MVP Transfer Jomonijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4558**. Stage 2274 feature scope remains frozen.
