@@ -31,3 +31,7 @@ Stage 2482 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneiaaaajiyuglaze Gate, Transfer Aneiaaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2482 opened under **ADR-4971** after CONTINUE/NEXT (Tenant MVP Transfer Aneiaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4972**. Stage 2481 feature scope remains frozen.
