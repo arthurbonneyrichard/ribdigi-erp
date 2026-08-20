@@ -31,3 +31,7 @@ Stage 8937 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseiccuujiyuglaze Gate, Transfer Anseiccuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8937 opened under **ADR-17881** after CONTINUE/NEXT (Tenant MVP Transfer Anseiccyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17882**. Stage 8936 feature scope remains frozen.
