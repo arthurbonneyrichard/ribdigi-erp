@@ -31,3 +31,7 @@ Stage 8811 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeiccujiyuglaze Gate, Transfer Kaeiccujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8811 opened under **ADR-17629** after CONTINUE/NEXT (Tenant MVP Transfer Kaeiccijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17630**. Stage 8810 feature scope remains frozen.
