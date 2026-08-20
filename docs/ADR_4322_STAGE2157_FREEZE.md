@@ -31,3 +31,7 @@ Stage 2158 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijieejiyuglaze Gate, Transfer Meijieejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2158 opened under **ADR-4323** after CONTINUE/NEXT (Tenant MVP Transfer Meijiojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4324**. Stage 2157 feature scope remains frozen.
