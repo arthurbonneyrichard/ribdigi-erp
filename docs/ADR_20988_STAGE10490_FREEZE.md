@@ -31,3 +31,7 @@ Stage 10491 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakurabbgyajiyuglaze Gate, Transfer Kamakurabbgyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10491 opened under **ADR-20989** after CONTINUE/NEXT (Tenant MVP Transfer Kamakurabbnyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20990**. Stage 10490 feature scope remains frozen.
