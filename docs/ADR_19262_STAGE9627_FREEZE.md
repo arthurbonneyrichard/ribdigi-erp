@@ -31,3 +31,7 @@ Stage 9628 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishodddajiyuglaze Gate, Transfer Taishodddajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9628 opened under **ADR-19263** after CONTINUE/NEXT (Tenant MVP Transfer Taishoddbajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19264**. Stage 9627 feature scope remains frozen.
