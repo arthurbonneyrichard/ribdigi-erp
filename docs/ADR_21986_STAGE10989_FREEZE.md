@@ -31,3 +31,7 @@ Stage 10990 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsubboojiyuglaze Gate, Transfer Bakumatsubboojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10990 opened under **ADR-21987** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsubbuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21988**. Stage 10989 feature scope remains frozen.
