@@ -31,3 +31,7 @@ Stage 6175 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ritsuryogyajiyuglaze Gate, Transfer Ritsuryogyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6175 opened under **ADR-12357** after CONTINUE/NEXT (Tenant MVP Transfer Ritsuryonyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12358**. Stage 6174 feature scope remains frozen.
