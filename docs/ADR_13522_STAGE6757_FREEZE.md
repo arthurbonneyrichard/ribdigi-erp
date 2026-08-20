@@ -31,3 +31,7 @@ Stage 6758 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shotokujiijiyuglaze Gate, Transfer Shotokujiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6758 opened under **ADR-13523** after CONTINUE/NEXT (Tenant MVP Transfer Shotokujiwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13524**. Stage 6757 feature scope remains frozen.
