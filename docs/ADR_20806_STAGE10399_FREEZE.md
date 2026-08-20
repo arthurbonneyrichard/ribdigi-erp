@@ -31,3 +31,7 @@ Stage 10400 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianddkajiyuglaze Gate, Transfer Heianddkajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10400 opened under **ADR-20807** after CONTINUE/NEXT (Tenant MVP Transfer Heianddsajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20808**. Stage 10399 feature scope remains frozen.
