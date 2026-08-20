@@ -31,3 +31,7 @@ Stage 4089 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyujeejiyuglaze Gate, Transfer Bunkyujeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4089 opened under **ADR-8185** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyujojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8186**. Stage 4088 feature scope remains frozen.
