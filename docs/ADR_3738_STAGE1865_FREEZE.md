@@ -31,3 +31,7 @@ Stage 1866 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Joukyoujiyuglaze Gate, Transfer Joukyoujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1866 opened under **ADR-3739** after CONTINUE/NEXT (Tenant MVP Transfer Meirekiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3740**. Stage 1865 feature scope remains frozen.
