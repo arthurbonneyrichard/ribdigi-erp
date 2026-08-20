@@ -31,3 +31,7 @@ Stage 4741 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoaapajiyuglaze Gate, Transfer Kanpoaapajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4741 opened under **ADR-9489** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoaagajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9490**. Stage 4740 feature scope remains frozen.
