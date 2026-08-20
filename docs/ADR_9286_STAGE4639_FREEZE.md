@@ -31,3 +31,7 @@ Stage 4640 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamagyajiyuglaze Gate, Transfer Higashiyamagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4640 opened under **ADR-9287** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9288**. Stage 4639 feature scope remains frozen.
