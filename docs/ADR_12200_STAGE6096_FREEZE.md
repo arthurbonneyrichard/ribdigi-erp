@@ -31,3 +31,7 @@ Stage 6097 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shotokuaagyajiyuglaze Gate, Transfer Shotokuaagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6097 opened under **ADR-12201** after CONTINUE/NEXT (Tenant MVP Transfer Shotokuaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12202**. Stage 6096 feature scope remains frozen.
