@@ -31,3 +31,7 @@ Stage 4963 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edoaadajiyuglaze Gate, Transfer Edoaadajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4963 opened under **ADR-9933** after CONTINUE/NEXT (Tenant MVP Transfer Edoaabajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9934**. Stage 4962 feature scope remains frozen.
