@@ -31,3 +31,7 @@ Stage 3026 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkaawajiyuglaze Gate, Transfer Bunkaawajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3026 opened under **ADR-6059** after CONTINUE/NEXT (Tenant MVP Transfer Bunkaakajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6060**. Stage 3025 feature scope remains frozen.
