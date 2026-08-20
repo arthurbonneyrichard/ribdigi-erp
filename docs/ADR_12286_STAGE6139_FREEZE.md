@@ -31,3 +31,7 @@ Stage 6140 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Horekiaahajiyuglaze Gate, Transfer Horekiaahajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6140 opened under **ADR-12287** after CONTINUE/NEXT (Tenant MVP Transfer Horekiaamajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12288**. Stage 6139 feature scope remains frozen.
