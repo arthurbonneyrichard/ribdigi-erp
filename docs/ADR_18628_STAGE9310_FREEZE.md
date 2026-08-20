@@ -31,3 +31,7 @@ Stage 9311 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiobbnajiyuglaze Gate, Transfer Keiobbnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9311 opened under **ADR-18629** after CONTINUE/NEXT (Tenant MVP Transfer Keiobbhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18630**. Stage 9310 feature scope remains frozen.
