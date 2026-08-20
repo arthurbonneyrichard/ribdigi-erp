@@ -31,3 +31,7 @@ Stage 5192 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwajigyajiyuglaze Gate, Transfer Meiwajigyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5192 opened under **ADR-10391** after CONTINUE/NEXT (Tenant MVP Transfer Meiwajinyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10392**. Stage 5191 feature scope remains frozen.
