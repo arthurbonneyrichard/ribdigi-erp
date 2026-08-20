@@ -31,3 +31,7 @@ Stage 4548 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakurabajiyuglaze Gate, Transfer Kamakurabajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4548 opened under **ADR-9103** after CONTINUE/NEXT (Tenant MVP Transfer Kamakurapajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9104**. Stage 4547 feature scope remains frozen.
