@@ -3656,6 +3656,8 @@ export default function Page() {
                 value={xferRejectReason}
                 onChange={(e) => setXferRejectReason(e.target.value)}
                 placeholder="Required before Reject or Cancel"
+                title="Required reject/cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Stock transfer reject reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -3737,7 +3739,12 @@ export default function Page() {
                               : ' source'
                             : ''}
                         </button>
-                        <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'reject')}>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => transferAct(t.id, 'reject')}
+                          aria-label={`Reject stock transfer ${t.id}`}
+                        >
                           Reject
                         </button>
                       </>

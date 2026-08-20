@@ -2,20 +2,19 @@
 
 Runtime already enforced reasons; empty body previously bypassed schema via
 optional payload / Optional reason and returned service 400. Align with PREQ /
-Skip-next style so omit/empty → 422. ExpenseReject uses ExpenseRejectReasonValue
-(full narrative honesty including garbage → 422).
+Skip-next style so omit/empty → 422. ExpenseReject / SalesQuotationReject /
+StockTransferReject use typed *RejectReasonValue (full narrative honesty
+including garbage → 422).
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import get_args, get_origin
 
 import pytest
 
 from app.schemas import (
     ExpenseReject,
-    ExpenseRejectReasonValue,
     SalesQuotationReject,
     StockTransferReject,
     TenantSuspendRequest,
@@ -25,19 +24,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_reject_suspend_reason_schemas_required():
-    for cls in (
-        TenantSuspendRequest,
-        StockTransferReject,
-    ):
-        field = cls.model_fields["reason"]
-        assert field.is_required()
-        assert field.annotation is str
+    field = TenantSuspendRequest.model_fields["reason"]
+    assert field.is_required()
+    assert field.annotation is str
 
     from pydantic import ValidationError
 
     for cls, sample, bad in (
         (ExpenseReject, "ok expense reason", "!!!!"),
         (SalesQuotationReject, "ok quote reason", "!!!!"),
+        (StockTransferReject, "ok transfer reason", "!!!!"),
     ):
         field = cls.model_fields["reason"]
         assert field.is_required()

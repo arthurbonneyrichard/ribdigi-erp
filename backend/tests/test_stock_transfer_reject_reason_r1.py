@@ -22,6 +22,7 @@ def test_stock_transfer_reject_reason_ui_wired():
     assert "Enter a reject reason before rejecting a stock transfer" in inv
     assert "JSON.stringify({ reason: xferRejectReason.trim() })" in inv
     assert "rejection_reason" in inv
+    assert 'aria-label="Stock transfer reject reason"' in inv
 
 
 async def _admin(ac, seed):
