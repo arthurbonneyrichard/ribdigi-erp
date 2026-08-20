@@ -31,3 +31,7 @@ Stage 4260 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianjihajiyuglaze Gate, Transfer Heianjihajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4260 opened under **ADR-8527** after CONTINUE/NEXT (Tenant MVP Transfer Heianjimajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8528**. Stage 4259 feature scope remains frozen.
