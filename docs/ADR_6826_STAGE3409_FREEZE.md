@@ -31,3 +31,7 @@ Stage 3410 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonaauujiyuglaze Gate, Transfer Jomonaauujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3410 opened under **ADR-6827** after CONTINUE/NEXT (Tenant MVP Transfer Jomonaayajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6828**. Stage 3409 feature scope remains frozen.
