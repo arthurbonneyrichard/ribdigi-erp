@@ -31,3 +31,7 @@ Stage 9026 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseiffhajiyuglaze Gate, Transfer Anseiffhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9026 opened under **ADR-18059** after CONTINUE/NEXT (Tenant MVP Transfer Anseiffmajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18060**. Stage 9025 feature scope remains frozen.
