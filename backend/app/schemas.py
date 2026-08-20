@@ -1449,7 +1449,8 @@ class AiDocumentPurchaseInvoiceCreate(BaseModel):
     purchase_order_id: str
     supplier_id: str | None = None
     supplier_invoice_number: str | None = None
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`).
+    notes: PurchaseInvoiceNotesValue | None = None
     is_reverse_charge: bool = False
     invoice_date: IsoDateQueryValue | None = None
 
@@ -2133,7 +2134,9 @@ class PurchaseInvoiceCreate(BaseModel):
     supplier_invoice_number: str | None = None
     discount_amount: float = Field(default=0, ge=0)
     attachment_url: str | None = None
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseInvoice.notes Text).
+    notes: PurchaseInvoiceNotesValue | None = None
     # Buyer self-assesses VAT (excluded from AP); posts Dr Input Tax / Cr Tax Payable on approve.
     is_reverse_charge: bool = False
     # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
@@ -2148,10 +2151,15 @@ class PurchaseInvoiceUpdate(BaseModel):
     Optional `invoice_date` / `due_date` ∈ `IsoDateQueryValue`; omit/`null` → no
     change; blank/invalid → **422** (was free `datetime`; OpenAPI date-time;
     padded dates inconsistent). API `reports.parse_date` remains defense-in-depth.
+    Optional `notes` ∈ PurchaseInvoiceNotesValue; omit/`null` → no change; blank/
+    `!!!`/`http://…` → **422** (was free `str`; blank silently cleared / garbage
+    could persist).
     """
 
     supplier_invoice_number: str | None = None
-    notes: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on draft PATCH).
+    notes: PurchaseInvoiceNotesValue | None = None
     invoice_date: IsoDateQueryValue | None = None
     due_date: IsoDateQueryValue | None = None
 
@@ -4900,6 +4908,27 @@ PurchaseRequestNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_purchase_request_notes_value),
+]
+
+
+def validate_purchase_invoice_notes_value(value: str) -> str:
+    """AfterValidator: purchase invoice notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase invoice notes — PurchaseInvoice.notes Text; keep ≤500 at API boundary.
+PurchaseInvoiceNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_invoice_notes_value),
 ]
 
 

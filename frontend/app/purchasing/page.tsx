@@ -252,6 +252,7 @@ export default function Page() {
   const [returnNotes, setReturnNotes] = useState('');
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
+  const [invNotes, setInvNotes] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
   const [manualInvProductId, setManualInvProductId] = useState('');
   const [manualInvQty, setManualInvQty] = useState('1');
@@ -786,6 +787,7 @@ export default function Page() {
         body: JSON.stringify({
           goods_receipt_id: invoiceGrnId,
           supplier_invoice_number: supplierInvoiceNo || undefined,
+          notes: invNotes.trim() || null,
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
           exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
@@ -797,6 +799,7 @@ export default function Page() {
       );
       setTab('invoices');
       setSupplierInvoiceNo('');
+      setInvNotes('');
       setGrnInvHeaderDiscount('0');
       setInvCurrency('');
       setInvExchangeRate('');
@@ -816,6 +819,7 @@ export default function Page() {
         body: JSON.stringify({
           supplier_id: manualInvSupplierId,
           supplier_invoice_number: supplierInvoiceNo || undefined,
+          notes: invNotes.trim() || null,
           is_reverse_charge: manualInvRc,
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
@@ -840,6 +844,7 @@ export default function Page() {
       );
       setTab('invoices');
       setSupplierInvoiceNo('');
+      setInvNotes('');
       setManualInvLineDiscount('0');
       setManualInvHeaderDiscount('0');
       setManualInvRc(false);
@@ -972,7 +977,8 @@ export default function Page() {
       if (ocrDraft.supplier_invoice_number !== '') {
         body.supplier_invoice_number = ocrDraft.supplier_invoice_number;
       }
-      if (ocrDraft.notes !== '') body.notes = ocrDraft.notes;
+      const ocrNotes = ocrDraft.notes.trim();
+      if (ocrNotes !== '') body.notes = ocrNotes;
       const invoiceDate = ocrDraft.invoice_date.trim();
       if (invoiceDate !== '') body.invoice_date = invoiceDate;
       await api(`/purchasing/invoices/${ocrFor}`, { method: 'PATCH', body: JSON.stringify(body) });
@@ -2357,6 +2363,13 @@ export default function Page() {
             placeholder="Supplier invoice #"
           />
           <input
+            value={invNotes}
+            onChange={(e) => setInvNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Purchase invoice notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <input
             value={grnInvHeaderDiscount}
             onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
             placeholder="Header discount (0 = use PO line discounts)"
@@ -2387,7 +2400,11 @@ export default function Page() {
             From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
             invoice total. Currency/FX apply when paying foreign supplier invoices (Credit).
           </span>
-          <button onClick={createInvoiceFromGrn} disabled={!invoiceGrnId}>
+          <button
+            onClick={createInvoiceFromGrn}
+            disabled={!invoiceGrnId}
+            aria-label="Draft purchase invoice from GRN"
+          >
             Draft invoice from GRN
           </button>
         </div>
@@ -2444,6 +2461,13 @@ export default function Page() {
             placeholder="Supplier invoice #"
           />
           <input
+            value={invNotes}
+            onChange={(e) => setInvNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Purchase invoice notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <input
             value={invCurrency}
             onChange={(e) => setInvCurrency(e.target.value.toUpperCase())}
             placeholder="Currency (blank=base)"
@@ -2466,7 +2490,11 @@ export default function Page() {
             <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} />
             Reverse charge (self-assess VAT; AP = net)
           </label>
-          <button onClick={createManualInvoice} disabled={!manualInvSupplierId || !manualInvProductId}>
+          <button
+            onClick={createManualInvoice}
+            disabled={!manualInvSupplierId || !manualInvProductId}
+            aria-label="Draft manual purchase invoice"
+          >
             Draft manual invoice
           </button>
         </div>
@@ -2500,9 +2528,11 @@ export default function Page() {
                   value={ocrDraft.notes}
                   onChange={(e) => setOcrDraft({ ...ocrDraft, notes: e.target.value })}
                   placeholder="Notes"
+                  aria-label="Purchase invoice OCR notes"
+                  title="Optional notes (1–500 chars; letters/digits required)"
                 />
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={applyInvoiceOcr}>
+                  <button type="button" onClick={applyInvoiceOcr} aria-label="Apply purchase invoice OCR">
                     Apply to draft
                   </button>
                   <button
