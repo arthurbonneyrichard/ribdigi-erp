@@ -31,3 +31,7 @@ Stage 10345 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Heianbbujiyuglaze Gate, Transfer Heianbbujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10345 opened under **ADR-20697** after CONTINUE/NEXT (Tenant MVP Transfer Heianbbijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20698**. Stage 10344 feature scope remains frozen.
