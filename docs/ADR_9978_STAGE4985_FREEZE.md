@@ -31,3 +31,7 @@ Stage 4986 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiaazajiyuglaze Gate, Transfer Yayoiaazajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4986 opened under **ADR-9979** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiaadajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9980**. Stage 4985 feature scope remains frozen.
