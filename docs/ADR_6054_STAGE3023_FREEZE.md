@@ -31,3 +31,7 @@ Stage 3024 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkaaujiyuglaze Gate, Transfer Bunkaaujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3024 opened under **ADR-6055** after CONTINUE/NEXT (Tenant MVP Transfer Bunkaaijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6056**. Stage 3023 feature scope remains frozen.
