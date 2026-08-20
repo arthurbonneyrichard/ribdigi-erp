@@ -31,3 +31,7 @@ Stage 5123 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hoeijidajiyuglaze Gate, Transfer Hoeijidajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5123 opened under **ADR-10253** after CONTINUE/NEXT (Tenant MVP Transfer Hoeijibajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10254**. Stage 5122 feature scope remains frozen.
