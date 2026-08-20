@@ -31,3 +31,7 @@ Stage 3751 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shotokuujiyuglaze Gate, Transfer Shotokuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3751 opened under **ADR-7509** after CONTINUE/NEXT (Tenant MVP Transfer Shotokuijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7510**. Stage 3750 feature scope remains frozen.
