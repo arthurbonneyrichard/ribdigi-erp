@@ -1435,6 +1435,8 @@ export default function Page() {
               value={unpostReason}
               onChange={(e) => setUnpostReason(e.target.value)}
               placeholder="Required before Unpost"
+              title="Required unpost reason (1–500 chars; letters/digits required)"
+              aria-label="Journal unpost reason"
               style={{ minWidth: 280 }}
             />
           </label>
@@ -1474,7 +1476,12 @@ export default function Page() {
                   <td>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {j.can_unpost && j.status === 'posted' && (
-                        <button type="button" className="btn-danger" onClick={() => unpostJournal(j.id)}>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => unpostJournal(j.id)}
+                          aria-label={`Unpost journal ${j.id}`}
+                        >
                           Unpost
                         </button>
                       )}

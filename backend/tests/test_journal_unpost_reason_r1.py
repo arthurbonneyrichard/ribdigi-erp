@@ -21,6 +21,8 @@ def test_journal_unpost_reason_ui_wired():
     assert "Enter an unpost reason before unposting" in page
     assert "JSON.stringify({ reason })" in page
     assert "setUnpostReason" in page
+    assert 'aria-label="Journal unpost reason"' in page
+    assert "aria-label={`Unpost journal ${j.id}`}" in page
     # No silent empty-body unpost
     assert "journal-entries/${id}/unpost`, { method: 'POST', body: '{}' }" not in page
 
@@ -71,8 +73,14 @@ async def test_unpost_requires_reason_and_persists(client, db_session):
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/accounting/journal-entries/{entry_id}/unpost",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     no_body = await ac.post(
         f"/api/v1/accounting/journal-entries/{entry_id}/unpost",
