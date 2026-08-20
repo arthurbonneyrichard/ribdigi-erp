@@ -31,3 +31,7 @@ Stage 2105 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukayajiyuglaze Gate, Transfer Koukayajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2105 opened under **ADR-4217** after CONTINUE/NEXT (Tenant MVP Transfer Koukaeejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4218**. Stage 2104 feature scope remains frozen.
