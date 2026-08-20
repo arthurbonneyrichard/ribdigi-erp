@@ -31,3 +31,7 @@ Stage 2499 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keichotajiyuglaze Gate, Transfer Keichotajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2499 opened under **ADR-5005** after CONTINUE/NEXT (Tenant MVP Transfer Keichonajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5006**. Stage 2498 feature scope remains frozen.
