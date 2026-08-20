@@ -31,3 +31,7 @@ Stage 5947 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jooaauujiyuglaze Gate, Transfer Jooaauujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5947 opened under **ADR-11901** after CONTINUE/NEXT (Tenant MVP Transfer Jooaayajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11902**. Stage 5946 feature scope remains frozen.
