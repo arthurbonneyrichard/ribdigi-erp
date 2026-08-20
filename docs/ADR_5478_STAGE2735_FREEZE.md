@@ -31,3 +31,7 @@ Stage 2736 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachiwajiyuglaze Gate, Transfer Muromachiwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2736 opened under **ADR-5479** after CONTINUE/NEXT (Tenant MVP Transfer Muromachikajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5480**. Stage 2735 feature scope remains frozen.
