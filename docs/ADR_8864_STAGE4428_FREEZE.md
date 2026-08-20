@@ -31,3 +31,7 @@ Stage 4429 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempopajiyuglaze Gate, Transfer Tempopajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4429 opened under **ADR-8865** after CONTINUE/NEXT (Tenant MVP Transfer Tempogajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8866**. Stage 4428 feature scope remains frozen.
