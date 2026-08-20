@@ -31,3 +31,7 @@ Stage 5995 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enpoaaaajiyuglaze Gate, Transfer Enpoaaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5995 opened under **ADR-11997** after CONTINUE/NEXT (Tenant MVP Transfer Enpoaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11998**. Stage 5994 feature scope remains frozen.
