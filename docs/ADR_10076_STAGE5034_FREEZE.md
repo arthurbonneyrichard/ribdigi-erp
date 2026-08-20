@@ -31,3 +31,7 @@ Stage 5035 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gennadajiyuglaze Gate, Transfer Gennadajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5035 opened under **ADR-10077** after CONTINUE/NEXT (Tenant MVP Transfer Gennabajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10078**. Stage 5034 feature scope remains frozen.
