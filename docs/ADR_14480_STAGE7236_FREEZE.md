@@ -31,3 +31,7 @@ Stage 7237 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpobbbajiyuglaze Gate, Transfer Kanpobbbajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7237 opened under **ADR-14481** after CONTINUE/NEXT (Tenant MVP Transfer Kanpobbpajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14482**. Stage 7236 feature scope remains frozen.
