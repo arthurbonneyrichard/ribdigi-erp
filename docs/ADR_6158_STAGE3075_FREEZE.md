@@ -31,3 +31,7 @@ Stage 3076 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukaaojiyuglaze Gate, Transfer Koukaaojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3076 opened under **ADR-6159** after CONTINUE/NEXT (Tenant MVP Transfer Koukaaujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6160**. Stage 3075 feature scope remains frozen.
