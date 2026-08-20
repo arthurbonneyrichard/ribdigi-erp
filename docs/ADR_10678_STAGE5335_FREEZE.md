@@ -31,3 +31,7 @@ Stage 5336 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwajigyajiyuglaze Gate, Transfer Reiwajigyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5336 opened under **ADR-10679** after CONTINUE/NEXT (Tenant MVP Transfer Reiwajinyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10680**. Stage 5335 feature scope remains frozen.

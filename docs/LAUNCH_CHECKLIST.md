@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 5336 track opened (ADR-10679: `test_stage5336_open.py`, `docs/STAGE_5336_PLAN.md`) — Transfer Reiwajinyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-10680
+- [x] Transfer Reiwajinyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 5336 I1: `test_stage5336_index_i1.py`, `docs/TRANSFER_REIWAJINYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Reiwajinyajiyuglaze Gate Honesty Pack blocker matrix (Stage 5336 B1: `test_stage5336_blockers_b1.py`, `docs/TRANSFER_REIWAJINYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 5335 / Stage 5334 / Stage 392 / CHANGE_IMPACT pointers (Stage 5336 P1: `test_stage5336_pointers_p1.py`, `docs/TRANSFER_REIWAJINYAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 5336 fidelity sync (D1: `test_stage5336_fidelity_d1.py`, `docs/STAGE_5336_FIDELITY.md`)
+- [x] Stage 5336 exit + freeze (H5336x: `test_stage5336_exit_h5336x.py`, `docs/STAGE_5336_EXIT_CRITERIA.md`, ADR-10680)
 Stage 5335 track opened (ADR-10677: `test_stage5335_open.py`, `docs/STAGE_5335_PLAN.md`) — Transfer Reiwajigyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-10678
 - [x] Transfer Reiwajigyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 5335 I1: `test_stage5335_index_i1.py`, `docs/TRANSFER_REIWAJIGYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Reiwajigyajiyuglaze Gate Honesty Pack blocker matrix (Stage 5335 B1: `test_stage5335_blockers_b1.py`, `docs/TRANSFER_REIWAJIGYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
