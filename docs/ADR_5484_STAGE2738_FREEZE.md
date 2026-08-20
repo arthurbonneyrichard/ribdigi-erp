@@ -31,3 +31,7 @@ Stage 2739 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Muromachitajiyuglaze Gate, Transfer Muromachitajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2739 opened under **ADR-5485** after CONTINUE/NEXT (Tenant MVP Transfer Muromachinajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5486**. Stage 2738 feature scope remains frozen.
