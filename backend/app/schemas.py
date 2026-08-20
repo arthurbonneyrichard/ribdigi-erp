@@ -5150,6 +5150,27 @@ ChequeLifecycleReasonValue = Annotated[
 ]
 
 
+def validate_period_close_reason_value(value: str) -> str:
+    """AfterValidator: period close/reopen reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Period close/reopen reason — audit period_closed / period_reopened details.reason (BR-10.2).
+PeriodCloseReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_period_close_reason_value),
+]
+
+
 def validate_expense_payee_value(value: str) -> str:
     """AfterValidator: expense payee label; blank/URL/garbage → 422 (1–150)."""
     if not value:
@@ -5641,21 +5662,27 @@ class PeriodCloseBody(BaseModel):
     """Close books through an inclusive calendar date (BR-10.2).
 
     `through_date` ∈ IsoDateQueryValue (required); blank/invalid → **422**.
+    `reason` ∈ PeriodCloseReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could land in audit `period_closed.details.reason`).
     """
 
     # IsoDateQueryValue as JournalCreate.entry_date / expense_date.
     through_date: IsoDateQueryValue
-    reason: str = Field(min_length=1, max_length=500)
+    reason: PeriodCloseReasonValue
 
 
 class PeriodReopenBody(BaseModel):
     """Reopen: set an earlier closed-through date, or null to clear — reason required (BR-10.2 honesty).
 
     Optional `through_date` ∈ IsoDateQueryValue; omit/`null` → clear; blank/invalid → **422**.
+    `reason` ∈ PeriodCloseReasonValue (same honesty as close; omit/blank/garbage → **422** —
+    was free `str` with `min_length=1` only; whitespace still reached service **400**).
     """
 
     through_date: IsoDateQueryValue | None = None
-    reason: str = Field(min_length=1, max_length=500)
+    reason: PeriodCloseReasonValue
 
 
 class PosSessionOpen(BaseModel):

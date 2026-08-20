@@ -951,13 +951,14 @@ export default function Page() {
                 onChange={(e) => setPeriodReason(e.target.value)}
                 placeholder="Required close / reopen reason"
                 style={{ minWidth: 280 }}
+                title="Required close/reopen reason (1–500 chars; letters/digits required)"
                 aria-label="Period close or reopen reason"
               />
-              <button type="button" className="btn-danger" onClick={closeBooks}>
+              <button type="button" className="btn-danger" onClick={closeBooks} aria-label="Close books">
                 Close books
               </button>
               {period?.books_closed_through && (
-                <button type="button" className="btn-ok" onClick={reopenBooks}>
+                <button type="button" className="btn-ok" onClick={reopenBooks} aria-label="Reopen books">
                   Reopen (clear)
                 </button>
               )}
