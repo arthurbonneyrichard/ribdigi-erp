@@ -31,3 +31,7 @@ Stage 1995 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohoojiyuglaze Gate, Transfer Kyohoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1995 opened under **ADR-3997** after CONTINUE/NEXT (Tenant MVP Transfer Kyohoujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3998**. Stage 1994 feature scope remains frozen.
