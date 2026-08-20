@@ -31,3 +31,7 @@ Stage 10087 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Asukabbwajiyuglaze Gate, Transfer Asukabbwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10087 opened under **ADR-20181** after CONTINUE/NEXT (Tenant MVP Transfer Asukabbkajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-20182**. Stage 10086 feature scope remains frozen.
