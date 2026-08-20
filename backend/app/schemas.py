@@ -1014,9 +1014,15 @@ class StockCountItemsUpdate(BaseModel):
 
 
 class StockCountCancel(BaseModel):
-    """Draft stock count cancel — typed reason required (BR-5.2 honesty)."""
+    """Draft stock count cancel — typed reason required (BR-5.2 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ StockCountCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to count `notes` / audit).
+    """
+
+    reason: StockCountCancelReasonValue
 
 
 class ProductCategoryCreate(BaseModel):
@@ -4958,6 +4964,27 @@ StockTransferRejectReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_transfer_reject_reason_value),
+]
+
+
+def validate_stock_count_cancel_reason_value(value: str) -> str:
+    """AfterValidator: stock count cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock count cancel reason — appended to StockCount.notes + audit stock_count_cancelled (BR-5.2).
+StockCountCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_count_cancel_reason_value),
 ]
 
 

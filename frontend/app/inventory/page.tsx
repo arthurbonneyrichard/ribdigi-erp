@@ -3020,6 +3020,8 @@ export default function Page() {
                 onChange={(e) => setCountCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
                 style={{ minWidth: 280 }}
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Stock count cancel reason"
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
@@ -3070,7 +3072,12 @@ export default function Page() {
                       Open
                     </button>
                     {(c.can_cancel || c.status === 'draft') && (
-                      <button type="button" className="btn-danger" onClick={() => cancelStockCount(c.id, c.count_number)}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => cancelStockCount(c.id, c.count_number)}
+                        aria-label={`Cancel stock count ${c.id}`}
+                      >
                         Cancel
                       </button>
                     )}
@@ -3163,6 +3170,7 @@ export default function Page() {
                     type="button"
                     className="btn-danger"
                     onClick={() => cancelStockCount(activeCount.id, activeCount.count_number)}
+                    aria-label={`Cancel stock count ${activeCount.id}`}
                   >
                     Cancel count
                   </button>
