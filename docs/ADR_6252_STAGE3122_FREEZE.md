@@ -31,3 +31,7 @@ Stage 3123 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manenaaaajiyuglaze Gate, Transfer Manenaaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3123 opened under **ADR-6253** after CONTINUE/NEXT (Tenant MVP Transfer Manenaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6254**. Stage 3122 feature scope remains frozen.
