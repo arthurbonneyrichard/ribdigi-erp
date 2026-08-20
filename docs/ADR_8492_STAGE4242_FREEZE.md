@@ -31,3 +31,7 @@ Stage 4243 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Narajimajiyuglaze Gate, Transfer Narajimajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4243 opened under **ADR-8493** after CONTINUE/NEXT (Tenant MVP Transfer Narajirajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8494**. Stage 4242 feature scope remains frozen.
