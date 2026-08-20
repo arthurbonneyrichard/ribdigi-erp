@@ -31,3 +31,7 @@ Stage 1984 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpoaajiyuglaze Gate, Transfer Kanpoaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1984 opened under **ADR-3975** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3976**. Stage 1983 feature scope remains frozen.
