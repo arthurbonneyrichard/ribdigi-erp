@@ -31,3 +31,7 @@ Stage 7089 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohobbiijiyuglaze Gate, Transfer Kyohobbiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7089 opened under **ADR-14185** after CONTINUE/NEXT (Tenant MVP Transfer Kyohobboojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14186**. Stage 7088 feature scope remains frozen.
