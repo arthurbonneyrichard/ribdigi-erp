@@ -31,3 +31,7 @@ Stage 9025 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseiffnajiyuglaze Gate, Transfer Anseiffnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9025 opened under **ADR-18057** after CONTINUE/NEXT (Tenant MVP Transfer Anseiffhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18058**. Stage 9024 feature scope remains frozen.
