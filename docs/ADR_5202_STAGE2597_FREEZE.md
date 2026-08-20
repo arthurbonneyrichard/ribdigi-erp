@@ -31,3 +31,7 @@ Stage 2598 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkamajiyuglaze Gate, Transfer Bunkamajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2598 opened under **ADR-5203** after CONTINUE/NEXT (Tenant MVP Transfer Bunkarajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5204**. Stage 2597 feature scope remains frozen.
