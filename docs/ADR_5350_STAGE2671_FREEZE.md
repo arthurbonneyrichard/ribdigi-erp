@@ -31,3 +31,7 @@ Stage 2672 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishowajiyuglaze Gate, Transfer Taishowajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2672 opened under **ADR-5351** after CONTINUE/NEXT (Tenant MVP Transfer Taishokajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5352**. Stage 2671 feature scope remains frozen.
