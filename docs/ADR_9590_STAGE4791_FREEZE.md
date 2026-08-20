@@ -31,3 +31,7 @@ Stage 4792 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiaagyajiyuglaze Gate, Transfer Kanseiaagyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4792 opened under **ADR-9591** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiaanyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9592**. Stage 4791 feature scope remains frozen.
