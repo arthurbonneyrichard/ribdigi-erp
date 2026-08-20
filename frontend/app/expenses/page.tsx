@@ -1000,6 +1000,8 @@ export default function Page() {
             value={skipNextReason}
             onChange={(e) => setSkipNextReason(e.target.value)}
             placeholder="Required before Skip next"
+            aria-label="Skip next reason"
+            title="Required reason for Skip next (1–500 chars; letters/digits required)"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -1165,6 +1167,7 @@ export default function Page() {
                       className="btn-danger"
                       onClick={() => skipNextRecurring(r.id)}
                       disabled={!skipNextReason.trim()}
+                      aria-label={`Skip next recurring expense ${r.id}`}
                       title={
                         skipNextReason.trim()
                           ? 'Skip next occurrence'

@@ -19,6 +19,7 @@ def test_recurring_skip_reason_ui_wired():
     assert "skipNextReason" in page
     assert "Enter a skip reason before skipping the next occurrence" in page
     assert "Required before Skip next" in page
+    assert 'aria-label="Skip next reason"' in page
     assert "JSON.stringify({ reason })" in page
     assert "/expenses/recurring/${id}/skip-next" in page
     assert "recurring_expense_skipped" in page
@@ -26,6 +27,8 @@ def test_recurring_skip_reason_ui_wired():
     skip_fn = page.split("async function skipNextRecurring")[1].split("async function ")[0]
     assert "body: '{}'" not in skip_fn
     assert "{ reason }" in skip_fn
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "RecurringSkipReasonValue" in agents
 
 
 async def _admin(ac, seed):
@@ -78,8 +81,15 @@ async def test_skip_next_requires_reason_and_audits(client, db_session):
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    # OpenAPI honesty: strip + RecurringSkipReasonValue → 422 (was service 400).
+    assert blank.status_code == 422
+
+    garbage = await ac.post(
+        f"/api/v1/expenses/recurring/{rid}/skip-next",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422
 
     skipped = await ac.post(
         f"/api/v1/expenses/recurring/{rid}/skip-next",
