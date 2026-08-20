@@ -31,3 +31,7 @@ Stage 4584 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsugyajiyuglaze Gate, Transfer Bakumatsugyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4584 opened under **ADR-9175** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsunyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-9176**. Stage 4583 feature scope remains frozen.
