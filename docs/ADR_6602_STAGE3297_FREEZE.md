@@ -31,3 +31,7 @@ Stage 3298 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraarajiyuglaze Gate, Transfer Naraarajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3298 opened under **ADR-6603** after CONTINUE/NEXT (Tenant MVP Transfer Heianaaaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6604**. Stage 3297 feature scope remains frozen.
