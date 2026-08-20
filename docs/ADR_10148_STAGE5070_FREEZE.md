@@ -31,3 +31,7 @@ Stage 5071 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jookyajiyuglaze Gate, Transfer Jookyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5071 opened under **ADR-10149** after CONTINUE/NEXT (Tenant MVP Transfer Joogyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10150**. Stage 5070 feature scope remains frozen.
