@@ -31,3 +31,7 @@ Stage 2969 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmeiaayajiyuglaze Gate, Transfer Tenmeiaayajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2969 opened under **ADR-5945** after CONTINUE/NEXT (Tenant MVP Transfer Tenmeiaaeejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5946**. Stage 2968 feature scope remains frozen.
