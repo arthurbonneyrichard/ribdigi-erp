@@ -31,3 +31,7 @@ Stage 6480 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunaajirajiyuglaze Gate, Transfer Kofunaajirajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6480 opened under **ADR-12967** after CONTINUE/NEXT (Tenant MVP Transfer Kofunaajizajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12968**. Stage 6479 feature scope remains frozen.
