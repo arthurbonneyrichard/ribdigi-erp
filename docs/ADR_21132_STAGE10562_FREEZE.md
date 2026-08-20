@@ -31,3 +31,7 @@ Stage 10563 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraeezajiyuglaze Gate, Transfer Kamakuraeezajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10563 opened under **ADR-21133** after CONTINUE/NEXT (Tenant MVP Transfer Kamakuraeedajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21134**. Stage 10562 feature scope remains frozen.
