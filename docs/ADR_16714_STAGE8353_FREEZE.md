@@ -31,3 +31,7 @@ Stage 8354 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkaeedajiyuglaze Gate, Transfer Bunkaeedajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8354 opened under **ADR-16715** after CONTINUE/NEXT (Tenant MVP Transfer Bunkaeebajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16716**. Stage 8353 feature scope remains frozen.
