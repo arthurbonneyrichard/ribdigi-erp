@@ -31,3 +31,7 @@ Stage 4414 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkagajiyuglaze Gate, Transfer Bunkagajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4414 opened under **ADR-8835** after CONTINUE/NEXT (Tenant MVP Transfer Bunkakyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8836**. Stage 4413 feature scope remains frozen.
