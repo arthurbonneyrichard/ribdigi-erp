@@ -31,3 +31,7 @@ Stage 3804 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpojiojiyuglaze Gate, Transfer Kanpojiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3804 opened under **ADR-7615** after CONTINUE/NEXT (Tenant MVP Transfer Kanpojiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7616**. Stage 3803 feature scope remains frozen.
