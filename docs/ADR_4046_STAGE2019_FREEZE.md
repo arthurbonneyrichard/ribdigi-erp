@@ -31,3 +31,7 @@ Stage 2020 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hourekioojiyuglaze Gate, Transfer Hourekioojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2020 opened under **ADR-4047** after CONTINUE/NEXT (Tenant MVP Transfer Hourekiuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4048**. Stage 2019 feature scope remains frozen.
