@@ -31,3 +31,7 @@ Stage 6971 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houeibbnajiyuglaze Gate, Transfer Houeibbnajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6971 opened under **ADR-13949** after CONTINUE/NEXT (Tenant MVP Transfer Houeibbhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13950**. Stage 6970 feature scope remains frozen.
