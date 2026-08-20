@@ -31,3 +31,7 @@ Stage 3058 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempoaaeejiyuglaze Gate, Transfer Tempoaaeejiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3058 opened under **ADR-6123** after CONTINUE/NEXT (Tenant MVP Transfer Tempoaaojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6124**. Stage 3057 feature scope remains frozen.
