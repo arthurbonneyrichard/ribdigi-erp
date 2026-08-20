@@ -31,3 +31,7 @@ Stage 5248 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempojigyajiyuglaze Gate, Transfer Tempojigyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5248 opened under **ADR-10503** after CONTINUE/NEXT (Tenant MVP Transfer Tempojinyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10504**. Stage 5247 feature scope remains frozen.
