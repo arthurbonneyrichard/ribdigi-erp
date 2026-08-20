@@ -31,3 +31,7 @@ Stage 1983 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyohoyajiyuglaze Gate, Transfer Kyohoyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1983 opened under **ADR-3973** after CONTINUE/NEXT (Tenant MVP Transfer Kanpoaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3974**. Stage 1982 feature scope remains frozen.
