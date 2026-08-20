@@ -31,3 +31,7 @@ Stage 6444 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiaajiojiyuglaze Gate, Transfer Yayoiaajiojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6444 opened under **ADR-12895** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiaajiujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12896**. Stage 6443 feature scope remains frozen.
