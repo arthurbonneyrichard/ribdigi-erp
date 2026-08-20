@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 11040 track opened (ADR-22087: `test_stage11040_open.py`, `docs/STAGE_11040_PLAN.md`) — Transfer Bakumatsuddiijiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-22088
+- [x] Transfer Bakumatsuddiijiyuglaze Gate Honesty Pack remaining-gate hub (Stage 11040 I1: `test_stage11040_index_i1.py`, `docs/TRANSFER_BAKUMATSUDDIIJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Bakumatsuddiijiyuglaze Gate Honesty Pack blocker matrix (Stage 11040 B1: `test_stage11040_blockers_b1.py`, `docs/TRANSFER_BAKUMATSUDDIIJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 11039 / Stage 11038 / Stage 392 / CHANGE_IMPACT pointers (Stage 11040 P1: `test_stage11040_pointers_p1.py`, `docs/TRANSFER_BAKUMATSUDDIIJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 11040 fidelity sync (D1: `test_stage11040_fidelity_d1.py`, `docs/STAGE_11040_FIDELITY.md`)
+- [x] Stage 11040 exit + freeze (H11040x: `test_stage11040_exit_h11040x.py`, `docs/STAGE_11040_EXIT_CRITERIA.md`, ADR-22088)
 Stage 11039 track opened (ADR-22085: `test_stage11039_open.py`, `docs/STAGE_11039_PLAN.md`) — Transfer Bakumatsuddajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-22086
 - [x] Transfer Bakumatsuddajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 11039 I1: `test_stage11039_index_i1.py`, `docs/TRANSFER_BAKUMATSUDDAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Bakumatsuddajiyuglaze Gate Honesty Pack blocker matrix (Stage 11039 B1: `test_stage11039_blockers_b1.py`, `docs/TRANSFER_BAKUMATSUDDAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
