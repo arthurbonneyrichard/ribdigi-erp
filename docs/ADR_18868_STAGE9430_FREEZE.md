@@ -31,3 +31,7 @@ Stage 9431 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijibbuujiyuglaze Gate, Transfer Meijibbuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9431 opened under **ADR-18869** after CONTINUE/NEXT (Tenant MVP Transfer Meijibbyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-18870**. Stage 9430 feature scope remains frozen.
