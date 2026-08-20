@@ -31,3 +31,7 @@ Stage 7546 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hourekiddrajiyuglaze Gate, Transfer Hourekiddrajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7546 opened under **ADR-15099** after CONTINUE/NEXT (Tenant MVP Transfer Hourekiddzajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-15100**. Stage 7545 feature scope remains frozen.
