@@ -31,3 +31,7 @@ Stage 5111 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jokyokyajiyuglaze Gate, Transfer Jokyokyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5111 opened under **ADR-10229** after CONTINUE/NEXT (Tenant MVP Transfer Jokyogyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10230**. Stage 5110 feature scope remains frozen.
