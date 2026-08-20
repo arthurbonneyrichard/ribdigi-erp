@@ -1619,7 +1619,7 @@ Append-only hash-chained audit trail (BR-17.1–17.2).
 ### 16.1 AI ERP Chat Assistant
 **Endpoint:** `POST /ai/chat`
 
-Typed body `AiChatBody` `{ "message" | "prompt", "context"?, "conversation_id"? }` (`extra=forbid`; blank/omit message+prompt / unknown keys → **422** — blank was late service **400**). Service `parse_chat_message` / injection checks remain defense-in-depth. AI UI **Ask AI chat** (`aria-label` message + Ask).
+Typed body `AiChatBody` `{ "message" | "prompt", "context"?, "conversation_id"? }` (`extra=forbid`; `message`/`prompt`/`context` ∈ `AiChatMessageValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; omit both message+prompt / blank/`!!!`/`http://…` → **422** — blank was late service **400**; punctuation/URL could reach parse; optional context omit/`null` OK; blank/garbage → **422**). Service `parse_chat_message` / injection checks remain defense-in-depth. AI UI **Ask AI chat** (`aria-label` message + Ask; Ask gated on trim).
 
 **Request:**
 ```json
@@ -1705,7 +1705,7 @@ Form fields: `file` (required), `document_type` ∈ `receipt`|`invoice`|`purchas
 ### 16.9 AI Customer Assistant
 **Endpoint:** `POST /ai/customer/assist`
 
-Typed body `AiCustomerAssistBody` `{ "customer_id"?, "query"? | "message"? }` (`extra=forbid`; unknown keys → **422**; omit/`{}` → overview). Blank strings coerce to omit. AI UI **Customer assist** (`aria-label`).
+Typed body `AiCustomerAssistBody` `{ "customer_id"?, "query"? | "message"? }` (`extra=forbid`; unknown keys → **422**; omit/`{}` → overview; optional `query`/`message` ∈ `AiChatMessageValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; omit/`null` → overview; blank/`!!!`/`http://…` → **422** — was free `str` stripped to null / garbage could silently become overview). AI UI **Customer assist** (`aria-label`).
 
 ```json
 {

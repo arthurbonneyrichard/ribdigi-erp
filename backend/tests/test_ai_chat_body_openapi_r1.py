@@ -41,6 +41,10 @@ def test_ai_chat_body_schema_forbid_and_require_message():
     with pytest.raises(ValidationError):
         AiChatBody.model_validate({"prompt": ""})
     with pytest.raises(ValidationError):
+        AiChatBody.model_validate({"message": "!!!"})
+    with pytest.raises(ValidationError):
+        AiChatBody.model_validate({"message": "http://evil.example/p"})
+    with pytest.raises(ValidationError):
         AiChatBody.model_validate({"message": "hi", "extra": True})
 
 
@@ -48,9 +52,11 @@ def test_ai_chat_body_ui_and_docs():
     page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI chat message"' in page
     assert 'aria-label="Ask AI chat"' in page
+    assert "AI chat message is required" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI chat body OpenAPI" in agents
     assert "AiChatBody" in agents
+    assert "AiChatMessageValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "AiChatBody" in docs
     assert "extra=forbid" in docs
@@ -75,6 +81,13 @@ async def test_ai_chat_api_unknown_blank_422(client, monkeypatch):
         json={"message": ""},
     )
     assert blank.status_code == 422, blank.text
+
+    punct = await ac.post(
+        "/api/v1/ai/chat",
+        headers=headers,
+        json={"message": "!!!"},
+    )
+    assert punct.status_code == 422, punct.text
 
     omit = await ac.post("/api/v1/ai/chat", headers=headers, json={})
     assert omit.status_code == 422, omit.text

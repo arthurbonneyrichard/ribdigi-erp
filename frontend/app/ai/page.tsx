@@ -29,11 +29,18 @@ export default function Page() {
   const [draftDocDescription, setDraftDocDescription] = useState('');
 
   async function go() {
+    const message = q.trim();
+    if (!message) {
+      setError('AI chat message is required.');
+      setMessage('');
+      setA('');
+      return;
+    }
     setError('');
     setMessage('');
     setA('');
     try {
-      const r = await api('/ai/chat', { method: 'POST', body: JSON.stringify({ message: q }) });
+      const r = await api('/ai/chat', { method: 'POST', body: JSON.stringify({ message }) });
       setA(r.data?.answer || r.data?.reply || JSON.stringify(r.data));
     } catch (err: any) {
       setError(err.message || 'AI assistant unavailable');

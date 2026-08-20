@@ -31,13 +31,15 @@ def test_ai_customer_assist_body_schema_forbid():
     via_message = AiCustomerAssistBody.model_validate({"message": "  churn  "})
     assert via_message.message == "churn"
 
-    blanked = AiCustomerAssistBody.model_validate(
-        {"customer_id": "   ", "query": "", "message": "  "}
-    )
-    assert blanked.customer_id is None
-    assert blanked.query is None
-    assert blanked.message is None
+    blank_id = AiCustomerAssistBody.model_validate({"customer_id": "   "})
+    assert blank_id.customer_id is None
 
+    with pytest.raises(ValidationError):
+        AiCustomerAssistBody.model_validate({"query": ""})
+    with pytest.raises(ValidationError):
+        AiCustomerAssistBody.model_validate({"query": "!!!"})
+    with pytest.raises(ValidationError):
+        AiCustomerAssistBody.model_validate({"message": "http://evil.example/p"})
     with pytest.raises(ValidationError):
         AiCustomerAssistBody.model_validate({"query": "hi", "extra": True})
 
@@ -48,6 +50,7 @@ def test_ai_customer_assist_ui_and_docs():
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI customer assist body OpenAPI" in agents
     assert "AiCustomerAssistBody" in agents
+    assert "AiChatMessageValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "AiCustomerAssistBody" in docs
     assert "POST /ai/customer/assist" in docs
@@ -65,6 +68,13 @@ async def test_ai_customer_assist_api_unknown_422(client):
         json={"query": "best customers", "foo": 1},
     )
     assert unknown.status_code == 422, unknown.text
+
+    garbage = await ac.post(
+        "/api/v1/ai/customer/assist",
+        headers=headers,
+        json={"query": "!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     overview = await ac.post(
         "/api/v1/ai/customer/assist",

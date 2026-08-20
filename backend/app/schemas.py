@@ -1382,22 +1382,25 @@ class ExpenseCreate(BaseModel):
 class AiChatBody(BaseModel):
     """POST /ai/chat — typed chat body (BR-21.1).
 
-    Unknown keys → **422** (`extra=forbid`). Blank/omit `message` (and `prompt`
-    alias) → **422** (blank was late service **400**). Optional `context` /
-    `conversation_id` accepted for documented clients (unused by mock path).
+    Unknown keys → **422** (`extra=forbid`). `message` or `prompt` ∈
+    `AiChatMessageValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); omit both
+    / blank / `!!!` / `http://…` → **422** (blank was late service **400**;
+    punctuation/URL could reach `parse_chat_message`). Optional `context` ∈ same
+    Value type; omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`
+    stripped to null). Optional `conversation_id` still strip-blank→omit.
     Service `parse_chat_message` / injection checks remain defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    message: str | None = None
-    prompt: str | None = None
-    context: str | None = None
+    message: AiChatMessageValue | None = None
+    prompt: AiChatMessageValue | None = None
+    context: AiChatMessageValue | None = None
     conversation_id: str | None = None
 
-    @field_validator("message", "prompt", "context", "conversation_id", mode="before")
+    @field_validator("conversation_id", mode="before")
     @classmethod
-    def _strip_optional(cls, value: object) -> object:
+    def _strip_conversation_id(cls, value: object) -> object:
         if isinstance(value, str):
             text = value.strip()
             return text or None
@@ -1414,19 +1417,21 @@ class AiCustomerAssistBody(BaseModel):
     """POST /ai/customer/assist — typed customer assistant body (BR-21.9).
 
     Unknown keys → **422** (`extra=forbid`). Omit/`{}` still allowed (overview).
-    Blank `customer_id` / `query` / `message` coerce to omit. `message` is an
-    accepted alias for `query` (historical free-dict clients).
+    Optional `query` / `message` (alias) ∈ `AiChatMessageValue` (strip; 1–16000;
+    ≥1 letter/digit; no `://`/`@`); omit/`null` → overview; blank/`!!!`/`http://…`
+    → **422** (was free `str` stripped to null — punctuation could silently become
+    overview). Blank `customer_id` still coerces to omit.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     customer_id: str | None = None
-    query: str | None = None
-    message: str | None = None
+    query: AiChatMessageValue | None = None
+    message: AiChatMessageValue | None = None
 
-    @field_validator("customer_id", "query", "message", mode="before")
+    @field_validator("customer_id", mode="before")
     @classmethod
-    def _strip_optional(cls, value: object) -> object:
+    def _strip_customer_id(cls, value: object) -> object:
         if isinstance(value, str):
             text = value.strip()
             return text or None
@@ -3809,6 +3814,27 @@ AiReportPromptValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_ai_report_prompt_value),
+]
+
+
+def validate_ai_chat_message_value(value: str) -> str:
+    """AfterValidator: AI chat / customer-assist NL text; blank/URL/garbage → 422 (1–16000)."""
+    if not value:
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    if len(value) > 16000:
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    return value
+
+
+# AI chat / customer-assist NL text (align AI_MAX_MESSAGE_CHARS).
+AiChatMessageValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_chat_message_value),
 ]
 
 
