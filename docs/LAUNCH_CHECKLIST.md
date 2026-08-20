@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 10566 track opened (ADR-21139: `test_stage10566_open.py`, `docs/STAGE_10566_PLAN.md`) — Transfer Kamakuraeegajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-21140
+- [x] Transfer Kamakuraeegajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 10566 I1: `test_stage10566_index_i1.py`, `docs/TRANSFER_KAMAKURAEEGAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Kamakuraeegajiyuglaze Gate Honesty Pack blocker matrix (Stage 10566 B1: `test_stage10566_blockers_b1.py`, `docs/TRANSFER_KAMAKURAEEGAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 10565 / Stage 10564 / Stage 392 / CHANGE_IMPACT pointers (Stage 10566 P1: `test_stage10566_pointers_p1.py`, `docs/TRANSFER_KAMAKURAEEGAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 10566 fidelity sync (D1: `test_stage10566_fidelity_d1.py`, `docs/STAGE_10566_FIDELITY.md`)
+- [x] Stage 10566 exit + freeze (H10566x: `test_stage10566_exit_h10566x.py`, `docs/STAGE_10566_EXIT_CRITERIA.md`, ADR-21140)
 Stage 10565 track opened (ADR-21137: `test_stage10565_open.py`, `docs/STAGE_10565_PLAN.md`) — Transfer Kamakuraeepajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-21138
 - [x] Transfer Kamakuraeepajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 10565 I1: `test_stage10565_index_i1.py`, `docs/TRANSFER_KAMAKURAEEPAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Kamakuraeepajiyuglaze Gate Honesty Pack blocker matrix (Stage 10565 B1: `test_stage10565_blockers_b1.py`, `docs/TRANSFER_KAMAKURAEEPAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
