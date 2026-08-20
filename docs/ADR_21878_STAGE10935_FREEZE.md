@@ -31,3 +31,7 @@ Stage 10936 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edoeeajiyuglaze Gate, Transfer Edoeeajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 10936 opened under **ADR-21879** after CONTINUE/NEXT (Tenant MVP Transfer Edoeeiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-21880**. Stage 10935 feature scope remains frozen.
