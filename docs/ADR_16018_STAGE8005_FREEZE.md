@@ -31,3 +31,7 @@ Stage 8006 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseibbijiyuglaze Gate, Transfer Kanseibbijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8006 opened under **ADR-16019** after CONTINUE/NEXT (Tenant MVP Transfer Kanseibbwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16020**. Stage 8005 feature scope remains frozen.
