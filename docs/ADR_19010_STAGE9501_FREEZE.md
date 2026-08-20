@@ -31,3 +31,7 @@ Stage 9502 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijiddkyajiyuglaze Gate, Transfer Meijiddkyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9502 opened under **ADR-19011** after CONTINUE/NEXT (Tenant MVP Transfer Meijiddgyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19012**. Stage 9501 feature scope remains frozen.
