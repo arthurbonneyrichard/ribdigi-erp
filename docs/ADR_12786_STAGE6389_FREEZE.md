@@ -31,3 +31,7 @@ Stage 6390 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuaajiyajiyuglaze Gate, Transfer Bakumatsuaajiyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6390 opened under **ADR-12787** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuaajieejiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-12788**. Stage 6389 feature scope remains frozen.
