@@ -31,3 +31,7 @@ Stage 8607 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempoeesajiyuglaze Gate, Transfer Tempoeesajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8607 opened under **ADR-17221** after CONTINUE/NEXT (Tenant MVP Transfer Tempoeetajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17222**. Stage 8606 feature scope remains frozen.
