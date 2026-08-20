@@ -1049,7 +1049,10 @@ class ProductCategoryUpdate(BaseModel):
 
 
 class BrandCreate(BaseModel):
-    code: str
+    # Required brand code ∈ BrandCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_brand **409**.
+    code: BrandCodeValue
     # Required brand label ∈ BrandNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog brand create).
     name: BrandNameValue
@@ -1059,7 +1062,9 @@ class BrandCreate(BaseModel):
 
 
 class BrandUpdate(BaseModel):
-    code: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank reached service **400**; punctuation/URL could persist on Brand.code).
+    code: BrandCodeValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on brand display name).
     name: BrandNameValue | None = None
@@ -3536,6 +3541,27 @@ CategoryCodeValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_category_code_value),
+]
+
+
+def validate_brand_code_value(value: str) -> str:
+    """AfterValidator: catalog brand code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Catalog brand code — matches Brand.code String(40); uniqueness in service.
+BrandCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_brand_code_value),
 ]
 
 

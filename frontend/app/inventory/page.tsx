@@ -2298,7 +2298,13 @@ export default function Page() {
             <p className="muted" style={{ margin: 0 }}>
               Name, description, and logo (BR-5.1).
             </p>
-            <input value={brandCode} onChange={(e) => setBrandCode(e.target.value)} placeholder="Code" />
+            <input
+              value={brandCode}
+              onChange={(e) => setBrandCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Brand code"
+              title="Brand code (1–40 chars; letters/digits required)"
+            />
             <input
               value={brandName}
               onChange={(e) => setBrandName(e.target.value)}
