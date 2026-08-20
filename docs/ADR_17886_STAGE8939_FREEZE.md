@@ -31,3 +31,7 @@ Stage 8940 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseiccojiyuglaze Gate, Transfer Anseiccojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8940 opened under **ADR-17887** after CONTINUE/NEXT (Tenant MVP Transfer Anseiccujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17888**. Stage 8939 feature scope remains frozen.
