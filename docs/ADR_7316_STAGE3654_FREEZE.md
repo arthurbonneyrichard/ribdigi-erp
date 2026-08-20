@@ -31,3 +31,7 @@ Stage 3655 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enpoiijiyuglaze Gate, Transfer Enpoiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3655 opened under **ADR-7317** after CONTINUE/NEXT (Tenant MVP Transfer Enpooojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7318**. Stage 3654 feature scope remains frozen.
