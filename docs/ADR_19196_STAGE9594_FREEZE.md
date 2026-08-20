@@ -31,3 +31,7 @@ Stage 9595 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Taishoccsajiyuglaze Gate, Transfer Taishoccsajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 9595 opened under **ADR-19197** after CONTINUE/NEXT (Tenant MVP Transfer Taishocctajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-19198**. Stage 9594 feature scope remains frozen.
