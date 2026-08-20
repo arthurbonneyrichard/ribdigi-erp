@@ -31,3 +31,7 @@ Stage 6727 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jokyojiuujiyuglaze Gate, Transfer Jokyojiuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 6727 opened under **ADR-13461** after CONTINUE/NEXT (Tenant MVP Transfer Jokyojiyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-13462**. Stage 6726 feature scope remains frozen.
