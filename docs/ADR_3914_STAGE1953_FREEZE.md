@@ -31,3 +31,7 @@ Stage 1954 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanbunaajiyuglaze Gate, Transfer Kanbunaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1954 opened under **ADR-3915** after CONTINUE/NEXT (Tenant MVP Transfer Kanbunajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3916**. Stage 1953 feature scope remains frozen.
