@@ -1411,9 +1411,9 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 
 ### 13.1 Stores
 **List:** `GET /stores` (`is_active=true|false` optional — Multi-Store manage All/Active/Inactive; default returns all)  
-**Create:** `POST /stores` — `name` ∈ `StoreNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Store name** input.  
+**Create:** `POST /stores` — `code` ∈ `StoreCodeValue` (strip; 1–50; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/punctuation/URL could persist). Multi-Store **Store code** input. `name` ∈ `StoreNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Store name** input. Tenant uniqueness remains UniqueConstraint `(tenant_id, code)`.  
 **Get:** `GET /stores/{store_id}`  
-**Update:** `PATCH /stores/{store_id}` — `name` ∈ `StoreNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit store name** input.
+**Update:** `PATCH /stores/{store_id}` — `name` ∈ `StoreNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit store name** input. (`code` is create-only.)
 
 **Create Store:**
 ```json

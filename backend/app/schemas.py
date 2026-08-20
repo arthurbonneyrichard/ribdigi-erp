@@ -1734,7 +1734,10 @@ class StoreCreate(BaseModel):
     # Required store label ∈ StoreNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on multi-store create).
     name: StoreNameValue
-    code: str
+    # Required store code ∈ StoreCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/punctuation/URL could persist on Store.code).
+    # Tenant uniqueness remains UniqueConstraint (tenant_id, code).
+    code: StoreCodeValue
     # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/`garbage` could persist on create). Same AddressValue as Company.
     address: AddressValue | None = None
@@ -3441,6 +3444,27 @@ StoreNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_store_name_value),
+]
+
+
+def validate_store_code_value(value: str) -> str:
+    """AfterValidator: store code; blank/URL/garbage → 422 (1–50)."""
+    if not value:
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    if len(value) > 50:
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    return value
+
+
+# Multi-store code — matches Store.code String(50); uniqueness via UniqueConstraint.
+StoreCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_store_code_value),
 ]
 
 

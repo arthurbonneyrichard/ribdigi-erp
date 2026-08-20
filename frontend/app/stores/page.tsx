@@ -244,7 +244,7 @@ export default function Page() {
       await api('/stores', {
         method: 'POST',
         body: JSON.stringify({
-          code,
+          code: code.trim(),
           name: name.trim(),
           // Omit blank address so Create does not 422 (AddressValue).
           ...(address.trim() ? { address: address.trim() } : {}),
@@ -932,7 +932,13 @@ export default function Page() {
         <div className="card">
           <h3>New store</h3>
           <div style={{ display: 'grid', gap: 8 }}>
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Store code"
+              title="Store code (1–50 chars; letters/digits required)"
+            />
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
