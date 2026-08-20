@@ -31,3 +31,7 @@ Stage 4299 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchijiaajiyuglaze Gate, Transfer Azuchijiaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4299 opened under **ADR-8605** after CONTINUE/NEXT (Tenant MVP Transfer Azuchijiajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8606**. Stage 4298 feature scope remains frozen.
