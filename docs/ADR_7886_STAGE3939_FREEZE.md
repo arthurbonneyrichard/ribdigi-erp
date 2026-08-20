@@ -31,3 +31,7 @@ Stage 3940 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyowajiajiyuglaze Gate, Transfer Kyowajiajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3940 opened under **ADR-7887** after CONTINUE/NEXT (Tenant MVP Transfer Kyowajiiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-7888**. Stage 3939 feature scope remains frozen.
