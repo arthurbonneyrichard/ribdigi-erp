@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 4231 D1 (2026-08-14):** Transfer Narajiyajiyuglaze Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_4231_FIDELITY.md` (`test_stage4231_fidelity_d1.py`). Open ADR: `docs/ADR_8469_STAGE4231_OPEN.md`; plan `docs/STAGE_4231_PLAN.md`.
+
+**Stage 4231 exit (2026-08-14):** I1, B1, P1, D1, H4231x met — `docs/STAGE_4231_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_8470_STAGE4231_FREEZE.md`. Fidelity: `docs/STAGE_4231_FIDELITY.md`.
+
 **Stage 4230 D1 (2026-08-14):** Transfer Narajiuujiyuglaze Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_4230_FIDELITY.md` (`test_stage4230_fidelity_d1.py`). Open ADR: `docs/ADR_8467_STAGE4230_OPEN.md`; plan `docs/STAGE_4230_PLAN.md`.
 
 **Stage 4230 exit (2026-08-14):** I1, B1, P1, D1, H4230x met — `docs/STAGE_4230_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_8468_STAGE4230_FREEZE.md`. Fidelity: `docs/STAGE_4230_FIDELITY.md`.
