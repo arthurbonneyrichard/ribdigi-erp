@@ -31,3 +31,7 @@ Stage 7218 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpobbajiyuglaze Gate, Transfer Kanpobbajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 7218 opened under **ADR-14443** after CONTINUE/NEXT (Tenant MVP Transfer Kanpobbiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-14444**. Stage 7217 feature scope remains frozen.
