@@ -31,3 +31,7 @@ Stage 1963 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keichoajiyuglaze Gate, Transfer Keichoajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1963 opened under **ADR-3933** after CONTINUE/NEXT (Tenant MVP Transfer Keichoiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3934**. Stage 1962 feature scope remains frozen.
