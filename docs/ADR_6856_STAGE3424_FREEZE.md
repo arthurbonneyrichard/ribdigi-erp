@@ -31,3 +31,7 @@ Stage 3425 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoiaaajiyuglaze Gate, Transfer Yayoiaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3425 opened under **ADR-6857** after CONTINUE/NEXT (Tenant MVP Transfer Yayoiaaiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6858**. Stage 3424 feature scope remains frozen.
