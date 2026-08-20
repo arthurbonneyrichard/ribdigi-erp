@@ -31,3 +31,7 @@ Stage 5979 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manjiaawajiyuglaze Gate, Transfer Manjiaawajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5979 opened under **ADR-11965** after CONTINUE/NEXT (Tenant MVP Transfer Manjiaakajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11966**. Stage 5978 feature scope remains frozen.
