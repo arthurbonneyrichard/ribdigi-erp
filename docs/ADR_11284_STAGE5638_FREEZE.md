@@ -31,3 +31,7 @@ Stage 5639 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenpoujiujiyuglaze Gate, Transfer Tenpoujiujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5639 opened under **ADR-11285** after CONTINUE/NEXT (Tenant MVP Transfer Tenpoujiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-11286**. Stage 5638 feature scope remains frozen.
