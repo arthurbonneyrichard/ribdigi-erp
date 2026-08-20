@@ -31,3 +31,7 @@ Stage 4348 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpobajiyuglaze Gate, Transfer Kanpobajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 4348 opened under **ADR-8703** after CONTINUE/NEXT (Tenant MVP Transfer Kanpopajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-8704**. Stage 4347 feature scope remains frozen.
