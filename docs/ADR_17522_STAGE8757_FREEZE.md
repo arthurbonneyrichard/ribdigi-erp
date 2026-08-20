@@ -31,3 +31,7 @@ Stage 8758 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Koukaffojiyuglaze Gate, Transfer Koukaffojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8758 opened under **ADR-17523** after CONTINUE/NEXT (Tenant MVP Transfer Koukaffujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-17524**. Stage 8757 feature scope remains frozen.
