@@ -31,3 +31,7 @@ Stage 2954 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneiaaujiyuglaze Gate, Transfer Aneiaaujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2954 opened under **ADR-5915** after CONTINUE/NEXT (Tenant MVP Transfer Aneiaaijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-5916**. Stage 2953 feature scope remains frozen.
