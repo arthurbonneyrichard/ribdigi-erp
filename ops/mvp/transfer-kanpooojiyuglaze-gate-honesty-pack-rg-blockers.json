@@ -1,6 +1,6 @@
 {
   "id": "transfer-kanpooojiyuglaze-gate-honesty-pack-rg-blockers",
-  "stage": 1986,
+  "stage": 2036,
   "pack": "B1",
   "doc": "docs/TRANSFER_KANPOOOJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
   "hub": "docs/TRANSFER_KANPOOOJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
@@ -16,5 +16,5 @@
     "packaging_as_offline_complete": "NON_CLAIM"
   },
   "packaging_complete": true,
-  "message": "Stage 1986 B1 Transfer Kanpooojiyuglaze Gate Honesty Pack blocker matrix packaging only."
+  "message": "Stage 2036 B1 Transfer Kanpooojiyuglaze Gate Honesty Pack blocker matrix packaging only."
 }
