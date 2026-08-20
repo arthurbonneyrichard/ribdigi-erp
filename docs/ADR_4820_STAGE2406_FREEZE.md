@@ -31,3 +31,7 @@ Stage 2407 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanbunaauujiyuglaze Gate, Transfer Kanbunaauujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2407 opened under **ADR-4821** after CONTINUE/NEXT (Tenant MVP Transfer Kanbunaayajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4822**. Stage 2406 feature scope remains frozen.
