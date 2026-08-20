@@ -31,3 +31,7 @@ Stage 8088 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseieetajiyuglaze Gate, Transfer Kanseieetajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 8088 opened under **ADR-16183** after CONTINUE/NEXT (Tenant MVP Transfer Kanseieenajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-16184**. Stage 8087 feature scope remains frozen.
