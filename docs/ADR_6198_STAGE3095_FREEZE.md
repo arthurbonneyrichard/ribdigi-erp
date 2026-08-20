@@ -31,3 +31,7 @@ Stage 3096 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaeiaaijiyuglaze Gate, Transfer Kaeiaaijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 3096 opened under **ADR-6199** after CONTINUE/NEXT (Tenant MVP Transfer Kaeiaawajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-6200**. Stage 3095 feature scope remains frozen.
