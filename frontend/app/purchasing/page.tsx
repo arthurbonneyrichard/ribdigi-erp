@@ -798,7 +798,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           goods_receipt_id: invoiceGrnId,
-          supplier_invoice_number: supplierInvoiceNo || undefined,
+          supplier_invoice_number: supplierInvoiceNo.trim() || null,
           notes: invNotes.trim() || null,
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
@@ -830,7 +830,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           supplier_id: manualInvSupplierId,
-          supplier_invoice_number: supplierInvoiceNo || undefined,
+          supplier_invoice_number: supplierInvoiceNo.trim() || null,
           notes: invNotes.trim() || null,
           is_reverse_charge: manualInvRc,
           discount_amount: headerDisc,
@@ -986,8 +986,8 @@ export default function Page() {
     setMessage('');
     try {
       const body: Record<string, unknown> = {};
-      if (ocrDraft.supplier_invoice_number !== '') {
-        body.supplier_invoice_number = ocrDraft.supplier_invoice_number;
+      if (ocrDraft.supplier_invoice_number.trim() !== '') {
+        body.supplier_invoice_number = ocrDraft.supplier_invoice_number.trim();
       }
       const ocrNotes = ocrDraft.notes.trim();
       if (ocrNotes !== '') body.notes = ocrNotes;
@@ -2434,6 +2434,8 @@ export default function Page() {
             value={supplierInvoiceNo}
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
+            aria-label="Supplier invoice number"
+            title="Optional supplier invoice # (1–100 chars; letters/digits required)"
           />
           <input
             value={invNotes}
@@ -2532,6 +2534,8 @@ export default function Page() {
             value={supplierInvoiceNo}
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
+            aria-label="Supplier invoice number"
+            title="Optional supplier invoice # (1–100 chars; letters/digits required)"
           />
           <input
             value={invNotes}
@@ -2590,6 +2594,8 @@ export default function Page() {
                     setOcrDraft({ ...ocrDraft, supplier_invoice_number: e.target.value })
                   }
                   placeholder="Supplier invoice #"
+                  aria-label="Supplier invoice number"
+                  title="Optional supplier invoice # (1–100 chars; letters/digits required)"
                 />
                 <input
                   aria-label="Purchase invoice OCR date"

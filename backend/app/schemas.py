@@ -1485,7 +1485,9 @@ class AiDocumentPurchaseInvoiceCreate(BaseModel):
 
     purchase_order_id: str
     supplier_id: str | None = None
-    supplier_invoice_number: str | None = None
+    # omit/`null` → no supplier invoice #; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared; punctuation/URL could persist).
+    supplier_invoice_number: SupplierInvoiceNumberValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`).
     notes: PurchaseInvoiceNotesValue | None = None
     is_reverse_charge: bool = False
@@ -2265,7 +2267,10 @@ class PurchaseInvoiceCreate(BaseModel):
     supplier_id: str | None = None
     goods_receipt_id: str | None = None
     purchase_order_id: str | None = None
-    supplier_invoice_number: str | None = None
+    # omit/`null` → no supplier invoice #; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/`""` could persist or be stored raw; punctuation/URL could persist
+    # on PurchaseInvoice.supplier_invoice_number).
+    supplier_invoice_number: SupplierInvoiceNumberValue | None = None
     discount_amount: float = Field(default=0, ge=0)
     attachment_url: str | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
@@ -2287,10 +2292,14 @@ class PurchaseInvoiceUpdate(BaseModel):
     padded dates inconsistent). API `reports.parse_date` remains defense-in-depth.
     Optional `notes` ∈ PurchaseInvoiceNotesValue; omit/`null` → no change; blank/
     `!!!`/`http://…` → **422** (was free `str`; blank silently cleared / garbage
-    could persist).
+    could persist). Optional `supplier_invoice_number` ∈ SupplierInvoiceNumberValue;
+    omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank
+    silently cleared / garbage could persist).
     """
 
-    supplier_invoice_number: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on draft PATCH).
+    supplier_invoice_number: SupplierInvoiceNumberValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared / garbage could persist on draft PATCH).
     notes: PurchaseInvoiceNotesValue | None = None
@@ -5745,6 +5754,35 @@ PurchaseInvoiceNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_purchase_invoice_notes_value),
+]
+
+
+def validate_supplier_invoice_number_value(value: str) -> str:
+    """AfterValidator: supplier invoice #; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    if len(value) > 100:
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    return value
+
+
+# Supplier's own invoice reference — matches PurchaseInvoice.supplier_invoice_number String(100).
+SupplierInvoiceNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_supplier_invoice_number_value),
 ]
 
 
