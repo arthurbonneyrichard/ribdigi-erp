@@ -31,3 +31,7 @@ Stage 2002 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwaaajiyuglaze Gate, Transfer Meiwaaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 2002 opened under **ADR-4011** after CONTINUE/NEXT (Tenant MVP Transfer Meiwaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-4012**. Stage 2001 feature scope remains frozen.
