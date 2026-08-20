@@ -31,3 +31,7 @@ Stage 5231 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkajikyajiyuglaze Gate, Transfer Bunkajikyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 5231 opened under **ADR-10469** after CONTINUE/NEXT (Tenant MVP Transfer Bunkajigyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-10470**. Stage 5230 feature scope remains frozen.
