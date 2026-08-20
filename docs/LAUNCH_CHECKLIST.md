@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 11961 track opened (ADR-23929: `test_stage11961_open.py`, `docs/STAGE_11961_PLAN.md`) — Transfer Higashiyamaddtajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-23930
+- [x] Transfer Higashiyamaddtajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 11961 I1: `test_stage11961_index_i1.py`, `docs/TRANSFER_HIGASHIYAMADDTAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Higashiyamaddtajiyuglaze Gate Honesty Pack blocker matrix (Stage 11961 B1: `test_stage11961_blockers_b1.py`, `docs/TRANSFER_HIGASHIYAMADDTAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 11960 / Stage 11959 / Stage 392 / CHANGE_IMPACT pointers (Stage 11961 P1: `test_stage11961_pointers_p1.py`, `docs/TRANSFER_HIGASHIYAMADDTAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 11961 fidelity sync (D1: `test_stage11961_fidelity_d1.py`, `docs/STAGE_11961_FIDELITY.md`)
+- [x] Stage 11961 exit + freeze (H11961x: `test_stage11961_exit_h11961x.py`, `docs/STAGE_11961_EXIT_CRITERIA.md`, ADR-23930)
 Stage 11960 track opened (ADR-23927: `test_stage11960_open.py`, `docs/STAGE_11960_PLAN.md`) — Transfer Higashiyamaddsajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-23928
 - [x] Transfer Higashiyamaddsajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 11960 I1: `test_stage11960_index_i1.py`, `docs/TRANSFER_HIGASHIYAMADDSAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Higashiyamaddsajiyuglaze Gate Honesty Pack blocker matrix (Stage 11960 B1: `test_stage11960_blockers_b1.py`, `docs/TRANSFER_HIGASHIYAMADDSAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
