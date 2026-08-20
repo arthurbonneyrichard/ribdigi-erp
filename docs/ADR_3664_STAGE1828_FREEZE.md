@@ -31,3 +31,7 @@ Stage 1829 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gennajiyuglaze Gate, Transfer Gennajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1829 opened under **ADR-3665** after CONTINUE/NEXT (Tenant MVP Transfer Bunkiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3666**. Stage 1828 feature scope remains frozen.
