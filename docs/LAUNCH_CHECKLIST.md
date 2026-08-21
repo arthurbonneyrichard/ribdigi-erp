@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 12781 track opened (ADR-25569: `test_stage12781_open.py`, `docs/STAGE_12781_PLAN.md`) — Transfer Kyoutokuffajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-25570
+- [x] Transfer Kyoutokuffajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12781 I1: `test_stage12781_index_i1.py`, `docs/TRANSFER_KYOUTOKUFFAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Kyoutokuffajiyuglaze Gate Honesty Pack blocker matrix (Stage 12781 B1: `test_stage12781_blockers_b1.py`, `docs/TRANSFER_KYOUTOKUFFAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 12780 / Stage 12779 / Stage 392 / CHANGE_IMPACT pointers (Stage 12781 P1: `test_stage12781_pointers_p1.py`, `docs/TRANSFER_KYOUTOKUFFAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 12781 fidelity sync (D1: `test_stage12781_fidelity_d1.py`, `docs/STAGE_12781_FIDELITY.md`)
+- [x] Stage 12781 exit + freeze (H12781x: `test_stage12781_exit_h12781x.py`, `docs/STAGE_12781_EXIT_CRITERIA.md`, ADR-25570)
 Stage 12780 track opened (ADR-25567: `test_stage12780_open.py`, `docs/STAGE_12780_PLAN.md`) — Transfer Kyoutokuffaajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-25568
 - [x] Transfer Kyoutokuffaajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12780 I1: `test_stage12780_index_i1.py`, `docs/TRANSFER_KYOUTOKUFFAAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Kyoutokuffaajiyuglaze Gate Honesty Pack blocker matrix (Stage 12780 B1: `test_stage12780_blockers_b1.py`, `docs/TRANSFER_KYOUTOKUFFAAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
