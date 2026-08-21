@@ -31,3 +31,7 @@ Stage 15300 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Nanbokuwhajiyuglaze Gate, Transfer Nanbokuwhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15300 opened under **ADR-30607** after CONTINUE/NEXT (Tenant MVP Transfer Nanbokurrajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30608**. Stage 15299 feature scope remains frozen.
