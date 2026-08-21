@@ -314,7 +314,7 @@ export default function Page() {
       const r = await api('/expenses/recurring', {
         method: 'POST',
         body: JSON.stringify({
-          category_id: recCategoryId || undefined,
+          category_id: recCategoryId.trim() || null,
           amount: Number(recAmount),
           description: recDescription.trim() || null,
           payee: recPayee.trim() || null,

@@ -1731,7 +1731,11 @@ class RecurringExpenseCreate(BaseModel):
     # when `category_id` set; blank/`!!!`/`http://…` → **422** (was free `str`;
     # punctuation/URL could persist on RecurringExpense.category).
     category: ExpenseCategoryLabelValue | None = None
-    category_id: str | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → label-only path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped expense-category lookup
+    # (**404**/400).
+    category_id: UuidIdValue | None = None
     # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
     # `str` default `""`; blank/garbage could persist on recurring create).
     description: ExpenseDescriptionValue | None = None
