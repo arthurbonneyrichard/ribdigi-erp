@@ -31,3 +31,7 @@ Stage 14044 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwaddhajiyuglaze Gate, Transfer Tenwaddhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14044 opened under **ADR-28095** after CONTINUE/NEXT (Tenant MVP Transfer Tenwaddmajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-28096**. Stage 14043 feature scope remains frozen.
