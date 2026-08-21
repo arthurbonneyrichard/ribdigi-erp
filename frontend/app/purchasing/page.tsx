@@ -458,13 +458,13 @@ export default function Page() {
       const r = await api('/purchasing/orders', {
         method: 'POST',
         body: JSON.stringify({
-          supplier_id: supplierId,
+          supplier_id: supplierId.trim(),
           // null when blank so Create does not 422 (AddressValue).
           delivery_address: poDeliveryAddress.trim() || null,
           notes: poNotes.trim() || null,
           items: [
             {
-              product_id: productId,
+              product_id: productId.trim(),
               quantity: Number(qty),
               unit_id: unitId || null,
               unit_price: Number(unitPrice),
