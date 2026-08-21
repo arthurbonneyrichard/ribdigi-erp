@@ -494,12 +494,16 @@ class SmsSettingsUpdate(BaseModel):
     `account_sid` ∈ `TwilioAccountSidValue` (strip; alphanumeric 1–64); omit/`null` →
     no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage were
     accepted into tenant Twilio SID). Not strict `AC`+32hex (fixtures use short SIDs).
+    Optional `auth_token` ∈ `TwilioAuthTokenValue` (strip; 1–128; ≥1 letter/digit;
+    no `://` / `@` / spaces); omit/`null` → keep prior; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank was a silent no-op via service; punctuation/URL could be
+    encrypted into `sms_settings.auth_token_enc`). `clear_auth_token: true` removes it.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     account_sid: TwilioAccountSidValue | None = None
-    auth_token: str | None = None
+    auth_token: TwilioAuthTokenValue | None = None
     clear_auth_token: bool = False
     from_number: E164PhoneValue | None = None
 
@@ -3169,6 +3173,39 @@ TwilioAccountSidValue = Annotated[
     str,
     BeforeValidator(coerce_twilio_account_sid_value),
     AfterValidator(validate_twilio_account_sid_value),
+]
+
+
+def coerce_twilio_auth_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for auth_token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_twilio_auth_token_value(value: str) -> str:
+    """AfterValidator: Twilio auth token; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip94Token!); rejects empty/URL garbage.
+    """
+    if not value:
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    return value
+
+
+# Twilio Auth Token — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-15.2).
+TwilioAuthTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_twilio_auth_token_value),
+    AfterValidator(validate_twilio_auth_token_value),
 ]
 
 

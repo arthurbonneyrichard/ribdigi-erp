@@ -807,6 +807,8 @@ export default function Page() {
             onChange={(e) => setSmsAuthToken(e.target.value)}
             placeholder={smsStatus.has_auth_token ? '••••••••' : ''}
             autoComplete="new-password"
+            aria-label="Company SMS auth token"
+            title="Twilio auth token (1–128 chars; omit blank to keep)"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">From number (E.164)</label>
@@ -845,7 +847,9 @@ export default function Page() {
                   if (trimmedSid) body.account_sid = trimmedSid;
                   const trimmedFrom = smsFromNumber.trim();
                   if (trimmedFrom) body.from_number = trimmedFrom;
-                  if (smsAuthToken) body.auth_token = smsAuthToken;
+                  // Omit blank token so Save does not 422 (TwilioAuthTokenValue); leave prior.
+                  const trimmedToken = smsAuthToken.trim();
+                  if (trimmedToken) body.auth_token = trimmedToken;
                   const r = await api('/settings/sms', {
                     method: 'PATCH',
                     body: JSON.stringify(body),
