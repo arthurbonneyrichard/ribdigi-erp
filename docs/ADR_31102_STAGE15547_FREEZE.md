@@ -31,3 +31,7 @@ Stage 15548 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanseiaachajiyuglaze Gate, Transfer Kanseiaachajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15548 opened under **ADR-31103** after CONTINUE/NEXT (Tenant MVP Transfer Kanseiaashajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31104**. Stage 15547 feature scope remains frozen.
