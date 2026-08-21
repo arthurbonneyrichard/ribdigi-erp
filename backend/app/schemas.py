@@ -6059,7 +6059,11 @@ class BankClearGroupBody(BaseModel):
 
 
 class SupplierPaymentCreate(BaseModel):
-    supplier_id: str
+    # Required supplier ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped supplier lookup (**404**). Distinct from CustomerPaymentCreate
+    # (same Value type; AP payment create path).
+    supplier_id: UuidIdValue
     amount: float = Field(gt=0)
     purchase_order_id: str | None = None
     purchase_invoice_id: str | None = None

@@ -191,10 +191,11 @@ export default function Page() {
           }),
         });
       } else {
-        await api(`/suppliers/${partyId}/payments`, {
+        await api(`/suppliers/${partyId.trim()}/payments`, {
           method: 'POST',
           body: JSON.stringify({
-            supplier_id: partyId,
+            // trim so Record payment (UuidIdValue supplier_id) does not 422 on whitespace
+            supplier_id: partyId.trim(),
             amount: Number(payAmount),
             payment_method: payMethod === 'cash' ? 'bank_transfer' : payMethod,
             reference: payReference.trim() || null,

@@ -1,4 +1,4 @@
-"""CustomerPaymentCreate.customer_id ∈ UuidIdValue OpenAPI honesty (BR-11)."""
+"""CustomerPaymentCreate.customer_id ∈ UuidIdValue OpenAPI honesty (BR-11.1)."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ async def test_customer_payment_customer_id_api_blank_invalid_422(client, seeded
     )
     assert omit.status_code == 422, omit.text
 
-    # Well-formed UUID (trimmed/lowered by schema) must not 422; business outcome varies.
+    # Valid UUID shape — must not 422 (may 400 if no open AR).
     shaped = await ac.post(
         f"/api/v1/customers/{cust}/payments",
         headers=headers,
