@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 12962 track opened (ADR-25931: `test_stage12962_open.py`, `docs/STAGE_12962_PLAN.md`) — Transfer Bunmeiccaajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-25932
+- [x] Transfer Bunmeiccaajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12962 I1: `test_stage12962_index_i1.py`, `docs/TRANSFER_BUNMEICCAAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Bunmeiccaajiyuglaze Gate Honesty Pack blocker matrix (Stage 12962 B1: `test_stage12962_blockers_b1.py`, `docs/TRANSFER_BUNMEICCAAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 12961 / Stage 12960 / Stage 392 / CHANGE_IMPACT pointers (Stage 12962 P1: `test_stage12962_pointers_p1.py`, `docs/TRANSFER_BUNMEICCAAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 12962 fidelity sync (D1: `test_stage12962_fidelity_d1.py`, `docs/STAGE_12962_FIDELITY.md`)
+- [x] Stage 12962 exit + freeze (H12962x: `test_stage12962_exit_h12962x.py`, `docs/STAGE_12962_EXIT_CRITERIA.md`, ADR-25932)
 Stage 12961 track opened (ADR-25929: `test_stage12961_open.py`, `docs/STAGE_12961_PLAN.md`) — Transfer Bunmeibbnyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-25930
 - [x] Transfer Bunmeibbnyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12961 I1: `test_stage12961_index_i1.py`, `docs/TRANSFER_BUNMEIBBNYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Bunmeibbnyajiyuglaze Gate Honesty Pack blocker matrix (Stage 12961 B1: `test_stage12961_blockers_b1.py`, `docs/TRANSFER_BUNMEIBBNYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
