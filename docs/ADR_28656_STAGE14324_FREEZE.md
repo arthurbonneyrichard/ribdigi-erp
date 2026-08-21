@@ -31,3 +31,7 @@ Stage 14325 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shotokueewajiyuglaze Gate, Transfer Shotokueewajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14325 opened under **ADR-28657** after CONTINUE/NEXT (Tenant MVP Transfer Shotokueekajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-28658**. Stage 14324 feature scope remains frozen.
