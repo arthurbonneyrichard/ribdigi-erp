@@ -5468,6 +5468,40 @@ WebhookDescriptionValue = Annotated[
 ]
 
 
+def coerce_webhook_secret_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for secret 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_webhook_secret_value(value: str) -> str:
+    """AfterValidator: webhook signing secret; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip251WebhookSecret!); rejects empty/URL garbage.
+    Non-`whsec_` secrets still need ≥16 chars in service create_endpoint (**400**).
+    """
+    if not value:
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    return value
+
+
+# Webhook create optional signing secret — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-18.6).
+WebhookSecretValue = Annotated[
+    str,
+    BeforeValidator(coerce_webhook_secret_value),
+    AfterValidator(validate_webhook_secret_value),
+]
+
+
 class WebhookCreate(BaseModel):
     """Outbound webhook endpoint create."""
 
@@ -5475,7 +5509,11 @@ class WebhookCreate(BaseModel):
     url: WebhookUrlValue
     # Closed event catalog; blank/unknown item → 422; empty list → 422
     events: list[WebhookEventValue] = Field(min_length=1)
-    secret: str | None = None
+    # omit/`null` → auto-generate `whsec_…`; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-generated via strip-or-generate; punctuation/URL could
+    # be encrypted into `WebhookEndpoint.secret_enc`). Service min-length for non-whsec
+    # remains defense-in-depth (**400**).
+    secret: WebhookSecretValue | None = None
     # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently None / garbage could persist).
     description: WebhookDescriptionValue | None = None

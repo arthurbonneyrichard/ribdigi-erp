@@ -81,6 +81,7 @@ export default function Page() {
   const [keyName, setKeyName] = useState('');
   const [keyExpires, setKeyExpires] = useState('');
   const [hookUrl, setHookUrl] = useState('');
+  const [hookSecret, setHookSecret] = useState('');
   const [hookDesc, setHookDesc] = useState('');
   const [hookEvents, setHookEvents] = useState<string[]>(['sale.created', 'webhook.test']);
   const [busy, setBusy] = useState(false);
@@ -169,6 +170,7 @@ export default function Page() {
         body: JSON.stringify({
           url: hookUrl,
           events: hookEvents,
+          secret: hookSecret.trim() || null,
           description: hookDesc.trim() || null,
           is_active: true,
         }),
@@ -176,6 +178,7 @@ export default function Page() {
       setRevealedSecret(r.data?.secret || '');
       setMessage(r.message || 'Webhook created — copy the signing secret now');
       setHookUrl('');
+      setHookSecret('');
       setHookDesc('');
       await refresh();
     } catch (err: any) {
@@ -503,6 +506,17 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           placeholder="https://your-app.com/webhooks/ribdigi"
           aria-label="Webhook endpoint URL"
           title="Absolute https URL (http only for localhost)"
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+        <label className="muted">Signing secret (optional)</label>
+        <input
+          type="password"
+          value={hookSecret}
+          onChange={(e) => setHookSecret(e.target.value)}
+          placeholder="Leave blank to auto-generate whsec_…"
+          aria-label="Webhook signing secret"
+          title="Optional custom signing secret; blank auto-generates"
+          autoComplete="off"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <label className="muted">Description</label>
