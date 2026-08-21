@@ -31,3 +31,7 @@ Stage 13963 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enpoffsajiyuglaze Gate, Transfer Enpoffsajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13963 opened under **ADR-27933** after CONTINUE/NEXT (Tenant MVP Transfer Enpofftajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-27934**. Stage 13962 feature scope remains frozen.
