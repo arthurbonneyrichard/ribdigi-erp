@@ -31,3 +31,7 @@ Stage 15381 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houekishajiyuglaze Gate, Transfer Houekishajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15381 opened under **ADR-30769** after CONTINUE/NEXT (Tenant MVP Transfer Houekithajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30770**. Stage 15380 feature scope remains frozen.
