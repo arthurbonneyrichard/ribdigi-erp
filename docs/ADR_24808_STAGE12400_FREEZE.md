@@ -31,3 +31,7 @@ Stage 12401 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpouffwajiyuglaze Gate, Transfer Kanpouffwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12401 opened under **ADR-24809** after CONTINUE/NEXT (Tenant MVP Transfer Kanpouffkajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-24810**. Stage 12400 feature scope remains frozen.
