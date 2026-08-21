@@ -18,11 +18,13 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_CUST = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
 
 def test_document_payment_currency_schema():
     si = SalesInvoiceCreate.model_validate(
         {
-            "customer_id": "c1",
+            "customer_id": _CUST,
             "items": [{"product_id": "p1", "quantity": 1}],
             "currency": " usd ",
         }
@@ -45,7 +47,7 @@ def test_document_payment_currency_schema():
     for Cls, base in (
         (
             SalesInvoiceCreate,
-            {"customer_id": "c1", "items": [{"product_id": "p1", "quantity": 1}]},
+            {"customer_id": _CUST, "items": [{"product_id": "p1", "quantity": 1}]},
         ),
         (PurchaseInvoiceCreate, {}),
         (CustomerPaymentCreate, {"customer_id": "c1", "amount": 1}),

@@ -2593,7 +2593,10 @@ class SalesInvoiceItemCreate(BaseModel):
 
 
 class SalesInvoiceCreate(BaseModel):
-    customer_id: str
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**).
+    customer_id: UuidIdValue
     discount_amount: float = Field(default=0, ge=0)
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesInvoice.notes Text).
@@ -5228,6 +5231,35 @@ TenantRefValue = Annotated[
     str,
     BeforeValidator(coerce_tenant_ref_value),
     AfterValidator(validate_tenant_ref_value),
+]
+
+
+def coerce_uuid_id_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for UUID id 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_uuid_id_value(value: str) -> str:
+    """AfterValidator: required UUID FK; blank/non-UUID → 422 (normalized lower).
+
+    Existence remains service tenant-scoped lookup (**404**).
+    """
+    if not value:
+        raise ValueError("UUID id must not be blank")
+    if not _UUID_RE.fullmatch(value):
+        raise ValueError("UUID id must be a valid UUID")
+    return value.lower()
+
+
+# Foreign-key UUID id — strip + lower; blank/`!!!`/URL/non-UUID → 422.
+UuidIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_uuid_id_value),
+    AfterValidator(validate_uuid_id_value),
 ]
 
 

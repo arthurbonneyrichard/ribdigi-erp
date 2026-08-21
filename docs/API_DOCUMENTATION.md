@@ -1062,7 +1062,7 @@ Optional create/confirm `delivery_address` ∈ `AddressValue` (strip; 1–500 ch
 
 ### 7.5 Invoices
 **List:** `GET /sales/invoices` — optional Query `status` ∈ `draft`|`posted`|`sent`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Invoices **Sales invoice status filter** (`invoiceManageFilter`; client filter over full cache).  
-**Create:** `POST /sales/invoices` — optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/orders; omit/`null` → no notes; blank/garbage → **422**). Sales **Sales document notes** input; Create invoice sends `null` when blank.  
+**Create:** `POST /sales/invoices` — required `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/orders; omit/`null` → no notes; blank/garbage → **422**). Sales **Sale customer** select + **Sales document notes** input; Create invoice sends `customer_id` trim and `null` notes when blank.  
 **Get:** `GET /sales/invoices/{invoice_id}`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
 **Print:** `GET /sales/invoices/{invoice_id}/print` — query `template` ∈ a4|thermal (omit → company print branding default; blank/invalid → **422**); `format` ∈ pdf|text|json (omit → `pdf`; blank/invalid → **422**); `paper` ∈ 58mm|80mm for thermal (omit → branding default; blank/invalid → **422**, no silent branding fallback for garbage). Sales Print A4 / thermal controls.

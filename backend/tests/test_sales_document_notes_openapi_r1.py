@@ -15,6 +15,7 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 _ITEMS = [{"product_id": "p1", "quantity": 1, "unit_price": 10}]
+_CUST = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
 
 def test_sales_document_notes_schema():
@@ -23,7 +24,7 @@ def test_sales_document_notes_schema():
         (SalesQuotationCreate, "customer_id"),
         (SalesOrderCreate, "customer_id"),
     ):
-        base = {key: "c1", "items": _ITEMS}
+        base = {key: _CUST, "items": _ITEMS}
         omit = cls.model_validate(base)
         assert omit.notes is None
         ok = cls.model_validate({**base, "notes": "  Bulk pricing  "})

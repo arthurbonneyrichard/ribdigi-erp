@@ -286,7 +286,7 @@ export default function Page() {
   };
 
   const invoicePayload = {
-    customer_id: customerId,
+    customer_id: customerId.trim(),
     store_id: storeId || null,
     items: lineItems,
     discount_amount: hdrDisc,
