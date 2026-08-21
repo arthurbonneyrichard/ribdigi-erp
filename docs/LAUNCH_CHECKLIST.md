@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 12311 track opened (ADR-24629: `test_stage12311_open.py`, `docs/STAGE_12311_PLAN.md`) — Transfer Kanpoubbnyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-24630
+- [x] Transfer Kanpoubbnyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12311 I1: `test_stage12311_index_i1.py`, `docs/TRANSFER_KANPOUBBNYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Kanpoubbnyajiyuglaze Gate Honesty Pack blocker matrix (Stage 12311 B1: `test_stage12311_blockers_b1.py`, `docs/TRANSFER_KANPOUBBNYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 12310 / Stage 12309 / Stage 392 / CHANGE_IMPACT pointers (Stage 12311 P1: `test_stage12311_pointers_p1.py`, `docs/TRANSFER_KANPOUBBNYAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 12311 fidelity sync (D1: `test_stage12311_fidelity_d1.py`, `docs/STAGE_12311_FIDELITY.md`)
+- [x] Stage 12311 exit + freeze (H12311x: `test_stage12311_exit_h12311x.py`, `docs/STAGE_12311_EXIT_CRITERIA.md`, ADR-24630)
 Stage 12310 track opened (ADR-24627: `test_stage12310_open.py`, `docs/STAGE_12310_PLAN.md`) — Transfer Kanpoubbgyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-24628
 - [x] Transfer Kanpoubbgyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12310 I1: `test_stage12310_index_i1.py`, `docs/TRANSFER_KANPOUBBGYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Kanpoubbgyajiyuglaze Gate Honesty Pack blocker matrix (Stage 12310 B1: `test_stage12310_blockers_b1.py`, `docs/TRANSFER_KANPOUBBGYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
