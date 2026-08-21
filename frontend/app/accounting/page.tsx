@@ -536,7 +536,7 @@ export default function Page() {
       const r = await api('/accounting/bank-statements', {
         method: 'POST',
         body: JSON.stringify({
-          account_id: reconAccountId,
+          account_id: reconAccountId.trim(),
           statement_date: stmtDate || undefined,
           opening_balance: Number(opening),
           closing_balance: Number(closing),

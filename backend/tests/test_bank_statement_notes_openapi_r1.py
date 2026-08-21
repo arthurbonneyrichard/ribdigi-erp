@@ -13,22 +13,24 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_ACCT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
 
 def test_bank_statement_notes_schema():
-    omit = BankStatementCreateBody.model_validate({"account_id": "a"})
+    omit = BankStatementCreateBody.model_validate({"account_id": _ACCT})
     assert omit.notes is None
     nullish = BankStatementCreateBody.model_validate(
-        {"account_id": "a", "notes": None}
+        {"account_id": _ACCT, "notes": None}
     )
     assert nullish.notes is None
     ok = BankStatementCreateBody.model_validate(
-        {"account_id": "a", "notes": "  Month-end feed  "}
+        {"account_id": _ACCT, "notes": "  Month-end feed  "}
     )
     assert ok.notes == "Month-end feed"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             BankStatementCreateBody.model_validate(
-                {"account_id": "a", "notes": bad}
+                {"account_id": _ACCT, "notes": bad}
             )
 
 

@@ -12,11 +12,13 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_ACCT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
 
 def test_bank_statement_create_schema_forbid_and_bounds():
     ok = BankStatementCreateBody.model_validate(
         {
-            "account_id": "  acct-1  ",
+            "account_id": f"  {_ACCT.upper()}  ",
             "opening_balance": 10,
             "closing_balance": 25,
             "notes": "  hello  ",
@@ -30,13 +32,13 @@ def test_bank_statement_create_schema_forbid_and_bounds():
             ],
         }
     )
-    assert ok.account_id == "acct-1"
+    assert ok.account_id == _ACCT
     assert ok.notes == "hello"
     assert ok.lines[0].description == "Line"
     assert ok.lines[0].external_ref == "xref"
     assert ok.lines[0].txn_date == "2026-08-17"
 
-    empty_lines = BankStatementCreateBody.model_validate({"account_id": "a"})
+    empty_lines = BankStatementCreateBody.model_validate({"account_id": _ACCT})
     assert empty_lines.lines == []
     assert empty_lines.opening_balance == 0
 
@@ -47,10 +49,10 @@ def test_bank_statement_create_schema_forbid_and_bounds():
     with pytest.raises(ValidationError):
         BankStatementCreateBody.model_validate({"account_id": "   "})
     with pytest.raises(ValidationError):
-        BankStatementCreateBody.model_validate({"account_id": "a", "extra": 1})
+        BankStatementCreateBody.model_validate({"account_id": _ACCT, "extra": 1})
     with pytest.raises(ValidationError):
         BankStatementCreateBody.model_validate(
-            {"account_id": "a", "lines": [{"amount": 0}]}
+            {"account_id": _ACCT, "lines": [{"amount": 0}]}
         )
     with pytest.raises(ValidationError):
         BankStatementLineCreate.model_validate({"amount": 1, "unknown": True})
@@ -59,6 +61,7 @@ def test_bank_statement_create_schema_forbid_and_bounds():
 def test_bank_statement_create_ui_and_docs():
     page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Reconcile liquid account"' in page
+    assert "account_id: reconAccountId.trim()" in page
     assert 'aria-label="Statement opening balance"' in page
     assert 'aria-label="Statement closing balance"' in page
     assert 'aria-label="Statement line amount"' in page
@@ -69,9 +72,11 @@ def test_bank_statement_create_ui_and_docs():
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Bank statement create body OpenAPI" in agents
     assert "BankStatementCreateBody" in agents
+    assert "Bank statement account_id OpenAPI" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "BankStatementCreateBody" in docs
     assert "BankStatementLineCreate" in docs
+    assert "UuidIdValue" in docs
     assert "extra=forbid" in docs
 
 

@@ -12,6 +12,8 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_ACCT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
 
 def test_iso_date_query_schema_for_bank_statement_dates():
     adapter = TypeAdapter(IsoDateQueryValue)
@@ -24,13 +26,13 @@ def test_iso_date_query_schema_for_bank_statement_dates():
 def test_bank_statement_date_schema_rejects_invalid():
     with pytest.raises(ValidationError):
         BankStatementCreateBody.model_validate(
-            {"account_id": "a", "statement_date": "not-a-date"}
+            {"account_id": _ACCT, "statement_date": "not-a-date"}
         )
     with pytest.raises(ValidationError):
-        BankStatementCreateBody.model_validate({"account_id": "a", "statement_date": ""})
+        BankStatementCreateBody.model_validate({"account_id": _ACCT, "statement_date": ""})
     with pytest.raises(ValidationError):
         BankStatementCreateBody.model_validate(
-            {"account_id": "a", "statement_date": "01/02/2024"}
+            {"account_id": _ACCT, "statement_date": "01/02/2024"}
         )
     with pytest.raises(ValidationError):
         BankStatementLineCreate.model_validate(
@@ -41,7 +43,7 @@ def test_bank_statement_date_schema_rejects_invalid():
 
     ok = BankStatementCreateBody.model_validate(
         {
-            "account_id": "a",
+            "account_id": _ACCT,
             "statement_date": " 2020-01-01 ",
             "lines": [{"amount": 10, "txn_date": " 2020-01-02 "}],
         }
@@ -49,7 +51,7 @@ def test_bank_statement_date_schema_rejects_invalid():
     assert ok.statement_date == "2020-01-01"
     assert ok.lines[0].txn_date == "2020-01-02"
 
-    omit = BankStatementCreateBody.model_validate({"account_id": "a"})
+    omit = BankStatementCreateBody.model_validate({"account_id": _ACCT})
     assert omit.statement_date is None
 
 

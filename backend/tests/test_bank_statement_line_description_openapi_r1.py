@@ -13,6 +13,8 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_ACCT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
 
 def test_bank_statement_line_description_schema():
     omit = BankStatementLineCreate.model_validate({"amount": 10})
@@ -34,7 +36,7 @@ def test_bank_statement_line_description_schema():
     with pytest.raises(ValidationError):
         BankStatementCreateBody.model_validate(
             {
-                "account_id": "a",
+                "account_id": _ACCT,
                 "lines": [{"amount": 10, "description": "!!!!"}],
             }
         )
