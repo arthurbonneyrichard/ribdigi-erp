@@ -1968,16 +1968,70 @@ TaxComponentBasisValue = Annotated[
 ]
 
 
+def coerce_tax_component_label_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip code/name; blank stays blank for AfterValidator 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_tax_component_code_value(value: str) -> str:
+    """AfterValidator: tax component code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    return value
+
+
+def validate_tax_component_name_value(value: str) -> str:
+    """AfterValidator: tax component display name; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Tax component code — matches normalize_components [:40]; omit/`null` → name or auto cN.
+TaxComponentCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_tax_component_label_value),
+    AfterValidator(validate_tax_component_code_value),
+]
+
+# Tax component name — matches normalize_components [:80]; omit/`null` → code.
+TaxComponentNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_tax_component_label_value),
+    AfterValidator(validate_tax_component_name_value),
+]
+
+
 class TaxComponent(BaseModel):
-    """Compound tax leg (BR-12.1) — unknown keys → 422; blank/invalid basis → 422."""
+    """Compound tax leg (BR-12.1) — unknown keys → 422; blank/invalid basis/code/name → 422."""
 
     model_config = ConfigDict(extra="forbid")
 
     rate: float = Field(ge=0)
     # omit → net; blank/invalid → 422 (was free dict; blank silently net; bad late **400**)
     basis: TaxComponentBasisValue = "net"
-    code: str | None = None
-    name: str | None = None
+    # omit/`null` → service uses name or auto `cN`; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank silently fell through to name/`cN`; garbage could persist).
+    code: TaxComponentCodeValue | None = None
+    # omit/`null` → service uses code; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank silently fell through to code; garbage could persist).
+    name: TaxComponentNameValue | None = None
 
 
 class TaxCreate(BaseModel):

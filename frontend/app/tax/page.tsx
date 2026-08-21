@@ -96,8 +96,22 @@ export default function Page() {
     try {
       let components = null;
       if (componentsJson.trim()) {
-        components = JSON.parse(componentsJson);
-        if (!Array.isArray(components)) throw new Error('Components must be a JSON array');
+        const parsed = JSON.parse(componentsJson);
+        if (!Array.isArray(parsed)) throw new Error('Components must be a JSON array');
+        // Omit blank code/name so schema omit/`null` path applies (blank → 422).
+        components = parsed.map((c: Record<string, unknown>) => {
+          if (!c || typeof c !== 'object') return c;
+          const next: Record<string, unknown> = { ...c };
+          if (typeof next.code === 'string') {
+            const code = next.code.trim();
+            next.code = code || null;
+          }
+          if (typeof next.name === 'string') {
+            const label = next.name.trim();
+            next.name = label || null;
+          }
+          return next;
+        });
       }
       await api('/tax/rates', {
         method: 'POST',
@@ -301,7 +315,7 @@ export default function Page() {
               rows={3}
               placeholder='[{"code":"cgst","name":"CGST","rate":9,"basis":"net"},{"code":"sgst","name":"SGST","rate":9,"basis":"net"}]'
               aria-label="Tax rate components JSON"
-              title='JSON array of {code,name,rate,basis} with basis net|compound'
+              title="JSON array of {code,name,rate,basis}; code/name omit or non-empty (blank/!!!/URL → 422); basis net|compound"
             />
             <button type="button" aria-label="Add tax rate" onClick={createRate} disabled={!name.trim()}>
               Add rate

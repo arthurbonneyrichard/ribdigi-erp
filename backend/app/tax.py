@@ -125,6 +125,24 @@ def normalize_components(raw: list | None) -> list[dict[str, Any]] | None:
             basis = "net"
         if basis not in {"net", "compound"}:
             raise HTTPException(status_code=400, detail="Component basis must be net or compound")
+        # Schema TaxComponentCodeValue / TaxComponentNameValue reject blank/garbage → 422;
+        # keep strip + auto-fill when omitted (defense-in-depth).
+        if "code" in item and item.get("code") is not None:
+            code_raw = str(item.get("code")).strip()
+            if not code_raw or "://" in code_raw or "@" in code_raw or not any(
+                ch.isalnum() for ch in code_raw
+            ):
+                raise HTTPException(
+                    status_code=400, detail="Component code must be a non-empty label"
+                )
+        if "name" in item and item.get("name") is not None:
+            name_raw = str(item.get("name")).strip()
+            if not name_raw or "://" in name_raw or "@" in name_raw or not any(
+                ch.isalnum() for ch in name_raw
+            ):
+                raise HTTPException(
+                    status_code=400, detail="Component name must be a non-empty label"
+                )
         code = (item.get("code") or item.get("name") or f"c{len(out)+1}").strip()[:40]
         name = (item.get("name") or code).strip()[:80]
         out.append({"code": code, "name": name, "rate": rate, "basis": basis})
