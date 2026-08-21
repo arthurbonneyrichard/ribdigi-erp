@@ -31,3 +31,7 @@ Stage 15287 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuphajiyuglaze Gate, Transfer Sengokuphajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15287 opened under **ADR-30581** after CONTINUE/NEXT (Tenant MVP Transfer Sengokuwhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30582**. Stage 15286 feature scope remains frozen.
