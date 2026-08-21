@@ -4175,6 +4175,35 @@ BankConnectionDisplayNameValue = Annotated[
 ]
 
 
+def validate_bank_external_account_id_value(value: str) -> str:
+    """AfterValidator: bank feed external account id; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    if len(value) > 120:
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    return value
+
+
+# Bank connection provider account id — matches BankConnection.external_account_id String(120).
+BankExternalAccountIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_external_account_id_value),
+]
+
+
 def validate_pos_customer_name_value(value: str) -> str:
     """AfterValidator: POS walk-in customer name; blank/URL/garbage → 422 (1–180)."""
     if not value:
@@ -4959,7 +4988,8 @@ class BankConnectionCreate(BaseModel):
     provider: Literal["mock", "http_json"] = "mock"
     # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
     display_name: BankConnectionDisplayNameValue | None = None
-    external_account_id: str | None = None
+    # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist)
+    external_account_id: BankExternalAccountIdValue | None = None
     # omit/null OK (mock); blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
     feed_url: WebhookUrlValue | None = None
     access_token: str | None = None
@@ -4973,7 +5003,8 @@ class BankConnectionUpdate(BaseModel):
     provider: Literal["mock", "http_json"] | None = None
     # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
     display_name: BankConnectionDisplayNameValue | None = None
-    external_account_id: str | None = None
+    # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist)
+    external_account_id: BankExternalAccountIdValue | None = None
     # omit/null = no change; blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
     feed_url: WebhookUrlValue | None = None
     access_token: str | None = None

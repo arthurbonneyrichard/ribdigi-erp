@@ -617,7 +617,7 @@ export default function Page() {
           account_id: reconAccountId,
           provider: connProvider,
           display_name: displayName || null,
-          external_account_id: connExtId || null,
+          external_account_id: connExtId.trim() || null,
           feed_url: connProvider === 'http_json' ? connFeedUrl : null,
           auto_sync: true,
           auto_match_after_sync: true,
@@ -1833,9 +1833,11 @@ export default function Page() {
               <option value="http_json">http_json (GET JSON feed URL)</option>
             </select>
             <input
+              aria-label="Bank external account id"
               value={connExtId}
               onChange={(e) => setConnExtId(e.target.value)}
               placeholder="External account id"
+              title="Provider account id (1–120 chars; letters/digits required)"
             />
             {connProvider === 'http_json' && (
               <input
