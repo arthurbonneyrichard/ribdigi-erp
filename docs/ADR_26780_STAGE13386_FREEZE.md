@@ -31,3 +31,7 @@ Stage 13387 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shohoddujiyuglaze Gate, Transfer Shohoddujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13387 opened under **ADR-26781** after CONTINUE/NEXT (Tenant MVP Transfer Shohoddijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-26782**. Stage 13386 feature scope remains frozen.
