@@ -31,3 +31,7 @@ Stage 15134 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Reiwaqajiyuglaze Gate, Transfer Reiwaqajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15134 opened under **ADR-30275** after CONTINUE/NEXT (Tenant MVP Transfer Reiwaxajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30276**. Stage 15133 feature scope remains frozen.
