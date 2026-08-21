@@ -31,3 +31,7 @@ Stage 15402 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Choukyouvajiyuglaze Gate, Transfer Choukyouvajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15402 opened under **ADR-30811** after CONTINUE/NEXT (Tenant MVP Transfer Choukyoujajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30812**. Stage 15401 feature scope remains frozen.
