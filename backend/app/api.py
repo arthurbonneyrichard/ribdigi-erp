@@ -12664,6 +12664,7 @@ async def ai_reports_export(
         format=payload.format,
         template_id=payload.template_id,
         report_type=payload.report_type,
+        period=payload.period,
         params=payload.params or payload.filters,
     )
     return Response(

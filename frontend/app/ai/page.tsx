@@ -292,6 +292,7 @@ export default function Page() {
     setMessage('');
     try {
       const prompt = q.trim() || 'monthly sales for this month';
+      const period = reportPeriod.trim() ? reportPeriod.trim() : null;
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -302,7 +303,7 @@ export default function Page() {
           Authorization: token ? `Bearer ${token}` : '',
           'X-Tenant-ID': tenant || '',
         },
-        body: JSON.stringify({ prompt, format: 'csv' }),
+        body: JSON.stringify({ prompt, format: 'csv', period }),
         cache: 'no-store',
       });
       if (!res.ok) {

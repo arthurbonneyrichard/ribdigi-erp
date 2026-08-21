@@ -4955,10 +4955,13 @@ class AiReportsExportBody(BaseModel):
     Unknown keys → **422** (`extra=forbid`). Must provide `prompt`, `template_id`,
     or `report_type`. Optional `prompt` ∈ `AiReportPromptValue` (strip; 1–16000; ≥1
     letter/digit; no `://`/`@`); omit/`null` OK when template_id|report_type present;
-    blank/`!!!`/`http://…` → **422** (was free `str` stripped to null). `format` ∈
-    csv|pdf|xlsx (omit → **csv**; blank/invalid → **422** — was free `dict` with
-    `or "csv"`). Invalid `report_type` → **422**. Service `export_from_intent`
-    remains defense-in-depth.
+    blank/`!!!`/`http://…` → **422** (was free `str` stripped to null). Optional
+    `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`);
+    omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422** (field
+    was absent — unknown `period` key → **422** via `extra=forbid`; generate already
+    typed the same Value). `format` ∈ csv|pdf|xlsx (omit → **csv**; blank/invalid →
+    **422** — was free `dict` with `or "csv"`). Invalid `report_type` → **422**.
+    Service `export_from_intent` remains defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -4967,6 +4970,9 @@ class AiReportsExportBody(BaseModel):
     format: ReportExportFormatValue = "csv"
     template_id: str | None = None
     report_type: ReportTypeValue | None = None
+    # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
+    # (same AiReportPeriodValue as AiReportsGenerateBody.period).
+    period: AiReportPeriodValue | None = None
     filters: dict[str, Any] | None = None
     params: dict[str, Any] | None = None
 

@@ -361,6 +361,7 @@ async def export_from_intent(
     format: str | None = None,
     template_id: str | None = None,
     report_type: str | None = None,
+    period: str | None = None,
     params: dict | None = None,
 ) -> tuple[bytes, str, str, dict[str, Any]]:
     """Return (content, media_type, filename, intent_meta)."""
@@ -372,6 +373,7 @@ async def export_from_intent(
         format=format,
         template_id=template_id,
         report_type=report_type,
+        period=period,
         filters=params,
     )
     # generate_report already committed; build export bytes again without re-audit noise
