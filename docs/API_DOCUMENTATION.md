@@ -184,7 +184,7 @@ Token is single-use and expires in 1 hour; new password must pass complexity rul
 
 **Login challenge verify:** `POST /auth/2fa/verify` — `{ "challenge_token", "code" }` with same `TwoFactorCodeValue` honesty on `code`.
 
-**Backup codes / disable:** `POST /auth/2fa/backup-codes` (`TwoFactorConfirm`) and `POST /auth/2fa/disable` (`TwoFactorDisable`) — `code` ∈ `TwoFactorCodeValue` (required). Security **2FA code** input (`aria-label`).
+**Backup codes / disable:** `POST /auth/2fa/backup-codes` (`TwoFactorConfirm`) and `POST /auth/2fa/disable` (`TwoFactorDisable`) — `code` ∈ `TwoFactorCodeValue` (required). Disable body `password` ∈ `TwoFactorDisablePasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `verify_password` as **401**). Authenticity remains `verify_password` (**401**). Security **2FA code** + **Disable 2FA password** inputs (`aria-label`s); Disable sends trim.
 
 **Login body:** `POST /auth/login` optional `totp_code` ∈ `TwoFactorCodeValue` (omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** — was free `str`). Login **2FA code** input (`aria-label`). Service `verify_totp` / backup-code hash checks remain defense-in-depth for authenticity.
 

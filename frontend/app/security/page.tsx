@@ -221,10 +221,15 @@ export default function Page() {
 
   async function disable() {
     setError('');
+    const trimmedPassword = disablePassword.trim();
+    if (!trimmedPassword) {
+      setError('Password is required');
+      return;
+    }
     try {
       const r = await api('/auth/2fa/disable', {
         method: 'POST',
-        body: JSON.stringify({ password: disablePassword, code }),
+        body: JSON.stringify({ password: trimmedPassword, code }),
       });
       setMessage(r.message || '2FA disabled');
       setCode('');

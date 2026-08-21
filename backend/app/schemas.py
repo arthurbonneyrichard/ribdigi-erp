@@ -415,7 +415,9 @@ class TwoFactorVerify(BaseModel):
 
 
 class TwoFactorDisable(BaseModel):
-    password: str
+    # Required password ∈ TwoFactorDisablePasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached verify_password as 401).
+    password: TwoFactorDisablePasswordValue
     # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
     code: TwoFactorCodeValue
 
@@ -4539,6 +4541,40 @@ LoginPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_login_password_value),
     AfterValidator(validate_login_password_value),
+]
+
+
+def coerce_two_factor_disable_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for disable password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_two_factor_disable_password_value(value: str) -> str:
+    """AfterValidator: 2FA disable password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip253Pass!); rejects empty/URL garbage.
+    Authenticity remains verify_password → **401**.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# 2FA disable password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+TwoFactorDisablePasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_two_factor_disable_password_value),
+    AfterValidator(validate_two_factor_disable_password_value),
 ]
 
 
