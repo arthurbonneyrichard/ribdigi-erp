@@ -167,6 +167,12 @@ export default function Page() {
       setMessage('');
       return;
     }
+    const trimmedPassword = form.password.trim();
+    if (!trimmedPassword) {
+      setError('User password is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setBusy(true);
@@ -176,7 +182,7 @@ export default function Page() {
         body: JSON.stringify({
           email: form.email.trim(),
           full_name: fullName,
-          password: form.password,
+          password: trimmedPassword,
           role: form.role,
           phone: form.phone || null,
           branch_id: form.branch_id || null,
@@ -597,6 +603,7 @@ export default function Page() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="Temporary password"
+            aria-label="User password"
             required
           />
           <input
@@ -651,7 +658,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <button type="submit" disabled={busy || !form.full_name.trim()} aria-label="Create user">
+          <button
+            type="submit"
+            disabled={busy || !form.full_name.trim() || !form.password.trim()}
+            aria-label="Create user"
+          >
             {busy ? 'Creating…' : 'Create user'}
           </button>
         </form>

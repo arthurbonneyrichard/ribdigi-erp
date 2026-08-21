@@ -503,6 +503,8 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 
 `full_name` ∈ `UserFullNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; empty/whitespace/`!!!`/URL could persist). Users **User full name** input (`aria-label`); create requires trim.
 
+`password` ∈ `UserPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces; blank/`!!!`/`http://…` → **422** — was free `str`; whitespace/`!!!`/URL could reach hash path; strength still `validate_password_strength` → **400**). PATCH omit/`null` → no change. Users **User password** input (`aria-label`); create requires trim.
+
 `phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`; blank/garbage could persist). Users **User phone** input (`aria-label`); create sends `null` when blank.
 
 `record_scope` schema `Literal["own","department","branch","all"]` (omit = role default; blank/invalid → **422** — no silent `all` from `""`). Response wraps `{ "user": {...}, ... }`.

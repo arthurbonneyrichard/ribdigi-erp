@@ -652,7 +652,10 @@ class UserCreate(BaseModel):
     # Required display name ∈ UserFullNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; empty/whitespace/`!!!`/URL could persist).
     full_name: UserFullNameValue
-    password: str
+    # Required password ∈ UserPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL could reach hash path; strength still
+    # enforced by validate_password_strength → **400**).
+    password: UserPasswordValue
     # omit → cashier; blank/malformed key → 422 (was free str; blank late **400**)
     role: RoleKeyValue = "cashier"
     # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
@@ -674,7 +677,9 @@ class UserUpdate(BaseModel):
     # omit = no change; blank/malformed key → 422 (was free str; blank late **400**)
     role: RoleKeyValue | None = None
     is_active: bool | None = None
-    password: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # whitespace/`!!!`/URL could reach hash path; strength still **400**).
+    password: UserPasswordValue | None = None
     # Record visibility: own | department | branch | all (omit = no change; blank → 422)
     record_scope: RecordScopeValue | None = None
     branch_id: str | None = None
@@ -4355,6 +4360,40 @@ PlatformStaffPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_platform_staff_password_value),
     AfterValidator(validate_platform_staff_password_value),
+]
+
+
+def coerce_user_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_user_password_value(value: str) -> str:
+    """AfterValidator: tenant user password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip247Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Tenant user create/PATCH password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-3).
+UserPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_user_password_value),
+    AfterValidator(validate_user_password_value),
 ]
 
 
