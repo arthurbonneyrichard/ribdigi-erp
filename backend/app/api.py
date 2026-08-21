@@ -3993,6 +3993,8 @@ async def stock_in(
         batch_number=payload.batch_number,
         manufacturing_date=reports_svc.parse_date(payload.manufacturing_date),
         expiry_date=reports_svc.parse_date(payload.expiry_date),
+        reference_type=payload.reference_type,
+        reference_id=payload.reference_id,
     )
     await db.commit()
     return env(result, "Stock in recorded")

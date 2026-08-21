@@ -1372,7 +1372,10 @@ class StockMove(BaseModel):
     on ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
     IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
     free `datetime`; OpenAPI date-time; padded dates inconsistent). API
-    `reports.parse_date` remains defense-in-depth.
+    `reports.parse_date` remains defense-in-depth. Optional `reference_type` ∈
+    StockInReferenceTypeValue (strip/lower; 1–50; ≥1 letter/digit; no `://`/`@`);
+    omit/`null` → no coded source; blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank/garbage could persist on StockMovement.reference_type String(50)).
     """
 
     product_id: str
@@ -1388,8 +1391,10 @@ class StockMove(BaseModel):
     batch_number: BatchNumberValue | None = None
     manufacturing_date: IsoDateQueryValue | None = None
     expiry_date: IsoDateQueryValue | None = None
-    # Optional on stock-in; stock-out uses StockOut with required Literal
-    reference_type: str | None = None
+    # omit/`null` → no coded source; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently stored / punctuation/URL could persist on
+    # StockMovement.reference_type String(50)). Stock-out uses required Literal.
+    reference_type: StockInReferenceTypeValue | None = None
     # omit/`null` → no external ref; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/garbage could persist on StockMovement.reference_id String(36)).
     reference_id: StockMovementReferenceIdValue | None = None
@@ -3634,6 +3639,42 @@ StockMovementReferenceIdValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_movement_reference_id_value),
+]
+
+
+def coerce_stock_in_reference_type_value(value: object) -> object:
+    """BeforeValidator: strip + lower stock-in reference_type codes."""
+    if isinstance(value, str):
+        return value.strip().lower()
+    return value
+
+
+def validate_stock_in_reference_type_value(value: str) -> str:
+    """AfterValidator: stock-in reference_type; blank/URL/garbage → 422 (1–50)."""
+    if not value:
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    if len(value) > 50:
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    return value
+
+
+# Manual stock-in source code — matches StockMovement.reference_type String(50).
+StockInReferenceTypeValue = Annotated[
+    str,
+    BeforeValidator(coerce_stock_in_reference_type_value),
+    AfterValidator(validate_stock_in_reference_type_value),
 ]
 
 

@@ -200,6 +200,8 @@ export default function Page() {
   const [stockWarehouseId, setStockWarehouseId] = useState('');
   const [stockVariantId, setStockVariantId] = useState('');
   const [stockNotes, setStockNotes] = useState('');
+  const [stockRefType, setStockRefType] = useState('');
+  const [stockRefId, setStockRefId] = useState('');
   const [openingQty, setOpeningQty] = useState('10');
   const [openingWarehouseId, setOpeningWarehouseId] = useState('');
   const [openingUnitId, setOpeningUnitId] = useState('');
@@ -1279,6 +1281,8 @@ export default function Page() {
           batch_number: batchNumber.trim(),
           manufacturing_date: mfgDate.trim() || null,
           expiry_date: expiryDate.trim() || null,
+          reference_type: stockRefType.trim() || null,
+          reference_id: stockRefId.trim() || null,
         }),
       });
       const converted =
@@ -1295,6 +1299,8 @@ export default function Page() {
       setMfgDate('');
       setExpiryDate('');
       setStockNotes('');
+      setStockRefType('');
+      setStockRefId('');
       await refresh();
       await refreshSelected(selectedId);
       setTab('batches');
@@ -2809,6 +2815,20 @@ export default function Page() {
               placeholder="Notes (optional)"
               aria-label="Stock-in notes"
               title="Optional notes (1–500 chars; letters/digits required)"
+            />
+            <input
+              value={stockRefType}
+              onChange={(e) => setStockRefType(e.target.value)}
+              placeholder="Reference type (optional)"
+              aria-label="Stock-in reference type"
+              title="Optional source code (1–50 chars; letters/digits required; blank → omit)"
+            />
+            <input
+              value={stockRefId}
+              onChange={(e) => setStockRefId(e.target.value)}
+              placeholder="Reference id (optional)"
+              aria-label="Stock-in reference id"
+              title="Optional external reference (1–36 chars; letters/digits required)"
             />
             <button
               type="button"

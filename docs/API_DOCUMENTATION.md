@@ -638,7 +638,7 @@ Barcodes are unique across **products and variants** in the tenant (409 on clash
 }
 ```
 
-Optional `warehouse_id` / `variant_id`. Optional `notes` ∈ `StockInNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Batches **Stock-in notes** input. Inventory Batches UI sends these; batch row persists warehouse + variant. Opening stock lines also accept `variant_id`.
+Optional `warehouse_id` / `variant_id`. Optional `notes` ∈ `StockInNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Batches **Stock-in notes** input. Optional `reference_type` ∈ `StockInReferenceTypeValue` (strip/lower; 1–50; ≥1 letter/digit; no `://`/`@`; omit/`null` → no coded source; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist on `StockMovement.reference_type` String(50)). Inventory Batches **Stock-in reference type** input (`aria-label`; Receive batch sends `null` when blank). Optional `reference_id` ∈ `StockMovementReferenceIdValue` (same honesty as stock-out; Inventory **Stock-in reference id**). Inventory Batches UI sends these; batch row persists warehouse + variant. Opening stock lines also accept `variant_id`.
 
 ```json
 {
