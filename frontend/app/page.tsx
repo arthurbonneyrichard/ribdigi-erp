@@ -119,12 +119,17 @@ export default function Login() {
         setError('Password is required');
         return;
       }
+      const trimmedTenant = tenant.trim();
+      if (!trimmedTenant) {
+        setError('Login tenant is required');
+        return;
+      }
       const r = await api('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
           email,
           password: trimmedPassword,
-          tenant_id: tenant,
+          tenant_id: trimmedTenant,
           totp_code: totpCode || null,
         }),
       });
@@ -153,10 +158,15 @@ export default function Login() {
     setError('');
     setVerifyMessage('');
     setDebugVerifyToken('');
+    const trimmedTenant = tenant.trim();
+    if (!trimmedTenant) {
+      setError('Login tenant is required');
+      return;
+    }
     try {
       const r = await api('/auth/resend-verification', {
         method: 'POST',
-        body: JSON.stringify({ email, tenant_id: tenant }),
+        body: JSON.stringify({ email, tenant_id: trimmedTenant }),
       });
       setVerifyMessage(r.message || 'If verification is needed, a link was sent');
       if (r.data?.verification_token) {
@@ -195,6 +205,7 @@ export default function Login() {
               <label className="login-field">
                 <span>Workspace</span>
                 <input
+                  aria-label="Login tenant"
                   value={tenant}
                   onChange={(e) => setTenant(e.target.value)}
                   placeholder="Tenant slug or ID"

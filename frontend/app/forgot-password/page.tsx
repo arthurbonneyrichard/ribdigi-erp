@@ -26,11 +26,16 @@ function ForgotPasswordForm() {
     setError('');
     setMessage('');
     setDebugToken('');
+    const trimmedTenant = tenant.trim();
+    if (!trimmedTenant) {
+      setError('Password reset tenant is required');
+      return;
+    }
     setSubmitting(true);
     try {
       const r = await api('/auth/password-reset-request', {
         method: 'POST',
-        body: JSON.stringify({ email, tenant_id: tenant }),
+        body: JSON.stringify({ email, tenant_id: trimmedTenant }),
       });
       setMessage(
         r.message ||
@@ -74,6 +79,7 @@ function ForgotPasswordForm() {
           <label className="login-field">
             <span>Workspace</span>
             <input
+              aria-label="Password reset tenant"
               value={tenant}
               onChange={(e) => setTenant(e.target.value)}
               placeholder="Tenant slug or ID"

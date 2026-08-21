@@ -113,6 +113,8 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 
 `password` ∈ `LoginPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `verify_password` as **401**). Authenticity still `verify_password` → **401**. Login UI **Login password** (`aria-label`); submit sends trim.
 
+`tenant_id` ∈ `TenantRefValue` (strip; UUID or slug `^[a-z0-9][a-z0-9-]{1,79}$`; UUID/slug normalized lower); blank/`!!!`/`http://…`/`a b`/`X` → **422** (was free `str`; whitespace/`!!!`/URL reached `resolve_tenant` as **404**). Same honesty on `POST /auth/password-reset-request` and `POST /auth/resend-verification`. Existence still `resolve_tenant` → **404**. Login **Login tenant** + Forgot password **Password reset tenant** (`aria-label`s); submit/resend send trim.
+
 **Response:**
 ```json
 {
@@ -178,7 +180,7 @@ Token is single-use and expires in 1 hour; new password must pass complexity rul
 
 ### 2.4b Email verification (BR-19.1)
 **Verify:** `POST /auth/verify-email` — body `token` ∈ `EmailVerifyTokenValue` (strip; 1–200; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `hash_token` / invalid-token **400**). Sets `email_verified=true` (single-use token). Authenticity remains AuthToken lookup (**400**). UI: `/verify-email?token=…` (auto-submits when token present). Verify email **Email verification token** input (`aria-label`); submit sends trim.  
-**Resend:** `POST /auth/resend-verification` — `{ "email", "tenant_id" }` neutral success; invalidates unused prior verify tokens; non-prod may echo `verification_token`.  
+**Resend:** `POST /auth/resend-verification` — `{ "email", "tenant_id" }` with `tenant_id` ∈ `TenantRefValue` (same as login; blank/`!!!`/`http://…` → **422**); neutral success; invalidates unused prior verify tokens; non-prod may echo `verification_token`.  
 **Login gate:** `POST /auth/login` returns `403` with `detail.code = "EMAIL_NOT_VERIFIED"` when credentials are valid but email is unverified (no tokens issued). Login UI offers resend.
 
 ### 2.5 Two-Factor Authentication (Optional)

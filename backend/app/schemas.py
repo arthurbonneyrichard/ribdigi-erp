@@ -397,7 +397,9 @@ class Login(BaseModel):
     # Required password ∈ LoginPasswordValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached verify_password as 401).
     password: LoginPasswordValue
-    tenant_id: str
+    # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
+    tenant_id: TenantRefValue
     # omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** (was free `str`)
     totp_code: TwoFactorCodeValue | None = None
 
@@ -2147,7 +2149,9 @@ class TaxCalculateRequest(BaseModel):
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
-    tenant_id: str
+    # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
+    tenant_id: TenantRefValue
 
 
 class PasswordResetConfirm(BaseModel):
@@ -2168,7 +2172,9 @@ class EmailVerifyConfirm(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
-    tenant_id: str
+    # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
+    tenant_id: TenantRefValue
 
 
 class PurchaseOrderItemCreate(BaseModel):
@@ -5104,6 +5110,48 @@ TenantSlugValue = Annotated[
     str,
     BeforeValidator(coerce_tenant_slug_value),
     AfterValidator(validate_tenant_slug_value),
+]
+
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def coerce_tenant_ref_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for tenant_id 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_tenant_ref_value(value: str) -> str:
+    """AfterValidator: login/auth workspace ref — UUID or slug; blank/URL → 422.
+
+    Accepts canonical UUID (normalized lower) or TenantSlugValue pattern (2–80).
+    Allows fixtures like Tip256-co; rejects empty/URL/@/space garbage.
+    Existence remains resolve_tenant → **404**.
+    """
+    if not value:
+        raise ValueError("tenant_id must be a UUID or slug (2–80 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("tenant_id must be a UUID or slug (2–80 chars)")
+    if _UUID_RE.fullmatch(value):
+        return value.lower()
+    lowered = value.lower()
+    if re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", lowered):
+        return lowered
+    raise ValueError("tenant_id must be a UUID or slug (2–80 chars)")
+
+
+# Auth workspace tenant_id — UUID or slug (Login / password-reset / resend) (BR-19 / BR-1).
+TenantRefValue = Annotated[
+    str,
+    BeforeValidator(coerce_tenant_ref_value),
+    AfterValidator(validate_tenant_ref_value),
 ]
 
 
