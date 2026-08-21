@@ -1136,7 +1136,12 @@ export default function Page() {
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <select value={coaOpenCode} onChange={(e) => setCoaOpenCode(e.target.value)}>
+                  <select
+                    value={coaOpenCode}
+                    onChange={(e) => setCoaOpenCode(e.target.value)}
+                    aria-label="Opening balance account code"
+                    title="COA account code for opening balance line"
+                  >
                     {activeAccounts.map((a) => (
                       <option key={a.id} value={a.code}>
                         {a.code} — {a.name} ({a.account_type})

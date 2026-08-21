@@ -751,8 +751,17 @@ class AccountUpdate(BaseModel):
 
 
 class OpeningBalanceLine(BaseModel):
+    """COA opening-balance line — optional code ∈ AccountCodeValue (BR-10.1).
+
+    Provide `account_id` and/or `account_code`; omit/`null` code OK when id set;
+    blank/`!!!`/`a b`/`http://…` → **422** (was free `str`; blank reached service
+    **400**; malformed codes were late **404** Account not found). Same
+    AccountCodeValue as AccountCreate.code.
+    """
+
     account_id: str | None = None
-    account_code: str | None = None
+    # Optional COA lookup ∈ AccountCodeValue; omit/`null` OK when account_id set
+    account_code: AccountCodeValue | None = None
     amount: float = Field(gt=0)
 
 
@@ -5143,13 +5152,17 @@ class NotificationPreferencesUpdate(BaseModel):
 class JournalLineCreate(BaseModel):
     """Nested line on `JournalCreate` (BR-10.2).
 
-    Optional `description` ∈ `JournalLineDescriptionValue`; omit/`null` → no line
-    narrative; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
-    could persist on `JournalEntryLine.description`).
+    Optional `account_code` ∈ `AccountCodeValue`; omit/`null` OK when `account_id`
+    set; blank/`!!!`/`a b`/`http://…` → **422** (was free `str`; blank reached
+    service **400**; malformed codes were late **404**). Same AccountCodeValue as
+    AccountCreate.code. Optional `description` ∈ `JournalLineDescriptionValue`;
+    omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** (was free
+    `str`; blank/garbage could persist on `JournalEntryLine.description`).
     """
 
     account_id: str | None = None
-    account_code: str | None = None
+    # Optional COA lookup ∈ AccountCodeValue; omit/`null` OK when account_id set
+    account_code: AccountCodeValue | None = None
     debit: float = Field(default=0, ge=0)
     credit: float = Field(default=0, ge=0)
     # omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** (was free
