@@ -31,3 +31,7 @@ Stage 12636 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Houekieekajiyuglaze Gate, Transfer Houekieekajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12636 opened under **ADR-25279** after CONTINUE/NEXT (Tenant MVP Transfer Houekieesajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-25280**. Stage 12635 feature scope remains frozen.
