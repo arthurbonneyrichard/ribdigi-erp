@@ -31,3 +31,7 @@ Stage 12340 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpouddajiyuglaze Gate, Transfer Kanpouddajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12340 opened under **ADR-24687** after CONTINUE/NEXT (Tenant MVP Transfer Kanpouddiijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-24688**. Stage 12339 feature scope remains frozen.
