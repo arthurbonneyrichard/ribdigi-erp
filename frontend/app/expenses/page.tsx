@@ -866,6 +866,8 @@ export default function Page() {
             value={newCatCode}
             onChange={(e) => setNewCatCode(e.target.value)}
             placeholder="Code"
+            aria-label="Expense category code"
+            title="Expense category code (1–40 chars; letters/digits required)"
             style={{ width: 90 }}
           />
           <input
