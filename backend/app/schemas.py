@@ -2458,7 +2458,12 @@ class PurchaseInvoiceCreate(BaseModel):
     # on PurchaseInvoice.supplier_invoice_number).
     supplier_invoice_number: SupplierInvoiceNumberValue | None = None
     discount_amount: float = Field(default=0, ge=0)
-    attachment_url: str | None = None
+    # omit/`null` → no external attachment URL; blank/`ftp://`/`not-a-url`/plain-http
+    # remote → **422** (was free `str`; blank/`""` could persist; garbage URLs could
+    # persist on PurchaseInvoice.attachment_url). Same absolute http(s) honesty as
+    # Webhook/Bank feed URLs (`WebhookUrlValue`). Multipart upload still sets a
+    # storage key via POST …/attachment (not this create field).
+    attachment_url: WebhookUrlValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on PurchaseInvoice.notes Text).
     notes: PurchaseInvoiceNotesValue | None = None

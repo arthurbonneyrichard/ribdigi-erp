@@ -254,6 +254,7 @@ export default function Page() {
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
   const [invNotes, setInvNotes] = useState('');
+  const [invAttachmentUrl, setInvAttachmentUrl] = useState('');
   const [grnNotes, setGrnNotes] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
   const [manualInvProductId, setManualInvProductId] = useState('');
@@ -800,6 +801,7 @@ export default function Page() {
           goods_receipt_id: invoiceGrnId,
           supplier_invoice_number: supplierInvoiceNo.trim() || null,
           notes: invNotes.trim() || null,
+          attachment_url: invAttachmentUrl.trim() || null,
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
           exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
@@ -812,6 +814,7 @@ export default function Page() {
       setTab('invoices');
       setSupplierInvoiceNo('');
       setInvNotes('');
+      setInvAttachmentUrl('');
       setGrnInvHeaderDiscount('0');
       setInvCurrency('');
       setInvExchangeRate('');
@@ -832,6 +835,7 @@ export default function Page() {
           supplier_id: manualInvSupplierId,
           supplier_invoice_number: supplierInvoiceNo.trim() || null,
           notes: invNotes.trim() || null,
+          attachment_url: invAttachmentUrl.trim() || null,
           is_reverse_charge: manualInvRc,
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
@@ -857,6 +861,7 @@ export default function Page() {
       setTab('invoices');
       setSupplierInvoiceNo('');
       setInvNotes('');
+      setInvAttachmentUrl('');
       setManualInvLineDiscount('0');
       setManualInvHeaderDiscount('0');
       setManualInvRc(false);
@@ -2453,6 +2458,13 @@ export default function Page() {
             title="Optional notes (1–500 chars; letters/digits required)"
           />
           <input
+            value={invAttachmentUrl}
+            onChange={(e) => setInvAttachmentUrl(e.target.value)}
+            placeholder="Attachment URL (optional https://…)"
+            aria-label="Purchase invoice attachment URL"
+            title="Optional absolute http(s) URL; http only for localhost (blank = none)"
+          />
+          <input
             value={grnInvHeaderDiscount}
             onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
             placeholder="Header discount (0 = use PO line discounts)"
@@ -2551,6 +2563,13 @@ export default function Page() {
             placeholder="Notes (optional)"
             aria-label="Purchase invoice notes"
             title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <input
+            value={invAttachmentUrl}
+            onChange={(e) => setInvAttachmentUrl(e.target.value)}
+            placeholder="Attachment URL (optional https://…)"
+            aria-label="Purchase invoice attachment URL"
+            title="Optional absolute http(s) URL; http only for localhost (blank = none)"
           />
           <input
             value={invCurrency}
