@@ -17,7 +17,7 @@ _token = TypeAdapter(BankAccessTokenValue)
 
 
 def test_bank_access_token_value_schema():
-    assert _token.validate_python("  Tip248Token!  ") == "Tip248Token!"
+    assert _token.validate_python("  Tip249Token!  ") == "Tip249Token!"
     assert _token.validate_python("a" * 128) == "a" * 128
     for bad in ("", " ", "!!!", "http://evil", "a@b", "tok en", "a" * 129):
         with pytest.raises(ValidationError):
@@ -79,7 +79,7 @@ async def test_bank_access_token_api_blank_invalid_422(client):
             json={
                 "account_id": bank["id"],
                 "provider": "mock",
-                "display_name": f"tip248-bad-{suffix}-{abs(hash(bad)) % 10000}",
+                "display_name": f"tip249-bad-{suffix}-{abs(hash(bad)) % 10000}",
                 "access_token": bad,
             },
         )
@@ -91,7 +91,7 @@ async def test_bank_access_token_api_blank_invalid_422(client):
         headers=headers,
         json={
             "code": f"1{suffix[:3]}",
-            "name": f"Tip248 Cash {suffix}",
+            "name": f"Tip249 Cash {suffix}",
             "liquid_kind": "cash",
         },
     )
@@ -104,7 +104,7 @@ async def test_bank_access_token_api_blank_invalid_422(client):
         json={
             "account_id": cash_id,
             "provider": "mock",
-            "display_name": f"Tip248 Omit Token {suffix}",
+            "display_name": f"Tip249 Omit Token {suffix}",
             "external_account_id": f"omit-tok-{suffix}",
         },
     )
@@ -121,14 +121,14 @@ async def test_bank_access_token_api_blank_invalid_422(client):
         json={
             "account_id": bank["id"],
             "provider": "mock",
-            "display_name": f"  Tip248 Feed {suffix}  ",
-            "external_account_id": f"tip248-{suffix}",
-            "access_token": "  Tip248Token!  ",
+            "display_name": f"  Tip249 Feed {suffix}  ",
+            "external_account_id": f"tip249-{suffix}",
+            "access_token": "  Tip249Token!  ",
         },
     )
     assert ok.status_code == 200, ok.text
     body = ok.json()["data"]
-    assert body["display_name"] == f"Tip248 Feed {suffix}"
+    assert body["display_name"] == f"Tip249 Feed {suffix}"
     assert body.get("has_credentials") is True or body.get("credentials_configured") is True
     assert "access_token" not in body
     cid = body["id"]
@@ -144,7 +144,7 @@ async def test_bank_access_token_api_blank_invalid_422(client):
     rotated = await ac.patch(
         f"/api/v1/accounting/bank-connections/{cid}",
         headers=headers,
-        json={"access_token": "  Tip248Rotated!  "},
+        json={"access_token": "  Tip249Rotated!  "},
     )
     assert rotated.status_code == 200, rotated.text
     assert "access_token" not in rotated.json()["data"]
