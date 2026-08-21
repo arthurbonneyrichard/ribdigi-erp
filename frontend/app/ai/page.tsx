@@ -23,6 +23,7 @@ export default function Page() {
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
   const [draftPiBusy, setDraftPiBusy] = useState(false);
   const [tmplName, setTmplName] = useState('');
+  const [reportPeriod, setReportPeriod] = useState('');
   const [analysisFromDate, setAnalysisFromDate] = useState('');
   const [analysisToDate, setAnalysisToDate] = useState('');
   const [draftDocDate, setDraftDocDate] = useState('');
@@ -268,9 +269,10 @@ export default function Page() {
     setMessage('');
     try {
       const prompt = q.trim() || 'monthly sales for this month';
+      const period = reportPeriod.trim() ? reportPeriod.trim() : null;
       const r = await api('/ai/reports/generate', {
         method: 'POST',
-        body: JSON.stringify({ prompt, format: 'csv' }),
+        body: JSON.stringify({ prompt, format: 'csv', period }),
       });
       const d = r.data || {};
       setA(
@@ -519,6 +521,13 @@ export default function Page() {
           <button onClick={exportReport} aria-label="Export AI report">
             Export CSV
           </button>
+          <input
+            value={reportPeriod}
+            onChange={(e) => setReportPeriod(e.target.value)}
+            placeholder="Period (e.g. this_month)"
+            aria-label="AI report period"
+            style={{ minWidth: 160 }}
+          />
           <input
             value={tmplName}
             onChange={(e) => setTmplName(e.target.value)}

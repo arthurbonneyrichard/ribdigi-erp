@@ -4431,6 +4431,27 @@ AiReportPromptValue = Annotated[
 ]
 
 
+def validate_ai_report_period_value(value: str) -> str:
+    """AfterValidator: AI report period shorthand; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    return value
+
+
+# AI report period shorthand — this_month / last_month / Q1 2026 / 2026-01 / year (BR-21.7).
+AiReportPeriodValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_report_period_value),
+]
+
+
 def validate_ai_chat_message_value(value: str) -> str:
     """AfterValidator: AI chat / customer-assist NL text; blank/URL/garbage → 422 (1–16000)."""
     if not value:
@@ -4820,10 +4841,14 @@ class AiReportsGenerateBody(BaseModel):
     or `report_type` (schema **422**; was late service **422**). Optional `prompt` ∈
     `AiReportPromptValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); omit/`null`
     OK when template_id|report_type present; blank/`!!!`/`http://…` → **422** (was free
-    `str` stripped to null — punctuation/URL could reach parse_prompt). Invalid
-    `format` / `report_type` → **422** (format garbage was silently remapped to
-    csv; unknown report_type was late **400**). `params` is an alias for
-    `filters`. Service `generate_report` / `parse_prompt` remain defense-in-depth.
+    `str` stripped to null — punctuation/URL could reach parse_prompt). Optional
+    `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`);
+    omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422** (was free
+    `str` soft-nulled on blank; punctuation/URL could reach period_label /
+    parse_prompt). Invalid `format` / `report_type` → **422** (format garbage was
+    silently remapped to csv; unknown report_type was late **400**). `params` is an
+    alias for `filters`. Service `generate_report` / `parse_prompt` remain
+    defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -4832,13 +4857,14 @@ class AiReportsGenerateBody(BaseModel):
     format: ReportExportFormatValue | None = None
     template_id: str | None = None
     report_type: ReportTypeValue | None = None
-    period: str | None = None
+    # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
+    period: AiReportPeriodValue | None = None
     filters: dict[str, Any] | None = None
     params: dict[str, Any] | None = None
 
-    @field_validator("template_id", "period", mode="before")
+    @field_validator("template_id", mode="before")
     @classmethod
-    def _strip_optional(cls, value: object) -> object:
+    def _strip_optional_template_id(cls, value: object) -> object:
         if isinstance(value, str):
             text = value.strip()
             return text or None
