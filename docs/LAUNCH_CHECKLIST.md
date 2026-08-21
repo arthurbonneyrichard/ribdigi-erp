@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 13167 track opened (ADR-26341: `test_stage13167_open.py`, `docs/STAGE_13167_PLAN.md`) — Transfer Gennaeekyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-26342
+- [x] Transfer Gennaeekyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 13167 I1: `test_stage13167_index_i1.py`, `docs/TRANSFER_GENNAEEKYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Gennaeekyajiyuglaze Gate Honesty Pack blocker matrix (Stage 13167 B1: `test_stage13167_blockers_b1.py`, `docs/TRANSFER_GENNAEEKYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 13166 / Stage 13165 / Stage 392 / CHANGE_IMPACT pointers (Stage 13167 P1: `test_stage13167_pointers_p1.py`, `docs/TRANSFER_GENNAEEKYAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 13167 fidelity sync (D1: `test_stage13167_fidelity_d1.py`, `docs/STAGE_13167_FIDELITY.md`)
+- [x] Stage 13167 exit + freeze (H13167x: `test_stage13167_exit_h13167x.py`, `docs/STAGE_13167_EXIT_CRITERIA.md`, ADR-26342)
 Stage 13166 track opened (ADR-26339: `test_stage13166_open.py`, `docs/STAGE_13166_PLAN.md`) — Transfer Gennaeegajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-26340
 - [x] Transfer Gennaeegajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 13166 I1: `test_stage13166_index_i1.py`, `docs/TRANSFER_GENNAEEGAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Gennaeegajiyuglaze Gate Honesty Pack blocker matrix (Stage 13166 B1: `test_stage13166_blockers_b1.py`, `docs/TRANSFER_GENNAEEGAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
