@@ -31,3 +31,7 @@ Stage 15227 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Edophajiyuglaze Gate, Transfer Edophajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15227 opened under **ADR-30461** after CONTINUE/NEXT (Tenant MVP Transfer Edowhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30462**. Stage 15226 feature scope remains frozen.
