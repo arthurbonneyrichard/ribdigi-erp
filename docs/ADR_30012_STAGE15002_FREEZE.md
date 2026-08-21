@@ -31,3 +31,7 @@ Stage 15003 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempoqajiyuglaze Gate, Transfer Tempoqajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15003 opened under **ADR-30013** after CONTINUE/NEXT (Tenant MVP Transfer Tempoxajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30014**. Stage 15002 feature scope remains frozen.
