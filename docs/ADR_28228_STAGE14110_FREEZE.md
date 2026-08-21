@@ -31,3 +31,7 @@ Stage 14111 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jokyobbuujiyuglaze Gate, Transfer Jokyobbuujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14111 opened under **ADR-28229** after CONTINUE/NEXT (Tenant MVP Transfer Jokyobbyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-28230**. Stage 14110 feature scope remains frozen.
