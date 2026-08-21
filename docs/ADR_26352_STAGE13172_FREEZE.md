@@ -31,3 +31,7 @@ Stage 13173 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Gennaffiijiyuglaze Gate, Transfer Gennaffiijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13173 opened under **ADR-26353** after CONTINUE/NEXT (Tenant MVP Transfer Gennaffoojiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-26354**. Stage 13172 feature scope remains frozen.
