@@ -31,3 +31,7 @@ Stage 15803 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Azuchiaaphajiyuglaze Gate, Transfer Azuchiaaphajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15803 opened under **ADR-31613** after CONTINUE/NEXT (Tenant MVP Transfer Azuchiaawhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31614**. Stage 15802 feature scope remains frozen.
