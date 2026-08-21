@@ -1401,7 +1401,12 @@ class OpeningStockCreate(BaseModel):
 
 
 class ExpenseCreate(BaseModel):
-    category: str | None = None
+    # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
+    # when `category_id` set (prefer FK); blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank without category_id reached service **400**; punctuation/URL
+    # could persist on Expense.category). When category_id set, service overwrites
+    # label from ExpenseCategory.name.
+    category: ExpenseCategoryLabelValue | None = None
     category_id: str | None = None
     # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
     # `str` default `""`; blank/garbage could persist).
@@ -1507,7 +1512,10 @@ class AiDocumentExpenseCreate(BaseModel):
     # free `str`; blank/garbage could persist on AI draft expense).
     reference: ExpenseReferenceValue | None = None
     category_id: str | None = None
-    category: str | None = None
+    # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
+    # when `category_id` set; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on AI draft Expense.category).
+    category: ExpenseCategoryLabelValue | None = None
     payment_method: ExpensePaymentMethod = "cash"
     expense_date: IsoDateQueryValue | None = None
     store_id: str | None = None
@@ -1538,7 +1546,9 @@ class AiDocumentPurchaseInvoiceCreate(BaseModel):
 
 
 class ExpenseUpdate(BaseModel):
-    category: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on Expense.category). Prefer category_id.
+    category: ExpenseCategoryLabelValue | None = None
     category_id: str | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on expense PATCH).
@@ -1610,7 +1620,10 @@ class ExpenseReject(BaseModel):
 
 
 class RecurringExpenseCreate(BaseModel):
-    category: str | None = None
+    # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
+    # when `category_id` set; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on RecurringExpense.category).
+    category: ExpenseCategoryLabelValue | None = None
     category_id: str | None = None
     # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
     # `str` default `""`; blank/garbage could persist on recurring create).
@@ -1640,7 +1653,9 @@ class RecurringExpenseUpdate(BaseModel):
     payment_method: ExpensePaymentMethod | None = None
     frequency: Literal["daily", "weekly", "monthly", "yearly"] | None = None
     category_id: str | None = None
-    category: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on RecurringExpense.category). Prefer category_id.
+    category: ExpenseCategoryLabelValue | None = None
     branch_id: str | None = None
     department_id: str | None = None
     clear_branch: bool = False
@@ -3906,6 +3921,27 @@ ExpenseCategoryCodeValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_expense_category_code_value),
+]
+
+
+def validate_expense_category_label_value(value: str) -> str:
+    """AfterValidator: denormalized expense spend category label; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Denormalized Expense/RecurringExpense.category String(100); prefer category_id FK.
+ExpenseCategoryLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_category_label_value),
 ]
 
 

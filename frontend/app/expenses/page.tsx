@@ -1017,7 +1017,12 @@ export default function Page() {
           </p>
         ) : null}
         <div className="erp-form-grid" style={{ marginBottom: 12 }}>
-          <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
+          <select
+            value={recCategoryId}
+            onChange={(e) => setRecCategoryId(e.target.value)}
+            aria-label="Recurring expense category"
+            title="Recurring expense category (catalog picker; API category label 1–100)"
+          >
             {categories
               .filter((c) => c.is_active !== false || c.id === recCategoryId)
               .map((c) => (
@@ -1197,7 +1202,12 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>New expense</h3>
         <div className="erp-form-grid">
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            aria-label="Expense spend category"
+            title="Expense spend category (catalog picker; API category label 1–100)"
+          >
             {categories
               .filter((c) => c.is_active !== false || c.id === categoryId)
               .map((c) => (
