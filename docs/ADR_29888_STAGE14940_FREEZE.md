@@ -31,3 +31,7 @@ Stage 14941 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Aneiwhajiyuglaze Gate, Transfer Aneiwhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14941 opened under **ADR-29889** after CONTINUE/NEXT (Tenant MVP Transfer Aneirrajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-29890**. Stage 14940 feature scope remains frozen.
