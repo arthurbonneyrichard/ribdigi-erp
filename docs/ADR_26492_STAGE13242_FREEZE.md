@@ -31,3 +31,7 @@ Stage 13243 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kaneiccbajiyuglaze Gate, Transfer Kaneiccbajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13243 opened under **ADR-26493** after CONTINUE/NEXT (Tenant MVP Transfer Kaneiccpajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-26494**. Stage 13242 feature scope remains frozen.
