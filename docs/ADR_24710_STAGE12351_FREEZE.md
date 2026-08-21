@@ -31,3 +31,7 @@ Stage 12352 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kanpouddtajiyuglaze Gate, Transfer Kanpouddtajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12352 opened under **ADR-24711** after CONTINUE/NEXT (Tenant MVP Transfer Kanpouddnajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-24712**. Stage 12351 feature scope remains frozen.
