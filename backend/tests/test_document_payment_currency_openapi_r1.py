@@ -40,7 +40,7 @@ def test_document_payment_currency_schema():
     assert cp.currency is None
 
     sp = SupplierPaymentCreate.model_validate(
-        {"supplier_id": "s1", "amount": 10, "currency": "ghs"}
+        {"supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff", "amount": 10, "currency": "ghs"}
     )
     assert sp.currency == "GHS"
 
@@ -51,7 +51,7 @@ def test_document_payment_currency_schema():
         ),
         (PurchaseInvoiceCreate, {}),
         (CustomerPaymentCreate, {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "amount": 1}),
-        (SupplierPaymentCreate, {"supplier_id": "s1", "amount": 1}),
+        (SupplierPaymentCreate, {"supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff", "amount": 1}),
     ):
         for bad in ("", " ", "US", "EURO", "gh", "123"):
             with pytest.raises(ValidationError):

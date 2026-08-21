@@ -25,12 +25,12 @@ def test_iso_date_query_schema_for_payment_cheque_date():
 
 def test_payment_cheque_date_schema():
     omit = CustomerPaymentCreate.model_validate(
-        {"customer_id": "c1", "amount": 10, "payment_method": "cheque"}
+        {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "amount": 10, "payment_method": "cheque"}
     )
     assert omit.cheque_date is None
     ok = CustomerPaymentCreate.model_validate(
         {
-            "customer_id": "c1",
+            "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "amount": 10,
             "payment_method": "cheque",
             "cheque_date": " 2026-08-01 ",
@@ -41,7 +41,7 @@ def test_payment_cheque_date_schema():
         with pytest.raises(ValidationError):
             CustomerPaymentCreate.model_validate(
                 {
-                    "customer_id": "c1",
+                    "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                     "amount": 10,
                     "payment_method": "cheque",
                     "cheque_date": bad,
@@ -50,7 +50,7 @@ def test_payment_cheque_date_schema():
 
     supp = SupplierPaymentCreate.model_validate(
         {
-            "supplier_id": "s1",
+            "supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
             "amount": 10,
             "payment_method": "cheque",
             "cheque_date": "2026-08-10",
@@ -60,7 +60,7 @@ def test_payment_cheque_date_schema():
     with pytest.raises(ValidationError):
         SupplierPaymentCreate.model_validate(
             {
-                "supplier_id": "s1",
+                "supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
                 "amount": 10,
                 "payment_method": "cheque",
                 "cheque_date": "",

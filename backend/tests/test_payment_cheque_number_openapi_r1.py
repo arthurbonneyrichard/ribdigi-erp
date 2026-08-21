@@ -17,12 +17,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_cheque_number_schema():
     create_omit = CustomerPaymentCreate.model_validate(
-        {"customer_id": "c1", "amount": 10, "payment_method": "cheque"}
+        {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "amount": 10, "payment_method": "cheque"}
     )
     assert create_omit.cheque_number is None
     create_ok = CustomerPaymentCreate.model_validate(
         {
-            "customer_id": "c1",
+            "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "amount": 10,
             "payment_method": "cheque",
             "cheque_number": "  CHQ-1001  ",
@@ -33,7 +33,7 @@ def test_cheque_number_schema():
         with pytest.raises(ValidationError):
             CustomerPaymentCreate.model_validate(
                 {
-                    "customer_id": "c1",
+                    "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                     "amount": 10,
                     "payment_method": "cheque",
                     "cheque_number": bad,
@@ -42,7 +42,7 @@ def test_cheque_number_schema():
 
     supp = SupplierPaymentCreate.model_validate(
         {
-            "supplier_id": "s1",
+            "supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
             "amount": 10,
             "payment_method": "cheque",
             "cheque_number": "OUT-55",
@@ -52,7 +52,7 @@ def test_cheque_number_schema():
     with pytest.raises(ValidationError):
         SupplierPaymentCreate.model_validate(
             {
-                "supplier_id": "s1",
+                "supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
                 "amount": 10,
                 "payment_method": "cheque",
                 "cheque_number": "",

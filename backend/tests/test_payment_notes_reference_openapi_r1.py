@@ -17,14 +17,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_payment_reference_notes_schema():
     create_omit = CustomerPaymentCreate.model_validate(
-        {"customer_id": "c1", "amount": 10, "payment_method": "cash"}
+        {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "amount": 10, "payment_method": "cash"}
     )
     assert create_omit.reference is None
     assert create_omit.notes is None
 
     create_ok = CustomerPaymentCreate.model_validate(
         {
-            "customer_id": "c1",
+            "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "amount": 10,
             "payment_method": "cash",
             "reference": "  REF-1001  ",
@@ -38,7 +38,7 @@ def test_payment_reference_notes_schema():
         with pytest.raises(ValidationError):
             CustomerPaymentCreate.model_validate(
                 {
-                    "customer_id": "c1",
+                    "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                     "amount": 10,
                     "payment_method": "cash",
                     "reference": bad,
@@ -47,7 +47,7 @@ def test_payment_reference_notes_schema():
         with pytest.raises(ValidationError):
             CustomerPaymentCreate.model_validate(
                 {
-                    "customer_id": "c1",
+                    "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                     "amount": 10,
                     "payment_method": "cash",
                     "notes": bad,
@@ -56,7 +56,7 @@ def test_payment_reference_notes_schema():
 
     supp = SupplierPaymentCreate.model_validate(
         {
-            "supplier_id": "s1",
+            "supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
             "amount": 10,
             "payment_method": "bank_transfer",
             "reference": "AP-55",
@@ -68,7 +68,7 @@ def test_payment_reference_notes_schema():
     with pytest.raises(ValidationError):
         SupplierPaymentCreate.model_validate(
             {
-                "supplier_id": "s1",
+                "supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
                 "amount": 10,
                 "payment_method": "bank_transfer",
                 "reference": "",
@@ -77,7 +77,7 @@ def test_payment_reference_notes_schema():
     with pytest.raises(ValidationError):
         SupplierPaymentCreate.model_validate(
             {
-                "supplier_id": "s1",
+                "supplier_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
                 "amount": 10,
                 "payment_method": "bank_transfer",
                 "notes": "!!!",
