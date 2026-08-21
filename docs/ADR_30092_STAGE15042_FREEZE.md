@@ -31,3 +31,7 @@ Stage 15043 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Anseivajiyuglaze Gate, Transfer Anseivajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15043 opened under **ADR-30093** after CONTINUE/NEXT (Tenant MVP Transfer Anseijajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30094**. Stage 15042 feature scope remains frozen.
