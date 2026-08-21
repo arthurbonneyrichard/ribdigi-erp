@@ -278,7 +278,7 @@ export default function Page() {
       const r = await api('/expenses', {
         method: 'POST',
         body: JSON.stringify({
-          category_id: categoryId || undefined,
+          category_id: categoryId.trim() || null,
           amount: Number(amount),
           description: description.trim() || null,
           payee: payee.trim() || null,

@@ -1508,7 +1508,10 @@ class ExpenseCreate(BaseModel):
     # could persist on Expense.category). When category_id set, service overwrites
     # label from ExpenseCategory.name.
     category: ExpenseCategoryLabelValue | None = None
-    category_id: str | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → label-only / MISC path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
+    category_id: UuidIdValue | None = None
     # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
     # `str` default `""`; blank/garbage could persist).
     description: ExpenseDescriptionValue | None = None
