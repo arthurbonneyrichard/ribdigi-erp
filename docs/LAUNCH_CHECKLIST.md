@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 15661 track opened (ADR-31329: `test_stage15661_open.py`, `docs/STAGE_15661_PLAN.md`) — Transfer Keioaaqajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-31330
+- [x] Transfer Keioaaqajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 15661 I1: `test_stage15661_index_i1.py`, `docs/TRANSFER_KEIOAAQAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Keioaaqajiyuglaze Gate Honesty Pack blocker matrix (Stage 15661 B1: `test_stage15661_blockers_b1.py`, `docs/TRANSFER_KEIOAAQAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 15660 / Stage 15659 / Stage 392 / CHANGE_IMPACT pointers (Stage 15661 P1: `test_stage15661_pointers_p1.py`, `docs/TRANSFER_KEIOAAQAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 15661 fidelity sync (D1: `test_stage15661_fidelity_d1.py`, `docs/STAGE_15661_FIDELITY.md`)
+- [x] Stage 15661 exit + freeze (H15661x: `test_stage15661_exit_h15661x.py`, `docs/STAGE_15661_EXIT_CRITERIA.md`, ADR-31330)
 Stage 15660 track opened (ADR-31327: `test_stage15660_open.py`, `docs/STAGE_15660_PLAN.md`) — Transfer Bunkyuaarrajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-31328
 - [x] Transfer Bunkyuaarrajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 15660 I1: `test_stage15660_index_i1.py`, `docs/TRANSFER_BUNKYUAARRAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Bunkyuaarrajiyuglaze Gate Honesty Pack blocker matrix (Stage 15660 B1: `test_stage15660_blockers_b1.py`, `docs/TRANSFER_BUNKYUAARRAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
