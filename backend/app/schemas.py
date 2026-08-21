@@ -2752,7 +2752,10 @@ class SalesReturnPost(BaseModel):
 
 
 class CustomerPaymentCreate(BaseModel):
-    customer_id: str
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**). Distinct from SupplierPaymentCreate.
+    customer_id: UuidIdValue
     amount: float = Field(gt=0)
     sales_invoice_id: str | None = None
     # BR-11.1 — schema Literal (+ aliases); omit → cash; blank/invalid → 422

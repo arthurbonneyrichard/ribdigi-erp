@@ -175,10 +175,11 @@ export default function Page() {
             }
           : {};
       if (kind === 'receivable') {
-        await api(`/customers/${partyId}/payments`, {
+        await api(`/customers/${partyId.trim()}/payments`, {
           method: 'POST',
           body: JSON.stringify({
-            customer_id: partyId,
+            // trim so Record payment (UuidIdValue customer_id) does not 422 on whitespace
+            customer_id: partyId.trim(),
             amount: Number(payAmount),
             payment_method: payMethod,
             reference: payReference.trim() || null,
@@ -440,7 +441,11 @@ export default function Page() {
         </div>
         <div className="card">
           <h3>Party actions</h3>
-          <select value={partyId} onChange={(e) => setPartyId(e.target.value)}>
+          <select
+            value={partyId}
+            onChange={(e) => setPartyId(e.target.value)}
+            aria-label="Credit payment party"
+          >
             {parties.map((p: any) => (
               <option key={p.id} value={p.id}>
                 {p.name} (bal {p.balance ?? 0}
