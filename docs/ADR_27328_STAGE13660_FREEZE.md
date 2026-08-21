@@ -31,3 +31,7 @@ Stage 13661 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jooddgajiyuglaze Gate, Transfer Jooddgajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13661 opened under **ADR-27329** after CONTINUE/NEXT (Tenant MVP Transfer Jooddkyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-27330**. Stage 13660 feature scope remains frozen.
