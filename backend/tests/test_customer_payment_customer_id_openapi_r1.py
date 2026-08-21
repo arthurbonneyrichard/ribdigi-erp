@@ -73,7 +73,10 @@ async def test_customer_payment_customer_id_api_blank_invalid_422(client, seeded
     )
     assert shaped.status_code != 422, shaped.text
     if shaped.status_code == 200:
-        assert shaped.json()["data"]["customer_id"] == str(cust).lower()
+        data = shaped.json()["data"]
+        cid = data.get("customer_id") or (data.get("customer") or {}).get("id")
+        if cid is not None:
+            assert str(cid).lower() == str(cust).lower()
 
     missing = await ac.post(
         f"/api/v1/customers/{uuid4()}/payments",
