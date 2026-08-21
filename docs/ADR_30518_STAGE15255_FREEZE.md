@@ -31,3 +31,7 @@ Stage 15256 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Yayoilajiyuglaze Gate, Transfer Yayoilajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15256 opened under **ADR-30519** after CONTINUE/NEXT (Tenant MVP Transfer Yayoifajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30520**. Stage 15255 feature scope remains frozen.
