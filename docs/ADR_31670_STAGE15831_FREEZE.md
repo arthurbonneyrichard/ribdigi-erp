@@ -31,3 +31,7 @@ Stage 15832 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonaalajiyuglaze Gate, Transfer Jomonaalajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15832 opened under **ADR-31671** after CONTINUE/NEXT (Tenant MVP Transfer Jomonaafajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31672**. Stage 15831 feature scope remains frozen.
