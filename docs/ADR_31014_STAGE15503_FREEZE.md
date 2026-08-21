@@ -31,3 +31,7 @@ Stage 15504 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hourekiaawhajiyuglaze Gate, Transfer Hourekiaawhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15504 opened under **ADR-31015** after CONTINUE/NEXT (Tenant MVP Transfer Hourekiaarrajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31016**. Stage 15503 feature scope remains frozen.
