@@ -458,6 +458,7 @@ export default function PlatformConsole() {
             <label>
               <span>Slug</span>
               <input
+                aria-label="Tenant slug"
                 value={form.slug}
                 onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase() }))}
                 placeholder="sunrise-mart"

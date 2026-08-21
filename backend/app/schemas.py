@@ -508,7 +508,10 @@ class TenantCreate(BaseModel):
     # Required trading name ∈ CompanyNameValue; blank/`!!!`/`http://…`/`X` → **422**
     # (was free `str` with no create-path length/content check).
     company_name: CompanyNameValue
-    slug: str
+    # Required URL slug ∈ TenantSlugValue (strip/lower; 2–80; `^[a-z0-9][a-z0-9-]{1,79}$`);
+    # blank/`!!!`/`http://…`/`a b`/`X` → **422** (was free `str`; blank/garbage could persist
+    # on `Tenant.slug` String(80); uniqueness remains create **409**).
+    slug: TenantSlugValue
     # BR-1.2 — schema Literal (+ case coerce via BeforeValidator); omit → retail;
     # blank/invalid → 422 (no silent retail from garbage).
     industry: IndustryValue = "retail"
@@ -4484,6 +4487,37 @@ CompanyNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_company_name_value),
+]
+
+
+def coerce_tenant_slug_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_tenant_slug_value(value: str) -> str:
+    """AfterValidator: URL-safe tenant slug; blank/URL/garbage → 422 (2–80).
+
+    Aligns with Platform create input `pattern=[a-z0-9-]{2,80}` and `Tenant.slug`
+    String(80). Must start with a letter or digit (rejects leading hyphen / `---`).
+    """
+    if not value or not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", value):
+        raise ValueError(
+            "tenant slug must be 2–80 lowercase letters, digits, or hyphens "
+            "(must start with a letter or digit)"
+        )
+    return value
+
+
+# Tenant URL slug — matches Tenant.slug String(80); uniqueness via create_tenant 409.
+TenantSlugValue = Annotated[
+    str,
+    BeforeValidator(coerce_tenant_slug_value),
+    AfterValidator(validate_tenant_slug_value),
 ]
 
 

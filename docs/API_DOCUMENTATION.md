@@ -221,6 +221,8 @@ Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, 
 
 `company_name` ∈ `CompanyNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); required on create; blank/`!!!`/`http://…`/`X` → **422** (was free `str` with no create-path length/content check). Same honesty on `PATCH /tenants/me` (omit/`null` → no change). Company **Company trading name** input (`aria-label`).
 
+`slug` ∈ `TenantSlugValue` (strip/lower; 2–80; `^[a-z0-9][a-z0-9-]{1,79}$`); required on create; blank/`!!!`/`http://…`/`a b`/`X`/`-bad` → **422** (was free `str`; blank/garbage could persist on `Tenant.slug` String(80)). Duplicate slug → **409**. Platform console **Tenant slug** input (`aria-label`; create sends trim/lower).
+
 **Response:**
 ```json
 {
