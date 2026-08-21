@@ -1385,11 +1385,18 @@ class StockMove(BaseModel):
     expiry_date: IsoDateQueryValue | None = None
     # Optional on stock-in; stock-out uses StockOut with required Literal
     reference_type: str | None = None
-    reference_id: str | None = None
+    # omit/`null` → no external ref; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on StockMovement.reference_id String(36)).
+    reference_id: StockMovementReferenceIdValue | None = None
 
 
 class StockOut(BaseModel):
-    """Manual stock-out (BR-5.2) — coded reference_type required at schema."""
+    """Manual stock-out (BR-5.2) — coded reference_type required at schema.
+
+    Optional `reference_id` ∈ StockMovementReferenceIdValue; omit/`null` → no external
+    ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist
+    on StockMovement.reference_id String(36)).
+    """
 
     product_id: str
     quantity: float = Field(gt=0)
@@ -1402,7 +1409,8 @@ class StockOut(BaseModel):
     batch_id: str | None = None
     # OpenAPI Literal → omit/blank/invalid → 422
     reference_type: Literal["sale", "transfer", "adjustment", "damage", "internal", "other"]
-    reference_id: str | None = None
+    # omit/`null` → no external ref; blank/`!!!`/`http://…` → **422** (was free `str`)
+    reference_id: StockMovementReferenceIdValue | None = None
 
 
 class OpeningStockLine(BaseModel):
@@ -3587,6 +3595,35 @@ StockOutNotesValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_stock_out_notes_value),
+]
+
+
+def validate_stock_movement_reference_id_value(value: str) -> str:
+    """AfterValidator: stock movement reference_id; blank/URL/garbage → 422 (1–36)."""
+    if not value:
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    if len(value) > 36:
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    return value
+
+
+# Manual stock-in / stock-out external ref — matches StockMovement.reference_id String(36).
+StockMovementReferenceIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_movement_reference_id_value),
 ]
 
 

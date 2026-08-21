@@ -3459,6 +3459,8 @@ export default function Page() {
             value={outRefId}
             onChange={(e) => setOutRefId(e.target.value)}
             placeholder="Invoice / transfer / ticket id"
+            aria-label="Stock-out reference id"
+            title="Optional external reference (1–36 chars; letters/digits required)"
           />
           <label className="muted">Warehouse (optional)</label>
           <select value={outWarehouseId} onChange={(e) => setOutWarehouseId(e.target.value)}>
