@@ -2628,7 +2628,11 @@ class SalesInvoiceCreate(BaseModel):
 
 
 class SalesQuotationCreate(BaseModel):
-    customer_id: str
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate /
+    # SalesOrderCreate (same honesty; shared Sale customer FE control).
+    customer_id: UuidIdValue
     discount_amount: float = Field(default=0, ge=0)
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesQuotation.notes Text).

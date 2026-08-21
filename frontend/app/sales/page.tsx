@@ -275,7 +275,7 @@ export default function Page() {
   ];
 
   const linePayload = {
-    // trim so Create order (UuidIdValue customer_id) does not 422 on whitespace
+    // trim so Create quotation / Create order (UuidIdValue customer_id) do not 422 on whitespace
     customer_id: customerId.trim(),
     store_id: storeId || null,
     delivery_date: deliveryDate.trim() || null,
