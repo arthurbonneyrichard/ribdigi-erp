@@ -2513,7 +2513,10 @@ class PurchaseReturnItemCreate(BaseModel):
 
 
 class PurchaseReturnCreate(BaseModel):
-    goods_receipt_id: str
+    # Required source GRN ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach GRN lookup). Existence remains
+    # tenant-scoped goods-receipt lookup (**404**).
+    goods_receipt_id: UuidIdValue
     # Required coded reason (BR-6.6); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damaged", "wrong_item", "expiry", "quality", "other"]
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;

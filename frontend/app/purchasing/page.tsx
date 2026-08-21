@@ -777,10 +777,11 @@ export default function Page() {
       const r = await api('/purchasing/returns', {
         method: 'POST',
         body: JSON.stringify({
-          goods_receipt_id: grnId,
+          // trim so Draft return (UuidIdValue goods_receipt_id) does not 422 on whitespace
+          goods_receipt_id: grnId.trim(),
           reason: returnReason,
           notes: returnNotes.trim() || null,
-          items: [{ goods_receipt_item_id: grnItemId, quantity: Number(returnQty) }],
+          items: [{ goods_receipt_item_id: grnItemId.trim(), quantity: Number(returnQty) }],
         }),
       });
       setMessage(`Return ${r.data.return_number} drafted`);
@@ -2935,7 +2936,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase return</h3>
         <div className="erp-form-grid">
-          <select value={grnId} onChange={(e) => setGrnId(e.target.value)}>
+          <select
+            value={grnId}
+            onChange={(e) => setGrnId(e.target.value)}
+            aria-label="Return from GRN"
+          >
             <option value="">Select GRN</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
