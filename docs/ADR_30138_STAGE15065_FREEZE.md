@@ -31,3 +31,7 @@ Stage 15066 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunkyufajiyuglaze Gate, Transfer Bunkyufajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15066 opened under **ADR-30139** after CONTINUE/NEXT (Tenant MVP Transfer Bunkyuvajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30140**. Stage 15065 feature scope remains frozen.
