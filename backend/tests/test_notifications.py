@@ -18,6 +18,8 @@ def test_default_preferences_cover_core_types():
     assert DEFAULT_PREFERENCES["recurring_expense"]["dashboard"] is True
     assert DEFAULT_PREFERENCES["expense_approval"]["email"] is True
     assert DEFAULT_PREFERENCES["expense_approval"]["dashboard"] is True
+    assert DEFAULT_PREFERENCES["expense_decision"]["email"] is True
+    assert DEFAULT_PREFERENCES["expense_decision"]["dashboard"] is True
     assert DEFAULT_PREFERENCES["ai_insight"]["email"] is True
     assert DEFAULT_PREFERENCES["ai_insight"]["dashboard"] is True
     assert DEFAULT_PREFERENCES["security"]["dashboard"] is True
@@ -35,6 +37,7 @@ def test_valid_categories():
     assert "shift_variance" in VALID_CATEGORIES
     assert "new_order" in VALID_CATEGORIES
     assert "expense_approval" in VALID_CATEGORIES
+    assert "expense_decision" in VALID_CATEGORIES
     assert "quotation_expiry" in VALID_CATEGORIES
     assert "recurring_expense" in VALID_CATEGORIES
     assert "ai_insight" in VALID_CATEGORIES

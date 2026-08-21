@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.workspace import company_id_match
 
 
 def available_qty(on_hand: float, reserved: float) -> float:
@@ -26,8 +27,9 @@ async def get_warehouse(
         m.Warehouse.id == warehouse_id,
         m.Warehouse.tenant_id == tenant_id,
     )
-    if company_id:
-        stmt = stmt.where(m.Warehouse.company_id == company_id)
+    match = company_id_match(m.Warehouse.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     wh = (await db.execute(stmt)).scalar_one_or_none()
     if not wh:
         raise HTTPException(status_code=404, detail="Warehouse not found")
@@ -519,8 +521,9 @@ async def list_movements_serialized(
     company_id: str | None = None,
 ) -> list[dict]:
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.StockMovement.company_id == company_id)
+    match = company_id_match(m.StockMovement.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     if product_id:
         stmt = stmt.where(m.StockMovement.product_id == product_id)
     if warehouse_id:

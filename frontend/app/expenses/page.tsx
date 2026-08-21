@@ -315,6 +315,23 @@ export default function Page() {
     }
   }
 
+  async function resubmit(id: string) {
+    setError('');
+    try {
+      const r = await api(`/expenses/${id}/resubmit`, {
+        method: 'POST',
+        body: JSON.stringify({ comment: 'Resubmitted after correction' }),
+      });
+      setMessage(
+        r.message ||
+          (r.data?.status === 'approved' ? 'Expense approved' : 'Expense resubmitted'),
+      );
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function uploadAttachment(id: string, file: File) {
     setError('');
     try {
@@ -1397,7 +1414,12 @@ export default function Page() {
                   </>
                 )}
                 {r.status === 'rejected' && (
-                  <span className="muted">{r.rejection_reason}</span>
+                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="muted">{r.rejection_reason}</span>
+                    <button type="button" onClick={() => resubmit(r.id)}>
+                      Resubmit
+                    </button>
+                  </span>
                 )}
               </td>
             </tr>

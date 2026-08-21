@@ -311,12 +311,29 @@ export default function PlatformTenantDetailPage() {
           <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
             <div className="muted">Store entitlement (subscription multi-store)</div>
             <p style={{ marginTop: 8 }}>
-              Active stores: {row.store_count ?? '—'} · Effective max:{' '}
-              {row.max_stores_effective ?? row.max_stores ?? '—'}
+              Active stores: {row.store_entitlement?.used ?? row.store_count ?? '—'} ·
+              Effective max:{' '}
+              {row.store_entitlement?.effective ??
+                row.max_stores_effective ??
+                row.max_stores ??
+                '—'}
               {row.max_stores_override != null
                 ? ` (override ${row.max_stores_override})`
                 : ' (plan/base)'}
             </p>
+            {(row.over_entitlement || row.store_entitlement?.over_entitlement) && (
+              <p className="error" style={{ marginTop: 8 }}>
+                Over entitlement — this tenant uses more active stores than the effective cap.
+                Existing stores are preserved; creates and reactivations stay blocked.
+              </p>
+            )}
+            {(row.over_allocated || row.store_entitlement?.over_allocated) &&
+              !(row.over_entitlement || row.store_entitlement?.over_entitlement) && (
+                <p className="error" style={{ marginTop: 8 }}>
+                  Company allocations exceed the effective tenant cap. Existing stores are not
+                  deleted.
+                </p>
+              )}
             <label style={{ display: 'block', marginTop: 8 }}>
               Base max_stores (−1 = unlimited)
               <input

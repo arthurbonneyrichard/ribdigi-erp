@@ -33,10 +33,10 @@ async def test_backup_restore_media_roundtrip(client, db_session, tmp_path, monk
     monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(backup_dir))
 
     headers = await _admin(ac, seed)
-    headers["X-Workspace-Kind"] = "tenant"
     tenant_id = seed["t1"].id
     product_id = seed["p1"].id
 
+    company_headers = {**headers, "X-Workspace-Kind": "company", "X-Company-ID": seed["c1"].id}
     png = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
         b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
@@ -44,7 +44,7 @@ async def test_backup_restore_media_roundtrip(client, db_session, tmp_path, monk
     )
     uploaded = await ac.post(
         f"/api/v1/products/{product_id}/images",
-        headers=headers,
+        headers=company_headers,
         files={"file": ("widget.png", png, "image/png")},
     )
     assert uploaded.status_code == 200, uploaded.text

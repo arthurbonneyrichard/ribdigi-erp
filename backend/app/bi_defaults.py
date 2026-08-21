@@ -73,10 +73,14 @@ FORMULA_DOCS: list[dict] = [
         "metric": "recommended_reorder_qty",
         "formula": (
             "max(0, ceil((average_daily_sales_qty * (lead_time_days + safety_stock_days)) "
-            "- current_stock + pending_incoming_qty_adjustment))"
+            "- current_stock - pending_incoming_qty))"
         ),
         "source": "products + open purchase orders (partially_received/sent)",
-        "notes": "Labeled Smart Reorder Recommendation — not ML prediction.",
+        "notes": (
+            "Labeled Smart Reorder Recommendation — not ML prediction. "
+            "POST /business-insights/reorder-requests converts lines into draft PRs "
+            "grouped by last supplier (or an explicit fallback supplier_id)."
+        ),
     },
     {
         "metric": "sales_change_pct",
@@ -107,4 +111,5 @@ FORMULA_DOCS: list[dict] = [
 POSTED_SALES_STATUSES = frozenset({"posted", "sent", "partial", "paid", "overdue"})
 POSTED_PURCHASE_STATUSES = frozenset({"unpaid", "partial", "paid", "overdue"})
 OPEN_PO_STATUSES = frozenset({"sent", "partially_received"})
+OPEN_PR_STATUSES = frozenset({"draft", "pending", "approved"})
 APPROVED_EXPENSE_STATUS = "approved"

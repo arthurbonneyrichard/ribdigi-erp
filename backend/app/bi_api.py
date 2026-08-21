@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bi_defaults import FORMULA_DOCS
 from app.bi_service import BusinessIntelligenceService
 from app.db import get_db
+from app.rbac import has_permission
 from app.security import require_permission
 
 router = APIRouter(prefix="/business-insights", tags=["business-insights"])
@@ -208,3 +209,32 @@ async def bi_formulas(
     _db: AsyncSession = Depends(get_db),
 ):
     return {"formulas": FORMULA_DOCS, "external_ai": False}
+
+
+class ReorderRequestBody(BaseModel):
+    product_ids: list[str] | None = None
+    supplier_id: str | None = None
+    warehouse_id: str | None = None
+    notes: str | None = None
+
+
+@router.post("/reorder-requests")
+async def bi_reorder_requests(
+    body: ReorderRequestBody | None = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    if not has_permission(
+        claims.get("role"),
+        "business_insights",
+        "read",
+        overrides=claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None,
+    ):
+        raise HTTPException(status_code=403, detail="Missing permission: business_insights:read")
+    payload = body or ReorderRequestBody()
+    return await _svc(db, claims).create_reorder_purchase_requests(
+        product_ids=payload.product_ids,
+        supplier_id=payload.supplier_id,
+        warehouse_id=payload.warehouse_id,
+        notes=payload.notes,
+    )

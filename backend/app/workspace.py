@@ -3,11 +3,32 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.rbac import permissions_for_role
+
+
+def company_id_match(column, company_id: str | None):
+    """Match active company workspace, including legacy NULL-scoped rows.
+
+    Cross-company stamped rows stay isolated. Unscoped (NULL) rows remain
+    visible until backfilled — same pattern as audit company scoping.
+    """
+    if not company_id:
+        return None
+    return or_(column == company_id, column.is_(None))
+
+
+def _default_company_store_limit(tenant: m.Tenant) -> int:
+    """First-company allocation uses the effective tenant cap (override-aware).
+
+    Do not treat ``max_stores=0`` as missing — ``or 5`` would silently raise the cap.
+    """
+    from app import store_entitlements as store_ent_svc
+
+    return int(store_ent_svc.effective_tenant_store_limit(tenant))
 
 # Modules usable in tenant workspace (SaaS account admin — not company ops).
 TENANT_WORKSPACE_MODULES = frozenset(
@@ -88,7 +109,7 @@ async def ensure_default_company(db: AsyncSession, tenant: m.Tenant) -> m.Compan
         logo_url=tenant.logo_url,
         is_active=True,
         is_default=True,
-        store_limit=int(getattr(tenant, "max_stores", 5) or 5),
+        store_limit=_default_company_store_limit(tenant),
     )
     db.add(co)
     await db.flush()
@@ -321,7 +342,9 @@ def company_scope_filter(model, claims: dict):
     clauses = [model.tenant_id == claims["tenant_id"]]
     company_id = claims.get("company_id")
     if company_id and hasattr(model, "company_id"):
-        clauses.append(model.company_id == company_id)
+        match = company_id_match(model.company_id, company_id)
+        if match is not None:
+            clauses.append(match)
     return clauses
 
 

@@ -213,8 +213,19 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
     assert data["emailed_to"] == "invoice-buyer@example.com"
     assert data["emailed_at"]
     assert data["delivery"]["mode"] == "console"
+    assert data["delivery"]["template"] == "thermal_80"
+    attach = data["delivery"]["attachment"]
+    assert attach["filename"].startswith("invoice_")
+    assert attach["filename"].endswith(".pdf")
+    assert invoice_number.replace("/", "-") in attach["filename"]
+    assert attach["content_type"] == "application/pdf"
+    assert attach["size_bytes"] > 4
     out = get_dev_outbox()
     assert out and invoice_number in out[0]["subject"]
+    assert out[0]["attachments"]
+    assert out[0]["attachments"][0]["filename"] == attach["filename"]
+    assert out[0]["attachments"][0]["content_type"] == "application/pdf"
+    assert "branded PDF" in (out[0].get("text_body") or "")
 
     db_session.expire_all()
     product_after = (
@@ -248,11 +259,19 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
     resend = await ac.post(
         f"/api/v1/sales/invoices/{invoice_id}/send",
         headers=headers,
-        json={"to": "override@example.com"},
+        json={"to": "override@example.com", "template": "a4"},
     )
     assert resend.status_code == 200, resend.text
     assert resend.json()["data"]["status"] == "overdue"
     assert resend.json()["data"]["emailed_to"] == "override@example.com"
+    assert resend.json()["data"]["delivery"]["template"] == "a4"
+
+    bad_tpl = await ac.post(
+        f"/api/v1/sales/invoices/{invoice_id}/send",
+        headers=headers,
+        json={"template": "poster"},
+    )
+    assert bad_tpl.status_code == 400
 
 
 @pytest.mark.asyncio

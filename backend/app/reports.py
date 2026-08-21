@@ -6,16 +6,20 @@ import calendar
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 
 
 def apply_company_filter(stmt, column, company_id: str | None):
-    """Optionally narrow a report query to the active company workspace."""
+    """Optionally narrow a report query to the active company workspace.
+
+    Includes legacy NULL-scoped rows (same tenant) so ops data created before
+    company stamping remains visible in company workspace.
+    """
     if company_id:
-        return stmt.where(column == company_id)
+        return stmt.where(or_(column == company_id, column.is_(None)))
     return stmt
 
 
@@ -395,9 +399,8 @@ async def _sales_totals_for_bounds(
         m.Transaction.created_at >= start,
         m.Transaction.created_at <= end,
     )
-    if company_id:
-        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
-        pos_q = pos_q.where(m.Transaction.company_id == company_id)
+    inv_q = apply_company_filter(inv_q, m.SalesInvoice.company_id, company_id)
+    pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
     invoices = (await db.execute(inv_q)).scalars().all()
     pos = (await db.execute(pos_q)).scalars().all()
     invoice_total = sum(float(i.total_amount or 0) for i in invoices)
@@ -1057,8 +1060,7 @@ async def inventory_valuation(
         .where(m.WarehouseStock.tenant_id == tenant_id)
         .order_by(m.Warehouse.code, m.Product.name)
     )
-    if company_id:
-        stmt = stmt.where(m.Warehouse.company_id == company_id)
+    stmt = apply_company_filter(stmt, m.Warehouse.company_id, company_id)
     if resolved_warehouse_id:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == resolved_warehouse_id)
     rows = (await db.execute(stmt)).all()
@@ -1319,8 +1321,7 @@ async def purchases_summary(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
     )
-    if company_id:
-        stmt = stmt.where(m.PurchaseOrder.company_id == company_id)
+    stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, company_id)
     if from_date:
         stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
     if to_date:
@@ -1559,8 +1560,7 @@ async def expenses_summary(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
     )
-    if company_id:
-        stmt = stmt.where(m.Expense.company_id == company_id)
+    stmt = apply_company_filter(stmt, m.Expense.company_id, company_id)
     if category_id:
         stmt = stmt.where(m.Expense.category_id == category_id)
     if from_date:
@@ -1637,14 +1637,12 @@ async def cash_flow(
         m.Account.tenant_id == tenant_id,
         (m.Account.is_cash_account.is_(True)) | (m.Account.is_bank_account.is_(True)),
     )
-    if company_id:
-        liq_q = liq_q.where(m.Account.company_id == company_id)
+    liq_q = apply_company_filter(liq_q, m.Account.company_id, company_id)
     liquid = (await db.execute(liq_q)).scalars().all()
     if not liquid:
         # Fallback for pre-flag DBs mid-migration
         cash_q = select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == "1000")
-        if company_id:
-            cash_q = cash_q.where(m.Account.company_id == company_id)
+        cash_q = apply_company_filter(cash_q, m.Account.company_id, company_id)
         cash = (await db.execute(cash_q)).scalar_one_or_none()
         liquid = [cash] if cash else []
     empty_sections = {
@@ -1686,8 +1684,7 @@ async def cash_flow(
                 m.JournalEntry.entry_date < from_date,
             )
         )
-        if company_id:
-            open_stmt = open_stmt.where(m.JournalEntry.company_id == company_id)
+        open_stmt = apply_company_filter(open_stmt, m.JournalEntry.company_id, company_id)
         if store_ids is not None:
             if store_ids:
                 open_stmt = open_stmt.where(m.JournalEntry.store_id.in_(store_ids))
@@ -1705,8 +1702,7 @@ async def cash_flow(
             m.JournalEntry.status == "posted",
         )
     )
-    if company_id:
-        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+    stmt = apply_company_filter(stmt, m.JournalEntry.company_id, company_id)
     if from_date:
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:

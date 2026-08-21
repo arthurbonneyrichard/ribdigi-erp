@@ -19,6 +19,7 @@ from app.inventory import (
     list_movements_serialized,
 )
 from app.session_passkey_doc_export import _cell
+from app.workspace import company_id_match
 
 MOVEMENT_EXPORT_COLUMNS = [
     "id",
@@ -141,8 +142,9 @@ async def list_low_stock_alerts(
         )
         .order_by(m.Product.stock_qty.asc())
     )
-    if company_id:
-        prod_stmt = prod_stmt.where(m.Product.company_id == company_id)
+    match = company_id_match(m.Product.company_id, company_id)
+    if match is not None:
+        prod_stmt = prod_stmt.where(match)
     products = (await db.execute(prod_stmt)).scalars().all()
     out: list[dict] = []
     for p in products:
@@ -186,8 +188,8 @@ async def list_low_stock_alerts(
     )
     if company_id:
         wh_stmt = wh_stmt.where(
-            m.Product.company_id == company_id,
-            m.Warehouse.company_id == company_id,
+            company_id_match(m.Product.company_id, company_id),
+            company_id_match(m.Warehouse.company_id, company_id),
         )
     wh_rows = (await db.execute(wh_stmt)).all()
     for stock, product, wh in wh_rows:

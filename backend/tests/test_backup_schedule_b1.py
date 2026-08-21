@@ -193,7 +193,14 @@ async def test_backup_failure_notifies_admin_no_fake_success(
     assert note.category == "system"
     assert note.status == "unread"
 
-    listed = await ac.get("/api/v1/notifications", headers=headers)
+    listed = await ac.get(
+        "/api/v1/notifications",
+        headers={
+            **headers,
+            "X-Workspace-Kind": "company",
+            "X-Company-ID": seed["c1"].id,
+        },
+    )
     assert listed.status_code == 200
     titles = [n["title"] for n in listed.json()["data"]]
     assert "Backup failed" in titles

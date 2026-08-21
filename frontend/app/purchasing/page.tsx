@@ -952,6 +952,23 @@ export default function Page() {
     }
   }
 
+  async function printGrn(grnId: string) {
+    setError('');
+    try {
+      const r = await api(`/purchasing/grn/${grnId}/print`);
+      const text = r.data?.text || '';
+      const win = window.open('', '_blank', 'noopener,noreferrer,width=720,height=800');
+      if (win) {
+        win.document.write(`<pre style="font:14px/1.4 monospace;padding:16px">${text.replace(/</g, '&lt;')}</pre>`);
+        win.document.close();
+        win.focus();
+      }
+      setMessage(`GRN print ready for ${r.data?.grn?.grn_number || 'GRN'}`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function printDebitNote(returnId: string) {
     setError('');
     try {
@@ -2083,6 +2100,7 @@ export default function Page() {
                 <th>PO</th>
                 <th>Status</th>
                 <th>Lines</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -2092,6 +2110,11 @@ export default function Page() {
                   <td>{g.purchase_order_id}</td>
                   <td>{g.status}</td>
                   <td>{g.items?.length || 0}</td>
+                  <td>
+                    <button type="button" onClick={() => printGrn(g.id)}>
+                      Print GRN
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

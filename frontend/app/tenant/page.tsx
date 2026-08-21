@@ -18,7 +18,9 @@ type TenantDash = {
       used: number;
       remaining: number | null;
       unallocated: number | null;
+      allocated_to_companies?: number;
       over_entitlement?: boolean;
+      over_allocated?: boolean;
     };
     store_allocations?: {
       company_id: string;
@@ -121,7 +123,9 @@ export default function TenantDashboardPage() {
                 </p>
                 <p className="muted">
                   Remaining {storeEnt?.remaining ?? '—'}
-                  {storeEnt?.over_entitlement ? ' · over entitlement' : ''}
+                  {storeEnt?.unallocated != null
+                    ? ` · Unallocated ${storeEnt.unallocated}`
+                    : ''}
                 </p>
               </div>
               <div className="card">
@@ -133,6 +137,20 @@ export default function TenantDashboardPage() {
 
             <section style={{ marginTop: 24 }}>
               <h2>Store allocations</h2>
+              {storeEnt?.over_entitlement && (
+                <p className="error" style={{ marginTop: 0 }}>
+                  Over entitlement — this tenant uses {storeEnt.used} of {storeLimitLabel} allowed
+                  stores. Existing stores are preserved; new creates and reactivations are blocked
+                  until the subscription is increased or stores are deactivated.
+                </p>
+              )}
+              {storeEnt?.over_allocated && !storeEnt?.over_entitlement && (
+                <p className="error" style={{ marginTop: 0 }}>
+                  Company allocations ({storeEnt.allocated_to_companies ?? '—'}) exceed the tenant
+                  entitlement ({storeLimitLabel}). Reduce allocations before assigning more capacity.
+                  Existing stores are not deleted.
+                </p>
+              )}
               <p className="muted">
                 Subscription store allowance is allocated to companies. Allocations cannot exceed the
                 tenant entitlement. Downgrades never delete existing stores.

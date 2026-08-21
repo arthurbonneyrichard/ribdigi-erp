@@ -141,6 +141,7 @@ class EmailSettingsUpdate(BaseModel):
 
 class InvoiceSendRequest(BaseModel):
     to: str | None = None
+    template: str | None = None
 
 
 class TenantSuspendRequest(BaseModel):
@@ -287,6 +288,12 @@ class StockCountItemUpdate(BaseModel):
 
 class StockCountItemsUpdate(BaseModel):
     items: list[StockCountItemUpdate]
+
+
+class StockCountItemAdd(BaseModel):
+    product_id: str
+    counted_qty: float | None = None
+    notes: str | None = None
 
 
 class ProductCategoryCreate(BaseModel):

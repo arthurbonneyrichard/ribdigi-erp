@@ -678,6 +678,12 @@ async def get_customer_tenant(db: AsyncSession, tenant_ref: str) -> dict | None:
         return None
     row = await _enrich_tenant_row(db, tenant)
     row["last_house_email_delivery"] = await last_house_email_delivery(db, tenant.id)
+    from app import store_entitlements as store_ent_svc
+
+    ent = await store_ent_svc.get_tenant_store_entitlement(db, tenant)
+    row["store_entitlement"] = {**ent, "effective": ent["max_stores"]}
+    row["over_entitlement"] = ent["over_entitlement"]
+    row["over_allocated"] = ent["over_allocated"]
     return row
 
 
