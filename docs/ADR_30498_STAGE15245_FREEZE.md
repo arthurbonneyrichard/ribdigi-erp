@@ -31,3 +31,7 @@ Stage 15246 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Jomonvajiyuglaze Gate, Transfer Jomonvajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15246 opened under **ADR-30499** after CONTINUE/NEXT (Tenant MVP Transfer Jomonjajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30500**. Stage 15245 feature scope remains frozen.
