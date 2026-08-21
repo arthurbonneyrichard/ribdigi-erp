@@ -535,7 +535,9 @@ class ProfileUpdate(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    # Required session refresh token ∈ RefreshTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached refresh lookup as invalid).
+    refresh_token: RefreshTokenValue
 
 
 class TenantCreate(BaseModel):
@@ -4625,6 +4627,40 @@ ChallengeTokenValue = Annotated[
     str,
     BeforeValidator(coerce_challenge_token_value),
     AfterValidator(validate_challenge_token_value),
+]
+
+
+def coerce_refresh_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for refresh_token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_refresh_token_value(value: str) -> str:
+    """AfterValidator: session refresh token; blank/URL/@/spaces → 422 (1–200).
+
+    Allows urlsafe tokens from issue_refresh_token (e.g. Tip258Tok_abc-); rejects empty/URL garbage.
+    Authenticity remains hashed refresh-token lookup (invalid/expired → **401**).
+    """
+    if not value:
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    return value
+
+
+# Session refresh token — 1–200; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+RefreshTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_refresh_token_value),
+    AfterValidator(validate_refresh_token_value),
 ]
 
 

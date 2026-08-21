@@ -144,6 +144,8 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 }
 ```
 
+`refresh_token` ∈ `RefreshTokenValue` (strip; 1–200; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached refresh lookup as invalid). Authenticity remains hashed refresh-token lookup (**401**). Frontend `refreshSession` sends trim (no dedicated form; `localStorage`).
+
 ### 2.3 Logout
 **Endpoint:** `POST /auth/logout`
 
