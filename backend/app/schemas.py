@@ -4447,7 +4447,7 @@ def coerce_tenant_admin_password_value(value: object) -> object:
 def validate_tenant_admin_password_value(value: str) -> str:
     """AfterValidator: tenant create admin password; blank/URL/@/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip249Pass!); rejects empty/URL garbage.
+    Allows punctuation used in fixtures (e.g. Tip248Pass!); rejects empty/URL garbage.
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
     if not value:
