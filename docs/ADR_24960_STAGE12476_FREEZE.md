@@ -31,3 +31,7 @@ Stage 12477 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Enkyouddujiyuglaze Gate, Transfer Enkyouddujiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12477 opened under **ADR-24961** after CONTINUE/NEXT (Tenant MVP Transfer Enkyouddijiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-24962**. Stage 12476 feature scope remains frozen.
