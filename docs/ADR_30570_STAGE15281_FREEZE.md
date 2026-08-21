@@ -31,3 +31,7 @@ Stage 15282 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Sengokuvajiyuglaze Gate, Transfer Sengokuvajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15282 opened under **ADR-30571** after CONTINUE/NEXT (Tenant MVP Transfer Sengokujajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30572**. Stage 15281 feature scope remains frozen.
