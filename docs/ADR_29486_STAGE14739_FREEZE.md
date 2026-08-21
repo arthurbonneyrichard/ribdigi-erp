@@ -31,3 +31,7 @@ Stage 14740 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Ritsuryoffijiyuglaze Gate, Transfer Ritsuryoffijiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14740 opened under **ADR-29487** after CONTINUE/NEXT (Tenant MVP Transfer Ritsuryoffwajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-29488**. Stage 14739 feature scope remains frozen.
