@@ -31,3 +31,7 @@ Stage 15781 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kamakuraarrajiyuglaze Gate, Transfer Kamakuraarrajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15781 opened under **ADR-31569** after CONTINUE/NEXT (Tenant MVP Transfer Muromachiaaqajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31570**. Stage 15780 feature scope remains frozen.
