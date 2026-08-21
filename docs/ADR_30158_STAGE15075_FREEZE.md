@@ -31,3 +31,7 @@ Stage 15076 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keiolajiyuglaze Gate, Transfer Keiolajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15076 opened under **ADR-30159** after CONTINUE/NEXT (Tenant MVP Transfer Keiofajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30160**. Stage 15075 feature scope remains frozen.
