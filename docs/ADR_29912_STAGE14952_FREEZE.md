@@ -31,3 +31,7 @@ Stage 14953 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenmeiwhajiyuglaze Gate, Transfer Tenmeiwhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14953 opened under **ADR-29913** after CONTINUE/NEXT (Tenant MVP Transfer Tenmeirrajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-29914**. Stage 14952 feature scope remains frozen.
