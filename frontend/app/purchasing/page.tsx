@@ -2181,6 +2181,8 @@ export default function Page() {
                                   style={{ minWidth: 100 }}
                                   value={draft.batch}
                                   placeholder={tracks ? 'Batch required' : 'Batch (opt)'}
+                                  aria-label="GRN batch number"
+                                  title="Batch / lot number (1–80 chars; required when product tracks batches)"
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,

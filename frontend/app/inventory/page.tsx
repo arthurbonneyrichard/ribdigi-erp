@@ -1276,7 +1276,7 @@ export default function Page() {
           warehouse_id: stockWarehouseId || null,
           variant_id: stockVariantId || null,
           notes: stockNotes.trim() || null,
-          batch_number: batchNumber,
+          batch_number: batchNumber.trim(),
           manufacturing_date: mfgDate.trim() || null,
           expiry_date: expiryDate.trim() || null,
         }),
@@ -1317,7 +1317,7 @@ export default function Page() {
         unit_id: openingUnitId || null,
         warehouse_id: openingWarehouseId || null,
         variant_id: openingVariantId || null,
-        batch_number: openingBatch || null,
+        batch_number: openingBatch.trim() || null,
         manufacturing_date: openingMfg.trim() || null,
         expiry_date: openingExpiry.trim() || null,
         notes: openingLineNotes.trim() || null,
@@ -2762,7 +2762,13 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
+            <input
+              value={batchNumber}
+              onChange={(e) => setBatchNumber(e.target.value)}
+              placeholder="Batch number"
+              aria-label="Stock-in batch number"
+              title="Batch / lot number (1–80 chars; letters/digits required)"
+            />
             <label className="muted">Manufacturing date</label>
             <input
               aria-label="Stock-in manufacturing date"
@@ -2898,6 +2904,8 @@ export default function Page() {
               value={openingBatch}
               onChange={(e) => setOpeningBatch(e.target.value)}
               placeholder="Batch number (if tracked)"
+              aria-label="Opening stock batch number"
+              title="Optional batch / lot number (1–80 chars; letters/digits required)"
             />
             <label className="muted">Manufacturing date</label>
             <input

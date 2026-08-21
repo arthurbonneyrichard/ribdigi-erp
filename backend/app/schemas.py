@@ -1328,11 +1328,15 @@ class StockAdjust(BaseModel):
 
 
 class StockMove(BaseModel):
-    """Manual stock-in — optional batch dates ∈ IsoDateQueryValue (BR-5.2).
+    """Manual stock-in — optional batch lot + dates (BR-5.2).
 
-    Optional `manufacturing_date` / `expiry_date`; omit/`null` → no batch dates;
-    blank/invalid → **422** (was free `datetime`; OpenAPI date-time; padded dates
-    inconsistent). API `reports.parse_date` remains defense-in-depth.
+    Optional `batch_number` ∈ BatchNumberValue; omit/`null` → no lot (service still
+    requires a lot when product.tracks_batches); blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank silently stripped to None / punctuation/URL could persist
+    on ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
+    IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
+    free `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_date` remains defense-in-depth.
     """
 
     product_id: str
@@ -1344,7 +1348,8 @@ class StockMove(BaseModel):
     warehouse_id: str | None = None
     variant_id: str | None = None
     batch_id: str | None = None
-    batch_number: str | None = None
+    # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
+    batch_number: BatchNumberValue | None = None
     manufacturing_date: IsoDateQueryValue | None = None
     expiry_date: IsoDateQueryValue | None = None
     # Optional on stock-in; stock-out uses StockOut with required Literal
@@ -1370,11 +1375,15 @@ class StockOut(BaseModel):
 
 
 class OpeningStockLine(BaseModel):
-    """Opening-stock line — optional batch dates ∈ IsoDateQueryValue (BR-5.2).
+    """Opening-stock line — optional batch lot + dates (BR-5.2).
 
-    Optional `manufacturing_date` / `expiry_date`; omit/`null` → no batch dates;
-    blank/invalid → **422** (was free `datetime`; OpenAPI date-time; padded dates
-    inconsistent). API `reports.parse_date` remains defense-in-depth.
+    Optional `batch_number` ∈ BatchNumberValue; omit/`null` → no lot (service still
+    requires a lot when product.tracks_batches); blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank silently stripped to None / punctuation/URL could persist
+    on ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
+    IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
+    free `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_date` remains defense-in-depth.
     """
 
     product_id: str
@@ -1382,7 +1391,8 @@ class OpeningStockLine(BaseModel):
     unit_id: str | None = None
     warehouse_id: str | None = None
     variant_id: str | None = None
-    batch_number: str | None = None
+    # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
+    batch_number: BatchNumberValue | None = None
     manufacturing_date: IsoDateQueryValue | None = None
     expiry_date: IsoDateQueryValue | None = None
     unit_cost: float | None = Field(default=None, ge=0)  # defaults to product.cost_price
@@ -2255,11 +2265,15 @@ class AiLowStockPredictionRequestsBody(BaseModel):
 
 
 class GrnItemCreate(BaseModel):
-    """GRN line — optional batch dates ∈ IsoDateQueryValue (BR-6.4).
+    """GRN line — optional batch lot + dates (BR-6.4).
 
-    Optional `manufacturing_date` / `expiry_date`; omit/`null` → no batch dates;
-    blank/invalid → **422** (was free `datetime`; OpenAPI date-time; padded dates
-    inconsistent). API `reports.parse_date` remains defense-in-depth.
+    Optional `batch_number` ∈ BatchNumberValue; omit/`null` → no lot (service still
+    requires a lot when product.tracks_batches); blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank silently stripped to None / punctuation/URL could persist
+    on ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
+    IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
+    free `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_date` remains defense-in-depth.
 
     Optional `rejection_reason` ∈ GrnRejectionReasonValue when rejecting stock
     (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` OK when no reject;
@@ -2274,8 +2288,8 @@ class GrnItemCreate(BaseModel):
     accepted_qty: float | None = None
     rejected_qty: float = Field(default=0, ge=0)
     rejection_reason: GrnRejectionReasonValue | None = None
-    # Optional lot for accepted stock (BR-6.4); required when product.tracks_batches
-    batch_number: str | None = None
+    # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
+    batch_number: BatchNumberValue | None = None
     manufacturing_date: IsoDateQueryValue | None = None
     expiry_date: IsoDateQueryValue | None = None
 
@@ -3714,6 +3728,27 @@ UnitCodeValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_unit_code_value),
+]
+
+
+def validate_batch_number_value(value: str) -> str:
+    """AfterValidator: product batch / lot number; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    return value
+
+
+# Product batch / lot number — matches ProductBatch.batch_number String(80).
+BatchNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_batch_number_value),
 ]
 
 
