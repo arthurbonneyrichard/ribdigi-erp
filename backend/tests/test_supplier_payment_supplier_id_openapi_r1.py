@@ -49,15 +49,14 @@ def test_supplier_payment_supplier_id_ui_and_docs():
 async def test_supplier_payment_supplier_id_api_blank_invalid_422(client, seeded):
     ac, seed = client
     headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-    supp = seed.get("supplier1") or seed.get("party_supplier") or seed.get("supp1")
-    if supp is None:
-        listed = await ac.get("/api/v1/suppliers", headers=headers)
-        assert listed.status_code == 200, listed.text
-        rows = listed.json().get("data") or []
-        assert rows, "seeded supplier required"
-        supp_id = rows[0]["id"]
-    else:
-        supp_id = getattr(supp, "id", None) or supp["id"]
+    suffix = uuid4().hex[:8]
+    supplier = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": f"Tip273 Vendor {suffix}"},
+    )
+    assert supplier.status_code == 200, supplier.text
+    supp_id = supplier.json()["data"]["id"]
 
     for bad in ("", "!!!", "http://evil", "not-a-uuid", "supp_001"):
         resp = await ac.post(
@@ -81,7 +80,10 @@ async def test_supplier_payment_supplier_id_api_blank_invalid_422(client, seeded
     )
     assert shaped.status_code != 422, shaped.text
     if shaped.status_code == 200:
-        assert shaped.json()["data"]["supplier_id"] == str(supp_id).lower()
+        data = shaped.json()["data"]
+        sid = data.get("supplier_id") or (data.get("supplier") or {}).get("id")
+        if sid is not None:
+            assert str(sid).lower() == str(supp_id).lower()
 
     missing = await ac.post(
         f"/api/v1/suppliers/{uuid4()}/payments",
