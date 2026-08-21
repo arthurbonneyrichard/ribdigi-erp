@@ -1845,22 +1845,24 @@ export default function Page() {
               title="Provider account id (1–120 chars; letters/digits required)"
             />
             {connProvider === 'http_json' && (
-              <input
-                value={connFeedUrl}
-                onChange={(e) => setConnFeedUrl(e.target.value)}
-                placeholder="https://…/transactions"
-                title="Absolute https feed URL (http only for localhost)"
-                aria-label="Bank feed URL"
-              />
-              <input
-                type="password"
-                value={connAccessToken}
-                onChange={(e) => setConnAccessToken(e.target.value)}
-                placeholder="Bearer / API token (optional)"
-                title="Optional feed access token (1–128; omit blank to skip)"
-                aria-label="Bank connection access token"
-                autoComplete="off"
-              />
+              <>
+                <input
+                  value={connFeedUrl}
+                  onChange={(e) => setConnFeedUrl(e.target.value)}
+                  placeholder="https://…/transactions"
+                  title="Absolute https feed URL (http only for localhost)"
+                  aria-label="Bank feed URL"
+                />
+                <input
+                  type="password"
+                  value={connAccessToken}
+                  onChange={(e) => setConnAccessToken(e.target.value)}
+                  placeholder="Bearer / API token (optional)"
+                  title="Optional feed access token (1–128; omit blank to skip)"
+                  aria-label="Bank connection access token"
+                  autoComplete="off"
+                />
+              </>
             )}
             <button
               type="button"
