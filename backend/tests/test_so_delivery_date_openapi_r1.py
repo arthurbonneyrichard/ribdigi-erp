@@ -15,14 +15,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_so_delivery_date_schema():
-    base_item = {"product_id": "p1", "quantity": 1, "unit_price": 1}
+    base_item = {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}
     create_omit = SalesOrderCreate.model_validate(
-        {"customer_id": "c1", "items": [base_item]}
+        {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "items": [base_item]}
     )
     assert create_omit.delivery_date is None
     create_ok = SalesOrderCreate.model_validate(
         {
-            "customer_id": "c1",
+            "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "delivery_date": " 2026-08-20 ",
             "items": [base_item],
         }
@@ -31,7 +31,7 @@ def test_so_delivery_date_schema():
     for bad in ("", " ", "not-a-date", "01/02/2024", "2026-13-01"):
         with pytest.raises(ValidationError):
             SalesOrderCreate.model_validate(
-                {"customer_id": "c1", "delivery_date": bad, "items": [base_item]}
+                {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "delivery_date": bad, "items": [base_item]}
             )
 
     confirm_omit = SalesOrderConfirm.model_validate({})

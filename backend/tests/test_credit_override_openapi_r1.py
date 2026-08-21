@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
         (TransactionCreate, {"items": []}),
         (
             PosSaleCreate,
-            {"items": [{"product_id": "p1", "quantity": 1}]},
+            {"items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}]},
         ),
     ],
 )

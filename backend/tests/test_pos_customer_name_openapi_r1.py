@@ -18,12 +18,12 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_pos_customer_name_schema():
     # Minimal body still needs items (min_length=1)
     omit = PosSaleCreate.model_validate(
-        {"items": [{"product_id": "p1", "quantity": 1}]}
+        {"items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}]}
     )
     assert omit.customer_name is None
     ok = PosSaleCreate.model_validate(
         {
-            "items": [{"product_id": "p1", "quantity": 1}],
+            "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}],
             "customer_name": "  Walk-in Ada  ",
         }
     )
@@ -31,7 +31,7 @@ def test_pos_customer_name_schema():
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             PosSaleCreate.model_validate(
-                {"items": [{"product_id": "p1", "quantity": 1}], "customer_name": bad}
+                {"items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}], "customer_name": bad}
             )
 
 

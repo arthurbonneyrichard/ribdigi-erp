@@ -30,7 +30,7 @@ def test_pos_payment_reference_schema():
 
     sale_ok = PosSaleCreate.model_validate(
         {
-            "items": [{"product_id": "p1", "quantity": 1}],
+            "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}],
             "payment_method": "card",
             "payments": [
                 {"payment_method": "card", "amount": 10, "reference": "  TIP185  "}
@@ -41,7 +41,7 @@ def test_pos_payment_reference_schema():
     with pytest.raises(ValidationError):
         PosSaleCreate.model_validate(
             {
-                "items": [{"product_id": "p1", "quantity": 1}],
+                "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}],
                 "payments": [
                     {"payment_method": "card", "amount": 10, "reference": "!!!!"}
                 ],
