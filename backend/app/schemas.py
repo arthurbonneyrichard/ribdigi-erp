@@ -1682,7 +1682,10 @@ class ExpenseCategoryCreate(BaseModel):
     # (was free `str`; blank/garbage could persist on expense category create).
     name: ExpenseCategoryNameValue
     budget_amount: float = Field(default=0, ge=0)
-    account_id: str | None = None
+    # Optional expense-type GL ∈ UuidIdValue; omit/`null` → default 6000; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
+    # Existence remains tenant-scoped account lookup (**404**).
+    account_id: UuidIdValue | None = None
 
 
 class ExpenseCategoryUpdate(BaseModel):
@@ -2641,7 +2644,10 @@ class SalesQuotationReject(BaseModel):
 
 
 class SalesOrderCreate(BaseModel):
-    customer_id: str
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate.
+    customer_id: UuidIdValue
     quotation_id: str | None = None
     store_id: str | None = None
     # omit/`null` → no promised date; blank/`not-a-date`/`01/02/2024` → **422**
@@ -5954,9 +5960,11 @@ class BankStatementLineCreate(BaseModel):
 class BankStatementCreateBody(BaseModel):
     """POST /accounting/bank-statements (BR-10.3).
 
-    Unknown keys → **422** (`extra=forbid`). Blank/omit `account_id` → **422**
-    (was free `dict` that turned omit/`""` into a late **404**). Zero line amounts
-    → **422**. Optional `statement_date` ∈ `IsoDateQueryValue`; omit → today;
+    Unknown keys → **422** (`extra=forbid`). Required `account_id` ∈ `UuidIdValue`
+    (strip; lower; valid UUID); blank/`!!!`/`http://…`/non-UUID → **422** (was
+    free `str` min_length=1; garbage could reach liquid-account lookup). Existence
+    remains tenant-scoped liquid account lookup (**404**). Zero line amounts →
+    **422**. Optional `statement_date` ∈ `IsoDateQueryValue`; omit → today;
     blank/invalid → **422** (blank was silent today; invalid was uncaught **500**).
     Optional `notes` ∈ `BankStatementNotesValue`; omit/`null` → no notes; blank/
     `!!!`/`http://…` → **422** (was free `str`; blank silently dropped via
@@ -5966,7 +5974,10 @@ class BankStatementCreateBody(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    account_id: str = Field(min_length=1)
+    # Required liquid COA ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str` min_length=1; garbage could reach liquid-account lookup).
+    # Existence remains tenant-scoped liquid account lookup (**404**).
+    account_id: UuidIdValue
     statement_date: IsoDateQueryValue | None = None
     opening_balance: float = 0
     closing_balance: float = 0
@@ -5974,13 +5985,6 @@ class BankStatementCreateBody(BaseModel):
     # blank silently dropped via strip-to-None / garbage could persist).
     notes: BankStatementNotesValue | None = None
     lines: list[BankStatementLineCreate] = Field(default_factory=list)
-
-    @field_validator("account_id", mode="before")
-    @classmethod
-    def _strip_account_id(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()
-        return value
 
 
 class BankStatementMatchBody(BaseModel):

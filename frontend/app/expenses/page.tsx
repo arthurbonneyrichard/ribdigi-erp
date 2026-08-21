@@ -203,7 +203,7 @@ export default function Page() {
           code: newCatCode.trim(),
           name,
           budget_amount: Number(newCatBudget) || 0,
-          account_id: newCatAccountId || null,
+          account_id: newCatAccountId.trim() || null,
         }),
       });
       setNewCatCode('');
@@ -887,6 +887,7 @@ export default function Page() {
             value={newCatAccountId}
             onChange={(e) => setNewCatAccountId(e.target.value)}
             title="GL expense account"
+            aria-label="Expense category GL account"
           >
             <option value="">GL: default 6000</option>
             {expenseAccounts.map((a: any) => (
