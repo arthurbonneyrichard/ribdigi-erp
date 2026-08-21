@@ -181,7 +181,10 @@ export default function Page() {
       if (!cred) throw new Error('Passkey registration cancelled');
       await api('/auth/webauthn/register/verify', {
         method: 'POST',
-        body: JSON.stringify({ credential: credentialToJson(cred), name: passkeyName || 'Passkey' }),
+        body: JSON.stringify({
+          credential: credentialToJson(cred),
+          name: passkeyName.trim() ? passkeyName.trim() : null,
+        }),
       });
       setMessage('Passkey registered');
       await refresh();
@@ -304,12 +307,14 @@ export default function Page() {
         <p className="muted">Register a platform or security-key passkey for passwordless second factor.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
+            aria-label="Passkey name"
             value={passkeyName}
             onChange={(e) => setPasskeyName(e.target.value)}
             placeholder="Passkey name"
+            title="Optional label (1–120 chars; letters/digits required)"
             style={{ minWidth: 160 }}
           />
-          <button type="button" onClick={registerPasskey}>
+          <button type="button" onClick={registerPasskey} aria-label="Add passkey">
             Add passkey
           </button>
         </div>

@@ -187,6 +187,8 @@ Token is single-use and expires in 1 hour; new password must pass complexity rul
 }
 ```
 
+**Passkeys (WebAuthn):** `POST /auth/webauthn/register/options` then `POST /auth/webauthn/register/verify` — body `{ "credential": {…}, "name"? }`. Optional `name` ∈ `PasskeyNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; omit/`null` → service default `"Passkey"`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently became `"Passkey"` via service strip; punctuation/URL could persist on `WebAuthnCredential.name` String(120)). Security **Passkey name** input (`aria-label`); register sends `null` when blank. Service strip remains defense-in-depth.
+
 ### 2.6 Session Management
 **Endpoint:** `GET /auth/sessions`
 

@@ -414,8 +414,17 @@ class TwoFactorDisable(BaseModel):
 
 
 class WebAuthnRegisterVerify(BaseModel):
+    """POST /auth/webauthn/register/verify — optional passkey label.
+
+    Optional `name` ∈ PasskeyNameValue; omit/`null` → service default `"Passkey"`;
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank silently became
+    `"Passkey"` via strip-or-default; punctuation/URL could persist on
+    `WebAuthnCredential.name` String(120)).
+    """
+
     credential: dict
-    name: str | None = None
+    # omit/`null` → service default "Passkey"; blank/`!!!`/`http://…` → **422**
+    name: PasskeyNameValue | None = None
 
 
 class WebAuthnLoginOptions(BaseModel):
@@ -4319,6 +4328,27 @@ ApiKeyNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_api_key_name_value),
+]
+
+
+def validate_passkey_name_value(value: str) -> str:
+    """AfterValidator: WebAuthn credential display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Passkey / WebAuthn credential label — matches WebAuthnCredential.name String(120).
+PasskeyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_passkey_name_value),
 ]
 
 
