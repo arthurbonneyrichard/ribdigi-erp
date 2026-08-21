@@ -574,7 +574,8 @@ export default function Page() {
       const r = await api('/sales/returns', {
         method: 'POST',
         body: JSON.stringify({
-          sales_invoice_id: invoiceId,
+          // trim so Create return (UuidIdValue sales_invoice_id) does not 422 on whitespace
+          sales_invoice_id: invoiceId.trim(),
           reason: returnReason,
           restock,
           notes: returnNotes.trim() || null,
