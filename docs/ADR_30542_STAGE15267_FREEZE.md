@@ -31,3 +31,7 @@ Stage 15268 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kofunlajiyuglaze Gate, Transfer Kofunlajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15268 opened under **ADR-30543** after CONTINUE/NEXT (Tenant MVP Transfer Kofunfajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30544**. Stage 15267 feature scope remains frozen.
