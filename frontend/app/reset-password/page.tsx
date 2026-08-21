@@ -24,6 +24,11 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError('');
     setMessage('');
+    const trimmedToken = token.trim();
+    if (!trimmedToken) {
+      setError('Password reset token is required.');
+      return;
+    }
     const trimmedPassword = password.trim();
     if (!trimmedPassword) {
       setError('Password reset new password is required.');
@@ -37,7 +42,7 @@ function ResetPasswordForm() {
     try {
       const r = await api('/auth/password-reset', {
         method: 'POST',
-        body: JSON.stringify({ token, new_password: trimmedPassword }),
+        body: JSON.stringify({ token: trimmedToken, new_password: trimmedPassword }),
       });
       setMessage(r.message || 'Password updated — you can sign in now');
       setTimeout(() => router.push('/'), 1200);
@@ -80,6 +85,7 @@ function ResetPasswordForm() {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="Paste token from email"
+                aria-label="Password reset token"
                 required
               />
             </label>
@@ -111,7 +117,7 @@ function ResetPasswordForm() {
           <button
             className="login-primary"
             type="submit"
-            disabled={submitting || !password.trim()}
+            disabled={submitting || !password.trim() || !token.trim()}
             aria-label="Update password"
           >
             {submitting ? 'Updating…' : 'Update password'}

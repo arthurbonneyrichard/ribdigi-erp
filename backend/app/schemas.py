@@ -2151,7 +2151,9 @@ class PasswordResetRequest(BaseModel):
 
 
 class PasswordResetConfirm(BaseModel):
-    token: str
+    # Required one-time token ∈ PasswordResetTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached hash lookup as invalid/expired).
+    token: PasswordResetTokenValue
     # Required new password ∈ PasswordResetNewPasswordValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL could reach hash path; strength still
     # enforced by validate_password_strength → **400**).
@@ -4510,6 +4512,40 @@ PasswordResetNewPasswordValue = Annotated[
 ]
 
 
+def coerce_password_reset_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for reset token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_password_reset_token_value(value: str) -> str:
+    """AfterValidator: password-reset token; blank/URL/@/spaces → 422 (1–200).
+
+    Allows url-safe tokens (e.g. Tip254Token_abc-); rejects empty/URL garbage.
+    Authenticity remains hash_token / AuthToken lookup → **400**.
+    """
+    if not value:
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    return value
+
+
+# Password-reset confirm token — 1–200; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+PasswordResetTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_password_reset_token_value),
+    AfterValidator(validate_password_reset_token_value),
+]
+
+
 def coerce_login_password_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for login password 422."""
     if value is None:
@@ -4575,6 +4611,40 @@ TwoFactorDisablePasswordValue = Annotated[
     str,
     BeforeValidator(coerce_two_factor_disable_password_value),
     AfterValidator(validate_two_factor_disable_password_value),
+]
+
+
+def coerce_password_reset_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for reset token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_password_reset_token_value(value: str) -> str:
+    """AfterValidator: password-reset token; blank/URL/@/spaces → 422 (1–128).
+
+    Allows urlsafe tokens from issue_one_time_token (e.g. Tip254Tok!); rejects empty/URL garbage.
+    Authenticity remains hashed one-time token lookup (invalid/expired → **400**).
+    """
+    if not value:
+        raise ValueError("token must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("token must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("token must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("token must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Password reset confirm token — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+PasswordResetTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_password_reset_token_value),
+    AfterValidator(validate_password_reset_token_value),
 ]
 
 

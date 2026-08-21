@@ -150,7 +150,7 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 ### 2.4 Password Reset
 **Endpoint:** `POST /auth/password-reset-request`
 
-UI: login **Forgot password?** → `/forgot-password` (workspace + email). Always returns a neutral success message (no account enumeration). Non-production may include `reset_token` for local testing. Email link opens `/reset-password?token=…`.
+UI: login **Forgot password?** → `/forgot-password` (workspace + email). Always returns a neutral success message (no account enumeration). Non-production may include `reset_token` for local testing. Email link opens `/reset-password?token=…`. Confirm body `token` ∈ `PasswordResetTokenValue` (strip; 1–200; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `hash_token` / invalid-token **400**). Reset password **Password reset token** input (`aria-label`); submit sends trim.
 
 **Request:**
 ```json
@@ -169,6 +169,8 @@ UI: login **Forgot password?** → `/forgot-password` (workspace + email). Alway
   "new_password": "NewSecurePass456!"
 }
 ```
+
+`token` ∈ `PasswordResetTokenValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached hashed one-time lookup as invalid). Authenticity remains token hash lookup (**400** invalid/expired). Reset password UI **Password reset token** (`aria-label`; paste field when URL has no `token`); submit sends trim.
 
 `new_password` ∈ `PasswordResetNewPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path). Strength still `validate_password_strength` → **400**. Reset password UI **Password reset new password** (`aria-label`); submit sends trim.
 
