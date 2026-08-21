@@ -25,7 +25,7 @@ def test_document_payment_currency_schema():
     si = SalesInvoiceCreate.model_validate(
         {
             "customer_id": _CUST,
-            "items": [{"product_id": "p1", "quantity": 1}],
+            "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}],
             "currency": " usd ",
         }
     )
@@ -35,7 +35,7 @@ def test_document_payment_currency_schema():
     assert pi.currency == "EUR"
 
     cp = CustomerPaymentCreate.model_validate(
-        {"customer_id": "c1", "amount": 10, "currency": None}
+        {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "amount": 10, "currency": None}
     )
     assert cp.currency is None
 
@@ -47,10 +47,10 @@ def test_document_payment_currency_schema():
     for Cls, base in (
         (
             SalesInvoiceCreate,
-            {"customer_id": _CUST, "items": [{"product_id": "p1", "quantity": 1}]},
+            {"customer_id": _CUST, "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}]},
         ),
         (PurchaseInvoiceCreate, {}),
-        (CustomerPaymentCreate, {"customer_id": "c1", "amount": 1}),
+        (CustomerPaymentCreate, {"customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "amount": 1}),
         (SupplierPaymentCreate, {"supplier_id": "s1", "amount": 1}),
     ):
         for bad in ("", " ", "US", "EURO", "gh", "123"):

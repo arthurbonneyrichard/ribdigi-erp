@@ -1340,7 +1340,10 @@ class CustomerGroupUpdate(BaseModel):
 
 
 class LineItem(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Shared by TransactionCreate + PosSaleCreate.
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_id: str | None = None  # entered UoM; stock converted at checkout
     variant_id: str | None = None
@@ -2196,7 +2199,10 @@ class PurchaseOrderItemCreate(BaseModel):
 
 
 class PurchaseOrderCreate(BaseModel):
-    supplier_id: str
+    # Required supplier ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped supplier lookup (**404**).
+    supplier_id: UuidIdValue
     warehouse_id: str | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on PurchaseOrder.notes Text).
@@ -2583,7 +2589,10 @@ class PurchaseInvoiceCancel(BaseModel):
 
 
 class SalesInvoiceItemCreate(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Shared by SI / QT / SO create lines.
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_id: str | None = None  # entered UoM; post/reserve convert to stock unit
     unit_price: float | None = None

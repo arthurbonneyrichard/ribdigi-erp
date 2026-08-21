@@ -264,7 +264,7 @@ export default function Page() {
   const hdrDisc = Math.max(0, Number(headerDiscount) || 0);
   const lineItems = [
     {
-      product_id: productId,
+      product_id: productId.trim(),
       variant_id: variantId || null,
       unit_id: unitId || null,
       quantity: Number(qty),

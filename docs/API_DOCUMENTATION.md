@@ -877,7 +877,7 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 **Create PO** (`POST /purchasing/orders`):
 ```json
 {
-  "supplier_id": "sup_001",
+  "supplier_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
   "warehouse_id": "wh_001",
   "delivery_address": "Gate B, Tema Wharf",
   "items": [
@@ -892,6 +892,8 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
   "notes": "Standard monthly order"
 }
 ```
+
+Required `supplier_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped supplier lookup **404**). Purchasing **PO supplier** select (`aria-label`); Create PO sends `supplier_id` trim.
 
 Optional `delivery_address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Stored on the PO, returned on GET/list/serialize, amendable via `POST /purchasing/orders/{id}/amend`, and included in supplier email bodies when set (BR-6.3). Purchasing **PO delivery address** input (`aria-label`); create sends `null` when blank.
 
@@ -1062,7 +1064,7 @@ Optional create/confirm `delivery_address` ∈ `AddressValue` (strip; 1–500 ch
 
 ### 7.5 Invoices
 **List:** `GET /sales/invoices` — optional Query `status` ∈ `draft`|`posted`|`sent`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Invoices **Sales invoice status filter** (`invoiceManageFilter`; client filter over full cache).  
-**Create:** `POST /sales/invoices` — required `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/orders; omit/`null` → no notes; blank/garbage → **422**). Sales **Sale customer** select + **Sales document notes** input; Create invoice sends `customer_id` trim and `null` notes when blank.  
+**Create:** `POST /sales/invoices` — required `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Line `items[].product_id` ∈ `UuidIdValue` (`SalesInvoiceItemCreate` / shared `LineItem` for POS/legacy sale; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/orders; omit/`null` → no notes; blank/garbage → **422**). Sales **Sale customer** + **Sales product** selects + **Sales document notes** input; Create invoice sends `customer_id` / `product_id` trim and `null` notes when blank.  
 **Get:** `GET /sales/invoices/{invoice_id}`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
 **Print:** `GET /sales/invoices/{invoice_id}/print` — query `template` ∈ a4|thermal (omit → company print branding default; blank/invalid → **422**); `format` ∈ pdf|text|json (omit → `pdf`; blank/invalid → **422**); `paper` ∈ 58mm|80mm for thermal (omit → branding default; blank/invalid → **422**, no silent branding fallback for garbage). Sales Print A4 / thermal controls.
