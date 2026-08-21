@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 14961 track opened (ADR-29929: `test_stage14961_open.py`, `docs/STAGE_14961_PLAN.md`) — Transfer Kanseishajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-29930
+- [x] Transfer Kanseishajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 14961 I1: `test_stage14961_index_i1.py`, `docs/TRANSFER_KANSEISHAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Kanseishajiyuglaze Gate Honesty Pack blocker matrix (Stage 14961 B1: `test_stage14961_blockers_b1.py`, `docs/TRANSFER_KANSEISHAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 14960 / Stage 14959 / Stage 392 / CHANGE_IMPACT pointers (Stage 14961 P1: `test_stage14961_pointers_p1.py`, `docs/TRANSFER_KANSEISHAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 14961 fidelity sync (D1: `test_stage14961_fidelity_d1.py`, `docs/STAGE_14961_FIDELITY.md`)
+- [x] Stage 14961 exit + freeze (H14961x: `test_stage14961_exit_h14961x.py`, `docs/STAGE_14961_EXIT_CRITERIA.md`, ADR-29930)
 Stage 14960 track opened (ADR-29927: `test_stage14960_open.py`, `docs/STAGE_14960_PLAN.md`) — Transfer Kanseichajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-29928
 - [x] Transfer Kanseichajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 14960 I1: `test_stage14960_index_i1.py`, `docs/TRANSFER_KANSEICHAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Kanseichajiyuglaze Gate Honesty Pack blocker matrix (Stage 14960 B1: `test_stage14960_blockers_b1.py`, `docs/TRANSFER_KANSEICHAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
