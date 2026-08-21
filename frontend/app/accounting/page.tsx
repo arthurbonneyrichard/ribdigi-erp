@@ -63,6 +63,7 @@ export default function Page() {
   const [connName, setConnName] = useState('Operating account feed');
   const [connProvider, setConnProvider] = useState('mock');
   const [connFeedUrl, setConnFeedUrl] = useState('');
+  const [connAccessToken, setConnAccessToken] = useState('');
   const [connExtId, setConnExtId] = useState('demo-acct-1');
   const [xferKind, setXferKind] = useState('transfer');
   const [xferKindManageFilter, setXferKindManageFilter] = useState<
@@ -619,6 +620,10 @@ export default function Page() {
           display_name: displayName || null,
           external_account_id: connExtId.trim() || null,
           feed_url: connProvider === 'http_json' ? connFeedUrl : null,
+          access_token:
+            connProvider === 'http_json' && connAccessToken.trim()
+              ? connAccessToken.trim()
+              : null,
           auto_sync: true,
           auto_match_after_sync: true,
         }),
@@ -1846,6 +1851,15 @@ export default function Page() {
                 placeholder="https://…/transactions"
                 title="Absolute https feed URL (http only for localhost)"
                 aria-label="Bank feed URL"
+              />
+              <input
+                type="password"
+                value={connAccessToken}
+                onChange={(e) => setConnAccessToken(e.target.value)}
+                placeholder="Bearer / API token (optional)"
+                title="Optional feed access token (1–128; omit blank to skip)"
+                aria-label="Bank connection access token"
+                autoComplete="off"
               />
             )}
             <button

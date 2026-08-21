@@ -3280,6 +3280,41 @@ SmtpPasswordValue = Annotated[
 ]
 
 
+def coerce_bank_access_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for access_token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_bank_access_token_value(value: str) -> str:
+    """AfterValidator: bank feed access token; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip248Token!); rejects empty/URL garbage.
+    """
+    if not value:
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    return value
+
+
+# Bank connection access_token — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-10.3).
+BankAccessTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_access_token_value),
+    AfterValidator(validate_bank_access_token_value),
+]
+
+
+
+
 def coerce_smtp_host_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for host 422."""
     if value is None:
@@ -5461,7 +5496,9 @@ class BankConnectionCreate(BaseModel):
     external_account_id: BankExternalAccountIdValue | None = None
     # omit/null OK (mock); blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
     feed_url: WebhookUrlValue | None = None
-    access_token: str | None = None
+    # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent no-op via service;
+    # punctuation/URL could be encrypted into credentials_enc)
+    access_token: BankAccessTokenValue | None = None
     auto_sync: bool = True
     auto_match_after_sync: bool = True
     sync_lookback_days: int = Field(default=30, ge=1, le=365)
@@ -5476,7 +5513,9 @@ class BankConnectionUpdate(BaseModel):
     external_account_id: BankExternalAccountIdValue | None = None
     # omit/null = no change; blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
     feed_url: WebhookUrlValue | None = None
-    access_token: str | None = None
+    # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent no-op;
+    # punctuation/URL could be encrypted into credentials_enc). clear_credentials still clears.
+    access_token: BankAccessTokenValue | None = None
     clear_credentials: bool | None = None
     auto_sync: bool | None = None
     auto_match_after_sync: bool | None = None
