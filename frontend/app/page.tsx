@@ -114,11 +114,16 @@ export default function Login() {
         return;
       }
 
+      const trimmedPassword = password.trim();
+      if (!trimmedPassword) {
+        setError('Password is required');
+        return;
+      }
       const r = await api('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
           email,
-          password,
+          password: trimmedPassword,
           tenant_id: tenant,
           totp_code: totpCode || null,
         }),
@@ -216,6 +221,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   autoComplete="current-password"
+                  aria-label="Login password"
                   required
                 />
               </label>

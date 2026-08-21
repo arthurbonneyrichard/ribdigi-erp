@@ -111,6 +111,8 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with **OAuth2** flows.
 }
 ```
 
+`password` ∈ `LoginPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `verify_password` as **401**). Authenticity still `verify_password` → **401**. Login UI **Login password** (`aria-label`); submit sends trim.
+
 **Response:**
 ```json
 {

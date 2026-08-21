@@ -394,7 +394,9 @@ class ORMSchema(BaseModel):
 
 class Login(BaseModel):
     email: EmailStr
-    password: str
+    # Required password ∈ LoginPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached verify_password as 401).
+    password: LoginPasswordValue
     tenant_id: str
     # omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** (was free `str`)
     totp_code: TwoFactorCodeValue | None = None
@@ -4503,6 +4505,40 @@ PasswordResetNewPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_password_reset_new_password_value),
     AfterValidator(validate_password_reset_new_password_value),
+]
+
+
+def coerce_login_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for login password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_login_password_value(value: str) -> str:
+    """AfterValidator: login password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip252Pass!); rejects empty/URL garbage.
+    Authenticity remains verify_password → **401**.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Login password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+LoginPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_login_password_value),
+    AfterValidator(validate_login_password_value),
 ]
 
 
