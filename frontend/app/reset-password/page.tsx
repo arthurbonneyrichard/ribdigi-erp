@@ -24,7 +24,12 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError('');
     setMessage('');
-    if (password !== confirm) {
+    const trimmedPassword = password.trim();
+    if (!trimmedPassword) {
+      setError('Password reset new password is required.');
+      return;
+    }
+    if (trimmedPassword !== confirm.trim()) {
       setError('Passwords do not match');
       return;
     }
@@ -32,7 +37,7 @@ function ResetPasswordForm() {
     try {
       const r = await api('/auth/password-reset', {
         method: 'POST',
-        body: JSON.stringify({ token, new_password: password }),
+        body: JSON.stringify({ token, new_password: trimmedPassword }),
       });
       setMessage(r.message || 'Password updated — you can sign in now');
       setTimeout(() => router.push('/'), 1200);
@@ -87,6 +92,7 @@ function ResetPasswordForm() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="New password"
               autoComplete="new-password"
+              aria-label="Password reset new password"
               required
             />
           </label>
@@ -98,10 +104,16 @@ function ResetPasswordForm() {
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Confirm new password"
               autoComplete="new-password"
+              aria-label="Password reset confirm password"
               required
             />
           </label>
-          <button className="login-primary" type="submit" disabled={submitting}>
+          <button
+            className="login-primary"
+            type="submit"
+            disabled={submitting || !password.trim()}
+            aria-label="Update password"
+          >
             {submitting ? 'Updating…' : 'Update password'}
           </button>
           <Link className="login-ghost" href="/forgot-password" style={{ display: 'block', textAlign: 'center' }}>

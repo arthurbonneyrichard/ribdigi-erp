@@ -168,6 +168,8 @@ UI: login **Forgot password?** → `/forgot-password` (workspace + email). Alway
 }
 ```
 
+`new_password` ∈ `PasswordResetNewPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path). Strength still `validate_password_strength` → **400**. Reset password UI **Password reset new password** (`aria-label`); submit sends trim.
+
 Token is single-use and expires in 1 hour; new password must pass complexity rules.
 
 ### 2.4b Email verification (BR-19.1)

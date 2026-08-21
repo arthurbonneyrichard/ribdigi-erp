@@ -2148,7 +2148,10 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetConfirm(BaseModel):
     token: str
-    new_password: str
+    # Required new password ∈ PasswordResetNewPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL could reach hash path; strength still
+    # enforced by validate_password_strength → **400**).
+    new_password: PasswordResetNewPasswordValue
 
 
 class EmailVerifyConfirm(BaseModel):
@@ -4466,6 +4469,40 @@ TenantAdminPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_tenant_admin_password_value),
     AfterValidator(validate_tenant_admin_password_value),
+]
+
+
+def coerce_password_reset_new_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for new_password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_password_reset_new_password_value(value: str) -> str:
+    """AfterValidator: password-reset new_password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip250Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Password reset confirm new_password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+PasswordResetNewPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_password_reset_new_password_value),
+    AfterValidator(validate_password_reset_new_password_value),
 ]
 
 
