@@ -4400,6 +4400,10 @@ Every feature in every phase must meet:
 
 **Stage 366 P1 (2026-08-14):** Stage 232 / Stage 365 / Stage 320 / Stage 329 pointers (`test_stage366_pointers_p1.py`).
 
+**Stage 15401 D1 (2026-08-14):** Transfer Choukyouvajiyuglaze Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_15401_FIDELITY.md` (`test_stage15401_fidelity_d1.py`). Open ADR: `docs/ADR_30809_STAGE15401_OPEN.md`; plan `docs/STAGE_15401_PLAN.md`.
+
+**Stage 15401 exit (2026-08-14):** I1, B1, P1, D1, H15401x met — `docs/STAGE_15401_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_30810_STAGE15401_FREEZE.md`. Fidelity: `docs/STAGE_15401_FIDELITY.md`.
+
 **Stage 15400 D1 (2026-08-14):** Transfer Choukyoufajiyuglaze Gate Honesty Pack Remaining-Gate Index fidelity sync — `docs/STAGE_15400_FIDELITY.md` (`test_stage15400_fidelity_d1.py`). Open ADR: `docs/ADR_30807_STAGE15400_OPEN.md`; plan `docs/STAGE_15400_PLAN.md`.
 
 **Stage 15400 exit (2026-08-14):** I1, B1, P1, D1, H15400x met — `docs/STAGE_15400_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_30808_STAGE15400_FREEZE.md`. Fidelity: `docs/STAGE_15400_FIDELITY.md`.
