@@ -67,8 +67,14 @@ export default function PlatformStaffPage() {
   async function createStaff(e: React.FormEvent) {
     e.preventDefault();
     const fullName = form.full_name.trim();
+    const trimmedPassword = form.password.trim();
     if (!fullName) {
       setError('Platform staff full name is required.');
+      setMessage('');
+      return;
+    }
+    if (!trimmedPassword) {
+      setError('Platform staff password is required.');
       setMessage('');
       return;
     }
@@ -81,7 +87,7 @@ export default function PlatformStaffPage() {
         body: JSON.stringify({
           email: form.email.trim(),
           full_name: fullName,
-          password: form.password,
+          password: trimmedPassword,
           role: form.role,
           phone: form.phone.trim() || null,
         }),
@@ -254,7 +260,7 @@ export default function PlatformStaffPage() {
             </label>
             <button
               type="submit"
-              disabled={busy || !form.full_name.trim()}
+              disabled={busy || !form.full_name.trim() || !form.password.trim()}
               aria-label="Create platform staff"
             >
               {busy ? 'Saving…' : 'Create staff'}

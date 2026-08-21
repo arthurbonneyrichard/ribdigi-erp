@@ -706,7 +706,10 @@ class PlatformStaffCreate(BaseModel):
     # Required display name ∈ PlatformStaffFullNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str` min_length=1; whitespace/`!!!`/URL could persist).
     full_name: PlatformStaffFullNameValue
-    password: str = Field(min_length=1)
+    # Required password ∈ PlatformStaffPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str` min_length=1; whitespace/`!!!`/URL could reach hash path;
+    # strength still enforced by validate_password_strength → **400**).
+    password: PlatformStaffPasswordValue
     # Same Literal as grant; omit → platform_support; blank/invalid → 422
     # (was free dict; API `role or "platform_support"` silently coerced "")
     role: PlatformRoleValue = "platform_support"
@@ -4318,6 +4321,40 @@ PlatformStaffFullNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_platform_staff_full_name_value),
+]
+
+
+def coerce_platform_staff_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_platform_staff_password_value(value: str) -> str:
+    """AfterValidator: platform staff password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip246Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Platform staff create password — 1–128; ≥1 letter/digit; no :// / @ / spaces.
+PlatformStaffPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_platform_staff_password_value),
+    AfterValidator(validate_platform_staff_password_value),
 ]
 
 
