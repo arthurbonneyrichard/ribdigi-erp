@@ -23,15 +23,15 @@ def test_bank_access_token_value_schema():
         with pytest.raises(ValidationError):
             _token.validate_python(bad)
 
-    omit = BankConnectionCreate.model_validate({"account_id": "a1"})
+    omit = BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"})
     assert omit.access_token is None
     ok = BankConnectionCreate.model_validate(
-        {"account_id": "a1", "access_token": "  secretToken1  "}
+        {"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "access_token": "  secretToken1  "}
     )
     assert ok.access_token == "secretToken1"
     for bad in ("", "!!!", "http://evil", "a@b", "tok en"):
         with pytest.raises(ValidationError):
-            BankConnectionCreate.model_validate({"account_id": "a1", "access_token": bad})
+            BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "access_token": bad})
 
     patch_omit = BankConnectionUpdate.model_validate({})
     assert patch_omit.access_token is None

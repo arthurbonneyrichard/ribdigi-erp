@@ -16,15 +16,15 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_bank_connection_display_name_schema():
-    omit = BankConnectionCreate.model_validate({"account_id": "a1"})
+    omit = BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"})
     assert omit.display_name is None
     ok = BankConnectionCreate.model_validate(
-        {"account_id": "a1", "display_name": "  Operating feed  "}
+        {"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "display_name": "  Operating feed  "}
     )
     assert ok.display_name == "Operating feed"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
-            BankConnectionCreate.model_validate({"account_id": "a1", "display_name": bad})
+            BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "display_name": bad})
 
     patch_omit = BankConnectionUpdate.model_validate({})
     assert patch_omit.display_name is None

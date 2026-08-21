@@ -16,16 +16,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_bank_external_account_id_schema():
-    omit = BankConnectionCreate.model_validate({"account_id": "a1"})
+    omit = BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"})
     assert omit.external_account_id is None
     ok = BankConnectionCreate.model_validate(
-        {"account_id": "a1", "external_account_id": "  demo-acct-1  "}
+        {"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "external_account_id": "  demo-acct-1  "}
     )
     assert ok.external_account_id == "demo-acct-1"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             BankConnectionCreate.model_validate(
-                {"account_id": "a1", "external_account_id": bad}
+                {"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "external_account_id": bad}
             )
 
     patch_omit = BankConnectionUpdate.model_validate({})

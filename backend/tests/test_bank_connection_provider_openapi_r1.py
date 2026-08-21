@@ -14,17 +14,17 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_bank_connection_provider_literal_schema():
     ok = BankConnectionCreate.model_validate(
-        {"account_id": "a1", "provider": "http_json", "feed_url": "https://example.test/feed"}
+        {"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "provider": "http_json", "feed_url": "https://example.test/feed"}
     )
     assert ok.provider == "http_json"
-    defaulted = BankConnectionCreate.model_validate({"account_id": "a1"})
+    defaulted = BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"})
     assert defaulted.provider == "mock"
     with pytest.raises(ValidationError):
-        BankConnectionCreate.model_validate({"account_id": "a1", "provider": ""})
+        BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "provider": ""})
     with pytest.raises(ValidationError):
-        BankConnectionCreate.model_validate({"account_id": "a1", "provider": "   "})
+        BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "provider": "   "})
     with pytest.raises(ValidationError):
-        BankConnectionCreate.model_validate({"account_id": "a1", "provider": "plaid"})
+        BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "provider": "plaid"})
 
     bare = BankConnectionUpdate.model_validate({})
     assert bare.provider is None

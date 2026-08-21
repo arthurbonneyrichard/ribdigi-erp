@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_bank_feed_url_schema():
     ok = BankConnectionCreate.model_validate(
         {
-            "account_id": "a1",
+            "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "provider": "http_json",
             "feed_url": "  https://example.com/transactions  ",
         }
@@ -26,14 +26,14 @@ def test_bank_feed_url_schema():
 
     local = BankConnectionCreate.model_validate(
         {
-            "account_id": "a1",
+            "account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "provider": "http_json",
             "feed_url": "http://localhost:9999/feed",
         }
     )
     assert local.feed_url.startswith("http://localhost")
 
-    bare = BankConnectionCreate.model_validate({"account_id": "a1"})
+    bare = BankConnectionCreate.model_validate({"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"})
     assert bare.feed_url is None
 
     for bad in (
@@ -46,7 +46,7 @@ def test_bank_feed_url_schema():
     ):
         with pytest.raises(ValidationError):
             BankConnectionCreate.model_validate(
-                {"account_id": "a1", "provider": "http_json", "feed_url": bad}
+                {"account_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "provider": "http_json", "feed_url": bad}
             )
 
     upd = BankConnectionUpdate.model_validate({})

@@ -615,7 +615,8 @@ export default function Page() {
       await api('/accounting/bank-connections', {
         method: 'POST',
         body: JSON.stringify({
-          account_id: reconAccountId,
+          // trim so Connect (UuidIdValue account_id) does not 422 on whitespace
+          account_id: reconAccountId.trim(),
           provider: connProvider,
           display_name: displayName || null,
           external_account_id: connExtId.trim() || null,

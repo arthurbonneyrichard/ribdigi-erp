@@ -5883,7 +5883,10 @@ class FxAutoRefreshUpdate(BaseModel):
 
 
 class BankConnectionCreate(BaseModel):
-    account_id: str
+    # Required liquid COA ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach liquid-account lookup). Existence remains
+    # tenant-scoped liquid account lookup (**404**).
+    account_id: UuidIdValue
     # BR-10.3 — schema Literal; omit defaults to mock; blank/invalid → 422
     provider: Literal["mock", "http_json"] = "mock"
     # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
