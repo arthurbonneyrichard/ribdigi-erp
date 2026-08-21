@@ -27,7 +27,7 @@ def test_profile_update_phone_schema():
 def test_profile_phone_ui_and_docs():
     page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Profile phone for SMS test"' in page
-    assert 'aria-label="Save my phone"' in page
+    assert 'aria-label="Save my profile"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Profile phone OpenAPI" in agents
     assert "E164PhoneValue" in agents

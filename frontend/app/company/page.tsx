@@ -11,6 +11,7 @@ export default function Page() {
   const [smsStatus, setSmsStatus] = useState<any>(null);
   const [storageStatus, setStorageStatus] = useState<any>(null);
   const [profilePhone, setProfilePhone] = useState('');
+  const [profileFullName, setProfileFullName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -87,6 +88,7 @@ export default function Page() {
     }
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
+    setProfileFullName(me.data?.full_name || '');
     if (print.data) {
       setPrintHeader(print.data.header_text || '');
       setPrintFooter(print.data.footer_text || '');
@@ -815,6 +817,15 @@ export default function Page() {
             aria-label="Company SMS from number"
             style={{ width: '100%', marginBottom: 8 }}
           />
+          <label className="muted">Your display name</label>
+          <input
+            value={profileFullName}
+            onChange={(e) => setProfileFullName(e.target.value)}
+            placeholder="Full name"
+            aria-label="Profile full name"
+            title="Profile full name (1–150 chars; letters/digits required)"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
           <label className="muted">Your mobile (for test SMS)</label>
           <input
             value={profilePhone}
@@ -855,19 +866,26 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
+                  const body: Record<string, unknown> = {
+                    // Keep prior phone behavior for SMS test save path.
+                    phone: profilePhone,
+                  };
+                  // Omit blank name so Save does not 422 (UserFullNameValue); leave prior.
+                  const trimmedName = profileFullName.trim();
+                  if (trimmedName) body.full_name = trimmedName;
                   await api('/me', {
                     method: 'PATCH',
-                    body: JSON.stringify({ phone: profilePhone }),
+                    body: JSON.stringify(body),
                   });
-                  setMessage('Profile phone saved');
+                  setMessage('Profile saved');
                   await refresh();
                 } catch (err: any) {
                   setError(err.message);
                 }
               }}
-              aria-label="Save my phone"
+              aria-label="Save my profile"
             >
-              Save my phone
+              Save my profile
             </button>
             <button
               onClick={async () => {

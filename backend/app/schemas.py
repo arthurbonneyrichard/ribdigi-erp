@@ -491,7 +491,10 @@ class SmsSettingsUpdate(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    full_name: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank reached service **400** "full_name cannot be empty"; punctuation/URL
+    # could persist on User.full_name). Same UserFullNameValue as UserCreate/Update.
+    full_name: UserFullNameValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank silently cleared phone; garbage was late **400** via normalize_phone).
     phone: E164PhoneValue | None = None
