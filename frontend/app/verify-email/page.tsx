@@ -22,11 +22,16 @@ function VerifyEmailForm() {
   async function verify(rawToken: string) {
     setError('');
     setMessage('');
+    const trimmedToken = rawToken.trim();
+    if (!trimmedToken) {
+      setError('Email verification token is required.');
+      return;
+    }
     setSubmitting(true);
     try {
       const r = await api('/auth/verify-email', {
         method: 'POST',
-        body: JSON.stringify({ token: rawToken }),
+        body: JSON.stringify({ token: trimmedToken }),
       });
       setMessage(r.message || 'Email verified — you can sign in now');
       setTimeout(() => router.push('/'), 1200);
@@ -83,11 +88,17 @@ function VerifyEmailForm() {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="Paste token from email"
+                aria-label="Email verification token"
                 required
               />
             </label>
           )}
-          <button className="login-primary" type="submit" disabled={submitting || !token}>
+          <button
+            className="login-primary"
+            type="submit"
+            disabled={submitting || !token.trim()}
+            aria-label="Verify email"
+          >
             {submitting ? 'Verifying…' : 'Verify email'}
           </button>
           <Link className="login-ghost" href="/" style={{ display: 'block', textAlign: 'center' }}>

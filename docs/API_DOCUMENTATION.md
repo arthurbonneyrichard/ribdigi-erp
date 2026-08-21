@@ -177,7 +177,7 @@ UI: login **Forgot password?** → `/forgot-password` (workspace + email). Alway
 Token is single-use and expires in 1 hour; new password must pass complexity rules.
 
 ### 2.4b Email verification (BR-19.1)
-**Verify:** `POST /auth/verify-email` — `{ "token": "..." }` sets `email_verified=true` (single-use token). UI: `/verify-email?token=…` (auto-submits when token present).  
+**Verify:** `POST /auth/verify-email` — body `token` ∈ `EmailVerifyTokenValue` (strip; 1–200; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `hash_token` / invalid-token **400**). Sets `email_verified=true` (single-use token). Authenticity remains AuthToken lookup (**400**). UI: `/verify-email?token=…` (auto-submits when token present). Verify email **Email verification token** input (`aria-label`); submit sends trim.  
 **Resend:** `POST /auth/resend-verification` — `{ "email", "tenant_id" }` neutral success; invalidates unused prior verify tokens; non-prod may echo `verification_token`.  
 **Login gate:** `POST /auth/login` returns `403` with `detail.code = "EMAIL_NOT_VERIFIED"` when credentials are valid but email is unverified (no tokens issued). Login UI offers resend.
 
