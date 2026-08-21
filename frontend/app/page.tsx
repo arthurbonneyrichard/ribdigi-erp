@@ -60,9 +60,14 @@ export default function Login() {
       if (!window.PublicKeyCredential) {
         throw new Error('This browser does not support passkeys');
       }
+      const trimmedChallenge = challengeToken.trim();
+      if (!trimmedChallenge) {
+        setError('2FA challenge token is required');
+        return;
+      }
       const opt = await api('/auth/webauthn/login/options', {
         method: 'POST',
-        body: JSON.stringify({ challenge_token: challengeToken }),
+        body: JSON.stringify({ challenge_token: trimmedChallenge }),
       });
       const publicKey = { ...opt.data };
       publicKey.challenge = base64urlToBuffer(publicKey.challenge);
@@ -89,7 +94,7 @@ export default function Login() {
       };
       const r = await api('/auth/webauthn/login/verify', {
         method: 'POST',
-        body: JSON.stringify({ challenge_token: challengeToken, credential }),
+        body: JSON.stringify({ challenge_token: trimmedChallenge, credential }),
       });
       finishLogin(r.data);
     } catch (err: any) {
@@ -106,9 +111,14 @@ export default function Login() {
           await verifyPasskey();
           return;
         }
+        const trimmedChallenge = challengeToken.trim();
+        if (!trimmedChallenge) {
+          setError('2FA challenge token is required');
+          return;
+        }
         const r = await api('/auth/2fa/verify', {
           method: 'POST',
-          body: JSON.stringify({ challenge_token: challengeToken, code: totpCode }),
+          body: JSON.stringify({ challenge_token: trimmedChallenge, code: totpCode }),
         });
         finishLogin(r.data);
         return;
@@ -244,6 +254,15 @@ export default function Login() {
                 </Link>
               </p>
             </>
+          )}
+
+          {needs2fa && (
+            <input
+              type="hidden"
+              value={challengeToken}
+              readOnly
+              aria-label="2FA challenge token"
+            />
           )}
 
           {needs2fa && showTotp && (

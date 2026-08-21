@@ -411,7 +411,9 @@ class TwoFactorConfirm(BaseModel):
 
 
 class TwoFactorVerify(BaseModel):
-    challenge_token: str
+    # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
+    challenge_token: ChallengeTokenValue
     # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
     code: TwoFactorCodeValue
 
@@ -439,11 +441,15 @@ class WebAuthnRegisterVerify(BaseModel):
 
 
 class WebAuthnLoginOptions(BaseModel):
-    challenge_token: str
+    # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
+    challenge_token: ChallengeTokenValue
 
 
 class WebAuthnLoginVerify(BaseModel):
-    challenge_token: str
+    # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
+    challenge_token: ChallengeTokenValue
     credential: dict
 
 
@@ -4585,6 +4591,40 @@ EmailVerifyTokenValue = Annotated[
     str,
     BeforeValidator(coerce_email_verify_token_value),
     AfterValidator(validate_email_verify_token_value),
+]
+
+
+def coerce_challenge_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for MFA challenge token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_challenge_token_value(value: str) -> str:
+    """AfterValidator: MFA challenge JWT; blank/URL/@/spaces → 422 (1–2048).
+
+    Allows JWT-shaped fixtures (e.g. Tip257.eyJ…); rejects empty/URL garbage.
+    Authenticity remains decode_challenge_token → **401**.
+    """
+    if not value:
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    if len(value) > 2048:
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    return value
+
+
+# MFA login challenge JWT — 1–2048; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+ChallengeTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_challenge_token_value),
+    AfterValidator(validate_challenge_token_value),
 ]
 
 

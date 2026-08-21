@@ -186,7 +186,7 @@ Token is single-use and expires in 1 hour; new password must pass complexity rul
 ### 2.5 Two-Factor Authentication (Optional)
 **Setup / confirm:** `POST /auth/2fa/setup` then `POST /auth/2fa/confirm` — body `{ "code" }` ∈ `TwoFactorCodeValue` (strip; 4–64; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…`/`abc` → **422** — was free `str`; empty/garbage reached service verify). Security **2FA setup code** input (`aria-label`).
 
-**Login challenge verify:** `POST /auth/2fa/verify` — `{ "challenge_token", "code" }` with same `TwoFactorCodeValue` honesty on `code`.
+**Login challenge verify:** `POST /auth/2fa/verify` — `{ "challenge_token", "code" }` with `challenge_token` ∈ `ChallengeTokenValue` (strip; 1–2048; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `decode_challenge_token` as **401**). Authenticity remains JWT decode (**401**). Same `TwoFactorCodeValue` honesty on `code`. Login **2FA challenge token** input (`aria-label`); verify sends trim. WebAuthn login `options` / `verify` bodies use the same `ChallengeTokenValue` on `challenge_token`.
 
 **Backup codes / disable:** `POST /auth/2fa/backup-codes` (`TwoFactorConfirm`) and `POST /auth/2fa/disable` (`TwoFactorDisable`) — `code` ∈ `TwoFactorCodeValue` (required). Disable body `password` ∈ `TwoFactorDisablePasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `verify_password` as **401**). Authenticity remains `verify_password` (**401**). Security **2FA code** + **Disable 2FA password** inputs (`aria-label`s); Disable sends trim.
 
