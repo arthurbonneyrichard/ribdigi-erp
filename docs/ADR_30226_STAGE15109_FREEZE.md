@@ -31,3 +31,7 @@ Stage 15110 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Showaqajiyuglaze Gate, Transfer Showaqajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15110 opened under **ADR-30227** after CONTINUE/NEXT (Tenant MVP Transfer Showaxajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30228**. Stage 15109 feature scope remains frozen.
