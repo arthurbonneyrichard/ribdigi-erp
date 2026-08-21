@@ -31,3 +31,7 @@ Stage 14918 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Hourekirrajiyuglaze Gate, Transfer Hourekirrajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14918 opened under **ADR-29843** after CONTINUE/NEXT (Tenant MVP Transfer Meiwaqajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-29844**. Stage 14917 feature scope remains frozen.
