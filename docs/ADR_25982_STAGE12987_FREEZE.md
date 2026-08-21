@@ -31,3 +31,7 @@ Stage 12988 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunmeiccnyajiyuglaze Gate, Transfer Bunmeiccnyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12988 opened under **ADR-25983** after CONTINUE/NEXT (Tenant MVP Transfer Bunmeiddaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-25984**. Stage 12987 feature scope remains frozen.
