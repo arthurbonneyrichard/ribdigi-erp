@@ -31,3 +31,7 @@ Stage 15314 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Higashiyamaqajiyuglaze Gate, Transfer Higashiyamaqajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15314 opened under **ADR-30635** after CONTINUE/NEXT (Tenant MVP Transfer Higashiyamaxajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30636**. Stage 15313 feature scope remains frozen.
