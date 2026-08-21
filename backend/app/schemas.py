@@ -540,7 +540,10 @@ class TenantCreate(BaseModel):
     # BR-2.6 — same CurrencyCodeValue as FX rates; omit → GHS; blank/non-ISO → 422
     currency: CurrencyCodeValue = "GHS"
     admin_email: EmailStr
-    admin_password: str
+    # Required initial admin password ∈ TenantAdminPasswordValue; blank/`!!!`/`http://…`
+    # → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path; strength
+    # still enforced by validate_password_strength → **400**).
+    admin_password: TenantAdminPasswordValue
 
 
 class TenantProfileUpdate(BaseModel):
@@ -4394,6 +4397,40 @@ UserPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_user_password_value),
     AfterValidator(validate_user_password_value),
+]
+
+
+def coerce_tenant_admin_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for admin_password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_tenant_admin_password_value(value: str) -> str:
+    """AfterValidator: tenant create admin password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip248Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Tenant create admin password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-1).
+TenantAdminPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_tenant_admin_password_value),
+    AfterValidator(validate_tenant_admin_password_value),
 ]
 
 

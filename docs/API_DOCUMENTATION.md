@@ -229,6 +229,8 @@ Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, 
 
 `slug` ∈ `TenantSlugValue` (strip/lower; 2–80; `^[a-z0-9][a-z0-9-]{1,79}$`); required on create; blank/`!!!`/`http://…`/`a b`/`X`/`-bad` → **422** (was free `str`; blank/garbage could persist on `Tenant.slug` String(80)). Duplicate slug → **409**. Platform console **Tenant slug** input (`aria-label`; create sends trim/lower).
 
+`admin_password` ∈ `TenantAdminPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path; strength still `validate_password_strength` → **400**). Platform console **Tenant admin password** input (`aria-label`); create requires trim.
+
 **Response:**
 ```json
 {

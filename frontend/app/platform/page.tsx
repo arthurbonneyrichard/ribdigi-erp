@@ -215,6 +215,12 @@ export default function PlatformConsole() {
 
   async function createTenant(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedPassword = form.admin_password.trim();
+    if (!trimmedPassword) {
+      setError('Tenant admin password is required.');
+      setMessage('');
+      return;
+    }
     setCreating(true);
     setError('');
     setMessage('');
@@ -227,7 +233,7 @@ export default function PlatformConsole() {
           industry: form.industry,
           currency: form.currency.trim().toUpperCase() || 'GHS',
           admin_email: form.admin_email.trim(),
-          admin_password: form.admin_password,
+          admin_password: trimmedPassword,
         }),
       });
       setForm(emptyCreate);
@@ -504,10 +510,15 @@ export default function PlatformConsole() {
                 value={form.admin_password}
                 onChange={(e) => setForm((f) => ({ ...f, admin_password: e.target.value }))}
                 placeholder="Min 8 chars, upper/lower/number/symbol"
+                aria-label="Tenant admin password"
                 required
               />
             </label>
-            <button type="submit" disabled={creating}>
+            <button
+              type="submit"
+              disabled={creating || !form.admin_password.trim()}
+              aria-label="Create tenant"
+            >
               {creating ? 'Creating…' : 'Create tenant'}
             </button>
           </form>
