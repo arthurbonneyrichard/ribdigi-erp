@@ -396,21 +396,26 @@ class Login(BaseModel):
     email: EmailStr
     password: str
     tenant_id: str
-    totp_code: str | None = None
+    # omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** (was free `str`)
+    totp_code: TwoFactorCodeValue | None = None
 
 
 class TwoFactorConfirm(BaseModel):
-    code: str
+    # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; empty/garbage reached service verify).
+    code: TwoFactorCodeValue
 
 
 class TwoFactorVerify(BaseModel):
     challenge_token: str
-    code: str
+    # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
+    code: TwoFactorCodeValue
 
 
 class TwoFactorDisable(BaseModel):
     password: str
-    code: str
+    # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
+    code: TwoFactorCodeValue
 
 
 class WebAuthnRegisterVerify(BaseModel):
@@ -4386,6 +4391,27 @@ PasskeyNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_passkey_name_value),
+]
+
+
+def validate_two_factor_code_value(value: str) -> str:
+    """AfterValidator: TOTP / backup code; blank/URL/garbage → 422 (4–64)."""
+    if not value:
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    if len(value) < 4 or len(value) > 64:
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    return value
+
+
+# TOTP authenticator or backup recovery code (login + /auth/2fa/*).
+TwoFactorCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_two_factor_code_value),
 ]
 
 

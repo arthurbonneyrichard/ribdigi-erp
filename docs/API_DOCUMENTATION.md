@@ -176,9 +176,13 @@ Token is single-use and expires in 1 hour; new password must pass complexity rul
 **Login gate:** `POST /auth/login` returns `403` with `detail.code = "EMAIL_NOT_VERIFIED"` when credentials are valid but email is unverified (no tokens issued). Login UI offers resend.
 
 ### 2.5 Two-Factor Authentication (Optional)
-**Endpoint:** `POST /auth/2fa/enable`
+**Setup / confirm:** `POST /auth/2fa/setup` then `POST /auth/2fa/confirm` — body `{ "code" }` ∈ `TwoFactorCodeValue` (strip; 4–64; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…`/`abc` → **422** — was free `str`; empty/garbage reached service verify). Security **2FA setup code** input (`aria-label`).
 
-**Endpoint:** `POST /auth/2fa/verify`
+**Login challenge verify:** `POST /auth/2fa/verify` — `{ "challenge_token", "code" }` with same `TwoFactorCodeValue` honesty on `code`.
+
+**Backup codes / disable:** `POST /auth/2fa/backup-codes` (`TwoFactorConfirm`) and `POST /auth/2fa/disable` (`TwoFactorDisable`) — `code` ∈ `TwoFactorCodeValue` (required). Security **2FA code** input (`aria-label`).
+
+**Login body:** `POST /auth/login` optional `totp_code` ∈ `TwoFactorCodeValue` (omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** — was free `str`). Login **2FA code** input (`aria-label`). Service `verify_totp` / backup-code hash checks remain defense-in-depth for authenticity.
 
 **Request:**
 ```json

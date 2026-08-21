@@ -348,8 +348,15 @@ export default function Page() {
                 />
               )}
               <p className="muted">Secret: {setup.secret}</p>
-              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="6-digit code" />
-              <button onClick={confirmSetup}>Confirm &amp; enable</button>
+              <input
+                aria-label="2FA setup code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="6-digit code"
+              />
+              <button type="button" onClick={confirmSetup} aria-label="Confirm 2FA setup">
+                Confirm &amp; enable
+              </button>
             </>
           )}
         </div>
@@ -358,18 +365,28 @@ export default function Page() {
       {status?.enabled && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Backup codes</h2>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Current 2FA code" />
-          <button onClick={regenCodes}>Regenerate backup codes</button>
+          <input
+            aria-label="2FA code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Current 2FA code"
+          />
+          <button type="button" onClick={regenCodes} aria-label="Regenerate backup codes">
+            Regenerate backup codes
+          </button>
           {!status.role_requires_2fa && (
             <div style={{ marginTop: 12 }}>
               <h3>Disable TOTP</h3>
               <input
                 type="password"
+                aria-label="Disable 2FA password"
                 value={disablePassword}
                 onChange={(e) => setDisablePassword(e.target.value)}
                 placeholder="Password"
               />
-              <button onClick={disable}>Disable</button>
+              <button type="button" onClick={disable} aria-label="Disable 2FA">
+                Disable
+              </button>
             </div>
           )}
         </div>

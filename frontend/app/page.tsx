@@ -234,6 +234,7 @@ export default function Login() {
               <span>Authenticator code</span>
               <p className="login-hint">Enter the 6-digit code from your authenticator app, or a backup code.</p>
               <input
+                aria-label="2FA code"
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value)}
                 placeholder="000000"
