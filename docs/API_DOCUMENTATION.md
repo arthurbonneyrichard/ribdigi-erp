@@ -1445,7 +1445,7 @@ Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Othe
 }
 ```
 
-`operating_hours` typed `StoreOperatingHours` (`extra=forbid`; keys ∈ `mon`…`sun` only; each day `StoreDayHours` with `closed` or `open`/`close` as `HH:MM` 24h, open before close). Unknown day keys / bad times / open≥close → **422** (was late service **400**). Returned on list/GET; update via `PATCH /stores/{store_id}` (BR-2.3). Creating a store still auto-creates a linked warehouse. Multi-Store **Operating hours** editor (`aria-label`s).
+`operating_hours` typed `StoreOperatingHours` (`extra=forbid`; keys ∈ `mon`…`sun` only; each day `StoreDayHours` with `closed` or `open`/`close` ∈ `StoreHoursTimeValue` — strip; `HH:MM` 24h; omit/`null` OK when `closed`; blank/`!!!`/`9:00`/`25:00`/`http://…` → **422** — was free `str`; OpenAPI unconstrained; garbage failed only via day model_validator / service **400**; open before close still required when not closed). Unknown day keys / open≥close / missing times when not closed → **422** (was late service **400**). Returned on list/GET; update via `PATCH /stores/{store_id}` (BR-2.3). Creating a store still auto-creates a linked warehouse. Multi-Store **Store {Day} open time** / **close time** inputs (`aria-label`s).
 
 `phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); create omit/`null` → no phone; PATCH omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Store phone** input (`aria-label`); create sends `null` when blank; edit omits blank phone.
 

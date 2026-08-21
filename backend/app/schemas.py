@@ -1778,25 +1778,48 @@ class ExpenseThresholdUpdate(BaseModel):
 _STORE_HHMM_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 
+def coerce_store_hours_time_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip HH:MM; blank stays blank for AfterValidator 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_store_hours_time_value(value: str) -> str:
+    """AfterValidator: store open/close HH:MM (24h); blank/garbage → 422."""
+    if not value:
+        raise ValueError("store hours time must be HH:MM (24h)")
+    if not _STORE_HHMM_RE.fullmatch(value):
+        raise ValueError("store hours time must be HH:MM (24h)")
+    return value
+
+
+# Store day open/close — matches stores._TIME_RE HH:MM; omit/`null` OK (required when not closed).
+StoreHoursTimeValue = Annotated[
+    str,
+    BeforeValidator(coerce_store_hours_time_value),
+    AfterValidator(validate_store_hours_time_value),
+]
+
+
 class StoreDayHours(BaseModel):
     """One weekday entry for store operating_hours (BR-2.3).
 
     Unknown keys → **422** (`extra=forbid`). When not `closed`, `open`/`close`
-    must be HH:MM (24h) with open before close → **422** (was late service **400**).
+    ∈ StoreHoursTimeValue (HH:MM 24h) with open before close → **422**
+    (was free `str` + late model/service checks; blank/`!!!`/`25:99`/`http://…`
+    failed only via day model_validator / service **400**).
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    open: str | None = None
-    close: str | None = None
+    # omit/`null` OK; blank/`!!!`/`25:99`/`http://…` → **422** (was free `str`)
+    open: StoreHoursTimeValue | None = None
+    # omit/`null` OK; blank/`!!!`/`25:99`/`http://…` → **422** (was free `str`)
+    close: StoreHoursTimeValue | None = None
     closed: bool | None = None
-
-    @field_validator("open", "close", mode="before")
-    @classmethod
-    def _strip_hhmm(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()
-        return value
 
     @model_validator(mode="after")
     def _require_times_when_open(self) -> StoreDayHours:
@@ -1804,8 +1827,8 @@ class StoreDayHours(BaseModel):
             return self
         open_t = self.open or ""
         close_t = self.close or ""
-        # Keep aligned with app.stores._TIME_RE
-        if not _STORE_HHMM_RE.fullmatch(open_t) or not _STORE_HHMM_RE.fullmatch(close_t):
+        # Presence when not closed (format already enforced by StoreHoursTimeValue).
+        if not open_t or not close_t:
             raise ValueError("open/close required as HH:MM (24h) when not closed")
         if open_t >= close_t:
             raise ValueError("open must be before close")
