@@ -31,3 +31,7 @@ Stage 12833 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Choukyouccaajiyuglaze Gate, Transfer Choukyouccaajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12833 opened under **ADR-25673** after CONTINUE/NEXT (Tenant MVP Transfer Choukyouccajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-25674**. Stage 12832 feature scope remains frozen.
