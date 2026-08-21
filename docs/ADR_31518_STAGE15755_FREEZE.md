@@ -31,3 +31,7 @@ Stage 15756 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Naraawhajiyuglaze Gate, Transfer Naraawhajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15756 opened under **ADR-31519** after CONTINUE/NEXT (Tenant MVP Transfer Naraarrajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31520**. Stage 15755 feature scope remains frozen.
