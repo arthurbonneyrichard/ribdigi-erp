@@ -31,3 +31,7 @@ Stage 13990 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tenwabbtajiyuglaze Gate, Transfer Tenwabbtajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13990 opened under **ADR-27987** after CONTINUE/NEXT (Tenant MVP Transfer Tenwabbnajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-27988**. Stage 13989 feature scope remains frozen.
