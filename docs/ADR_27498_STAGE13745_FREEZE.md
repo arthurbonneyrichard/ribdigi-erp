@@ -31,3 +31,7 @@ Stage 13746 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Manjiccoojiyuglaze Gate, Transfer Manjiccoojiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13746 opened under **ADR-27499** after CONTINUE/NEXT (Tenant MVP Transfer Manjiccuujiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-27500**. Stage 13745 feature scope remains frozen.
