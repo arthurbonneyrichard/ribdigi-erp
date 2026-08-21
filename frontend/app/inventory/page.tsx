@@ -720,7 +720,7 @@ export default function Page() {
       const r = await api('/inventory/stock-counts', {
         method: 'POST',
         body: JSON.stringify({
-          warehouse_id: countWarehouseId,
+          warehouse_id: countWarehouseId.trim(),
           notes: countNotes.trim() || null,
         }),
       });

@@ -16,19 +16,19 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_stock_count_notes_schema():
-    omit = StockCountCreate.model_validate({"warehouse_id": "wh1"})
+    omit = StockCountCreate.model_validate({"warehouse_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"})
     assert omit.notes is None
     nullish = StockCountCreate.model_validate(
-        {"warehouse_id": "wh1", "notes": None}
+        {"warehouse_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE", "notes": None}
     )
     assert nullish.notes is None
     ok = StockCountCreate.model_validate(
-        {"warehouse_id": "wh1", "notes": "  Month-end cycle  "}
+        {"warehouse_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE", "notes": "  Month-end cycle  "}
     )
     assert ok.notes == "Month-end cycle"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
-            StockCountCreate.model_validate({"warehouse_id": "wh1", "notes": bad})
+            StockCountCreate.model_validate({"warehouse_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE", "notes": bad})
 
 
 def test_stock_count_notes_ui_and_docs():

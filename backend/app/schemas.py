@@ -1075,7 +1075,10 @@ class ProductUpdate(BaseModel):
 
 
 class StockCountCreate(BaseModel):
-    warehouse_id: str
+    # Required warehouse ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach warehouse lookup). Existence remains
+    # tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped / garbage could persist on StockCount.notes Text).
     notes: StockCountNotesValue | None = None
