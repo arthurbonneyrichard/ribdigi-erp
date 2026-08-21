@@ -31,3 +31,7 @@ Stage 15679 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meijiaajajiyuglaze Gate, Transfer Meijiaajajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15679 opened under **ADR-31365** after CONTINUE/NEXT (Tenant MVP Transfer Meijiaachajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31366**. Stage 15678 feature scope remains frozen.
