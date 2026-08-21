@@ -31,3 +31,7 @@ Stage 15506 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Meiwaaqajiyuglaze Gate, Transfer Meiwaaqajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15506 opened under **ADR-31019** after CONTINUE/NEXT (Tenant MVP Transfer Meiwaaxajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31020**. Stage 15505 feature scope remains frozen.
