@@ -74,9 +74,9 @@ def test_user_password_ui_and_docs():
 @pytest.mark.asyncio
 async def test_user_password_api_blank_invalid_422(client, seeded):
     ac, seed = client
-    code = pyotp.TOTP(seed["admin_totp_secret"]).now()
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
-        ac, email="admin@alpha.example.com", tenant_slug="alpha", totp_code=code
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
     suffix = uuid4().hex[:8]
 
@@ -85,33 +85,32 @@ async def test_user_password_api_blank_invalid_422(client, seeded):
             "/api/v1/users",
             headers=admin,
             json={
-                "email": f"bad-pass-{suffix}-{abs(hash(bad)) % 10000}@example.com",
+                "email": f"bad-pass-{suffix}-{abs(hash(bad)) % 10000}@alpha.example.com",
                 "full_name": "Bad Password User",
                 "password": bad,
                 "role": "cashier",
             },
         )
-        assert resp.status_code == 422, bad
+        assert resp.status_code == 422, (bad, resp.text)
 
     ok = await ac.post(
         "/api/v1/users",
         headers=admin,
         json={
-            "email": f"ok-pass-{suffix}@example.com",
-            "full_name": "Ok Password User",
-            "password": "  SecurePass123!  ",
+            "email": f"tip247-{suffix}@alpha.example.com",
+            "full_name": f"Tip247 User {suffix}",
+            "password": "  Tip247Pass!  ",
             "role": "cashier",
         },
     )
     assert ok.status_code == 200, ok.text
-    user_id = (ok.json().get("data") or ok.json()).get("user", {}).get("id") or (
-        ok.json().get("data") or ok.json()
-    ).get("id")
+    user = ok.json()["data"].get("user") or ok.json()["data"]
+    uid = user["id"]
 
     for bad in ("", "!!!", "http://evil"):
         patch = await ac.patch(
-            f"/api/v1/users/{user_id}",
+            f"/api/v1/users/{uid}",
             headers=admin,
             json={"password": bad},
         )
-        assert patch.status_code == 422, bad
+        assert patch.status_code == 422, (bad, patch.text)
