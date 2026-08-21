@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 13035 track opened (ADR-26077: `test_stage13035_open.py`, `docs/STAGE_13035_PLAN.md`) — Transfer Bunmeieepajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-26078
+- [x] Transfer Bunmeieepajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 13035 I1: `test_stage13035_index_i1.py`, `docs/TRANSFER_BUNMEIEEPAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Bunmeieepajiyuglaze Gate Honesty Pack blocker matrix (Stage 13035 B1: `test_stage13035_blockers_b1.py`, `docs/TRANSFER_BUNMEIEEPAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 13034 / Stage 13033 / Stage 392 / CHANGE_IMPACT pointers (Stage 13035 P1: `test_stage13035_pointers_p1.py`, `docs/TRANSFER_BUNMEIEEPAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 13035 fidelity sync (D1: `test_stage13035_fidelity_d1.py`, `docs/STAGE_13035_FIDELITY.md`)
+- [x] Stage 13035 exit + freeze (H13035x: `test_stage13035_exit_h13035x.py`, `docs/STAGE_13035_EXIT_CRITERIA.md`, ADR-26078)
 Stage 13034 track opened (ADR-26075: `test_stage13034_open.py`, `docs/STAGE_13034_PLAN.md`) — Transfer Bunmeieebajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-26076
 - [x] Transfer Bunmeieebajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 13034 I1: `test_stage13034_index_i1.py`, `docs/TRANSFER_BUNMEIEEBAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Bunmeieebajiyuglaze Gate Honesty Pack blocker matrix (Stage 13034 B1: `test_stage13034_blockers_b1.py`, `docs/TRANSFER_BUNMEIEEBAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
