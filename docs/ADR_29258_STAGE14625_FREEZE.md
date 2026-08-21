@@ -31,3 +31,7 @@ Stage 14626 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Horekiffnyajiyuglaze Gate, Transfer Horekiffnyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 14626 opened under **ADR-29259** after CONTINUE/NEXT (Tenant MVP Transfer Ritsuryobbaajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-29260**. Stage 14625 feature scope remains frozen.
