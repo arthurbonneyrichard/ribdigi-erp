@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 12413 track opened (ADR-24833: `test_stage12413_open.py`, `docs/STAGE_12413_PLAN.md`) — Transfer Kanpouffkyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-24834
+- [x] Transfer Kanpouffkyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12413 I1: `test_stage12413_index_i1.py`, `docs/TRANSFER_KANPOUFFKYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Kanpouffkyajiyuglaze Gate Honesty Pack blocker matrix (Stage 12413 B1: `test_stage12413_blockers_b1.py`, `docs/TRANSFER_KANPOUFFKYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 12412 / Stage 12411 / Stage 392 / CHANGE_IMPACT pointers (Stage 12413 P1: `test_stage12413_pointers_p1.py`, `docs/TRANSFER_KANPOUFFKYAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 12413 fidelity sync (D1: `test_stage12413_fidelity_d1.py`, `docs/STAGE_12413_FIDELITY.md`)
+- [x] Stage 12413 exit + freeze (H12413x: `test_stage12413_exit_h12413x.py`, `docs/STAGE_12413_EXIT_CRITERIA.md`, ADR-24834)
 Stage 12412 track opened (ADR-24831: `test_stage12412_open.py`, `docs/STAGE_12412_PLAN.md`) — Transfer Kanpouffgajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-24832
 - [x] Transfer Kanpouffgajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 12412 I1: `test_stage12412_index_i1.py`, `docs/TRANSFER_KANPOUFFGAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Kanpouffgajiyuglaze Gate Honesty Pack blocker matrix (Stage 12412 B1: `test_stage12412_blockers_b1.py`, `docs/TRANSFER_KANPOUFFGAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
