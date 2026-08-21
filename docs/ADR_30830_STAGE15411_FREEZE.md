@@ -31,3 +31,7 @@ Stage 15412 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunmeilajiyuglaze Gate, Transfer Bunmeilajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15412 opened under **ADR-30831** after CONTINUE/NEXT (Tenant MVP Transfer Bunmeifajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30832**. Stage 15411 feature scope remains frozen.
