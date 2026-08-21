@@ -31,3 +31,7 @@ Stage 13584 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Keianffkyajiyuglaze Gate, Transfer Keianffkyajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 13584 opened under **ADR-27175** after CONTINUE/NEXT (Tenant MVP Transfer Keianffgyajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-27176**. Stage 13583 feature scope remains frozen.
