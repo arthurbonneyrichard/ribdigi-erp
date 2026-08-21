@@ -1946,6 +1946,8 @@ export default function Page() {
               value={productSku}
               onChange={(e) => setProductSku(e.target.value)}
               placeholder="SKU (auto if blank)"
+              aria-label="Product SKU"
+              title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
             />
             <input
               value={productBarcode}
@@ -2593,6 +2595,8 @@ export default function Page() {
               value={variantSku}
               onChange={(e) => setVariantSku(e.target.value)}
               placeholder="SKU (auto if blank)"
+              aria-label="Variant SKU"
+              title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
             />
             <input
               value={variantBarcode}

@@ -956,7 +956,10 @@ class ProductCreate(BaseModel):
     # Required catalog label ∈ ProductNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on product create).
     name: ProductNameValue
-    sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
+    # Optional catalog SKU ∈ ProductSkuValue; omit/`null` → auto-allocate; blank/`!!!`/
+    # `a b`/`http://…` → **422** (was free `str`; blank also auto-allocated; garbage
+    # late service **400** via normalize_sku).
+    sku: ProductSkuValue | None = None
     # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
@@ -991,7 +994,9 @@ class ProductUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank late service **400**; garbage could persist on product display name).
     name: ProductNameValue | None = None
-    sku: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`a b`/`http://…` → **422** (was free `str`;
+    # blank silently ignored on PATCH; garbage could persist without normalize_sku).
+    sku: ProductSkuValue | None = None
     # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
@@ -1136,7 +1141,10 @@ class ProductVariantCreate(BaseModel):
     # Required variant label ∈ VariantNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on product variant create).
     name: VariantNameValue
-    sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
+    # Optional variant SKU ∈ ProductSkuValue; omit/`null` → auto-allocate; blank/`!!!`/
+    # `a b`/`http://…` → **422** (was free `str`; blank also auto-allocated; garbage
+    # late service **400** via normalize_sku).
+    sku: ProductSkuValue | None = None
     # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
@@ -1154,7 +1162,9 @@ class ProductVariantUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on variant display name).
     name: VariantNameValue | None = None
-    sku: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`a b`/`http://…` → **422** (was free `str`;
+    # blank reached service **400** "Variant sku is required"; garbage late **400**).
+    sku: ProductSkuValue | None = None
     # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
     # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
     barcode: ProductBarcodeValue | None = None
@@ -3380,6 +3390,32 @@ ProductBarcodeValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_barcode_value),
+]
+
+
+# Keep aligned with app.catalog._SKU_RE / normalize_sku.
+_PRODUCT_SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+
+
+def validate_product_sku_value(value: str) -> str:
+    """AfterValidator: product/variant SKU; blank/pattern fail → 422 (1–100)."""
+    if not value:
+        raise ValueError(
+            "product SKU must be 1–100 chars: letters, digits, . _ - (start alphanumeric)"
+        )
+    sku = value.upper()
+    if not _PRODUCT_SKU_RE.fullmatch(sku):
+        raise ValueError(
+            "product SKU must be 1–100 chars: letters, digits, . _ - (start alphanumeric)"
+        )
+    return sku
+
+
+# Product / variant SKU — matches Product.sku / ProductVariant.sku String(100).
+ProductSkuValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_sku_value),
 ]
 
 
