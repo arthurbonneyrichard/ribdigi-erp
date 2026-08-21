@@ -31,3 +31,7 @@ Stage 15004 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Tempoxajiyuglaze Gate, Transfer Tempoxajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15004 opened under **ADR-30015** after CONTINUE/NEXT (Tenant MVP Transfer Tempolajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30016**. Stage 15003 feature scope remains frozen.
