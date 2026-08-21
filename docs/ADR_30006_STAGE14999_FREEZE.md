@@ -31,3 +31,7 @@ Stage 15000 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bunseiphajiyuglaze Gate, Transfer Bunseiphajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15000 opened under **ADR-30007** after CONTINUE/NEXT (Tenant MVP Transfer Bunseiwhajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-30008**. Stage 14999 feature scope remains frozen.
