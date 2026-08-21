@@ -31,3 +31,7 @@ Stage 12791 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Kyoutokuffwajiyuglaze Gate, Transfer Kyoutokuffwajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 12791 opened under **ADR-25589** after CONTINUE/NEXT (Tenant MVP Transfer Kyoutokuffkajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-25590**. Stage 12790 feature scope remains frozen.
