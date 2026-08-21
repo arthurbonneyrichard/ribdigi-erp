@@ -1989,7 +1989,12 @@ export default function Page() {
                 style={{ width: 80 }}
               />
             </div>
-            <select value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
+            <select
+              value={productCategoryId}
+              onChange={(e) => setProductCategoryId(e.target.value)}
+              aria-label="Product category"
+              title="Product category (catalog picker; API category label 1–100)"
+            >
               <option value="">Category</option>
               {categories
                 .filter((c) => c.is_active !== false)

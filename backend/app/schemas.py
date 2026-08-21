@@ -951,7 +951,12 @@ class ProductCreate(BaseModel):
     # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently cleared / garbage could persist on Product.description Text).
     description: ProductDescriptionValue | None = None
-    category: str = "General"
+    # Denormalized category label ∈ ProductCategoryLabelValue; omit → "General";
+    # blank/`!!!`/`http://…` → **422** (was free `str`; blank silently fell through
+    # to "General" in resolve_product_refs; punctuation/URL could persist on
+    # Product.category). When `category_id` is set, service overwrites label from
+    # catalog category name.
+    category: ProductCategoryLabelValue = "General"
     category_id: str | None = None
     brand_id: str | None = None
     unit_id: str | None = None
@@ -981,7 +986,9 @@ class ProductUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared / garbage could persist on Product.description Text).
     description: ProductDescriptionValue | None = None
-    category: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently fell through to "General"; punctuation/URL could persist).
+    category: ProductCategoryLabelValue | None = None
     category_id: str | None = None
     brand_id: str | None = None
     unit_id: str | None = None
@@ -3289,6 +3296,27 @@ ProductNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_name_value),
+]
+
+
+def validate_product_category_label_value(value: str) -> str:
+    """AfterValidator: denormalized product category label; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Denormalized Product.category String(100); catalog FK is category_id.
+ProductCategoryLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_category_label_value),
 ]
 
 
