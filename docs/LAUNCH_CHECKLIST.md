@@ -1677,6 +1677,12 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 40 S1 / Stage 313 / Stage 312 / Stage 38 pointers (Stage 314 P1: `test_stage314_pointers_p1.py`, `docs/SBOM_DISCLOSURE_PACK_RG_POINTERS_MVP.md`)
 - [x] Stage 314 fidelity sync (D1: `test_stage314_fidelity_d1.py`, `docs/STAGE_314_FIDELITY.md`)
 - [x] Stage 314 exit + freeze (H314x: `test_stage314_exit_h314x.py`, `docs/STAGE_314_EXIT_CRITERIA.md`, ADR-636)
+Stage 13742 track opened (ADR-27491: `test_stage13742_open.py`, `docs/STAGE_13742_PLAN.md`) — Transfer Manjiccaajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-27492
+- [x] Transfer Manjiccaajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 13742 I1: `test_stage13742_index_i1.py`, `docs/TRANSFER_MANJICCAAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
+- [x] Transfer Manjiccaajiyuglaze Gate Honesty Pack blocker matrix (Stage 13742 B1: `test_stage13742_blockers_b1.py`, `docs/TRANSFER_MANJICCAAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
+- [x] Stage 13741 / Stage 13740 / Stage 392 / CHANGE_IMPACT pointers (Stage 13742 P1: `test_stage13742_pointers_p1.py`, `docs/TRANSFER_MANJICCAAJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md`)
+- [x] Stage 13742 fidelity sync (D1: `test_stage13742_fidelity_d1.py`, `docs/STAGE_13742_FIDELITY.md`)
+- [x] Stage 13742 exit + freeze (H13742x: `test_stage13742_exit_h13742x.py`, `docs/STAGE_13742_EXIT_CRITERIA.md`, ADR-27492)
 Stage 13741 track opened (ADR-27489: `test_stage13741_open.py`, `docs/STAGE_13741_PLAN.md`) — Transfer Manjibbnyajiyuglaze Gate Honesty Pack Remaining-Gate Index; closed under ADR-27490
 - [x] Transfer Manjibbnyajiyuglaze Gate Honesty Pack remaining-gate hub (Stage 13741 I1: `test_stage13741_index_i1.py`, `docs/TRANSFER_MANJIBBNYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md`)
 - [x] Transfer Manjibbnyajiyuglaze Gate Honesty Pack blocker matrix (Stage 13741 B1: `test_stage13741_blockers_b1.py`, `docs/TRANSFER_MANJIBBNYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md`)
