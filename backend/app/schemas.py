@@ -458,6 +458,10 @@ class EmailSettingsUpdate(BaseModel):
     tenant SMTP From display name). Optional `username` ∈ `SmtpUsernameValue`;
     omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     blank/garbage were accepted into tenant SMTP username; email-shaped logins OK).
+    Optional `password` ∈ `SmtpPasswordValue` (strip; 1–128; ≥1 letter/digit;
+    no `://` / `@` / spaces); omit/`null` → keep prior; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank was a silent no-op via service; punctuation/URL could be
+    encrypted into `email_settings.password_enc`). `clear_password: true` removes it.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -465,7 +469,7 @@ class EmailSettingsUpdate(BaseModel):
     host: SmtpHostValue | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
     username: SmtpUsernameValue | None = None
-    password: str | None = None
+    password: SmtpPasswordValue | None = None
     clear_password: bool = False
     from_email: EmailStr | None = None
     from_name: SmtpFromNameValue | None = None
@@ -3229,6 +3233,39 @@ TwilioAuthTokenValue = Annotated[
     str,
     BeforeValidator(coerce_twilio_auth_token_value),
     AfterValidator(validate_twilio_auth_token_value),
+]
+
+
+def coerce_smtp_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_smtp_password_value(value: str) -> str:
+    """AfterValidator: SMTP password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip245Pass!); rejects empty/URL garbage.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# SMTP password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-20.3).
+SmtpPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_smtp_password_value),
+    AfterValidator(validate_smtp_password_value),
 ]
 
 

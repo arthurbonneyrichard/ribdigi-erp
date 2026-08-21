@@ -686,6 +686,8 @@ export default function Page() {
             onChange={(e) => setEmailPassword(e.target.value)}
             placeholder={emailStatus.has_password ? '••••••••' : ''}
             autoComplete="new-password"
+            aria-label="Company SMTP password"
+            title="SMTP password (1–128 chars; omit blank to keep)"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">From email</label>
@@ -747,7 +749,9 @@ export default function Page() {
                   // Omit blank from_name so Save does not 422 (SmtpFromNameValue); leave prior.
                   const trimmedFromName = emailFromName.trim();
                   if (trimmedFromName) body.from_name = trimmedFromName;
-                  if (emailPassword) body.password = emailPassword;
+                  // Omit blank password so Save does not 422 (SmtpPasswordValue); leave prior.
+                  const trimmedPassword = emailPassword.trim();
+                  if (trimmedPassword) body.password = trimmedPassword;
                   const r = await api('/settings/email', {
                     method: 'PATCH',
                     body: JSON.stringify(body),
