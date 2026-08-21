@@ -275,7 +275,8 @@ export default function Page() {
   ];
 
   const linePayload = {
-    customer_id: customerId,
+    // trim so Create order (UuidIdValue customer_id) does not 422 on whitespace
+    customer_id: customerId.trim(),
     store_id: storeId || null,
     delivery_date: deliveryDate.trim() || null,
     // null when blank so Create order does not 422 (AddressValue).
