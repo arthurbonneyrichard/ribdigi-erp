@@ -2496,7 +2496,10 @@ class GrnItemCreate(BaseModel):
 
 
 class GrnCreate(BaseModel):
-    purchase_order_id: str
+    # Required purchase order ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach PO lookup). Existence remains tenant-scoped
+    # PO lookup (**404**). Purchasing **GRN purchase order** control; Post GRN sends trim.
+    purchase_order_id: UuidIdValue
     warehouse_id: str | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on GoodsReceipt.notes Text).
@@ -2720,7 +2723,10 @@ class SalesReturnItemCreate(BaseModel):
 
 
 class SalesReturnCreate(BaseModel):
-    sales_invoice_id: str
+    # Required source invoice ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach invoice lookup). Existence remains
+    # tenant-scoped sales invoice lookup (**404**).
+    sales_invoice_id: UuidIdValue
     # Required coded reason (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damaged", "wrong_item", "defective", "customer_change", "other"]
     restock: bool = True

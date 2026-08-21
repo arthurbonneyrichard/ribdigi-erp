@@ -18,10 +18,10 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 _BASE = {
-    "purchase_order_id": "po-1",
+    "purchase_order_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "items": [
         {
-            "po_item_id": "poi-1",
+            "po_item_id": "bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee",
             "received_qty": 1,
             "accepted_qty": 1,
             "rejected_qty": 0,

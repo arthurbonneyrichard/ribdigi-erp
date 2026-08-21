@@ -650,7 +650,8 @@ export default function Page() {
       const r = await api('/purchasing/grn', {
         method: 'POST',
         body: JSON.stringify({
-          purchase_order_id: po.id,
+          // trim so Post GRN (UuidIdValue purchase_order_id) does not 422 on whitespace
+          purchase_order_id: String(po.id).trim(),
           notes: grnNotes.trim() || null,
           items,
         }),
@@ -718,7 +719,8 @@ export default function Page() {
       const r = await api('/purchasing/grn', {
         method: 'POST',
         body: JSON.stringify({
-          purchase_order_id: po.id,
+          // trim so Post GRN (UuidIdValue purchase_order_id) does not 422 on whitespace
+          purchase_order_id: String(po.id).trim(),
           notes: grnNotes.trim() || null,
           items,
         }),
@@ -1970,6 +1972,7 @@ export default function Page() {
                     <button
                       onClick={() => openAmend(o)}
                       style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                      aria-label="GRN purchase order"
                     >
                       {o.po_number}
                     </button>
