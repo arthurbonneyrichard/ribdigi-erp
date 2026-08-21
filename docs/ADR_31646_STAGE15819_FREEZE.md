@@ -31,3 +31,7 @@ Stage 15820 requires CONTINUE/NEXT with a distinct product outline after this fr
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Bakumatsuaalajiyuglaze Gate, Transfer Bakumatsuaalajiyuglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 15820 opened under **ADR-31647** after CONTINUE/NEXT (Tenant MVP Transfer Bakumatsuaafajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-31648**. Stage 15819 feature scope remains frozen.
