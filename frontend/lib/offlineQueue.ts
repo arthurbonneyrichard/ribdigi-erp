@@ -212,3 +212,74 @@ export function newClientOpId(prefix = 'op'): string {
       : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   return `${prefix}-${rand}`;
 }
+
+/** Stage 2026-08-23 — block destructive queue ops while sales are pending (§23). */
+export class OfflineQueuePendingError extends Error {
+  pending: number;
+
+  constructor(pending: number) {
+    super(
+      `Cannot ${pending > 0 ? 'clear or reset' : 'modify'} offline data: ${pending} pending queue ` +
+        'operation(s) must be flushed or resolved first. Export recovery data instead.',
+    );
+    this.name = 'OfflineQueuePendingError';
+    this.pending = pending;
+  }
+}
+
+async function assertNoPendingQueueOps(action: string): Promise<void> {
+  const rows = await listPendingOfflineOps();
+  const pending = rows.filter((r) => r.status === 'pending').length;
+  if (pending > 0) {
+    throw new OfflineQueuePendingError(pending);
+  }
+}
+
+/** Recovery export is always allowed — even with pending ops. */
+export async function exportOfflineQueueRecovery(): Promise<{
+  exported_at: string;
+  device_id: string;
+  ops: OfflineQueueOp[];
+}> {
+  const ops = await listPendingOfflineOps();
+  return {
+    exported_at: new Date().toISOString(),
+    device_id: getBoundOfflineDeviceId(),
+    ops,
+  };
+}
+
+/** Clears flushed/failed rows only when no pending ops remain. */
+export async function clearOfflineQueueHistory(): Promise<number> {
+  await assertNoPendingQueueOps('clear offline queue history');
+  const db = await openDb();
+  const tx = db.transaction(STORE, 'readwrite');
+  const store = tx.objectStore(STORE);
+  const req = store.getAll();
+  const rows: OfflineQueueOp[] = await new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve((req.result || []) as OfflineQueueOp[]);
+    req.onerror = () => reject(req.error || new Error('IndexedDB list failed'));
+  });
+  let removed = 0;
+  for (const row of rows) {
+    if (row.id != null && row.status !== 'pending') {
+      store.delete(row.id);
+      removed += 1;
+    }
+  }
+  await txDone(tx);
+  db.close();
+  if (removed) emitQueueChanged();
+  return removed;
+}
+
+/** Destructive reset — blocked while pending queue count > 0 (no cashier override). */
+export async function resetOfflineQueueData(): Promise<void> {
+  await assertNoPendingQueueOps('reset offline queue data');
+  const db = await openDb();
+  const tx = db.transaction(STORE, 'readwrite');
+  tx.objectStore(STORE).clear();
+  await txDone(tx);
+  db.close();
+  emitQueueChanged();
+}

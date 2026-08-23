@@ -1009,6 +1009,26 @@ export default function Page() {
           Revoking a device blocks flush and retains pending queue ops (not auto-applied). Conflict
           accept_client never double-posts applied POS. Offline Complete remains deferred.
         </p>
+        {syncStatus ? (
+          <div
+            className="card"
+            style={{ marginBottom: 12, padding: 12, background: 'var(--surface-muted, #f8fafc)' }}
+          >
+            <h3 style={{ marginTop: 0 }}>Tenant offline summary</h3>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              Registered devices: {syncStatus.registered_devices ?? offlineDevices.length} · Active:{' '}
+              {syncStatus.active_devices ??
+                offlineDevices.filter((d) => d.status !== 'revoked').length}{' '}
+              · Server pending pushes: {syncStatus.pending_pushes ?? 0} · Pending pulls:{' '}
+              {syncStatus.pending_pulls ?? 0} · Open conflicts: {syncStatus.conflict_count ?? 0}
+              {syncStatus.last_sync_at ? ` · Last applied sync: ${syncStatus.last_sync_at}` : ''}
+            </p>
+            <p className="muted" style={{ marginBottom: 0, marginTop: 8 }}>
+              Counts come from <code>/sync/status</code> (server queue — not live when a device is
+              offline). Flush pending browser ops from POS when online.
+            </p>
+          </div>
+        ) : null}
         <p className="muted">
           Bound browser device:{' '}
           {boundDeviceId ? <code>{boundDeviceId}</code> : 'none — bind an active device below'}

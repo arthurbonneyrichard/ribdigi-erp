@@ -17,6 +17,15 @@ import {
   listPendingOfflineOps,
   newClientOpId,
 } from '../../lib/offlineQueue';
+import {
+  canOfflineCredit,
+  canSupervisorOfflinePayment,
+  isOfflineCheckout,
+  isOfflineProviderMethod,
+  OFFLINE_CREDIT_CACHED_NOTE,
+  OFFLINE_CREDIT_METHOD,
+  prepareOfflineSalePayments,
+} from '../../lib/offlinePayments';
 
 type Product = {
   id: string;
@@ -118,6 +127,17 @@ export default function Page() {
   const [catalogExpired, setCatalogExpired] = useState(false);
   const [catalogExpiresAt, setCatalogExpiresAt] = useState<string | null>(null);
   const [catalogStaleNote, setCatalogStaleNote] = useState('');
+  const [userRole, setUserRole] = useState('cashier');
+  const [userPermissions, setUserPermissions] = useState<Record<string, string[]> | null>(null);
+
+  const offlineCheckout = isOfflineCheckout(online);
+  const supervisorOffline = canSupervisorOfflinePayment(userRole, userPermissions);
+  const offlinePaymentCtx = {
+    role: userRole,
+    permissions: userPermissions,
+    customers,
+    customerId,
+  };
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
@@ -235,6 +255,12 @@ export default function Page() {
         else if (tpl === 'thermal_80') setPaper('80mm');
       })
       .catch(() => undefined);
+    api('/me')
+      .then((r) => {
+        setUserRole(r.data?.role || 'cashier');
+        setUserPermissions(r.data?.permissions || null);
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -248,6 +274,13 @@ export default function Page() {
       window.removeEventListener('offline', sync);
     };
   }, []);
+
+  useEffect(() => {
+    if (!offlineCheckout) return;
+    if (!supervisorOffline && (isOfflineProviderMethod(paymentMethod) || paymentMethod === OFFLINE_CREDIT_METHOD)) {
+      setPaymentMethod('cash');
+    }
+  }, [offlineCheckout, supervisorOffline, paymentMethod]);
 
   // Stage 101 P1 / Stage 107 P1 / Stage 165 H1 — honor Shell /pos#sessions / #shift / #cart / #receipt / #holds
   useEffect(() => {
@@ -535,6 +568,23 @@ export default function Page() {
         setError('Offline: bind a device in Settings → Offline sync before queuing sales');
         return;
       }
+
+      let supervisorReason = '';
+      let prep = prepareOfflineSalePayments(body, offlinePaymentCtx);
+      if (prep.requiresSupervisorPrompt) {
+        supervisorReason = window.prompt(
+          `${prep.error}\n\nEnter supervisor acknowledgment reason (min 3 characters):`,
+        ) || '';
+        prep = prepareOfflineSalePayments(body, offlinePaymentCtx, { supervisorReason });
+      }
+      if (prep.blocked) {
+        setError(prep.error || 'Offline payment blocked');
+        return;
+      }
+      if (Object.keys(prep.payloadMeta).length) {
+        body.payload = { ...(body.payload as Record<string, unknown> | undefined), ...prep.payloadMeta };
+      }
+
       try {
         await enqueueOfflineOp({
           client_op_id: clientRequestId,
@@ -546,7 +596,11 @@ export default function Page() {
         setCartDiscount('0');
         setSplitTender(false);
         await refreshOfflinePending();
-        setMessage(`Sale queued offline (${clientRequestId}). Flush when online.`);
+        setMessage(
+          prep.userMessage
+            ? `Sale queued offline (${clientRequestId}). ${prep.userMessage}`
+            : `Sale queued offline (${clientRequestId}). Flush when online.`,
+        );
       } catch (err: any) {
         setError(err.message || 'Failed to queue offline sale');
       }
@@ -1059,16 +1113,35 @@ export default function Page() {
           <label style={{ display: 'block', marginBottom: 8 }}>
             Payment{' '}
             <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="wallet">Digital wallet</option>
-              <option value="credit">Credit (registered customer)</option>
+              <option value="cash">Cash{offlineCheckout ? ' (offline default)' : ''}</option>
+              <option value="card" disabled={offlineCheckout && !supervisorOffline}>
+                Card
+                {offlineCheckout && !supervisorOffline ? ' — blocked offline' : ''}
+              </option>
+              <option value="wallet" disabled={offlineCheckout && !supervisorOffline}>
+                Digital wallet
+                {offlineCheckout && !supervisorOffline ? ' — blocked offline' : ''}
+              </option>
+              <option
+                value="credit"
+                disabled={
+                  offlineCheckout &&
+                  (!canOfflineCredit(userPermissions) ||
+                    !customerId ||
+                    !customers.some((c) => c.id === customerId))
+                }
+              >
+                Credit (registered customer)
+              </option>
             </select>
           </label>
         ) : (
           <div style={{ display: 'grid', gap: 8, marginBottom: 8, maxWidth: 420 }}>
             <p className="muted" style={{ margin: 0 }}>
               Enter amounts that sum to the sale total (after tax/discount).
+              {offlineCheckout
+                ? ' Offline: cash allowed; card/wallet need supervisor acknowledgment; credit needs cached customer data.'
+                : ''}
             </p>
             {tenders.map((t, idx) => (
               <div key={idx} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1081,9 +1154,18 @@ export default function Page() {
                   }}
                 >
                   <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                  <option value="wallet">Wallet</option>
-                  <option value="credit">Credit</option>
+                  <option value="card" disabled={offlineCheckout && !supervisorOffline}>
+                    Card
+                  </option>
+                  <option value="wallet" disabled={offlineCheckout && !supervisorOffline}>
+                    Wallet
+                  </option>
+                  <option
+                    value="credit"
+                    disabled={offlineCheckout && !canOfflineCredit(userPermissions)}
+                  >
+                    Credit
+                  </option>
                 </select>
                 <input
                   value={t.amount}
@@ -1106,6 +1188,21 @@ export default function Page() {
               Add tender line
             </button>
           </div>
+        )}
+        {offlineCheckout && paymentMethod === OFFLINE_CREDIT_METHOD && customerId && (
+          <p className="muted" style={{ marginTop: 0 }}>
+            {OFFLINE_CREDIT_CACHED_NOTE}
+            {selectedCustomer?.credit_limit != null
+              ? ` · limit ${selectedCustomer.credit_limit}`
+              : ''}
+            {selectedCustomer?.balance != null ? ` · balance ${selectedCustomer.balance}` : ''}
+          </p>
+        )}
+        {offlineCheckout && supervisorOffline && isOfflineProviderMethod(paymentMethod) && (
+          <p className="muted" style={{ marginTop: 0 }}>
+            Offline provider payments require supervisor acknowledgment — not treated as live provider
+            approval until verified on sync.
+          </p>
         )}
         <label style={{ display: 'block', marginBottom: 8 }}>
           Receipt paper{' '}

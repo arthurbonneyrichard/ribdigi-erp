@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import offline_devices as offline_devices_svc
+from app import offline_payments as offline_payments_svc
 from app.pos_holds import HOLD_SOFT_RESERVE_TTL_HOURS
 from app.schemas import PosSaleCreate
 
@@ -219,6 +220,28 @@ async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         ).scalar_one()
         or 0
     )
+    active_devices = int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(m.OfflineDevice)
+                .where(
+                    m.OfflineDevice.tenant_id == tenant_id,
+                    m.OfflineDevice.revoked_at.is_(None),
+                )
+            )
+        ).scalar_one()
+        or 0
+    )
+    registered_devices = int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(m.OfflineDevice).where(m.OfflineDevice.tenant_id == tenant_id)
+            )
+        ).scalar_one()
+        or 0
+    )
     last_sync_at = (
         await db.execute(
             select(func.max(m.SyncQueueItem.applied_at)).where(
@@ -233,6 +256,8 @@ async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         "pending_pulls": pending_pulls,
         "last_sync_at": last_sync_at,
         "conflict_count": conflict_count,
+        "registered_devices": registered_devices,
+        "active_devices": active_devices,
         "message": (
             "Stage 164–168 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
             "Idempotent offline POS path requires client_request_id. "
@@ -437,6 +462,8 @@ async def _apply_pos_sale_op(
     # Ensure sync path uses the same idempotency key as the sale row.
     if not sale_payload.client_request_id:
         raise HTTPException(status_code=400, detail="client_request_id required")
+
+    offline_payments_svc.validate_offline_pos_sale_payments(body, claims=claims)
 
     return await record_pos_sale(db, claims=claims, payload=sale_payload, commit=False)
 

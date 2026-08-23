@@ -53,6 +53,9 @@
 - **Default Main Store on company create** when `create_main_store` (default when company has `store_limit ≥ 1`); blocks explicit request without allocation (`STORE_LIMIT_REQUIRED`). Tests: `test_company_create_creates_main_store_when_capacity_allocated`, `test_company_create_blocks_main_store_without_allocation`.
 - **UI:** Companies page checkbox “Create Main Store automatically”.
 - **Docs:** Mark schema-per-tenant as SUPERSEDED; point to `docs/ADR_001_TENANCY.md`.
+- **Offline payment safety (§18):** POS blocks cashier card/wallet offline; supervisor acknowledgment + pending-verification metadata for provider methods; offline credit requires cached customer data + credit permission. Server `/sync/push` rejects unsafe offline payments (`OFFLINE_PAYMENT_BLOCKED`, `OFFLINE_CREDIT_BLOCKED`). Tests: `test_offline_payment_safety.py`.
+- **Unsafe local reset guard (§23):** `offlineQueue.ts` throws `OfflineQueuePendingError` when clearing/resetting with pending ops (recovery export always allowed).
+- **Owner offline summary:** Company `#offline-sync` tenant summary card (device counts, server pending pushes/pulls, conflicts via `/sync/status`).
 
 ---
 
@@ -69,4 +72,16 @@
 
 ---
 
-*Offline POS deep audit (sections 13–38) was in progress at report time; update this file when that audit completes.*
+## Offline POS (sections 13–38) — audit complete
+
+**Honest positioning:** partial offline queue MVP; **Offline Complete explicitly MISSING** (`docs/OFFLINE_COMPLETE_ATTESTATION.md`).
+
+| Shipped | Not shipped |
+|---------|-------------|
+| IndexedDB queue + catalog, sync APIs, device registry/revoke, idempotent `client_request_id`, offline payment safety (cash default; provider ack), queue reset guard, tenant offline summary on Company page | 7-day auth envelope, offline receipt numbering, owner alerts, automated recovery export UI, native shells, hardware bridges |
+
+**Physical tests** (7-day endurance, multi-device reconnect, peripherals) require owner/device action — not runnable in CI alone.
+
+---
+
+*Offline POS audit: sections 13–38 complete (2026-08-23).*
