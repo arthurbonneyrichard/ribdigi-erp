@@ -835,7 +835,7 @@ export default function Page() {
           category_id: productCategoryId.trim() || null,
           tax_rate_id: productTaxRateId.trim() || null,
           brand_id: productBrandId.trim() || null,
-          unit_id: productUnitId || null,
+          unit_id: productUnitId.trim() || null,
           tax_supply_class: productSupplyClass,
         }),
       });
@@ -2040,7 +2040,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={productUnitId} onChange={(e) => setProductUnitId(e.target.value)}>
+            <select
+              value={productUnitId}
+              onChange={(e) => setProductUnitId(e.target.value)}
+              aria-label="Product unit"
+              title="Product unit (optional catalog picker)"
+            >
               <option value="">Unit</option>
               {units
                 .filter((u) => u.is_active !== false)
