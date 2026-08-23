@@ -20,14 +20,6 @@ async def _super(ac, seed):
     )
 
 
-async def _manager(ac, seed):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-
-
-async def _cashier(ac, seed):
-    return await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
-
-
 async def _pos_push_setup(ac, seed, db_session, *, headers):
     await accounting_svc.ensure_default_accounts(db_session, seed["t1"].id)
     product = seed["p1"]
@@ -155,16 +147,13 @@ async def test_sync_push_accepts_offline_card_with_supervisor_ack(client, db_ses
 @pytest.mark.asyncio
 async def test_sync_push_rejects_offline_credit_without_cached_ack(client, db_session):
     ac, seed = client
-    super_headers = await _super(ac, seed)
-    mgr_headers = await _manager(ac, seed)
-    device_id, session_id, product_id = await _pos_push_setup(
-        ac, seed, db_session, headers=super_headers
-    )
+    headers = await _super(ac, seed)
+    device_id, session_id, product_id = await _pos_push_setup(ac, seed, db_session, headers=headers)
     customer_id = seed["party1"].id
 
     pushed = await ac.post(
         "/api/v1/sync/push",
-        headers=mgr_headers,
+        headers=headers,
         json={
             "device_id": device_id,
             "ops": [

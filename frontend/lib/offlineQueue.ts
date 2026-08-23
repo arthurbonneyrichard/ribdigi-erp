@@ -216,14 +216,16 @@ export function newClientOpId(prefix = 'op'): string {
 /** Stage 2026-08-23 — block destructive queue ops while sales are pending (§23). */
 export class OfflineQueuePendingError extends Error {
   pending: number;
+  action: string;
 
-  constructor(pending: number) {
+  constructor(pending: number, action = 'clear or reset') {
     super(
-      `Cannot ${pending > 0 ? 'clear or reset' : 'modify'} offline data: ${pending} pending queue ` +
+      `Cannot ${action} offline data: ${pending} pending queue ` +
         'operation(s) must be flushed or resolved first. Export recovery data instead.',
     );
     this.name = 'OfflineQueuePendingError';
     this.pending = pending;
+    this.action = action;
   }
 }
 
@@ -231,7 +233,7 @@ async function assertNoPendingQueueOps(action: string): Promise<void> {
   const rows = await listPendingOfflineOps();
   const pending = rows.filter((r) => r.status === 'pending').length;
   if (pending > 0) {
-    throw new OfflineQueuePendingError(pending);
+    throw new OfflineQueuePendingError(pending, action);
   }
 }
 
