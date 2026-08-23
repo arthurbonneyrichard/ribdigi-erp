@@ -388,6 +388,7 @@ async def tenant_dashboard_payload(
     )
     store_ent = await store_ent_svc.get_tenant_store_entitlement(db, tenant)
     company_ent = await store_ent_svc.get_tenant_company_entitlement(db, tenant)
+    user_ent = await store_ent_svc.get_tenant_user_entitlement(db, tenant)
     store_by_company = await store_ent_svc.store_usage_by_company(db, tenant_id=tenant.id)
     return {
         "tenant": {
@@ -406,7 +407,9 @@ async def tenant_dashboard_payload(
                 "max_companies": company_ent["max_companies"],
                 "max_companies_unlimited": company_ent["max_companies_unlimited"],
                 "max_companies_override": company_ent["max_companies_override"],
-                "max_users": int(getattr(tenant, "max_users", 25) or 25),
+                "max_users": user_ent["max_users"],
+                "max_users_unlimited": user_ent["max_users_unlimited"],
+                "max_users_override": user_ent["max_users_override"],
                 "max_branches": int(getattr(tenant, "max_branches", 5) or 5),
                 "max_stores": store_ent["max_stores"],
                 "max_stores_unlimited": store_ent["max_stores_unlimited"],
@@ -422,6 +425,7 @@ async def tenant_dashboard_payload(
             },
             "store_entitlement": store_ent,
             "company_entitlement": company_ent,
+            "user_entitlement": user_ent,
             "store_allocations": store_by_company,
             "billing_deferred": True,
         },

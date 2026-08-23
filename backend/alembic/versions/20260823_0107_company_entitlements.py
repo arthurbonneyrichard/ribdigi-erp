@@ -1,7 +1,7 @@
 """Tenant max_companies_override for plan-synced company entitlement.
 
 Revision ID: 20260823_0107
-Revises: 20260816_0105
+Revises: 20260823_0106
 Create Date: 2026-08-23
 """
 
@@ -11,7 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "20260823_0107"
-down_revision = "20260816_0105"
+down_revision = "20260823_0106"
 branch_labels = None
 depends_on = None
 

@@ -3101,6 +3101,12 @@ async def add_user(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="User email already exists in tenant")
+    from app import store_entitlements as store_ent_svc
+
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    await store_ent_svc.assert_can_create_user(db, tenant, lock=True)
     perms = await roles_svc.permissions_for_assignment(db, claims["tenant_id"], role)
     if payload.record_scope is not None:
         try:
@@ -3263,6 +3269,13 @@ async def update_user(
         if user.id == claims["sub"] and payload.is_active is False:
             raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
         if bool(user.is_active) != bool(payload.is_active):
+            if payload.is_active and not user.is_active:
+                from app import store_entitlements as store_ent_svc
+
+                tenant = await db.get(m.Tenant, claims["tenant_id"])
+                if not tenant:
+                    raise HTTPException(status_code=404, detail="Tenant not found")
+                await store_ent_svc.assert_can_reactivate_user(db, tenant=tenant, user=user)
             user.is_active = bool(payload.is_active)
             changes["is_active"] = user.is_active
             if not user.is_active:

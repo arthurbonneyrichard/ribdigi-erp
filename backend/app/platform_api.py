@@ -82,6 +82,8 @@ class PlatformPlanUpdate(BaseModel):
     sync_store_limits: bool = True
     # When true (default), sync Tenant.max_companies from PLAN_CATALOG unless override is set.
     sync_company_limits: bool = True
+    # When true (default), sync Tenant.max_users from PLAN_CATALOG unless override is set.
+    sync_user_limits: bool = True
 
 
 class PlatformStoreEntitlementUpdate(BaseModel):
@@ -93,6 +95,12 @@ class PlatformStoreEntitlementUpdate(BaseModel):
 class PlatformCompanyEntitlementUpdate(BaseModel):
     max_companies: int | None = Field(default=None, ge=-1)
     max_companies_override: int | None = Field(default=None, ge=-1)
+    clear_override: bool = False
+
+
+class PlatformUserEntitlementUpdate(BaseModel):
+    max_users: int | None = Field(default=None, ge=-1)
+    max_users_override: int | None = Field(default=None, ge=-1)
     clear_override: bool = False
 
 
@@ -766,10 +774,13 @@ async def platform_set_tenant_plan(
 
     sync_info = {"synced": False}
     company_sync_info = {"synced": False}
+    user_sync_info = {"synced": False}
     if payload.sync_store_limits:
         sync_info = store_ent_svc.apply_plan_store_defaults(row, plan)
     if payload.sync_company_limits:
         company_sync_info = store_ent_svc.apply_plan_company_defaults(row, plan)
+    if payload.sync_user_limits:
+        user_sync_info = store_ent_svc.apply_plan_user_defaults(row, plan)
     ip, ua = _client_meta(request)
     await audit.record_event(
         db,
@@ -785,6 +796,7 @@ async def platform_set_tenant_plan(
             "billing_deferred": True,
             "store_limit_sync": sync_info,
             "company_limit_sync": company_sync_info,
+            "user_limit_sync": user_sync_info,
         },
         ip_address=ip,
         user_agent=ua,
@@ -911,6 +923,65 @@ async def platform_set_tenant_company_entitlement(
         "effective": store_ent_svc.effective_tenant_company_limit(row),
     }
     return env(data, message="Company entitlement updated")
+
+
+@router.patch("/tenants/{tenant_id}/user-entitlement")
+async def platform_set_tenant_user_entitlement(
+    tenant_id: str,
+    payload: PlatformUserEntitlementUpdate,
+    request: Request,
+    claims: dict = Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """RIBDIGI HOUSE override / base max_users for a customer tenant (does not delete users)."""
+    from app import store_entitlements as store_ent_svc
+
+    if tenant_id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=400, detail="Cannot change platform tenant entitlements here")
+    row = await db.get(m.Tenant, tenant_id)
+    if not row or row.id == PLATFORM_TENANT_ID:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    prev = {
+        "max_users": getattr(row, "max_users", None),
+        "max_users_override": getattr(row, "max_users_override", None),
+    }
+    if payload.clear_override:
+        row.max_users_override = None
+    elif payload.max_users_override is not None:
+        row.max_users_override = int(payload.max_users_override)
+    if payload.max_users is not None:
+        row.max_users = int(payload.max_users)
+
+    ip, ua = _client_meta(request)
+    await audit.record_event(
+        db,
+        tenant_id=PLATFORM_TENANT_ID,
+        user_id=claims.get("sub"),
+        action="platform.tenant.user_entitlement_updated",
+        entity="tenant",
+        entity_id=tenant_id,
+        details={
+            "target_tenant_id": tenant_id,
+            "from": prev,
+            "to": {
+                "max_users": row.max_users,
+                "max_users_override": row.max_users_override,
+            },
+            "effective": store_ent_svc.effective_tenant_user_limit(row),
+        },
+        ip_address=ip,
+        user_agent=ua,
+        module="platform_tenants",
+    )
+    await db.commit()
+    data = await platform_svc.get_customer_tenant(db, tenant_id)
+    data["user_entitlement"] = {
+        "max_users": row.max_users,
+        "max_users_override": row.max_users_override,
+        "effective": store_ent_svc.effective_tenant_user_limit(row),
+    }
+    return env(data, message="User entitlement updated")
 
 
 @router.patch("/tenants/{tenant_id}/notes")
