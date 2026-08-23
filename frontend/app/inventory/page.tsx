@@ -144,6 +144,7 @@ export default function Page() {
   const [productWidth, setProductWidth] = useState('');
   const [productHeight, setProductHeight] = useState('');
   const [productCategoryId, setProductCategoryId] = useState('');
+  const [productTaxRateId, setProductTaxRateId] = useState('');
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
   const [editReorder, setEditReorder] = useState('0');
@@ -512,7 +513,8 @@ export default function Page() {
           to_warehouse_id: xferToWh,
           submit: true,
           notes: xferNotes.trim() || null,
-          items: [{ product_id: selectedId, quantity: qty }],
+          // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
+          items: [{ product_id: selectedId.trim(), quantity: qty }],
         }),
       });
       setMessage(
@@ -831,6 +833,7 @@ export default function Page() {
           width: productWidth === '' ? null : Number(productWidth),
           height: productHeight === '' ? null : Number(productHeight),
           category_id: productCategoryId.trim() || null,
+          tax_rate_id: productTaxRateId.trim() || null,
           brand_id: productBrandId || null,
           unit_id: productUnitId || null,
           tax_supply_class: productSupplyClass,
@@ -847,6 +850,7 @@ export default function Page() {
       setProductHeight('');
       setProductPrice('0');
       setProductSupplyClass('standard');
+      setProductTaxRateId('');
       await refresh();
       setSelectedId(r.data.id);
       setTab('products');
@@ -1319,7 +1323,8 @@ export default function Page() {
     }
     try {
       const line: Record<string, unknown> = {
-        product_id: selectedId,
+        // trim so Opening stock line (UuidIdValue product_id) does not 422 on whitespace
+        product_id: selectedId.trim(),
         quantity: Number(openingQty),
         unit_id: openingUnitId || null,
         warehouse_id: openingWarehouseId || null,
@@ -1419,7 +1424,8 @@ export default function Page() {
       const r = await api('/inventory/stock-out', {
         method: 'POST',
         body: JSON.stringify({
-          product_id: selectedId,
+          // trim so Stock out (UuidIdValue product_id) does not 422 on whitespace
+          product_id: selectedId.trim(),
           quantity: qty,
           reference_type: outRefType,
           reference_id: outRefId.trim() || null,
@@ -2043,6 +2049,21 @@ export default function Page() {
               <option value="standard">Tax: standard-rated</option>
               <option value="zero_rated">Tax: zero-rated</option>
               <option value="exempt">Tax: exempt</option>
+            </select>
+            <select
+              value={productTaxRateId}
+              onChange={(e) => setProductTaxRateId(e.target.value)}
+              aria-label="Product tax rate"
+              title="Product tax rate (optional — category/tenant default when blank)"
+            >
+              <option value="">Tax rate (optional — category/tenant default)</option>
+              {taxRates
+                .filter((r) => r.is_active !== false)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
+                  </option>
+                ))}
             </select>
             <button
               onClick={createProduct}

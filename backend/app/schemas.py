@@ -1047,7 +1047,10 @@ class ProductCreate(BaseModel):
     height: float | None = Field(default=None, ge=0)
     stock_qty: float = 0
     reorder_level: float = 0
-    tax_rate_id: str | None = None
+    # Optional product tax rate FK ∈ UuidIdValue; omit/`null` → category/tenant default path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup / FK). Existence remains tenant-scoped tax-rate lookup (**404**/integrity).
+    tax_rate_id: UuidIdValue | None = None
     tax_exempt: bool = False
     # BR-12.1 / BR-5.1 — schema Literal; omit → standard; blank/invalid → 422
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] = "standard"
@@ -1459,12 +1462,18 @@ class StockMove(BaseModel):
 class StockOut(BaseModel):
     """Manual stock-out (BR-5.2) — coded reference_type required at schema.
 
-    Optional `reference_id` ∈ StockMovementReferenceIdValue; omit/`null` → no external
-    ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist
-    on StockMovement.reference_id String(36)).
+    Required `product_id` ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    (was free `str`; garbage could reach catalog lookup). Existence remains
+    tenant-scoped product lookup (**404**). Optional `reference_id` ∈
+    StockMovementReferenceIdValue; omit/`null` → no external ref; blank/`!!!`/
+    `http://…` → **422** (was free `str`; blank/garbage could persist on
+    StockMovement.reference_id String(36)).
     """
 
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_id: str | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
@@ -1491,7 +1500,10 @@ class OpeningStockLine(BaseModel):
     `reports.parse_date` remains defense-in-depth.
     """
 
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_id: str | None = None
     warehouse_id: str | None = None
@@ -2033,7 +2045,17 @@ class WarehouseUpdate(BaseModel):
 
 
 class StockTransferItemCreate(BaseModel):
-    product_id: str
+    """Nested line on stock transfer create (BR-5.2 / BR-13.2).
+
+    Required `product_id` ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    (was free `str`; garbage could reach catalog lookup). Existence remains
+    tenant-scoped product lookup (**404**).
+    """
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
 
 
