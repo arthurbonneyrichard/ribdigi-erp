@@ -102,6 +102,8 @@ class Tenant(Base):
     # Platform Owner override for company entitlement (-1 = unlimited). NULL = use max_companies.
     max_companies_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_users: Mapped[int] = mapped_column(Integer, default=25)
+    # Platform Owner override for user entitlement (-1 = unlimited). NULL = use max_users.
+    max_users_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_branches: Mapped[int] = mapped_column(Integer, default=5)
     max_stores: Mapped[int] = mapped_column(Integer, default=5)
     # Platform Owner override for store entitlement (-1 = unlimited). NULL = use max_stores.
