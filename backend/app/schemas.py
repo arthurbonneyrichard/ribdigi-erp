@@ -1037,7 +1037,10 @@ class ProductCreate(BaseModel):
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
     category_id: UuidIdValue | None = None
-    brand_id: str | None = None
+    # Optional catalog brand FK ∈ UuidIdValue; omit/`null` → no brand;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # brand lookup / FK). Existence remains tenant-scoped brand lookup (**404**/integrity).
+    brand_id: UuidIdValue | None = None
     unit_id: str | None = None
     cost_price: float = 0
     selling_price: float = 0

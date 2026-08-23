@@ -834,7 +834,7 @@ export default function Page() {
           height: productHeight === '' ? null : Number(productHeight),
           category_id: productCategoryId.trim() || null,
           tax_rate_id: productTaxRateId.trim() || null,
-          brand_id: productBrandId || null,
+          brand_id: productBrandId.trim() || null,
           unit_id: productUnitId || null,
           tax_supply_class: productSupplyClass,
         }),
@@ -2025,7 +2025,12 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <select value={productBrandId} onChange={(e) => setProductBrandId(e.target.value)}>
+            <select
+              value={productBrandId}
+              onChange={(e) => setProductBrandId(e.target.value)}
+              aria-label="Product brand"
+              title="Product brand (optional catalog picker)"
+            >
               <option value="">Brand</option>
               {brands
                 .filter((b) => b.is_active !== false)
