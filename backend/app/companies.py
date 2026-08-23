@@ -13,6 +13,21 @@ from app import workspace as workspace_svc
 from app.rbac import permissions_for_role
 
 # Fallback labels when business_types catalog row is missing (tests / legacy industry codes).
+def _payload_bool(value, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "on"):
+        return True
+    if text in ("0", "false", "no", "off", ""):
+        return False
+    return default
+
+
 INDUSTRY_LABELS: dict[str, str] = {
     "supermarket": "Supermarket",
     "mini_mart": "Mini Mart",
@@ -207,6 +222,21 @@ async def create_company(
             unalloc = int(ent.get("unallocated") or 0)
             initial_store_limit = 1 if unalloc >= 1 else 0
 
+    create_main_store = _payload_bool(
+        payload.get("create_main_store"),
+        default=initial_store_limit >= 1,
+    )
+    if create_main_store and initial_store_limit < 1:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_LIMIT_REQUIRED",
+                "message": (
+                    "Allocate store capacity to this company before creating a Main Store."
+                ),
+            },
+        )
+
     co = m.Company(
         tenant_id=tenant.id,
         code=code,
@@ -256,6 +286,22 @@ async def create_company(
         )
     )
     await db.flush()
+
+    if create_main_store:
+        from app import stores as stores_svc
+
+        main_store_name = (payload.get("main_store_name") or "Main Store").strip() or "Main Store"
+        main_store_code = (payload.get("main_store_code") or "MAIN").strip().upper()[:40] or "MAIN"
+        await stores_svc.create_store(
+            db,
+            tenant_id=tenant.id,
+            company_id=co.id,
+            name=main_store_name,
+            code=main_store_code,
+            address=co.address,
+            phone=co.phone,
+        )
+
     return co
 
 

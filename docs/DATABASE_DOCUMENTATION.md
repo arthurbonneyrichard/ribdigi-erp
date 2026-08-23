@@ -31,7 +31,9 @@
 
 ### 1.1 Architecture Overview
 
-RIBDIGI ERP uses **PostgreSQL 15** as the primary relational database with a **schema-per-tenant** isolation model. The architecture separates global metadata (tenant registry, system configuration) from tenant-specific business data.
+RIBDIGI ERP uses **PostgreSQL 15** as the primary relational database with **shared-schema tenant isolation** (`tenant_id` on business rows). See `docs/ADR_001_TENANCY.md` for the authoritative tenancy model.
+
+> **SUPERSEDED:** Earlier drafts described **schema-per-tenant** isolation. That design was not implemented for MVP; do not provision per-tenant PostgreSQL schemas based on this document alone.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
