@@ -20,6 +20,8 @@ export default function PlatformTenantDetailPage() {
   const [suspendReason, setSuspendReason] = useState('');
   const [storeOverride, setStoreOverride] = useState('');
   const [baseMaxStores, setBaseMaxStores] = useState('');
+  const [companyOverride, setCompanyOverride] = useState('');
+  const [baseMaxCompanies, setBaseMaxCompanies] = useState('');
 
   async function load() {
     setError('');
@@ -40,6 +42,16 @@ export default function PlatformTenantDetailPage() {
       setBaseMaxStores(
         r.data?.max_stores != null && r.data?.max_stores !== undefined
           ? String(r.data.max_stores)
+          : ''
+      );
+      setCompanyOverride(
+        r.data?.max_companies_override != null && r.data?.max_companies_override !== undefined
+          ? String(r.data.max_companies_override)
+          : ''
+      );
+      setBaseMaxCompanies(
+        r.data?.max_companies != null && r.data?.max_companies !== undefined
+          ? String(r.data.max_companies)
           : ''
       );
     } catch (err: any) {
@@ -131,6 +143,40 @@ export default function PlatformTenantDetailPage() {
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to update store entitlement');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveCompanyEntitlement(opts?: {
+    clearOverride?: boolean;
+    unlimited?: boolean;
+  }) {
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      const body: Record<string, unknown> = {};
+      if (opts?.clearOverride) {
+        body.clear_override = true;
+      } else if (opts?.unlimited) {
+        body.max_companies_override = -1;
+      } else if (companyOverride.trim() !== '') {
+        body.max_companies_override = Number(companyOverride);
+      }
+      if (baseMaxCompanies.trim() !== '') {
+        body.max_companies = Number(baseMaxCompanies);
+      }
+      const r = await api(`/platform/tenants/${id}/company-entitlement`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      setMsg(
+        `Company entitlement updated · effective=${r.data?.company_entitlement?.effective ?? r.data?.max_companies_effective ?? '—'}`
+      );
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update company entitlement');
     } finally {
       setBusy(false);
     }
@@ -301,11 +347,78 @@ export default function PlatformTenantDetailPage() {
             </div>
             {selectedPlan && (
               <p className="muted" style={{ marginTop: 8 }}>
-                {selectedPlan.blurb || '—'} · Soft limits — stores:{' '}
+                {selectedPlan.blurb || '—'} · Soft limits — companies:{' '}
+                {selectedPlan.soft_limits?.companies ?? 'n/a'}, stores:{' '}
                 {selectedPlan.soft_limits?.stores ?? 'n/a'}, users:{' '}
                 {selectedPlan.soft_limits?.users ?? 'n/a'} (informational; not checkout entitlements)
               </p>
             )}
+          </div>
+
+          <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+            <div className="muted">Company entitlement (subscription multi-company)</div>
+            <p style={{ marginTop: 8 }}>
+              Active companies: {row.company_count ?? '—'} · Effective max:{' '}
+              {row.max_companies_effective ?? row.max_companies ?? '—'}
+              {row.max_companies_override != null
+                ? ` (override ${row.max_companies_override})`
+                : ' (plan/base)'}
+            </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Base max_companies (−1 = unlimited)
+              <input
+                value={baseMaxCompanies}
+                onChange={(e) => setBaseMaxCompanies(e.target.value)}
+                placeholder="e.g. 3"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginTop: 4,
+                  padding: 10,
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                }}
+              />
+            </label>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Tenant override (optional; wins over plan/base)
+              <input
+                value={companyOverride}
+                onChange={(e) => setCompanyOverride(e.target.value)}
+                placeholder="blank = no override"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginTop: 4,
+                  padding: 10,
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                }}
+              />
+            </label>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <button type="button" disabled={busy} onClick={() => saveCompanyEntitlement()}>
+                Save company entitlement
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => saveCompanyEntitlement({ unlimited: true })}
+              >
+                Set unlimited (−1)
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => saveCompanyEntitlement({ clearOverride: true })}
+              >
+                Clear override
+              </button>
+            </div>
+            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+              Downgrades never delete companies. Override is for special customer agreements — not paid
+              billing Completes.
+            </p>
           </div>
 
           <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>

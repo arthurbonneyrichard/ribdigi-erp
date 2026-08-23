@@ -58,6 +58,7 @@
 - **Owner offline summary:** Company `#offline-sync` tenant summary card (device counts, server pending pushes/pulls, conflicts via `/sync/status`).
 - **7-day offline auth envelope (§13–14):** `offline_auth_envelope.py` + Alembic `20260823_0106`; `POST /offline/devices/{id}/bind`; client IndexedDB (`offlineAuthEnvelope.ts`); POS blocks new offline sales when `offline_valid_until` expired (queue preserved). Tests: `test_offline_auth_envelope.py`. **Does not claim Offline Complete or 7-day VERIFIED.**
 - **Company entitlement:** `PLAN_CATALOG.soft_limits.companies` syncs `Tenant.max_companies` on plan change; platform `PATCH /platform/tenants/{id}/company-entitlement` for override/unlimited; downgrades preserve companies and block new creates. Tests: `test_company_entitlements.py`.
+- **Platform UI for company-entitlement override:** House tenant detail (`/platform/tenants/[id]`) mirrors store-entitlement controls (base / override / unlimited −1 / clear) via `PATCH /platform/tenants/{id}/company-entitlement`. Caps only — not paid billing Completes.
 
 ---
 
