@@ -757,7 +757,8 @@ export default function Page() {
           from_store_id: fromStore,
           to_store_id: toStore,
           submit: true,
-          items: [{ product_id: productId, quantity: Number(qty) }],
+          // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
+          items: [{ product_id: productId.trim(), quantity: Number(qty) }],
         }),
       });
       setMessage(`Transfer ${r.data.transfer_number} requested`);
@@ -1103,7 +1104,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+            <select
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+              aria-label="Stock transfer product"
+            >
               {products
                 .filter((p) => p.is_active !== false)
                 .map((p) => (

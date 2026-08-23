@@ -17,12 +17,14 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_VALID_PRODUCT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
 
 def test_stock_transfer_notes_schema():
     base = {
         "from_warehouse_id": "wh1",
         "to_warehouse_id": "wh2",
-        "items": [{"product_id": "p1", "quantity": 1}],
+        "items": [{"product_id": _VALID_PRODUCT, "quantity": 1}],
     }
     omit = StockTransferCreate.model_validate(base)
     assert omit.notes is None
