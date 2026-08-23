@@ -8,7 +8,7 @@ import {
   clearOfflineAuthEnvelope,
   refreshOfflineAuthEnvelope,
 } from '../../lib/offlineAuthEnvelope';
-import { setBoundOfflineDeviceId } from '../../lib/offlineQueue';
+import { downloadOfflineRecoveryPack, setBoundOfflineDeviceId } from '../../lib/offlineQueue';
 import { getSelectedStoreId } from '../../lib/storeContext';
 import { getCompanyId, getWorkspaceKind } from '../../lib/workspaceContext';
 
@@ -1035,6 +1035,41 @@ export default function Page() {
             </p>
           </div>
         ) : null}
+        <div
+          style={{
+            marginBottom: 12,
+            padding: 12,
+            border: '1px solid var(--border, #e2e8f0)',
+            borderRadius: 6,
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>Local recovery export</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Download this browser&apos;s IndexedDB offline queue + device/envelope metadata as JSON.
+            Export never clears pending ops. No passwords or tokens are included. Owner alerts and
+            Offline Complete remain deferred.
+          </p>
+          <button
+            type="button"
+            disabled={deviceBusy}
+            onClick={async () => {
+              setError('');
+              setDeviceBusy(true);
+              try {
+                const pack = await downloadOfflineRecoveryPack();
+                setMessage(
+                  `Offline recovery pack exported (${pack.summary.total} op(s); queue preserved)`,
+                );
+              } catch (err: any) {
+                setError(err.message || 'Recovery export failed');
+              } finally {
+                setDeviceBusy(false);
+              }
+            }}
+          >
+            Export offline recovery pack
+          </button>
+        </div>
         <p className="muted">
           Bound browser device:{' '}
           {boundDeviceId ? <code>{boundDeviceId}</code> : 'none — bind an active device below'}

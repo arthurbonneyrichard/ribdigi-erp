@@ -3,7 +3,13 @@
  * Flushes via POST /sync/push. Never stores tokens; SW must not cache /api/v1/*.
  */
 
-import { withOfflineAuthPayload, parseEnvelope, storeOfflineAuthEnvelope } from './offlineAuthEnvelope';
+import {
+  withOfflineAuthPayload,
+  parseEnvelope,
+  storeOfflineAuthEnvelope,
+  getStoredOfflineAuthEnvelope,
+  type OfflineAuthEnvelope,
+} from './offlineAuthEnvelope';
 
 const DB_NAME = 'ribdigi-offline-queue';
 const DB_VERSION = 1;
@@ -244,18 +250,116 @@ async function assertNoPendingQueueOps(action: string): Promise<void> {
   }
 }
 
-/** Recovery export is always allowed — even with pending ops. */
-export async function exportOfflineQueueRecovery(): Promise<{
+/** Keys stripped from recovery payloads — never export secrets/tokens. */
+const RECOVERY_SECRET_KEY_RE =
+  /^(authorization|auth|token|access_token|refresh_token|password|passwd|secret|api_key|apikey|bearer|cookie|session)$/i;
+
+function sanitizeRecoveryValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sanitizeRecoveryValue);
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (RECOVERY_SECRET_KEY_RE.test(k)) continue;
+      out[k] = sanitizeRecoveryValue(v);
+    }
+    return out;
+  }
+  return value;
+}
+
+function sanitizeOfflineOpForRecovery(op: OfflineQueueOp): OfflineQueueOp {
+  return {
+    ...op,
+    payload: sanitizeRecoveryValue(op.payload) as Record<string, unknown>,
+  };
+}
+
+/** Envelope metadata only — permissions module names + validity; never tokens/passwords. */
+function envelopeMetaForRecovery(
+  envelope: OfflineAuthEnvelope | null,
+): Record<string, unknown> | null {
+  if (!envelope) return null;
+  return {
+    tenant_id: envelope.tenant_id,
+    company_id: envelope.company_id,
+    store_id: envelope.store_id,
+    user_id: envelope.user_id,
+    device_id: envelope.device_id,
+    issued_at: envelope.issued_at,
+    last_online_at: envelope.last_online_at,
+    offline_valid_until: envelope.offline_valid_until,
+    catalog_version: envelope.catalog_version ?? null,
+    app_version: envelope.app_version ?? null,
+    validity_days: envelope.validity_days ?? null,
+    permission_modules: Object.keys(envelope.permissions || {}).sort(),
+  };
+}
+
+export type OfflineRecoveryPack = {
+  format: 'ribdigi-offline-recovery-v1';
   exported_at: string;
   device_id: string;
-  ops: OfflineQueueOp[];
-}> {
-  const ops = await listPendingOfflineOps();
-  return {
-    exported_at: new Date().toISOString(),
-    device_id: getBoundOfflineDeviceId(),
-    ops,
+  queue_cleared: false;
+  summary: {
+    pending: number;
+    failed: number;
+    total: number;
   };
+  auth_envelope: Record<string, unknown> | null;
+  ops: OfflineQueueOp[];
+  notes: string[];
+};
+
+/**
+ * Recovery export is always allowed — even with pending ops.
+ * Does NOT clear or mutate the IndexedDB queue.
+ */
+export async function exportOfflineQueueRecovery(): Promise<OfflineRecoveryPack> {
+  const ops = await listPendingOfflineOps();
+  const deviceId = getBoundOfflineDeviceId();
+  const envelope = await getStoredOfflineAuthEnvelope(deviceId || undefined);
+  const pending = ops.filter((r) => r.status === 'pending').length;
+  const failed = ops.filter((r) => r.status === 'failed').length;
+  return {
+    format: 'ribdigi-offline-recovery-v1',
+    exported_at: new Date().toISOString(),
+    device_id: deviceId,
+    queue_cleared: false,
+    summary: {
+      pending,
+      failed,
+      total: ops.length,
+    },
+    auth_envelope: envelopeMetaForRecovery(envelope),
+    ops: ops.map(sanitizeOfflineOpForRecovery),
+    notes: [
+      'Local IndexedDB recovery pack — pending ops are preserved (export does not clear the queue).',
+      'Contains no passwords, bearer tokens, or Authorization headers.',
+      'Import/replay on another device is not automated in MVP; use for support/recovery evidence.',
+    ],
+  };
+}
+
+/** Trigger a browser download of the recovery pack JSON. Queue is never cleared. */
+export async function downloadOfflineRecoveryPack(): Promise<OfflineRecoveryPack> {
+  const pack = await exportOfflineQueueRecovery();
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return pack;
+  }
+  const stamp = pack.exported_at.replace(/[:.]/g, '-');
+  const devicePart = (pack.device_id || 'unbound').slice(0, 8);
+  const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ribdigi-offline-recovery-${devicePart}-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return pack;
 }
 
 /** Clears flushed/failed rows only when no pending ops remain. */

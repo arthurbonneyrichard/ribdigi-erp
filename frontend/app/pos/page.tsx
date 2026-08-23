@@ -11,6 +11,7 @@ import {
   searchOfflineCatalog,
 } from '../../lib/offlineCatalog';
 import {
+  downloadOfflineRecoveryPack,
   enqueueOfflineOp,
   flushOfflineQueue,
   getBoundOfflineDeviceId,
@@ -804,6 +805,20 @@ export default function Page() {
     }
   }
 
+  async function exportOfflineRecovery() {
+    setError('');
+    setMessage('');
+    try {
+      const pack = await downloadOfflineRecoveryPack();
+      await refreshOfflinePending();
+      setMessage(
+        `Offline recovery pack downloaded (${pack.summary.total} op(s); queue not cleared)`,
+      );
+    } catch (err: any) {
+      setError(err.message || 'Recovery export failed');
+    }
+  }
+
   return (
     <Shell>
       <h1>Point of Sale</h1>
@@ -841,7 +856,17 @@ export default function Page() {
             </button>
           </>
         ) : null}
+        {' '}
+        <button type="button" onClick={() => exportOfflineRecovery()}>
+          Export offline recovery pack
+        </button>
       </p>
+      {pendingOffline > 0 ? (
+        <p className="muted" style={{ color: '#92400e' }}>
+          Pending offline ops on this device — export recovery pack before clearing browser data.
+          Export never wipes the queue.
+        </p>
+      ) : null}
       {catalogStaleNote ? <p className="muted">{catalogStaleNote}</p> : null}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
