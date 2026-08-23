@@ -828,7 +828,11 @@ class OpeningBalanceCreate(BaseModel):
 class CashTransferCreate(BaseModel):
     # BR-10.3 — schema Literal; omit defaults to transfer; blank/invalid → 422
     kind: Literal["transfer", "deposit", "withdrawal"] = "transfer"
-    from_account_id: str | None = None
+    # Optional source liquid COA ∈ UuidIdValue; omit/`null` → service requires
+    # for transfer/withdrawal; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach liquid-account lookup). Existence remains
+    # tenant-scoped account lookup (**404**).
+    from_account_id: UuidIdValue | None = None
     # Optional destination liquid COA ∈ UuidIdValue; omit/`null` → service requires
     # for transfer/deposit; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
     # garbage could reach liquid-account lookup). Existence remains tenant-scoped
