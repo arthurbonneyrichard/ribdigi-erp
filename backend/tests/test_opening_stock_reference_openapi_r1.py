@@ -14,20 +14,22 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_VALID = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"
+
 
 def test_opening_stock_reference_schema():
     omit = OpeningStockCreate.model_validate(
-        {"lines": [{"product_id": "p1", "quantity": 1}]}
+        {"lines": [{"product_id": _VALID, "quantity": 1}]}
     )
     assert omit.reference is None
     ok = OpeningStockCreate.model_validate(
-        {"lines": [{"product_id": "p1", "quantity": 1}], "reference": "  FY2026-OS  "}
+        {"lines": [{"product_id": _VALID, "quantity": 1}], "reference": "  FY2026-OS  "}
     )
     assert ok.reference == "FY2026-OS"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             OpeningStockCreate.model_validate(
-                {"lines": [{"product_id": "p1", "quantity": 1}], "reference": bad}
+                {"lines": [{"product_id": _VALID, "quantity": 1}], "reference": bad}
             )
 
 

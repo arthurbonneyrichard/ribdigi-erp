@@ -14,23 +14,25 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_VALID = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"
+
 
 def test_opening_stock_line_notes_schema():
-    omit = OpeningStockLine.model_validate({"product_id": "p1", "quantity": 1})
+    omit = OpeningStockLine.model_validate({"product_id": _VALID, "quantity": 1})
     assert omit.notes is None
     ok = OpeningStockLine.model_validate(
-        {"product_id": "p1", "quantity": 1, "notes": "  Line count A  "}
+        {"product_id": _VALID, "quantity": 1, "notes": "  Line count A  "}
     )
     assert ok.notes == "Line count A"
     for bad in ("", " ", "!!!", "!!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             OpeningStockLine.model_validate(
-                {"product_id": "p1", "quantity": 1, "notes": bad}
+                {"product_id": _VALID, "quantity": 1, "notes": bad}
             )
 
     create_ok = OpeningStockCreate.model_validate(
         {
-            "lines": [{"product_id": "p1", "quantity": 1, "notes": "  Bin A  "}],
+            "lines": [{"product_id": _VALID, "quantity": 1, "notes": "  Bin A  "}],
             "post_journal": False,
         }
     )
@@ -38,7 +40,7 @@ def test_opening_stock_line_notes_schema():
     with pytest.raises(ValidationError):
         OpeningStockCreate.model_validate(
             {
-                "lines": [{"product_id": "p1", "quantity": 1, "notes": "!!!!"}],
+                "lines": [{"product_id": _VALID, "quantity": 1, "notes": "!!!!"}],
                 "post_journal": False,
             }
         )

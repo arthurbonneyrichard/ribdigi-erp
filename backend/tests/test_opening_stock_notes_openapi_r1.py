@@ -14,24 +14,26 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_VALID = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"
+
 
 def test_opening_stock_notes_schema():
     omit = OpeningStockCreate.model_validate(
-        {"lines": [{"product_id": "p1", "quantity": 1}]}
+        {"lines": [{"product_id": _VALID, "quantity": 1}]}
     )
     assert omit.notes is None
     nullish = OpeningStockCreate.model_validate(
-        {"lines": [{"product_id": "p1", "quantity": 1}], "notes": None}
+        {"lines": [{"product_id": _VALID, "quantity": 1}], "notes": None}
     )
     assert nullish.notes is None
     ok = OpeningStockCreate.model_validate(
-        {"lines": [{"product_id": "p1", "quantity": 1}], "notes": "  Go-live count  "}
+        {"lines": [{"product_id": _VALID, "quantity": 1}], "notes": "  Go-live count  "}
     )
     assert ok.notes == "Go-live count"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             OpeningStockCreate.model_validate(
-                {"lines": [{"product_id": "p1", "quantity": 1}], "notes": bad}
+                {"lines": [{"product_id": _VALID, "quantity": 1}], "notes": bad}
             )
 
 
