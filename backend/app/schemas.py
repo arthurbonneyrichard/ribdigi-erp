@@ -1427,7 +1427,10 @@ class StockMove(BaseModel):
     blank/garbage could persist on StockMovement.reference_type String(50)).
     """
 
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_id: str | None = None  # entered UoM; converted to product.unit_id for stock
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;

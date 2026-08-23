@@ -22,7 +22,7 @@ def test_stock_in_reference_type_value_schema():
         with pytest.raises(ValidationError):
             _ref.validate_python(bad)
 
-    base = {"product_id": "p1", "quantity": 1}
+    base = {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}
     omit = StockMove.model_validate(base)
     assert omit.reference_type is None
     ok = StockMove.model_validate({**base, "reference_type": "  GRN  "})

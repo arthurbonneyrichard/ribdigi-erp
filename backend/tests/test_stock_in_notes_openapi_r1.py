@@ -16,20 +16,20 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_stock_in_notes_schema():
-    omit = StockMove.model_validate({"product_id": "p1", "quantity": 1})
+    omit = StockMove.model_validate({"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1})
     assert omit.notes is None
     nullish = StockMove.model_validate(
-        {"product_id": "p1", "quantity": 1, "notes": None}
+        {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "notes": None}
     )
     assert nullish.notes is None
     ok = StockMove.model_validate(
-        {"product_id": "p1", "quantity": 1, "notes": "  Received from PO  "}
+        {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "notes": "  Received from PO  "}
     )
     assert ok.notes == "Received from PO"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             StockMove.model_validate(
-                {"product_id": "p1", "quantity": 1, "notes": bad}
+                {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "notes": bad}
             )
 
 

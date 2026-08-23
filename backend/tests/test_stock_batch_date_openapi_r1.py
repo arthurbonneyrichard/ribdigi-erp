@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_stock_batch_date_schema():
-    base = {"product_id": "p1", "quantity": 1}
+    base = {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}
     omit = StockMove.model_validate(base)
     assert omit.manufacturing_date is None
     assert omit.expiry_date is None

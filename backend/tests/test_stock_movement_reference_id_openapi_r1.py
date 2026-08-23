@@ -22,7 +22,7 @@ def test_stock_movement_reference_id_value_schema():
         with pytest.raises(ValidationError):
             _ref.validate_python(bad)
 
-    base_in = {"product_id": "p1", "quantity": 1}
+    base_in = {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}
     omit = StockMove.model_validate(base_in)
     assert omit.reference_id is None
     ok = StockMove.model_validate({**base_in, "reference_id": "  PO-99  "})

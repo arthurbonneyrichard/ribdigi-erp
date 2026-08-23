@@ -1272,7 +1272,8 @@ export default function Page() {
       const r = await api('/inventory/stock-in', {
         method: 'POST',
         body: JSON.stringify({
-          product_id: selectedId,
+          // trim so Receive batch (UuidIdValue product_id) does not 422 on whitespace
+          product_id: selectedId.trim(),
           quantity: Number(stockQty),
           unit_id: stockUnitId || null,
           warehouse_id: stockWarehouseId || null,
@@ -1591,7 +1592,12 @@ export default function Page() {
             <option value="inactive">Inactive only</option>
           </select>
         </div>
-        <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={{ width: '100%' }}>
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          style={{ width: '100%' }}
+          aria-label="Selected product"
+        >
           <option value="">Select product</option>
           {managedProducts.map((p) => (
             <option key={p.id} value={p.id}>

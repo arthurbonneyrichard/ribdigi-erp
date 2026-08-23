@@ -22,7 +22,7 @@ def test_batch_number_value_schema():
         with pytest.raises(ValidationError):
             _lot.validate_python(bad)
 
-    base = {"product_id": "p1", "quantity": 1}
+    base = {"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1}
     omit = StockMove.model_validate(base)
     assert omit.batch_number is None
     ok = StockMove.model_validate({**base, "batch_number": "  LOT-A1  "})
