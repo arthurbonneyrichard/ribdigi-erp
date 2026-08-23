@@ -1280,7 +1280,8 @@ export default function Page() {
           product_id: selectedId.trim(),
           quantity: Number(stockQty),
           unit_id: stockUnitId || null,
-          warehouse_id: stockWarehouseId || null,
+          // trim so Receive batch (UuidIdValue warehouse_id) does not 422 on whitespace
+          warehouse_id: stockWarehouseId.trim() || null,
           variant_id: stockVariantId || null,
           notes: stockNotes.trim() || null,
           batch_number: batchNumber.trim(),
@@ -2789,6 +2790,8 @@ export default function Page() {
             <select
               value={stockWarehouseId}
               onChange={(e) => setStockWarehouseId(e.target.value)}
+              aria-label="Stock-in warehouse"
+              title="Optional warehouse for stock-in (UuidIdValue)"
             >
               <option value="">Warehouse (optional)</option>
               {warehouses
