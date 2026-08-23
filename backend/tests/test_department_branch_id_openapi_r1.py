@@ -55,12 +55,14 @@ async def test_department_branch_id_api_blank_invalid_422(client):
     ac, _seed = client
     headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
 
-    branches = await ac.get("/api/v1/branches", headers=headers)
-    assert branches.status_code == 200, branches.text
-    rows = branches.json().get("data") or []
-    active = next((b for b in rows if b.get("is_active") is not False), rows[0] if rows else None)
-    assert active, "seeded branch required"
-    branch_id = active["id"]
+    suffix = uuid4().hex[:8]
+    branch = await ac.post(
+        "/api/v1/branches",
+        headers=headers,
+        json={"code": f"B280{suffix[:4]}".upper(), "name": f"Tip280 Branch {suffix}"},
+    )
+    assert branch.status_code == 200, branch.text
+    branch_id = branch.json()["data"]["id"]
 
     for bad in ("", "!!!", "http://evil", "not-a-uuid", "branch_001"):
         resp = await ac.post(
