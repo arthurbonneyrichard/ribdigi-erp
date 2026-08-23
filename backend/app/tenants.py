@@ -31,25 +31,25 @@ PLAN_CATALOG: dict[str, dict] = {
         "code": "trial",
         "label": "Trial",
         "blurb": "Evaluation window for new customer tenants.",
-        "soft_limits": {"stores": 1, "users": 5},
+        "soft_limits": {"companies": 1, "stores": 1, "users": 5},
     },
     "starter": {
         "code": "starter",
         "label": "Starter",
         "blurb": "Single-location retail operations metadata tier.",
-        "soft_limits": {"stores": 2, "users": 15},
+        "soft_limits": {"companies": 1, "stores": 2, "users": 15},
     },
     "growth": {
         "code": "growth",
         "label": "Growth",
         "blurb": "Multi-store growth metadata tier.",
-        "soft_limits": {"stores": 10, "users": 50},
+        "soft_limits": {"companies": 3, "stores": 10, "users": 50},
     },
     "enterprise": {
         "code": "enterprise",
         "label": "Enterprise",
         "blurb": "Large-org metadata tier (limits negotiated offline).",
-        "soft_limits": {"stores": None, "users": None},
+        "soft_limits": {"companies": None, "stores": None, "users": None},
     },
 }
 

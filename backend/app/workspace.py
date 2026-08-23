@@ -365,8 +365,12 @@ async def count_active_companies(db: AsyncSession, tenant_id: str) -> int:
 
 
 async def assert_can_create_company(db: AsyncSession, tenant: m.Tenant) -> None:
-    limit = int(getattr(tenant, "max_companies", None) or 1)
-    current = await count_active_companies(db, tenant.id)
+    from app import store_entitlements as store_ent_svc
+
+    limit = store_ent_svc.effective_tenant_company_limit(tenant)
+    if store_ent_svc.is_unlimited(limit):
+        return
+    current = await store_ent_svc.count_active_companies(db, tenant.id)
     if current >= limit:
         raise HTTPException(
             status_code=403,

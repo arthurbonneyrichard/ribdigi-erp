@@ -675,6 +675,14 @@ class PlatformStoreEntitlementUpdate(BaseModel):
     clear_override: bool = False
 
 
+class PlatformCompanyEntitlementUpdate(BaseModel):
+    """RIBDIGI HOUSE override / base company entitlement for a customer tenant."""
+
+    max_companies: int | None = Field(default=None, ge=-1)
+    max_companies_override: int | None = Field(default=None, ge=-1)
+    clear_override: bool = False
+
+
 class StoreDrawerSettingsUpdate(BaseModel):
     drawer_mode: str | None = None
     drawer_host: str | None = None
