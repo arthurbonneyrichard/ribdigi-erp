@@ -13,14 +13,14 @@
 | Architecture (shared-schema tenancy) | **PASS** (runtime) — doc drift **NEEDS HARDENING** |
 | Tenant isolation | **PASS** (MVP automated tests) |
 | Multi-company | **PARTIAL** |
-| Company entitlement | **PARTIAL** (`max_companies` enforced; not plan-synced) |
+| Company entitlement | **COMPLETE** (MVP) — plan-synced `max_companies` + platform override (2026-08-23) |
 | Store entitlement | **COMPLETE** (MVP) |
 | User ↔ Store assignment | **MISSING** (ADR-005 POST-MVP) |
 | RBAC / store scope | **PARTIAL** — **NEEDS HARDENING** |
 | Inventory / Purchasing / Sales / Accounting / Tax / Credit | **PASS** (MVP gates in `PRODUCTION_READINESS.md`) |
 | POS (online) | **PASS** (MVP) |
-| Offline foundation | **PARTIAL** — queue/catalog/sync MVP; no 7-day envelope |
-| 7-Day offline | **MISSING** / **NOT RUN** (physical) |
+| Offline foundation | **PARTIAL** — queue/catalog/sync MVP; 7-day auth envelope implemented (not VERIFIED) |
+| 7-Day offline | **PARTIAL** (envelope + client gate shipped; physical endurance **NOT RUN**) |
 | Offline recovery / lockdown / owner dashboard | **MISSING** |
 | Paid billing | **DEFERRED** (ADR-002) |
 | Backup (logical) | **PASS** (MVP tests) |
@@ -42,7 +42,7 @@
 7. **Default store on company create** — **implemented** 2026-08-23 when store capacity allocated.
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
 9. **Store RBAC** — not enforced on all operational APIs.
-10. **7-day offline POS** — **MISSING** (catalog TTL ~4h; no `offline_valid_until` envelope; idempotency at API layer only). See offline audit §13–14.
+10. **7-day offline POS** — **PARTIAL** (2026-08-23): `offline_valid_until` envelope on `offline_devices`, `POST /offline/devices/{id}/bind`, client IndexedDB gate blocks new offline sales when expired; sync push validates expiry/mismatch. **Offline Complete / 7-day VERIFIED remain MISSING** — physical endurance not run. See offline audit §13–14.
 11. **Offline owner dashboard + alerts + recovery** — MISSING (queue MVP exists; monitoring/alerts/export not shipped).
 12. **Scale / pen test on prod infra** — operator/external.
 
@@ -56,6 +56,8 @@
 - **Offline payment safety (§18):** POS blocks cashier card/wallet offline; supervisor acknowledgment + pending-verification metadata for provider methods; offline credit requires cached customer data + credit permission. Server `/sync/push` rejects unsafe offline payments (`OFFLINE_PAYMENT_BLOCKED`, `OFFLINE_CREDIT_BLOCKED`). Tests: `test_offline_payment_safety.py`.
 - **Unsafe local reset guard (§23):** `offlineQueue.ts` throws `OfflineQueuePendingError` when clearing/resetting with pending ops (recovery export always allowed).
 - **Owner offline summary:** Company `#offline-sync` tenant summary card (device counts, server pending pushes/pulls, conflicts via `/sync/status`).
+- **7-day offline auth envelope (§13–14):** `offline_auth_envelope.py` + Alembic `20260823_0106`; `POST /offline/devices/{id}/bind`; client IndexedDB (`offlineAuthEnvelope.ts`); POS blocks new offline sales when `offline_valid_until` expired (queue preserved). Tests: `test_offline_auth_envelope.py`. **Does not claim Offline Complete or 7-day VERIFIED.**
+- **Company entitlement:** `PLAN_CATALOG.soft_limits.companies` syncs `Tenant.max_companies` on plan change; platform `PATCH /platform/tenants/{id}/company-entitlement` for override/unlimited; downgrades preserve companies and block new creates. Tests: `test_company_entitlements.py`.
 
 ---
 
@@ -78,7 +80,7 @@
 
 | Shipped | Not shipped |
 |---------|-------------|
-| IndexedDB queue + catalog, sync APIs, device registry/revoke, idempotent `client_request_id`, offline payment safety (cash default; provider ack), queue reset guard, tenant offline summary on Company page | 7-day auth envelope, offline receipt numbering, owner alerts, automated recovery export UI, native shells, hardware bridges |
+| IndexedDB queue + catalog, sync APIs, device registry/revoke, idempotent `client_request_id`, offline payment safety (cash default; provider ack), queue reset guard, tenant offline summary on Company page, **7-day auth envelope (bind + IndexedDB + POS gate + sync validation)** | Offline Complete attestation, 7-day physical VERIFIED, offline receipt numbering, owner alerts, automated recovery export UI, native shells, hardware bridges |
 
 **Physical tests** (7-day endurance, multi-device reconnect, peripherals) require owner/device action — not runnable in CI alone.
 

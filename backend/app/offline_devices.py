@@ -11,12 +11,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.offline_auth_envelope import envelope_from_device
 
 DEVICE_CODE_PREFIX = "ofd_"
 ALLOWED_PLATFORMS = {"web", "android", "ios", "desktop", "other"}
 
 
 def serialize_device(row: m.OfflineDevice) -> dict[str, Any]:
+    envelope = envelope_from_device(row)
     return {
         "id": row.id,
         "name": row.name,
@@ -24,11 +26,17 @@ def serialize_device(row: m.OfflineDevice) -> dict[str, Any]:
         "platform": row.platform,
         "user_agent": row.user_agent,
         "registered_by": row.registered_by,
+        "company_id": getattr(row, "company_id", None),
+        "bound_user_id": getattr(row, "bound_user_id", None),
+        "bound_store_id": getattr(row, "bound_store_id", None),
         "last_seen_at": row.last_seen_at,
+        "last_online_at": getattr(row, "last_online_at", None),
+        "offline_authorized_until": getattr(row, "offline_authorized_until", None),
         "revoked_at": row.revoked_at,
         "created_at": row.created_at,
         "updated_at": row.updated_at,
         "status": "revoked" if row.revoked_at else "active",
+        "auth_envelope": envelope,
     }
 
 

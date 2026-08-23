@@ -3,6 +3,8 @@
  * Flushes via POST /sync/push. Never stores tokens; SW must not cache /api/v1/*.
  */
 
+import { withOfflineAuthPayload, parseEnvelope, storeOfflineAuthEnvelope } from './offlineAuthEnvelope';
+
 const DB_NAME = 'ribdigi-offline-queue';
 const DB_VERSION = 1;
 const STORE = 'ops';
@@ -177,10 +179,15 @@ export async function flushOfflineQueue(apiFn: typeof import('./api').api): Prom
       op_type: p.op_type,
       payload: p.payload,
     }));
+    const body = await withOfflineAuthPayload({ device_id: deviceId, ops });
     const res = await apiFn('/sync/push', {
       method: 'POST',
-      body: JSON.stringify({ device_id: deviceId, ops }),
+      body: JSON.stringify(body),
     });
+    const refreshed = parseEnvelope(res.data?.auth_envelope);
+    if (refreshed) {
+      await storeOfflineAuthEnvelope(refreshed);
+    }
     const results = (res.data?.results || []) as Array<{
       client_op_id: string;
       status: string;

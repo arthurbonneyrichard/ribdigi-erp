@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api, authHeaders } from '../../lib/api';
 import { formatDate } from '../../lib/format';
+import {
+  clearOfflineAuthEnvelope,
+  refreshOfflineAuthEnvelope,
+} from '../../lib/offlineAuthEnvelope';
+import { setBoundOfflineDeviceId } from '../../lib/offlineQueue';
+import { getSelectedStoreId } from '../../lib/storeContext';
 import { getCompanyId, getWorkspaceKind } from '../../lib/workspaceContext';
 
 export default function Page() {
@@ -1213,10 +1219,27 @@ export default function Page() {
                         <button
                           type="button"
                           disabled={deviceBusy}
-                          onClick={() => {
-                            localStorage.setItem('offline_device_id', d.id);
-                            setBoundDeviceId(d.id);
-                            setMessage('Browser bound to this offline device (Stage 165 K1)');
+                          onClick={async () => {
+                            setError('');
+                            setDeviceBusy(true);
+                            try {
+                              setBoundOfflineDeviceId(d.id);
+                              setBoundDeviceId(d.id);
+                              const me = await api('/me');
+                              await refreshOfflineAuthEnvelope(api, {
+                                tenant_id: me.data?.tenant_id || '',
+                                company_id: me.data?.company_id || getCompanyId() || null,
+                                user_id: me.data?.id || null,
+                                store_id: getSelectedStoreId() || null,
+                              });
+                              setMessage(
+                                'Browser bound — 7-day offline auth envelope issued (renew online before expiry)',
+                              );
+                            } catch (err: any) {
+                              setError(err.message || 'Device bind failed');
+                            } finally {
+                              setDeviceBusy(false);
+                            }
                           }}
                         >
                           Bind browser
@@ -1234,6 +1257,7 @@ export default function Page() {
                               if (boundDeviceId === d.id) {
                                 localStorage.removeItem('offline_device_id');
                                 setBoundDeviceId('');
+                                await clearOfflineAuthEnvelope(d.id);
                               }
                               const pending = r.data?.pending_queue?.pending_total ?? 0;
                               setMessage(

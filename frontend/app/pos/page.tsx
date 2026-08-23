@@ -18,6 +18,14 @@ import {
   newClientOpId,
 } from '../../lib/offlineQueue';
 import {
+  getOfflineAuthStatus,
+  offlineAuthBlockedMessage,
+  refreshOfflineAuthEnvelope,
+  type OfflineAuthStatus,
+} from '../../lib/offlineAuthEnvelope';
+import { getSelectedStoreId } from '../../lib/storeContext';
+import { getCompanyId } from '../../lib/workspaceContext';
+import {
   canOfflineCredit,
   canSupervisorOfflinePayment,
   isOfflineCheckout,
@@ -129,6 +137,12 @@ export default function Page() {
   const [catalogStaleNote, setCatalogStaleNote] = useState('');
   const [userRole, setUserRole] = useState('cashier');
   const [userPermissions, setUserPermissions] = useState<Record<string, string[]> | null>(null);
+  const [offlineAuth, setOfflineAuth] = useState<OfflineAuthStatus | null>(null);
+  const [meContext, setMeContext] = useState<{
+    tenant_id: string;
+    company_id: string | null;
+    user_id: string | null;
+  } | null>(null);
 
   const offlineCheckout = isOfflineCheckout(online);
   const supervisorOffline = canSupervisorOfflinePayment(userRole, userPermissions);
@@ -150,6 +164,32 @@ export default function Page() {
       setHeldCarts(r.data || []);
     } catch {
       setHeldCarts([]);
+    }
+  }
+
+  async function refreshOfflineAuth() {
+    try {
+      const status = await getOfflineAuthStatus();
+      setOfflineAuth(status);
+      return status;
+    } catch {
+      setOfflineAuth(null);
+      return null;
+    }
+  }
+
+  async function renewOfflineAuthOnline() {
+    if (!meContext?.tenant_id || !getBoundOfflineDeviceId()) return;
+    try {
+      await refreshOfflineAuthEnvelope(api, {
+        tenant_id: meContext.tenant_id,
+        company_id: meContext.company_id,
+        user_id: meContext.user_id,
+        store_id: getSelectedStoreId() || null,
+      });
+      await refreshOfflineAuth();
+    } catch {
+      /* best-effort when online */
     }
   }
 
@@ -244,6 +284,7 @@ export default function Page() {
     loadSessionHistory({ status: initial }).catch((err) => setError(err.message));
     refreshHolds().catch(() => undefined);
     refreshOfflinePending().catch(() => undefined);
+    refreshOfflineAuth().catch(() => undefined);
     refreshCatalogMeta().catch(() => undefined);
     api('/customers?active_only=true')
       .then((r) => setCustomers(r.data || []))
@@ -259,13 +300,29 @@ export default function Page() {
       .then((r) => {
         setUserRole(r.data?.role || 'cashier');
         setUserPermissions(r.data?.permissions || null);
+        setMeContext({
+          tenant_id: r.data?.tenant_id || '',
+          company_id: r.data?.company_id || getCompanyId() || null,
+          user_id: r.data?.id || null,
+        });
+        if (navigator.onLine && getBoundOfflineDeviceId()) {
+          renewOfflineAuthOnline().catch(() => undefined);
+        }
       })
       .catch(() => undefined);
   }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const sync = () => setOnline(navigator.onLine);
+    const sync = () => {
+      const nowOnline = navigator.onLine;
+      setOnline(nowOnline);
+      if (nowOnline) {
+        renewOfflineAuthOnline().catch(() => undefined);
+      } else {
+        refreshOfflineAuth().catch(() => undefined);
+      }
+    };
     sync();
     window.addEventListener('online', sync);
     window.addEventListener('offline', sync);
@@ -273,7 +330,7 @@ export default function Page() {
       window.removeEventListener('online', sync);
       window.removeEventListener('offline', sync);
     };
-  }, []);
+  }, [meContext?.tenant_id]);
 
   useEffect(() => {
     if (!offlineCheckout) return;
@@ -569,6 +626,12 @@ export default function Page() {
         return;
       }
 
+      const authStatus = offlineAuth || (await refreshOfflineAuth());
+      if (!authStatus?.canQueueOfflineSales) {
+        setError(offlineAuthBlockedMessage(authStatus || { envelope: null, expired: true, canQueueOfflineSales: false, expiresAt: null, daysRemaining: null }));
+        return;
+      }
+
       let supervisorReason = '';
       let prep = prepareOfflineSalePayments(body, offlinePaymentCtx);
       if (prep.requiresSupervisorPrompt) {
@@ -722,6 +785,7 @@ export default function Page() {
     try {
       const out = await flushOfflineQueue(api);
       await refreshOfflinePending();
+      await refreshOfflineAuth();
       if (online && getBoundOfflineDeviceId()) {
         try {
           const meta = await refreshOfflineCatalog(api);
@@ -753,6 +817,11 @@ export default function Page() {
         {getBoundOfflineDeviceId()
           ? ` · Device ${getBoundOfflineDeviceId().slice(0, 8)}…`
           : ' · No offline device bound (Settings → Offline sync)'}
+        {offlineAuth?.expiresAt
+          ? ` · Offline auth until ${offlineAuth.expiresAt}${offlineAuth.expired ? ' (EXPIRED)' : offlineAuth.daysRemaining != null ? ` (${offlineAuth.daysRemaining}d left)` : ''}`
+          : getBoundOfflineDeviceId()
+            ? ' · Offline auth not issued (go online to bind)'
+            : ''}
         {catalogAsOf
           ? ` · Catalog as of ${catalogAsOf}${catalogExpired ? ' (TTL expired)' : catalogExpiresAt ? ` · expires ${catalogExpiresAt}` : ''}`
           : ' · No offline catalog cached'}

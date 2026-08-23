@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import offline_devices as offline_devices_svc
 from app import offline_payments as offline_payments_svc
+from app.offline_auth_envelope import envelope_from_device, issue_envelope, validate_client_envelope
 from app.pos_holds import HOLD_SOFT_RESERVE_TTL_HOURS
 from app.schemas import PosSaleCreate
 
@@ -153,7 +154,16 @@ async def device_pending_queue_stats(
 
 
 async def require_active_device(
-    db: AsyncSession, tenant_id: str, device_id: str
+    db: AsyncSession,
+    tenant_id: str,
+    device_id: str,
+    *,
+    client_envelope: dict | None = None,
+    refresh_envelope: bool = False,
+    claims: dict | None = None,
+    store_id: str | None = None,
+    catalog_version: str | None = None,
+    app_version: str | None = None,
 ) -> m.OfflineDevice:
     if not (device_id or "").strip():
         raise HTTPException(status_code=400, detail="device_id is required")
@@ -171,9 +181,20 @@ async def require_active_device(
                 "pending_queue": stats,
             },
         )
-    device.last_seen_at = datetime.utcnow()
-    device.updated_at = datetime.utcnow()
-    await db.flush()
+    validate_client_envelope(device, client_envelope, tenant_id=tenant_id)
+    if refresh_envelope and claims:
+        await issue_envelope(
+            db,
+            device,
+            claims=claims,
+            store_id=store_id,
+            catalog_version=catalog_version,
+            app_version=app_version,
+        )
+    else:
+        device.last_seen_at = datetime.utcnow()
+        device.updated_at = datetime.utcnow()
+        await db.flush()
     return device
 
 
@@ -316,6 +337,10 @@ async def push_ops(
     claims: dict,
     device_id: str,
     ops: list[dict],
+    auth_envelope: dict | None = None,
+    store_id: str | None = None,
+    catalog_version: str | None = None,
+    app_version: str | None = None,
 ) -> dict[str, Any]:
     """Stage 164 P1 — accept device-scoped push ops; apply pos_sale idempotently."""
     if not isinstance(ops, list) or not ops:
@@ -323,7 +348,17 @@ async def push_ops(
     if len(ops) > 50:
         raise HTTPException(status_code=400, detail="ops batch limit is 50")
 
-    device = await require_active_device(db, tenant_id, device_id)
+    device = await require_active_device(
+        db,
+        tenant_id,
+        device_id,
+        client_envelope=auth_envelope,
+        refresh_envelope=True,
+        claims=claims,
+        store_id=store_id,
+        catalog_version=catalog_version,
+        app_version=app_version,
+    )
     results: list[dict[str, Any]] = []
 
     for raw in ops:
@@ -437,7 +472,11 @@ async def push_ops(
             )
 
     await db.flush()
-    return {"device_id": device.id, "results": results}
+    return {
+        "device_id": device.id,
+        "auth_envelope": envelope_from_device(device),
+        "results": results,
+    }
 
 
 async def _apply_pos_sale_op(
@@ -475,9 +514,24 @@ async def pull_ops(
     device_id: str,
     limit: int = 50,
     include_catalog: bool = True,
+    claims: dict | None = None,
+    auth_envelope: dict | None = None,
+    store_id: str | None = None,
+    catalog_version: str | None = None,
+    app_version: str | None = None,
 ) -> dict[str, Any]:
     """Stage 164 L1 — pending pull ops + optional bounded catalog snapshot."""
-    device = await require_active_device(db, tenant_id, device_id)
+    device = await require_active_device(
+        db,
+        tenant_id,
+        device_id,
+        client_envelope=auth_envelope,
+        refresh_envelope=bool(claims),
+        claims=claims,
+        store_id=store_id,
+        catalog_version=catalog_version,
+        app_version=app_version,
+    )
     window = max(1, min(int(limit or 50), 100))
 
     pending = list(
@@ -562,6 +616,7 @@ async def pull_ops(
 
     return {
         "device_id": device.id,
+        "auth_envelope": envelope_from_device(device),
         "ops": [serialize_queue_item(r) for r in pending],
         "count": len(pending),
     }
@@ -573,6 +628,7 @@ async def ack_ops(
     tenant_id: str,
     device_id: str,
     op_ids: list[str],
+    auth_envelope: dict | None = None,
 ) -> dict[str, Any]:
     """Stage 164 A1 — mark pull/push results as acked by the device."""
     if not isinstance(op_ids, list) or not op_ids:
@@ -580,7 +636,9 @@ async def ack_ops(
     if len(op_ids) > 100:
         raise HTTPException(status_code=400, detail="op_ids batch limit is 100")
 
-    device = await require_active_device(db, tenant_id, device_id)
+    device = await require_active_device(
+        db, tenant_id, device_id, client_envelope=auth_envelope
+    )
     now = datetime.utcnow()
     acked: list[dict[str, Any]] = []
     for raw_id in op_ids:

@@ -99,6 +99,8 @@ class Tenant(Base):
     onboarding_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # ADR-490 — subscription caps (enforce on create; billing Complete still deferred)
     max_companies: Mapped[int] = mapped_column(Integer, default=1)
+    # Platform Owner override for company entitlement (-1 = unlimited). NULL = use max_companies.
+    max_companies_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_users: Mapped[int] = mapped_column(Integer, default=25)
     max_branches: Mapped[int] = mapped_column(Integer, default=5)
     max_stores: Mapped[int] = mapped_column(Integer, default=5)
@@ -1770,6 +1772,18 @@ class OfflineDevice(Base):
     registered_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # §13–14 — 7-day offline authorization envelope (no secrets/tokens).
+    company_id: Mapped[str | None] = mapped_column(
+        ForeignKey("companies.id"), nullable=True, index=True
+    )
+    bound_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    bound_store_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    permissions_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    envelope_issued_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_online_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    offline_authorized_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    catalog_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

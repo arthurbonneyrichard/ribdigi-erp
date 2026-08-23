@@ -4,6 +4,11 @@
  */
 
 import { getBoundOfflineDeviceId } from './offlineQueue';
+import {
+  parseEnvelope,
+  storeOfflineAuthEnvelope,
+  withOfflineAuthPayload,
+} from './offlineAuthEnvelope';
 
 const DB_NAME = 'ribdigi-offline-catalog';
 const DB_VERSION = 1;
@@ -213,10 +218,19 @@ export async function refreshOfflineCatalog(
   if (!deviceId) {
     throw new Error('Bind an offline device in Settings → Offline sync before refreshing catalog');
   }
+  const body = await withOfflineAuthPayload({
+    device_id: deviceId,
+    include_catalog: true,
+    limit: 50,
+  });
   const res = await apiFn('/sync/pull', {
     method: 'POST',
-    body: JSON.stringify({ device_id: deviceId, include_catalog: true, limit: 50 }),
+    body: JSON.stringify(body),
   });
+  const refreshed = parseEnvelope(res.data?.auth_envelope);
+  if (refreshed) {
+    await storeOfflineAuthEnvelope(refreshed);
+  }
   const ops = (res.data?.ops || []) as Array<{
     id: string;
     op_type: string;
@@ -246,9 +260,13 @@ export async function refreshOfflineCatalog(
     ttl_ms: ttlMs,
   });
   try {
+    const ackBody = await withOfflineAuthPayload({
+      device_id: deviceId,
+      op_ids: [catalogOp.id],
+    });
     await apiFn('/sync/ack', {
       method: 'POST',
-      body: JSON.stringify({ device_id: deviceId, op_ids: [catalogOp.id] }),
+      body: JSON.stringify(ackBody),
     });
   } catch {
     // Cache still valid even if ack fails (device may lack write briefly).
