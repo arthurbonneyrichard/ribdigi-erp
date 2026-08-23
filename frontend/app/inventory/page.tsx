@@ -830,7 +830,7 @@ export default function Page() {
           length: productLength === '' ? null : Number(productLength),
           width: productWidth === '' ? null : Number(productWidth),
           height: productHeight === '' ? null : Number(productHeight),
-          category_id: productCategoryId || null,
+          category_id: productCategoryId.trim() || null,
           brand_id: productBrandId || null,
           unit_id: productUnitId || null,
           tax_supply_class: productSupplyClass,

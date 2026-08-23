@@ -1025,7 +1025,10 @@ class ProductCreate(BaseModel):
     # Product.category). When `category_id` is set, service overwrites label from
     # catalog category name.
     category: ProductCategoryLabelValue = "General"
-    category_id: str | None = None
+    # Optional catalog category FK ∈ UuidIdValue; omit/`null` → label-only / General path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
+    category_id: UuidIdValue | None = None
     brand_id: str | None = None
     unit_id: str | None = None
     cost_price: float = 0
