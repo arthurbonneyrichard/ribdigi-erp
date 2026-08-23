@@ -517,7 +517,7 @@ export default function Page() {
         notes: xferNotes.trim() || null,
       };
       if (xferKind === 'transfer' || xferKind === 'withdrawal') body.from_account_id = xferFrom;
-      if (xferKind === 'transfer' || xferKind === 'deposit') body.to_account_id = xferTo;
+      if (xferKind === 'transfer' || xferKind === 'deposit') body.to_account_id = xferTo.trim() || null;
       const r = await api('/accounting/transfers', { method: 'POST', body: JSON.stringify(body) });
       setMessage(`${r.data.kind} posted for ${r.data.amount}`);
       setXferNotes('');
@@ -1620,7 +1620,11 @@ export default function Page() {
                 </select>
               )}
               {(xferKind === 'transfer' || xferKind === 'deposit') && (
-                <select value={xferTo} onChange={(e) => setXferTo(e.target.value)}>
+                <select
+                  value={xferTo}
+                  onChange={(e) => setXferTo(e.target.value)}
+                  aria-label="Cash transfer to account"
+                >
                   <option value="">To</option>
                   {liquid.map((a) => (
                     <option key={a.id} value={a.id}>
