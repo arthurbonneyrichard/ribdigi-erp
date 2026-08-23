@@ -15,6 +15,7 @@
 | Multi-company | **PARTIAL** |
 | Company entitlement | **COMPLETE** (MVP) — plan-synced `max_companies` + platform override (2026-08-23) |
 | Store entitlement | **COMPLETE** (MVP) |
+| User entitlement | **COMPLETE** (MVP) — plan-synced `max_users` + platform override; create/reactivate enforced (2026-08-23) |
 | User ↔ Store assignment | **MISSING** (ADR-005 POST-MVP) |
 | RBAC / store scope | **PARTIAL** — **NEEDS HARDENING** |
 | Inventory / Purchasing / Sales / Accounting / Tax / Credit | **PASS** (MVP gates in `PRODUCTION_READINESS.md`) |
@@ -38,7 +39,7 @@
 3. **Production cutover not performed** — `production_cutover_claimed: false`.
 4. **Live PITR / restore drill** — packaged runbooks only; `operator_pitr_drill_executed: false`.
 5. **Architecture doc drift** — **partially fixed** 2026-08-23 (`DATABASE_DOCUMENTATION.md`, `ARCHITECTURE_DOCUMENTS.md`); audit remaining top-level docs.
-6. **`max_users` not enforced** on user create (catalog display only).
+6. **`max_users` enforcement** — **implemented** 2026-08-23 (plan sync + platform override + create/reactivate/import gate). Downgrades preserve users; `over_entitlement` on tenant dashboard.
 7. **Default store on company create** — **implemented** 2026-08-23 when store capacity allocated.
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
 9. **Store RBAC** — not enforced on all operational APIs.

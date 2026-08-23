@@ -20,6 +20,13 @@ type TenantDash = {
       unallocated: number | null;
       over_entitlement?: boolean;
     };
+    user_entitlement?: {
+      max_users: number;
+      max_users_unlimited?: boolean;
+      used: number;
+      remaining: number | null;
+      over_entitlement?: boolean;
+    };
     store_allocations?: {
       company_id: string;
       company_name: string;
