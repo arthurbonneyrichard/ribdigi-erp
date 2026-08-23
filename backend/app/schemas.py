@@ -883,7 +883,10 @@ class DepartmentCreate(BaseModel):
     # Required department label ∈ DepartmentNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on multi-store department create).
     name: DepartmentNameValue
-    branch_id: str | None = None
+    # omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach branch lookup). Existence remains tenant-scoped
+    # branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
     head_user_id: str | None = None
 
 

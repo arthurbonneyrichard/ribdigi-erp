@@ -617,7 +617,8 @@ export default function Page() {
         body: JSON.stringify({
           code: deptCode.trim(),
           name: deptName.trim(),
-          branch_id: deptBranchId || null,
+          // trim so Create department (UuidIdValue branch_id) does not 422 on whitespace
+          branch_id: deptBranchId.trim() || null,
           head_user_id: deptHeadId || null,
         }),
       });
@@ -894,7 +895,11 @@ export default function Page() {
               aria-label={editDeptId ? 'Edit department name' : 'Department name'}
               title="Department name (1–150 chars; letters/digits required)"
             />
-            <select value={deptBranchId} onChange={(e) => setDeptBranchId(e.target.value)}>
+            <select
+              value={deptBranchId}
+              onChange={(e) => setDeptBranchId(e.target.value)}
+              aria-label="Department branch"
+            >
               <option value="">Branch (optional)</option>
               {branches
                 .filter((b) => b.is_active !== false)
