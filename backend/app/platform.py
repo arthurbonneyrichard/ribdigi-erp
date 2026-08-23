@@ -501,6 +501,8 @@ async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
     from app import store_entitlements as store_ent_svc
 
     effective_stores = store_ent_svc.effective_tenant_store_limit(t)
+    effective_companies = store_ent_svc.effective_tenant_company_limit(t)
+    effective_users = store_ent_svc.effective_tenant_user_limit(t)
     base.update(
         {
             "user_count": user_count,
@@ -509,6 +511,12 @@ async def _enrich_tenant_row(db: AsyncSession, t: m.Tenant) -> dict:
             "max_stores": getattr(t, "max_stores", None),
             "max_stores_override": getattr(t, "max_stores_override", None),
             "max_stores_effective": effective_stores,
+            "max_companies": getattr(t, "max_companies", None),
+            "max_companies_override": getattr(t, "max_companies_override", None),
+            "max_companies_effective": effective_companies,
+            "max_users": getattr(t, "max_users", None),
+            "max_users_override": getattr(t, "max_users_override", None),
+            "max_users_effective": effective_users,
             "last_activity_at": last_activity.isoformat() + "Z" if last_activity else None,
             "platform_notes": getattr(t, "platform_notes", None),
             "tenant_admin": (

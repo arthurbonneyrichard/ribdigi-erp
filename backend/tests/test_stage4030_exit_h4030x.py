@@ -1,0 +1,30 @@
+"""Stage 4030 H4030x — exit criteria + freeze ADR exist."""
+from __future__ import annotations
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[2]
+
+def test_stage4030_exit_criteria_and_freeze_adr():
+    exit_doc = (ROOT / "docs" / "STAGE_4030_EXIT_CRITERIA.md").read_text(encoding="utf-8")
+    for token in ("I1", "B1", "P1", "D1", "H4030x", "COMPLETE", "ADR-8068"):
+        assert token in exit_doc, token
+    freeze = (ROOT / "docs" / "ADR_8068_STAGE4030_FREEZE.md").read_text(encoding="utf-8")
+    assert "Stage 4030" in freeze
+    assert "Accepted" in freeze
+    assert "Stage 4031" in freeze and "Stage 4029" in freeze
+    plan = (ROOT / "docs" / "STAGE_4030_PLAN.md").read_text(encoding="utf-8")
+    for ws in ("I1", "B1", "P1", "D1", "H4030x"):
+        assert ws in plan
+    assert (ROOT / "docs" / "ADR_8067_STAGE4030_OPEN.md").is_file()
+    assert (ROOT / "docs" / "STAGE_4030_FIDELITY.md").is_file()
+
+def test_stage4030_exit_listed_in_launch_and_roadmap():
+    launch = (ROOT / "docs" / "LAUNCH_CHECKLIST.md").read_text(encoding="utf-8")
+    assert "test_stage4030_exit_h4030x.py" in launch
+    roadmap = (ROOT / "docs" / "DEVELOPMENT_ROADMAP.md").read_text(encoding="utf-8")
+    assert "STAGE_4030_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_8068_STAGE4030_FREEZE.md" in roadmap
+    assert "Stage 4030 exit" in roadmap
+    pr = (ROOT / "PRODUCTION_READINESS.md").read_text(encoding="utf-8")
+    assert "STAGE_4030_EXIT_CRITERIA.md" in pr or "ADR-8068" in pr or "ADR_8068" in pr
+    sec = (ROOT / "docs" / "SECURITY_GUIDE.md").read_text(encoding="utf-8")
+    assert "ADR-8068" in sec or "ADR_8068" in sec or "test_stage4030_exit_h4030x.py" in sec

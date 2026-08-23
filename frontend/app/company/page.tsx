@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api, authHeaders } from '../../lib/api';
 import { formatDate } from '../../lib/format';
+import {
+  clearOfflineAuthEnvelope,
+  refreshOfflineAuthEnvelope,
+} from '../../lib/offlineAuthEnvelope';
+import { downloadOfflineRecoveryPack, setBoundOfflineDeviceId } from '../../lib/offlineQueue';
+import { getSelectedStoreId } from '../../lib/storeContext';
 import { getCompanyId, getWorkspaceKind } from '../../lib/workspaceContext';
 
 export default function Page() {
@@ -1009,6 +1015,61 @@ export default function Page() {
           Revoking a device blocks flush and retains pending queue ops (not auto-applied). Conflict
           accept_client never double-posts applied POS. Offline Complete remains deferred.
         </p>
+        {syncStatus ? (
+          <div
+            className="card"
+            style={{ marginBottom: 12, padding: 12, background: 'var(--surface-muted, #f8fafc)' }}
+          >
+            <h3 style={{ marginTop: 0 }}>Tenant offline summary</h3>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              Registered devices: {syncStatus.registered_devices ?? offlineDevices.length} · Active:{' '}
+              {syncStatus.active_devices ??
+                offlineDevices.filter((d) => d.status !== 'revoked').length}{' '}
+              · Server pending pushes: {syncStatus.pending_pushes ?? 0} · Pending pulls:{' '}
+              {syncStatus.pending_pulls ?? 0} · Open conflicts: {syncStatus.conflict_count ?? 0}
+              {syncStatus.last_sync_at ? ` · Last applied sync: ${syncStatus.last_sync_at}` : ''}
+            </p>
+            <p className="muted" style={{ marginBottom: 0, marginTop: 8 }}>
+              Counts come from <code>/sync/status</code> (server queue — not live when a device is
+              offline). Flush pending browser ops from POS when online.
+            </p>
+          </div>
+        ) : null}
+        <div
+          style={{
+            marginBottom: 12,
+            padding: 12,
+            border: '1px solid var(--border, #e2e8f0)',
+            borderRadius: 6,
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>Local recovery export</h3>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Download this browser&apos;s IndexedDB offline queue + device/envelope metadata as JSON.
+            Export never clears pending ops. No passwords or tokens are included. Owner alerts and
+            Offline Complete remain deferred.
+          </p>
+          <button
+            type="button"
+            disabled={deviceBusy}
+            onClick={async () => {
+              setError('');
+              setDeviceBusy(true);
+              try {
+                const pack = await downloadOfflineRecoveryPack();
+                setMessage(
+                  `Offline recovery pack exported (${pack.summary.total} op(s); queue preserved)`,
+                );
+              } catch (err: any) {
+                setError(err.message || 'Recovery export failed');
+              } finally {
+                setDeviceBusy(false);
+              }
+            }}
+          >
+            Export offline recovery pack
+          </button>
+        </div>
         <p className="muted">
           Bound browser device:{' '}
           {boundDeviceId ? <code>{boundDeviceId}</code> : 'none — bind an active device below'}
@@ -1193,10 +1254,27 @@ export default function Page() {
                         <button
                           type="button"
                           disabled={deviceBusy}
-                          onClick={() => {
-                            localStorage.setItem('offline_device_id', d.id);
-                            setBoundDeviceId(d.id);
-                            setMessage('Browser bound to this offline device (Stage 165 K1)');
+                          onClick={async () => {
+                            setError('');
+                            setDeviceBusy(true);
+                            try {
+                              setBoundOfflineDeviceId(d.id);
+                              setBoundDeviceId(d.id);
+                              const me = await api('/me');
+                              await refreshOfflineAuthEnvelope(api, {
+                                tenant_id: me.data?.tenant_id || '',
+                                company_id: me.data?.company_id || getCompanyId() || null,
+                                user_id: me.data?.id || null,
+                                store_id: getSelectedStoreId() || null,
+                              });
+                              setMessage(
+                                'Browser bound — 7-day offline auth envelope issued (renew online before expiry)',
+                              );
+                            } catch (err: any) {
+                              setError(err.message || 'Device bind failed');
+                            } finally {
+                              setDeviceBusy(false);
+                            }
                           }}
                         >
                           Bind browser
@@ -1214,6 +1292,7 @@ export default function Page() {
                               if (boundDeviceId === d.id) {
                                 localStorage.removeItem('offline_device_id');
                                 setBoundDeviceId('');
+                                await clearOfflineAuthEnvelope(d.id);
                               }
                               const pending = r.data?.pending_queue?.pending_total ?? 0;
                               setMessage(

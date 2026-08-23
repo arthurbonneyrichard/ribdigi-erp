@@ -1,0 +1,20 @@
+{
+  "id": "transfer-kanpoeeaajiyuglaze-gate-honesty-pack-rg-blockers",
+  "stage": 7294,
+  "pack": "B1",
+  "doc": "docs/TRANSFER_KANPOEEAAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "hub": "docs/TRANSFER_KANPOEEAAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "transfer_kanpoeeaajiyuglaze_gate_honesty_complete_claimed": "REMAINING",
+    "transfer_kanpoeeaajiyuglaze_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_transfer_kanpoeeaajiyuglaze_gate_honesty": "NON_CLAIM",
+    "transfer_kanpoeeaajiyuglaze_gate_pack_as_transfer_kanpoeeaajiyuglaze_gate_complete": "NON_CLAIM",
+    "stage392_as_golive": "NON_CLAIM",
+    "packaging_as_offline_complete": "NON_CLAIM"
+  },
+  "packaging_complete": true,
+  "message": "Stage 7294 B1 Transfer Kanpoeeaajiyuglaze Gate Honesty Pack blocker matrix packaging only."
+}

@@ -824,12 +824,15 @@ Istio or Linkerd will be introduced post-MVP for:
 
 ## 13. Appendix: Decision Records
 
-### ADR-001: Schema-per-Tenant over Database-per-Tenant
+### ADR-001: Shared-schema tenant isolation (see `docs/ADR_001_TENANCY.md`)
 
-**Status:** Accepted  
+**Status:** Accepted (runtime) — **SUPERSEDED below:** the original schema-per-tenant appendix text  
 **Context:** Need strong isolation without operational complexity  
-**Decision:** Use PostgreSQL schema-per-tenant with shared database  
-**Consequences:** (+) Easier backups, simpler connection management, lower cost. (-) Slightly higher risk of cross-tenant bugs, schema migration complexity.
+**Decision (implemented):** Shared PostgreSQL schema with `tenant_id` row isolation (`docs/ADR_001_TENANCY.md`)  
+**Legacy note:** Schema-per-tenant was considered but not implemented for MVP.
+
+~~**Decision:** Use PostgreSQL schema-per-tenant with shared database~~  
+~~**Consequences:** (+) Easier backups, simpler connection management, lower cost. (-) Slightly higher risk of cross-tenant bugs, schema migration complexity.~~
 
 ### ADR-002: FastAPI over Django for Backend
 

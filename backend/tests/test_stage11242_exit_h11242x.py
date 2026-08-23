@@ -1,0 +1,30 @@
+"""Stage 11242 H11242x — exit criteria + freeze ADR exist."""
+from __future__ import annotations
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[2]
+
+def test_stage11242_exit_criteria_and_freeze_adr():
+    exit_doc = (ROOT / "docs" / "STAGE_11242_EXIT_CRITERIA.md").read_text(encoding="utf-8")
+    for token in ("I1", "B1", "P1", "D1", "H11242x", "COMPLETE", "ADR-22492"):
+        assert token in exit_doc, token
+    freeze = (ROOT / "docs" / "ADR_22492_STAGE11242_FREEZE.md").read_text(encoding="utf-8")
+    assert "Stage 11242" in freeze
+    assert "Accepted" in freeze
+    assert "Stage 11243" in freeze and "Stage 11241" in freeze
+    plan = (ROOT / "docs" / "STAGE_11242_PLAN.md").read_text(encoding="utf-8")
+    for ws in ("I1", "B1", "P1", "D1", "H11242x"):
+        assert ws in plan
+    assert (ROOT / "docs" / "ADR_22491_STAGE11242_OPEN.md").is_file()
+    assert (ROOT / "docs" / "STAGE_11242_FIDELITY.md").is_file()
+
+def test_stage11242_exit_listed_in_launch_and_roadmap():
+    launch = (ROOT / "docs" / "LAUNCH_CHECKLIST.md").read_text(encoding="utf-8")
+    assert "test_stage11242_exit_h11242x.py" in launch
+    roadmap = (ROOT / "docs" / "DEVELOPMENT_ROADMAP.md").read_text(encoding="utf-8")
+    assert "STAGE_11242_EXIT_CRITERIA.md" in roadmap
+    assert "ADR_22492_STAGE11242_FREEZE.md" in roadmap
+    assert "Stage 11242 exit" in roadmap
+    pr = (ROOT / "PRODUCTION_READINESS.md").read_text(encoding="utf-8")
+    assert "STAGE_11242_EXIT_CRITERIA.md" in pr or "ADR-22492" in pr or "ADR_22492" in pr
+    sec = (ROOT / "docs" / "SECURITY_GUIDE.md").read_text(encoding="utf-8")
+    assert "ADR-22492" in sec or "ADR_22492" in sec or "test_stage11242_exit_h11242x.py" in sec

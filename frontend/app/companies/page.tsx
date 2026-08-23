@@ -57,6 +57,7 @@ export default function CompaniesPage() {
   const [fiscalYearStart, setFiscalYearStart] = useState('01-01');
   const [taxRegistration, setTaxRegistration] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [createMainStore, setCreateMainStore] = useState(true);
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -117,6 +118,7 @@ export default function CompaniesPage() {
           timezone: timezone || undefined,
           fiscal_year_start: fiscalYearStart || undefined,
           tax_registration_number: taxRegistration || undefined,
+          create_main_store: createMainStore,
         }),
       });
       const companyId = created.data?.id as string | undefined;
@@ -277,6 +279,14 @@ export default function CompaniesPage() {
           <label>
             Financial year start (MM-DD)
             <input value={fiscalYearStart} onChange={(e) => setFiscalYearStart(e.target.value)} />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={createMainStore}
+              onChange={(e) => setCreateMainStore(e.target.checked)}
+            />
+            Create Main Store automatically (uses store entitlement for this company)
           </label>
           <button type="submit" disabled={busy || !name.trim()}>
             {busy ? 'Creating…' : 'Create company'}

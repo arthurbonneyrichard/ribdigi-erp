@@ -128,6 +128,56 @@ async def test_company_limit_blocks_fourth_company(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_company_create_creates_main_store_when_capacity_allocated(client, db_session):
+    ac, seed = client
+    seed["t1"].max_stores = 10
+    seed["c1"].store_limit = 3
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
+
+    r = await ac.post(
+        "/api/v1/companies",
+        headers=headers,
+        json={"name": "Gamma Retail", "code": "GAMMA", "industry": "retail"},
+    )
+    assert r.status_code in (200, 201), r.text
+    company_id = r.json()["data"]["id"]
+
+    headers["X-Workspace-Kind"] = "company"
+    headers["X-Company-ID"] = company_id
+    stores = await ac.get("/api/v1/stores", headers=headers)
+    assert stores.status_code == 200, stores.text
+    rows = stores.json()["data"]
+    assert any(s["code"] == "MAIN" and s["name"] == "Main Store" for s in rows)
+
+
+@pytest.mark.asyncio
+async def test_company_create_blocks_main_store_without_allocation(client, db_session):
+    ac, seed = client
+    seed["t1"].max_stores = 5
+    seed["c1"].store_limit = 5
+    await db_session.commit()
+
+    headers = await _super_headers(ac, seed)
+    headers["X-Workspace-Kind"] = "tenant"
+
+    r = await ac.post(
+        "/api/v1/companies",
+        headers=headers,
+        json={
+            "name": "No Store Co",
+            "code": "NOST",
+            "industry": "retail",
+            "create_main_store": True,
+        },
+    )
+    assert r.status_code == 403
+    assert r.json()["detail"]["code"] == "STORE_LIMIT_REQUIRED"
+
+
+@pytest.mark.asyncio
 async def test_workspace_endpoint_lists_memberships(client):
     ac, seed = client
     headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")

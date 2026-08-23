@@ -64,7 +64,94 @@ store activation — never frontend-only.
 
 Offline Complete, paid billing Completes, ADR-005 membership Completes, go-live,
 and attestation Completes remain **MISSING** unless separately delivered with
-evidence.
+evidence. Store, company, and user caps are subscription gates on `Tenant.max_*`
+columns — not checkout or MRR Completes.
+
+## Subscription Company Entitlement
+
+RIBDIGI HOUSE controls the maximum company entitlement for a Tenant
+(`Tenant.max_companies`, optional `Tenant.max_companies_override`, synced from
+`PLAN_CATALOG.soft_limits.companies` when a plan changes and no override is set).
+
+Tenants can only create Companies while under the effective entitlement.
+Enforcement lives in `backend/app/workspace.py` (`assert_can_create_company`) and
+is called from `companies.create_company` — never frontend-only.
+
+### Permanent rules
+
+1. **Backend enforcement is mandatory.** Disabling a UI button is not sufficient.
+2. **Never delete Companies** (or their Stores, sales, inventory, payments,
+   accounting, reports, or audit history) because a subscription is downgraded.
+   While over entitlement, block new creates; surface `over_entitlement` via
+   `company_entitlement` on the tenant dashboard.
+3. **Tenant isolation** remains shared-schema + `tenant_id` (ADR-001).
+4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
+5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
+   gates on tenant columns, not fabricated MRR.
+6. When `max_companies_override` is set, plan changes do not overwrite
+   `Tenant.max_companies` until the override is cleared.
+7. Reuse `companies` RBAC module actions and tenant-admin workspace flows; do not
+   invent parallel entitlement tables.
+
+### Key modules
+
+| Concern | Module |
+|---------|--------|
+| Entitlement math + counts | `backend/app/store_entitlements.py` |
+| Create gate | `backend/app/workspace.py` (`assert_can_create_company`) |
+| Company create | `backend/app/companies.py` |
+| Tenant dashboard payload | `backend/app/companies.py` (`company_entitlement`) |
+| Plan catalog soft limits | `backend/app/tenants.py` (`PLAN_CATALOG`) |
+| Plan change sync | `backend/app/platform_api.py` (`apply_plan_company_defaults`) |
+| Platform override API | `PATCH /api/v1/platform/tenants/{id}/company-entitlement` |
+| Platform override UI | `frontend/app/platform/tenants/[id]/page.tsx` |
+| Migration | `backend/alembic/versions/20260823_0107_company_entitlements.py` |
+| Tests | `backend/tests/test_company_entitlements.py` |
+
+## Subscription User Entitlement
+
+RIBDIGI HOUSE controls the maximum active-user entitlement for a Tenant
+(`Tenant.max_users`, optional `Tenant.max_users_override`, synced from
+`PLAN_CATALOG.soft_limits.users` when a plan changes and no override is set).
+
+User create, bulk import, and reactivation are blocked at the limit
+(`USER_LIMIT_REACHED`). Enforcement lives in `backend/app/store_entitlements.py`
+(`assert_can_create_user`, `assert_can_reactivate_user`) and is called from
+`api.py` user-create/reactivate paths and `user_import.py` — never frontend-only.
+
+Alembic `20260823_0108` (`tenants.max_users_override`) is on branch tip; apply
+after `0107` in deploy order.
+
+### Permanent rules
+
+1. **Backend enforcement is mandatory.** Disabling a UI button is not sufficient.
+2. **Never delete Users** because a subscription is downgraded. Deactivate if
+   needed; block new creates and reactivations while over entitlement; surface
+   `over_entitlement` via `user_entitlement` on the tenant dashboard.
+3. **Tenant isolation** remains shared-schema + `tenant_id` (ADR-001). User caps
+   count active `User` rows for the tenant — not per-store membership (ADR-005).
+4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
+5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
+   gates on tenant columns, not fabricated MRR.
+6. When `max_users_override` is set, plan changes do not overwrite
+   `Tenant.max_users` until the override is cleared.
+7. **User↔store membership** remains deferred (ADR-005). Do not invent parallel
+   membership tables unless that ADR is intentionally opened.
+
+### Key modules
+
+| Concern | Module |
+|---------|--------|
+| Entitlement math + gates | `backend/app/store_entitlements.py` |
+| User create / reactivate | `backend/app/api.py` |
+| Bulk import gate | `backend/app/user_import.py` |
+| Tenant dashboard payload | `backend/app/companies.py` (`user_entitlement`) |
+| Plan catalog soft limits | `backend/app/tenants.py` (`PLAN_CATALOG`) |
+| Plan change sync | `backend/app/platform_api.py` (`apply_plan_user_defaults`) |
+| Platform override API | `PATCH /api/v1/platform/tenants/{id}/user-entitlement` |
+| Tenant dashboard UI | `frontend/app/tenant/page.tsx` |
+| Migration | `backend/alembic/versions/20260823_0108_user_entitlements.py` |
+| Tests | `backend/tests/test_user_entitlements.py` |
 
 ## Smart Business Intelligence (Layer 1)
 

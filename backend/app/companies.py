@@ -13,6 +13,21 @@ from app import workspace as workspace_svc
 from app.rbac import permissions_for_role
 
 # Fallback labels when business_types catalog row is missing (tests / legacy industry codes).
+def _payload_bool(value, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "on"):
+        return True
+    if text in ("0", "false", "no", "off", ""):
+        return False
+    return default
+
+
 INDUSTRY_LABELS: dict[str, str] = {
     "supermarket": "Supermarket",
     "mini_mart": "Mini Mart",
@@ -207,6 +222,21 @@ async def create_company(
             unalloc = int(ent.get("unallocated") or 0)
             initial_store_limit = 1 if unalloc >= 1 else 0
 
+    create_main_store = _payload_bool(
+        payload.get("create_main_store"),
+        default=initial_store_limit >= 1,
+    )
+    if create_main_store and initial_store_limit < 1:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_LIMIT_REQUIRED",
+                "message": (
+                    "Allocate store capacity to this company before creating a Main Store."
+                ),
+            },
+        )
+
     co = m.Company(
         tenant_id=tenant.id,
         code=code,
@@ -256,6 +286,22 @@ async def create_company(
         )
     )
     await db.flush()
+
+    if create_main_store:
+        from app import stores as stores_svc
+
+        main_store_name = (payload.get("main_store_name") or "Main Store").strip() or "Main Store"
+        main_store_code = (payload.get("main_store_code") or "MAIN").strip().upper()[:40] or "MAIN"
+        await stores_svc.create_store(
+            db,
+            tenant_id=tenant.id,
+            company_id=co.id,
+            name=main_store_name,
+            code=main_store_code,
+            address=co.address,
+            phone=co.phone,
+        )
+
     return co
 
 
@@ -341,6 +387,8 @@ async def tenant_dashboard_payload(
         db, tenant_id=tenant.id, user=user, tenant_admin=True
     )
     store_ent = await store_ent_svc.get_tenant_store_entitlement(db, tenant)
+    company_ent = await store_ent_svc.get_tenant_company_entitlement(db, tenant)
+    user_ent = await store_ent_svc.get_tenant_user_entitlement(db, tenant)
     store_by_company = await store_ent_svc.store_usage_by_company(db, tenant_id=tenant.id)
     return {
         "tenant": {
@@ -356,8 +404,12 @@ async def tenant_dashboard_payload(
             "plan_code": tenant.plan_code,
             "status": tenant.status,
             "limits": {
-                "max_companies": int(getattr(tenant, "max_companies", 1) or 1),
-                "max_users": int(getattr(tenant, "max_users", 25) or 25),
+                "max_companies": company_ent["max_companies"],
+                "max_companies_unlimited": company_ent["max_companies_unlimited"],
+                "max_companies_override": company_ent["max_companies_override"],
+                "max_users": user_ent["max_users"],
+                "max_users_unlimited": user_ent["max_users_unlimited"],
+                "max_users_override": user_ent["max_users_override"],
                 "max_branches": int(getattr(tenant, "max_branches", 5) or 5),
                 "max_stores": store_ent["max_stores"],
                 "max_stores_unlimited": store_ent["max_stores_unlimited"],
@@ -372,6 +424,8 @@ async def tenant_dashboard_payload(
                 "warehouses": warehouses,
             },
             "store_entitlement": store_ent,
+            "company_entitlement": company_ent,
+            "user_entitlement": user_ent,
             "store_allocations": store_by_company,
             "billing_deferred": True,
         },

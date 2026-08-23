@@ -269,6 +269,24 @@ async def import_users_csv(
         if dry_run:
             continue
 
+        from app import store_entitlements as store_ent_svc
+
+        tenant = await db.get(m.Tenant, tenant_id)
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+        try:
+            await store_ent_svc.assert_can_create_user(db, tenant, lock=True)
+        except HTTPException as exc:
+            detail = exc.detail if isinstance(exc.detail, dict) else {"message": str(exc.detail)}
+            errors.append(
+                {
+                    "row": idx,
+                    "email": email_raw,
+                    "errors": [detail.get("message") or detail.get("code") or "USER_LIMIT_REACHED"],
+                }
+            )
+            continue
+
         perms = await roles_svc.permissions_for_assignment(db, tenant_id, role)
         if scope_value is not None:
             perms[RECORD_SCOPE_KEY] = scope_value

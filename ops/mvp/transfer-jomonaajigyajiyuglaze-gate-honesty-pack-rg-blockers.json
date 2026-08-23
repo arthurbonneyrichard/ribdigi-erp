@@ -1,0 +1,20 @@
+{
+  "id": "transfer-jomonaajigyajiyuglaze-gate-honesty-pack-rg-blockers",
+  "stage": 6434,
+  "pack": "B1",
+  "doc": "docs/TRANSFER_JOMONAAJIGYAJIYUGLAZE_GATE_HONESTY_PACK_RG_BLOCKERS_MVP.md",
+  "hub": "docs/TRANSFER_JOMONAAJIGYAJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "blockers": {
+    "offline_complete_claimed": "REMAINING",
+    "transfer_jomonaajigyajiyuglaze_gate_honesty_complete_claimed": "REMAINING",
+    "transfer_jomonaajigyajiyuglaze_gate_as_golive_complete_claimed": "REMAINING",
+    "go_live_claimed": "REMAINING",
+    "attestation_claimed": "REMAINING",
+    "stage392_as_transfer_jomonaajigyajiyuglaze_gate_honesty": "NON_CLAIM",
+    "transfer_jomonaajigyajiyuglaze_gate_pack_as_transfer_jomonaajigyajiyuglaze_gate_complete": "NON_CLAIM",
+    "stage392_as_golive": "NON_CLAIM",
+    "packaging_as_offline_complete": "NON_CLAIM"
+  },
+  "packaging_complete": true,
+  "message": "Stage 6434 B1 Transfer Jomonaajigyajiyuglaze Gate Honesty Pack blocker matrix packaging only."
+}

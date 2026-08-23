@@ -3101,6 +3101,12 @@ async def add_user(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="User email already exists in tenant")
+    from app import store_entitlements as store_ent_svc
+
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    await store_ent_svc.assert_can_create_user(db, tenant, lock=True)
     perms = await roles_svc.permissions_for_assignment(db, claims["tenant_id"], role)
     if payload.record_scope is not None:
         try:
@@ -3263,6 +3269,13 @@ async def update_user(
         if user.id == claims["sub"] and payload.is_active is False:
             raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
         if bool(user.is_active) != bool(payload.is_active):
+            if payload.is_active and not user.is_active:
+                from app import store_entitlements as store_ent_svc
+
+                tenant = await db.get(m.Tenant, claims["tenant_id"])
+                if not tenant:
+                    raise HTTPException(status_code=404, detail="Tenant not found")
+                await store_ent_svc.assert_can_reactivate_user(db, tenant=tenant, user=user)
             user.is_active = bool(payload.is_active)
             changes["is_active"] = user.is_active
             if not user.is_active:
@@ -14482,6 +14495,10 @@ async def sync_push(
         claims=claims,
         device_id=str(body.get("device_id") or ""),
         ops=body.get("ops") or [],
+        auth_envelope=body.get("auth_envelope") if isinstance(body.get("auth_envelope"), dict) else None,
+        store_id=str(body.get("store_id") or "").strip() or None,
+        catalog_version=str(body.get("catalog_version") or "").strip() or None,
+        app_version=str(body.get("app_version") or "").strip() or None,
     )
     await audit_svc.record_event(
         db,
@@ -14513,6 +14530,11 @@ async def sync_pull(
         device_id=str(body.get("device_id") or ""),
         limit=int(body.get("limit") or 50),
         include_catalog=bool(body.get("include_catalog", True)),
+        claims=claims,
+        auth_envelope=body.get("auth_envelope") if isinstance(body.get("auth_envelope"), dict) else None,
+        store_id=str(body.get("store_id") or "").strip() or None,
+        catalog_version=str(body.get("catalog_version") or "").strip() or None,
+        app_version=str(body.get("app_version") or "").strip() or None,
     )
     await db.commit()
     return env(data, "Sync pull ready")
@@ -14531,6 +14553,7 @@ async def sync_ack(
         tenant_id=claims["tenant_id"],
         device_id=str(body.get("device_id") or ""),
         op_ids=body.get("op_ids") or [],
+        auth_envelope=body.get("auth_envelope") if isinstance(body.get("auth_envelope"), dict) else None,
     )
     await db.commit()
     return env(data, "Sync ops acknowledged")
@@ -14648,6 +14671,63 @@ async def offline_devices_get(
 ):
     row = await offline_devices_svc.get_device(db, claims["tenant_id"], device_id)
     return env(offline_devices_svc.serialize_device(row))
+
+
+@api.post("/offline/devices/{device_id}/bind")
+async def offline_devices_bind(
+    device_id: str,
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """§13–14 — online bind/refresh: issue 7-day offline authorization envelope."""
+    from app.offline_auth_envelope import issue_envelope
+
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    row = await offline_devices_svc.get_device(db, claims["tenant_id"], device_id)
+    if row.revoked_at is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "OFFLINE_DEVICE_REVOKED",
+                "message": "Offline device is revoked",
+                "device_id": row.id,
+            },
+        )
+    envelope = await issue_envelope(
+        db,
+        row,
+        claims=claims,
+        store_id=str(body.get("store_id") or "").strip() or None,
+        catalog_version=str(body.get("catalog_version") or "").strip() or None,
+        app_version=str(body.get("app_version") or "").strip() or None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="pos",
+        action="offline_device_bind",
+        entity="offline_device",
+        entity_id=row.id,
+        details={
+            "offline_valid_until": envelope.get("offline_valid_until"),
+            "company_id": envelope.get("company_id"),
+            "store_id": envelope.get("store_id"),
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(
+        {
+            **offline_devices_svc.serialize_device(row),
+            "auth_envelope": envelope,
+        },
+        "Offline authorization envelope issued",
+    )
 
 
 @api.delete("/offline/devices/{device_id}")

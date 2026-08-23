@@ -1,0 +1,18 @@
+{
+  "id": "transfer-kanekijiyuglaze-gate-honesty-pack-rg-pointers",
+  "stage": 1822,
+  "pack": "P1",
+  "doc": "docs/TRANSFER_KANEKIJIYUGLAZE_GATE_HONESTY_PACK_RG_POINTERS_MVP.md",
+  "hub": "docs/TRANSFER_KANEKIJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+  "pointers": {
+    "transfer_manjiyuglaze_gate_honesty_pack_remaining_gate_stage1821": "docs/TRANSFER_MANJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "transfer_keianjiyuglaze_gate_honesty_pack_remaining_gate_stage1820": "docs/TRANSFER_KEIANJIYUGLAZE_GATE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "stage392_fidelity": "docs/STAGE_392_FIDELITY.md",
+    "change_impact_section_5": "docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md",
+    "golive_honesty_pack_remaining_gate": "docs/GOLIVE_HONESTY_PACK_REMAINING_GATE_MVP.md",
+    "offline_complete_pack_remaining_gate": "docs/OFFLINE_COMPLETE_PACK_REMAINING_GATE_MVP.md",
+    "mvp_product_update_pack_remaining_gate": "docs/MVP_PRODUCT_UPDATE_PACK_REMAINING_GATE_MVP.md"
+  },
+  "packaging_complete": true,
+  "message": "Stage 1822 P1 Transfer Kanekijiyuglaze Gate Honesty Pack RG pointers packaging only."
+}

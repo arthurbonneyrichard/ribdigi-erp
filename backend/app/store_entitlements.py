@@ -5,13 +5,23 @@ Hierarchy of truth (reuse existing Tenant.max_* columns; no parallel billing ORM
   PLAN_CATALOG.soft_limits.stores  →  Tenant.max_stores (when no override)
        ↓
   Tenant.max_stores_override OR Tenant.max_stores   (= effective tenant entitlement)
+
+  PLAN_CATALOG.soft_limits.companies  →  Tenant.max_companies (when no override)
+       ↓
+  Tenant.max_companies_override OR Tenant.max_companies   (= effective company entitlement)
        ↓
   Company.store_limit   (Tenant Admin allocation; never exceeds remaining entitlement)
        ↓
   Active Store rows (is_active=True)
 
+  PLAN_CATALOG.soft_limits.users  →  Tenant.max_users (when no override)
+       ↓
+  Tenant.max_users_override OR Tenant.max_users   (= effective user entitlement)
+       ↓
+  Active User rows (is_active=True)
+
 Unlimited convention: integer ``-1`` (matches enterprise soft_limits ``None`` mapped to -1).
-Downgrades never delete Stores; creation/reactivation is blocked while over entitlement.
+Downgrades never delete Stores/Companies/Users; creation/reactivation is blocked while over entitlement.
 """
 
 from __future__ import annotations
@@ -59,14 +69,26 @@ def is_unlimited(limit: int | None) -> bool:
     return limit is not None and int(limit) < 0
 
 
-def plan_default_max_stores(plan_code: str | None) -> int:
-    """Map PLAN_CATALOG soft_limits.stores → integer (None → unlimited)."""
+def _plan_soft_limit(plan_code: str | None, key: str, *, default: int) -> int:
+    """Map PLAN_CATALOG soft_limits[key] → integer (None → unlimited)."""
     code = (plan_code or "trial").strip().lower()
     item = tenants_svc.PLAN_CATALOG.get(code) or tenants_svc.PLAN_CATALOG["trial"]
-    soft = (item.get("soft_limits") or {}).get("stores")
+    soft = (item.get("soft_limits") or {}).get(key)
     if soft is None:
         return UNLIMITED
     return max(0, int(soft))
+
+
+def plan_default_max_stores(plan_code: str | None) -> int:
+    return _plan_soft_limit(plan_code, "stores", default=5)
+
+
+def plan_default_max_companies(plan_code: str | None) -> int:
+    return _plan_soft_limit(plan_code, "companies", default=1)
+
+
+def plan_default_max_users(plan_code: str | None) -> int:
+    return _plan_soft_limit(plan_code, "users", default=25)
 
 
 def effective_tenant_store_limit(tenant: m.Tenant) -> int:
@@ -75,6 +97,22 @@ def effective_tenant_store_limit(tenant: m.Tenant) -> int:
     if override is not None:
         return int(override)
     return int(getattr(tenant, "max_stores", 5) or 0)
+
+
+def effective_tenant_company_limit(tenant: m.Tenant) -> int:
+    """Platform override wins; otherwise Tenant.max_companies (plan-synced base)."""
+    override = getattr(tenant, "max_companies_override", None)
+    if override is not None:
+        return int(override)
+    return int(getattr(tenant, "max_companies", 1) or 0)
+
+
+def effective_tenant_user_limit(tenant: m.Tenant) -> int:
+    """Platform override wins; otherwise Tenant.max_users (plan-synced base)."""
+    override = getattr(tenant, "max_users_override", None)
+    if override is not None:
+        return int(override)
+    return int(getattr(tenant, "max_users", 25) or 0)
 
 
 async def count_active_stores(
@@ -425,6 +463,149 @@ def apply_plan_store_defaults(tenant: m.Tenant, plan_code: str) -> dict:
         "to": new_limit,
         "max_stores_override": None,
     }
+
+
+async def count_active_companies(db: AsyncSession, tenant_id: str) -> int:
+    return int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(m.Company)
+                .where(m.Company.tenant_id == tenant_id, m.Company.is_active.is_(True))
+            )
+        ).scalar_one()
+        or 0
+    )
+
+
+async def get_tenant_company_entitlement(db: AsyncSession, tenant: m.Tenant) -> dict:
+    limit = effective_tenant_company_limit(tenant)
+    used = await count_active_companies(db, tenant.id)
+    unlimited = is_unlimited(limit)
+    remaining = None if unlimited else max(0, limit - used)
+    return {
+        "max_companies": limit,
+        "max_companies_unlimited": unlimited,
+        "max_companies_override": getattr(tenant, "max_companies_override", None),
+        "plan_code": getattr(tenant, "plan_code", None) or "trial",
+        "plan_default_max_companies": plan_default_max_companies(getattr(tenant, "plan_code", None)),
+        "used": used,
+        "remaining": remaining,
+        "over_entitlement": (not unlimited) and used > limit,
+        "billing_deferred": True,
+    }
+
+
+def apply_plan_company_defaults(tenant: m.Tenant, plan_code: str) -> dict:
+    """When override is unset, sync Tenant.max_companies from PLAN_CATALOG soft_limits."""
+    before = int(getattr(tenant, "max_companies", 1) or 0)
+    if getattr(tenant, "max_companies_override", None) is not None:
+        return {
+            "synced": False,
+            "reason": "override_set",
+            "max_companies": before,
+            "max_companies_override": tenant.max_companies_override,
+        }
+    new_limit = plan_default_max_companies(plan_code)
+    tenant.max_companies = new_limit
+    return {
+        "synced": True,
+        "from": before,
+        "to": new_limit,
+        "max_companies_override": None,
+    }
+
+
+
+async def count_active_users(db: AsyncSession, tenant_id: str) -> int:
+    return int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(m.User)
+                .where(m.User.tenant_id == tenant_id, m.User.is_active.is_(True))
+            )
+        ).scalar_one()
+        or 0
+    )
+
+
+async def get_tenant_user_entitlement(db: AsyncSession, tenant: m.Tenant) -> dict:
+    limit = effective_tenant_user_limit(tenant)
+    used = await count_active_users(db, tenant.id)
+    unlimited = is_unlimited(limit)
+    remaining = None if unlimited else max(0, limit - used)
+    return {
+        "max_users": limit,
+        "max_users_unlimited": unlimited,
+        "max_users_override": getattr(tenant, "max_users_override", None),
+        "plan_code": getattr(tenant, "plan_code", None) or "trial",
+        "plan_default_max_users": plan_default_max_users(getattr(tenant, "plan_code", None)),
+        "used": used,
+        "remaining": remaining,
+        "over_entitlement": (not unlimited) and used > limit,
+        "billing_deferred": True,
+    }
+
+
+def apply_plan_user_defaults(tenant: m.Tenant, plan_code: str) -> dict:
+    """When override is unset, sync Tenant.max_users from PLAN_CATALOG soft_limits."""
+    before = int(getattr(tenant, "max_users", 25) or 0)
+    if getattr(tenant, "max_users_override", None) is not None:
+        return {
+            "synced": False,
+            "reason": "override_set",
+            "max_users": before,
+            "max_users_override": tenant.max_users_override,
+        }
+    new_limit = plan_default_max_users(plan_code)
+    tenant.max_users = new_limit
+    return {
+        "synced": True,
+        "from": before,
+        "to": new_limit,
+        "max_users_override": None,
+    }
+
+
+async def assert_can_create_user(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    lock: bool = True,
+) -> None:
+    """Reject when active-user entitlement is exhausted (create or reactivation)."""
+    if lock:
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant.id).with_for_update())
+        tenant = await db.get(m.Tenant, tenant.id) or tenant
+
+    limit = effective_tenant_user_limit(tenant)
+    if is_unlimited(limit):
+        return
+    current = await count_active_users(db, tenant.id)
+    if current >= limit:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "USER_LIMIT_REACHED",
+                "message": (
+                    f"User limit reached. Your tenant currently uses {current} of "
+                    f"{limit} allowed users. Upgrade your subscription or contact "
+                    "RIBDIGI HOUSE / your Tenant Administrator."
+                ),
+                "max_users": limit,
+                "current_users": current,
+            },
+        )
+
+
+async def assert_can_reactivate_user(
+    db: AsyncSession, *, tenant: m.Tenant, user: m.User
+) -> None:
+    """Reactivating an inactive user consumes entitlement like a create."""
+    if user.is_active:
+        return
+    await assert_can_create_user(db, tenant, lock=True)
 
 
 async def store_usage_by_company(db: AsyncSession, *, tenant_id: str) -> list[dict]:

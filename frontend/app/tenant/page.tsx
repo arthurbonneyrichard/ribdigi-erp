@@ -20,6 +20,13 @@ type TenantDash = {
       unallocated: number | null;
       over_entitlement?: boolean;
     };
+    user_entitlement?: {
+      max_users: number;
+      max_users_unlimited?: boolean;
+      used: number;
+      remaining: number | null;
+      over_entitlement?: boolean;
+    };
     store_allocations?: {
       company_id: string;
       company_name: string;
@@ -82,9 +89,13 @@ export default function TenantDashboardPage() {
   }
 
   const storeEnt = data?.subscription?.store_entitlement;
+  const userEnt = data?.subscription?.user_entitlement;
   const storeLimitLabel = storeEnt?.max_stores_unlimited
     ? 'Unlimited'
     : String(storeEnt?.max_stores ?? data?.subscription?.limits?.max_stores ?? '—');
+  const userLimitLabel = userEnt?.max_users_unlimited
+    ? 'Unlimited'
+    : String(userEnt?.max_users ?? data?.subscription?.limits?.max_users ?? '—');
 
   return (
     <Shell>
@@ -126,8 +137,13 @@ export default function TenantDashboardPage() {
               </div>
               <div className="card">
                 <h3>Users</h3>
-                <p style={{ fontSize: 28, margin: 0 }}>{data.counts.users}</p>
-                <p className="muted">Limit {String(data.subscription.limits.max_users)}</p>
+                <p style={{ fontSize: 28, margin: 0 }}>
+                  {userEnt?.used ?? data.counts.users} / {userLimitLabel}
+                </p>
+                <p className="muted">
+                  Remaining {userEnt?.remaining ?? '—'}
+                  {userEnt?.over_entitlement ? ' · over entitlement' : ''}
+                </p>
               </div>
             </div>
 
