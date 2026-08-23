@@ -13,16 +13,17 @@ from app.schemas import StockOut
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
+_VALID_PRODUCT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
 
 def test_stock_out_notes_schema():
     omit = StockOut.model_validate(
-        {"product_id": "p1", "quantity": 1, "reference_type": "internal"}
+        {"product_id": _VALID_PRODUCT, "quantity": 1, "reference_type": "internal"}
     )
     assert omit.notes is None
     nullish = StockOut.model_validate(
         {
-            "product_id": "p1",
+            "product_id": _VALID_PRODUCT,
             "quantity": 1,
             "reference_type": "internal",
             "notes": None,
@@ -31,7 +32,7 @@ def test_stock_out_notes_schema():
     assert nullish.notes is None
     ok = StockOut.model_validate(
         {
-            "product_id": "p1",
+            "product_id": _VALID_PRODUCT,
             "quantity": 1,
             "reference_type": "internal",
             "notes": "  Issued to kitchen  ",
@@ -42,7 +43,7 @@ def test_stock_out_notes_schema():
         with pytest.raises(ValidationError):
             StockOut.model_validate(
                 {
-                    "product_id": "p1",
+                    "product_id": _VALID_PRODUCT,
                     "quantity": 1,
                     "reference_type": "internal",
                     "notes": bad,
