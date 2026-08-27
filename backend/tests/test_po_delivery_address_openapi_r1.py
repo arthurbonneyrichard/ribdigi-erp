@@ -15,14 +15,19 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_po_delivery_address_schema():
-    base_item = {"product_id": "p1", "quantity": 1, "unit_price": 1}
+    base_item = {
+        "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        "quantity": 1,
+        "unit_price": 1,
+    }
+    supplier = "11111111-2222-3333-4444-555555555555"
     create_omit = PurchaseOrderCreate.model_validate(
-        {"supplier_id": "s1", "items": [base_item]}
+        {"supplier_id": supplier, "items": [base_item]}
     )
     assert create_omit.delivery_address is None
     create_ok = PurchaseOrderCreate.model_validate(
         {
-            "supplier_id": "s1",
+            "supplier_id": supplier,
             "delivery_address": "  Gate B, Tema  ",
             "items": [base_item],
         }
@@ -31,7 +36,7 @@ def test_po_delivery_address_schema():
     for bad in ("", " ", "!!!", "---", "http://addr.example", "ops@example.com"):
         with pytest.raises(ValidationError):
             PurchaseOrderCreate.model_validate(
-                {"supplier_id": "s1", "delivery_address": bad, "items": [base_item]}
+                {"supplier_id": supplier, "delivery_address": bad, "items": [base_item]}
             )
 
     amend_omit = PurchaseOrderAmend.model_validate({"reason": "qty change"})

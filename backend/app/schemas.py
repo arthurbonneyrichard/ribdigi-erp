@@ -2253,7 +2253,10 @@ class ResendVerificationRequest(BaseModel):
 
 
 class PurchaseOrderItemCreate(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_id: str | None = None  # entered UoM; GRN converts to product stock unit
     unit_price: float = Field(ge=0)

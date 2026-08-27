@@ -15,8 +15,8 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 _BASE_CREATE = {
-    "supplier_id": "sup-1",
-    "items": [{"product_id": "p1", "quantity": 1, "unit_price": 2}],
+    "supplier_id": "11111111-2222-3333-4444-555555555555",
+    "items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "unit_price": 2}],
 }
 
 
