@@ -1431,7 +1431,7 @@ export default function Page() {
           reference_type: outRefType,
           reference_id: outRefId.trim() || null,
           notes: outNotes.trim() || null,
-          warehouse_id: outWarehouseId || null,
+          warehouse_id: outWarehouseId.trim() || null,
           variant_id: outVariantId || null,
           unit_id: outUnitId || null,
           batch_id: outBatchId || null,
@@ -3523,7 +3523,12 @@ export default function Page() {
             title="Optional external reference (1–36 chars; letters/digits required)"
           />
           <label className="muted">Warehouse (optional)</label>
-          <select value={outWarehouseId} onChange={(e) => setOutWarehouseId(e.target.value)}>
+          <select
+            value={outWarehouseId}
+            onChange={(e) => setOutWarehouseId(e.target.value)}
+            aria-label="Stock-out warehouse"
+            title="Optional warehouse for stock-out (UuidIdValue)"
+          >
             <option value="">Company / product stock only</option>
             {warehouses
                 .filter((w) => w.is_active !== false)
