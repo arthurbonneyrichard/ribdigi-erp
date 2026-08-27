@@ -227,7 +227,8 @@ def validate_client_envelope(
     ts = now or datetime.utcnow()
 
     server_until = row.offline_authorized_until
-    if server_until is not None and server_until < ts:
+    # Inclusive expiry matches client isEnvelopeExpired (until <= now).
+    if server_until is not None and server_until <= ts:
         raise _mismatch(
             "OFFLINE_ENVELOPE_EXPIRED",
             "Offline authorization envelope expired — reconnect online to renew",
@@ -272,7 +273,7 @@ def validate_client_envelope(
             )
 
     client_until = _parse_iso(client_envelope.get("offline_valid_until"))
-    if client_until is not None and client_until < ts:
+    if client_until is not None and client_until <= ts:
         raise _mismatch(
             "OFFLINE_ENVELOPE_EXPIRED",
             "Client offline authorization envelope expired — reconnect online to renew",

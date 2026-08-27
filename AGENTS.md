@@ -56,6 +56,10 @@ store activation — never frontend-only.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
+8. **Offline soft lockdown is PARTIAL:** revoke expires server `offline_authorized_until`
+   and blocks sync; critical alerts can email via security notifications
+   (`POST /offline/alerts/notify`). Remote IndexedDB wipe, push delivery, Offline
+   Complete, and 7-day VERIFIED remain MISSING.
 
 ### Key modules
 

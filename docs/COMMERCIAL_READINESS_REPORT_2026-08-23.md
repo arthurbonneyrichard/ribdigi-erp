@@ -22,7 +22,7 @@
 | POS (online) | **PASS** (MVP) |
 | Offline foundation | **PARTIAL** — queue/catalog/sync MVP; 7-day auth envelope implemented (not VERIFIED) |
 | 7-Day offline | **PARTIAL** (envelope + client gate shipped; physical endurance **NOT RUN**) |
-| Offline recovery / lockdown / owner dashboard | **PARTIAL** — recovery export UI + owner alerts API/UI; lockdown / Offline Complete still MISSING |
+| Offline recovery / lockdown / owner dashboard | **PARTIAL** — recovery export UI + owner alerts API/UI + soft lockdown (envelope expire on revoke) + critical security-email notify; remote wipe / push / Offline Complete still MISSING |
 | Paid billing | **DEFERRED** (ADR-002) |
 | Backup (logical) | **PASS** (MVP tests) |
 | Restore / PITR / load / pen test (live) | **NOT RUN** (operator/external) |
@@ -44,7 +44,7 @@
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
 9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS/sales/expenses/stores/transfers, warehouse inventory ops, purchasing PR/PO/GRN/returns, and **purchase invoices** (scope inferred from linked GRN/PO `warehouse_id`; manual unlinked invoices fail-closed; no direct PI `warehouse_id` column yet). ADR-005 membership still open.
 10. **7-day offline POS** — **PARTIAL** (2026-08-23): envelope + client gate. Physical matrix: `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md` (**NOT RUN** / not VERIFIED).
-11. **Offline owner dashboard + alerts + recovery** — **PARTIAL**: recovery export + alerts API/UI; email/push + lockdown + Offline Complete MISSING.
+11. **Offline owner dashboard + alerts + recovery** — **PARTIAL**: recovery export + alerts API/UI; soft lockdown (revoke expires server envelope + security notify); critical alert email via `POST /offline/alerts/notify` (security channel); push + remote IndexedDB wipe + Offline Complete MISSING.
 12. **Scale / pen test on prod infra** — operator/external.
 13. **Commercial tip migrations** — apply `0106`→`0107`→`0108` before prod bind/entitlement paths (`docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md`, `ops/launch/commercial-tip-migrations.json`).
 
@@ -65,7 +65,8 @@
 - **Platform UI for user-entitlement override:** House tenant detail mirrors company/store controls (base / override / unlimited −1 / clear) via `PATCH /platform/tenants/{id}/user-entitlement`; shows `user_count` from platform tenant payload. Caps only — not paid billing Completes.
 - **User entitlement:** `PLAN_CATALOG.soft_limits.users` syncs `Tenant.max_users` on plan change (unless override); platform `PATCH /platform/tenants/{id}/user-entitlement`; create/reactivation/import blocked at limit (`USER_LIMIT_REACHED`); downgrades never delete users; tenant dashboard exposes `user_entitlement` / `over_entitlement`. Tests: `test_user_entitlements.py`. Alembic `20260823_0108` (`max_users_override`). Deploy: apply `0106` → `0107` → `0108` in order (`0107` revises `0106`).
 - **Single-company UX:** `/me` and `/workspace` expose `company_entitlement`; Shell hides workspace switcher for non–tenant-admin users on single-company plans with one company; Companies page hides create-at-limit and redundant switch controls.
-- **Offline owner alerts:** `offline_alerts.py` + `GET /offline/alerts` (envelope expired/expiring, never bound, sync backlog/failed, open conflicts); Company `#offline-sync` alert list. In-app only — not email/push Complete.
+- **Offline owner alerts:** `offline_alerts.py` + `GET /offline/alerts` (envelope expired/expiring, never bound, sync backlog/failed, open conflicts); Company `#offline-sync` alert list; `POST /offline/alerts/notify` creates security notifications (+ email when enabled) for **critical** alerts only. Push delivery remains deferred — not email/push Complete.
+- **Offline soft lockdown (PARTIAL):** `DELETE /offline/devices/{id}` sets `revoked_at` **and** expires `offline_authorized_until` immediately; queue retained; security notification emailed to admins. Does **not** remotely wipe offline IndexedDB; Offline Complete remains MISSING.
 - **Offline receipt numbering:** client IndexedDB seq per device (`offlineReceiptNumber.ts` → `OFF-{device}-{seq}`); POS shows receipt on queue; `/sync/push` preserves as sale `reference` with duplicate guard (`OFFLINE_RECEIPT_DUPLICATE`). Tests: `test_offline_receipt_numbering.py`.
 - **Operator runbooks (2026-08-23):** commercial Alembic deploy note; offline physical test matrix; PITR drill wrapper — all unchecked / not executed; go-live still NOT READY.
 - **Store RBAC ops hardening:** store + warehouse helpers through POS/sales/expenses/stores/transfers, warehouses/inventory ops, purchasing PR/PO/GRN/returns, and purchase invoices via PO/GRN warehouse join (`apply_purchase_invoice_warehouse_scope`; unlinked manual PIs denied for managers). Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
@@ -92,7 +93,7 @@
 
 | Shipped | Not shipped |
 |---------|-------------|
-| IndexedDB queue + catalog, sync APIs, device registry/revoke, idempotent `client_request_id`, offline payment safety (cash default; provider ack), queue reset guard, tenant offline summary on Company page, **7-day auth envelope (bind + IndexedDB + POS gate + sync validation)**, **local recovery export UI** (Company + POS; queue preserved; no tokens), **owner offline alerts API + Company UI** (in-app; not email/push), **offline receipt numbering** (`OFF-{device}-{seq}`; sync preserves reference) | Offline Complete attestation, 7-day physical VERIFIED, email/push alerts, native shells, hardware bridges |
+| IndexedDB queue + catalog, sync APIs, device registry/revoke, idempotent `client_request_id`, offline payment safety (cash default; provider ack), queue reset guard, tenant offline summary on Company page, **7-day auth envelope (bind + IndexedDB + POS gate + sync validation)**, **local recovery export UI** (Company + POS; queue preserved; no tokens), **owner offline alerts API + Company UI** + **critical security-email notify**, **soft lockdown** (revoke expires server envelope; queue retained; no remote wipe), **offline receipt numbering** (`OFF-{device}-{seq}`; sync preserves reference) | Offline Complete attestation, 7-day physical VERIFIED, push alerts, remote IndexedDB wipe, native shells, hardware bridges |
 
 **Physical tests** (7-day endurance, multi-device reconnect, peripherals) require owner/device action — not runnable in CI alone.
 

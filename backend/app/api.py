@@ -15149,8 +15149,25 @@ async def offline_alerts_list(
     claims=Depends(require_roles("company_admin", "super_admin", "tenant_admin", "tenant_owner")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Owner/admin offline signals — envelope expiry, sync backlog, open conflicts (in-app only)."""
+    """Owner/admin offline signals — envelope expiry, sync backlog, open conflicts."""
     return env(await offline_alerts_svc.collect_offline_alerts(db, claims["tenant_id"]))
+
+
+@api.post("/offline/alerts/notify")
+async def offline_alerts_notify(
+    claims=Depends(require_roles("company_admin", "super_admin", "tenant_admin", "tenant_owner")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email/dashboard notify for current critical offline alerts (security channel).
+
+    Push delivery and Offline Complete remain deferred.
+    """
+    tenants_svc.assert_writable(claims)
+    result = await offline_alerts_svc.notify_critical_offline_alerts(
+        db, claims["tenant_id"]
+    )
+    await db.commit()
+    return env(result, "Critical offline alerts notified")
 
 
 @api.post("/offline/devices")
@@ -15265,12 +15282,18 @@ async def offline_devices_revoke(
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 163 V1 / Stage 168 R1 — soft-revoke; pending queue retained (not auto-applied)."""
+    """Soft-revoke + soft lockdown: expire server envelope; queue retained (not auto-applied)."""
     tenants_svc.assert_writable(claims)
     pending = await sync_engine_svc.device_pending_queue_stats(
         db, tenant_id=claims["tenant_id"], device_id=device_id
     )
     row = await offline_devices_svc.revoke_device(db, claims["tenant_id"], device_id)
+    await offline_alerts_svc.notify_device_soft_lockdown(
+        db,
+        tenant_id=claims["tenant_id"],
+        device=row,
+        pending_queue=pending,
+    )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -15283,6 +15306,12 @@ async def offline_devices_revoke(
             "name": row.name,
             "device_code": row.device_code,
             "pending_queue": pending,
+            "soft_lockdown": True,
+            "offline_authorized_until": (
+                row.offline_authorized_until.isoformat() + "Z"
+                if row.offline_authorized_until
+                else None
+            ),
         },
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
@@ -15290,9 +15319,11 @@ async def offline_devices_revoke(
     await db.commit()
     data = offline_devices_svc.serialize_device(row)
     data["pending_queue"] = pending
+    data["soft_lockdown"] = True
     data["message"] = (
-        "Offline device revoked (soft). Pending queue ops were not deleted or auto-applied; "
-        "push/pull/ack remain blocked for this device (Stage 168 R1)."
+        "Offline device revoked (soft lockdown). Server auth envelope expired; "
+        "pending queue ops were not deleted or auto-applied; push/pull/ack remain blocked. "
+        "Remote IndexedDB wipe and Offline Complete remain deferred."
     )
     return env(data, "Offline device revoked")
 

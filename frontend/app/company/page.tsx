@@ -1019,8 +1019,9 @@ export default function Page() {
         <h2>Offline sync</h2>
         <p className="muted">
           Stage 168: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
-          Revoking a device blocks flush and retains pending queue ops (not auto-applied). Conflict
-          accept_client never double-posts applied POS. Offline Complete remains deferred.
+          Revoke soft-locks the device (expires server auth envelope, blocks sync/rebind) and retains
+          pending queue ops (not auto-applied). Conflict accept_client never double-posts applied POS.
+          Remote IndexedDB wipe and Offline Complete remain deferred.
         </p>
         {syncStatus ? (
           <div
@@ -1049,18 +1050,43 @@ export default function Page() {
           >
             <h3 style={{ marginTop: 0 }}>Owner offline alerts</h3>
             <p className="muted" style={{ marginTop: 0 }}>
-              In-app signals only — email/push delivery and Offline Complete remain deferred.
+              In-app list plus optional security-email notify for critical alerts. Push delivery
+              and Offline Complete remain deferred.
               {offlineAlertSummary
                 ? ` · ${offlineAlertSummary.critical ?? 0} critical · ${offlineAlertSummary.warning ?? 0} warning`
                 : ''}
             </p>
-            <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
+            <ul style={{ marginBottom: 8, paddingLeft: 20 }}>
               {offlineAlerts.map((a, idx) => (
                 <li key={`${a.code}-${a.device_id || idx}`}>
                   <strong>{String(a.severity || 'info').toUpperCase()}</strong> — {a.message}
                 </li>
               ))}
             </ul>
+            {(offlineAlertSummary?.critical ?? 0) > 0 ? (
+              <button
+                type="button"
+                disabled={deviceBusy}
+                onClick={async () => {
+                  setError('');
+                  setDeviceBusy(true);
+                  try {
+                    const r = await api('/offline/alerts/notify', { method: 'POST' });
+                    setMessage(
+                      r.data?.message ||
+                        `Notified ${r.data?.notifications_created ?? 0} critical offline alert(s)`,
+                    );
+                    await refreshOfflineSync();
+                  } catch (err: any) {
+                    setError(err.message || 'Offline alert notify failed');
+                  } finally {
+                    setDeviceBusy(false);
+                  }
+                }}
+              >
+                Email critical alerts
+              </button>
+            ) : null}
           </div>
         ) : null}
         <div
@@ -1074,8 +1100,8 @@ export default function Page() {
           <h3 style={{ marginTop: 0 }}>Local recovery export</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
             Download this browser&apos;s IndexedDB offline queue + device/envelope metadata as JSON.
-            Export never clears pending ops. No passwords or tokens are included. Owner alerts and
-            Offline Complete remain deferred.
+            Export never clears pending ops. No passwords or tokens are included. Soft lockdown
+            and critical email notify are PARTIAL; push and Offline Complete remain deferred.
           </p>
           <button
             type="button"
@@ -1325,9 +1351,9 @@ export default function Page() {
                               const pending = r.data?.pending_queue?.pending_total ?? 0;
                               setMessage(
                                 pending > 0
-                                  ? `Offline device revoked — ${pending} pending queue op(s) retained (not auto-applied; flush blocked)`
+                                  ? `Offline device soft-locked — envelope expired; ${pending} pending queue op(s) retained (flush blocked)`
                                   : r.data?.message ||
-                                      'Offline device revoked (soft revoke; no pending queue ops)',
+                                      'Offline device soft-locked (envelope expired; queue empty)',
                               );
                               await refreshOfflineSync();
                             } catch (err: any) {
