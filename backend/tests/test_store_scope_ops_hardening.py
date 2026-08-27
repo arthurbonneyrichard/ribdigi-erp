@@ -5155,3 +5155,101 @@ async def test_store_manager_party_history_store_wh_scoped(client, db_session):
     assert "PO-HIST-M" in supp_csv.text
     assert "PO-HIST-O" not in supp_csv.text
     assert "PI-HIST-N" not in supp_csv.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_batches_wh_scoped(client, db_session):
+    """Per-product batches list/export exclude foreign/null warehouse lots."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    soon = datetime.utcnow() + timedelta(days=20)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Batch Scope Mine",
+        code="BAT-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Batch Scope Other",
+        code="BAT-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Batch Mine WH",
+        code="BAT-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Batch Other WH",
+        code="BAT-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    db_session.add_all(
+        [
+            m.ProductBatch(
+                tenant_id=tid,
+                company_id=cid,
+                product_id=seed["p1"].id,
+                warehouse_id=wh_mine.id,
+                batch_number="LOT-PB-MINE",
+                expiry_date=soon,
+                quantity=5,
+            ),
+            m.ProductBatch(
+                tenant_id=tid,
+                company_id=cid,
+                product_id=seed["p1"].id,
+                warehouse_id=wh_other.id,
+                batch_number="LOT-PB-OTH",
+                expiry_date=soon,
+                quantity=8,
+            ),
+            m.ProductBatch(
+                tenant_id=tid,
+                company_id=cid,
+                product_id=seed["p1"].id,
+                warehouse_id=None,
+                batch_number="LOT-PB-NULL",
+                expiry_date=soon,
+                quantity=2,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    listed = await ac.get(
+        f"/api/v1/products/{seed['p1'].id}/batches", headers=headers
+    )
+    assert listed.status_code == 200, listed.text
+    lots = {b["batch_number"] for b in listed.json()["data"]}
+    assert "LOT-PB-MINE" in lots
+    assert "LOT-PB-OTH" not in lots
+    assert "LOT-PB-NULL" not in lots
+
+    exported = await ac.get(
+        f"/api/v1/products/{seed['p1'].id}/batches/export", headers=headers
+    )
+    assert exported.status_code == 200, exported.text
+    assert "LOT-PB-MINE" in exported.text
+    assert "LOT-PB-OTH" not in exported.text
+    assert "LOT-PB-NULL" not in exported.text

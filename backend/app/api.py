@@ -6241,9 +6241,18 @@ async def list_product_batches(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
-    rows = await catalog_svc.list_batches(db, claims["tenant_id"], product_id=product_id)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    rows = await catalog_svc.list_batches(
+        db,
+        claims["tenant_id"],
+        product_id=product_id,
+        company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
+    )
     return env([catalog_svc.serialize_batch(b) for b in rows])
 
 
@@ -6254,10 +6263,17 @@ async def export_product_batches(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 154 K1 — per-product batches CSV (distinct from Stage 137 expiring export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await inventory_ops_export_svc.export_product_batches_csv(
-        db, tenant_id=claims["tenant_id"], product_id=product_id
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,

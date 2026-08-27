@@ -144,8 +144,9 @@ async def test_catalog_hierarchy_brand_uom_product_chain(client, tmp_path, monke
 
 
 @pytest.mark.asyncio
-async def test_variants_barcode_images_batches(client, tmp_path, monkeypatch):
+async def test_variants_barcode_images_batches(client, db_session, tmp_path, monkeypatch):
     """Variants SKU, barcode generate, multi-image primary, batch/expiry via stock-in."""
+    from app import models as m
     from app import storage as storage_svc
 
     monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
@@ -153,6 +154,28 @@ async def test_variants_barcode_images_batches(client, tmp_path, monkeypatch):
 
     ac, seed = client
     headers = await _mgr(ac)
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Catalog Fid Store",
+        code="CAT-FID",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Catalog Fid WH",
+        code="CAT-FID-WH",
+    )
+    db_session.add(wh)
+    await db_session.commit()
 
     created = await ac.post(
         "/api/v1/products",
@@ -219,6 +242,7 @@ async def test_variants_barcode_images_batches(client, tmp_path, monkeypatch):
         headers=headers,
         json={
             "product_id": product_id,
+            "warehouse_id": wh.id,
             "quantity": 15,
             "batch_number": "S17-BATCH-1",
             "manufacturing_date": mfg,

@@ -337,10 +337,18 @@ async def export_product_batches_csv(
     *,
     tenant_id: str,
     product_id: str,
+    company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 154 K1 — per-product batches CSV (distinct from Stage 137 expiring window)."""
     await catalog_svc.get_product(db, tenant_id, product_id)
-    rows = await catalog_svc.list_batches(db, tenant_id, product_id=product_id)
+    rows = await catalog_svc.list_batches(
+        db,
+        tenant_id,
+        product_id=product_id,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PRODUCT_BATCH_EXPORT_COLUMNS)
     writer.writeheader()
