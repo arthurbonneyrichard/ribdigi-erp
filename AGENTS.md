@@ -99,8 +99,9 @@ store activation — never frontend-only.
    patch/generate residual store scoped (null-store fail-closed), and COA
    account ledger (+ export) from managed-store journals (null-store
    fail-closed), and expense approve/reject/delete + OCR suggest/apply +
-   attachment upload/delete writes store scoped. Not store-scoped RBAC
-   Complete.
+   attachment upload/delete writes store scoped, and customer/supplier
+   history (+ CSV) store+WH scoped (open quotations omit without store
+   column). Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
