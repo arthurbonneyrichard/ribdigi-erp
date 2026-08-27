@@ -64,11 +64,14 @@ store activation — never frontend-only.
    (+ exports; chat stockout intent) via managed WarehouseStock + store sales
    (null-store fail-closed; empty managed WH → empty; no `product.stock_qty`
    fallback), and AI insights + sales/expenses/purchases/cross-domain analysis
-   (+ exports) with the same store/WH fail-closed semantics, and AI customer
+   (+ exports) with the same store/WH fail-closed semantics, AI customer
    insights/assist (+ export; chat customer count) from managed-store sales
-   only (customer universe = buyers on those invoices). Document analyze /
-   security alerts / some chat sales helpers may still be company-wide;
-   not store-scoped RBAC Complete.
+   only (customer universe = buyers on those invoices), and AI chat
+   top-product / sales-month / expenses / classic low-stock helpers
+   (managed-store invoices/expenses; managed WarehouseStock vs reorder —
+   not `product.stock_qty`; empty managed store/WH → empty/zero). Document
+   analyze / security alerts may still be company-wide; not store-scoped
+   RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
