@@ -12331,6 +12331,7 @@ async def reports_export(
         compare=compare,
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
+        store_ids=managed,
     )
     return Response(
         content=content,
@@ -12482,12 +12483,17 @@ async def report_sales_daily(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Daily sales; store_manager scoped via manager_id stores."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await reports_svc.sales_daily(
             db,
             claims["tenant_id"],
             reports_svc.parse_date(date),
             company_id=claims.get("company_id"),
+            store_ids=managed,
         )
     )
 
@@ -12499,7 +12505,11 @@ async def report_sales_monthly(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Monthly sales; store_manager scoped via manager_id stores."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     now = datetime.utcnow()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await reports_svc.sales_monthly(
             db,
@@ -12507,6 +12517,7 @@ async def report_sales_monthly(
             year or now.year,
             month or now.month,
             company_id=claims.get("company_id"),
+            store_ids=managed,
         )
     )
 
@@ -12520,15 +12531,21 @@ async def report_sales_products(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Sales by product; store_manager scoped via manager_id stores."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await reports_svc.sales_by_product(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id,
+            store_id=single,
             category_id=category_id,
             company_id=claims.get("company_id"),
+            store_ids=multi,
         )
     )
 
@@ -12541,6 +12558,10 @@ async def report_sales_customers(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Sales by customer; store_manager scoped via manager_id stores."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await reports_svc.sales_by_customer(
             db,
@@ -12549,6 +12570,7 @@ async def report_sales_customers(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             limit=limit,
             company_id=claims.get("company_id"),
+            store_ids=managed,
         )
     )
 
@@ -12560,6 +12582,10 @@ async def report_sales_salesperson(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Sales by salesperson; store_manager scoped via manager_id stores."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await reports_svc.sales_by_salesperson(
             db,
@@ -12567,6 +12593,7 @@ async def report_sales_salesperson(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            store_ids=managed,
         )
     )
 
@@ -12578,6 +12605,10 @@ async def report_sales_by_store(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Sales by store; store_manager sees managed stores only."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await reports_svc.sales_by_store(
             db,
@@ -12585,6 +12616,7 @@ async def report_sales_by_store(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            store_ids=managed,
         )
     )
 
@@ -14777,11 +14809,21 @@ async def report(claims=Depends(require_permission("reports", "read")), db: Asyn
     dash = await dashboard(claims, db)
     now = datetime.utcnow()
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     daily = await reports_svc.sales_daily(
-        db, claims["tenant_id"], now, company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        now,
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     monthly = await reports_svc.sales_monthly(
-        db, claims["tenant_id"], now.year, now.month, company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        now.year,
+        now.month,
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     low = await reports_svc.inventory_low_stock(
         db,

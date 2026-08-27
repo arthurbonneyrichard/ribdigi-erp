@@ -1493,3 +1493,110 @@ async def test_store_manager_inventory_reports_warehouse_scoped(client, db_sessi
     )
     assert exported.status_code == 200, exported.text
     assert wh_other.code not in exported.text or "IR-O-WH" not in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_sales_reports_store_scoped(client, db_session):
+    """Daily/monthly/by-store/customer/salesperson sales reports exclude other stores."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="SalesRep Mine",
+        code="SR-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="SalesRep Other",
+        code="SR-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    mine_inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="INV-SR-MINE",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=50,
+        tax_amount=0,
+        total_amount=50,
+        store_id=mine.id,
+        posted_at=today,
+        created_by=mgr.id,
+    )
+    other_inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="INV-SR-OTH",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=999,
+        tax_amount=0,
+        total_amount=999,
+        store_id=other.id,
+        posted_at=today,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add_all([mine_inv, other_inv])
+    await db_session.commit()
+
+    daily = await ac.get("/api/v1/reports/sales/daily", headers=headers)
+    assert daily.status_code == 200, daily.text
+    dbody = daily.json()["data"]
+    assert float(dbody["total_revenue"]) == pytest.approx(50.0)
+    assert int(dbody["invoice_count"]) == 1
+
+    monthly = await ac.get(
+        "/api/v1/reports/sales/monthly",
+        headers=headers,
+        params={"year": today.year, "month": today.month},
+    )
+    assert monthly.status_code == 200, monthly.text
+    assert float(monthly.json()["data"]["total_revenue"]) == pytest.approx(50.0)
+
+    by_store = await ac.get("/api/v1/reports/sales/by-store", headers=headers)
+    assert by_store.status_code == 200, by_store.text
+    store_ids = {s["store_id"] for s in by_store.json()["data"]["stores"]}
+    assert mine.id in store_ids
+    assert other.id not in store_ids
+
+    customers = await ac.get("/api/v1/reports/sales/customers", headers=headers)
+    assert customers.status_code == 200, customers.text
+    assert float(customers.json()["data"]["total_revenue"]) == pytest.approx(50.0)
+
+    salesperson = await ac.get("/api/v1/reports/sales/salesperson", headers=headers)
+    assert salesperson.status_code == 200, salesperson.text
+    assert float(salesperson.json()["data"]["total_revenue"]) == pytest.approx(50.0)
+
+    products = await ac.get(
+        "/api/v1/reports/sales/products",
+        headers=headers,
+        params={"store_id": other.id},
+    )
+    assert products.status_code == 403
+    assert products.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    summary = await ac.get("/api/v1/reports/summary", headers=headers)
+    assert summary.status_code == 200, summary.text
+    assert float(summary.json()["data"]["today_sales"]["total_revenue"]) == pytest.approx(50.0)
+
+    exported = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "sales_daily", "format": "csv"},
+    )
+    assert exported.status_code == 200, exported.text
+    assert "999" not in exported.text or "INV-SR-OTH" not in exported.text

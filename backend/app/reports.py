@@ -382,23 +382,60 @@ async def _sales_totals_for_bounds(
     end: datetime,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Aggregate invoice + POS totals for a window.
+
+    ``store_ids`` None = tenant/company-wide; set (store_manager) filters invoices by
+    ``SalesInvoice.store_id`` and POS via ``PosSession.store_id`` (null store fail-closed).
+    """
+    if store_ids is not None and not store_ids:
+        return {
+            "invoice_count": 0,
+            "pos_count": 0,
+            "invoice_revenue": 0.0,
+            "pos_revenue": 0.0,
+            "total_revenue": 0.0,
+            "tax": 0.0,
+            "discounts": 0.0,
+            "net_sales": 0.0,
+        }
+
     inv_q = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
         m.SalesInvoice.posted_at >= start,
         m.SalesInvoice.posted_at <= end,
     )
-    pos_q = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-        m.Transaction.created_at >= start,
-        m.Transaction.created_at <= end,
-    )
     if company_id:
         inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
-        pos_q = pos_q.where(m.Transaction.company_id == company_id)
+    if store_ids is not None:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_q)).scalars().all()
+
+    if store_ids is not None:
+        pos_q = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.Transaction.created_at >= start,
+                m.Transaction.created_at <= end,
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+        if company_id:
+            pos_q = pos_q.where(m.Transaction.company_id == company_id)
+    else:
+        pos_q = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
+        )
+        if company_id:
+            pos_q = pos_q.where(m.Transaction.company_id == company_id)
     pos = (await db.execute(pos_q)).scalars().all()
     invoice_total = sum(float(i.total_amount or 0) for i in invoices)
     invoice_tax = sum(float(i.tax_amount or 0) for i in invoices)
@@ -424,15 +461,16 @@ async def sales_daily(
     date: datetime | None = None,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     day = date or datetime.utcnow()
     start, end = day_bounds(day)
     current = await _sales_totals_for_bounds(
-        db, tenant_id, start, end, company_id=company_id
+        db, tenant_id, start, end, company_id=company_id, store_ids=store_ids
     )
     prev_start, prev_end = day_bounds(start - timedelta(days=1))
     previous = await _sales_totals_for_bounds(
-        db, tenant_id, prev_start, prev_end, company_id=company_id
+        db, tenant_id, prev_start, prev_end, company_id=company_id, store_ids=store_ids
     )
     prev_rev = float(previous["total_revenue"] or 0)
     cur_rev = float(current["total_revenue"] or 0)
@@ -452,7 +490,19 @@ async def sales_monthly(
     month: int,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    if store_ids is not None and not store_ids:
+        return {
+            "year": year,
+            "month": month,
+            "invoice_count": 0,
+            "pos_count": 0,
+            "total_revenue": 0.0,
+            "previous_month_revenue": 0.0,
+            "change_pct": None,
+            "daily": [],
+        }
     start, end = month_bounds(year, month)
     inv_q = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -461,14 +511,30 @@ async def sales_monthly(
         m.SalesInvoice.posted_at <= end,
     )
     inv_q = apply_company_filter(inv_q, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_q)).scalars().all()
-    pos_q = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-        m.Transaction.created_at >= start,
-        m.Transaction.created_at <= end,
-    )
-    pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    if store_ids is not None:
+        pos_q = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.Transaction.created_at >= start,
+                m.Transaction.created_at <= end,
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    else:
+        pos_q = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
     pos = (await db.execute(pos_q)).scalars().all()
 
     by_day: dict[str, float] = defaultdict(float)
@@ -482,7 +548,7 @@ async def sales_monthly(
     total = sum(by_day.values())
     prev_year, prev_month = (year - 1, month) if month == 1 else (year, month - 1)
     prev = await sales_monthly_total(
-        db, tenant_id, prev_year, prev_month, company_id=company_id
+        db, tenant_id, prev_year, prev_month, company_id=company_id, store_ids=store_ids
     )
     return {
         "year": year,
@@ -503,7 +569,10 @@ async def sales_monthly_total(
     month: int,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> float:
+    if store_ids is not None and not store_ids:
+        return 0.0
     start, end = month_bounds(year, month)
     inv_q = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -512,14 +581,31 @@ async def sales_monthly_total(
         m.SalesInvoice.posted_at <= end,
     )
     inv_q = apply_company_filter(inv_q, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     inv = float((await db.execute(inv_q)).scalar() or 0)
-    pos_q = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-        m.Transaction.created_at >= start,
-        m.Transaction.created_at <= end,
-    )
-    pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    if store_ids is not None:
+        pos_q = (
+            select(func.coalesce(func.sum(m.Transaction.total), 0))
+            .select_from(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.Transaction.created_at >= start,
+                m.Transaction.created_at <= end,
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    else:
+        pos_q = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
     pos = float((await db.execute(pos_q)).scalar() or 0)
     return round(inv + pos, 2)
 
@@ -533,7 +619,18 @@ async def sales_by_product(
     store_id: str | None = None,
     category_id: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    if store_ids is not None and not store_ids and not store_id:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "store_id": store_id,
+            "category_id": category_id,
+            "products": [],
+            "total_revenue": 0.0,
+            "total_quantity": 0.0,
+        }
     if store_id:
         from app.stores import get_store
 
@@ -556,6 +653,8 @@ async def sales_by_product(
         stmt = stmt.where(m.SalesInvoice.posted_at <= to_date)
     if store_id:
         stmt = stmt.where(m.SalesInvoice.store_id == store_id)
+    elif store_ids is not None:
+        stmt = stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     if category_id:
         stmt = stmt.where(m.Product.category_id == category_id)
     rows = (await db.execute(stmt)).all()
@@ -590,6 +689,8 @@ async def sales_by_product(
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
     if store_id:
         pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    elif store_ids is not None:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id.in_(store_ids))
     for tx, _session in (await db.execute(pos_stmt)).all():
         for line in (tx.payload or {}).get("items") or []:
             pid = line.get("product_id")
@@ -636,9 +737,19 @@ async def sales_by_customer(
     to_date: datetime | None = None,
     limit: int = 50,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Top customers by revenue and purchase frequency (BR-14.1)."""
     limit = max(1, min(int(limit or 50), 200))
+    if store_ids is not None and not store_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "customers": [],
+            "total_revenue": 0.0,
+            "total_sales": 0,
+            "customer_count": 0,
+        }
 
     def _bucket(agg: dict[str, dict], customer_id: str | None) -> dict:
         key = customer_id or "walk_in"
@@ -667,6 +778,8 @@ async def sales_by_customer(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.customer_id)
         row["invoice_count"] += 1
@@ -674,10 +787,21 @@ async def sales_by_customer(
         row["revenue"] = round(row["revenue"] + float(inv.total_amount or 0), 2)
         row["tax"] = round(row["tax"] + float(inv.tax_amount or 0), 2)
 
-    pos_stmt = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-    )
+    if store_ids is not None:
+        pos_stmt = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+    else:
+        pos_stmt = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+        )
     pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
@@ -732,8 +856,19 @@ async def sales_by_salesperson(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by salesperson (invoice created_by / POS session user)."""
+    if store_ids is not None and not store_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "salespeople": [],
+            "total_revenue": 0.0,
+            "total_sales": 0,
+            "invoice_revenue": 0.0,
+            "pos_revenue": 0.0,
+        }
 
     def _bucket(agg: dict[str, dict], user_id: str | None) -> dict:
         key = user_id or "unknown"
@@ -768,6 +903,8 @@ async def sales_by_salesperson(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.created_by)
         total = float(inv.total_amount or 0)
@@ -792,6 +929,8 @@ async def sales_by_salesperson(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if store_ids is not None:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id.in_(store_ids))
     for tx, session in (await db.execute(pos_stmt)).all():
         user_id = session.user_id if session else None
         row = _bucket(agg, user_id)
@@ -846,8 +985,19 @@ async def sales_by_store(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by store (invoice.store_id / POS session.store_id)."""
+    if store_ids is not None and not store_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "stores": [],
+            "total_revenue": 0.0,
+            "total_sales": 0,
+            "invoice_revenue": 0.0,
+            "pos_revenue": 0.0,
+        }
 
     def _bucket(agg: dict[str, dict], store_id: str | None) -> dict:
         key = store_id or "unknown"
@@ -875,6 +1025,8 @@ async def sales_by_store(
     # Seed active stores so zero-activity locations still appear.
     store_q = select(m.Store).where(m.Store.tenant_id == tenant_id).order_by(m.Store.name)
     store_q = apply_company_filter(store_q, m.Store.company_id, company_id)
+    if store_ids is not None:
+        store_q = store_q.where(m.Store.id.in_(store_ids))
     stores = (await db.execute(store_q)).scalars().all()
     for store in stores:
         row = _bucket(agg, store.id)
@@ -890,6 +1042,8 @@ async def sales_by_store(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.store_id)
         total = float(inv.total_amount or 0)
@@ -914,6 +1068,8 @@ async def sales_by_store(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if store_ids is not None:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id.in_(store_ids))
     for tx, session in (await db.execute(pos_stmt)).all():
         store_id = session.store_id if session else None
         row = _bucket(agg, store_id)
@@ -954,9 +1110,10 @@ async def sales_by_store(
     for key, row in agg.items():
         if key == "unknown" and row["sale_count"] == 0:
             continue
+        if store_ids is not None and key == "unknown":
+            continue
         stores_out.append(row)
-    stores_out.sort(key=lambda x: x["revenue"], reverse=True)
-
+    stores_out = sorted(stores_out, key=lambda x: x["revenue"], reverse=True)
     return {
         "from_date": from_date,
         "to_date": to_date,

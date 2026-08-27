@@ -197,15 +197,25 @@ async def test_reports_suite_tenant_isolation(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
     today = datetime.utcnow().replace(hour=14, minute=0, second=0, microsecond=0)
+    store = await create_store(
+        db_session,
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="S16ISO",
+        name="S16 ISO Store",
+        manager_id=seed["mgr1"].id,
+    )
     db_session.add(
         m.SalesInvoice(
             tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
             invoice_number="INV-S16-R1-ISO",
             customer_id=seed["party1"].id,
             status="posted",
             subtotal=9999,
             tax_amount=0,
             total_amount=9999,
+            store_id=store.id,
             posted_at=today,
             created_by=seed["mgr1"].id,
         )
