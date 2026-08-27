@@ -8972,6 +8972,7 @@ async def create_purchase_invoice(
         claims,
         goods_receipt_id=payload.goods_receipt_id,
         purchase_order_id=payload.purchase_order_id,
+        warehouse_id=payload.warehouse_id,
     )
     inv = await purchasing_svc.create_purchase_invoice(
         db,
@@ -8980,6 +8981,7 @@ async def create_purchase_invoice(
         supplier_id=payload.supplier_id,
         goods_receipt_id=payload.goods_receipt_id,
         purchase_order_id=payload.purchase_order_id,
+        warehouse_id=payload.warehouse_id,
         supplier_invoice_number=payload.supplier_invoice_number,
         discount_amount=payload.discount_amount,
         attachment_url=payload.attachment_url,
@@ -9024,14 +9026,24 @@ async def patch_purchase_invoice(
     from app import dashboard_scope as dashboard_scope_svc
 
     await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, existing)
+    fields = payload.model_dump(exclude_unset=True)
+    if "warehouse_id" in fields:
+        managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(
+            managed_wh, fields.get("warehouse_id"), allow_unset=False
+        )
     inv = await purchase_ocr_svc.update_purchase_invoice_draft(
         db,
         tenant_id=claims["tenant_id"],
         invoice_id=invoice_id,
-        supplier_invoice_number=payload.supplier_invoice_number,
-        notes=payload.notes,
-        invoice_date=payload.invoice_date,
-        due_date=payload.due_date,
+        supplier_invoice_number=fields.get("supplier_invoice_number")
+        if "supplier_invoice_number" in fields
+        else None,
+        notes=fields.get("notes") if "notes" in fields else None,
+        invoice_date=fields.get("invoice_date") if "invoice_date" in fields else None,
+        due_date=fields.get("due_date") if "due_date" in fields else None,
+        warehouse_id=fields.get("warehouse_id") if "warehouse_id" in fields else None,
+        clear_warehouse="warehouse_id" in fields and fields.get("warehouse_id") is None,
     )
     await audit_svc.record_event(
         db,

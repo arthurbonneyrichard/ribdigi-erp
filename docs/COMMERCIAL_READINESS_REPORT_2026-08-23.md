@@ -17,7 +17,7 @@
 | Store entitlement | **COMPLETE** (MVP) |
 | User entitlement | **COMPLETE** (MVP) — plan-synced `max_users` + platform override; create/reactivate enforced (2026-08-23) |
 | User ↔ Store assignment | **MISSING** (ADR-005 POST-MVP) |
-| RBAC / store scope | **PARTIAL** — store_manager scoped via `manager_id`→`Warehouse.store_id` across POS/sales/expenses/stores/transfers/inventory ops/purchasing PR/PO/GRN/returns + purchase invoices via linked PO/GRN WH + **sales orders** + **POS sessions** (manual unlinked PIs fail-closed); ADR-005 still open |
+| RBAC / store scope | **PARTIAL** — store_manager scoped via `manager_id`→`Warehouse.store_id` across POS/sales/expenses/stores/transfers/inventory ops/purchasing PR/PO/GRN/returns + purchase invoices (direct `warehouse_id` or linked PO/GRN WH) + sales orders + POS sessions; ADR-005 still open |
 | Inventory / Purchasing / Sales / Accounting / Tax / Credit | **PASS** (MVP gates in `PRODUCTION_READINESS.md`) |
 | POS (online) | **PASS** (MVP) |
 | Offline foundation | **PARTIAL** — queue/catalog/sync MVP; 7-day auth envelope implemented (not VERIFIED) |
@@ -42,11 +42,11 @@
 6. **`max_users` enforcement** — **implemented** 2026-08-23 (plan sync + platform override + create/reactivate/import gate). Downgrades preserve users; `over_entitlement` on tenant dashboard.
 7. **Default store on company create** — **implemented** 2026-08-23 when store capacity allocated.
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
-9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS/sales/expenses/stores/transfers, warehouse inventory ops, purchasing PR/PO/GRN/returns, purchase invoices (via linked GRN/PO WH), **sales orders**, and **POS sessions**. ADR-005 membership still open.
+9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS/sales/expenses/stores/transfers, warehouse inventory ops, purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` or linked GRN/PO WH; unlinked null-WH still fail-closed), **sales orders**, and **POS sessions**. ADR-005 membership still open.
 10. **7-day offline POS** — **PARTIAL** (2026-08-23): envelope + client gate. Physical matrix: `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md` (**NOT RUN** / not VERIFIED).
 11. **Offline owner dashboard + alerts + recovery** — **PARTIAL**: recovery export + alerts API/UI; soft lockdown (revoke expires server envelope + security notify); critical alert email via `POST /offline/alerts/notify` (security channel); push + remote IndexedDB wipe + Offline Complete MISSING.
 12. **Scale / pen test on prod infra** — operator/external.
-13. **Commercial tip migrations** — apply `0106`→`0107`→`0108` before prod bind/entitlement paths (`docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md`, `ops/launch/commercial-tip-migrations.json`).
+13. **Commercial tip migrations** — apply `0106`→`0107`→`0108`→`0109` before prod bind/entitlement/PI warehouse paths (`docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md`, `ops/launch/commercial-tip-migrations.json`).
 
 ---
 
@@ -63,13 +63,14 @@
 - **Company entitlement:** `PLAN_CATALOG.soft_limits.companies` syncs `Tenant.max_companies` on plan change; platform `PATCH /platform/tenants/{id}/company-entitlement` for override/unlimited; downgrades preserve companies and block new creates. Tests: `test_company_entitlements.py`.
 - **Platform UI for company-entitlement override:** House tenant detail (`/platform/tenants/[id]`) mirrors store-entitlement controls (base / override / unlimited −1 / clear) via `PATCH /platform/tenants/{id}/company-entitlement`. Caps only — not paid billing Completes.
 - **Platform UI for user-entitlement override:** House tenant detail mirrors company/store controls (base / override / unlimited −1 / clear) via `PATCH /platform/tenants/{id}/user-entitlement`; shows `user_count` from platform tenant payload. Caps only — not paid billing Completes.
-- **User entitlement:** `PLAN_CATALOG.soft_limits.users` syncs `Tenant.max_users` on plan change (unless override); platform `PATCH /platform/tenants/{id}/user-entitlement`; create/reactivation/import blocked at limit (`USER_LIMIT_REACHED`); downgrades never delete users; tenant dashboard exposes `user_entitlement` / `over_entitlement`. Tests: `test_user_entitlements.py`. Alembic `20260823_0108` (`max_users_override`). Deploy: apply `0106` → `0107` → `0108` in order (`0107` revises `0106`).
+- **User entitlement:** `PLAN_CATALOG.soft_limits.users` syncs `Tenant.max_users` on plan change (unless override); platform `PATCH /platform/tenants/{id}/user-entitlement`; create/reactivation/import blocked at limit (`USER_LIMIT_REACHED`); downgrades never delete users; tenant dashboard exposes `user_entitlement` / `over_entitlement`. Tests: `test_user_entitlements.py`. Alembic `20260823_0108` (`max_users_override`). Deploy: apply `0106` → `0107` → `0108` → `0109` in order.
 - **Single-company UX:** `/me` and `/workspace` expose `company_entitlement`; Shell hides workspace switcher for non–tenant-admin users on single-company plans with one company; Companies page hides create-at-limit and redundant switch controls.
 - **Offline owner alerts:** `offline_alerts.py` + `GET /offline/alerts` (envelope expired/expiring, never bound, sync backlog/failed, open conflicts); Company `#offline-sync` alert list; `POST /offline/alerts/notify` creates security notifications (+ email when enabled) for **critical** alerts only. Push delivery remains deferred — not email/push Complete.
 - **Offline soft lockdown (PARTIAL):** `DELETE /offline/devices/{id}` sets `revoked_at` **and** expires `offline_authorized_until` immediately; queue retained; security notification emailed to admins. Does **not** remotely wipe offline IndexedDB; Offline Complete remains MISSING.
 - **Offline receipt numbering:** client IndexedDB seq per device (`offlineReceiptNumber.ts` → `OFF-{device}-{seq}`); POS shows receipt on queue; `/sync/push` preserves as sale `reference` with duplicate guard (`OFFLINE_RECEIPT_DUPLICATE`). Tests: `test_offline_receipt_numbering.py`.
 - **Operator runbooks (2026-08-23):** commercial Alembic deploy note; offline physical test matrix; PITR drill wrapper — all unchecked / not executed; go-live still NOT READY.
-- **Store RBAC ops hardening:** store + warehouse helpers through POS/sales/expenses/stores/transfers, warehouses/inventory ops, purchasing PR/PO/GRN/returns, purchase invoices via PO/GRN warehouse join, **sales orders** (list/export/create/get/patch/lifecycle/convert), and **POS sessions** (open/list/export/close/drawer/report). Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
+- **Store RBAC ops hardening:** store + warehouse helpers through POS/sales/expenses/stores/transfers, warehouses/inventory ops, purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` preferred, else PO/GRN join), **sales orders**, and **POS sessions**. Alembic `20260823_0109`. Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
+- **Purchase invoice warehouse_id (PARTIAL):** nullable `purchase_invoices.warehouse_id`; create from GRN/PO copies WH; manual invoices may set WH so store managers can draft in-scope bills; unlinked null-WH still fail-closed.
 - **Architecture doc drift:** `ARCHITECTURE_DOCUMENTS.md` §9.1 and `DATABASE_DOCUMENTATION.md` §§3.1–3.4 schema-per-tenant SQL samples marked historical / SUPERSEDED (live = shared-schema `tenant_id`).
 
 ---
@@ -77,7 +78,7 @@
 ## ACTION REQUIRED FROM OWNER
 
 1. LAUNCH §1–3 verification (secrets, CORS, Redis, SMTP, no demo creds).
-2. Staging → production cutover on target VPS/domain/HTTPS — apply Alembic `0106`→`0107`→`0108` first (`docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md`).
+2. Staging → production cutover on target VPS/domain/HTTPS — apply Alembic `0106`→`0107`→`0108`→`0109` first (`docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md`).
 3. Execute PITR + restore drill in staging/prod; retain evidence (`docs/PITR_RESTORE_DRILL_RUNBOOK_2026-08-23.md`).
 4. Physical POS offline tests (Windows/Android/iPad/macOS) per `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`.
 5. Production load test (~1000 VU) on sized infra.

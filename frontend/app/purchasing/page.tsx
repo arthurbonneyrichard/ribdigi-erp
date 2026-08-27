@@ -202,6 +202,8 @@ export default function Page() {
   const [manualInvPrice, setManualInvPrice] = useState('0');
   const [manualInvTaxRate, setManualInvTaxRate] = useState('15');
   const [manualInvRc, setManualInvRc] = useState(false);
+  const [manualInvWarehouseId, setManualInvWarehouseId] = useState('');
+  const [warehouses, setWarehouses] = useState<any[]>([]);
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
     supplier_invoice_number: string;
@@ -261,7 +263,8 @@ export default function Page() {
         : supplierStatus === 'active'
           ? '?status=active'
           : '';
-    const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes] = await Promise.all([
+    const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes, whRes] =
+      await Promise.all([
       api(prPath),
       api(poPath),
       api(`/suppliers${supplierQs}`),
@@ -270,6 +273,7 @@ export default function Page() {
       api(invPath),
       api(retPath),
       api('/purchasing/settings'),
+      api('/warehouses').catch(() => ({ data: [] })),
     ]);
     setRequests(prRes.data || []);
     setOrders(poRes.data || []);
@@ -277,6 +281,7 @@ export default function Page() {
     setProducts(prodRes.data || []);
     setGrns(grnRes.data || []);
     setInvoices(invRes.data || []);
+    setWarehouses(whRes.data || []);
     setReturns(retRes.data || []);
     setPrLevels(settingsRes.data?.levels || []);
   }
@@ -1093,6 +1098,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           supplier_id: manualInvSupplierId,
+          warehouse_id: manualInvWarehouseId || undefined,
           supplier_invoice_number: supplierInvoiceNo || undefined,
           is_reverse_charge: manualInvRc,
           items: [
@@ -1112,6 +1118,7 @@ export default function Page() {
       setTab('invoices');
       setSupplierInvoiceNo('');
       setManualInvRc(false);
+      setManualInvWarehouseId('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1604,6 +1611,10 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create manual purchase invoice</h3>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Store managers must pick a managed warehouse (or use GRN/PO). Unlinked invoices without
+          warehouse stay fail-closed.
+        </p>
         <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
           <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
@@ -1612,6 +1623,17 @@ export default function Page() {
               .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={manualInvWarehouseId}
+            onChange={(e) => setManualInvWarehouseId(e.target.value)}
+          >
+            <option value="">Warehouse (optional for admins; required for store managers)</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name || w.code || w.id}
               </option>
             ))}
           </select>

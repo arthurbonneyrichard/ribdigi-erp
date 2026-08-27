@@ -44,6 +44,7 @@ PURCHASE_INVOICE_EXPORT_COLUMNS = [
     "supplier_id",
     "purchase_order_id",
     "goods_receipt_id",
+    "warehouse_id",
     "supplier_invoice_number",
     "status",
     "invoice_date",

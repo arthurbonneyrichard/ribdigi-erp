@@ -18,12 +18,17 @@
       "revision": "20260823_0108",
       "purpose": "tenants.max_users_override",
       "required_before": ["user limit enforcement", "platform user-entitlement"]
+    },
+    {
+      "revision": "20260823_0109",
+      "purpose": "purchase_invoices.warehouse_id",
+      "required_before": ["store-manager manual purchase invoices"]
     }
   ],
-  "apply_order": ["20260823_0106", "20260823_0107", "20260823_0108"],
+  "apply_order": ["20260823_0106", "20260823_0107", "20260823_0108", "20260823_0109"],
   "operator_checklist": [
-    "alembic upgrade through 0108 on staging/prod before cutover",
-    "smoke bind + company/user entitlement patches",
+    "alembic upgrade through 0109 on staging/prod before cutover",
+    "smoke bind + company/user entitlement patches + PI warehouse create",
     "do not claim go-live from this file alone"
   ]
 }

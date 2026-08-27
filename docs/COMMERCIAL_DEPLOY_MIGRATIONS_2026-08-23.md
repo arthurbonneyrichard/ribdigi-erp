@@ -10,15 +10,16 @@
 | `20260823_0106` | Offline auth envelope columns on `offline_devices` | `POST /offline/devices/{id}/bind`, sync push/pull envelope validation |
 | `20260823_0107` | `tenants.max_companies_override` | Platform company-entitlement override + plan sync |
 | `20260823_0108` | `tenants.max_users_override` | User create/reactivate/import limits + platform user-entitlement |
+| `20260823_0109` | `purchase_invoices.warehouse_id` (nullable) | Store-manager PI scope for manual invoices |
 
 ```bash
 # From backend with production DATABASE_URL
 alembic upgrade head
 # Or pin explicitly:
-alembic upgrade 20260823_0108
+alembic upgrade 20260823_0109
 ```
 
-Confirm chain: `0107.down_revision == 0106`, `0108.down_revision == 0107`.
+Confirm chain: `0107.down_revision == 0106`, `0108.down_revision == 0107`, `0109.down_revision == 0108`.
 
 ## Post-migrate smoke (staging)
 

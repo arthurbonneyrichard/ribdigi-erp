@@ -950,6 +950,7 @@ class PurchaseInvoiceCreate(BaseModel):
     supplier_id: str | None = None
     goods_receipt_id: str | None = None
     purchase_order_id: str | None = None
+    warehouse_id: str | None = None
     supplier_invoice_number: str | None = None
     discount_amount: float = Field(default=0, ge=0)
     attachment_url: str | None = None
@@ -966,6 +967,7 @@ class PurchaseInvoiceUpdate(BaseModel):
     notes: str | None = None
     invoice_date: datetime | None = None
     due_date: datetime | None = None
+    warehouse_id: str | None = None
 
 
 class PurchaseInvoiceOcrApply(BaseModel):

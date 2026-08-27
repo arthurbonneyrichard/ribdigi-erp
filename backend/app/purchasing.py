@@ -2370,6 +2370,7 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "supplier_id": inv.supplier_id,
         "purchase_order_id": inv.purchase_order_id,
         "goods_receipt_id": inv.goods_receipt_id,
+        "warehouse_id": getattr(inv, "warehouse_id", None),
         "supplier_invoice_number": inv.supplier_invoice_number,
         "status": status,
         "invoice_date": inv.invoice_date,
@@ -2468,6 +2469,7 @@ async def create_purchase_invoice(
     supplier_id: str | None = None,
     goods_receipt_id: str | None = None,
     purchase_order_id: str | None = None,
+    warehouse_id: str | None = None,
     items: list[dict] | None = None,
     supplier_invoice_number: str | None = None,
     invoice_date: datetime | None = None,
@@ -2560,6 +2562,16 @@ async def create_purchase_invoice(
 
     from app.document_numbering import allocate_document_number
 
+    resolved_wh = (warehouse_id or "").strip() or None
+    if not resolved_wh and grn is not None and getattr(grn, "warehouse_id", None):
+        resolved_wh = str(grn.warehouse_id)
+    if not resolved_wh and po is not None and getattr(po, "warehouse_id", None):
+        resolved_wh = str(po.warehouse_id)
+    if resolved_wh:
+        from app.inventory import get_warehouse
+
+        await get_warehouse(db, tenant_id, resolved_wh, company_id=company_id)
+
     inv = m.PurchaseInvoice(
         tenant_id=tenant_id,
         company_id=company_id or (getattr(grn, "company_id", None) if grn else None) or (getattr(po, "company_id", None) if po else None),
@@ -2574,6 +2586,7 @@ async def create_purchase_invoice(
         supplier_id=supplier_id,
         purchase_order_id=purchase_order_id or (po.id if po else None),
         goods_receipt_id=grn.id if grn else None,
+        warehouse_id=resolved_wh,
         supplier_invoice_number=supplier_invoice_number,
         status="draft",
         invoice_date=inv_date,

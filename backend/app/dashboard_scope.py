@@ -212,10 +212,10 @@ def apply_warehouse_scope_filter(stmt, model, managed_wh_ids: list[str] | None):
 
 
 def apply_purchase_invoice_warehouse_scope(stmt, managed_wh_ids: list[str] | None):
-    """Scope purchase invoices via linked GRN/PO warehouse (prefer GRN).
+    """Scope purchase invoices via direct warehouse_id, else linked GRN/PO warehouse.
 
-    Manual invoices with neither link (or null warehouses) are excluded for
-    store_managers — fail closed until a direct ``warehouse_id`` column exists.
+    Prefer ``PurchaseInvoice.warehouse_id``, then GRN, then PO. Unlinked invoices with
+    null warehouse remain fail-closed for store_managers.
     """
     if managed_wh_ids is None:
         return stmt
@@ -226,14 +226,21 @@ def apply_purchase_invoice_warehouse_scope(stmt, managed_wh_ids: list[str] | Non
     ).outerjoin(
         m.PurchaseOrder, m.PurchaseOrder.id == m.PurchaseInvoice.purchase_order_id
     )
-    wh_expr = func.coalesce(m.GoodsReceipt.warehouse_id, m.PurchaseOrder.warehouse_id)
+    wh_expr = func.coalesce(
+        m.PurchaseInvoice.warehouse_id,
+        m.GoodsReceipt.warehouse_id,
+        m.PurchaseOrder.warehouse_id,
+    )
     return stmt.where(wh_expr.in_(managed_wh_ids))
 
 
 async def resolve_purchase_invoice_warehouse_id(
     db: AsyncSession, inv: m.PurchaseInvoice
 ) -> str | None:
-    """Warehouse implied by GRN (preferred) or PO; None if unlinked/unset."""
+    """Prefer direct PI.warehouse_id, then GRN, then PO."""
+    direct = getattr(inv, "warehouse_id", None)
+    if direct:
+        return str(direct)
     if getattr(inv, "goods_receipt_id", None):
         grn = await db.get(m.GoodsReceipt, inv.goods_receipt_id)
         if grn and getattr(grn, "warehouse_id", None):
@@ -261,13 +268,14 @@ async def assert_purchase_invoice_links_in_manager_scope(
     *,
     goods_receipt_id: str | None,
     purchase_order_id: str | None,
+    warehouse_id: str | None = None,
 ) -> None:
-    """Create-time gate: managers must link a GRN/PO whose warehouse is managed."""
+    """Create-time gate: managers need a managed warehouse (explicit or via GRN/PO)."""
     managed_wh = await managed_warehouse_ids(db, claims)
     if managed_wh is None:
         return
-    wid: str | None = None
-    if goods_receipt_id:
+    wid = (warehouse_id or "").strip() or None
+    if not wid and goods_receipt_id:
         grn = await db.get(m.GoodsReceipt, goods_receipt_id)
         if grn and getattr(grn, "warehouse_id", None):
             wid = str(grn.warehouse_id)

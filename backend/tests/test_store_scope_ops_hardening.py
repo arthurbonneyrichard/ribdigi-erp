@@ -929,10 +929,22 @@ async def test_store_manager_purchase_invoices_scoped_via_po_grn(client, db_sess
         supplier_id=supplier.id,
         purchase_order_id=None,
         goods_receipt_id=None,
+        warehouse_id=None,
         status="draft",
         created_by=mgr.id,
     )
-    db_session.add_all([inv_mine, inv_other, inv_manual])
+    inv_manual_scoped = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-SCOPE-MANUAL-WH",
+        supplier_id=supplier.id,
+        purchase_order_id=None,
+        goods_receipt_id=None,
+        warehouse_id=wh_mine.id,
+        status="draft",
+        created_by=mgr.id,
+    )
+    db_session.add_all([inv_mine, inv_other, inv_manual, inv_manual_scoped])
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -941,11 +953,15 @@ async def test_store_manager_purchase_invoices_scoped_via_po_grn(client, db_sess
     assert listed.status_code == 200, listed.text
     numbers = {row["invoice_number"] for row in listed.json()["data"]}
     assert "PI-SCOPE-MINE" in numbers
+    assert "PI-SCOPE-MANUAL-WH" in numbers
     assert "PI-SCOPE-OTH" not in numbers
     assert "PI-SCOPE-MANUAL" not in numbers
 
     ok = await ac.get(f"/api/v1/purchasing/invoices/{inv_mine.id}", headers=headers)
     assert ok.status_code == 200, ok.text
+    assert (
+        await ac.get(f"/api/v1/purchasing/invoices/{inv_manual_scoped.id}", headers=headers)
+    ).status_code == 200
     assert (await ac.get(f"/api/v1/purchasing/invoices/{inv_other.id}", headers=headers)).status_code == 403
     assert (await ac.get(f"/api/v1/purchasing/invoices/{inv_manual.id}", headers=headers)).status_code == 403
 
@@ -959,6 +975,31 @@ async def test_store_manager_purchase_invoices_scoped_via_po_grn(client, db_sess
     )
     assert create_manual.status_code == 403
     assert create_manual.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_manual_ok = await ac.post(
+        "/api/v1/purchasing/invoices",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "warehouse_id": wh_mine.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_manual_ok.status_code == 200, create_manual_ok.text
+    assert create_manual_ok.json()["data"]["warehouse_id"] == wh_mine.id
+    assert create_manual_ok.json()["data"]["invoice_number"]
+
+    create_manual_other_wh = await ac.post(
+        "/api/v1/purchasing/invoices",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "warehouse_id": wh_other.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_manual_other_wh.status_code == 403
+    assert create_manual_other_wh.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     create_other = await ac.post(
         "/api/v1/purchasing/invoices",
