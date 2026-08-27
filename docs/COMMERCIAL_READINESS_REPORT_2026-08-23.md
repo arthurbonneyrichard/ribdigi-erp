@@ -37,15 +37,16 @@
 1. **Go-live not executed** — `go_live_claimed: false`; LAUNCH §1–3 unchecked; §7 unsigned.
 2. **Paid billing missing** — ADR-002; blocks revenue launch.
 3. **Production cutover not performed** — `production_cutover_claimed: false`.
-4. **Live PITR / restore drill** — packaged runbooks only; `operator_pitr_drill_executed: false`.
+4. **Live PITR / restore drill** — packaged runbooks only; `operator_pitr_drill_executed: false`. See `docs/PITR_RESTORE_DRILL_RUNBOOK_2026-08-23.md` + `docs/DR_WAL_PITR_RUNBOOK.md`.
 5. **Architecture doc drift** — **partially fixed** 2026-08-23 (`DATABASE_DOCUMENTATION.md`, `ARCHITECTURE_DOCUMENTS.md`); audit remaining top-level docs.
 6. **`max_users` enforcement** — **implemented** 2026-08-23 (plan sync + platform override + create/reactivate/import gate). Downgrades preserve users; `over_entitlement` on tenant dashboard.
 7. **Default store on company create** — **implemented** 2026-08-23 when store capacity allocated.
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
 9. **Store RBAC** — not enforced on all operational APIs.
-10. **7-day offline POS** — **PARTIAL** (2026-08-23): `offline_valid_until` envelope on `offline_devices`, `POST /offline/devices/{id}/bind`, client IndexedDB gate blocks new offline sales when expired; sync push validates expiry/mismatch. **Offline Complete / 7-day VERIFIED remain MISSING** — physical endurance not run. See offline audit §13–14.
-11. **Offline owner dashboard + alerts + recovery** — **PARTIAL** (2026-08-23): recovery export UI + `GET /offline/alerts` (envelope expiry, sync backlog, conflicts) on Company `#offline-sync`. Email/push, lockdown automation, and Offline Complete remain MISSING.
+10. **7-day offline POS** — **PARTIAL** (2026-08-23): envelope + client gate. Physical matrix: `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md` (**NOT RUN** / not VERIFIED).
+11. **Offline owner dashboard + alerts + recovery** — **PARTIAL**: recovery export + alerts API/UI; email/push + lockdown + Offline Complete MISSING.
 12. **Scale / pen test on prod infra** — operator/external.
+13. **Commercial tip migrations** — apply `0106`→`0107`→`0108` before prod bind/entitlement paths (`docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md`, `ops/launch/commercial-tip-migrations.json`).
 
 ---
 
@@ -66,15 +67,16 @@
 - **Single-company UX:** `/me` and `/workspace` expose `company_entitlement`; Shell hides workspace switcher for non–tenant-admin users on single-company plans with one company; Companies page hides create-at-limit and redundant switch controls.
 - **Offline owner alerts:** `offline_alerts.py` + `GET /offline/alerts` (envelope expired/expiring, never bound, sync backlog/failed, open conflicts); Company `#offline-sync` alert list. In-app only — not email/push Complete.
 - **Offline receipt numbering:** client IndexedDB seq per device (`offlineReceiptNumber.ts` → `OFF-{device}-{seq}`); POS shows receipt on queue; `/sync/push` preserves as sale `reference` with duplicate guard (`OFFLINE_RECEIPT_DUPLICATE`). Tests: `test_offline_receipt_numbering.py`.
+- **Operator runbooks (2026-08-23):** commercial Alembic deploy note; offline physical test matrix; PITR drill wrapper — all unchecked / not executed; go-live still NOT READY.
 
 ---
 
 ## ACTION REQUIRED FROM OWNER
 
 1. LAUNCH §1–3 verification (secrets, CORS, Redis, SMTP, no demo creds).
-2. Staging → production cutover on target VPS/domain/HTTPS.
-3. Execute PITR + restore drill in staging/prod; retain evidence.
-4. Physical POS offline tests (Windows/Android/iPad/macOS) per master prompt §51–52.
+2. Staging → production cutover on target VPS/domain/HTTPS — apply Alembic `0106`→`0107`→`0108` first (`docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md`).
+3. Execute PITR + restore drill in staging/prod; retain evidence (`docs/PITR_RESTORE_DRILL_RUNBOOK_2026-08-23.md`).
+4. Physical POS offline tests (Windows/Android/iPad/macOS) per `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`.
 5. Production load test (~1000 VU) on sized infra.
 6. Vendor penetration test engagement.
 7. Decide billing provider integration timeline (ADR-002).

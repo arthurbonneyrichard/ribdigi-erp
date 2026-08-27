@@ -4,6 +4,7 @@
 |------|------|
 | `checklist-map.json` | CI-proven vs operator-required vs deferred classification for `docs/LAUNCH_CHECKLIST.md` (Stage 27 L1) |
 | `cutover-checklist.json` | Production cutover / rollback / secrets handoff phases mapping LAUNCH §§1–3 / §7 (Stage 29 X1) |
+| `commercial-tip-migrations.json` | Commercial tip Alembic `0106`→`0107`→`0108` prerequisites (2026-08-23; not go-live) |
 | `cutover-evidence.example.json` | Operator evidence schema after a real cutover (not a forged certificate) |
 | `attestation-matrix.json` | Go-live attestation Remaining honesty matrix for §§1–3 / §7 + Stage 26–29 flags (Stage 30 A1) |
 | `attestation-evidence.example.json` | Operator evidence schema after real go-live verification (not a forged attestation) |
@@ -16,5 +17,8 @@ Authoritative MVP docs:
 - `docs/CUTOVER_PACK_MVP.md` (`backend/tests/test_cutover_pack_x1.py`)
 - `docs/EVIDENCE_LEDGER_MVP.md` (`backend/tests/test_evidence_ledger_l1.py`)
 - `docs/ATTESTATION_PACK_MVP.md` (`backend/tests/test_attestation_pack_a1.py`) — Stage 30 A1
+- `docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md` — commercial tip Alembic order
+- `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md` — physical offline matrix (not VERIFIED)
+- `docs/PITR_RESTORE_DRILL_RUNBOOK_2026-08-23.md` — commercial PITR drill wrapper (not executed)
 
 Do **not** treat this packaging as production sign-off. Operator §§1–3 and §7 remain unchecked until a real environment is verified. Stage 29 X1 keeps `production_cutover_claimed: false` and `section_7_signed: false`. Stage 30 L1 keeps `live_runs_certified: false` and `attestation_claimed: false`. Stage 30 A1 keeps `attestation_claimed: false`, `section_7_signed: false`, and `sections_1_3_verified: false`.
