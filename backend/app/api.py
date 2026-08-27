@@ -10874,12 +10874,17 @@ async def account_transactions(
     from_date: str | None = None,
     to_date: str | None = None,
     include_unposted: bool = False,
+    store_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 8 A1 — ledger lines and running balance for one COA account."""
+    """Stage 8 A1 — ledger lines and running balance for one COA account; store scoped."""
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    store_ids = [single] if single else multi
     return env(
         await accounting_svc.account_transactions(
             db,
@@ -10889,6 +10894,7 @@ async def account_transactions(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             include_unposted=include_unposted,
             company_id=claims.get("company_id"),
+            store_ids=store_ids,
         )
     )
 
@@ -10899,10 +10905,16 @@ async def export_account_transactions(
     from_date: str | None = None,
     to_date: str | None = None,
     include_unposted: bool = False,
+    store_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 139 A1 — COA account ledger lines CSV."""
+    """Stage 139 A1 — COA account ledger lines CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    store_ids = [single] if single else multi
     text = await finance_ops_export_svc.export_account_transactions_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -10911,6 +10923,7 @@ async def export_account_transactions(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         include_unposted=include_unposted,
         company_id=claims.get("company_id"),
+        store_ids=store_ids,
     )
     return Response(
         content=text,

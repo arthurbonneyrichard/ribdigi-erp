@@ -4597,3 +4597,107 @@ async def test_store_manager_recurring_expenses_residual_scoped(client, db_sessi
     assert "Mine override" in gdescs
     assert "Recur other due" not in gdescs
     assert "Recur null due" not in gdescs
+
+
+@pytest.mark.asyncio
+async def test_store_manager_account_ledger_store_scoped(client, db_session):
+    """COA account ledger (+ export) excludes foreign/null-store journal lines."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Ledger Scope Mine",
+        code="LED-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Ledger Scope Other",
+        code="LED-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        description="Mine ledger sale",
+        reference="JE-LED-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 40, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 40},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Other ledger sale",
+        reference="JE-LED-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 800, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 800},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Null ledger sale",
+        reference="JE-LED-NULL",
+        store_id=None,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 50, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 50},
+        ],
+    )
+    await db_session.commit()
+
+    cash = await accounting_svc.get_account_by_code(
+        db_session, tid, "1000", company_id=cid
+    )
+    assert cash is not None
+
+    ledger = await ac.get(
+        f"/api/v1/accounting/accounts/{cash.id}/transactions", headers=headers
+    )
+    assert ledger.status_code == 200, ledger.text
+    body = ledger.json()["data"]
+    refs = {row["reference"] for row in body["transactions"]}
+    assert "JE-LED-MINE" in refs
+    assert "JE-LED-OTH" not in refs
+    assert "JE-LED-NULL" not in refs
+    assert float(body["total_debit"]) == pytest.approx(40.0)
+    assert float(body["closing_balance"]) == pytest.approx(40.0)
+
+    denied = await ac.get(
+        f"/api/v1/accounting/accounts/{cash.id}/transactions",
+        headers=headers,
+        params={"store_id": other.id},
+    )
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    exported = await ac.get(
+        f"/api/v1/accounting/accounts/{cash.id}/transactions/export", headers=headers
+    )
+    assert exported.status_code == 200, exported.text
+    assert "JE-LED-MINE" in exported.text
+    assert "JE-LED-OTH" not in exported.text
+    assert "JE-LED-NULL" not in exported.text

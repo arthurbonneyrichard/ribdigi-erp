@@ -285,8 +285,13 @@ async def account_transactions(
     to_date: datetime | None = None,
     include_unposted: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
-    """Ledger drill-down for one COA account (Stage 8 A1)."""
+    """Ledger drill-down for one COA account (Stage 8 A1).
+
+    When ``store_ids`` is set (store_manager scope), only journal lines from those
+    stores are included in opening/period balances (null-store fail-closed).
+    """
     account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
     stmt = (
         select(m.JournalEntryLine, m.JournalEntry)
@@ -299,6 +304,11 @@ async def account_transactions(
     )
     if not include_unposted:
         stmt = stmt.where(m.JournalEntry.status == "posted")
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.JournalEntry.id.is_(None))
     stmt = stmt.order_by(
         m.JournalEntry.entry_date.asc(),
         m.JournalEntry.entry_number.asc(),

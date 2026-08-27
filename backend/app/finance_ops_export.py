@@ -229,6 +229,7 @@ async def export_account_transactions_csv(
     to_date: datetime | None = None,
     include_unposted: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 139 A1 — COA account ledger lines CSV."""
     data = await accounting_svc.account_transactions(
@@ -239,6 +240,7 @@ async def export_account_transactions_csv(
         to_date=to_date,
         include_unposted=include_unposted,
         company_id=company_id,
+        store_ids=store_ids,
     )
     account = data.get("account") or {}
     code = account.get("code")
