@@ -80,6 +80,8 @@ export default function Page() {
   // Stage 163 V1 / S1 / Stage 165 R1 — offline devices + sync honesty + conflict resolve
   const [offlineDevices, setOfflineDevices] = useState<any[]>([]);
   const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [offlineAlerts, setOfflineAlerts] = useState<any[]>([]);
+  const [offlineAlertSummary, setOfflineAlertSummary] = useState<any>(null);
   const [syncConflicts, setSyncConflicts] = useState<any[]>([]);
   const [deviceForm, setDeviceForm] = useState({ name: '', platform: 'web' });
   const [deviceBusy, setDeviceBusy] = useState(false);
@@ -92,14 +94,19 @@ export default function Page() {
 
   async function refreshOfflineSync() {
     try {
-      const [devicesRes, syncRes, conflictsRes] = await Promise.all([
+      const [devicesRes, syncRes, conflictsRes, alertsRes] = await Promise.all([
         api('/offline/devices').catch(() => null),
         api('/sync/status').catch(() => null),
         api('/sync/conflicts?status=open').catch(() => null),
+        api('/offline/alerts').catch(() => null),
       ]);
       if (devicesRes?.data) setOfflineDevices(devicesRes.data || []);
       if (syncRes?.data) setSyncStatus(syncRes.data);
       if (conflictsRes?.data) setSyncConflicts(conflictsRes.data || []);
+      if (alertsRes?.data) {
+        setOfflineAlerts(alertsRes.data.alerts || []);
+        setOfflineAlertSummary(alertsRes.data.summary || null);
+      }
     } catch {
       // Company admins only for devices; sync status is authenticated.
     }
@@ -1033,6 +1040,27 @@ export default function Page() {
               Counts come from <code>/sync/status</code> (server queue — not live when a device is
               offline). Flush pending browser ops from POS when online.
             </p>
+          </div>
+        ) : null}
+        {offlineAlerts.length > 0 ? (
+          <div
+            className="card"
+            style={{ marginBottom: 12, padding: 12, borderLeft: '4px solid #f59e0b' }}
+          >
+            <h3 style={{ marginTop: 0 }}>Owner offline alerts</h3>
+            <p className="muted" style={{ marginTop: 0 }}>
+              In-app signals only — email/push delivery and Offline Complete remain deferred.
+              {offlineAlertSummary
+                ? ` · ${offlineAlertSummary.critical ?? 0} critical · ${offlineAlertSummary.warning ?? 0} warning`
+                : ''}
+            </p>
+            <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
+              {offlineAlerts.map((a, idx) => (
+                <li key={`${a.code}-${a.device_id || idx}`}>
+                  <strong>{String(a.severity || 'info').toUpperCase()}</strong> — {a.message}
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
         <div

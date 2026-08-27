@@ -87,6 +87,7 @@ from app import ai_chat as ai_chat_svc
 from app import ai_guard as ai_guard_svc
 from app import api_keys as api_keys_svc
 from app import offline_devices as offline_devices_svc
+from app import offline_alerts as offline_alerts_svc
 from app import sync_engine as sync_engine_svc
 from app import pos_holds as pos_holds_svc
 from app import webhooks as webhooks_svc
@@ -14635,6 +14636,15 @@ async def offline_devices_list(
         db, claims["tenant_id"], status=status, active_only=active_only
     )
     return env([offline_devices_svc.serialize_device(r) for r in rows])
+
+
+@api.get("/offline/alerts")
+async def offline_alerts_list(
+    claims=Depends(require_roles("company_admin", "super_admin", "tenant_admin", "tenant_owner")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Owner/admin offline signals — envelope expiry, sync backlog, open conflicts (in-app only)."""
+    return env(await offline_alerts_svc.collect_offline_alerts(db, claims["tenant_id"]))
 
 
 @api.post("/offline/devices")
