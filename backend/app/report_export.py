@@ -876,11 +876,23 @@ async def build_report_payload(
         )
     if report_type == "tax":
         return await tax_svc.tax_report(
-            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing":
         return await tax_svc.tax_filing_pack(
-            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing_gh":
         from app import tax_filings as tax_filings_svc
@@ -892,6 +904,8 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "GH",
             company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing_ke":
         from app import tax_filings as tax_filings_svc
@@ -903,6 +917,8 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "KE",
             company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing_ng":
         from app import tax_filings as tax_filings_svc
@@ -914,6 +930,8 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "NG",
             company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "transfer_history":
         from app import stores as stores_svc

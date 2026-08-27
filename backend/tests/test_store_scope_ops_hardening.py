@@ -3574,3 +3574,237 @@ async def test_store_manager_accounting_pnl_tb_store_scoped(client, db_session):
     assert dash.status_code == 200, dash.text
     assert float(dash.json()["data"]["profit_summary"]) == pytest.approx(100.0)
     assert float(dash.json()["data"]["income_mtd"]) == pytest.approx(100.0)
+
+
+@pytest.mark.asyncio
+async def test_store_manager_tax_reports_store_wh_scoped(client, db_session):
+    """Tax report/filing (+ exports) use managed-store outputs and managed-WH inputs."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Tax Scope Mine",
+        code="TAX-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Tax Scope Other",
+        code="TAX-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Tax Mine WH",
+        code="TAX-M-WH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Tax Other WH",
+        code="TAX-O-WH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-TAX-M-1",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=100,
+        tax_amount=15,
+        total_amount=115,
+        posted_at=today,
+        created_at=today,
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-TAX-O-1",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=1000,
+        tax_amount=900,
+        total_amount=1900,
+        posted_at=today,
+        created_at=today,
+    )
+    inv_null = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=None,
+        invoice_number="INV-TAX-NULL",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=50,
+        tax_amount=50,
+        total_amount=100,
+        posted_at=today,
+        created_at=today,
+    )
+    db_session.add_all([inv_mine, inv_other, inv_null])
+    await db_session.flush()
+
+    sess_mine = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        user_id=mgr.id,
+        session_number="TAX-POS-M",
+        status="open",
+        opening_cash=0,
+    )
+    sess_other = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        user_id=seed["admin1"].id,
+        session_number="TAX-POS-O",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add_all([sess_mine, sess_other])
+    await db_session.flush()
+    pos_mine = m.Transaction(
+        tenant_id=tid,
+        company_id=cid,
+        session_id=sess_mine.id,
+        tx_type="pos_sale",
+        reference="POS-TAX-M",
+        subtotal=20,
+        tax=5,
+        total=25,
+        created_at=today,
+    )
+    pos_other = m.Transaction(
+        tenant_id=tid,
+        company_id=cid,
+        session_id=sess_other.id,
+        tx_type="pos_sale",
+        reference="POS-TAX-O",
+        subtotal=200,
+        tax=80,
+        total=280,
+        created_at=today,
+    )
+    db_session.add_all([pos_mine, pos_other])
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Tax Scope Supplier",
+        kind="supplier",
+        status="active",
+    )
+    db_session.add(supplier)
+    await db_session.flush()
+    pi_mine = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-TAX-M-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="unpaid",
+        subtotal=40,
+        tax_amount=4,
+        total_amount=44,
+        paid_amount=0,
+        invoice_date=today,
+        created_at=today,
+    )
+    pi_other = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-TAX-O-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="unpaid",
+        subtotal=400,
+        tax_amount=400,
+        total_amount=800,
+        paid_amount=0,
+        invoice_date=today,
+        created_at=today,
+    )
+    pi_null = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-TAX-NULL",
+        supplier_id=supplier.id,
+        warehouse_id=None,
+        status="unpaid",
+        subtotal=30,
+        tax_amount=30,
+        total_amount=60,
+        paid_amount=0,
+        invoice_date=today,
+        created_at=today,
+    )
+    db_session.add_all([pi_mine, pi_other, pi_null])
+    await db_session.commit()
+
+    tax = await ac.get("/api/v1/reports/tax", headers=headers)
+    assert tax.status_code == 200, tax.text
+    body = tax.json()["data"]
+    assert float(body["output_tax_invoices"]) == pytest.approx(15.0)
+    assert float(body["output_tax_pos"]) == pytest.approx(5.0)
+    assert float(body["output_tax"]) == pytest.approx(20.0)
+    assert float(body["input_tax"]) == pytest.approx(4.0)
+    assert float(body["net_tax_payable"]) == pytest.approx(16.0)
+    assert int(body["invoice_count"]) == 1
+    assert int(body["pos_sale_count"]) == 1
+    assert int(body["purchase_count"]) == 1
+
+    filing = await ac.get("/api/v1/reports/tax/filing", headers=headers)
+    assert filing.status_code == 200, filing.text
+    fbody = filing.json()["data"]
+    out_nums = {r["document_number"] for r in fbody["schedules"]["output"]}
+    in_nums = {r["document_number"] for r in fbody["schedules"]["input"]}
+    assert "INV-TAX-M-1" in out_nums
+    assert "POS-TAX-M" in out_nums
+    assert "INV-TAX-O-1" not in out_nums
+    assert "POS-TAX-O" not in out_nums
+    assert "INV-TAX-NULL" not in out_nums
+    assert "PI-TAX-M-1" in in_nums
+    assert "PI-TAX-O-1" not in in_nums
+    assert "PI-TAX-NULL" not in in_nums
+
+    path_csv = await ac.get("/api/v1/reports/tax/export", headers=headers)
+    assert path_csv.status_code == 200, path_csv.text
+    assert "900" not in path_csv.text
+    assert "400" not in path_csv.text or "40" in path_csv.text
+
+    generic = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "tax", "format": "csv"},
+    )
+    assert generic.status_code == 200, generic.text
+    assert "900" not in generic.text
+
+    filing_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "tax_filing", "format": "csv"},
+    )
+    assert filing_csv.status_code == 200, filing_csv.text
+    assert "INV-TAX-O-1" not in filing_csv.text
+    assert "PI-TAX-O-1" not in filing_csv.text

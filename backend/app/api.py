@@ -13899,6 +13899,8 @@ async def reports_tax(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     fd, td, meta = reports_svc.resolve_report_period(
         period=period,
         year=year,
@@ -13907,12 +13909,16 @@ async def reports_tax(
         from_date=from_date,
         to_date=to_date,
     )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await tax_svc.tax_report(
         db,
         claims["tenant_id"],
         from_date=fd,
         to_date=td,
         company_id=claims.get("company_id"),
+        store_ids=managed,
+        warehouse_ids=managed_wh,
     )
     data["period"] = meta.get("period")
     data["period_year"] = meta.get("year")
@@ -13933,6 +13939,10 @@ async def reports_tax_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 161 X1 — reports tax path CSV (distinct from generic /reports/export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await finance_ops_export_svc.export_tax_report_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -13943,6 +13953,8 @@ async def reports_tax_export(
         month=month,
         quarter=quarter,
         company_id=claims.get("company_id"),
+        store_ids=managed,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -13965,9 +13977,12 @@ async def reports_tax_filing(
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import tax_filings as tax_filings_svc
 
     company_id = claims.get("company_id")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     fd, td, meta = reports_svc.resolve_report_period(
         period=period,
         year=year,
@@ -13994,6 +14009,8 @@ async def reports_tax_filing(
                     to_date=td,
                     jurisdiction=jurisdiction,
                     company_id=company_id,
+                    store_ids=managed,
+                    warehouse_ids=managed_wh,
                 )
             )
         )
@@ -14010,6 +14027,8 @@ async def reports_tax_filing(
                     to_date=td,
                     jurisdiction=juris,
                     company_id=company_id,
+                    store_ids=managed,
+                    warehouse_ids=managed_wh,
                 )
             )
         )
@@ -14021,6 +14040,8 @@ async def reports_tax_filing(
                 from_date=fd,
                 to_date=td,
                 company_id=company_id,
+                store_ids=managed,
+                warehouse_ids=managed_wh,
             )
             pack["jurisdiction"] = juris
             pack["government"] = None

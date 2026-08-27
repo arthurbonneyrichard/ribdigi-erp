@@ -653,6 +653,8 @@ async def export_tax_report_csv(
     month: int | None = None,
     quarter: int | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 161 X1 — reports tax path CSV (distinct from generic /reports/export)."""
     from app import reports as reports_svc
@@ -672,6 +674,8 @@ async def export_tax_report_csv(
         from_date=fd,
         to_date=td,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     data["period"] = meta.get("period")
     data["period_year"] = meta.get("year")
