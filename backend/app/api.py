@@ -7027,12 +7027,22 @@ async def list_sales_invoices(
 @api.get("/sales/invoices/export")
 async def export_sales_invoices_csv(
     status: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 132 I1 — sales invoice header CSV (no line dump)."""
+    """Stage 132 I1 — sales invoice header CSV (no line dump); store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await commerce_docs_export_svc.export_sales_invoices_csv(
-        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        status=status,
+        store_id=single,
+        store_ids=multi,
     )
     await db.commit()
     return Response(
@@ -7050,6 +7060,12 @@ async def create_sales_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id, allow_unset=False
+    )
     invoice = await sales_svc.create_sales_invoice(
         db,
         tenant_id=claims["tenant_id"],
@@ -7079,7 +7095,9 @@ async def get_sales_invoice(
     workspace_svc.assert_record_company(claims, invoice)
     assert_record_access(claims, invoice.created_by)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(managed, getattr(invoice, "store_id", None))
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(invoice, "store_id", None), allow_unset=False
+    )
     data = await sales_svc.serialize_invoice(db, invoice)
     await db.commit()
     return env(data)
@@ -7100,7 +7118,9 @@ async def print_sales_invoice(
     assert_record_access(claims, invoice.created_by)
     workspace_svc.assert_record_company(claims, invoice)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(managed, getattr(invoice, "store_id", None))
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(invoice, "store_id", None), allow_unset=False
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     company = None
     cid = claims.get("company_id") or getattr(invoice, "company_id", None)
@@ -7191,9 +7211,15 @@ async def send_sales_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     invoice, delivery = await sales_svc.send_sales_invoice(
         db,
         tenant_id=claims["tenant_id"],
@@ -7214,9 +7240,15 @@ async def post_sales_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
     invoice = await sales_svc.post_sales_invoice(
         db,
@@ -7251,9 +7283,15 @@ async def cancel_sales_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     invoice = await sales_svc.cancel_sales_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )

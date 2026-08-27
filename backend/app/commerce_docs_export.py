@@ -107,6 +107,8 @@ async def export_sales_invoices_csv(
     tenant_id: str,
     claims: dict,
     status: str | None = None,
+    store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     from app import workspace as workspace_svc
 
@@ -127,6 +129,13 @@ async def export_sales_invoices_csv(
             stmt = stmt.where(m.SalesInvoice.status.in_(["posted", "sent"]))
         else:
             stmt = stmt.where(m.SalesInvoice.status == key)
+    if store_id:
+        stmt = stmt.where(m.SalesInvoice.store_id == store_id)
+    elif store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.SalesInvoice.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.SalesInvoice.id.is_(None))
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()

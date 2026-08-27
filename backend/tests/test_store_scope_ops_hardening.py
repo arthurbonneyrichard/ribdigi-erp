@@ -49,6 +49,7 @@ async def test_store_manager_sales_invoices_scoped(client, db_session):
         total_amount=10,
         store_id=store.id,
         posted_at=datetime.utcnow(),
+        created_by=mgr.id,
     )
     theirs = m.SalesInvoice(
         tenant_id=tid,
@@ -61,8 +62,45 @@ async def test_store_manager_sales_invoices_scoped(client, db_session):
         total_amount=99,
         store_id=other.id,
         posted_at=datetime.utcnow(),
+        created_by=seed["admin1"].id,
     )
-    db_session.add_all([mine, theirs])
+    null_inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="INV-SCOPE-NULL",
+        customer_id=seed["party1"].id,
+        status="draft",
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        store_id=None,
+        created_by=seed["admin1"].id,
+    )
+    draft_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="INV-SCOPE-DRAFT-O",
+        customer_id=seed["party1"].id,
+        status="draft",
+        subtotal=8,
+        tax_amount=0,
+        total_amount=8,
+        store_id=other.id,
+        created_by=seed["admin1"].id,
+    )
+    draft_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="INV-SCOPE-DRAFT-M",
+        customer_id=seed["party1"].id,
+        status="draft",
+        subtotal=7,
+        tax_amount=0,
+        total_amount=7,
+        store_id=store.id,
+        created_by=mgr.id,
+    )
+    db_session.add_all([mine, theirs, null_inv, draft_other, draft_mine])
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -70,11 +108,18 @@ async def test_store_manager_sales_invoices_scoped(client, db_session):
     assert listed.status_code == 200, listed.text
     numbers = {row["invoice_number"] for row in listed.json()["data"]}
     assert "INV-SCOPE-MINE" in numbers
+    assert "INV-SCOPE-DRAFT-M" in numbers
     assert "INV-SCOPE-THEIRS" not in numbers
+    assert "INV-SCOPE-NULL" not in numbers
+    assert "INV-SCOPE-DRAFT-O" not in numbers
 
     denied = await ac.get(f"/api/v1/sales/invoices/{theirs.id}", headers=headers)
     assert denied.status_code == 403
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null = await ac.get(f"/api/v1/sales/invoices/{null_inv.id}", headers=headers)
+    assert denied_null.status_code == 403
+    assert denied_null.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     ok = await ac.get(f"/api/v1/sales/invoices/{mine.id}", headers=headers)
     assert ok.status_code == 200, ok.text
@@ -86,6 +131,69 @@ async def test_store_manager_sales_invoices_scoped(client, db_session):
     )
     assert cross.status_code == 403
     assert cross.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    exported = await ac.get("/api/v1/sales/invoices/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "INV-SCOPE-MINE" in exported.text
+    assert "INV-SCOPE-THEIRS" not in exported.text
+    assert "INV-SCOPE-NULL" not in exported.text
+
+    create_other = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "store_id": other.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_other.status_code == 403
+    assert create_other.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_unset = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_unset.status_code == 403
+    assert create_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_ok = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "store_id": store.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_ok.status_code == 200, create_ok.text
+
+    denied_post = await ac.post(
+        f"/api/v1/sales/invoices/{draft_other.id}/post", headers=headers
+    )
+    assert denied_post.status_code == 403
+    assert denied_post.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_send = await ac.post(
+        f"/api/v1/sales/invoices/{theirs.id}/send", headers=headers
+    )
+    assert denied_send.status_code == 403
+    assert denied_send.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_cancel = await ac.post(
+        f"/api/v1/sales/invoices/{draft_other.id}/cancel", headers=headers
+    )
+    assert denied_cancel.status_code == 403
+    assert denied_cancel.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    cancel_ok = await ac.post(
+        f"/api/v1/sales/invoices/{draft_mine.id}/cancel", headers=headers
+    )
+    assert cancel_ok.status_code == 200, cancel_ok.text
 
 
 @pytest.mark.asyncio
