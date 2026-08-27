@@ -101,7 +101,8 @@ store activation — never frontend-only.
    fail-closed), and expense approve/reject/delete + OCR suggest/apply +
    attachment upload/delete writes store scoped, and customer/supplier
    history (+ CSV) store+WH scoped (open quotations omit without store
-   column). Not store-scoped RBAC Complete.
+   column), and per-product batches list/export WH scoped (null-WH
+   fail-closed). Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
