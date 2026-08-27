@@ -58,8 +58,12 @@ store activation — never frontend-only.
    summary/suppliers/pending/returns reports, transfer history report,
    inventory stock-transfer write asserts (from-WH required; mutations must touch
    managed stores), expenses summary + category budget spent/pending
-   (null-store fail-closed; budget limits remain company-level), and expense +
-   recurring create / expense patch store asserts (foreign `store_id` denied);
+   (null-store fail-closed; budget limits remain company-level), expense +
+   recurring create / expense patch store asserts (foreign `store_id` denied),
+   and AI inventory low-stock / demand-forecast / dead-stock / predictions
+   (+ exports; chat stockout intent) via managed WarehouseStock + store sales
+   (null-store fail-closed; empty managed WH → empty; no `product.stock_qty`
+   fallback). `/ai/insights` / cross-domain may still be company-wide;
    not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
