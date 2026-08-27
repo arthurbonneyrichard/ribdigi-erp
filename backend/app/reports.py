@@ -125,6 +125,7 @@ async def profit_loss_with_optional_compare(
     to_date: datetime | None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     compare: bool = False,
     company_id: str | None = None,
 ) -> dict:
@@ -138,6 +139,7 @@ async def profit_loss_with_optional_compare(
             to_date=to_date,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids,
             company_id=company_id,
         )
     cur_from, cur_to = resolve_compare_period(from_date, to_date)
@@ -149,6 +151,7 @@ async def profit_loss_with_optional_compare(
         to_date=cur_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     prior = await profit_and_loss(
@@ -158,6 +161,7 @@ async def profit_loss_with_optional_compare(
         to_date=prior_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     current["comparison"] = build_comparison(
@@ -180,6 +184,7 @@ async def cash_flow_with_optional_compare(
     to_date: datetime | None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     compare: bool = False,
     company_id: str | None = None,
 ) -> dict:
@@ -191,6 +196,7 @@ async def cash_flow_with_optional_compare(
             to_date=to_date,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids,
             company_id=company_id,
         )
     cur_from, cur_to = resolve_compare_period(from_date, to_date)
@@ -202,6 +208,7 @@ async def cash_flow_with_optional_compare(
         to_date=cur_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     prior = await cash_flow(
@@ -211,6 +218,7 @@ async def cash_flow_with_optional_compare(
         to_date=prior_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     current["comparison"] = build_comparison(
@@ -232,6 +240,7 @@ async def balance_sheet_with_optional_compare(
     as_of: datetime | None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     compare: bool = False,
     company_id: str | None = None,
 ) -> dict:
@@ -242,6 +251,7 @@ async def balance_sheet_with_optional_compare(
             as_of=as_of,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids,
             company_id=company_id,
         )
     current_as_of = as_of or datetime.utcnow().replace(
@@ -254,6 +264,7 @@ async def balance_sheet_with_optional_compare(
         as_of=current_as_of,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     prior = await balance_sheet(
@@ -262,6 +273,7 @@ async def balance_sheet_with_optional_compare(
         as_of=prior_as_of,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     current["comparison"] = build_comparison(
@@ -1923,19 +1935,25 @@ async def cash_flow(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> dict:
     """Cash flow from cash + bank GL accounts, split into O/I/F activities."""
-    from app.accounting import ensure_default_accounts, resolve_journal_dimension_ids
+    from app.accounting import (
+        ensure_default_accounts,
+        merge_journal_store_scope,
+        resolve_journal_dimension_ids,
+    )
 
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+    resolved_store, resolved_branch, dim_store_ids = await resolve_journal_dimension_ids(
         db,
         tenant_id=tenant_id,
         store_id=store_id,
         branch_id=branch_id,
         company_id=company_id,
     )
+    store_ids = merge_journal_store_scope(dim_store_ids, store_ids)
     liq_q = select(m.Account).where(
         m.Account.tenant_id == tenant_id,
         (m.Account.is_cash_account.is_(True)) | (m.Account.is_bank_account.is_(True)),
@@ -2093,20 +2111,26 @@ async def balance_sheet(
     as_of: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> dict:
-    """Point-in-time balance sheet; optional as_of / store / branch from posted journals."""
-    from app.accounting import account_balances_through, resolve_journal_dimension_ids
+    """Point-in-time balance sheet; optional as_of / store / branch / scope from posted journals."""
+    from app.accounting import (
+        account_balances_through,
+        merge_journal_store_scope,
+        resolve_journal_dimension_ids,
+    )
 
-    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+    resolved_store, resolved_branch, dim_store_ids = await resolve_journal_dimension_ids(
         db,
         tenant_id=tenant_id,
         store_id=store_id,
         branch_id=branch_id,
         company_id=company_id,
     )
+    effective_store_ids = merge_journal_store_scope(dim_store_ids, store_ids)
     accounts, bal_by_id = await account_balances_through(
-        db, tenant_id, as_of=as_of, store_ids=store_ids, company_id=company_id
+        db, tenant_id, as_of=as_of, store_ids=effective_store_ids, company_id=company_id
     )
 
     def rows_for(account_type: str) -> list[dict]:

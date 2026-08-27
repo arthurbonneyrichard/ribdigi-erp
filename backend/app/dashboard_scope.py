@@ -1,7 +1,8 @@
 """Store-scoped dashboard resolution for Store Managers (Stage 81 S1 / ADR-005 adjacency).
 
 Also used for operational list/read hardening (POS sales, sales invoices, expenses,
-transfers, warehouses / inventory movements) — still ``stores.manager_id`` only;
+transfers, warehouses / inventory movements) and accounting statement reads
+(P&L / TB / cash-flow / balance-sheet) — still ``stores.manager_id`` only;
 ADR-005 membership tables remain deferred. Warehouse scope maps via
 ``Warehouse.store_id`` ∈ managed stores.
 """

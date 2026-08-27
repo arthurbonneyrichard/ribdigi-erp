@@ -303,12 +303,15 @@ async def export_trial_balance_csv(
     tenant_id: str,
     as_of=None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from reports/export)."""
     from app.accounting import ensure_default_accounts, trial_balance
 
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    data = await trial_balance(db, tenant_id, as_of=as_of, company_id=company_id)
+    data = await trial_balance(
+        db, tenant_id, as_of=as_of, company_id=company_id, store_ids=store_ids
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TRIAL_BALANCE_EXPORT_COLUMNS)
     writer.writeheader()
@@ -383,6 +386,7 @@ async def export_profit_loss_csv(
     to_date=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     """Stage 160 P1 — accounting profit-loss CSV (path-scoped; distinct from reports/export)."""
@@ -396,6 +400,7 @@ async def export_profit_loss_csv(
         to_date=to_date,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     buf = io.StringIO()
@@ -475,6 +480,7 @@ async def export_cash_flow_csv(
     to_date=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     """Stage 160 C1 — reports cash-flow path CSV (distinct from generic /reports/export)."""
@@ -487,6 +493,7 @@ async def export_cash_flow_csv(
         to_date=to_date,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     buf = io.StringIO()
@@ -562,6 +569,7 @@ async def export_balance_sheet_csv(
     as_of=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     """Stage 160 S1 — reports balance-sheet path CSV (distinct from generic /reports/export)."""
@@ -573,6 +581,7 @@ async def export_balance_sheet_csv(
         as_of=as_of,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     buf = io.StringIO()

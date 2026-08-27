@@ -3719,7 +3719,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     from app import accounting as accounting_svc
 
     pnl_mtd = await accounting_svc.profit_and_loss(
-        db, tid, from_date=month_start, to_date=now, company_id=cid
+        db, tid, from_date=month_start, to_date=now, company_id=cid, store_ids=managed_ids
     )
     profit_summary = float(pnl_mtd.get("net_profit") or 0)
     income_mtd = float(pnl_mtd.get("income") or 0)
@@ -12046,18 +12046,22 @@ async def get_trial_balance(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app.accounting import ensure_default_accounts, trial_balance
 
     await ensure_default_accounts(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )
     await db.commit()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     return env(
         await trial_balance(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            store_ids=multi,
         )
     )
 
@@ -12069,11 +12073,16 @@ async def accounting_trial_balance_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from /reports/export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     text = await finance_ops_export_svc.export_trial_balance_csv(
         db,
         tenant_id=claims["tenant_id"],
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
         company_id=claims.get("company_id"),
+        store_ids=multi,
     )
     return Response(
         content=text,
@@ -12094,20 +12103,24 @@ async def get_profit_loss(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app.accounting import ensure_default_accounts
 
     await ensure_default_accounts(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )
     await db.commit()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await reports_svc.profit_loss_with_optional_compare(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id,
+            store_id=single,
             branch_id=branch_id,
+            store_ids=multi,
             compare=compare,
             company_id=claims.get("company_id"),
         )
@@ -12124,13 +12137,18 @@ async def accounting_profit_loss_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 160 P1 — accounting profit-loss CSV (path-scoped; distinct from /reports/export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_profit_loss_csv(
         db,
         tenant_id=claims["tenant_id"],
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
-        store_id=store_id,
+        store_id=single,
         branch_id=branch_id,
+        store_ids=multi,
         company_id=claims.get("company_id"),
     )
     return Response(
@@ -12167,13 +12185,18 @@ async def reports_profit_loss_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 161 L1 — reports profit-loss path CSV (distinct from /accounting/... and /reports/export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_profit_loss_csv(
         db,
         tenant_id=claims["tenant_id"],
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
-        store_id=store_id,
+        store_id=single,
         branch_id=branch_id,
+        store_ids=multi,
         company_id=claims.get("company_id"),
     )
     return Response(
@@ -12201,11 +12224,16 @@ async def reports_trial_balance_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 161 B1 — reports trial-balance path CSV (distinct from /accounting/... and /reports/export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     text = await finance_ops_export_svc.export_trial_balance_csv(
         db,
         tenant_id=claims["tenant_id"],
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
         company_id=claims.get("company_id"),
+        store_ids=multi,
     )
     return Response(
         content=text,
@@ -12226,14 +12254,19 @@ async def report_cash_flow(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await reports_svc.cash_flow_with_optional_compare(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id,
+            store_id=single,
             branch_id=branch_id,
+            store_ids=multi,
             compare=compare,
             company_id=claims.get("company_id"),
         )
@@ -12250,13 +12283,18 @@ async def reports_cash_flow_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 160 C1 — reports cash-flow path CSV (distinct from generic /reports/export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_cash_flow_csv(
         db,
         tenant_id=claims["tenant_id"],
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
-        store_id=store_id,
+        store_id=single,
         branch_id=branch_id,
+        store_ids=multi,
         company_id=claims.get("company_id"),
     )
     return Response(
@@ -12277,13 +12315,18 @@ async def report_balance_sheet(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await reports_svc.balance_sheet_with_optional_compare(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
-            store_id=store_id,
+            store_id=single,
             branch_id=branch_id,
+            store_ids=multi,
             compare=compare,
             company_id=claims.get("company_id"),
         )
@@ -12299,12 +12342,17 @@ async def reports_balance_sheet_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 160 S1 — reports balance-sheet path CSV (distinct from generic /reports/export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_balance_sheet_csv(
         db,
         tenant_id=claims["tenant_id"],
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
-        store_id=store_id,
+        store_id=single,
         branch_id=branch_id,
+        store_ids=multi,
         company_id=claims.get("company_id"),
     )
     return Response(

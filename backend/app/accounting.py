@@ -1190,6 +1190,24 @@ async def resolve_journal_dimension_ids(
     return None, None, None
 
 
+def merge_journal_store_scope(
+    dimension_store_ids: list[str] | None,
+    scope_store_ids: list[str] | None,
+) -> list[str] | None:
+    """Intersect optional journal dimension filter with store_manager scope.
+
+    - Both ``None`` → tenant-wide (no store filter)
+    - ``scope_store_ids`` set → fail-closed list (may be empty); null-store journals excluded
+    - Both lists → intersection (empty when no overlap)
+    """
+    if scope_store_ids is None:
+        return dimension_store_ids
+    if dimension_store_ids is None:
+        return list(scope_store_ids)
+    allowed = set(scope_store_ids)
+    return [sid for sid in dimension_store_ids if sid in allowed]
+
+
 async def post_journal_entry(
     db: AsyncSession,
     *,
@@ -2097,10 +2115,11 @@ async def trial_balance(
     *,
     as_of: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
-    """Trial balance; optional as_of rebuilds balances from posted journals through that date."""
+    """Trial balance; optional as_of / store_ids rebuilds from posted journals."""
     accounts, bal_by_id = await account_balances_through(
-        db, tenant_id, as_of=as_of, company_id=company_id
+        db, tenant_id, as_of=as_of, store_ids=store_ids, company_id=company_id
     )
     rows = []
     debit_total = 0.0
@@ -2156,17 +2175,19 @@ async def profit_and_loss(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> dict:
-    """Period P&L from posted journal lines (optional date range / store / branch)."""
+    """Period P&L from posted journal lines (optional date range / store / branch / scope)."""
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+    resolved_store, resolved_branch, dim_store_ids = await resolve_journal_dimension_ids(
         db,
         tenant_id=tenant_id,
         store_id=store_id,
         branch_id=branch_id,
         company_id=company_id,
     )
+    effective_store_ids = merge_journal_store_scope(dim_store_ids, store_ids)
 
     stmt = (
         select(m.JournalEntryLine, m.Account, m.JournalEntry)
@@ -2186,9 +2207,9 @@ async def profit_and_loss(
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
-    if store_ids is not None:
-        if store_ids:
-            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+    if effective_store_ids is not None:
+        if effective_store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(effective_store_ids))
         else:
             stmt = stmt.where(m.JournalEntry.store_id.in_([]))
 

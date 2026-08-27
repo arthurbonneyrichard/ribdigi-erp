@@ -820,10 +820,18 @@ async def build_report_payload(
             to_date=td,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids if not store_id else None,
             compare=compare,
+            company_id=company_id,
         )
     if report_type == "trial_balance":
-        return await accounting_svc.trial_balance(db, tenant_id, as_of=as_of)
+        return await accounting_svc.trial_balance(
+            db,
+            tenant_id,
+            as_of=as_of,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "profit_loss":
         return await reports_svc.profit_loss_with_optional_compare(
             db,
@@ -832,7 +840,9 @@ async def build_report_payload(
             to_date=td,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids if not store_id else None,
             compare=compare,
+            company_id=company_id,
         )
     if report_type == "balance_sheet":
         return await reports_svc.balance_sheet_with_optional_compare(
@@ -841,7 +851,9 @@ async def build_report_payload(
             as_of=as_of,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids if not store_id else None,
             compare=compare,
+            company_id=company_id,
         )
     if report_type == "credit_aging":
         from app import credit as credit_svc

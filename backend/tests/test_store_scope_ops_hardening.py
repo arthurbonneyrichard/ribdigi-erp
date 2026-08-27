@@ -3427,3 +3427,150 @@ async def test_store_manager_credit_statements_payments_store_scoped(client, db_
         },
     )
     assert denied_ap.status_code == 403, denied_ap.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_accounting_pnl_tb_store_scoped(client, db_session):
+    """P&L / TB / cash-flow / balance-sheet (+ exports, dashboard) exclude foreign-store journals."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Acct Stmt Mine",
+        code="ACC-PNL-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Acct Stmt Other",
+        code="ACC-PNL-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        description="Mine store sale",
+        reference="JE-ACC-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 100, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 100},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Other store sale",
+        reference="JE-ACC-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 9000, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 9000},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Null-store sale (fail-closed)",
+        reference="JE-ACC-NULL",
+        store_id=None,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 500, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 500},
+        ],
+    )
+    await db_session.commit()
+
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
+    pnl = await ac.get(
+        "/api/v1/accounting/profit-loss",
+        headers=headers,
+        params={"from_date": today, "to_date": today},
+    )
+    assert pnl.status_code == 200, pnl.text
+    pdata = pnl.json()["data"]
+    assert float(pdata["income"]) == pytest.approx(100.0)
+    assert float(pdata["net_profit"]) == pytest.approx(100.0)
+
+    denied = await ac.get(
+        "/api/v1/accounting/profit-loss",
+        headers=headers,
+        params={"store_id": other.id},
+    )
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    reports_pnl = await ac.get(
+        "/api/v1/reports/profit-loss",
+        headers=headers,
+        params={"from_date": today, "to_date": today},
+    )
+    assert reports_pnl.status_code == 200, reports_pnl.text
+    assert float(reports_pnl.json()["data"]["income"]) == pytest.approx(100.0)
+
+    tb = await ac.get("/api/v1/accounting/trial-balance", headers=headers)
+    assert tb.status_code == 200, tb.text
+    rows_by_code = {r["code"]: r for r in tb.json()["data"]["rows"]}
+    assert float(rows_by_code["4000"]["credit"]) == pytest.approx(100.0)
+    assert float(rows_by_code["1000"]["debit"]) == pytest.approx(100.0)
+
+    cf = await ac.get(
+        "/api/v1/reports/cash-flow",
+        headers=headers,
+        params={"from_date": today, "to_date": today},
+    )
+    assert cf.status_code == 200, cf.text
+    assert float(cf.json()["data"]["inflows"]) == pytest.approx(100.0)
+
+    bs = await ac.get("/api/v1/reports/balance-sheet", headers=headers)
+    assert bs.status_code == 200, bs.text
+    cash_row = next(
+        (r for r in bs.json()["data"]["assets"] if r["code"] == "1000"), None
+    )
+    assert cash_row is not None
+    assert float(cash_row["balance"]) == pytest.approx(100.0)
+
+    pnl_csv = await ac.get(
+        "/api/v1/accounting/profit-loss/export",
+        headers=headers,
+        params={"from_date": today, "to_date": today},
+    )
+    assert pnl_csv.status_code == 200, pnl_csv.text
+    assert "9000" not in pnl_csv.text
+    assert "100" in pnl_csv.text
+
+    tb_csv = await ac.get("/api/v1/reports/trial-balance/export", headers=headers)
+    assert tb_csv.status_code == 200, tb_csv.text
+    assert "9000" not in tb_csv.text
+
+    generic = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "profit_loss", "from_date": today, "to_date": today},
+    )
+    assert generic.status_code == 200, generic.text
+    assert "9000" not in generic.text
+
+    dash = await ac.get("/api/v1/dashboard", headers=headers)
+    assert dash.status_code == 200, dash.text
+    assert float(dash.json()["data"]["profit_summary"]) == pytest.approx(100.0)
+    assert float(dash.json()["data"]["income_mtd"]) == pytest.approx(100.0)
