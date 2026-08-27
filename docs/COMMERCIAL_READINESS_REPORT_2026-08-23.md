@@ -17,7 +17,7 @@
 | Store entitlement | **COMPLETE** (MVP) |
 | User entitlement | **COMPLETE** (MVP) — plan-synced `max_users` + platform override; create/reactivate enforced (2026-08-23) |
 | User ↔ Store assignment | **MISSING** (ADR-005 POST-MVP) |
-| RBAC / store scope | **PARTIAL** — dashboard/BI + POS sales list/export + sales invoice list/get/print scoped for `store_manager` via `manager_id`; ADR-005 membership still MISSING |
+| RBAC / store scope | **PARTIAL** — dashboard/BI + POS sales + sales invoices + expenses + stores list/inventory/sales scoped for `store_manager` via `manager_id`; purchasing/inventory movements + ADR-005 still open |
 | Inventory / Purchasing / Sales / Accounting / Tax / Credit | **PASS** (MVP gates in `PRODUCTION_READINESS.md`) |
 | POS (online) | **PASS** (MVP) |
 | Offline foundation | **PARTIAL** — queue/catalog/sync MVP; 7-day auth envelope implemented (not VERIFIED) |

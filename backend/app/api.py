@@ -9761,14 +9761,22 @@ async def expenses(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 98 Q1 — optional status filter for approval queue honesty."""
+    """Stage 98 Q1 — optional status filter; store_manager scoped via manager_id."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     stmt = (
         select(m.Expense)
         .where(*workspace_svc.company_scope_filter(m.Expense, claims))
         .order_by(m.Expense.created_at.desc())
     )
-    if store_id:
-        stmt = stmt.where(m.Expense.store_id == store_id)
+    if single:
+        stmt = stmt.where(m.Expense.store_id == single)
+    elif multi is not None:
+        if not multi:
+            return env([])
+        stmt = stmt.where(m.Expense.store_id.in_(multi))
     if department_id:
         stmt = stmt.where(m.Expense.department_id == department_id)
     if status:
@@ -9793,13 +9801,18 @@ async def expenses_export(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 120 X1 — expenses CSV export (record-scope aware)."""
+    """Stage 120 X1 — expenses CSV export (record-scope + store_manager aware)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await expense_export_svc.export_expenses_csv(
         db,
         tenant_id=claims["tenant_id"],
         claims=claims,
         status=status,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         department_id=department_id,
     )
     return Response(
@@ -9842,9 +9855,15 @@ async def get_expense(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(expense, "store_id", None), allow_unset=False
+    )
     return env(await expenses_svc.serialize_expense_full(db, expense))
 
 
@@ -9855,9 +9874,15 @@ async def patch_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     expense = await expenses_svc.update_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -10026,9 +10051,15 @@ async def download_expense_attachment(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(expense, "store_id", None), allow_unset=False
+    )
     if not expense.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" in expense.attachment_url:
@@ -13241,10 +13272,16 @@ async def stores(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 121 S1 — active_only / is_active for honest inactive-only store lists."""
+    """Stage 121 S1 — active_only / is_active; store_manager sees managed stores only."""
     from app import cash_drawer as cash_drawer_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     stmt = select(m.Store).where(*workspace_svc.company_scope_filter(m.Store, claims))
+    if managed is not None:
+        if not managed:
+            return env([])
+        stmt = stmt.where(m.Store.id.in_(managed))
     if is_active is not None:
         stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
     elif active_only:
@@ -13476,6 +13513,10 @@ async def store_inventory(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, store_id)
     return env(
         await stores_svc.store_inventory(
             db,
@@ -13495,6 +13536,10 @@ async def store_inventory_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 155 I1 — store inventory / reorder CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, store_id)
     text = await location_export_svc.export_store_inventory_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -13522,6 +13567,10 @@ async def store_sales(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, store_id)
     return env(
         await stores_svc.store_sales(
             db,
@@ -13545,6 +13594,10 @@ async def store_sales_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 155 S1 — store sales summary + recent lines CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, store_id)
     text = await location_export_svc.export_store_sales_csv(
         db,
         tenant_id=claims["tenant_id"],

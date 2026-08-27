@@ -61,6 +61,7 @@ async def export_expenses_csv(
     claims: dict,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     department_id: str | None = None,
 ) -> str:
     """Stage 120 X1 — export tenant expenses (record-scope aware)."""
@@ -71,6 +72,13 @@ async def export_expenses_csv(
     )
     if store_id:
         stmt = stmt.where(m.Expense.store_id == store_id)
+    elif store_ids is not None:
+        if not store_ids:
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=EXPENSE_EXPORT_COLUMNS)
+            writer.writeheader()
+            return buf.getvalue()
+        stmt = stmt.where(m.Expense.store_id.in_(store_ids))
     if department_id:
         stmt = stmt.where(m.Expense.department_id == department_id)
     if status:

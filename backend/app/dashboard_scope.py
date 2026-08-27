@@ -51,14 +51,30 @@ def store_scope_payload(store_ids: list[str] | None) -> dict:
 
 
 def assert_store_in_manager_scope(
-    managed_ids: list[str] | None, store_id: str | None
+    managed_ids: list[str] | None,
+    store_id: str | None,
+    *,
+    allow_unset: bool = True,
 ) -> None:
-    """403 when a store_manager requests a store outside ``manager_id`` scope."""
+    """403 when a store_manager requests a store outside ``manager_id`` scope.
+
+    When ``allow_unset`` is False, missing ``store_id`` is also denied (fail closed
+    for records that should be store-bound for managers).
+    """
     if managed_ids is None:
         return
     sid = (store_id or "").strip()
     if not sid:
-        return
+        if allow_unset:
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Record has no store assignment within your managed store scope.",
+                "store_id": None,
+            },
+        )
     if sid not in managed_ids:
         raise HTTPException(
             status_code=403,

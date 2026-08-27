@@ -175,3 +175,89 @@ async def test_store_manager_pos_sales_scoped(client, db_session):
     )
     assert denied.status_code == 403
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expenses_and_stores_scoped(client, db_session):
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Exp Mgr Store",
+        code="EXP-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Exp Other Store",
+        code="EXP-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([store, other])
+    await db_session.flush()
+    mine = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Managed store expense",
+        amount=12.5,
+        store_id=store.id,
+        status="pending",
+        created_by=mgr.id,
+    )
+    theirs = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Other store expense",
+        amount=99,
+        store_id=other.id,
+        status="pending",
+        created_by=mgr.id,
+    )
+    unset = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="No store expense",
+        amount=5,
+        store_id=None,
+        status="pending",
+        created_by=mgr.id,
+    )
+    db_session.add_all([mine, theirs, unset])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    stores = await ac.get("/api/v1/stores", headers=headers)
+    assert stores.status_code == 200, stores.text
+    store_ids = {row["id"] for row in stores.json()["data"]}
+    assert store.id in store_ids
+    assert other.id not in store_ids
+
+    listed = await ac.get("/api/v1/expenses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    descs = {row["description"] for row in listed.json()["data"]}
+    assert "Managed store expense" in descs
+    assert "Other store expense" not in descs
+    assert "No store expense" not in descs
+
+    assert (await ac.get(f"/api/v1/expenses/{theirs.id}", headers=headers)).status_code == 403
+    assert (await ac.get(f"/api/v1/expenses/{unset.id}", headers=headers)).status_code == 403
+    ok = await ac.get(f"/api/v1/expenses/{mine.id}", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    inv_denied = await ac.get(f"/api/v1/stores/{other.id}/inventory", headers=headers)
+    assert inv_denied.status_code == 403
+    assert inv_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    sales_denied = await ac.get(f"/api/v1/stores/{other.id}/sales", headers=headers)
+    assert sales_denied.status_code == 403
+    assert sales_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

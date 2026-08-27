@@ -47,8 +47,8 @@ store activation — never frontend-only.
    membership tables unless that ADR is intentionally opened. Until then, store
    manager operational scope uses ``stores.manager_id`` via
    `backend/app/dashboard_scope.py` (`managed_store_ids`, `constrain_store_query`,
-   `STORE_SCOPE_DENIED`) — dashboard/BI plus POS sales list/export and sales
-   invoice list/get/print; not store-scoped RBAC Complete.
+   `STORE_SCOPE_DENIED`) — dashboard/BI, POS sales, sales invoices, expenses,
+   stores list, and store inventory/sales endpoints; not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
