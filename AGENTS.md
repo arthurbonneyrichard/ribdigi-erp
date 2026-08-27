@@ -86,8 +86,10 @@ store activation — never frontend-only.
    journals (null-store fail-closed; foreign `store_id` denied), and tax
    report / filing (+ path CSV, `/reports/export` tax/tax_filing*) from
    managed-store sales/POS + managed-WH purchase bills/POs (null-store /
-   null-WH fail-closed; empty managed → zero). Company-wide audit log
-   reads may still be company-wide. Not store-scoped RBAC Complete.
+   null-WH fail-closed; empty managed → zero), and audit list/export
+   fail-closed to self-authored events plus details with managed
+   `store_id`/`warehouse_id` (no audit store column; ADR-005 open). Not
+   store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
