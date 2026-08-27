@@ -1303,6 +1303,7 @@ async def list_recurring(
     active_only: bool = False,
     is_active: bool | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.RecurringExpense]:
     """Stage 125 R1 — is_active / active_only for honest paused-only recurring lists."""
     stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
@@ -1312,6 +1313,11 @@ async def list_recurring(
         stmt = stmt.where(m.RecurringExpense.is_active.is_(bool(is_active)))
     elif active_only:
         stmt = stmt.where(m.RecurringExpense.is_active.is_(True))
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.RecurringExpense.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.RecurringExpense.id.is_(None))
     stmt = stmt.order_by(m.RecurringExpense.created_at.desc())
     return list((await db.execute(stmt)).scalars().all())
 
@@ -1409,6 +1415,7 @@ async def generate_due_recurring(
     tenant_id: str,
     user_id: str,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.Expense]:
     now = datetime.utcnow()
     stmt = select(m.RecurringExpense).where(
@@ -1418,6 +1425,11 @@ async def generate_due_recurring(
     )
     if company_id:
         stmt = stmt.where(m.RecurringExpense.company_id == company_id)
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.RecurringExpense.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.RecurringExpense.id.is_(None))
     rows = (await db.execute(stmt)).scalars().all()
     created: list[m.Expense] = []
     for row in rows:

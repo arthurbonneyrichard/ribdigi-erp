@@ -10265,13 +10265,17 @@ async def list_recurring_expenses(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 125 R1 — active_only / is_active for honest paused-only recurring lists."""
+    """Stage 125 R1 — active_only / is_active for honest paused-only recurring lists; store scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     rows = await expenses_svc.list_recurring(
         db,
         claims["tenant_id"],
         active_only=active_only,
         is_active=is_active,
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     return env([expenses_svc.serialize_recurring(r) for r in rows])
 
@@ -10283,13 +10287,17 @@ async def expenses_recurring_export(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 125 X1 — recurring expenses CSV export."""
+    """Stage 125 X1 — recurring expenses CSV export; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await liquid_recurring_export_svc.export_recurring_expenses_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     return Response(
         content=text,
@@ -10334,8 +10342,14 @@ async def update_recurring_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await expenses_svc.get_recurring(db, claims["tenant_id"], recurring_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     row = await expenses_svc.update_recurring(
         db,
         tenant_id=claims["tenant_id"],
@@ -10360,11 +10374,15 @@ async def generate_recurring_expenses(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     created = await expenses_svc.generate_due_recurring(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     await db.commit()
     return env(

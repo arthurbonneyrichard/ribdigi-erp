@@ -101,10 +101,16 @@ async def export_recurring_expenses_csv(
     is_active: bool | None = None,
     active_only: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
     if company_id:
         stmt = stmt.where(m.RecurringExpense.company_id == company_id)
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.RecurringExpense.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.RecurringExpense.id.is_(None))
     stmt = _apply_active_filter(
         stmt, m.RecurringExpense.is_active, is_active=is_active, active_only=active_only
     )

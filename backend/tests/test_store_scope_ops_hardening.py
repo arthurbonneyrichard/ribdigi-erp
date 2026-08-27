@@ -4473,3 +4473,127 @@ async def test_store_manager_journal_entries_store_scoped(client, db_session):
     )
     assert denied_attach.status_code == 403
     assert denied_attach.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_recurring_expenses_residual_scoped(client, db_session):
+    """Recurring list/export/patch/generate stay within managed stores (null fail-closed)."""
+    from datetime import timedelta
+
+    from app.expenses import ensure_default_categories
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await ensure_default_categories(db_session, tid, company_id=cid)
+    past = datetime.utcnow() - timedelta(days=1)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Recur Scope Mine",
+        code="REC-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Recur Scope Other",
+        code="REC-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    row_mine = m.RecurringExpense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Recur mine due",
+        amount=11,
+        frequency="monthly",
+        payment_method="cash",
+        store_id=mine.id,
+        next_run_at=past,
+        start_date=past,
+        is_active=True,
+        created_by=mgr.id,
+    )
+    row_other = m.RecurringExpense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Recur other due",
+        amount=99,
+        frequency="monthly",
+        payment_method="cash",
+        store_id=other.id,
+        next_run_at=past,
+        start_date=past,
+        is_active=True,
+        created_by=seed["admin1"].id,
+    )
+    row_null = m.RecurringExpense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Recur null due",
+        amount=33,
+        frequency="monthly",
+        payment_method="cash",
+        store_id=None,
+        next_run_at=past,
+        start_date=past,
+        is_active=True,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add_all([row_mine, row_other, row_null])
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/expenses/recurring", headers=headers)
+    assert listed.status_code == 200, listed.text
+    descs = {r["description"] for r in listed.json()["data"]}
+    assert "Recur mine due" in descs
+    assert "Recur other due" not in descs
+    assert "Recur null due" not in descs
+
+    exported = await ac.get("/api/v1/expenses/recurring/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "Recur mine due" in exported.text
+    assert "Recur other due" not in exported.text
+    assert "Recur null due" not in exported.text
+
+    denied_patch = await ac.patch(
+        f"/api/v1/expenses/recurring/{row_other.id}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert denied_patch.status_code == 403
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null_patch = await ac.patch(
+        f"/api/v1/expenses/recurring/{row_null.id}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert denied_null_patch.status_code == 403
+    assert denied_null_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_patch = await ac.patch(
+        f"/api/v1/expenses/recurring/{row_mine.id}",
+        headers=headers,
+        json={"next_description": "Mine override"},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+    assert ok_patch.json()["data"]["next_description"] == "Mine override"
+
+    generated = await ac.post("/api/v1/expenses/recurring/generate", headers=headers)
+    assert generated.status_code == 200, generated.text
+    gdescs = {e["description"] for e in generated.json()["data"]}
+    assert "Mine override" in gdescs
+    assert "Recur other due" not in gdescs
+    assert "Recur null due" not in gdescs
