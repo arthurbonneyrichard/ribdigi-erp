@@ -21,6 +21,18 @@ async def test_set_category_budget_and_variance(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
     tenant_id = seed["t1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="Budget Mgr Store",
+        code="BUD-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
 
     await ensure_default_categories(db_session, tenant_id)
     await db_session.commit()
@@ -47,7 +59,7 @@ async def test_set_category_budget_and_variance(client, db_session):
     assert custom.json()["data"]["budget_amount"] == 250
     travel_id = custom.json()["data"]["id"]
 
-    # Auto-approved low amount against Travel
+    # Auto-approved low amount against Travel (must bind managed store)
     created = await ac.post(
         "/api/v1/expenses",
         headers=headers,
@@ -56,6 +68,7 @@ async def test_set_category_budget_and_variance(client, db_session):
             "amount": 80,
             "description": "Taxi",
             "payment_method": "cash",
+            "store_id": store.id,
         },
     )
     assert created.status_code == 200, created.text
@@ -70,6 +83,7 @@ async def test_set_category_budget_and_variance(client, db_session):
             "amount": 400,
             "description": "Shop rent installment",
             "payment_method": "bank_transfer",
+            "store_id": store.id,
         },
     )
     assert pending.status_code == 200, pending.text

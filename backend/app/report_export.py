@@ -676,7 +676,9 @@ async def build_report_payload(
         low = await reports_svc.inventory_low_stock(
             db, tenant_id, company_id=company_id, warehouse_ids=warehouse_ids
         )
-        expenses = await reports_svc.expenses_summary(db, tenant_id, company_id=company_id)
+        expenses = await reports_svc.expenses_summary(
+            db, tenant_id, company_id=company_id, store_ids=store_ids
+        )
         return {
             "today_sales": daily,
             "month_sales": monthly,
@@ -801,7 +803,15 @@ async def build_report_payload(
             warehouse_ids=warehouse_ids,
         )
     if report_type == "expenses_summary":
-        return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.expenses_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            category_id=category_id,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "cash_flow":
         return await reports_svc.cash_flow_with_optional_compare(
             db,

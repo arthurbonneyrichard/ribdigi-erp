@@ -357,6 +357,7 @@ async def category_budget_variance(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Budget vs approved spend by category for a period (defaults to current month)."""
     from app.reports import apply_company_filter
@@ -371,6 +372,19 @@ async def category_budget_variance(
             end = datetime(now.year, now.month + 1, 1) - timedelta(seconds=1)
     else:
         end = to_date
+
+    if store_ids is not None and not store_ids:
+        return {
+            "from_date": start,
+            "to_date": end,
+            "categories": [],
+            "totals": {
+                "budget_amount": 0.0,
+                "spent": 0.0,
+                "pending": 0.0,
+                "variance": 0.0,
+            },
+        }
 
     cat_stmt = (
         select(m.ExpenseCategory)
@@ -387,6 +401,8 @@ async def category_budget_variance(
         m.Expense.status.in_(["approved", "pending"]),
     )
     exp_stmt = apply_company_filter(exp_stmt, m.Expense.company_id, company_id)
+    if store_ids is not None:
+        exp_stmt = exp_stmt.where(m.Expense.store_id.in_(store_ids))
     expenses = (await db.execute(exp_stmt)).scalars().all()
 
     spent_by: dict[str, float] = {}

@@ -10038,14 +10038,18 @@ async def expense_category_budgets(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Category budget variance; store_manager spent/pending scoped via manager_id."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app import reports as reports_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     data = await expenses_svc.category_budget_variance(
         db,
         claims["tenant_id"],
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     await db.commit()
     return env(data)
@@ -10058,15 +10062,18 @@ async def export_expense_budgets(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 139 B1 — category budget variance CSV."""
+    """Stage 139 B1 — category budget variance CSV; store_manager spent scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app import reports as reports_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await expense_export_svc.export_expense_budgets_csv(
         db,
         tenant_id=claims["tenant_id"],
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     return Response(
         content=text,
@@ -12881,6 +12888,10 @@ async def report_expenses_summary(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Expense summary; store_manager scoped via manager_id stores."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await reports_svc.expenses_summary(
             db,
@@ -12889,6 +12900,7 @@ async def report_expenses_summary(
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             category_id=category_id,
             company_id=claims.get("company_id"),
+            store_ids=managed,
         )
     )
 
@@ -14908,7 +14920,10 @@ async def report(claims=Depends(require_permission("reports", "read")), db: Asyn
         warehouse_ids=managed_wh,
     )
     expenses = await reports_svc.expenses_summary(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return env(
         {

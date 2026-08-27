@@ -1827,13 +1827,38 @@ async def expenses_summary(
     to_date: datetime | None = None,
     category_id: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Approved expense summary.
+
+    ``store_ids`` None = tenant/company-wide; set (store_manager) restricts to
+    managed stores and excludes null-store expenses (fail closed).
+    """
+    if store_ids is not None and not store_ids:
+        return {
+            "count": 0,
+            "total_amount": 0.0,
+            "by_category": [],
+            "budgets": {
+                "from_date": None,
+                "to_date": None,
+                "categories": [],
+                "totals": {
+                    "budget_amount": 0.0,
+                    "spent": 0.0,
+                    "pending": 0.0,
+                    "variance": 0.0,
+                },
+            },
+        }
     stmt = select(m.Expense).where(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
     )
     if company_id:
         stmt = stmt.where(m.Expense.company_id == company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.Expense.store_id.in_(store_ids))
     if category_id:
         stmt = stmt.where(m.Expense.category_id == category_id)
     if from_date:
@@ -1851,7 +1876,12 @@ async def expenses_summary(
     from app import expenses as expenses_svc
 
     budget = await expenses_svc.category_budget_variance(
-        db, tenant_id, from_date=from_date, to_date=to_date
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     return {
         "count": len(rows),

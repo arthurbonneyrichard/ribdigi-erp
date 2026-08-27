@@ -1772,3 +1772,123 @@ async def test_store_manager_purchasing_reports_and_stock_transfer_writes_scoped
         headers=headers,
     )
     assert ok_submit.status_code == 200, ok_submit.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expense_reports_and_budgets_store_scoped(client, db_session):
+    """Expense summary/budgets/export exclude other/null stores for store_manager."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    from app.expenses import ensure_default_categories
+
+    await ensure_default_categories(db_session, tid, company_id=cid)
+    cat = (
+        await db_session.execute(
+            select(m.ExpenseCategory).where(
+                m.ExpenseCategory.tenant_id == tid,
+                m.ExpenseCategory.code == "TRAVEL",
+            )
+        )
+    ).scalar_one_or_none()
+    if cat is None:
+        cat = (
+            await db_session.execute(
+                select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tid)
+            )
+        ).scalars().first()
+    assert cat is not None
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="ExpRep Mine",
+        code="ER-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="ExpRep Other",
+        code="ER-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    mine_exp = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category_id=cat.id,
+        category=cat.name,
+        description="ExpRep mine approved",
+        amount=25,
+        store_id=mine.id,
+        status="approved",
+        expense_date=today,
+        created_by=mgr.id,
+        approved_by=mgr.id,
+        approved_at=today,
+    )
+    other_exp = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category_id=cat.id,
+        category=cat.name,
+        description="ExpRep other approved",
+        amount=500,
+        store_id=other.id,
+        status="approved",
+        expense_date=today,
+        created_by=seed["admin1"].id,
+        approved_by=seed["admin1"].id,
+        approved_at=today,
+    )
+    null_exp = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category_id=cat.id,
+        category=cat.name,
+        description="ExpRep null approved",
+        amount=40,
+        store_id=None,
+        status="approved",
+        expense_date=today,
+        created_by=seed["admin1"].id,
+        approved_by=seed["admin1"].id,
+        approved_at=today,
+    )
+    db_session.add_all([mine_exp, other_exp, null_exp])
+    await db_session.commit()
+
+    summary = await ac.get("/api/v1/reports/expenses/summary", headers=headers)
+    assert summary.status_code == 200, summary.text
+    sbody = summary.json()["data"]
+    assert int(sbody["count"]) == 1
+    assert float(sbody["total_amount"]) == pytest.approx(25.0)
+    assert float(sbody["budgets"]["totals"]["spent"]) == pytest.approx(25.0)
+
+    budgets = await ac.get("/api/v1/expenses/budgets", headers=headers)
+    assert budgets.status_code == 200, budgets.text
+    assert float(budgets.json()["data"]["totals"]["spent"]) == pytest.approx(25.0)
+
+    rollup = await ac.get("/api/v1/reports/summary", headers=headers)
+    assert rollup.status_code == 200, rollup.text
+    assert float(rollup.json()["data"]["expenses_summary"]["total_amount"]) == pytest.approx(
+        25.0
+    )
+    assert int(rollup.json()["data"]["expenses_summary"]["count"]) == 1
+
+    exported = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "expenses_summary", "format": "csv"},
+    )
+    assert exported.status_code == 200, exported.text
+    assert "500" not in exported.text or "ExpRep other" not in exported.text
