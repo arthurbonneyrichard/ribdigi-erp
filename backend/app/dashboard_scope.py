@@ -211,6 +211,73 @@ def apply_warehouse_scope_filter(stmt, model, managed_wh_ids: list[str] | None):
     return stmt.where(getattr(model, "warehouse_id").in_(managed_wh_ids))
 
 
+def apply_purchase_invoice_warehouse_scope(stmt, managed_wh_ids: list[str] | None):
+    """Scope purchase invoices via linked GRN/PO warehouse (prefer GRN).
+
+    Manual invoices with neither link (or null warehouses) are excluded for
+    store_managers — fail closed until a direct ``warehouse_id`` column exists.
+    """
+    if managed_wh_ids is None:
+        return stmt
+    if not managed_wh_ids:
+        return stmt.where(func.false())
+    stmt = stmt.outerjoin(
+        m.GoodsReceipt, m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id
+    ).outerjoin(
+        m.PurchaseOrder, m.PurchaseOrder.id == m.PurchaseInvoice.purchase_order_id
+    )
+    wh_expr = func.coalesce(m.GoodsReceipt.warehouse_id, m.PurchaseOrder.warehouse_id)
+    return stmt.where(wh_expr.in_(managed_wh_ids))
+
+
+async def resolve_purchase_invoice_warehouse_id(
+    db: AsyncSession, inv: m.PurchaseInvoice
+) -> str | None:
+    """Warehouse implied by GRN (preferred) or PO; None if unlinked/unset."""
+    if getattr(inv, "goods_receipt_id", None):
+        grn = await db.get(m.GoodsReceipt, inv.goods_receipt_id)
+        if grn and getattr(grn, "warehouse_id", None):
+            return str(grn.warehouse_id)
+    if getattr(inv, "purchase_order_id", None):
+        po = await db.get(m.PurchaseOrder, inv.purchase_order_id)
+        if po and getattr(po, "warehouse_id", None):
+            return str(po.warehouse_id)
+    return None
+
+
+async def assert_purchase_invoice_in_manager_scope(
+    db: AsyncSession, claims: dict, inv: m.PurchaseInvoice
+) -> None:
+    managed_wh = await managed_warehouse_ids(db, claims)
+    if managed_wh is None:
+        return
+    wid = await resolve_purchase_invoice_warehouse_id(db, inv)
+    assert_warehouse_in_manager_scope(managed_wh, wid, allow_unset=False)
+
+
+async def assert_purchase_invoice_links_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    *,
+    goods_receipt_id: str | None,
+    purchase_order_id: str | None,
+) -> None:
+    """Create-time gate: managers must link a GRN/PO whose warehouse is managed."""
+    managed_wh = await managed_warehouse_ids(db, claims)
+    if managed_wh is None:
+        return
+    wid: str | None = None
+    if goods_receipt_id:
+        grn = await db.get(m.GoodsReceipt, goods_receipt_id)
+        if grn and getattr(grn, "warehouse_id", None):
+            wid = str(grn.warehouse_id)
+    if not wid and purchase_order_id:
+        po = await db.get(m.PurchaseOrder, purchase_order_id)
+        if po and getattr(po, "warehouse_id", None):
+            wid = str(po.warehouse_id)
+    assert_warehouse_in_manager_scope(managed_wh, wid, allow_unset=False)
+
+
 async def scoped_financial_kpis(
     db: AsyncSession,
     *,
@@ -221,7 +288,7 @@ async def scoped_financial_kpis(
     month_start: datetime,
     prior_month_start: datetime,
 ) -> dict:
-    """Sales / expense KPIs limited to managed stores. Purchases omitted (no store axis on PI)."""
+    """Sales / expense KPIs limited to managed stores. Purchase invoices use PO/GRN WH join elsewhere."""
 
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0

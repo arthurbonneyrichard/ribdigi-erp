@@ -13,6 +13,7 @@ from app import models as m
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import stores as stores_svc
+from app import dashboard_scope as dashboard_scope_svc
 from app.rbac import apply_created_by_scope
 from app.session_passkey_doc_export import _cell
 
@@ -165,6 +166,8 @@ async def export_purchase_invoices_csv(
         else:
             stmt = stmt.where(m.PurchaseInvoice.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseInvoice, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_purchase_invoice_warehouse_scope(stmt, managed_wh)
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PURCHASE_INVOICE_EXPORT_COLUMNS)

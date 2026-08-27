@@ -8825,6 +8825,8 @@ async def list_purchase_invoices(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 97 P1 — optional status filter (`outstanding` → unpaid∪partial∪overdue)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     stmt = (
         select(m.PurchaseInvoice)
         .where(*workspace_svc.company_scope_filter(m.PurchaseInvoice, claims))
@@ -8843,6 +8845,8 @@ async def list_purchase_invoices(
         else:
             stmt = stmt.where(m.PurchaseInvoice.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseInvoice, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_purchase_invoice_warehouse_scope(stmt, managed_wh)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_invoice(db, r) for r in rows])
 
@@ -8873,6 +8877,14 @@ async def create_purchase_invoice(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_purchase_invoice_links_in_manager_scope(
+        db,
+        claims,
+        goods_receipt_id=payload.goods_receipt_id,
+        purchase_order_id=payload.purchase_order_id,
+    )
     inv = await purchasing_svc.create_purchase_invoice(
         db,
         tenant_id=claims["tenant_id"],
@@ -8900,9 +8912,12 @@ async def get_purchase_invoice(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     workspace_svc.assert_record_company(claims, inv)
     assert_record_access(claims, inv.created_by)
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, inv)
     return env(await purchasing_svc.serialize_purchase_invoice(db, inv))
 
 
@@ -8918,6 +8933,9 @@ async def patch_purchase_invoice(
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, existing)
     inv = await purchase_ocr_svc.update_purchase_invoice_draft(
         db,
         tenant_id=claims["tenant_id"],
@@ -8952,6 +8970,9 @@ async def purchase_invoice_ocr_suggest(
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, existing)
     result = await purchase_ocr_svc.suggest_for_purchase_invoice(
         db, tenant_id=claims["tenant_id"], invoice_id=invoice_id
     )
@@ -8976,6 +8997,9 @@ async def purchase_invoice_ocr_apply(
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, existing)
     inv = await purchase_ocr_svc.update_purchase_invoice_draft(
         db,
         tenant_id=claims["tenant_id"],
@@ -9023,6 +9047,9 @@ async def approve_purchase_invoice(
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, existing)
     inv = await purchasing_svc.approve_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -9039,6 +9066,9 @@ async def cancel_purchase_invoice(
     existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, existing)
     inv = await purchasing_svc.cancel_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
@@ -9053,9 +9083,12 @@ async def upload_purchase_invoice_attachment(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, inv.created_by)
     workspace_svc.assert_record_company(claims, inv)
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, inv)
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="purchase_invoices",
@@ -9093,9 +9126,12 @@ async def download_purchase_invoice_attachment(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, inv.created_by)
     workspace_svc.assert_record_company(claims, inv)
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, inv)
     if not inv.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     # External URLs (legacy client-supplied) are not served from local media
@@ -9115,9 +9151,12 @@ async def delete_purchase_invoice_attachment(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, inv.created_by)
     workspace_svc.assert_record_company(claims, inv)
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, inv)
     if not inv.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     storage_svc.delete_key(inv.attachment_url, tenant_id=claims["tenant_id"])

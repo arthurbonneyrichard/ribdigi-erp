@@ -17,7 +17,7 @@
 | Store entitlement | **COMPLETE** (MVP) |
 | User entitlement | **COMPLETE** (MVP) — plan-synced `max_users` + platform override; create/reactivate enforced (2026-08-23) |
 | User ↔ Store assignment | **MISSING** (ADR-005 POST-MVP) |
-| RBAC / store scope | **PARTIAL** — dashboard/BI + POS/sales/expenses/stores/transfers + warehouses/inventory ops + purchasing PR/PO/GRN/returns scoped for `store_manager` via `manager_id`→`Warehouse.store_id`; purchase invoices (no WH axis) + ADR-005 still open |
+| RBAC / store scope | **PARTIAL** — store_manager scoped via `manager_id`→`Warehouse.store_id` across POS/sales/expenses/stores/transfers/inventory ops/purchasing PR/PO/GRN/returns + purchase invoices via linked PO/GRN WH (manual unlinked PIs fail-closed); ADR-005 still open |
 | Inventory / Purchasing / Sales / Accounting / Tax / Credit | **PASS** (MVP gates in `PRODUCTION_READINESS.md`) |
 | POS (online) | **PASS** (MVP) |
 | Offline foundation | **PARTIAL** — queue/catalog/sync MVP; 7-day auth envelope implemented (not VERIFIED) |
@@ -42,7 +42,7 @@
 6. **`max_users` enforcement** — **implemented** 2026-08-23 (plan sync + platform override + create/reactivate/import gate). Downgrades preserve users; `over_entitlement` on tenant dashboard.
 7. **Default store on company create** — **implemented** 2026-08-23 when store capacity allocated.
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
-9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS/sales/expenses/stores/transfers, warehouse inventory ops, and purchasing pipeline (`/purchasing/requests|orders|grn|returns` list/export/get/create/mutate via `warehouse_id` ∈ managed-store WHs; null warehouse fail-closed; low-stock reorder PO same). Purchase invoices (no `warehouse_id`) and ADR-005 membership still open.
+9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS/sales/expenses/stores/transfers, warehouse inventory ops, purchasing PR/PO/GRN/returns, and **purchase invoices** (scope inferred from linked GRN/PO `warehouse_id`; manual unlinked invoices fail-closed; no direct PI `warehouse_id` column yet). ADR-005 membership still open.
 10. **7-day offline POS** — **PARTIAL** (2026-08-23): envelope + client gate. Physical matrix: `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md` (**NOT RUN** / not VERIFIED).
 11. **Offline owner dashboard + alerts + recovery** — **PARTIAL**: recovery export + alerts API/UI; email/push + lockdown + Offline Complete MISSING.
 12. **Scale / pen test on prod infra** — operator/external.
@@ -68,7 +68,7 @@
 - **Offline owner alerts:** `offline_alerts.py` + `GET /offline/alerts` (envelope expired/expiring, never bound, sync backlog/failed, open conflicts); Company `#offline-sync` alert list. In-app only — not email/push Complete.
 - **Offline receipt numbering:** client IndexedDB seq per device (`offlineReceiptNumber.ts` → `OFF-{device}-{seq}`); POS shows receipt on queue; `/sync/push` preserves as sale `reference` with duplicate guard (`OFFLINE_RECEIPT_DUPLICATE`). Tests: `test_offline_receipt_numbering.py`.
 - **Operator runbooks (2026-08-23):** commercial Alembic deploy note; offline physical test matrix; PITR drill wrapper — all unchecked / not executed; go-live still NOT READY.
-- **Store RBAC ops hardening:** store + warehouse helpers applied through POS/sales/expenses/stores/transfers, warehouses/inventory movements/stock-counts/stock mutate, and purchasing PR/PO/GRN/returns (+ exports / low-stock reorder). Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005. Purchase invoices remain unscoped (no warehouse axis).
+- **Store RBAC ops hardening:** store + warehouse helpers through POS/sales/expenses/stores/transfers, warehouses/inventory ops, purchasing PR/PO/GRN/returns, and purchase invoices via PO/GRN warehouse join (`apply_purchase_invoice_warehouse_scope`; unlinked manual PIs denied for managers). Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
 - **Architecture doc drift:** `ARCHITECTURE_DOCUMENTS.md` §9.1 and `DATABASE_DOCUMENTATION.md` §§3.1–3.4 schema-per-tenant SQL samples marked historical / SUPERSEDED (live = shared-schema `tenant_id`).
 
 ---
