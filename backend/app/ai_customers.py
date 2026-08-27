@@ -86,18 +86,29 @@ async def customer_intelligence(
     *,
     lookback_days: int = 180,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Customer churn / best / promos.
+
+    ``store_ids`` set = store_manager scope: only managed-store invoices (null-store
+    fail-closed). Customer universe is limited to customers who appear on those
+    invoices so company-wide party catalogs do not leak.
+    """
     lookback_days = max(30, min(int(lookback_days), 730))
     now = datetime.utcnow()
     since = now - timedelta(days=lookback_days)
 
-    party_stmt = select(m.Party).where(
-        m.Party.tenant_id == tenant_id,
-        m.Party.kind == "customer",
-        m.Party.status == "active",
-    )
-    party_stmt = apply_company_filter(party_stmt, m.Party.company_id, company_id)
-    customers = (await db.execute(party_stmt)).scalars().all()
+    if store_ids is not None and not store_ids:
+        return {
+            "generated_at": now,
+            "lookback_days": lookback_days,
+            "method": "rules_v1",
+            "scope": "store_manager",
+            "customer_count": 0,
+            "best_customers": [],
+            "churn_risks": [],
+            "promotion_suggestions": [],
+        }
 
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -105,6 +116,8 @@ async def customer_intelligence(
         m.SalesInvoice.created_at >= since,
     )
     inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_stmt)).scalars().all()
 
     by_cust: dict[str, dict] = {}
@@ -121,6 +134,28 @@ async def customer_intelligence(
             row["open"] += unpaid
         if when > row["last"]:
             row["last"] = when
+
+    if store_ids is not None:
+        # Managers: only customers with managed-store sales in the window
+        cust_ids = list(by_cust.keys())
+        customers: list[m.Party] = []
+        if cust_ids:
+            party_stmt = select(m.Party).where(
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "customer",
+                m.Party.status == "active",
+                m.Party.id.in_(cust_ids),
+            )
+            party_stmt = apply_company_filter(party_stmt, m.Party.company_id, company_id)
+            customers = (await db.execute(party_stmt)).scalars().all()
+    else:
+        party_stmt = select(m.Party).where(
+            m.Party.tenant_id == tenant_id,
+            m.Party.kind == "customer",
+            m.Party.status == "active",
+        )
+        party_stmt = apply_company_filter(party_stmt, m.Party.company_id, company_id)
+        customers = (await db.execute(party_stmt)).scalars().all()
 
     ranked = []
     for cust in customers:
@@ -166,6 +201,7 @@ async def customer_intelligence(
         "generated_at": now,
         "lookback_days": lookback_days,
         "method": "rules_v1",
+        "scope": "store_manager" if store_ids is not None else "company",
         "customer_count": len(ranked),
         "best_customers": best,
         "churn_risks": at_risk,
@@ -180,9 +216,12 @@ async def assist_customer(
     customer_id: str | None = None,
     query: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     q = (query or "").strip()
-    intel = await customer_intelligence(db, tenant_id, company_id=company_id)
+    intel = await customer_intelligence(
+        db, tenant_id, company_id=company_id, store_ids=store_ids
+    )
 
     if customer_id:
         party_stmt = select(m.Party).where(
@@ -194,19 +233,26 @@ async def assist_customer(
         party = (await db.execute(party_stmt)).scalar_one_or_none()
         if not party:
             raise HTTPException(status_code=404, detail="Customer not found")
-        profile = next((c for c in intel["best_customers"] + intel["churn_risks"] if c["customer_id"] == customer_id), None)
+        profile = next(
+            (
+                c
+                for c in intel["best_customers"] + intel["churn_risks"]
+                if c["customer_id"] == customer_id
+            ),
+            None,
+        )
         if profile is None:
-            # customer with no lookback sales
+            # customer with no lookback sales in scope
             profile = {
                 "customer_id": party.id,
                 "name": party.name,
-                "balance": float(party.balance or 0),
+                "balance": float(party.balance or 0) if store_ids is None else 0.0,
                 "credit_limit": float(party.credit_limit or 0),
                 "monetary": 0,
                 "frequency": 0,
                 "recency_days": None,
                 "churn": _churn_score(recency_days=None, frequency=0, monetary=0),
-                "open_invoice_balance": float(party.balance or 0),
+                "open_invoice_balance": float(party.balance or 0) if store_ids is None else 0.0,
             }
             profile["promotion"] = _promotion_for(profile)
 
@@ -233,6 +279,7 @@ async def assist_customer(
         return {
             "generated_at": intel["generated_at"],
             "method": "rules_v1",
+            "scope": intel.get("scope") or "company",
             "customer": profile,
             "answer": answer,
             "query": q or None,
@@ -257,6 +304,7 @@ async def assist_customer(
     return {
         "generated_at": intel["generated_at"],
         "method": "rules_v1",
+        "scope": intel.get("scope") or "company",
         "answer": answer,
         "query": q or None,
         "best_customers": intel["best_customers"][:10],

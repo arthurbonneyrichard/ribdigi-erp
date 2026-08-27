@@ -2290,3 +2290,128 @@ async def test_store_manager_ai_insights_and_cross_domain_scoped(client, db_sess
     assert float(xbody["summary"]["total_sales"]) == pytest.approx(50.0)
     assert float(xbody["summary"]["total_approved_expenses"]) == pytest.approx(20.0)
     assert float(xbody["summary"]["total_purchase_spend"]) == pytest.approx(30.0)
+
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_customer_insights_store_scoped(client, db_session):
+    """Customer insights / assist use managed-store sales only (not foreign-store spend)."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Cust Mine",
+        code="AI-CUST-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Cust Other",
+        code="AI-CUST-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    local_cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Local Buyer",
+        kind="customer",
+        status="active",
+        credit_limit=100,
+    )
+    foreign_only = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Foreign Only Buyer",
+        kind="customer",
+        status="active",
+        credit_limit=100,
+    )
+    db_session.add_all([local_cust, foreign_only])
+    await db_session.flush()
+
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=mine.id,
+            invoice_number="INV-CUST-M-1",
+            customer_id=local_cust.id,
+            status="posted",
+            subtotal=120,
+            total_amount=120,
+            paid_amount=120,
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+    )
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=other.id,
+            invoice_number="INV-CUST-O-1",
+            customer_id=foreign_only.id,
+            status="posted",
+            subtotal=9000,
+            total_amount=9000,
+            paid_amount=9000,
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+    )
+    # Foreign-store spend on local customer must not inflate manager monetary
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=other.id,
+            invoice_number="INV-CUST-O-2",
+            customer_id=local_cust.id,
+            status="posted",
+            subtotal=5000,
+            total_amount=5000,
+            paid_amount=5000,
+            posted_at=today - timedelta(days=2),
+            created_at=today - timedelta(days=2),
+        )
+    )
+    await db_session.commit()
+
+    insights = await ac.get("/api/v1/ai/customers/insights", headers=headers)
+    assert insights.status_code == 200, insights.text
+    body = insights.json()["data"]
+    assert body.get("scope") == "store_manager"
+    ids = {c["customer_id"] for c in body["best_customers"]}
+    assert local_cust.id in ids
+    assert foreign_only.id not in ids
+    row = next(c for c in body["best_customers"] if c["customer_id"] == local_cust.id)
+    assert float(row["monetary"]) == pytest.approx(120.0)
+
+    assist = await ac.post(
+        "/api/v1/ai/customer/assist",
+        headers=headers,
+        json={"query": "Who are my best customers?"},
+    )
+    assert assist.status_code == 200, assist.text
+    adata = assist.json()["data"]
+    assert adata.get("scope") == "store_manager"
+    assert "Foreign Only" not in (adata.get("answer") or "")
+    assert float(adata["best_customers"][0]["monetary"]) == pytest.approx(120.0)
+
+    exported = await ac.get("/api/v1/ai/customers/insights/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "Foreign Only Buyer" not in exported.text
+    assert "Local Buyer" in exported.text or local_cust.id in exported.text

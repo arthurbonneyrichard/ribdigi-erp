@@ -997,10 +997,15 @@ async def export_customer_insights_csv(
     tenant_id: str,
     lookback_days: int = 180,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 148 I1 — customer intelligence multi-section CSV."""
     data = await ai_customers_svc.customer_intelligence(
-        db, tenant_id, lookback_days=lookback_days, company_id=company_id
+        db,
+        tenant_id,
+        lookback_days=lookback_days,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CUSTOMER_INSIGHTS_EXPORT_COLUMNS)

@@ -210,8 +210,36 @@ async def _expenses(
 
 
 async def _customers(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Count customers. Managers: distinct buyers on managed-store invoices only."""
+    if store_ids is not None and not store_ids:
+        return {
+            "answer": "You have 0 customer(s) with sales at your managed stores.",
+            "data": {"count": 0, "scope": "store_manager"},
+        }
+    if store_ids is not None:
+        stmt = (
+            select(func.count(func.distinct(m.SalesInvoice.customer_id)))
+            .select_from(m.SalesInvoice)
+            .where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.store_id.in_(store_ids),
+                m.SalesInvoice.customer_id.is_not(None),
+                m.SalesInvoice.status.in_(
+                    list({"posted", "sent", "partial", "paid", "overdue"})
+                ),
+            )
+        )
+        stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
+        count = int((await db.execute(stmt)).scalar_one() or 0)
+        return {
+            "answer": f"You have {count} customer(s) with sales at your managed stores.",
+            "data": {"count": count, "scope": "store_manager"},
+        }
     stmt = (
         select(func.count())
         .select_from(m.Party)
@@ -408,16 +436,28 @@ async def handle_chat(
         ):
             answer = "You do not have permission to view customers."
         else:
-            out = await _customers(db, tenant_id, company_id=company_id)
+            from app import dashboard_scope as dashboard_scope_svc
+
+            managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+            out = await _customers(
+                db, tenant_id, company_id=company_id, store_ids=managed_stores
+            )
             answer, data = out["answer"], out["data"]
     elif intent == "insights":
         if not _can(claims, "ai", "read"):
             answer = "You do not have permission to view AI insights."
         else:
             from app import ai_insights as ai_insights_svc
+            from app import dashboard_scope as dashboard_scope_svc
 
+            managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+            managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
             insights = await ai_insights_svc.generate_insights(
-                db, tenant_id, company_id=company_id
+                db,
+                tenant_id,
+                company_id=company_id,
+                store_ids=managed_stores,
+                warehouse_ids=managed_wh,
             )
             cards = insights["insights"][:5]
             if not cards:
@@ -426,7 +466,7 @@ async def handle_chat(
                 answer = "Top insights:\n" + "\n".join(
                     f"- [{c['severity']}] {c['title']}: {c['summary']}" for c in cards
                 )
-            data = {"cards": cards}
+            data = {"cards": cards, "scope": insights.get("scope")}
     elif intent == "create_po":
         out = await _create_po(
             db,

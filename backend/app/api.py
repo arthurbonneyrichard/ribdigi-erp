@@ -17239,8 +17239,9 @@ async def ai_customer_assist(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """BR-21.9 — customer intelligence / assist from sales history."""
+    """BR-21.9 — customer intelligence / assist from sales history; store_manager scoped."""
     from app import ai_customers as ai_customers_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     body = payload or {}
     raw_query = body.get("query") or body.get("message")
@@ -17254,12 +17255,14 @@ async def ai_customer_assist(
             field="query",
             attempted_action="ai_customer_assist",
         )
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     data = await ai_customers_svc.assist_customer(
         db,
         claims["tenant_id"],
         customer_id=body.get("customer_id"),
         query=query,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     await ai_guard_svc.audit_ai_event(
         db,
@@ -17281,14 +17284,17 @@ async def ai_customers_insights(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """BR-21.9 — churn risks, best customers, promotion suggestions."""
+    """BR-21.9 — churn risks, best customers, promotion suggestions; store_manager scoped."""
     from app import ai_customers as ai_customers_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     data = await ai_customers_svc.customer_intelligence(
         db,
         claims["tenant_id"],
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return env(data)
 
@@ -17299,12 +17305,16 @@ async def ai_customers_insights_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 148 I1 — customer insights CSV."""
+    """Stage 148 I1 — customer insights CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await ai_ops_export_svc.export_customer_insights_csv(
         db,
         tenant_id=claims["tenant_id"],
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return Response(
         content=text,
