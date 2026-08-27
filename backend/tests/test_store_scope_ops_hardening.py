@@ -2119,3 +2119,174 @@ async def test_store_manager_ai_inventory_predictions_store_wh_scoped(client, db
     assert exported.status_code == 200, exported.text
     # Manager CSV must reflect scoped on-hand (10), not company stock_qty 999
     assert ",10," in exported.text or ",10.0," in exported.text or "10" in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_insights_and_cross_domain_scoped(client, db_session):
+    """Insights / sales / expenses / purchases / cross-domain ignore foreign store+WH totals."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Ins Mine",
+        code="AI-INS-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Ins Other",
+        code="AI-INS-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="AI Ins Mine WH",
+        code="AI-INS-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="AI Ins Other WH",
+        code="AI-INS-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    # Quiet managed store sales vs huge foreign store sales
+    for i, (store, amt, prefix) in enumerate(
+        (
+            (mine, 50.0, "M"),
+            (other, 5000.0, "O"),
+        )
+    ):
+        inv = m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number=f"INV-INS-{prefix}-{i}",
+            customer_id=seed["party1"].id,
+            status="posted",
+            subtotal=amt,
+            total_amount=amt,
+            store_id=store.id,
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+            created_by=mgr.id if store is mine else seed["admin1"].id,
+        )
+        db_session.add(inv)
+
+    db_session.add(
+        m.Expense(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=mine.id,
+            category="Utilities",
+            description="Mine util",
+            amount=20,
+            status="approved",
+            expense_date=today - timedelta(days=1),
+            payment_method="cash",
+        )
+    )
+    db_session.add(
+        m.Expense(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=other.id,
+            category="Utilities",
+            description="Other util",
+            amount=9000,
+            status="approved",
+            expense_date=today - timedelta(days=1),
+            payment_method="cash",
+        )
+    )
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Ins Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.flush()
+    for wh, total, num in (
+        (wh_mine, 30.0, "PO-INS-M"),
+        (wh_other, 8000.0, "PO-INS-O"),
+    ):
+        po = m.PurchaseOrder(
+            tenant_id=tid,
+            company_id=cid,
+            po_number=num,
+            supplier_id=supplier.id,
+            warehouse_id=wh.id,
+            status="sent",
+            subtotal=total,
+            total_amount=total,
+            created_at=today - timedelta(days=2),
+        )
+        db_session.add(po)
+        await db_session.flush()
+        pi = m.PurchaseInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number=f"PI-{num}",
+            supplier_id=supplier.id,
+            purchase_order_id=po.id,
+            warehouse_id=wh.id,
+            status="unpaid",
+            subtotal=total,
+            total_amount=total,
+            invoice_date=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+        db_session.add(pi)
+
+    await db_session.commit()
+
+    sales = await ac.get("/api/v1/ai/sales/analysis", headers=headers)
+    assert sales.status_code == 200, sales.text
+    sbody = sales.json()["data"]
+    assert sbody.get("scope") == "store_manager"
+    assert float(sbody["summary"]["total_sales"]) == pytest.approx(50.0)
+
+    expenses = await ac.get("/api/v1/ai/expenses/analysis", headers=headers)
+    assert expenses.status_code == 200, expenses.text
+    ebody = expenses.json()["data"]
+    assert ebody.get("scope") == "store_manager"
+    assert float(ebody["summary"]["total_approved"]) == pytest.approx(20.0)
+
+    purchases = await ac.get("/api/v1/ai/purchases/analysis", headers=headers)
+    assert purchases.status_code == 200, purchases.text
+    pbody = purchases.json()["data"]
+    assert pbody.get("scope") == "store_manager"
+    assert float(pbody["summary"]["total_spend"]) == pytest.approx(30.0)
+
+    insights = await ac.get("/api/v1/ai/insights", headers=headers)
+    assert insights.status_code == 200, insights.text
+    ibody = insights.json()["data"]
+    assert ibody.get("scope") == "store_manager"
+
+    xd = await ac.get("/api/v1/ai/cross-domain/analysis", headers=headers)
+    assert xd.status_code == 200, xd.text
+    xbody = xd.json()["data"]
+    assert xbody.get("scope") == "store_manager"
+    assert float(xbody["summary"]["total_sales"]) == pytest.approx(50.0)
+    assert float(xbody["summary"]["total_approved_expenses"]) == pytest.approx(20.0)
+    assert float(xbody["summary"]["total_purchase_spend"]) == pytest.approx(30.0)

@@ -45,10 +45,16 @@ async def analyze_cross_domain(
     to_date: datetime | str | None = None,
     lookback_days: int = 90,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """Run domain analyzers and synthesize cross-domain signals."""
+    """Run domain analyzers and synthesize cross-domain signals.
+
+    ``store_ids`` / ``warehouse_ids`` set = store_manager scope across domains.
+    """
     now = datetime.utcnow()
     lookback_days = max(14, min(int(lookback_days), 365))
+    scoped = store_ids is not None or warehouse_ids is not None
 
     sales = await ai_sales_svc.analyze_sales(
         db,
@@ -57,6 +63,7 @@ async def analyze_cross_domain(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=company_id,
+        store_ids=store_ids,
     )
     purchases = await ai_purchases_svc.analyze_purchases(
         db,
@@ -65,6 +72,7 @@ async def analyze_cross_domain(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     expenses = await ai_expenses_svc.analyze_expenses(
         db,
@@ -72,6 +80,7 @@ async def analyze_cross_domain(
         from_date=from_date or sales["from_date"],
         to_date=to_date or sales["to_date"],
         company_id=company_id,
+        store_ids=store_ids,
     )
     low = await ai_inventory_svc.predict_low_stock(
         db,
@@ -81,12 +90,16 @@ async def analyze_cross_domain(
         lead_time_days=7,
         at_risk_only=True,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     dead = await ai_inventory_svc.identify_dead_stock(
         db,
         tenant_id,
         lookback_days=min(lookback_days, 90),
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
 
     sales_summary = sales.get("summary") or {}
@@ -330,6 +343,7 @@ async def analyze_cross_domain(
         "to_date": sales.get("to_date"),
         "method": "rules_v1",
         "lookback_days": lookback_days,
+        "scope": "store_manager" if scoped else "company",
         "summary": {
             "domains_analyzed": ["inventory", "sales", "purchases", "expenses"],
             "domains_with_activity": domain_activity,

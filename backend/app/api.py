@@ -16477,9 +16477,16 @@ async def ai_chat_history_export(
 @api.get("/ai/insights")
 async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSession = Depends(get_db)):
     from app import ai_insights as ai_insights_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_insights_svc.generate_insights(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return env(
         {
@@ -16488,6 +16495,7 @@ async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSe
             "generated_at": data["generated_at"],
             "method": data["method"],
             "count": data["count"],
+            "scope": data.get("scope") or "company",
             "low_stock_predictions": data["low_stock_predictions"],
             "actuals": data.get("actuals") or ["inventory", "sales", "purchases", "expenses"],
             "actuals_covered": data.get("actuals_covered") or [],
@@ -16501,9 +16509,17 @@ async def insights_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 145 I1 — business insight cards CSV."""
+    """Stage 145 I1 — business insight cards CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_business_insights_csv(
-        db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -16782,9 +16798,11 @@ async def ai_sales_analysis(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """BR-21.5 — sales trends, RFM segments, product affinity, peak hour/day."""
+    """BR-21.5 — sales trends, RFM segments, product affinity, peak hour/day; store_manager scoped."""
     from app import ai_sales as ai_sales_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     data = await ai_sales_svc.analyze_sales(
         db,
         claims["tenant_id"],
@@ -16792,6 +16810,7 @@ async def ai_sales_analysis(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return env(data)
 
@@ -16804,7 +16823,10 @@ async def ai_sales_analysis_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 147 S1 — sales analysis CSV."""
+    """Stage 147 S1 — sales analysis CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await ai_ops_export_svc.export_sales_analysis_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16812,6 +16834,7 @@ async def ai_sales_analysis_export(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return Response(
         content=text,
@@ -16829,15 +16852,18 @@ async def ai_expenses_analysis(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """BR-21.6 — budget variance, anomalies, optimization, OCR category hints."""
+    """BR-21.6 — budget variance, anomalies, optimization, OCR category hints; store_manager scoped."""
     from app import ai_expenses as ai_expenses_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     data = await ai_expenses_svc.analyze_expenses(
         db,
         claims["tenant_id"],
         from_date=from_date,
         to_date=to_date,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return env(data)
 
@@ -16849,13 +16875,17 @@ async def ai_expenses_analysis_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 147 E1 — expense analysis CSV."""
+    """Stage 147 E1 — expense analysis CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await ai_ops_export_svc.export_expense_analysis_csv(
         db,
         tenant_id=claims["tenant_id"],
         from_date=from_date,
         to_date=to_date,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return Response(
         content=text,
@@ -16874,9 +16904,11 @@ async def ai_purchases_analysis(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 25 P1 / BR-21.11 — PO/GRN/PI spend trends, supplier concentration, fill & overdue."""
+    """Stage 25 P1 / BR-21.11 — PO/GRN/PI spend; store_manager WH scoped."""
     from app import ai_purchases as ai_purchases_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_purchases_svc.analyze_purchases(
         db,
         claims["tenant_id"],
@@ -16884,6 +16916,7 @@ async def ai_purchases_analysis(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return env(data)
 
@@ -16896,7 +16929,10 @@ async def ai_purchases_analysis_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 147 P1 — purchases analysis CSV."""
+    """Stage 147 P1 — purchases analysis CSV; store_manager WH scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_purchases_analysis_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16904,6 +16940,7 @@ async def ai_purchases_analysis_export(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -16922,9 +16959,12 @@ async def ai_cross_domain_analysis(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 25 X1 / BR-21.12 — Inv+Sales+Purch+Exp orchestration with synthesis signals."""
+    """Stage 25 X1 / BR-21.12 — Inv+Sales+Purch+Exp synthesis; store_manager scoped."""
     from app import ai_cross_domain as ai_cross_domain_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_cross_domain_svc.analyze_cross_domain(
         db,
         claims["tenant_id"],
@@ -16932,6 +16972,8 @@ async def ai_cross_domain_analysis(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return env(data)
 
@@ -16944,7 +16986,11 @@ async def ai_cross_domain_analysis_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 148 X1 — cross-domain analysis CSV."""
+    """Stage 148 X1 — cross-domain analysis CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_cross_domain_analysis_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16952,6 +16998,15 @@ async def ai_cross_domain_analysis_export(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="ai_cross_domain_analysis_export.csv"'
+        },
     )
     return Response(
         content=text,

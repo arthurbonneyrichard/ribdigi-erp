@@ -128,12 +128,53 @@ async def test_restock_suggestion_insight(db_session, seeded):
     assert "Restock" in restock[0]["title"] or "restock" in restock[0]["summary"].lower()
 
 
+async def _mgr(ac):
+    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+
+async def _bind_mgr_store_wh(db_session, seed, *, code: str = "AI-INS"):
+    """Attach a managed store + warehouse so store_manager AI scope is non-empty."""
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name=f"{code} Store",
+        code=code,
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name=f"{code} WH",
+        code=f"{code}-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    return store, wh
+
+
 @pytest.mark.asyncio
 async def test_insights_api_returns_cards(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
+    store, wh = await _bind_mgr_store_wh(db_session, seed, code="AI-CARD")
     seed["p1"].stock_qty = 0
     seed["p1"].reorder_level = 5
+    seed["p1"].company_id = seed["c1"].id
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            warehouse_id=wh.id,
+            product_id=seed["p1"].id,
+            quantity=0,
+            reserved_qty=0,
+            reorder_level=5,
+        )
+    )
     await db_session.commit()
 
     r = await ac.get("/api/v1/ai/insights", headers=headers)
@@ -142,8 +183,10 @@ async def test_insights_api_returns_cards(client, db_session):
     assert "cards" in body
     assert isinstance(body["insights"], list)
     assert body["method"] == "rules_v1"
+    assert body.get("scope") == "store_manager"
     assert any(c["kind"] == "low_stock" for c in body["cards"])
     assert "Beta" not in " ".join(body["insights"])
+    _ = store  # bound for managed scope
 
 
 @pytest.mark.asyncio
