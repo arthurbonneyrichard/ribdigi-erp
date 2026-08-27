@@ -971,3 +971,183 @@ async def test_store_manager_purchase_invoices_scoped_via_po_grn(client, db_sess
     )
     assert create_other.status_code == 403
     assert create_other.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_sales_orders_scoped(client, db_session):
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Order Mgr Store",
+        code="ORD-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Order Other Store",
+        code="ORD-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([store, other])
+    await db_session.flush()
+    mine = m.SalesOrder(
+        tenant_id=tid,
+        company_id=cid,
+        order_number="SO-SCOPE-MINE",
+        customer_id=seed["party1"].id,
+        status="draft",
+        subtotal=10,
+        tax_amount=0,
+        total_amount=10,
+        store_id=store.id,
+        created_by=mgr.id,
+    )
+    theirs = m.SalesOrder(
+        tenant_id=tid,
+        company_id=cid,
+        order_number="SO-SCOPE-THEIRS",
+        customer_id=seed["party1"].id,
+        status="draft",
+        subtotal=99,
+        tax_amount=0,
+        total_amount=99,
+        store_id=other.id,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add_all([mine, theirs])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    listed = await ac.get("/api/v1/sales/orders", headers=headers)
+    assert listed.status_code == 200, listed.text
+    numbers = {row["order_number"] for row in listed.json()["data"]}
+    assert "SO-SCOPE-MINE" in numbers
+    assert "SO-SCOPE-THEIRS" not in numbers
+
+    denied = await ac.get(f"/api/v1/sales/orders/{theirs.id}", headers=headers)
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.get(f"/api/v1/sales/orders/{mine.id}", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    create_denied = await ac.post(
+        "/api/v1/sales/orders",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "store_id": other.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_denied.status_code == 403
+    assert create_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_ok = await ac.post(
+        "/api/v1/sales/orders",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "store_id": store.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_ok.status_code == 200, create_ok.text
+
+    cross = await ac.get(
+        "/api/v1/sales/orders",
+        headers=headers,
+        params={"store_id": other.id},
+    )
+    assert cross.status_code == 403
+    assert cross.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_pos_sessions_scoped(client, db_session):
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Sess Mgr Store",
+        code="SES-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Sess Other Store",
+        code="SES-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([store, other])
+    await db_session.flush()
+    sess_mine = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        user_id=mgr.id,
+        session_number="SES-MGR-1",
+        status="open",
+        opening_cash=0,
+    )
+    sess_other = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        user_id=seed["admin1"].id,
+        session_number="SES-OTH-1",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add_all([sess_mine, sess_other])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    listed = await ac.get("/api/v1/pos/sessions", headers=headers)
+    assert listed.status_code == 200, listed.text
+    numbers = {row["session_number"] for row in listed.json()["data"]}
+    assert "SES-MGR-1" in numbers
+    assert "SES-OTH-1" not in numbers
+
+    denied = await ac.get(f"/api/v1/pos/sessions/{sess_other.id}/report", headers=headers)
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.get(f"/api/v1/pos/sessions/{sess_mine.id}/report", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    open_denied = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"store_id": other.id, "opening_cash": 0},
+    )
+    assert open_denied.status_code == 403
+    assert open_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Close mine first so open succeeds on managed store
+    closed = await ac.post(
+        f"/api/v1/pos/sessions/{sess_mine.id}/close",
+        headers=headers,
+        json={"actual_cash": 0},
+    )
+    assert closed.status_code == 200, closed.text
+
+    open_ok = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"store_id": store.id, "opening_cash": 10},
+    )
+    assert open_ok.status_code == 200, open_ok.text

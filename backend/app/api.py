@@ -7473,10 +7473,15 @@ async def convert_quotation_invoice(
 @api.get("/sales/orders")
 async def list_sales_orders(
     status: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 99 T1 — optional status filter (server-side delivery status)."""
+    """Stage 99 T1 — optional status filter; store_manager scoped via manager_id."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     stmt = (
         select(m.SalesOrder)
         .where(*workspace_svc.company_scope_filter(m.SalesOrder, claims))
@@ -7491,6 +7496,12 @@ async def list_sales_orders(
                 detail="status must be draft, confirmed, processing, shipped, delivered, or cancelled",
             )
         stmt = stmt.where(m.SalesOrder.status == key)
+    if single:
+        stmt = stmt.where(m.SalesOrder.store_id == single)
+    elif multi is not None:
+        if not multi:
+            return env([])
+        stmt = stmt.where(m.SalesOrder.store_id.in_(multi))
     stmt = apply_created_by_scope(stmt, m.SalesOrder, claims)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_order(db, o) for o in rows])
@@ -7499,12 +7510,22 @@ async def list_sales_orders(
 @api.get("/sales/orders/export")
 async def export_sales_orders_csv(
     status: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 133 O1 — sales order header CSV (no line dump)."""
+    """Stage 133 O1 — sales order header CSV (no line dump); store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await sales_pipeline_export_svc.export_orders_csv(
-        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        status=status,
+        store_id=single,
+        store_ids=multi,
     )
     return Response(
         content=text,
@@ -7521,6 +7542,16 @@ async def create_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id
+    )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=True
+    )
     if payload.quotation_id:
         quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], payload.quotation_id)
         assert_record_access(claims, quote.created_by)
@@ -7550,9 +7581,15 @@ async def get_sales_order(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     order = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     workspace_svc.assert_record_company(claims, order)
     assert_record_access(claims, order.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(order, "store_id", None)
+    )
     return env(await sales_docs_svc.serialize_order(db, order))
 
 
@@ -7563,10 +7600,25 @@ async def patch_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     fields = payload.model_dump(exclude_unset=True)
+    if "store_id" in fields:
+        dashboard_scope_svc.assert_store_in_manager_scope(
+            managed, fields.get("store_id")
+        )
+    if "warehouse_id" in fields:
+        managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(
+            managed_wh, fields.get("warehouse_id"), allow_unset=True
+        )
     order = await sales_docs_svc.update_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -7588,9 +7640,15 @@ async def confirm_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     order = await sales_docs_svc.confirm_order(
         db, claims["tenant_id"], order_id, user_id=claims["sub"]
     )
@@ -7604,9 +7662,15 @@ async def process_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     order = await sales_docs_svc.advance_order_status(
         db,
         tenant_id=claims["tenant_id"],
@@ -7624,9 +7688,15 @@ async def ship_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     order = await sales_docs_svc.advance_order_status(
         db,
         tenant_id=claims["tenant_id"],
@@ -7644,9 +7714,15 @@ async def deliver_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     order = await sales_docs_svc.advance_order_status(
         db,
         tenant_id=claims["tenant_id"],
@@ -7664,9 +7740,15 @@ async def cancel_sales_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     order = await sales_docs_svc.cancel_order(
         db, claims["tenant_id"], order_id, user_id=claims["sub"]
     )
@@ -7680,9 +7762,15 @@ async def convert_order_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     invoice = await sales_docs_svc.convert_order_to_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], order_id=order_id
     )
@@ -9180,6 +9268,12 @@ async def pos_open_session(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id
+    )
     session = await pos_svc.open_session(
         db,
         tenant_id=claims["tenant_id"],
@@ -9197,29 +9291,42 @@ async def pos_current_session(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     session = await pos_svc.get_open_session_for_user(
         db, claims["tenant_id"], claims["sub"], company_id=claims.get("company_id")
     )
     if not session:
         return env(None, "No open POS shift")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(session, "store_id", None)
+    )
     return env(await pos_svc.serialize_session(session))
 
 
 @api.get("/pos/sessions")
 async def pos_list_sessions(
     status: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 130 P1 — optional status=open|closed for POS session honesty."""
+    """Stage 130 P1 — optional status=open|closed; store_manager scoped via manager_id."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"open", "closed"}:
         raise HTTPException(status_code=400, detail="status must be open or closed")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     rows = await ops_lifecycle_export_svc.list_pos_sessions(
         db,
         tenant_id=claims["tenant_id"],
         status=status_n,
         company_id=claims.get("company_id"),
+        store_id=single,
+        store_ids=multi,
     )
     return env([await pos_svc.serialize_session(s) for s in rows])
 
@@ -9227,18 +9334,25 @@ async def pos_list_sessions(
 @api.get("/pos/sessions/export")
 async def pos_sessions_export(
     status: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 130 P1 — POS session inventory CSV."""
+    """Stage 130 P1 — POS session inventory CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"open", "closed"}:
         raise HTTPException(status_code=400, detail="status must be open or closed")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await ops_lifecycle_export_svc.export_pos_sessions_csv(
         db,
         tenant_id=claims["tenant_id"],
         status=status_n,
         company_id=claims.get("company_id"),
+        store_id=single,
+        store_ids=multi,
     )
     return Response(
         content=text,
@@ -9256,6 +9370,15 @@ async def pos_close_session(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await pos_svc.get_session(
+        db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None)
+    )
     session = await pos_svc.close_session(
         db,
         tenant_id=claims["tenant_id"],
@@ -9276,9 +9399,14 @@ async def pos_session_drawer(
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     session = await pos_svc.get_session(
         db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(session, "store_id", None)
     )
     summary = await pos_svc.drawer_summary(session)
     cfg = await cash_drawer_svc.resolve_config(
@@ -9295,9 +9423,14 @@ async def pos_open_cash_drawer(
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     session = await pos_svc.get_session(
         db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(session, "store_id", None)
     )
     if session.status != "open":
         raise HTTPException(status_code=400, detail="POS session is not open")
@@ -9334,8 +9467,14 @@ async def pos_session_report(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     session = await pos_svc.get_session(
         db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(session, "store_id", None)
     )
     return env(await pos_svc.shift_report(db, session))
 
@@ -9347,6 +9486,15 @@ async def pos_session_report_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 142 Z1 — POS session Z-report CSV (summary + sale lines)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    session = await pos_svc.get_session(
+        db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(session, "store_id", None)
+    )
     text = await pos_ops_export_svc.export_session_z_report_csv(
         db,
         tenant_id=claims["tenant_id"],

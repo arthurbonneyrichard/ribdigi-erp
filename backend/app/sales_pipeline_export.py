@@ -113,6 +113,8 @@ async def export_orders_csv(
     tenant_id: str,
     claims: dict,
     status: str | None = None,
+    store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     stmt = (
         select(m.SalesOrder)
@@ -128,6 +130,15 @@ async def export_orders_csv(
                 detail="status must be draft, confirmed, processing, shipped, delivered, or cancelled",
             )
         stmt = stmt.where(m.SalesOrder.status == key)
+    if store_id:
+        stmt = stmt.where(m.SalesOrder.store_id == store_id)
+    elif store_ids is not None:
+        if not store_ids:
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=ORDER_EXPORT_COLUMNS)
+            writer.writeheader()
+            return buf.getvalue()
+        stmt = stmt.where(m.SalesOrder.store_id.in_(store_ids))
     stmt = apply_created_by_scope(stmt, m.SalesOrder, claims)
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
