@@ -151,14 +151,34 @@ async def ar_aging(
     as_of: datetime | None = None,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Open AR aging.
+
+    ``store_ids`` set = store_manager scope (null-store invoices fail-closed).
+    Party ``balance`` is zeroed under store scope (company-wide ledger balance).
+    """
     as_of = as_of or datetime.utcnow()
+    manager_scope = store_ids is not None
+    if manager_scope and not store_ids:
+        return {
+            "as_of": as_of,
+            "kind": "receivable",
+            "totals": empty_buckets(),
+            "total_due": 0.0,
+            "parties": [],
+            "documents": [],
+            "scope": "store_manager",
+        }
+
     inv_q = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial"]),
     )
     if company_id:
         inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+    if manager_scope:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_q)).scalars().all()
     party_q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
     if company_id:
@@ -186,7 +206,7 @@ async def ar_aging(
                 "party_id": inv.customer_id,
                 "name": cust.name if cust else inv.customer_id,
                 "credit_limit": float(cust.credit_limit or 0) if cust else 0,
-                "balance": float(cust.balance or 0) if cust else 0,
+                "balance": 0.0 if manager_scope else (float(cust.balance or 0) if cust else 0),
                 "total_due": 0.0,
                 **empty_buckets(),
             },
@@ -199,6 +219,7 @@ async def ar_aging(
                 "document_number": inv.invoice_number,
                 "party_id": inv.customer_id,
                 "party_name": row["name"],
+                "store_id": getattr(inv, "store_id", None),
                 "due_date": inv.due_date,
                 "balance_due": due,
                 "currency": getattr(inv, "currency", None) or "",
@@ -211,14 +232,16 @@ async def ar_aging(
             }
         )
 
-    return {
+    out = {
         "as_of": as_of,
         "kind": "receivable",
         "totals": totals,
         "total_due": round(sum(totals.values()), 2),
         "parties": sorted(by_customer.values(), key=lambda x: x["total_due"], reverse=True),
         "documents": documents,
+        "scope": "store_manager" if manager_scope else "company",
     }
+    return out
 
 
 async def ap_aging(
@@ -227,14 +250,35 @@ async def ap_aging(
     as_of: datetime | None = None,
     *,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """Open AP aging.
+
+    ``warehouse_ids`` set = store_manager scope via PI WH (or linked GRN/PO) and
+    PO.warehouse_id; null-WH fail-closed. Party ``balance`` zeroed under scope.
+    """
+    from app import dashboard_scope as dashboard_scope_svc
+
     as_of = as_of or datetime.utcnow()
+    manager_scope = warehouse_ids is not None
+    if manager_scope and not warehouse_ids:
+        return {
+            "as_of": as_of,
+            "kind": "payable",
+            "totals": empty_buckets(),
+            "total_due": 0.0,
+            "parties": [],
+            "documents": [],
+            "scope": "store_manager",
+        }
+
     inv_q = select(m.PurchaseInvoice).where(
         m.PurchaseInvoice.tenant_id == tenant_id,
         m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
     )
     if company_id:
         inv_q = inv_q.where(m.PurchaseInvoice.company_id == company_id)
+    inv_q = dashboard_scope_svc.apply_purchase_invoice_warehouse_scope(inv_q, warehouse_ids)
     invoices = (await db.execute(inv_q)).scalars().all()
     invoiced_po_ids = {i.purchase_order_id for i in invoices if i.purchase_order_id}
 
@@ -244,6 +288,9 @@ async def ap_aging(
     )
     if company_id:
         po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
+    po_q = dashboard_scope_svc.apply_warehouse_scope_filter(
+        po_q, m.PurchaseOrder, warehouse_ids
+    )
     orders = (await db.execute(po_q)).scalars().all()
     party_q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
     if company_id:
@@ -265,7 +312,7 @@ async def ap_aging(
                 "party_id": supplier_id,
                 "name": sup.name if sup else supplier_id,
                 "credit_limit": float(sup.credit_limit or 0) if sup else 0,
-                "balance": float(sup.balance or 0) if sup else 0,
+                "balance": 0.0 if manager_scope else (float(sup.balance or 0) if sup else 0),
                 "total_due": 0.0,
                 **empty_buckets(),
             },
@@ -338,6 +385,7 @@ async def ap_aging(
         "total_due": round(sum(totals.values()), 2),
         "parties": sorted(by_supplier.values(), key=lambda x: x["total_due"], reverse=True),
         "documents": documents,
+        "scope": "store_manager" if manager_scope else "company",
     }
 
 

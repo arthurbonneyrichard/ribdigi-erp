@@ -198,15 +198,21 @@ async def expenses_by_category(
 async def credit_slice(db: AsyncSession, claims: dict) -> dict:
     """AR outstanding summary for credit:read dashboards (Stage 84 S1)."""
     from app import credit as credit_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     aging = await credit_svc.ar_aging(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     total_due = float(aging.get("total_due") or 0)
     payload = {
         **_meta(claims),
         "credit_outstanding": total_due,
         "ar_total_due": total_due,
+        "scope": aging.get("scope"),
     }
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 

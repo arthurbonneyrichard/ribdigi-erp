@@ -23,13 +23,26 @@ async def test_credit_aging_exportable_and_http(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
 
     assert "credit_aging" in EXPORTABLE
 
     today = datetime.utcnow()
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=cid,
+        name="Credit R2 Store",
+        code="CR-R2",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             invoice_number="INV-S16-R2-AR",
             customer_id=seed["party1"].id,
             status="posted",
@@ -47,6 +60,7 @@ async def test_credit_aging_exportable_and_http(client, db_session):
     aging = await ac.get("/api/v1/credit/aging?kind=receivable", headers=headers)
     assert aging.status_code == 200, aging.text
     assert float(aging.json()["data"]["total_due"]) >= 120
+    assert aging.json()["data"].get("scope") == "store_manager"
 
     exportable = await ac.get("/api/v1/reports/exportable", headers=headers)
     assert exportable.status_code == 200
@@ -65,7 +79,12 @@ async def test_credit_aging_exportable_and_http(client, db_session):
     assert "INV-S16-R2-AR" in body or "total_due" in body.lower() or seed["party1"].name in body
 
     payload = await build_report_payload(
-        db_session, tenant_id, "credit_aging", kind="receivable"
+        db_session,
+        tenant_id,
+        "credit_aging",
+        kind="receivable",
+        company_id=cid,
+        store_ids=[store.id],
     )
     assert payload["kind"] == "receivable"
     rows, lines, title = flatten_report("credit_aging", payload)

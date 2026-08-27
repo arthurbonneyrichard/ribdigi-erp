@@ -2993,3 +2993,183 @@ async def test_store_manager_ai_documents_analyze_matches_store_scoped(client, d
     assert dbody["matches"]["party"] is None
     assert dbody["matches"]["products"] == []
     assert any(d.get("field") == "payee" for d in dbody["discrepancies"])
+
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_aging_store_wh_scoped(client, db_session):
+    """AR aging uses managed-store invoices; AP aging uses managed-WH bills."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Aging Mine",
+        code="CR-AGE-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Aging Other",
+        code="CR-AGE-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Credit Aging Mine WH",
+        code="CR-AGE-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Credit Aging Other WH",
+        code="CR-AGE-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    local_cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="AR Local Buyer",
+        kind="customer",
+        status="active",
+        credit_limit=500,
+        balance=9999,
+    )
+    foreign_cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="AR Foreign Buyer",
+        kind="customer",
+        status="active",
+        credit_limit=500,
+        balance=8888,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="AP Aging Supplier",
+        kind="supplier",
+        status="active",
+        balance=7777,
+    )
+    db_session.add_all([local_cust, foreign_cust, supplier])
+    await db_session.flush()
+
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=mine.id,
+            invoice_number="INV-AR-M-1",
+            customer_id=local_cust.id,
+            status="posted",
+            subtotal=40,
+            total_amount=40,
+            paid_amount=0,
+            due_date=today - timedelta(days=5),
+            posted_at=today - timedelta(days=5),
+            created_at=today - timedelta(days=5),
+        )
+    )
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=other.id,
+            invoice_number="INV-AR-O-1",
+            customer_id=foreign_cust.id,
+            status="posted",
+            subtotal=9000,
+            total_amount=9000,
+            paid_amount=0,
+            due_date=today - timedelta(days=5),
+            posted_at=today - timedelta(days=5),
+            created_at=today - timedelta(days=5),
+        )
+    )
+
+    db_session.add(
+        m.PurchaseInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number="PI-AP-M-1",
+            supplier_id=supplier.id,
+            warehouse_id=wh_mine.id,
+            status="unpaid",
+            subtotal=25,
+            total_amount=25,
+            paid_amount=0,
+            invoice_date=today - timedelta(days=3),
+            due_date=today - timedelta(days=1),
+            created_at=today - timedelta(days=3),
+        )
+    )
+    db_session.add(
+        m.PurchaseInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number="PI-AP-O-1",
+            supplier_id=supplier.id,
+            warehouse_id=wh_other.id,
+            status="unpaid",
+            subtotal=8000,
+            total_amount=8000,
+            paid_amount=0,
+            invoice_date=today - timedelta(days=3),
+            due_date=today - timedelta(days=1),
+            created_at=today - timedelta(days=3),
+        )
+    )
+    await db_session.commit()
+
+    ar = await ac.get("/api/v1/credit/aging?kind=receivable", headers=headers)
+    assert ar.status_code == 200, ar.text
+    ar_body = ar.json()["data"]
+    assert ar_body.get("scope") == "store_manager"
+    assert float(ar_body["total_due"]) == pytest.approx(40.0)
+    party_names = {p["name"] for p in ar_body["parties"]}
+    assert "AR Local Buyer" in party_names
+    assert "AR Foreign Buyer" not in party_names
+    assert all(float(p.get("balance") or 0) == 0 for p in ar_body["parties"])
+    doc_nums = {d["document_number"] for d in ar_body["documents"]}
+    assert "INV-AR-M-1" in doc_nums
+    assert "INV-AR-O-1" not in doc_nums
+
+    ap = await ac.get("/api/v1/credit/aging?kind=payable", headers=headers)
+    assert ap.status_code == 200, ap.text
+    ap_body = ap.json()["data"]
+    assert ap_body.get("scope") == "store_manager"
+    assert float(ap_body["total_due"]) == pytest.approx(25.0)
+    ap_docs = {d["document_number"] for d in ap_body["documents"]}
+    assert "PI-AP-M-1" in ap_docs
+    assert "PI-AP-O-1" not in ap_docs
+    assert all(float(p.get("balance") or 0) == 0 for p in ap_body["parties"])
+
+    slice_r = await ac.get("/api/v1/dashboard/credit", headers=headers)
+    assert slice_r.status_code == 200, slice_r.text
+    slice_body = slice_r.json()["data"]
+    assert float(slice_body["ar_total_due"]) == pytest.approx(40.0)
+
+    export = await ac.get(
+        "/api/v1/credit/aging/export?kind=receivable", headers=headers
+    )
+    assert export.status_code == 200, export.text
+    assert "INV-AR-M-1" in export.text
+    assert "INV-AR-O-1" not in export.text
+    assert "AR Foreign Buyer" not in export.text

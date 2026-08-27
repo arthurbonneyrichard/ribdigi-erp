@@ -848,8 +848,20 @@ async def build_report_payload(
 
         aging_kind = (kind or "receivable").strip().lower()
         if aging_kind in {"payable", "ap"}:
-            return await credit_svc.ap_aging(db, tenant_id, as_of=as_of or now)
-        return await credit_svc.ar_aging(db, tenant_id, as_of=as_of or now)
+            return await credit_svc.ap_aging(
+                db,
+                tenant_id,
+                as_of=as_of or now,
+                company_id=company_id,
+                warehouse_ids=warehouse_ids,
+            )
+        return await credit_svc.ar_aging(
+            db,
+            tenant_id,
+            as_of=as_of or now,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "tax":
         return await tax_svc.tax_report(
             db, tenant_id, from_date=fd, to_date=td, company_id=company_id

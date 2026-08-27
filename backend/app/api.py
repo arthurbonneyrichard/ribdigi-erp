@@ -3706,10 +3706,15 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     expenses_by_category = await dashboard_slices_svc.expenses_by_category(
         db, tid, company_id=cid
     )
-    ar_aging = await credit_svc.ar_aging(db, tid, company_id=cid)
+    ar_aging = await credit_svc.ar_aging(
+        db, tid, company_id=cid, store_ids=managed_ids
+    )
     ar_total_due = float(ar_aging.get("total_due") or 0)
     # Stage 96 B1 — AP Payables + MTD Profit Summary (real aggregates; no fabricated KPIs)
-    ap_aging = await credit_svc.ap_aging(db, tid, company_id=cid)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    ap_aging = await credit_svc.ap_aging(
+        db, tid, company_id=cid, warehouse_ids=managed_wh
+    )
     ap_total_due = float(ap_aging.get("total_due") or 0)
     from app import accounting as accounting_svc
 
@@ -12921,15 +12926,25 @@ async def credit_aging(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if kind == "payable":
         return env(
             await credit_svc.ap_aging(
-                db, claims["tenant_id"], company_id=claims.get("company_id")
+                db,
+                claims["tenant_id"],
+                company_id=claims.get("company_id"),
+                warehouse_ids=managed_wh,
             )
         )
     return env(
         await credit_svc.ar_aging(
-            db, claims["tenant_id"], company_id=claims.get("company_id")
+            db,
+            claims["tenant_id"],
+            company_id=claims.get("company_id"),
+            store_ids=managed_stores,
         )
     )
 
@@ -12941,11 +12956,17 @@ async def credit_aging_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 136 A1 — aging document CSV (party/totals omitted; document rows only)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await credit_ops_export_svc.export_aging_csv(
         db,
         tenant_id=claims["tenant_id"],
         kind=kind,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,

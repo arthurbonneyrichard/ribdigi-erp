@@ -228,8 +228,12 @@ class BusinessIntelligenceService:
 
         credit = None
         if self.can_read_credit():
+            store_ids = await managed_store_ids(self.db, self.claims)
             credit = await ar_aging(
-                self.db, self.tenant_id, company_id=self.company_id
+                self.db,
+                self.tenant_id,
+                company_id=self.company_id,
+                store_ids=store_ids,
             )
 
         rules = InsightRulesService(settings)

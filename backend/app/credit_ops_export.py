@@ -273,14 +273,20 @@ async def export_aging_csv(
     tenant_id: str,
     kind: str = "receivable",
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     key = (kind or "receivable").strip().lower()
     if key not in {"receivable", "payable"}:
         raise HTTPException(status_code=400, detail="kind must be receivable or payable")
     report = (
-        await credit_svc.ap_aging(db, tenant_id, company_id=company_id)
+        await credit_svc.ap_aging(
+            db, tenant_id, company_id=company_id, warehouse_ids=warehouse_ids
+        )
         if key == "payable"
-        else await credit_svc.ar_aging(db, tenant_id, company_id=company_id)
+        else await credit_svc.ar_aging(
+            db, tenant_id, company_id=company_id, store_ids=store_ids
+        )
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=AGING_EXPORT_COLUMNS)
