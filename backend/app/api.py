@@ -5137,12 +5137,16 @@ async def lowstock(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 137 L1 — optional stock_status=red|yellow filter."""
+    """Stage 137 L1 — optional stock_status=red|yellow; store_manager WH-scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     out = await inventory_ops_export_svc.list_low_stock_alerts(
         db,
         tenant_id=claims["tenant_id"],
         stock_status=stock_status,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return env(out)
 
@@ -5153,12 +5157,16 @@ async def export_low_stock_csv(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 137 L1 — low-stock alert CSV."""
+    """Stage 137 L1 — low-stock alert CSV; store_manager WH-scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await inventory_ops_export_svc.export_low_stock_csv(
         db,
         tenant_id=claims["tenant_id"],
         stock_status=stock_status,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -6217,11 +6225,16 @@ async def inventory_batches_expiring(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Expiring batches; store_manager WH-scoped (null warehouse excluded)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     rows = await catalog_svc.list_expiring_batches(
         db,
         claims["tenant_id"],
         within_days=days,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return env(
         {
@@ -6238,12 +6251,16 @@ async def export_expiring_batches_csv(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 137 E1 — expiring batches CSV."""
+    """Stage 137 E1 — expiring batches CSV; store_manager WH-scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await inventory_ops_export_svc.export_expiring_batches_csv(
         db,
         tenant_id=claims["tenant_id"],
         days=days,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -12625,13 +12642,22 @@ async def report_low_stock(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Low-stock report; store_manager scoped via manager_id warehouses."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, _multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    if warehouse_id:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(managed_wh, warehouse_id)
     return env(
         await reports_svc.inventory_low_stock(
             db,
             claims["tenant_id"],
-            store_id=store_id,
+            store_id=single or store_id,
             warehouse_id=warehouse_id,
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -12669,12 +12695,16 @@ async def report_inventory_expiry(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await reports_svc.inventory_expiry(
             db,
             claims["tenant_id"],
             within_days=days,
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 

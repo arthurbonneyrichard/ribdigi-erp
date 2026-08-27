@@ -1192,3 +1192,199 @@ async def test_store_manager_pos_sessions_scoped(client, db_session):
         json={"store_id": store.id, "opening_cash": 10},
     )
     assert open_ok.status_code == 200, open_ok.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_low_stock_and_expiry_warehouse_scoped(client, db_session):
+    """Managers see only managed-WH low-stock/expiry rows; omit product scope + other WHs."""
+    from datetime import timedelta
+
+    from app.inventory import apply_stock_change
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="LS Alert Mine",
+        code="LS-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="LS Alert Other",
+        code="LS-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="LS Mine WH",
+        code="LS-M-WH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="LS Other WH",
+        code="LS-O-WH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    seed["p1"].stock_qty = 2
+    seed["p1"].minimum_stock = 5
+    seed["p1"].reorder_level = 20
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=seed["p1"].id,
+        quantity_delta=3,
+        movement_type="stock_in",
+        user_id=mgr.id,
+        warehouse_id=wh_mine.id,
+    )
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=seed["p1"].id,
+        quantity_delta=3,
+        movement_type="stock_in",
+        user_id=seed["admin1"].id,
+        warehouse_id=wh_other.id,
+    )
+    stock_mine = (
+        await db_session.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.warehouse_id == wh_mine.id,
+                m.WarehouseStock.product_id == seed["p1"].id,
+            )
+        )
+    ).scalar_one()
+    stock_other = (
+        await db_session.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.warehouse_id == wh_other.id,
+                m.WarehouseStock.product_id == seed["p1"].id,
+            )
+        )
+    ).scalar_one()
+    stock_mine.minimum_stock = 10
+    stock_mine.reorder_level = 20
+    stock_other.minimum_stock = 10
+    stock_other.reorder_level = 20
+
+    soon = datetime.utcnow() + timedelta(days=7)
+    batch_mine = m.ProductBatch(
+        tenant_id=tid,
+        company_id=cid,
+        product_id=seed["p1"].id,
+        warehouse_id=wh_mine.id,
+        batch_number="LOT-LS-MINE",
+        expiry_date=soon,
+        quantity=3,
+    )
+    batch_other = m.ProductBatch(
+        tenant_id=tid,
+        company_id=cid,
+        product_id=seed["p1"].id,
+        warehouse_id=wh_other.id,
+        batch_number="LOT-LS-OTH",
+        expiry_date=soon,
+        quantity=3,
+    )
+    batch_null = m.ProductBatch(
+        tenant_id=tid,
+        company_id=cid,
+        product_id=seed["p1"].id,
+        warehouse_id=None,
+        batch_number="LOT-LS-NULL",
+        expiry_date=soon,
+        quantity=1,
+    )
+    db_session.add_all([batch_mine, batch_other, batch_null])
+    await db_session.commit()
+
+    low = await ac.get("/api/v1/inventory/low-stock", headers=headers)
+    assert low.status_code == 200, low.text
+    low_rows = low.json()["data"]
+    assert not any(r.get("scope") == "product" for r in low_rows)
+    wh_ids = {r.get("warehouse_id") for r in low_rows if r.get("scope") == "warehouse"}
+    assert wh_mine.id in wh_ids
+    assert wh_other.id not in wh_ids
+
+    report = await ac.get("/api/v1/reports/inventory/low-stock", headers=headers)
+    assert report.status_code == 200, report.text
+    report_data = report.json()["data"]
+    assert report_data["count"] == 0
+    assert report_data["products"] == []
+    report_wh = {r["warehouse_id"] for r in report_data["warehouse_low_stock"]}
+    assert wh_mine.id in report_wh
+    assert wh_other.id not in report_wh
+
+    expiring = await ac.get("/api/v1/inventory/batches/expiring?days=30", headers=headers)
+    assert expiring.status_code == 200, expiring.text
+    lots = {b["batch_number"] for b in expiring.json()["data"]["batches"]}
+    assert "LOT-LS-MINE" in lots
+    assert "LOT-LS-OTH" not in lots
+    assert "LOT-LS-NULL" not in lots
+
+    expiry_report = await ac.get("/api/v1/reports/inventory/expiry?days=30", headers=headers)
+    assert expiry_report.status_code == 200, expiry_report.text
+    expiry_lots = {b["batch_number"] for b in expiry_report.json()["data"]["batches"]}
+    assert "LOT-LS-MINE" in expiry_lots
+    assert "LOT-LS-OTH" not in expiry_lots
+    assert "LOT-LS-NULL" not in expiry_lots
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="LS Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    missing_wh = await ac.post(
+        "/api/v1/inventory/low-stock/reorder-po",
+        headers=headers,
+        json={"product_id": seed["p1"].id, "supplier_id": supplier.id},
+    )
+    assert missing_wh.status_code == 403
+    assert missing_wh.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    cross_wh = await ac.post(
+        "/api/v1/inventory/low-stock/reorder-po",
+        headers=headers,
+        json={
+            "product_id": seed["p1"].id,
+            "supplier_id": supplier.id,
+            "warehouse_id": wh_other.id,
+        },
+    )
+    assert cross_wh.status_code == 403
+    assert cross_wh.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_po = await ac.post(
+        "/api/v1/inventory/low-stock/reorder-po",
+        headers=headers,
+        json={
+            "product_id": seed["p1"].id,
+            "supplier_id": supplier.id,
+            "warehouse_id": wh_mine.id,
+            "quantity": 5,
+        },
+    )
+    assert ok_po.status_code == 200, ok_po.text
+    assert ok_po.json()["data"]["warehouse_id"] == wh_mine.id

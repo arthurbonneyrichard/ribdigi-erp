@@ -52,7 +52,8 @@ store activation — never frontend-only.
    `apply_purchase_invoice_warehouse_scope`, `STORE_SCOPE_DENIED`) — dashboard/BI,
    POS sales, sales invoices, expenses, stores, transfers, warehouse inventory ops,
    purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` or linked
-   PO/GRN warehouse), sales orders, and POS sessions; not store-scoped RBAC Complete.
+   PO/GRN warehouse), sales orders, POS sessions, and low-stock / expiring-batch
+   list+export+reports (warehouse rows only); not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.

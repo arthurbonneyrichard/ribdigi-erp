@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
+from sqlalchemy import select
 
-from app.inventory import compute_stock_status
+from app import models as m
+from app.inventory import apply_stock_change, compute_stock_status
 from tests.conftest import auth_headers
 
 
@@ -16,10 +19,18 @@ def test_compute_stock_status_thresholds():
     assert compute_stock_status(2, 0, 0) == "green"
 
 
+async def _super(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
 @pytest.mark.asyncio
 async def test_product_minimum_stock_and_list_status(client, db_session):
+    """Product-level low-stock uses tenant-wide role (store_managers omit product scope)."""
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _super(ac, seed)
     seed["p1"].stock_qty = 8
     await db_session.commit()
 
@@ -55,22 +66,37 @@ async def test_product_minimum_stock_and_list_status(client, db_session):
 @pytest.mark.asyncio
 async def test_warehouse_low_stock_uses_minimum(client, db_session):
     ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    from sqlalchemy import select
 
-    from app import models as m
-    from app.inventory import apply_stock_change
-
-    wh = m.Warehouse(tenant_id=seed["t1"].id, name="Min WH", code="MINWH")
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Min WH Store",
+        code="MINWH-S",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Min WH",
+        code="MINWH",
+    )
     db_session.add(wh)
     await db_session.flush()
     await apply_stock_change(
         db_session,
-        tenant_id=seed["t1"].id,
+        tenant_id=tid,
         product_id=seed["p1"].id,
         quantity_delta=4,
         movement_type="stock_in",
-        user_id=seed["mgr1"].id,
+        user_id=mgr.id,
         warehouse_id=wh.id,
     )
     stock = (
@@ -88,6 +114,7 @@ async def test_warehouse_low_stock_uses_minimum(client, db_session):
     low = await ac.get("/api/v1/inventory/low-stock", headers=headers)
     assert low.status_code == 200, low.text
     rows = low.json()["data"]
+    assert not any(r.get("scope") == "product" for r in rows)
     wh_row = next(
         r
         for r in rows

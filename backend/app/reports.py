@@ -1189,36 +1189,42 @@ async def inventory_low_stock(
     store_id: str | None = None,
     warehouse_id: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """Product-level and optional store/warehouse reorder breaches."""
+    """Product-level and optional store/warehouse reorder breaches.
+
+    When ``warehouse_ids`` is set (store_manager), omit company-wide product rows and
+    restrict warehouse rows to that set (intersected with store/warehouse filters).
+    """
     from app.inventory import compute_stock_status
 
-    pq = select(m.Product).where(
-        m.Product.tenant_id == tenant_id,
-        m.Product.is_active == True,  # noqa: E712
-    ).order_by(m.Product.stock_qty.asc())
-    pq = apply_company_filter(pq, m.Product.company_id, company_id)
-    products = (await db.execute(pq)).scalars().all()
-    product_rows = []
-    for p in products:
-        qty = float(p.stock_qty or 0)
-        minimum = float(getattr(p, "minimum_stock", 0) or 0)
-        reorder = float(p.reorder_level or 0)
-        status = compute_stock_status(qty, minimum, reorder)
-        if status == "green":
-            continue
-        product_rows.append(
-            {
-                "id": p.id,
-                "sku": p.sku,
-                "name": p.name,
-                "stock_qty": qty,
-                "minimum_stock": minimum,
-                "reorder_level": reorder,
-                "stock_status": status,
-                "scope": "product",
-            }
-        )
+    product_rows: list[dict] = []
+    if warehouse_ids is None:
+        pq = select(m.Product).where(
+            m.Product.tenant_id == tenant_id,
+            m.Product.is_active == True,  # noqa: E712
+        ).order_by(m.Product.stock_qty.asc())
+        pq = apply_company_filter(pq, m.Product.company_id, company_id)
+        products = (await db.execute(pq)).scalars().all()
+        for p in products:
+            qty = float(p.stock_qty or 0)
+            minimum = float(getattr(p, "minimum_stock", 0) or 0)
+            reorder = float(p.reorder_level or 0)
+            status = compute_stock_status(qty, minimum, reorder)
+            if status == "green":
+                continue
+            product_rows.append(
+                {
+                    "id": p.id,
+                    "sku": p.sku,
+                    "name": p.name,
+                    "stock_qty": qty,
+                    "minimum_stock": minimum,
+                    "reorder_level": reorder,
+                    "stock_status": status,
+                    "scope": "product",
+                }
+            )
 
     wh_filter = warehouse_id
     store = None
@@ -1236,6 +1242,17 @@ async def inventory_low_stock(
         await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
 
     warehouse_rows: list[dict] = []
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "count": len(product_rows),
+            "products": product_rows,
+            "warehouse_count": 0,
+            "warehouse_low_stock": [],
+            "store_id": store_id,
+            "warehouse_id": wh_filter,
+            "store_name": store.name if store else None,
+        }
+
     stmt = (
         select(m.WarehouseStock, m.Product, m.Warehouse)
         .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
@@ -1249,6 +1266,8 @@ async def inventory_low_stock(
     stmt = apply_company_filter(stmt, m.Warehouse.company_id, company_id)
     if wh_filter:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == wh_filter)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.WarehouseStock.warehouse_id.in_(warehouse_ids))
     from app.inventory import compute_stock_status, effective_warehouse_thresholds
 
     for stock, product, wh in (await db.execute(stmt)).all():
@@ -1294,11 +1313,16 @@ async def inventory_expiry(
     *,
     within_days: int = 30,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     from app import catalog as catalog_svc
 
     batches = await catalog_svc.list_expiring_batches(
-        db, tenant_id, within_days=within_days, company_id=company_id
+        db,
+        tenant_id,
+        within_days=within_days,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     return {
         "within_days": within_days,

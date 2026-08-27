@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -13,19 +14,32 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
+async def _super(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
 async def _mgr(ac):
     return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
 
 @pytest.mark.asyncio
 async def test_low_stock_traffic_lights_suggested_qty_and_reorder_po(client, db_session):
-    """PATCH thresholds → product list status → low-stock list → draft reorder PO."""
+    """PATCH thresholds → product list status → low-stock list → draft reorder PO.
+
+    Product-scope alerts and null-warehouse reorder POs use tenant-wide roles;
+    store_managers omit product scope and require warehouse_id on reorder-PO.
+    """
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=cid,
         name="S17 L1 Reorder SKU",
         sku="S17-L1-REO",
         cost_price=4.5,
@@ -36,6 +50,7 @@ async def test_low_stock_traffic_lights_suggested_qty_and_reorder_po(client, db_
     )
     supplier = m.Party(
         tenant_id=tenant_id,
+        company_id=cid,
         name="S17 L1 Supplier",
         kind="supplier",
         credit_limit=0,
@@ -122,9 +137,12 @@ async def test_warehouse_low_stock_suggested_uses_reorder_qty(client, db_session
     ac, seed = client
     headers = await _mgr(ac)
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=cid,
         name="S17 L1 WH Low SKU",
         sku="S17-L1-WH",
         cost_price=2,
@@ -133,11 +151,19 @@ async def test_warehouse_low_stock_suggested_uses_reorder_qty(client, db_session
         minimum_stock=0,
         reorder_level=0,
     )
-    store = m.Store(tenant_id=tenant_id, name="S17 L1 Store", code="S17L1S", is_active=True)
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=cid,
+        name="S17 L1 Store",
+        code="S17L1S",
+        manager_id=mgr.id,
+        is_active=True,
+    )
     db_session.add_all([product, store])
     await db_session.flush()
     wh = m.Warehouse(
         tenant_id=tenant_id,
+        company_id=cid,
         store_id=store.id,
         name="S17 L1 Store WH",
         code="S17L1WH",
@@ -169,9 +195,11 @@ async def test_warehouse_low_stock_suggested_uses_reorder_qty(client, db_session
 
     low = await ac.get("/api/v1/inventory/low-stock", headers=headers)
     assert low.status_code == 200, low.text
+    rows = low.json()["data"]
+    assert not any(r.get("scope") == "product" for r in rows)
     wh_row = next(
         r
-        for r in low.json()["data"]
+        for r in rows
         if r.get("scope") == "warehouse"
         and r.get("warehouse_id") == wh_id
         and r["id"] == product_id

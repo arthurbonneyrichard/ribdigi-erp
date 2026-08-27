@@ -299,8 +299,12 @@ async def list_expiring_batches(
     *,
     within_days: int = 30,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> list[m.ProductBatch]:
+    """Expiring batches. ``warehouse_ids`` None = tenant-wide; else filter (null WH excluded)."""
     within_days = max(0, min(int(within_days), 3650))
+    if warehouse_ids is not None and not warehouse_ids:
+        return []
     horizon = datetime.utcnow() + timedelta(days=within_days)
     stmt = (
         select(m.ProductBatch)
@@ -314,6 +318,8 @@ async def list_expiring_batches(
     )
     if company_id:
         stmt = stmt.where(m.ProductBatch.company_id == company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.ProductBatch.warehouse_id.in_(warehouse_ids))
     return list((await db.execute(stmt)).scalars().all())
 
 
