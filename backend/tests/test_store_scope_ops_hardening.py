@@ -255,6 +255,58 @@ async def test_store_manager_expenses_and_stores_scoped(client, db_session):
     ok = await ac.get(f"/api/v1/expenses/{mine.id}", headers=headers)
     assert ok.status_code == 200, ok.text
 
+    foreign_create = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "category": "Travel",
+            "amount": 8,
+            "description": "Foreign create blocked",
+            "payment_method": "cash",
+            "store_id": other.id,
+        },
+    )
+    assert foreign_create.status_code == 403
+    assert foreign_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "category": "Travel",
+            "amount": 7,
+            "description": "Managed create ok",
+            "payment_method": "cash",
+            "store_id": store.id,
+        },
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    assert ok_create.json()["data"]["store_id"] == store.id
+
+    foreign_recurring = await ac.post(
+        "/api/v1/expenses/recurring",
+        headers=headers,
+        json={
+            "category": "Rent",
+            "amount": 50,
+            "description": "Foreign recurring",
+            "frequency": "monthly",
+            "payment_method": "cash",
+            "store_id": other.id,
+        },
+    )
+    assert foreign_recurring.status_code == 403
+    assert foreign_recurring.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Cannot reassign an in-scope expense onto an unmanaged store
+    reassign = await ac.patch(
+        f"/api/v1/expenses/{mine.id}",
+        headers=headers,
+        json={"store_id": other.id},
+    )
+    assert reassign.status_code == 403
+    assert reassign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     inv_denied = await ac.get(f"/api/v1/stores/{other.id}/inventory", headers=headers)
     assert inv_denied.status_code == 403
     assert inv_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

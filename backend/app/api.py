@@ -10181,6 +10181,10 @@ async def create_recurring_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
     row = await expenses_svc.create_recurring(
         db,
         tenant_id=claims["tenant_id"],
@@ -10321,6 +10325,10 @@ async def add_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
     expense = await expenses_svc.create_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -10376,6 +10384,8 @@ async def patch_expense(
     dashboard_scope_svc.assert_store_in_manager_scope(
         managed, getattr(existing, "store_id", None), allow_unset=False
     )
+    if payload.store_id is not None:
+        dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
     expense = await expenses_svc.update_expense(
         db,
         tenant_id=claims["tenant_id"],

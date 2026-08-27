@@ -1944,6 +1944,7 @@ async def post_expense_journal(
         source_type="expense",
         source_id=expense.id,
         store_id=getattr(expense, "store_id", None),
+        company_id=getattr(expense, "company_id", None),
         lines=[
             debit_line,
             {

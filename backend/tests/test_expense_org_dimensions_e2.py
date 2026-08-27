@@ -22,16 +22,34 @@ async def test_expense_store_department_assign_filter_and_foreign_dept(client, d
     tenant_id = seed["t1"].id
 
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="E2S1", name="E2 Store One"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="E2S1",
+        name="E2 Store One",
+        manager_id=seed["mgr1"].id,
     )
     dept = await create_department(
-        db_session, tenant_id=tenant_id, code="E2D1", name="E2 Ops"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="E2D1",
+        name="E2 Ops",
     )
     foreign_dept = await create_department(
-        db_session, tenant_id=seed["t2"].id, code="E2FD", name="Beta Dept"
+        db_session,
+        tenant_id=seed["t2"].id,
+        company_id=seed["c2"].id,
+        code="E2FD",
+        name="Beta Dept",
     )
     other_store = await create_store(
-        db_session, tenant_id=tenant_id, code="E2S2", name="E2 Store Two"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="E2S2",
+        name="E2 Store Two",
+        manager_id=seed["mgr1"].id,
     )
     await db_session.commit()
 
@@ -106,6 +124,7 @@ async def test_expense_store_department_assign_filter_and_foreign_dept(client, d
             "amount": 5000,
             "description": "Needs org patch",
             "payment_method": "cash",
+            "store_id": store.id,
         },
     )
     assert pending.status_code == 200, pending.text
@@ -115,7 +134,7 @@ async def test_expense_store_department_assign_filter_and_foreign_dept(client, d
     patched = await ac.patch(
         f"/api/v1/expenses/{pid}",
         headers=headers,
-        json={"store_id": store.id, "department_id": dept.id},
+        json={"department_id": dept.id},
     )
     assert patched.status_code == 200, patched.text
     assert patched.json()["data"]["store_id"] == store.id
@@ -137,10 +156,19 @@ async def test_recurring_copies_org_dimensions_on_generate(client, db_session):
     headers = await _mgr(ac)
     tenant_id = seed["t1"].id
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="E2RS", name="Rec Store"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="E2RS",
+        name="Rec Store",
+        manager_id=seed["mgr1"].id,
     )
     dept = await create_department(
-        db_session, tenant_id=tenant_id, code="E2RD", name="Rec Dept"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="E2RD",
+        name="Rec Dept",
     )
     await db_session.commit()
 

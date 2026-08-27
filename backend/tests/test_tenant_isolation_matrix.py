@@ -957,7 +957,10 @@ async def test_foreign_store_id_on_expense_create_404(client, db_session):
             "store_id": store.id,
         },
     )
-    assert r.status_code == 404, r.text
+    # store_manager write-path scope deny (403) before tenant FK resolve (404)
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
     planted = (
         await db_session.execute(
             select(m.Expense).where(
