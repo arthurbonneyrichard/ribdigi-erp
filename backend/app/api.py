@@ -17346,13 +17346,18 @@ async def ai_documents_analyze(
 ):
     """BR-21.8 — OCR extract, match to parties/products, flag discrepancies."""
     from app import ai_documents as ai_documents_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_documents_svc.analyze_document(
         db,
         claims["tenant_id"],
         upload=file,
         document_type=document_type,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     filename = getattr(file, "filename", None) or ""
     await ai_guard_svc.audit_ai_event(
@@ -17365,6 +17370,7 @@ async def ai_documents_analyze(
             "document_type": document_type,
             "filename": ai_guard_svc.redact_for_audit(filename)[:200],
             "match_count": len((data or {}).get("matches") or {}),
+            "scope": (data or {}).get("scope"),
         },
     )
     await db.commit()
@@ -17379,12 +17385,18 @@ async def ai_documents_analyze_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 149 A1 — document analyze multi-section CSV (suggest-only; no raw OCR dump)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_document_analyze_csv(
         db,
         tenant_id=claims["tenant_id"],
         upload=file,
         document_type=document_type,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     filename = getattr(file, "filename", None) or ""
     await ai_guard_svc.audit_ai_event(

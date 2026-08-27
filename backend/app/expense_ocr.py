@@ -90,7 +90,7 @@ def extract_text_from_image(data: bytes, content_type: str) -> str:
 
 
 def extract_text(media: storage_svc.MediaObject) -> tuple[str, str]:
-    """Return (text, engine) where engine is pdf|tesseract|none."""
+    """Return (text, engine) where engine is pdf|tesseract|text|none."""
     ct = (media.content_type or "").lower()
     name = (media.filename or "").lower()
     if ct == "application/pdf" or name.endswith(".pdf"):
@@ -101,6 +101,11 @@ def extract_text(media: storage_svc.MediaObject) -> tuple[str, str]:
             return "", "unavailable"
         text = extract_text_from_image(media.data, ct)
         return text, "tesseract"
+    if ct.startswith("text/") or name.endswith((".txt", ".csv", ".log")):
+        try:
+            return (media.data or b"").decode("utf-8", errors="ignore").strip(), "text"
+        except Exception:  # noqa: BLE001
+            return "", "unsupported"
     return "", "unsupported"
 
 

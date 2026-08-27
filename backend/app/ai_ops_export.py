@@ -1273,6 +1273,8 @@ async def export_document_analyze_csv(
     upload: UploadFile,
     document_type: str = "receipt",
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 149 A1 — document analyze result CSV."""
     data = await ai_documents_svc.analyze_document(
@@ -1281,5 +1283,7 @@ async def export_document_analyze_csv(
         upload=upload,
         document_type=document_type,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     return document_analyze_result_to_csv(data)

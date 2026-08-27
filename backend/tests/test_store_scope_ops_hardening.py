@@ -2767,3 +2767,229 @@ async def test_store_manager_ai_security_alerts_self_and_store_details_scoped(
     csv_text = export.text
     assert "AdminEvil/1.0" not in csv_text
     assert "198.51.100.50" not in csv_text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_documents_analyze_matches_store_scoped(client, db_session):
+    """Document analyze matches only managed-store/WH parties and products."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    local_product = seed["p1"]
+    local_product.company_id = cid
+    local_product.is_active = True
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Doc Mine",
+        code="AI-DOC-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Doc Other",
+        code="AI-DOC-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="AI Doc Mine WH",
+        code="AI-DOC-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="AI Doc Other WH",
+        code="AI-DOC-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    foreign_product = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="Foreign Gadget XYZ",
+        sku="FG-XYZ-99",
+        selling_price=9,
+        cost_price=4,
+        stock_qty=50,
+        reorder_level=1,
+        is_active=True,
+    )
+    db_session.add(foreign_product)
+    await db_session.flush()
+
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_mine.id,
+            product_id=local_product.id,
+            quantity=12,
+            reserved_qty=0,
+            reorder_level=2,
+        )
+    )
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_other.id,
+            product_id=foreign_product.id,
+            quantity=40,
+            reserved_qty=0,
+            reorder_level=2,
+        )
+    )
+
+    local_supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Local Mine Supplier",
+        kind="supplier",
+        status="active",
+    )
+    foreign_supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Foreign Only Supplier",
+        kind="supplier",
+        status="active",
+    )
+    db_session.add_all([local_supplier, foreign_supplier])
+    await db_session.flush()
+
+    db_session.add(
+        m.PurchaseOrder(
+            tenant_id=tid,
+            company_id=cid,
+            po_number="PO-DOC-M-1",
+            supplier_id=local_supplier.id,
+            warehouse_id=wh_mine.id,
+            status="sent",
+            subtotal=10,
+            total_amount=10,
+        )
+    )
+    db_session.add(
+        m.PurchaseOrder(
+            tenant_id=tid,
+            company_id=cid,
+            po_number="PO-DOC-O-1",
+            supplier_id=foreign_supplier.id,
+            warehouse_id=wh_other.id,
+            status="sent",
+            subtotal=99,
+            total_amount=99,
+        )
+    )
+
+    local_customer = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Local Doc Buyer",
+        kind="customer",
+        status="active",
+        credit_limit=100,
+    )
+    foreign_customer = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Foreign Doc Buyer",
+        kind="customer",
+        status="active",
+        credit_limit=100,
+    )
+    db_session.add_all([local_customer, foreign_customer])
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=mine.id,
+            invoice_number="INV-DOC-M-1",
+            customer_id=local_customer.id,
+            status="posted",
+            subtotal=25,
+            total_amount=25,
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+    )
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=other.id,
+            invoice_number="INV-DOC-O-1",
+            customer_id=foreign_customer.id,
+            status="posted",
+            subtotal=500,
+            total_amount=500,
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+    )
+    await db_session.commit()
+
+    receipt_text = (
+        "Payee: Local Mine Supplier\n"
+        f"{local_product.name} {local_product.sku}\n"
+        f"{foreign_product.name} {foreign_product.sku}\n"
+        "Total: 12.50\n"
+        "Date: 2026-08-20\n"
+    )
+    files = {"file": ("receipt.txt", receipt_text.encode("utf-8"), "text/plain")}
+    r = await ac.post(
+        "/api/v1/ai/documents/analyze?document_type=receipt",
+        headers=headers,
+        files=files,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()["data"]
+    assert body.get("scope") == "store_manager"
+    assert body["extracted_fields"].get("payee") == "Local Mine Supplier"
+    party = body["matches"]["party"]
+    assert party is not None
+    assert party["id"] == local_supplier.id
+    assert party["name"] == "Local Mine Supplier"
+    product_ids = {p["id"] for p in body["matches"]["products"]}
+    assert local_product.id in product_ids
+    assert foreign_product.id not in product_ids
+    blob = str(body["matches"])
+    assert "Foreign Only Supplier" not in blob
+    assert "Foreign Gadget" not in blob
+    assert "Foreign Doc Buyer" not in blob
+
+    # Foreign payee must not match even though company catalog has the party
+    foreign_text = (
+        "Payee: Foreign Only Supplier\n"
+        f"{foreign_product.name} {foreign_product.sku}\n"
+        "Total: 9.99\n"
+        "Date: 2026-08-20\n"
+    )
+    denied = await ac.post(
+        "/api/v1/ai/documents/analyze?document_type=purchase_order",
+        headers=headers,
+        files={"file": ("po.txt", foreign_text.encode("utf-8"), "text/plain")},
+    )
+    assert denied.status_code == 200, denied.text
+    dbody = denied.json()["data"]
+    assert dbody.get("scope") == "store_manager"
+    assert dbody["matches"]["party"] is None
+    assert dbody["matches"]["products"] == []
+    assert any(d.get("field") == "payee" for d in dbody["discrepancies"])
