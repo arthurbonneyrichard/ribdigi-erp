@@ -69,11 +69,13 @@ store activation — never frontend-only.
    only (customer universe = buyers on those invoices), AI chat
    top-product / sales-month / expenses / classic low-stock helpers
    (managed-store invoices/expenses; managed WarehouseStock vs reorder —
-   not `product.stock_qty`; empty managed store/WH → empty/zero), and AI
+   not `product.stock_qty`; empty managed store/WH → empty/zero), AI
    security alerts (+ export) fail-closed to self-attributed audit events
    plus details.store_id/warehouse_id in managed scope (no audit store
-   column). Document analyze may still be company-wide; not store-scoped
-   RBAC Complete.
+   column), and AI documents/analyze (+ export) match only customers on
+   managed-store sales, suppliers on managed-WH PO/GRN/PI, and products
+   with managed WH stock or managed-store sales (expense categories remain
+   company-level). Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
