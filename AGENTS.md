@@ -44,7 +44,11 @@ store activation — never frontend-only.
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
    gates on tenant columns, not fabricated MRR.
 6. **User↔store membership** remains deferred (ADR-005). Do not invent parallel
-   membership tables unless that ADR is intentionally opened.
+   membership tables unless that ADR is intentionally opened. Until then, store
+   manager operational scope uses ``stores.manager_id`` via
+   `backend/app/dashboard_scope.py` (`managed_store_ids`, `constrain_store_query`,
+   `STORE_SCOPE_DENIED`) — dashboard/BI plus POS sales list/export and sales
+   invoice list/get/print; not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
