@@ -96,8 +96,9 @@ store activation — never frontend-only.
    from managed-store journals (null-store fail-closed; foreign `store_id`
    denied), and sales invoice create/post/send/cancel + CSV export (+ get/print
    null-store fail-closed) store scoped, and recurring expense list/export/
-   patch/generate residual store scoped (null-store fail-closed). Not
-   store-scoped RBAC Complete.
+   patch/generate residual store scoped (null-store fail-closed), and COA
+   account ledger (+ export) from managed-store journals (null-store
+   fail-closed). Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
