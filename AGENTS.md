@@ -75,7 +75,11 @@ store activation — never frontend-only.
    column), and AI documents/analyze (+ export) match only customers on
    managed-store sales, suppliers on managed-WH PO/GRN/PI, and products
    with managed WH stock or managed-store sales (expense categories remain
-   company-level). Not store-scoped RBAC Complete.
+   company-level), and credit AR/AP aging (+ export; dashboard credit slice;
+   BI credit; reports credit_aging export) from managed-store invoices /
+   managed-WH purchase bills (null-store/null-WH fail-closed; party ledger
+   balance zeroed under scope). Statements/payment registers/writes and
+   accounting P&L may still be company-wide. Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
