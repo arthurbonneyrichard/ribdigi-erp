@@ -2052,6 +2052,11 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
         co = await db.get(m.Company, claims["company_id"])
         if co and co.tenant_id == claims["tenant_id"]:
             company_payload = await companies_svc.serialize_company_async(db, co)
+    company_entitlement = None
+    if principal != "platform" and tenant:
+        from app import store_entitlements as store_ent_svc
+
+        company_entitlement = await store_ent_svc.get_tenant_company_entitlement(db, tenant)
     return env(
         {
             "id": user.id,
@@ -2070,6 +2075,7 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "company": company_payload,
             "company_memberships": memberships,
             "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
+            "company_entitlement": company_entitlement,
             "permissions": perms,
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
             "inactivity_timeout_minutes": int(
@@ -2101,6 +2107,11 @@ async def get_workspace(claims=Depends(current_claims), db: AsyncSession = Depen
         user=user,
         tenant_admin=workspace_svc.is_tenant_admin_role(user.role),
     )
+    from app import store_entitlements as store_ent_svc
+
+    company_entitlement = (
+        await store_ent_svc.get_tenant_company_entitlement(db, tenant) if tenant else None
+    )
     return env(
         {
             "workspace_kind": claims.get("workspace_kind"),
@@ -2109,6 +2120,7 @@ async def get_workspace(claims=Depends(current_claims), db: AsyncSession = Depen
             "tenant_name": tenant.company_name if tenant else None,
             "tenant_has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
             "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
+            "company_entitlement": company_entitlement,
             "companies": [
                 await companies_svc.serialize_company_async(db, c)
                 for c in companies

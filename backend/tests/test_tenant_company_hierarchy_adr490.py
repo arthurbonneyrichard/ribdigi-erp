@@ -187,6 +187,20 @@ async def test_workspace_endpoint_lists_memberships(client):
     assert body["tenant_id"] == seed["t1"].id
     assert any(c["id"] == seed["c1"].id for c in body["companies"])
     assert all(c["id"] != seed["c2"].id for c in body["companies"])
+    assert body.get("company_entitlement") is not None
+    assert "max_companies" in body["company_entitlement"]
+
+
+@pytest.mark.asyncio
+async def test_me_includes_company_entitlement(client):
+    ac, seed = client
+    headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    r = await ac.get("/api/v1/me", headers=headers)
+    assert r.status_code == 200
+    body = r.json()["data"]
+    ent = body.get("company_entitlement")
+    assert ent is not None
+    assert ent["max_companies"] >= 1
 
 
 @pytest.mark.asyncio

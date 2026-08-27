@@ -12,7 +12,7 @@
 |------|--------|
 | Architecture (shared-schema tenancy) | **PASS** (runtime) — doc drift **NEEDS HARDENING** |
 | Tenant isolation | **PASS** (MVP automated tests) |
-| Multi-company | **PARTIAL** |
+| Multi-company | **PARTIAL** — entitlement gates COMPLETE; single-company UX hides switcher when `max_companies === 1` |
 | Company entitlement | **COMPLETE** (MVP) — plan-synced `max_companies` + platform override (2026-08-23) |
 | Store entitlement | **COMPLETE** (MVP) |
 | User entitlement | **COMPLETE** (MVP) — plan-synced `max_users` + platform override; create/reactivate enforced (2026-08-23) |
@@ -63,6 +63,7 @@
 - **Platform UI for company-entitlement override:** House tenant detail (`/platform/tenants/[id]`) mirrors store-entitlement controls (base / override / unlimited −1 / clear) via `PATCH /platform/tenants/{id}/company-entitlement`. Caps only — not paid billing Completes.
 - **Platform UI for user-entitlement override:** House tenant detail mirrors company/store controls (base / override / unlimited −1 / clear) via `PATCH /platform/tenants/{id}/user-entitlement`; shows `user_count` from platform tenant payload. Caps only — not paid billing Completes.
 - **User entitlement:** `PLAN_CATALOG.soft_limits.users` syncs `Tenant.max_users` on plan change (unless override); platform `PATCH /platform/tenants/{id}/user-entitlement`; create/reactivation/import blocked at limit (`USER_LIMIT_REACHED`); downgrades never delete users; tenant dashboard exposes `user_entitlement` / `over_entitlement`. Tests: `test_user_entitlements.py`. Alembic `20260823_0108` (`max_users_override`). Deploy: apply `0106` → `0107` → `0108` in order (`0107` revises `0106`).
+- **Single-company UX:** `/me` and `/workspace` expose `company_entitlement`; Shell hides workspace switcher for non–tenant-admin users on single-company plans with one company; Companies page hides create-at-limit and redundant switch controls.
 
 ---
 
