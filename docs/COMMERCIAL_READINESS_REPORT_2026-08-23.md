@@ -42,7 +42,7 @@
 6. **`max_users` enforcement** — **implemented** 2026-08-23 (plan sync + platform override + create/reactivate/import gate). Downgrades preserve users; `over_entitlement` on tenant dashboard.
 7. **Default store on company create** — **implemented** 2026-08-23 when store capacity allocated.
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
-9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on `/pos/sales`, `/pos/sales/export`, `/sales/invoices` (+ get/print) using `stores.manager_id` (`STORE_SCOPE_DENIED`). Purchasing/inventory/expenses and ADR-005 membership still open.
+9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS sales, sales invoices, expenses (+ get/patch/attachment), `/stores` list, `/stores/{id}/inventory|sales` (+ exports), and stock transfers (`/stores/transfers` + `/inventory/stock-transfers` list/export/get/create/submit/ship/receive/cancel; list/get/mutations require the transfer to touch a managed store; create requires managed from-store; BR-13.2 ship/receive manager rules unchanged) via `manager_id` (`STORE_SCOPE_DENIED`). Purchasing / other inventory movements and ADR-005 membership still open.
 10. **7-day offline POS** — **PARTIAL** (2026-08-23): envelope + client gate. Physical matrix: `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md` (**NOT RUN** / not VERIFIED).
 11. **Offline owner dashboard + alerts + recovery** — **PARTIAL**: recovery export + alerts API/UI; email/push + lockdown + Offline Complete MISSING.
 12. **Scale / pen test on prod infra** — operator/external.
@@ -68,7 +68,8 @@
 - **Offline owner alerts:** `offline_alerts.py` + `GET /offline/alerts` (envelope expired/expiring, never bound, sync backlog/failed, open conflicts); Company `#offline-sync` alert list. In-app only — not email/push Complete.
 - **Offline receipt numbering:** client IndexedDB seq per device (`offlineReceiptNumber.ts` → `OFF-{device}-{seq}`); POS shows receipt on queue; `/sync/push` preserves as sale `reference` with duplicate guard (`OFFLINE_RECEIPT_DUPLICATE`). Tests: `test_offline_receipt_numbering.py`.
 - **Operator runbooks (2026-08-23):** commercial Alembic deploy note; offline physical test matrix; PITR drill wrapper — all unchecked / not executed; go-live still NOT READY.
-- **Store RBAC ops hardening:** `dashboard_scope.constrain_store_query` / `assert_store_in_manager_scope` applied to POS sales list/export and sales invoice list/get/print. Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
+- **Store RBAC ops hardening:** `dashboard_scope.constrain_store_query` / `assert_store_in_manager_scope` / `assert_transfer_touches_manager_scope` applied to POS sales list/export, sales invoice list/get/print, expenses list/export/get/patch/attachment, stores list, store inventory/sales (+ exports), and stock transfers (stores + inventory list/export + get/create/submit/ship/receive/cancel). Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
+- **Architecture doc drift:** `ARCHITECTURE_DOCUMENTS.md` §9.1 and `DATABASE_DOCUMENTATION.md` §§3.1–3.4 schema-per-tenant SQL samples marked historical / SUPERSEDED (live = shared-schema `tenant_id`).
 
 ---
 
