@@ -94,7 +94,8 @@ store activation — never frontend-only.
    pending expenses) store+WH scoped (not `product.stock_qty`), and
    accounting journal entries (+ export; create/unpost/attachment asserts)
    from managed-store journals (null-store fail-closed; foreign `store_id`
-   denied). Not store-scoped RBAC Complete.
+   denied), and sales invoice create/post/send/cancel + CSV export (+ get/print
+   null-store fail-closed) store scoped. Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
