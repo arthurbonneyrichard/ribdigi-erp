@@ -643,6 +643,7 @@ async def list_transfers_filtered(
     *,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     scope: str = "all",
@@ -667,6 +668,15 @@ async def list_transfers_filtered(
             or_(
                 m.StockTransfer.from_store_id == store_id,
                 m.StockTransfer.to_store_id == store_id,
+            )
+        )
+    elif store_ids is not None:
+        if not store_ids:
+            return []
+        stmt = stmt.where(
+            or_(
+                m.StockTransfer.from_store_id.in_(store_ids),
+                m.StockTransfer.to_store_id.in_(store_ids),
             )
         )
     if from_date:

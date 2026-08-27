@@ -261,3 +261,156 @@ async def test_store_manager_expenses_and_stores_scoped(client, db_session):
     sales_denied = await ac.get(f"/api/v1/stores/{other.id}/sales", headers=headers)
     assert sales_denied.status_code == 403
     assert sales_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_stock_transfers_scoped(client, db_session):
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Xfer Mgr Store",
+        code="XFER-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other_a = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Xfer Other A",
+        code="XFER-OA",
+        manager_id=None,
+        is_active=True,
+    )
+    other_b = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Xfer Other B",
+        code="XFER-OB",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([store, other_a, other_b])
+    await db_session.flush()
+
+    wh_store = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Xfer Mgr WH",
+        code="WH-XFER-MGR",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    wh_a = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other_a.id,
+        name="Xfer OA WH",
+        code="WH-XFER-OA",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    wh_b = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other_b.id,
+        name="Xfer OB WH",
+        code="WH-XFER-OB",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add_all([wh_store, wh_a, wh_b])
+    await db_session.flush()
+
+    mine = m.StockTransfer(
+        tenant_id=tid,
+        company_id=cid,
+        transfer_number="XFER-SCOPE-MINE",
+        from_store_id=store.id,
+        to_store_id=other_a.id,
+        from_warehouse_id=wh_store.id,
+        to_warehouse_id=wh_a.id,
+        status="draft",
+        notes="touches managed",
+        created_by=mgr.id,
+    )
+    inbound = m.StockTransfer(
+        tenant_id=tid,
+        company_id=cid,
+        transfer_number="XFER-SCOPE-IN",
+        from_store_id=other_a.id,
+        to_store_id=store.id,
+        from_warehouse_id=wh_a.id,
+        to_warehouse_id=wh_store.id,
+        status="draft",
+        notes="inbound to managed",
+        created_by=mgr.id,
+    )
+    theirs = m.StockTransfer(
+        tenant_id=tid,
+        company_id=cid,
+        transfer_number="XFER-SCOPE-THEIRS",
+        from_store_id=other_a.id,
+        to_store_id=other_b.id,
+        from_warehouse_id=wh_a.id,
+        to_warehouse_id=wh_b.id,
+        status="draft",
+        notes="outside managed",
+        created_by=mgr.id,
+    )
+    db_session.add_all([mine, inbound, theirs])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    listed = await ac.get("/api/v1/stores/transfers", headers=headers)
+    assert listed.status_code == 200, listed.text
+    numbers = {row["transfer_number"] for row in listed.json()["data"]}
+    assert "XFER-SCOPE-MINE" in numbers
+    assert "XFER-SCOPE-IN" in numbers
+    assert "XFER-SCOPE-THEIRS" not in numbers
+
+    inv_listed = await ac.get("/api/v1/inventory/stock-transfers", headers=headers)
+    assert inv_listed.status_code == 200, inv_listed.text
+    inv_numbers = {row["transfer_number"] for row in inv_listed.json()["data"]}
+    assert "XFER-SCOPE-MINE" in inv_numbers
+    assert "XFER-SCOPE-THEIRS" not in inv_numbers
+
+    ok = await ac.get(f"/api/v1/stores/transfers/{mine.id}", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    denied = await ac.get(f"/api/v1/stores/transfers/{theirs.id}", headers=headers)
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    cross = await ac.get(
+        "/api/v1/stores/transfers",
+        headers=headers,
+        params={"store_id": other_a.id},
+    )
+    assert cross.status_code == 403
+    assert cross.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_denied = await ac.post(
+        "/api/v1/stores/transfers",
+        headers=headers,
+        json={
+            "from_store_id": other_a.id,
+            "to_store_id": other_b.id,
+            "submit": False,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert create_denied.status_code == 403
+    assert create_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    submit_denied = await ac.post(
+        f"/api/v1/stores/transfers/{theirs.id}/submit",
+        headers=headers,
+    )
+    assert submit_denied.status_code == 403
+    assert submit_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

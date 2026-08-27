@@ -86,6 +86,32 @@ def assert_store_in_manager_scope(
         )
 
 
+def assert_transfer_touches_manager_scope(
+    managed_ids: list[str] | None,
+    *,
+    from_store_id: str | None,
+    to_store_id: str | None,
+) -> None:
+    """403 unless transfer involves at least one managed store (store_manager)."""
+    if managed_ids is None:
+        return
+    touched = {
+        sid
+        for sid in ((from_store_id or "").strip(), (to_store_id or "").strip())
+        if sid
+    }
+    if not touched or touched.isdisjoint(set(managed_ids)):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Stock transfer is outside your managed store scope.",
+                "from_store_id": from_store_id,
+                "to_store_id": to_store_id,
+            },
+        )
+
+
 def constrain_store_query(
     managed_ids: list[str] | None,
     requested_store_id: str | None = None,

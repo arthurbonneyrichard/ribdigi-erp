@@ -13700,11 +13700,16 @@ async def list_transfers(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     rows = await stores_svc.list_transfers_filtered(
         db,
         claims["tenant_id"],
         status=status,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         scope=scope,
@@ -13723,11 +13728,16 @@ async def export_stores_transfers_csv(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 135 T1 — stores-permission inter-store transfer header CSV (no line dump)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await commerce_docs_export_svc.export_stock_transfers_csv(
         db,
         tenant_id=claims["tenant_id"],
         status=status,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         scope=scope,
         company_id=claims.get("company_id"),
     )
@@ -13746,6 +13756,11 @@ async def create_transfer(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    # Originating store must be managed; destination may be outside for ship-out.
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.from_store_id)
     transfer = await stores_svc.create_transfer(
         db,
         tenant_id=claims["tenant_id"],
@@ -13768,7 +13783,16 @@ async def get_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     # Transfers are operationally shared (ship/receive); record scope is not applied.
+    # Store managers still require from/to to touch a managed store.
+    from app import dashboard_scope as dashboard_scope_svc
+
     transfer = await stores_svc.get_transfer(db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id"))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(transfer, "from_store_id", None),
+        to_store_id=getattr(transfer, "to_store_id", None),
+    )
     return env(await stores_svc.serialize_transfer(db, transfer))
 
 
@@ -13778,6 +13802,17 @@ async def submit_transfer(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.submit_transfer(
         db, tenant_id=claims["tenant_id"], transfer_id=transfer_id,
         company_id=claims.get("company_id"),
@@ -13792,6 +13827,18 @@ async def ship_transfer(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    # Must touch a managed store; BR-13.2 still enforces source manager in service.
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.ship_transfer(
         db,
         tenant_id=claims["tenant_id"],
@@ -13810,6 +13857,18 @@ async def receive_transfer(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    # Must touch a managed store; BR-13.2 still enforces dest manager in service.
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.receive_transfer(
         db,
         tenant_id=claims["tenant_id"],
@@ -13828,6 +13887,17 @@ async def cancel_transfer(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.cancel_transfer(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id,
         company_id=claims.get("company_id"),
@@ -13986,11 +14056,16 @@ async def list_inventory_stock_transfers(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     rows = await stores_svc.list_transfers_filtered(
         db,
         claims["tenant_id"],
         status=status,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         scope=scope,
@@ -14009,11 +14084,16 @@ async def export_inventory_stock_transfers_csv(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 132 T1 — stock-transfer header CSV (no line dump)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await commerce_docs_export_svc.export_stock_transfers_csv(
         db,
         tenant_id=claims["tenant_id"],
         status=status,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         scope=scope,
         company_id=claims.get("company_id"),
     )

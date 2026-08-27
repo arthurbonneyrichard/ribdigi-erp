@@ -181,6 +181,7 @@ async def export_stock_transfers_csv(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     scope: str = "all",
     company_id: str | None = None,
 ) -> str:
@@ -195,6 +196,7 @@ async def export_stock_transfers_csv(
         tenant_id,
         status=status_n,
         store_id=store_id,
+        store_ids=store_ids,
         scope=scope or "all",
         limit=500,
         company_id=company_id,
