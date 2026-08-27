@@ -3173,3 +3173,257 @@ async def test_store_manager_credit_aging_store_wh_scoped(client, db_session):
     assert "INV-AR-M-1" in export.text
     assert "INV-AR-O-1" not in export.text
     assert "AR Foreign Buyer" not in export.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_statements_payments_store_scoped(client, db_session):
+    """Statements/outstanding/payment register + write asserts respect store/WH scope."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Stmt Mine",
+        code="CR-ST-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Stmt Other",
+        code="CR-ST-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Credit Stmt Mine WH",
+        code="CR-ST-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Credit Stmt Other WH",
+        code="CR-ST-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Stmt Shared Customer",
+        kind="customer",
+        status="active",
+        credit_limit=500,
+        balance=999,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Stmt Shared Supplier",
+        kind="supplier",
+        status="active",
+        balance=888,
+    )
+    db_session.add_all([cust, supplier])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-STMT-M-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=50,
+        total_amount=50,
+        paid_amount=0,
+        due_date=today - timedelta(days=2),
+        posted_at=today - timedelta(days=2),
+        created_at=today - timedelta(days=2),
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-STMT-O-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=7000,
+        total_amount=7000,
+        paid_amount=0,
+        due_date=today - timedelta(days=2),
+        posted_at=today - timedelta(days=2),
+        created_at=today - timedelta(days=2),
+    )
+    db_session.add_all([inv_mine, inv_other])
+    await db_session.flush()
+
+    pay_mine = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CPAY-STMT-M-1",
+        customer_id=cust.id,
+        sales_invoice_id=inv_mine.id,
+        amount=10,
+        payment_method="cash",
+    )
+    pay_other = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CPAY-STMT-O-1",
+        customer_id=cust.id,
+        sales_invoice_id=inv_other.id,
+        amount=500,
+        payment_method="cash",
+    )
+    db_session.add_all([pay_mine, pay_other])
+
+    pi_mine = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-STMT-M-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="unpaid",
+        subtotal=30,
+        total_amount=30,
+        paid_amount=0,
+        invoice_date=today - timedelta(days=1),
+        due_date=today + timedelta(days=5),
+        created_at=today - timedelta(days=1),
+    )
+    pi_other = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-STMT-O-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="unpaid",
+        subtotal=6000,
+        total_amount=6000,
+        paid_amount=0,
+        invoice_date=today - timedelta(days=1),
+        due_date=today + timedelta(days=5),
+        created_at=today - timedelta(days=1),
+    )
+    db_session.add_all([pi_mine, pi_other])
+    await db_session.flush()
+    spay_mine = m.SupplierPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="SPAY-STMT-M-1",
+        supplier_id=supplier.id,
+        purchase_invoice_id=pi_mine.id,
+        amount=5,
+        payment_method="bank_transfer",
+    )
+    spay_other = m.SupplierPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="SPAY-STMT-O-1",
+        supplier_id=supplier.id,
+        purchase_invoice_id=pi_other.id,
+        amount=400,
+        payment_method="bank_transfer",
+    )
+    db_session.add_all([spay_mine, spay_other])
+    await db_session.commit()
+
+    outstanding = await ac.get(
+        f"/api/v1/customers/{cust.id}/outstanding", headers=headers
+    )
+    assert outstanding.status_code == 200, outstanding.text
+    oids = {d["invoice_id"] for d in outstanding.json()["data"]}
+    assert inv_mine.id in oids
+    assert inv_other.id not in oids
+
+    stmt = await ac.get(
+        f"/api/v1/credit/customers/{cust.id}/statement", headers=headers
+    )
+    assert stmt.status_code == 200, stmt.text
+    sbody = stmt.json()["data"]
+    assert sbody.get("scope") == "store_manager"
+    assert float(sbody["customer"]["balance"]) == pytest.approx(0)
+    refs = {ln["reference"] for ln in sbody["lines"]}
+    assert "INV-STMT-M-1" in refs
+    assert "CPAY-STMT-M-1" in refs
+    assert "INV-STMT-O-1" not in refs
+    assert "CPAY-STMT-O-1" not in refs
+
+    cpays = await ac.get("/api/v1/credit/customer-payments", headers=headers)
+    assert cpays.status_code == 200, cpays.text
+    cnums = {r["payment_number"] for r in cpays.json()["data"]}
+    assert "CPAY-STMT-M-1" in cnums
+    assert "CPAY-STMT-O-1" not in cnums
+
+    # Deny paying foreign-store invoice
+    denied = await ac.post(
+        f"/api/v1/customers/{cust.id}/payments",
+        headers=headers,
+        json={
+            "customer_id": cust.id,
+            "amount": 1,
+            "sales_invoice_id": inv_other.id,
+            "payment_method": "cash",
+        },
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Deny unallocated payment (no invoice)
+    denied_unalloc = await ac.post(
+        f"/api/v1/customers/{cust.id}/payments",
+        headers=headers,
+        json={
+            "customer_id": cust.id,
+            "amount": 1,
+            "payment_method": "cash",
+        },
+    )
+    assert denied_unalloc.status_code == 403, denied_unalloc.text
+
+    schedule = await ac.get(
+        f"/api/v1/suppliers/{supplier.id}/payment-schedule", headers=headers
+    )
+    assert schedule.status_code == 200, schedule.text
+    sch = schedule.json()["data"]
+    assert sch.get("scope") == "store_manager"
+    assert float(sch["total_due"]) == pytest.approx(30.0)
+    sch_nums = {
+        (i.get("invoice_number") or i.get("po_number")) for i in sch["items"]
+    }
+    assert "PI-STMT-M-1" in sch_nums
+    assert "PI-STMT-O-1" not in sch_nums
+
+    spays = await ac.get("/api/v1/credit/supplier-payments", headers=headers)
+    assert spays.status_code == 200, spays.text
+    snums = {r["payment_number"] for r in spays.json()["data"]}
+    assert "SPAY-STMT-M-1" in snums
+    assert "SPAY-STMT-O-1" not in snums
+
+    denied_ap = await ac.post(
+        f"/api/v1/suppliers/{supplier.id}/payments",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "amount": 1,
+            "purchase_invoice_id": pi_other.id,
+            "payment_method": "bank_transfer",
+        },
+    )
+    assert denied_ap.status_code == 403, denied_ap.text

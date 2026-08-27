@@ -28,10 +28,21 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     client, db_session
 ):
     """BR-11.1: limit, block+override, balance, collections, statement (allocate cited Stage 14)."""
+    from app import models as m
+
     ac, seed = client
     mgr_h = await _mgr(ac)
     super_h = await _super(ac, seed)
     seed["p1"].stock_qty = 100
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="R1 Credit Store",
+        code="R1-CR",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
     await db_session.commit()
 
     # --- Set per-customer credit limit ---
@@ -64,6 +75,7 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
         headers=mgr_h,
         json={
             "customer_id": customer_id,
+            "store_id": store.id,
             "items": [
                 {
                     "product_id": seed["p1"].id,
@@ -134,7 +146,7 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     profile3 = await ac.get(f"/api/v1/customers/{customer_id}", headers=mgr_h)
     assert float(profile3.json()["data"]["balance"]) == pytest.approx(90)
 
-    # Customer statement: invoices + payments + balance
+    # Customer statement: invoices + payments (store-scoped; ledger balance zeroed)
     stmt = await ac.get(
         f"/api/v1/credit/customers/{customer_id}/statement", headers=mgr_h
     )
@@ -142,7 +154,9 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     sdata = stmt.json()["data"]
     assert sdata["customer"]["id"] == customer_id
     assert float(sdata["customer"]["credit_limit"]) == pytest.approx(100)
-    assert float(sdata["customer"]["balance"]) == pytest.approx(90)
+    assert sdata.get("scope") == "store_manager"
+    assert float(sdata["customer"]["balance"]) == pytest.approx(0)
+    assert float(sdata.get("scoped_open_due") or 0) == pytest.approx(90)
     lines = sdata["lines"]
     assert any(ln.get("type") == "invoice" for ln in lines)
     assert any(ln.get("type") == "payment" for ln in lines)

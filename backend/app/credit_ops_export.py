@@ -174,7 +174,12 @@ async def list_customer_payments(
     payment_method: str | None = None,
     limit: int = 500,
 ) -> list[m.CustomerPayment]:
+    from app import dashboard_scope as dashboard_scope_svc
+
     method = _normalize_method(payment_method)
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if managed_stores is not None and not managed_stores:
+        return []
     stmt = (
         select(m.CustomerPayment)
         .where(m.CustomerPayment.tenant_id == tenant_id)
@@ -188,6 +193,10 @@ async def list_customer_payments(
         stmt = stmt.where(m.CustomerPayment.customer_id == customer_id.strip())
     if method:
         stmt = stmt.where(m.CustomerPayment.payment_method == method)
+    if managed_stores is not None:
+        stmt = stmt.join(
+            m.SalesInvoice, m.SalesInvoice.id == m.CustomerPayment.sales_invoice_id
+        ).where(m.SalesInvoice.store_id.in_(managed_stores))
     stmt = apply_created_by_scope(stmt, m.CustomerPayment, claims)
     return list((await db.execute(stmt)).scalars().all())
 
@@ -201,7 +210,13 @@ async def list_supplier_payments(
     payment_method: str | None = None,
     limit: int = 500,
 ) -> list[m.SupplierPayment]:
+    from app import dashboard_scope as dashboard_scope_svc
+    from sqlalchemy import func
+
     method = _normalize_method(payment_method)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    if managed_wh is not None and not managed_wh:
+        return []
     stmt = (
         select(m.SupplierPayment)
         .where(m.SupplierPayment.tenant_id == tenant_id)
@@ -215,6 +230,32 @@ async def list_supplier_payments(
         stmt = stmt.where(m.SupplierPayment.supplier_id == supplier_id.strip())
     if method:
         stmt = stmt.where(m.SupplierPayment.payment_method == method)
+    if managed_wh is not None:
+        stmt = (
+            stmt.outerjoin(
+                m.PurchaseInvoice,
+                m.PurchaseInvoice.id == m.SupplierPayment.purchase_invoice_id,
+            )
+            .outerjoin(
+                m.GoodsReceipt,
+                m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id,
+            )
+            .outerjoin(
+                m.PurchaseOrder,
+                m.PurchaseOrder.id
+                == func.coalesce(
+                    m.SupplierPayment.purchase_order_id,
+                    m.PurchaseInvoice.purchase_order_id,
+                ),
+            )
+            .where(
+                func.coalesce(
+                    m.PurchaseInvoice.warehouse_id,
+                    m.GoodsReceipt.warehouse_id,
+                    m.PurchaseOrder.warehouse_id,
+                ).in_(managed_wh)
+            )
+        )
     stmt = apply_created_by_scope(stmt, m.SupplierPayment, claims)
     return list((await db.execute(stmt)).scalars().all())
 
@@ -303,10 +344,11 @@ async def export_customer_outstanding_csv(
     tenant_id: str,
     customer_id: str,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 141 O1 — open AR bills CSV for one customer."""
     rows = await credit_svc.customer_outstanding_bills(
-        db, tenant_id, customer_id, company_id=company_id
+        db, tenant_id, customer_id, company_id=company_id, store_ids=store_ids
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=OUTSTANDING_EXPORT_COLUMNS)
@@ -333,10 +375,15 @@ async def export_supplier_outstanding_csv(
     tenant_id: str,
     supplier_id: str,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 141 O1 — open AP bills CSV for one supplier (flat outstanding list)."""
     schedule = await credit_svc.supplier_payment_schedule(
-        db, tenant_id, supplier_id, company_id=company_id
+        db,
+        tenant_id,
+        supplier_id,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=OUTSTANDING_EXPORT_COLUMNS)
@@ -371,6 +418,7 @@ async def export_supplier_payment_schedule_csv(
     supplier_id: str,
     schedule_bucket: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 141 P1 — supplier AP payment schedule CSV with optional bucket filter."""
     bucket = (schedule_bucket or "").strip().lower() or None
@@ -380,7 +428,11 @@ async def export_supplier_payment_schedule_csv(
             detail="schedule_bucket must be overdue, due_today, upcoming, or unscheduled",
         )
     schedule = await credit_svc.supplier_payment_schedule(
-        db, tenant_id, supplier_id, company_id=company_id
+        db,
+        tenant_id,
+        supplier_id,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PAYMENT_SCHEDULE_EXPORT_COLUMNS)
@@ -423,10 +475,15 @@ async def export_customer_statement_csv(
     tenant_id: str,
     customer_id: str,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 141 T1 — customer credit statement lines CSV."""
     data = await credit_svc.customer_statement(
-        db, tenant_id, customer_id, company_id=company_id
+        db,
+        tenant_id,
+        customer_id,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     party = data.get("customer") or {}
     buf = io.StringIO()
@@ -458,10 +515,15 @@ async def export_supplier_statement_csv(
     tenant_id: str,
     supplier_id: str,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 141 T1 — supplier credit statement lines CSV."""
     data = await credit_svc.supplier_statement(
-        db, tenant_id, supplier_id, company_id=company_id
+        db,
+        tenant_id,
+        supplier_id,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     party = data.get("supplier") or {}
     buf = io.StringIO()

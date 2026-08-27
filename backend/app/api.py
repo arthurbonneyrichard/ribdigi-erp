@@ -8018,6 +8018,22 @@ async def record_sales_payment(
         raise HTTPException(status_code=403, detail="Missing permission: sales:write or credit:write")
     party = await customers_svc.get_customer(db, claims["tenant_id"], payload.customer_id)
     workspace_svc.assert_record_company(claims, party)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if managed_stores is not None:
+        if not payload.sales_invoice_id:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_SCOPE_DENIED",
+                    "message": "sales_invoice_id is required within your managed store scope.",
+                },
+            )
+        inv = await sales_svc.get_invoice(db, claims["tenant_id"], payload.sales_invoice_id)
+        dashboard_scope_svc.assert_store_in_manager_scope(
+            managed_stores, getattr(inv, "store_id", None), allow_unset=False
+        )
     payment = await sales_svc.record_customer_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -13256,12 +13272,16 @@ async def customer_credit_statement(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await credit_svc.customer_statement(
             db,
             claims["tenant_id"],
             customer_id,
             company_id=claims.get("company_id"),
+            store_ids=managed_stores,
         )
     )
 
@@ -13273,11 +13293,15 @@ async def export_customer_credit_statement(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 T1 — customer statement lines CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await credit_ops_export_svc.export_customer_statement_csv(
         db,
         tenant_id=claims["tenant_id"],
         customer_id=customer_id,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return Response(
         content=text,
@@ -13294,12 +13318,16 @@ async def supplier_credit_statement(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await credit_svc.supplier_statement(
             db,
             claims["tenant_id"],
             supplier_id,
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -13311,11 +13339,15 @@ async def export_supplier_credit_statement(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 T1 — supplier statement lines CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await credit_ops_export_svc.export_supplier_statement_csv(
         db,
         tenant_id=claims["tenant_id"],
         supplier_id=supplier_id,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -13361,12 +13393,16 @@ async def customer_outstanding(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 8 S2 — open AR bills for Credit UI."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     return env(
         await credit_svc.customer_outstanding_bills(
             db,
             claims["tenant_id"],
             customer_id,
             company_id=claims.get("company_id"),
+            store_ids=managed_stores,
         )
     )
 
@@ -13378,11 +13414,15 @@ async def export_customer_outstanding(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 O1 — customer outstanding bills CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await credit_ops_export_svc.export_customer_outstanding_csv(
         db,
         tenant_id=claims["tenant_id"],
         customer_id=customer_id,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return Response(
         content=text,
@@ -13402,6 +13442,22 @@ async def customer_payment_alias(
 ):
     party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, party)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if managed_stores is not None:
+        if not payload.sales_invoice_id:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_SCOPE_DENIED",
+                    "message": "sales_invoice_id is required within your managed store scope.",
+                },
+            )
+        inv = await sales_svc.get_invoice(db, claims["tenant_id"], payload.sales_invoice_id)
+        dashboard_scope_svc.assert_store_in_manager_scope(
+            managed_stores, getattr(inv, "store_id", None), allow_unset=False
+        )
     payment = await sales_svc.record_customer_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -13440,11 +13496,15 @@ async def supplier_outstanding(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     schedule = await credit_svc.supplier_payment_schedule(
         db,
         claims["tenant_id"],
         supplier_id,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     # Flat list kept for existing clients; schedule adds buckets/early-pay.
     out = []
@@ -13473,11 +13533,15 @@ async def export_supplier_outstanding(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 O1 — supplier outstanding bills CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await credit_ops_export_svc.export_supplier_outstanding_csv(
         db,
         tenant_id=claims["tenant_id"],
         supplier_id=supplier_id,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -13495,12 +13559,16 @@ async def supplier_payment_schedule(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 8 S1 / BR-11.2 — upcoming and overdue AP payment schedule."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await credit_svc.supplier_payment_schedule(
             db,
             claims["tenant_id"],
             supplier_id,
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -13513,12 +13581,16 @@ async def export_supplier_payment_schedule(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 P1 — supplier payment schedule CSV (optional schedule_bucket)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await credit_ops_export_svc.export_supplier_payment_schedule_csv(
         db,
         tenant_id=claims["tenant_id"],
         supplier_id=supplier_id,
         schedule_bucket=schedule_bucket,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -13538,6 +13610,32 @@ async def supplier_payment(
 ):
     party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, party)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    if managed_wh is not None:
+        if payload.purchase_invoice_id:
+            inv = await purchasing_svc.get_purchase_invoice(
+                db, claims["tenant_id"], payload.purchase_invoice_id
+            )
+            await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(
+                db, claims, inv
+            )
+        elif payload.purchase_order_id:
+            po = await purchasing_svc.get_po(
+                db, claims["tenant_id"], payload.purchase_order_id
+            )
+            dashboard_scope_svc.assert_warehouse_in_manager_scope(
+                managed_wh, getattr(po, "warehouse_id", None), allow_unset=False
+            )
+        else:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_SCOPE_DENIED",
+                    "message": "purchase_invoice_id or purchase_order_id is required within your managed store scope.",
+                },
+            )
     payment = await purchasing_svc.record_supplier_payment(
         db,
         tenant_id=claims["tenant_id"],

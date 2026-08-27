@@ -395,8 +395,12 @@ async def customer_outstanding_bills(
     customer_id: str,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[dict]:
-    """Open AR invoices for a customer (Stage 8 S2 / BR-11.1)."""
+    """Open AR invoices for a customer (Stage 8 S2 / BR-11.1).
+
+    ``store_ids`` set = managed-store invoices only (null-store fail-closed).
+    """
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -411,6 +415,9 @@ async def customer_outstanding_bills(
     if company_id and customer.company_id and customer.company_id != company_id:
         raise HTTPException(status_code=404, detail="Customer not found")
 
+    if store_ids is not None and not store_ids:
+        return []
+
     inv_q = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.customer_id == customer_id,
@@ -418,6 +425,8 @@ async def customer_outstanding_bills(
     )
     if company_id:
         inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+    if store_ids is not None:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_q)).scalars().all()
     rows: list[dict] = []
     for inv in invoices:
@@ -432,6 +441,7 @@ async def customer_outstanding_bills(
                 "due_date": inv.due_date,
                 "status": inv.status,
                 "document_type": "sales_invoice",
+                "store_id": getattr(inv, "store_id", None),
             }
         )
     rows.sort(
@@ -450,7 +460,14 @@ async def customer_statement(
     customer_id: str,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Customer AR statement.
+
+    ``store_ids`` set = managed-store invoices + payments allocated to those
+    invoices only (unallocated payments fail-closed). Party ledger balance
+    zeroed under store scope.
+    """
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -465,6 +482,19 @@ async def customer_statement(
     if company_id and customer.company_id and customer.company_id != company_id:
         raise HTTPException(status_code=404, detail="Customer not found")
 
+    manager_scope = store_ids is not None
+    if manager_scope and not store_ids:
+        return {
+            "customer": {
+                "id": customer.id,
+                "name": customer.name,
+                "credit_limit": float(customer.credit_limit or 0),
+                "balance": 0.0,
+            },
+            "lines": [],
+            "scope": "store_manager",
+        }
+
     inv_q = (
         select(m.SalesInvoice)
         .where(
@@ -475,7 +505,10 @@ async def customer_statement(
     )
     if company_id:
         inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
+    if manager_scope:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_q)).scalars().all()
+
     pay_q = (
         select(m.CustomerPayment)
         .where(
@@ -486,10 +519,22 @@ async def customer_statement(
     )
     if company_id:
         pay_q = pay_q.where(m.CustomerPayment.company_id == company_id)
+    if manager_scope:
+        pay_q = pay_q.join(
+            m.SalesInvoice, m.SalesInvoice.id == m.CustomerPayment.sales_invoice_id
+        ).where(m.SalesInvoice.store_id.in_(store_ids))
     payments = (await db.execute(pay_q)).scalars().all()
 
     lines = []
+    scoped_due = 0.0
     for inv in invoices:
+        due = (
+            max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+            if inv.status in {"posted", "partial"}
+            else 0
+        )
+        if inv.status != "cancelled":
+            scoped_due += due
         lines.append(
             {
                 "date": inv.posted_at or inv.created_at,
@@ -498,9 +543,8 @@ async def customer_statement(
                 "debit": float(inv.total_amount) if inv.status != "cancelled" else 0,
                 "credit": 0,
                 "status": inv.status,
-                "balance_due": max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
-                if inv.status in {"posted", "partial"}
-                else 0,
+                "balance_due": due,
+                "store_id": getattr(inv, "store_id", None),
             }
         )
     for pay in payments:
@@ -521,9 +565,11 @@ async def customer_statement(
             "id": customer.id,
             "name": customer.name,
             "credit_limit": float(customer.credit_limit or 0),
-            "balance": float(customer.balance or 0),
+            "balance": 0.0 if manager_scope else float(customer.balance or 0),
         },
         "lines": lines,
+        "scope": "store_manager" if manager_scope else "company",
+        "scoped_open_due": round(scoped_due, 2) if manager_scope else None,
     }
 
 
@@ -533,7 +579,15 @@ async def supplier_statement(
     supplier_id: str,
     *,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """Supplier AP statement.
+
+    ``warehouse_ids`` set = managed-WH POs + payments linked to in-scope PO/PI.
+    """
+    from app import dashboard_scope as dashboard_scope_svc
+    from sqlalchemy import func
+
     supplier = (
         await db.execute(
             select(m.Party).where(
@@ -548,6 +602,18 @@ async def supplier_statement(
     if company_id and supplier.company_id and supplier.company_id != company_id:
         raise HTTPException(status_code=404, detail="Supplier not found")
 
+    manager_scope = warehouse_ids is not None
+    if manager_scope and not warehouse_ids:
+        return {
+            "supplier": {
+                "id": supplier.id,
+                "name": supplier.name,
+                "balance": 0.0,
+            },
+            "lines": [],
+            "scope": "store_manager",
+        }
+
     po_q = (
         select(m.PurchaseOrder)
         .where(
@@ -558,7 +624,11 @@ async def supplier_statement(
     )
     if company_id:
         po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
+    po_q = dashboard_scope_svc.apply_warehouse_scope_filter(
+        po_q, m.PurchaseOrder, warehouse_ids
+    )
     orders = (await db.execute(po_q)).scalars().all()
+
     pay_q = (
         select(m.SupplierPayment)
         .where(
@@ -569,6 +639,32 @@ async def supplier_statement(
     )
     if company_id:
         pay_q = pay_q.where(m.SupplierPayment.company_id == company_id)
+    if manager_scope:
+        pay_q = (
+            pay_q.outerjoin(
+                m.PurchaseInvoice,
+                m.PurchaseInvoice.id == m.SupplierPayment.purchase_invoice_id,
+            )
+            .outerjoin(
+                m.GoodsReceipt,
+                m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id,
+            )
+            .outerjoin(
+                m.PurchaseOrder,
+                m.PurchaseOrder.id
+                == func.coalesce(
+                    m.SupplierPayment.purchase_order_id,
+                    m.PurchaseInvoice.purchase_order_id,
+                ),
+            )
+            .where(
+                func.coalesce(
+                    m.PurchaseInvoice.warehouse_id,
+                    m.GoodsReceipt.warehouse_id,
+                    m.PurchaseOrder.warehouse_id,
+                ).in_(warehouse_ids)
+            )
+        )
     payments = (await db.execute(pay_q)).scalars().all()
 
     lines = []
@@ -584,6 +680,7 @@ async def supplier_statement(
                 "credit": float(po.total_amount),
                 "status": po.status,
                 "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
+                "warehouse_id": getattr(po, "warehouse_id", None),
             }
         )
     for pay in payments:
@@ -603,9 +700,10 @@ async def supplier_statement(
         "supplier": {
             "id": supplier.id,
             "name": supplier.name,
-            "balance": float(supplier.balance or 0),
+            "balance": 0.0 if manager_scope else float(supplier.balance or 0),
         },
         "lines": lines,
+        "scope": "store_manager" if manager_scope else "company",
     }
 
 
@@ -616,8 +714,11 @@ async def supplier_payment_schedule(
     *,
     as_of: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """Upcoming/overdue AP schedule for a supplier (Stage 8 S1 / BR-11.2)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     as_of = as_of or datetime.utcnow()
     supplier = (
         await db.execute(
@@ -633,6 +734,20 @@ async def supplier_payment_schedule(
     if company_id and supplier.company_id and supplier.company_id != company_id:
         raise HTTPException(status_code=404, detail="Supplier not found")
 
+    manager_scope = warehouse_ids is not None
+    if manager_scope and not warehouse_ids:
+        return {
+            "supplier_id": supplier.id,
+            "supplier_name": supplier.name,
+            "as_of": as_of.date().isoformat(),
+            "total_due": 0.0,
+            "overdue_total": 0.0,
+            "upcoming_total": 0.0,
+            "early_pay": {},
+            "items": [],
+            "scope": "store_manager",
+        }
+
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
@@ -645,6 +760,7 @@ async def supplier_payment_schedule(
     )
     if company_id:
         inv_q = inv_q.where(m.PurchaseInvoice.company_id == company_id)
+    inv_q = dashboard_scope_svc.apply_purchase_invoice_warehouse_scope(inv_q, warehouse_ids)
     invoices = (await db.execute(inv_q)).scalars().all()
     po_q = select(m.PurchaseOrder).where(
         m.PurchaseOrder.tenant_id == tenant_id,
@@ -653,6 +769,9 @@ async def supplier_payment_schedule(
     )
     if company_id:
         po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
+    po_q = dashboard_scope_svc.apply_warehouse_scope_filter(
+        po_q, m.PurchaseOrder, warehouse_ids
+    )
     orders = (await db.execute(po_q)).scalars().all()
 
     items: list[dict] = []
@@ -766,6 +885,7 @@ async def supplier_payment_schedule(
         "upcoming_total": upcoming_total,
         "early_pay": ep,
         "items": items,
+        "scope": "store_manager" if manager_scope else "company",
     }
 
 
