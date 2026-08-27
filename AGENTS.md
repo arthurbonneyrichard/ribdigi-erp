@@ -78,8 +78,11 @@ store activation — never frontend-only.
    company-level), and credit AR/AP aging (+ export; dashboard credit slice;
    BI credit; reports credit_aging export) from managed-store invoices /
    managed-WH purchase bills (null-store/null-WH fail-closed; party ledger
-   balance zeroed under scope). Statements/payment registers/writes and
-   accounting P&L may still be company-wide. Not store-scoped RBAC Complete.
+   balance zeroed under scope), and credit statements / outstanding /
+   payment registers (+ exports) plus customer/supplier payment write
+   asserts (invoice/PO/PI required in managed scope; unallocated payments
+   denied). Accounting P&L/TB and tax reports may still be company-wide.
+   Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
