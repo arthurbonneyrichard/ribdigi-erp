@@ -12734,13 +12734,18 @@ async def report_transfer_history(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 16 M2 — consolidated stock transfer history (inter-store + warehouse)."""
+    """Stage 16 M2 — transfer history; store_manager scoped via manager_id stores."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await stores_svc.transfer_history(
             db,
             claims["tenant_id"],
             status=status,
-            store_id=store_id,
+            store_id=single,
+            store_ids=multi,
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             scope=scope,
@@ -12777,6 +12782,10 @@ async def report_purchases_summary(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """PO summary; store_manager WH-scoped (null WH fail-closed)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await reports_svc.purchases_summary(
             db,
@@ -12784,6 +12793,7 @@ async def report_purchases_summary(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -12796,6 +12806,10 @@ async def report_purchases_suppliers(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Purchases by supplier; store_manager WH-scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await reports_svc.purchases_by_supplier(
             db,
@@ -12804,6 +12818,7 @@ async def report_purchases_suppliers(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -12816,6 +12831,10 @@ async def report_purchases_pending_orders(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Pending POs; store_manager WH-scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await reports_svc.purchases_pending_orders(
             db,
@@ -12824,6 +12843,7 @@ async def report_purchases_pending_orders(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -12836,6 +12856,10 @@ async def report_purchases_returns(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Purchase returns summary; store_manager WH-scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await reports_svc.purchases_return_summary(
             db,
@@ -12844,6 +12868,7 @@ async def report_purchases_returns(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -14708,6 +14733,13 @@ async def create_inventory_stock_transfer(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    # Originating warehouse must be managed; destination may be outside for ship-out.
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.from_warehouse_id, allow_unset=False
+    )
     transfer = await stores_svc.create_warehouse_transfer(
         db,
         tenant_id=claims["tenant_id"],
@@ -14744,6 +14776,17 @@ async def submit_inventory_stock_transfer(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.submit_transfer(
         db, tenant_id=claims["tenant_id"], transfer_id=transfer_id,
         company_id=claims.get("company_id"),
@@ -14758,6 +14801,17 @@ async def ship_inventory_stock_transfer(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.ship_transfer(
         db,
         tenant_id=claims["tenant_id"],
@@ -14776,6 +14830,17 @@ async def receive_inventory_stock_transfer(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.receive_transfer(
         db,
         tenant_id=claims["tenant_id"],
@@ -14794,6 +14859,17 @@ async def cancel_inventory_stock_transfer(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stores_svc.get_transfer(
+        db, claims["tenant_id"], transfer_id, company_id=claims.get("company_id")
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_transfer_touches_manager_scope(
+        managed,
+        from_store_id=getattr(existing, "from_store_id", None),
+        to_store_id=getattr(existing, "to_store_id", None),
+    )
     transfer = await stores_svc.cancel_transfer(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], transfer_id=transfer_id,
         company_id=claims.get("company_id"),

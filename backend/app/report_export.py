@@ -765,13 +765,41 @@ async def build_report_payload(
             warehouse_ids=warehouse_ids,
         )
     if report_type == "purchases_summary":
-        return await reports_svc.purchases_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "purchases_suppliers":
-        return await reports_svc.purchases_by_supplier(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_by_supplier(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "purchases_pending_orders":
-        return await reports_svc.purchases_pending_orders(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_pending_orders(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "purchases_returns":
-        return await reports_svc.purchases_return_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_return_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "expenses_summary":
         return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "cash_flow":
@@ -861,10 +889,12 @@ async def build_report_payload(
             tenant_id,
             status=status,
             store_id=store_id,
+            store_ids=store_ids if not store_id else None,
             from_date=fd,
             to_date=td,
             scope=scope or "all",
             limit=int(limit or 200),
+            company_id=company_id,
         )
     raise HTTPException(status_code=400, detail="Unhandled report type")
 

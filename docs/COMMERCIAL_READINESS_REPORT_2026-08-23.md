@@ -17,7 +17,7 @@
 | Store entitlement | **COMPLETE** (MVP) |
 | User entitlement | **COMPLETE** (MVP) — plan-synced `max_users` + platform override; create/reactivate enforced (2026-08-23) |
 | User ↔ Store assignment | **MISSING** (ADR-005 POST-MVP) |
-| RBAC / store scope | **PARTIAL** — store_manager scoped via `manager_id`→`Warehouse.store_id` across POS/sales/expenses/stores/transfers/inventory ops/purchasing PR/PO/GRN/returns + purchase invoices + sales orders + POS sessions + low-stock/expiry + inventory balance/valuation/movements reports + **sales daily/monthly/products/customers/salesperson/by-store reports + `/reports/summary` sales + sales export types**; ADR-005 still open |
+| RBAC / store scope | **PARTIAL** — store_manager scoped via `manager_id` across ops surfaces + inventory/sales reports + **purchasing summary/suppliers/pending/returns reports** + **transfer history report** + **inventory stock-transfer write asserts**; ADR-005 still open |
 | Inventory / Purchasing / Sales / Accounting / Tax / Credit | **PASS** (MVP gates in `PRODUCTION_READINESS.md`) |
 | POS (online) | **PASS** (MVP) |
 | Offline foundation | **PARTIAL** — queue/catalog/sync MVP; 7-day auth envelope implemented (not VERIFIED) |
@@ -42,7 +42,7 @@
 6. **`max_users` enforcement** — **implemented** 2026-08-23 (plan sync + platform override + create/reactivate/import gate). Downgrades preserve users; `over_entitlement` on tenant dashboard.
 7. **Default store on company create** — **implemented** 2026-08-23 when store capacity allocated.
 8. **ADR-005 user↔store membership** — POST-MVP if product requires cashier store lists.
-9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS/sales/expenses/stores/transfers, warehouse inventory ops, purchasing PR/PO/GRN/returns, purchase invoices, **sales orders**, **POS sessions**, **low-stock / expiring batches**, **inventory balance/valuation/movements reports**, and **sales daily/monthly/products/customers/salesperson/by-store reports** (+ summary sales + matching export types; null-store invoices fail-closed). ADR-005 membership still open.
+9. **Store RBAC** — **PARTIAL** (2026-08-23): `store_manager` constrained on POS/sales/expenses/stores/transfers, warehouse inventory ops, purchasing PR/PO/GRN/returns/invoices, sales orders, POS sessions, low-stock/expiry, inventory + sales reports, **purchasing reports** (WH-scoped; null WH fail-closed), **transfer history report**, and **inventory `/stock-transfers` create/submit/ship/receive/cancel asserts**. ADR-005 membership still open.
 10. **7-day offline POS** — **PARTIAL** (2026-08-23): envelope + client gate. Physical matrix: `docs/OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md` (**NOT RUN** / not VERIFIED).
 11. **Offline owner dashboard + alerts + recovery** — **PARTIAL**: recovery export + alerts API/UI; soft lockdown (revoke expires server envelope + security notify); critical alert email via `POST /offline/alerts/notify` (security channel); push + remote IndexedDB wipe + Offline Complete MISSING.
 12. **Scale / pen test on prod infra** — operator/external.
@@ -69,7 +69,7 @@
 - **Offline soft lockdown (PARTIAL):** `DELETE /offline/devices/{id}` sets `revoked_at` **and** expires `offline_authorized_until` immediately; queue retained; security notification emailed to admins. Does **not** remotely wipe offline IndexedDB; Offline Complete remains MISSING.
 - **Offline receipt numbering:** client IndexedDB seq per device (`offlineReceiptNumber.ts` → `OFF-{device}-{seq}`); POS shows receipt on queue; `/sync/push` preserves as sale `reference` with duplicate guard (`OFFLINE_RECEIPT_DUPLICATE`). Tests: `test_offline_receipt_numbering.py`.
 - **Operator runbooks (2026-08-23):** commercial Alembic deploy note; offline physical test matrix; PITR drill wrapper — all unchecked / not executed; go-live still NOT READY.
-- **Store RBAC ops hardening:** store + warehouse helpers through POS/sales/expenses/stores/transfers, warehouses/inventory ops, purchasing PR/PO/GRN/returns, purchase invoices, **sales orders**, **POS sessions**, **low-stock / expiry**, **inventory balance/valuation/movements reports**, and **sales report suite** (daily/monthly/products/customers/salesperson/by-store + summary/export). Alembic `20260823_0109`. Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
+- **Store RBAC ops hardening:** store + warehouse helpers through POS/sales/expenses/stores/transfers, warehouses/inventory ops, purchasing PR/PO/GRN/returns/invoices, sales orders, POS sessions, low-stock/expiry, inventory + sales reports, **purchasing reports**, **transfer history**, and **inventory stock-transfer write asserts**. Alembic `20260823_0109`. Tests: `test_store_scope_ops_hardening.py`. Does not claim store-scoped RBAC Complete or ADR-005.
 - **Purchase invoice warehouse_id (PARTIAL):** nullable `purchase_invoices.warehouse_id`; create from GRN/PO copies WH; manual invoices may set WH so store managers can draft in-scope bills; unlinked null-WH still fail-closed.
 - **Architecture doc drift:** `ARCHITECTURE_DOCUMENTS.md` §9.1 and `DATABASE_DOCUMENTATION.md` §§3.1–3.4 schema-per-tenant SQL samples marked historical / SUPERSEDED (live = shared-schema `tenant_id`).
 

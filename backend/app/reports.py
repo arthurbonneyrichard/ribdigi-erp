@@ -1541,13 +1541,26 @@ async def purchases_summary(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """PO summary. ``warehouse_ids`` set (store_manager) restricts to managed WHs."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "order_count": 0,
+            "total_amount": 0.0,
+            "outstanding_amount": 0.0,
+            "by_status": {},
+        }
     stmt = select(m.PurchaseOrder).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
     )
     if company_id:
         stmt = stmt.where(m.PurchaseOrder.company_id == company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     if from_date:
         stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
     if to_date:
@@ -1578,12 +1591,17 @@ async def purchases_by_supplier(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    if warehouse_ids is not None and not warehouse_ids:
+        return {"suppliers": [], "total_amount": 0.0}
     stmt = select(m.PurchaseOrder, m.Party).join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
     )
     stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     if supplier_id:
         stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
     if from_date:
@@ -1615,8 +1633,18 @@ async def purchases_pending_orders(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """POs not yet fully received — status sent or partially_received."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "count": 0,
+            "total_amount": 0.0,
+            "open_qty": 0.0,
+            "orders": [],
+        }
     stmt = (
         select(m.PurchaseOrder, m.Party)
         .join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id)
@@ -1627,6 +1655,8 @@ async def purchases_pending_orders(
         .order_by(m.PurchaseOrder.created_at.asc())
     )
     stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     if supplier_id:
         stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
     if from_date:
@@ -1686,8 +1716,22 @@ async def purchases_return_summary(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """Purchase return summary by reason and supplier (BR-14.3)."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "return_count": 0,
+            "posted_count": 0,
+            "total_amount": 0.0,
+            "posted_amount": 0.0,
+            "by_status": {},
+            "by_reason": [],
+            "by_supplier": [],
+            "returns": [],
+        }
     stmt = (
         select(m.PurchaseReturn, m.Party)
         .join(m.Party, m.Party.id == m.PurchaseReturn.supplier_id)
@@ -1698,6 +1742,8 @@ async def purchases_return_summary(
         .order_by(m.PurchaseReturn.created_at.desc())
     )
     stmt = apply_company_filter(stmt, m.PurchaseReturn.company_id, company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseReturn.warehouse_id.in_(warehouse_ids))
     if supplier_id:
         stmt = stmt.where(m.PurchaseReturn.supplier_id == supplier_id)
     if from_date:

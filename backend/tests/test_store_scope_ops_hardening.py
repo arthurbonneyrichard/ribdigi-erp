@@ -1600,3 +1600,175 @@ async def test_store_manager_sales_reports_store_scoped(client, db_session):
     )
     assert exported.status_code == 200, exported.text
     assert "999" not in exported.text or "INV-SR-OTH" not in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_purchasing_reports_and_stock_transfer_writes_scoped(
+    client, db_session
+):
+    """Purchasing reports WH-scoped; warehouse stock-transfer writes assert scope."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PurRep Mine",
+        code="PR-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PurRep Other",
+        code="PR-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="PR Mine WH",
+        code="PR-M-WH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="PR Other WH",
+        code="PR-O-WH",
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="PurRep Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add_all([wh_mine, wh_other, supplier])
+    await db_session.flush()
+
+    po_mine = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-PR-MINE",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="sent",
+        subtotal=40,
+        tax_amount=0,
+        total_amount=40,
+        paid_amount=0,
+        created_by=mgr.id,
+    )
+    po_other = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-PR-OTH",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="sent",
+        subtotal=400,
+        tax_amount=0,
+        total_amount=400,
+        paid_amount=0,
+        created_by=seed["admin1"].id,
+    )
+    po_null = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-PR-NULL",
+        supplier_id=supplier.id,
+        warehouse_id=None,
+        status="sent",
+        subtotal=10,
+        tax_amount=0,
+        total_amount=10,
+        paid_amount=0,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add_all([po_mine, po_other, po_null])
+    await db_session.commit()
+
+    summary = await ac.get("/api/v1/reports/purchases/summary", headers=headers)
+    assert summary.status_code == 200, summary.text
+    sbody = summary.json()["data"]
+    assert int(sbody["order_count"]) == 1
+    assert float(sbody["total_amount"]) == pytest.approx(40.0)
+
+    suppliers = await ac.get("/api/v1/reports/purchases/suppliers", headers=headers)
+    assert suppliers.status_code == 200, suppliers.text
+    assert float(suppliers.json()["data"]["total_amount"]) == pytest.approx(40.0)
+
+    pending = await ac.get("/api/v1/reports/purchases/pending-orders", headers=headers)
+    assert pending.status_code == 200, pending.text
+    numbers = {o["po_number"] for o in pending.json()["data"]["orders"]}
+    assert "PO-PR-MINE" in numbers
+    assert "PO-PR-OTH" not in numbers
+    assert "PO-PR-NULL" not in numbers
+
+    returns = await ac.get("/api/v1/reports/purchases/returns", headers=headers)
+    assert returns.status_code == 200, returns.text
+
+    xfer_hist = await ac.get("/api/v1/reports/transfers", headers=headers)
+    assert xfer_hist.status_code == 200, xfer_hist.text
+
+    denied_create = await ac.post(
+        "/api/v1/inventory/stock-transfers",
+        headers=headers,
+        json={
+            "from_warehouse_id": wh_other.id,
+            "to_warehouse_id": wh_mine.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert denied_create.status_code == 403
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/inventory/stock-transfers",
+        headers=headers,
+        json={
+            "from_warehouse_id": wh_mine.id,
+            "to_warehouse_id": wh_other.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+            "submit": False,
+        },
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    transfer_id = ok_create.json()["data"]["id"]
+
+    # Foreign transfer (other→other) cannot be submitted by manager
+    foreign = m.StockTransfer(
+        tenant_id=tid,
+        company_id=cid,
+        transfer_number="XFER-PR-FOREIGN",
+        from_store_id=other.id,
+        to_store_id=other.id,
+        from_warehouse_id=wh_other.id,
+        to_warehouse_id=wh_other.id,
+        status="draft",
+        created_by=seed["admin1"].id,
+    )
+    db_session.add(foreign)
+    await db_session.commit()
+
+    denied_submit = await ac.post(
+        f"/api/v1/inventory/stock-transfers/{foreign.id}/submit",
+        headers=headers,
+    )
+    assert denied_submit.status_code == 403
+    assert denied_submit.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_submit = await ac.post(
+        f"/api/v1/inventory/stock-transfers/{transfer_id}/submit",
+        headers=headers,
+    )
+    assert ok_submit.status_code == 200, ok_submit.text

@@ -53,9 +53,11 @@ store activation — never frontend-only.
    POS sales, sales invoices, expenses, stores, transfers, warehouse inventory ops,
    purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` or linked
    PO/GRN warehouse), sales orders, POS sessions, low-stock / expiring-batch
-   list+export+reports, inventory balance/valuation/movements reports, and sales
-   daily/monthly/products/customers/salesperson/by-store reports (managed stores
-   only; null-store sales fail-closed for managers); not store-scoped RBAC Complete.
+   list+export+reports, inventory balance/valuation/movements reports, sales
+   daily/monthly/products/customers/salesperson/by-store reports, purchasing
+   summary/suppliers/pending/returns reports, transfer history report, and
+   inventory stock-transfer write asserts (from-WH required; mutations must touch
+   managed stores); not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
