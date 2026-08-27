@@ -2415,3 +2415,182 @@ async def test_store_manager_ai_customer_insights_store_scoped(client, db_sessio
     assert exported.status_code == 200, exported.text
     assert "Foreign Only Buyer" not in exported.text
     assert "Local Buyer" in exported.text or local_cust.id in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_chat_sales_helpers_store_scoped(client, db_session):
+    """Chat top-product / sales-month / expenses / low-stock ignore foreign store+WH."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+    product.company_id = cid
+    product.is_active = True
+    product.stock_qty = 999
+    product.reorder_level = 5
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Chat Mine",
+        code="AI-CHAT-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Chat Other",
+        code="AI-CHAT-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="AI Chat Mine WH",
+        code="AI-CHAT-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="AI Chat Other WH",
+        code="AI-CHAT-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_mine.id,
+            product_id=product.id,
+            quantity=2,
+            reserved_qty=0,
+            reorder_level=10,
+        )
+    )
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_other.id,
+            product_id=product.id,
+            quantity=1,
+            reserved_qty=0,
+            reorder_level=10,
+        )
+    )
+
+    # Managed-store modest sales vs foreign-store huge sales
+    for store, amt, qty, prefix in (
+        (mine, 40.0, 4.0, "M"),
+        (other, 8000.0, 400.0, "O"),
+    ):
+        inv = m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=store.id,
+            invoice_number=f"INV-CHAT-{prefix}-1",
+            customer_id=seed["party1"].id,
+            status="posted",
+            subtotal=amt,
+            total_amount=amt,
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+        db_session.add(inv)
+        await db_session.flush()
+        db_session.add(
+            m.SalesInvoiceItem(
+                tenant_id=tid,
+                company_id=cid,
+                sales_invoice_id=inv.id,
+                product_id=product.id,
+                quantity=qty,
+                unit_price=amt / qty,
+                line_total=amt,
+            )
+        )
+
+    db_session.add(
+        m.Expense(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=mine.id,
+            category="Utilities",
+            description="Mine chat exp",
+            amount=15,
+            status="approved",
+            expense_date=today - timedelta(days=1),
+            payment_method="cash",
+        )
+    )
+    db_session.add(
+        m.Expense(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=other.id,
+            category="Utilities",
+            description="Other chat exp",
+            amount=7000,
+            status="approved",
+            expense_date=today - timedelta(days=1),
+            payment_method="cash",
+        )
+    )
+    await db_session.commit()
+
+    top = await ac.post(
+        "/api/v1/ai/chat",
+        headers=headers,
+        json={"message": "What is my top selling product this month?"},
+    )
+    assert top.status_code == 200, top.text
+    tdata = top.json()["data"]
+    assert tdata["intent"] == "top_product"
+    assert tdata["data"].get("scope") == "store_manager"
+    assert float(tdata["data"]["revenue"]) == pytest.approx(40.0)
+
+    sales = await ac.post(
+        "/api/v1/ai/chat",
+        headers=headers,
+        json={"message": "How much were my sales this month?"},
+    )
+    assert sales.status_code == 200, sales.text
+    sdata = sales.json()["data"]
+    assert sdata["intent"] == "sales_month"
+    assert sdata["data"].get("scope") == "store_manager"
+    assert float(sdata["data"]["total"]) == pytest.approx(40.0)
+
+    expenses = await ac.post(
+        "/api/v1/ai/chat",
+        headers=headers,
+        json={"message": "What are my expenses this month?"},
+    )
+    assert expenses.status_code == 200, expenses.text
+    edata = expenses.json()["data"]
+    assert edata["intent"] == "expenses"
+    assert edata["data"].get("scope") == "store_manager"
+    assert float(edata["data"]["total"]) == pytest.approx(15.0)
+
+    low = await ac.post(
+        "/api/v1/ai/chat",
+        headers=headers,
+        json={"message": "Which products are low stock?"},
+    )
+    assert low.status_code == 200, low.text
+    ldata = low.json()["data"]
+    assert ldata["intent"] == "low_stock"
+    assert ldata["data"].get("scope") == "store_manager"
+    assert ldata["data"]["items"]
+    assert float(ldata["data"]["items"][0]["stock_qty"]) == pytest.approx(2.0)

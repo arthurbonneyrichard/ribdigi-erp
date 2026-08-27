@@ -83,8 +83,17 @@ def _parse_po_request(message: str) -> tuple[float | None, str | None]:
 
 
 async def _top_product(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Top product by revenue. ``store_ids`` set = managed-store sales only."""
+    if store_ids is not None and not store_ids:
+        return {
+            "answer": "No posted sales at your managed stores in the last 30 days, so I cannot rank a top product yet.",
+            "data": {"scope": "store_manager"},
+        }
     month_ago = datetime.utcnow() - timedelta(days=30)
     stmt = (
         select(
@@ -108,11 +117,13 @@ async def _top_product(
     )
     stmt = apply_company_filter(stmt, m.Product.company_id, company_id)
     stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     row = (await db.execute(stmt)).first()
     if not row:
         return {
             "answer": "No posted sales in the last 30 days, so I cannot rank a top product yet.",
-            "data": {},
+            "data": {"scope": "store_manager" if store_ids is not None else "company"},
         }
     return {
         "answer": (
@@ -125,13 +136,23 @@ async def _top_product(
             "sku": row.sku,
             "quantity": float(row.qty),
             "revenue": float(row.revenue),
+            "scope": "store_manager" if store_ids is not None else "company",
         },
     }
 
 
 async def _sales_month(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """30-day sales total. ``store_ids`` set = managed-store sales only."""
+    if store_ids is not None and not store_ids:
+        return {
+            "answer": "Sales in the last 30 days: 0.00 across 0 posted invoice(s).",
+            "data": {"total": 0.0, "invoice_count": 0, "scope": "store_manager"},
+        }
     month_ago = datetime.utcnow() - timedelta(days=30)
     total_stmt = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -139,6 +160,8 @@ async def _sales_month(
         m.SalesInvoice.created_at >= month_ago,
     )
     total_stmt = apply_company_filter(total_stmt, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        total_stmt = total_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     total = float((await db.execute(total_stmt)).scalar_one() or 0)
     count_stmt = (
         select(func.count())
@@ -150,16 +173,82 @@ async def _sales_month(
         )
     )
     count_stmt = apply_company_filter(count_stmt, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        count_stmt = count_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     count = int((await db.execute(count_stmt)).scalar_one() or 0)
     return {
         "answer": f"Sales in the last 30 days: {total:.2f} across {count} posted invoice(s).",
-        "data": {"total": total, "invoice_count": count},
+        "data": {
+            "total": total,
+            "invoice_count": count,
+            "scope": "store_manager" if store_ids is not None else "company",
+        },
     }
 
 
 async def _low_stock(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """Products at/below reorder. ``warehouse_ids`` set = managed WarehouseStock only."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "answer": "No products are currently at or below reorder level in your managed warehouses.",
+            "data": {"items": [], "scope": "store_manager"},
+        }
+    if warehouse_ids is not None:
+        stmt = (
+            select(m.WarehouseStock, m.Product)
+            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+            .where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id.in_(warehouse_ids),
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+                (
+                    (
+                        (m.WarehouseStock.reorder_level > 0)
+                        & (m.WarehouseStock.quantity <= m.WarehouseStock.reorder_level)
+                    )
+                    | (
+                        (m.WarehouseStock.reorder_level <= 0)
+                        & (m.WarehouseStock.quantity <= m.Product.reorder_level)
+                    )
+                ),
+            )
+            .order_by(m.WarehouseStock.quantity.asc())
+            .limit(10)
+        )
+        stmt = apply_company_filter(stmt, m.WarehouseStock.company_id, company_id)
+        pairs = (await db.execute(stmt)).all()
+        if not pairs:
+            return {
+                "answer": "No products are currently at or below reorder level in your managed warehouses.",
+                "data": {"items": [], "scope": "store_manager"},
+            }
+        items = []
+        lines = []
+        for ws, p in pairs:
+            qty = float(ws.quantity or 0)
+            reorder = float(ws.reorder_level or 0) or float(p.reorder_level or 0)
+            lines.append(f"- {p.name} ({p.sku}): stock {qty}, reorder {reorder}")
+            items.append(
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "sku": p.sku,
+                    "stock_qty": qty,
+                    "reorder_level": reorder,
+                    "warehouse_id": ws.warehouse_id,
+                }
+            )
+        return {
+            "answer": f"{len(items)} product(s) at/below reorder level:\n" + "\n".join(lines),
+            "data": {"items": items, "scope": "store_manager"},
+        }
+
     stmt = (
         select(m.Product)
         .where(
@@ -174,7 +263,10 @@ async def _low_stock(
     rows = (await db.execute(stmt)).scalars().all()
     if not rows:
         return {"answer": "No products are currently at or below reorder level.", "data": {"items": []}}
-    lines = [f"- {p.name} ({p.sku}): stock {float(p.stock_qty)}, reorder {float(p.reorder_level)}" for p in rows]
+    lines = [
+        f"- {p.name} ({p.sku}): stock {float(p.stock_qty)}, reorder {float(p.reorder_level)}"
+        for p in rows
+    ]
     return {
         "answer": f"{len(rows)} product(s) at/below reorder level:\n" + "\n".join(lines),
         "data": {
@@ -187,14 +279,24 @@ async def _low_stock(
                     "reorder_level": float(p.reorder_level),
                 }
                 for p in rows
-            ]
+            ],
+            "scope": "company",
         },
     }
 
 
 async def _expenses(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Approved expense total. ``store_ids`` set = managed-store expenses only."""
+    if store_ids is not None and not store_ids:
+        return {
+            "answer": "Approved expenses in the last 30 days total 0.00.",
+            "data": {"total": 0.0, "scope": "store_manager"},
+        }
     month_ago = datetime.utcnow() - timedelta(days=30)
     stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
         m.Expense.tenant_id == tenant_id,
@@ -202,10 +304,15 @@ async def _expenses(
         m.Expense.expense_date >= month_ago,
     )
     stmt = apply_company_filter(stmt, m.Expense.company_id, company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.Expense.store_id.in_(store_ids))
     total = float((await db.execute(stmt)).scalar_one() or 0)
     return {
         "answer": f"Approved expenses in the last 30 days total {total:.2f}.",
-        "data": {"total": total},
+        "data": {
+            "total": total,
+            "scope": "store_manager" if store_ids is not None else "company",
+        },
     }
 
 
@@ -383,19 +490,34 @@ async def handle_chat(
         if not _can(claims, "sales", "read") and not _can(claims, "dashboard", "read"):
             answer = "You do not have permission to view sales data."
         else:
-            out = await _top_product(db, tenant_id, company_id=company_id)
+            from app import dashboard_scope as dashboard_scope_svc
+
+            managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+            out = await _top_product(
+                db, tenant_id, company_id=company_id, store_ids=managed_stores
+            )
             answer, data = out["answer"], out["data"]
     elif intent == "sales_month":
         if not _can(claims, "sales", "read") and not _can(claims, "dashboard", "read"):
             answer = "You do not have permission to view sales data."
         else:
-            out = await _sales_month(db, tenant_id, company_id=company_id)
+            from app import dashboard_scope as dashboard_scope_svc
+
+            managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+            out = await _sales_month(
+                db, tenant_id, company_id=company_id, store_ids=managed_stores
+            )
             answer, data = out["answer"], out["data"]
     elif intent == "low_stock":
         if not _can(claims, "inventory", "read"):
             answer = "You do not have permission to view inventory."
         else:
-            out = await _low_stock(db, tenant_id, company_id=company_id)
+            from app import dashboard_scope as dashboard_scope_svc
+
+            managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+            out = await _low_stock(
+                db, tenant_id, company_id=company_id, warehouse_ids=managed_wh
+            )
             answer, data = out["answer"], out["data"]
     elif intent == "stockout_prediction":
         if not _can(claims, "ai", "read"):
@@ -428,7 +550,12 @@ async def handle_chat(
         if not _can(claims, "expenses", "read") and not _can(claims, "dashboard", "read"):
             answer = "You do not have permission to view expenses."
         else:
-            out = await _expenses(db, tenant_id, company_id=company_id)
+            from app import dashboard_scope as dashboard_scope_svc
+
+            managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+            out = await _expenses(
+                db, tenant_id, company_id=company_id, store_ids=managed_stores
+            )
             answer, data = out["answer"], out["data"]
     elif intent == "customers":
         if not _can(claims, "sales", "read") and not _can(claims, "credit", "read") and not _can(
