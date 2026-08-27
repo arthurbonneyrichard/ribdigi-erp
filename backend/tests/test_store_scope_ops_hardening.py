@@ -4701,3 +4701,139 @@ async def test_store_manager_account_ledger_store_scoped(client, db_session):
     assert "JE-LED-MINE" in exported.text
     assert "JE-LED-OTH" not in exported.text
     assert "JE-LED-NULL" not in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expense_lifecycle_writes_store_scoped(client, db_session):
+    """Approve/reject/delete/OCR/attachment writes fail-closed outside managed stores."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Exp Life Mine",
+        code="EXL-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Exp Life Other",
+        code="EXL-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    exp_mine = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Life mine pending",
+        amount=10,
+        store_id=mine.id,
+        status="pending",
+        created_by=seed["admin1"].id,
+    )
+    exp_other = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Life other pending",
+        amount=20,
+        store_id=other.id,
+        status="pending",
+        created_by=mgr.id,
+    )
+    exp_null = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Life null pending",
+        amount=30,
+        store_id=None,
+        status="pending",
+        created_by=mgr.id,
+    )
+    exp_other_del = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Life other delete",
+        amount=4,
+        store_id=other.id,
+        status="pending",
+        created_by=mgr.id,
+    )
+    exp_mine_del = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Life mine delete",
+        amount=5,
+        store_id=mine.id,
+        status="pending",
+        created_by=mgr.id,
+    )
+    db_session.add_all([exp_mine, exp_other, exp_null, exp_other_del, exp_mine_del])
+    await db_session.commit()
+
+    denied_approve = await ac.post(
+        f"/api/v1/expenses/{exp_other.id}/approve", headers=headers, json={}
+    )
+    assert denied_approve.status_code == 403
+    assert denied_approve.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null_approve = await ac.post(
+        f"/api/v1/expenses/{exp_null.id}/approve", headers=headers, json={}
+    )
+    assert denied_null_approve.status_code == 403
+    assert denied_null_approve.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_approve = await ac.post(
+        f"/api/v1/expenses/{exp_mine.id}/approve", headers=headers, json={}
+    )
+    assert ok_approve.status_code == 200, ok_approve.text
+
+    denied_reject = await ac.post(
+        f"/api/v1/expenses/{exp_other.id}/reject",
+        headers=headers,
+        json={"reason": "out of scope"},
+    )
+    assert denied_reject.status_code == 403
+    assert denied_reject.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_ocr = await ac.post(
+        f"/api/v1/expenses/{exp_other.id}/ocr-suggest", headers=headers
+    )
+    assert denied_ocr.status_code == 403
+    assert denied_ocr.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_ocr_apply = await ac.post(
+        f"/api/v1/expenses/{exp_null.id}/ocr-apply",
+        headers=headers,
+        json={"confirm": True, "description": "should fail"},
+    )
+    assert denied_ocr_apply.status_code == 403
+    assert denied_ocr_apply.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_del_attach = await ac.delete(
+        f"/api/v1/expenses/{exp_other.id}/attachment", headers=headers
+    )
+    assert denied_del_attach.status_code == 403
+    assert denied_del_attach.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete = await ac.delete(
+        f"/api/v1/expenses/{exp_other_del.id}", headers=headers
+    )
+    assert denied_delete.status_code == 403
+    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_delete = await ac.delete(f"/api/v1/expenses/{exp_mine_del.id}", headers=headers)
+    assert ok_delete.status_code == 200, ok_delete.text

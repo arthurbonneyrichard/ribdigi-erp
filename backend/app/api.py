@@ -10571,10 +10571,15 @@ async def expense_ocr_suggest(
     db: AsyncSession = Depends(get_db),
 ):
     from app import expense_ocr as ocr_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(expense, "store_id", None), allow_unset=False
+    )
     result = await ocr_svc.suggest_for_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -10600,6 +10605,12 @@ async def expense_ocr_apply(
     existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, existing)
     assert_record_access(claims, existing.created_by)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     expense = await expenses_svc.update_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -10655,9 +10666,15 @@ async def upload_expense_attachment(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(expense, "store_id", None), allow_unset=False
+    )
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="expenses",
@@ -10722,9 +10739,15 @@ async def delete_expense_attachment(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(expense, "store_id", None), allow_unset=False
+    )
     if not expense.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" not in expense.attachment_url:
@@ -10750,8 +10773,14 @@ async def approve_expense(
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     expense = await expenses_svc.approve_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -10774,8 +10803,14 @@ async def reject_expense(
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     expense = await expenses_svc.reject_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -10794,9 +10829,15 @@ async def delete_expense(
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     workspace_svc.assert_record_company(claims, expense)
     assert_record_access(claims, expense.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(expense, "store_id", None), allow_unset=False
+    )
     if expense.status == "approved":
         raise HTTPException(status_code=409, detail="Approved expenses cannot be deleted")
     if expense.attachment_url and "://" not in expense.attachment_url:
