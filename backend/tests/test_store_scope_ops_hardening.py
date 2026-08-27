@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 import pytest
+from sqlalchemy import select
 
 from app import accounting as accounting_svc
 from app import models as m
@@ -414,3 +415,211 @@ async def test_store_manager_stock_transfers_scoped(client, db_session):
     )
     assert submit_denied.status_code == 403
     assert submit_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_warehouses_and_inventory_ops_scoped(client, db_session):
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Inv Mgr Store",
+        code="INV-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Inv Other Store",
+        code="INV-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([store, other])
+    await db_session.flush()
+
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Inv Mgr WH",
+        code="WH-INV-MGR",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Inv Other WH",
+        code="WH-INV-OTH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    wh_central = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=None,
+        name="Inv Central WH",
+        code="WH-INV-CTR",
+        warehouse_type="main",
+        is_active=True,
+    )
+    db_session.add_all([wh_mine, wh_other, wh_central])
+    await db_session.flush()
+
+    db_session.add_all(
+        [
+            m.WarehouseStock(
+                tenant_id=tid,
+                company_id=cid,
+                warehouse_id=wh_mine.id,
+                product_id=product.id,
+                quantity=7,
+            ),
+            m.WarehouseStock(
+                tenant_id=tid,
+                company_id=cid,
+                warehouse_id=wh_other.id,
+                product_id=product.id,
+                quantity=70,
+            ),
+            m.StockMovement(
+                tenant_id=tid,
+                company_id=cid,
+                product_id=product.id,
+                warehouse_id=wh_mine.id,
+                movement_type="stock_in",
+                quantity=7,
+                quantity_before=0,
+                quantity_after=7,
+                notes="mine",
+                created_by=mgr.id,
+            ),
+            m.StockMovement(
+                tenant_id=tid,
+                company_id=cid,
+                product_id=product.id,
+                warehouse_id=wh_other.id,
+                movement_type="stock_in",
+                quantity=70,
+                quantity_before=0,
+                quantity_after=70,
+                notes="other",
+                created_by=mgr.id,
+            ),
+            m.StockCount(
+                tenant_id=tid,
+                company_id=cid,
+                warehouse_id=wh_mine.id,
+                count_number="CNT-SCOPE-MINE",
+                status="draft",
+                created_by=mgr.id,
+            ),
+            m.StockCount(
+                tenant_id=tid,
+                company_id=cid,
+                warehouse_id=wh_other.id,
+                count_number="CNT-SCOPE-OTH",
+                status="draft",
+                created_by=mgr.id,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    warehouses = await ac.get("/api/v1/warehouses", headers=headers)
+    assert warehouses.status_code == 200, warehouses.text
+    codes = {row["code"] for row in warehouses.json()["data"]}
+    assert "WH-INV-MGR" in codes
+    assert "WH-INV-OTH" not in codes
+    assert "WH-INV-CTR" not in codes
+
+    movements = await ac.get("/api/v1/inventory/movements", headers=headers)
+    assert movements.status_code == 200, movements.text
+    notes = {row.get("notes") for row in movements.json()["data"]}
+    assert "mine" in notes
+    assert "other" not in notes
+
+    denied_wh = await ac.get(
+        "/api/v1/inventory/movements",
+        headers=headers,
+        params={"warehouse_id": wh_other.id},
+    )
+    assert denied_wh.status_code == 403
+    assert denied_wh.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    stock = await ac.get(f"/api/v1/products/{product.id}/warehouse-stock", headers=headers)
+    assert stock.status_code == 200, stock.text
+    wh_codes = {row["code"] for row in stock.json()["data"]["warehouses"]}
+    assert "WH-INV-MGR" in wh_codes
+    assert "WH-INV-OTH" not in wh_codes
+
+    counts = await ac.get("/api/v1/inventory/stock-counts", headers=headers)
+    assert counts.status_code == 200, counts.text
+    count_nums = {row["count_number"] for row in counts.json()["data"]}
+    assert "CNT-SCOPE-MINE" in count_nums
+    assert "CNT-SCOPE-OTH" not in count_nums
+
+    other_count = (
+        await db_session.execute(
+            select(m.StockCount).where(m.StockCount.count_number == "CNT-SCOPE-OTH")
+        )
+    ).scalar_one()
+    denied_count = await ac.get(
+        f"/api/v1/inventory/stock-counts/{other_count.id}", headers=headers
+    )
+    assert denied_count.status_code == 403
+    assert denied_count.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_count_denied = await ac.post(
+        "/api/v1/inventory/stock-counts",
+        headers=headers,
+        json={"warehouse_id": wh_other.id, "notes": "nope"},
+    )
+    assert create_count_denied.status_code == 403
+    assert create_count_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    stock_in_denied = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers,
+        json={"product_id": product.id, "quantity": 1, "warehouse_id": wh_other.id},
+    )
+    assert stock_in_denied.status_code == 403
+    assert stock_in_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    stock_in_unset = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers,
+        json={"product_id": product.id, "quantity": 1},
+    )
+    assert stock_in_unset.status_code == 403
+    assert stock_in_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    stock_in_ok = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers,
+        json={"product_id": product.id, "quantity": 1, "warehouse_id": wh_mine.id},
+    )
+    assert stock_in_ok.status_code == 200, stock_in_ok.text
+
+    create_wh_denied = await ac.post(
+        "/api/v1/warehouses",
+        headers=headers,
+        json={
+            "code": "WH-BAD",
+            "name": "Bad WH",
+            "store_id": other.id,
+            "warehouse_type": "retail",
+        },
+    )
+    assert create_wh_denied.status_code == 403
+    assert create_wh_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

@@ -1,7 +1,9 @@
 """Store-scoped dashboard resolution for Store Managers (Stage 81 S1 / ADR-005 adjacency).
 
-Also used for operational list/read hardening (POS sales, sales invoices) — still
-``stores.manager_id`` only; ADR-005 membership tables remain deferred.
+Also used for operational list/read hardening (POS sales, sales invoices, expenses,
+transfers, warehouses / inventory movements) — still ``stores.manager_id`` only;
+ADR-005 membership tables remain deferred. Warehouse scope maps via
+``Warehouse.store_id`` ∈ managed stores.
 """
 
 from __future__ import annotations
@@ -130,6 +132,75 @@ def constrain_store_query(
         assert_store_in_manager_scope(managed_ids, req)
         return req, None
     return None, list(managed_ids)
+
+
+async def managed_warehouse_ids(db: AsyncSession, claims: dict) -> list[str] | None:
+    """Warehouse IDs linked to managed stores; None = tenant-wide; [] = none.
+
+    Warehouses with null ``store_id`` (central / unassigned) are out of store_manager
+    scope. Still ``stores.manager_id`` only — ADR-005 deferred.
+    """
+    managed_stores = await managed_store_ids(db, claims)
+    if managed_stores is None:
+        return None
+    if not managed_stores:
+        return []
+    stmt = select(m.Warehouse.id).where(
+        m.Warehouse.tenant_id == claims["tenant_id"],
+        m.Warehouse.store_id.in_(managed_stores),
+    )
+    company_id = claims.get("company_id")
+    if company_id:
+        stmt = stmt.where(m.Warehouse.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    return [str(wid) for wid in rows]
+
+
+def assert_warehouse_in_manager_scope(
+    managed_wh_ids: list[str] | None,
+    warehouse_id: str | None,
+    *,
+    allow_unset: bool = True,
+) -> None:
+    """403 when a store_manager targets a warehouse outside managed-store WHs."""
+    if managed_wh_ids is None:
+        return
+    wid = (warehouse_id or "").strip()
+    if not wid:
+        if allow_unset:
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Warehouse is required within your managed store scope.",
+                "warehouse_id": None,
+            },
+        )
+    if wid not in managed_wh_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Warehouse is outside your managed store scope.",
+                "warehouse_id": wid,
+            },
+        )
+
+
+def constrain_warehouse_query(
+    managed_wh_ids: list[str] | None,
+    requested_warehouse_id: str | None = None,
+) -> tuple[str | None, list[str] | None]:
+    """Resolve warehouse list filters for store_manager (mirrors constrain_store_query)."""
+    req = (requested_warehouse_id or "").strip() or None
+    if managed_wh_ids is None:
+        return req, None
+    if req:
+        assert_warehouse_in_manager_scope(managed_wh_ids, req)
+        return req, None
+    return None, list(managed_wh_ids)
+
 
 async def scoped_financial_kpis(
     db: AsyncSession,

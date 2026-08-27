@@ -5259,13 +5259,17 @@ async def movements(
     db: AsyncSession = Depends(get_db),
 ):
     from app import reports as reports_svc
+    from app import dashboard_scope as dashboard_scope_svc
     from app.inventory import list_movements_serialized
 
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_warehouse_query(managed_wh, warehouse_id)
     rows = await list_movements_serialized(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
-        warehouse_id=warehouse_id,
+        warehouse_id=single,
+        warehouse_ids=multi,
         movement_type=movement_type,
         from_dt=reports_svc.parse_date(from_date),
         to_dt=reports_svc.parse_date(to_date, end_of_day=True),
@@ -5286,11 +5290,16 @@ async def export_movements_csv(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 137 M1 — stock movement CSV honoring list filters."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_warehouse_query(managed_wh, warehouse_id)
     text = await inventory_ops_export_svc.export_movements_csv(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
-        warehouse_id=warehouse_id,
+        warehouse_id=single,
+        warehouse_ids=multi,
         movement_type=movement_type,
         from_date=from_date,
         to_date=to_date,
@@ -5333,7 +5342,17 @@ async def product_warehouse_stock(
             (m.WarehouseStock.company_id == claims["company_id"])
             | (m.WarehouseStock.company_id.is_(None))
         )
-    rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    if managed_wh is not None:
+        if not managed_wh:
+            rows = []
+        else:
+            stock_q = stock_q.where(m.Warehouse.id.in_(managed_wh))
+            rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
+    else:
+        rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
     from app.inventory import compute_stock_status, effective_warehouse_thresholds
 
     p_min = float(getattr(product, "minimum_stock", 0) or 0)
@@ -5382,11 +5401,15 @@ async def export_product_warehouse_stock(
     """Stage 155 W1 — per-product warehouse-stock CSV (distinct from Stage 137 movements)."""
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await inventory_ops_export_svc.export_product_warehouse_stock_csv(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -5406,12 +5429,16 @@ async def list_stock_counts(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 130 S1 — optional status filter for stock-count list honesty."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     status_n = (status or "").strip().lower() or None
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     rows = await ops_lifecycle_export_svc.list_stock_counts(
         db,
         tenant_id=claims["tenant_id"],
         status=status_n,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     out = []
     for row in rows:
@@ -5428,12 +5455,16 @@ async def stock_counts_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 130 S1 — stock-count list CSV (header metadata; not variance lines)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     status_n = (status or "").strip().lower() or None
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ops_lifecycle_export_svc.export_stock_counts_csv(
         db,
         tenant_id=claims["tenant_id"],
         status=status_n,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -5450,6 +5481,12 @@ async def create_stock_count(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     count = await stock_counts_svc.create_count(
         db,
         tenant_id=claims["tenant_id"],
@@ -5480,6 +5517,12 @@ async def get_stock_count(
     db: AsyncSession = Depends(get_db),
 ):
     count = await stock_counts_svc.get_count(db, claims["tenant_id"], count_id, company_id=claims.get("company_id"))
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(count, "warehouse_id", None), allow_unset=False
+    )
     return env(await stock_counts_svc.serialize_count(db, count))
 
 
@@ -5491,6 +5534,15 @@ async def stock_count_variance_report(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-5.2 — export completed count variance (CSV or PDF)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    count = await stock_counts_svc.get_count(
+        db, claims["tenant_id"], count_id, company_id=claims.get("company_id")
+    )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(count, "warehouse_id", None), allow_unset=False
+    )
     report = await stock_counts_svc.build_variance_report(
         db, tenant_id=claims["tenant_id"], count_id=count_id,
         company_id=claims.get("company_id"),
@@ -5527,6 +5579,15 @@ async def patch_stock_count_items(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stock_counts_svc.get_count(
+        db, claims["tenant_id"], count_id, company_id=claims.get("company_id")
+    )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     count = await stock_counts_svc.update_count_items(
         db,
         tenant_id=claims["tenant_id"],
@@ -5544,6 +5605,15 @@ async def complete_stock_count(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stock_counts_svc.get_count(
+        db, claims["tenant_id"], count_id, company_id=claims.get("company_id")
+    )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     count = await stock_counts_svc.complete_count(
         db,
         tenant_id=claims["tenant_id"],
@@ -5571,6 +5641,15 @@ async def cancel_stock_count(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    existing = await stock_counts_svc.get_count(
+        db, claims["tenant_id"], count_id, company_id=claims.get("company_id")
+    )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     count = await stock_counts_svc.cancel_count(
         db, tenant_id=claims["tenant_id"], count_id=count_id,
         company_id=claims.get("company_id"),
@@ -5587,9 +5666,14 @@ async def adjust(
     db: AsyncSession = Depends(get_db),
 ):
     from app.inventory import normalize_adjustment_reason
+    from app import dashboard_scope as dashboard_scope_svc
 
     existing = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     reason = normalize_adjustment_reason(payload.reason)
     product = await apply_stock_change(
         db,
@@ -5620,8 +5704,14 @@ async def stock_in(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     product = await catalog_svc.get_product(db, claims["tenant_id"], payload.product_id)
     workspace_svc.assert_record_company(claims, product)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     result = await catalog_svc.stock_in_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -5647,11 +5737,18 @@ async def opening_stock(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-5.2 Opening Stock — initialize levels for existing products / fiscal start."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if payload.items:
         for item in payload.items:
             pid = item.product_id if hasattr(item, "product_id") else item.get("product_id")
             product = await catalog_svc.get_product(db, claims["tenant_id"], pid)
             workspace_svc.assert_record_company(claims, product)
+            wid = getattr(item, "warehouse_id", None) if hasattr(item, "warehouse_id") else item.get("warehouse_id")
+            dashboard_scope_svc.assert_warehouse_in_manager_scope(
+                managed_wh, wid, allow_unset=False
+            )
         result = await catalog_svc.record_opening_stock_batch(
             db,
             tenant_id=claims["tenant_id"],
@@ -5679,6 +5776,9 @@ async def opening_stock(
         )
     product = await catalog_svc.get_product(db, claims["tenant_id"], payload.product_id)
     workspace_svc.assert_record_company(claims, product)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     result = await catalog_svc.record_opening_stock(
         db,
         tenant_id=claims["tenant_id"],
@@ -5705,8 +5805,14 @@ async def stock_out(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     product = await catalog_svc.get_product(db, claims["tenant_id"], payload.product_id)
     workspace_svc.assert_record_company(claims, product)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     result = await catalog_svc.stock_out_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -13914,7 +14020,14 @@ async def warehouses(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 121 W1 — active_only / is_active for honest inactive-only warehouse lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     stmt = select(m.Warehouse).where(*workspace_svc.company_scope_filter(m.Warehouse, claims))
+    if managed_stores is not None:
+        if not managed_stores:
+            return env([])
+        stmt = stmt.where(m.Warehouse.store_id.in_(managed_stores))
     if is_active is not None:
         stmt = stmt.where(m.Warehouse.is_active.is_(bool(is_active)))
     elif active_only:
@@ -13931,12 +14044,16 @@ async def warehouses_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 121 X1 — warehouses CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await location_export_svc.export_warehouses_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     return Response(
         content=text,
@@ -13951,8 +14068,14 @@ async def add_warehouse(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
     data = payload.model_dump()
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed_stores, data.get("store_id"), allow_unset=False
+    )
     if data.get("store_id"):
         await stores_svc.get_store(
             db, claims["tenant_id"], data["store_id"], company_id=claims.get("company_id")
@@ -14015,7 +14138,26 @@ async def update_warehouse(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+    from app.inventory import get_warehouse
+
     tenants_svc.assert_writable(claims)
+    existing = await get_warehouse(
+        db, claims["tenant_id"], warehouse_id, company_id=claims.get("company_id")
+    )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, existing.id, allow_unset=False
+    )
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if payload.clear_store:
+        dashboard_scope_svc.assert_store_in_manager_scope(
+            managed_stores, None, allow_unset=False
+        )
+    elif payload.store_id is not None:
+        dashboard_scope_svc.assert_store_in_manager_scope(
+            managed_stores, payload.store_id, allow_unset=False
+        )
     warehouse = await stores_svc.update_warehouse(
         db,
         tenant_id=claims["tenant_id"],

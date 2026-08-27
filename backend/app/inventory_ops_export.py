@@ -231,6 +231,7 @@ async def export_movements_csv(
     tenant_id: str,
     product_id: str | None = None,
     warehouse_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
     movement_type: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
@@ -252,6 +253,7 @@ async def export_movements_csv(
         tenant_id=tenant_id,
         product_id=product_id,
         warehouse_id=warehouse_id,
+        warehouse_ids=warehouse_ids,
         movement_type=movement_type,
         from_dt=reports_svc.parse_date(from_date),
         to_dt=reports_svc.parse_date(to_date, end_of_day=True),
@@ -328,6 +330,7 @@ async def export_product_warehouse_stock_csv(
     tenant_id: str,
     product_id: str,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 155 W1 — per-product warehouse placement CSV (distinct from Stage 137 movements)."""
     product = await catalog_svc.get_product(db, tenant_id, product_id)
@@ -344,7 +347,14 @@ async def export_product_warehouse_stock_csv(
             (m.WarehouseStock.company_id == company_id)
             | (m.WarehouseStock.company_id.is_(None))
         )
-    rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            rows = []
+        else:
+            stock_q = stock_q.where(m.Warehouse.id.in_(warehouse_ids))
+            rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
+    else:
+        rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
     p_min = float(getattr(product, "minimum_stock", 0) or 0)
     p_ro = float(product.reorder_level or 0)
     p_qty = float(product.stock_qty or 0)

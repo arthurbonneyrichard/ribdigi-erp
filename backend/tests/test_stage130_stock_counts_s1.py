@@ -18,9 +18,24 @@ async def test_stock_counts_status_filter_and_export(client, db_session):
     headers = await auth_headers(
         ac, email="mgr@alpha.example.com", tenant_slug="alpha"
     )
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=cid,
+        name="Stage130 Store",
+        code="ST130",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
 
     wh = m.Warehouse(
         tenant_id=seed["t1"].id,
+        company_id=cid,
+        store_id=store.id,
         name="Stage130 WH",
         code="WH130",
         is_active=True,
@@ -32,20 +47,22 @@ async def test_stock_counts_status_filter_and_export(client, db_session):
         [
             m.StockCount(
                 tenant_id=seed["t1"].id,
+                company_id=cid,
                 warehouse_id=wh.id,
                 count_number="SC-130-DRAFT",
                 status="draft",
                 notes="Stage130 draft",
-                created_by=seed["mgr1"].id,
+                created_by=mgr.id,
             ),
             m.StockCount(
                 tenant_id=seed["t1"].id,
+                company_id=cid,
                 warehouse_id=wh.id,
                 count_number="SC-130-DONE",
                 status="completed",
                 notes="Stage130 completed",
-                created_by=seed["mgr1"].id,
-                completed_by=seed["mgr1"].id,
+                created_by=mgr.id,
+                completed_by=mgr.id,
             ),
         ]
     )

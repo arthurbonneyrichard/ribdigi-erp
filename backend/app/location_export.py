@@ -155,10 +155,19 @@ async def export_warehouses_csv(
     is_active: bool | None = None,
     active_only: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == tenant_id)
     if company_id:
         stmt = stmt.where(m.Warehouse.company_id == company_id)
+    if store_ids is not None:
+        if not store_ids:
+            rows = []
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=WAREHOUSE_EXPORT_COLUMNS)
+            writer.writeheader()
+            return buf.getvalue()
+        stmt = stmt.where(m.Warehouse.store_id.in_(store_ids))
     stmt = _apply_active_filter(
         stmt, m.Warehouse.is_active, is_active=is_active, active_only=active_only
     )
