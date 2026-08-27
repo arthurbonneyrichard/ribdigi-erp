@@ -306,6 +306,9 @@ async def export_security_alerts_csv(
     tenant_id: str,
     lookback_hours: int = 72,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
+    scoped_user_id: str | None = None,
 ) -> str:
     """Stage 145 S1 — AI security alert rows (audit-derived; no secrets)."""
     data = await ai_security_svc.scan_security_alerts(
@@ -314,6 +317,9 @@ async def export_security_alerts_csv(
         lookback_hours=lookback_hours,
         notify=False,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
+        scoped_user_id=scoped_user_id,
     )
     lookback = data.get("lookback_hours")
     buf = io.StringIO()

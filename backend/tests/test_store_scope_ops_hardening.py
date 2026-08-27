@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import select
 
 from app import accounting as accounting_svc
+from app import audit as audit_svc
 from app import models as m
 from tests.conftest import auth_headers
 
@@ -2594,3 +2595,175 @@ async def test_store_manager_ai_chat_sales_helpers_store_scoped(client, db_sessi
     assert ldata["data"].get("scope") == "store_manager"
     assert ldata["data"]["items"]
     assert float(ldata["data"]["items"][0]["stock_qty"]) == pytest.approx(2.0)
+
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_security_alerts_self_and_store_details_scoped(
+    client, db_session
+):
+    """Security alerts: mgr sees self (+ managed store/WH details), not foreign users."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    now = datetime.utcnow()
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Sec Mine",
+        code="AI-SEC-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Sec Other",
+        code="AI-SEC-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="AI Sec Mine WH",
+        code="AI-SEC-MWH",
+    )
+    db_session.add(wh_mine)
+    await db_session.flush()
+
+    async def _backdate(action: str, when):
+        row = (
+            await db_session.execute(
+                select(m.AuditLog)
+                .where(m.AuditLog.tenant_id == tid, m.AuditLog.action == action)
+                .order_by(m.AuditLog.created_at.desc())
+            )
+        ).scalars().first()
+        row.created_at = when
+        await db_session.flush()
+
+    # Manager self failed-login burst (should alert)
+    for i in range(5):
+        await audit_svc.record_event(
+            db_session,
+            tenant_id=tid,
+            company_id=cid,
+            user_id=mgr.id,
+            module="auth",
+            action="login_failed",
+            entity="user",
+            entity_id=mgr.id,
+            details={"email": mgr.email},
+            ip_address="203.0.113.50",
+            user_agent="MgrClient/1.0",
+        )
+        await _backdate("login_failed", now - timedelta(minutes=15 - i))
+
+    # Foreign admin failed-login burst (must not leak to store manager)
+    for i in range(6):
+        await audit_svc.record_event(
+            db_session,
+            tenant_id=tid,
+            company_id=cid,
+            user_id=other_user.id,
+            module="auth",
+            action="login_failed",
+            entity="user",
+            entity_id=other_user.id,
+            details={"email": other_user.email},
+            ip_address="198.51.100.50",
+            user_agent="AdminEvil/1.0",
+        )
+        await _backdate("login_failed", now - timedelta(minutes=25 - i))
+
+    # Foreign-store attributed txn burst (no self; wrong store — exclude)
+    for i in range(9):
+        await audit_svc.record_event(
+            db_session,
+            tenant_id=tid,
+            company_id=cid,
+            user_id=other_user.id,
+            module="sales",
+            action="post",
+            entity="sales_invoice",
+            entity_id=f"inv-sec-o-{i}",
+            details={"store_id": other.id},
+            ip_address="198.51.100.50",
+            user_agent="AdminEvil/1.0",
+        )
+        await _backdate("post", now - timedelta(minutes=40 - i))
+
+    # Managed-store attributed txn burst from another user (include via details.store_id)
+    for i in range(9):
+        await audit_svc.record_event(
+            db_session,
+            tenant_id=tid,
+            company_id=cid,
+            user_id=other_user.id,
+            module="sales",
+            action="post",
+            entity="sales_invoice",
+            entity_id=f"inv-sec-m-{i}",
+            details={"store_id": mine.id},
+            ip_address="203.0.113.90",
+            user_agent="PosClient/1.0",
+        )
+        await _backdate("post", now - timedelta(minutes=8 - i))
+
+    await db_session.commit()
+
+    r = await ac.get(
+        "/api/v1/ai/security/alerts",
+        headers=headers,
+        params={"lookback_hours": 48},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()["data"]
+    assert body.get("scope") == "store_manager"
+    assert body["alert_count"] >= 1
+    blob = str(body)
+    assert "AdminEvil/1.0" not in blob
+    assert "198.51.100.50" not in blob
+    assert other_user.email not in blob
+
+    kinds = {a["kind"] for a in body["alerts"]}
+    assert "failed_login_burst" in kinds or "failed_login_ip_burst" in kinds
+    assert "suspicious_transaction_burst" in kinds
+
+    entity_ids = {a.get("entity_id") for a in body["alerts"]}
+    assert mgr.id in entity_ids
+    # Foreign admin auth entity must not appear; managed-store txn burst may
+    # surface other_user.id only via store-attributed sensitive actions.
+    auth_entities = {
+        a.get("entity_id")
+        for a in body["alerts"]
+        if a.get("kind")
+        in {
+            "failed_login_burst",
+            "failed_login_ip_burst",
+            "login_after_failures",
+            "unusual_login_ip",
+            "unusual_login_time",
+            "unusual_login_device",
+        }
+    }
+    assert other_user.id not in auth_entities
+
+    export = await ac.get(
+        "/api/v1/ai/security/alerts/export",
+        headers=headers,
+        params={"lookback_hours": 48},
+    )
+    assert export.status_code == 200, export.text
+    csv_text = export.text
+    assert "AdminEvil/1.0" not in csv_text
+    assert "198.51.100.50" not in csv_text

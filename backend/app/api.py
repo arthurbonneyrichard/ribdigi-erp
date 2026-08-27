@@ -17025,13 +17025,19 @@ async def ai_security_alerts(
 ):
     """BR-21.10 — behavioral security alerts from audit logs."""
     from app import ai_security as ai_security_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_security_svc.scan_security_alerts(
         db,
         claims["tenant_id"],
         lookback_hours=lookback_hours,
         notify=notify,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
+        scoped_user_id=claims.get("sub") if managed_stores is not None else None,
     )
     if notify and data.get("notifications_created"):
         await db.commit()
@@ -17045,11 +17051,18 @@ async def ai_security_alerts_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 145 S1 — AI security alerts CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_security_alerts_csv(
         db,
         tenant_id=claims["tenant_id"],
         lookback_hours=lookback_hours,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
+        scoped_user_id=claims.get("sub") if managed_stores is not None else None,
     )
     return Response(
         content=text,
