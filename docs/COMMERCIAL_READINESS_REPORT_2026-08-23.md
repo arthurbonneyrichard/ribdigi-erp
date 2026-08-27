@@ -65,6 +65,7 @@
 - **User entitlement:** `PLAN_CATALOG.soft_limits.users` syncs `Tenant.max_users` on plan change (unless override); platform `PATCH /platform/tenants/{id}/user-entitlement`; create/reactivation/import blocked at limit (`USER_LIMIT_REACHED`); downgrades never delete users; tenant dashboard exposes `user_entitlement` / `over_entitlement`. Tests: `test_user_entitlements.py`. Alembic `20260823_0108` (`max_users_override`). Deploy: apply `0106` → `0107` → `0108` in order (`0107` revises `0106`).
 - **Single-company UX:** `/me` and `/workspace` expose `company_entitlement`; Shell hides workspace switcher for non–tenant-admin users on single-company plans with one company; Companies page hides create-at-limit and redundant switch controls.
 - **Offline owner alerts:** `offline_alerts.py` + `GET /offline/alerts` (envelope expired/expiring, never bound, sync backlog/failed, open conflicts); Company `#offline-sync` alert list. In-app only — not email/push Complete.
+- **Offline receipt numbering:** client IndexedDB seq per device (`offlineReceiptNumber.ts` → `OFF-{device}-{seq}`); POS shows receipt on queue; `/sync/push` preserves as sale `reference` with duplicate guard (`OFFLINE_RECEIPT_DUPLICATE`). Tests: `test_offline_receipt_numbering.py`.
 
 ---
 
@@ -87,7 +88,7 @@
 
 | Shipped | Not shipped |
 |---------|-------------|
-| IndexedDB queue + catalog, sync APIs, device registry/revoke, idempotent `client_request_id`, offline payment safety (cash default; provider ack), queue reset guard, tenant offline summary on Company page, **7-day auth envelope (bind + IndexedDB + POS gate + sync validation)**, **local recovery export UI** (Company + POS; queue preserved; no tokens), **owner offline alerts API + Company UI** (in-app; not email/push) | Offline Complete attestation, 7-day physical VERIFIED, offline receipt numbering, email/push alerts, native shells, hardware bridges |
+| IndexedDB queue + catalog, sync APIs, device registry/revoke, idempotent `client_request_id`, offline payment safety (cash default; provider ack), queue reset guard, tenant offline summary on Company page, **7-day auth envelope (bind + IndexedDB + POS gate + sync validation)**, **local recovery export UI** (Company + POS; queue preserved; no tokens), **owner offline alerts API + Company UI** (in-app; not email/push), **offline receipt numbering** (`OFF-{device}-{seq}`; sync preserves reference) | Offline Complete attestation, 7-day physical VERIFIED, email/push alerts, native shells, hardware bridges |
 
 **Physical tests** (7-day endurance, multi-device reconnect, peripherals) require owner/device action — not runnable in CI alone.
 
