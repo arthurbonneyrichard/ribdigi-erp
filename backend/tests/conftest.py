@@ -14,6 +14,17 @@ from app.security import hash_password
 from app.rbac import permissions_for_role
 
 
+@pytest.fixture(autouse=True)
+def _isolate_file_storage(tmp_path, monkeypatch):
+    """Point local media/backup storage at a per-test temp dir.
+
+    The default MEDIA_DIR/BACKUP_DIR ("/data/...") is the Docker volume mount and
+    is not writable on CI runners, so file-writing tests must not depend on it.
+    """
+    monkeypatch.setattr("app.config.settings.MEDIA_DIR", str(tmp_path / "media"))
+    monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(tmp_path / "backups"))
+
+
 @pytest.fixture
 def _disable_rate_limit(monkeypatch):
     monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_ENABLED", False)
