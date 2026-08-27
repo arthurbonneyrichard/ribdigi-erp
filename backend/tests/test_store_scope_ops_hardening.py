@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 
 import pytest
@@ -3808,3 +3809,121 @@ async def test_store_manager_tax_reports_store_wh_scoped(client, db_session):
     assert filing_csv.status_code == 200, filing_csv.text
     assert "INV-TAX-O-1" not in filing_csv.text
     assert "PI-TAX-O-1" not in filing_csv.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_logs_self_and_store_details_scoped(client, db_session):
+    """Audit list/export: mgr sees self + managed store/WH details, not foreign unscoped."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Scope Mine",
+        code="AUD-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Scope Other",
+        code="AUD-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Audit Mine WH",
+        code="AUD-M-WH",
+    )
+    db_session.add(wh_mine)
+    await db_session.flush()
+
+    self_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=mgr.id,
+        module="sales",
+        action="self_note",
+        entity="note",
+        entity_id="self-1",
+        details={"note": "manager self event"},
+    )
+    store_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="sales",
+        action="invoice_posted",
+        entity="sales_invoice",
+        entity_id="inv-aud-m",
+        details={"store_id": mine.id, "invoice_number": "INV-AUD-M"},
+    )
+    wh_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="purchasing",
+        action="receive",
+        entity="goods_receipt",
+        entity_id="grn-aud-m",
+        details={"warehouse_id": wh_mine.id, "grn_number": "GRN-AUD-M"},
+    )
+    foreign_store = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="sales",
+        action="invoice_posted",
+        entity="sales_invoice",
+        entity_id="inv-aud-o",
+        details={"store_id": other.id, "invoice_number": "INV-AUD-O-SECRET"},
+    )
+    foreign_unscoped = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="users",
+        action="update",
+        entity="user",
+        entity_id=other_user.id,
+        details={"email": other_user.email, "secret": "ADMIN-ONLY-AUDIT"},
+    )
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/audit-logs", headers=headers, params={"limit": 500})
+    assert listed.status_code == 200, listed.text
+    ids = {r["id"] for r in listed.json()["data"]}
+    assert self_ev.id in ids
+    assert store_ev.id in ids
+    assert wh_ev.id in ids
+    assert foreign_store.id not in ids
+    assert foreign_unscoped.id not in ids
+    bodies = listed.json()["data"]
+    assert all("INV-AUD-O-SECRET" not in json.dumps(r.get("details") or {}) for r in bodies)
+    assert all("ADMIN-ONLY-AUDIT" not in json.dumps(r.get("details") or {}) for r in bodies)
+
+    exported = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert exported.status_code == 200, exported.text
+    assert "INV-AUD-M" in exported.text or store_ev.id in exported.text
+    assert "INV-AUD-O-SECRET" not in exported.text
+    assert "ADMIN-ONLY-AUDIT" not in exported.text

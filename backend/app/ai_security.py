@@ -13,6 +13,8 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.audit import audit_in_store_manager_scope
+
 
 SENSITIVE_ACTIONS = frozenset(
     {
@@ -50,30 +52,6 @@ def _risk_level(score: float) -> str:
     if score >= 40:
         return "medium"
     return "low"
-
-
-def _audit_in_store_manager_scope(
-    event: m.AuditLog,
-    *,
-    user_id: str | None,
-    store_ids: list[str],
-    warehouse_ids: list[str],
-) -> bool:
-    """Fail-closed store scope: self events and explicit store/WH details only.
-
-    ``audit_logs`` has no ``store_id`` column (ADR-005 still open); unattributed
-    foreign-user events are excluded for store managers.
-    """
-    if user_id and event.user_id == user_id:
-        return True
-    details = event.details or {}
-    sid = details.get("store_id")
-    if sid and str(sid) in store_ids:
-        return True
-    wid = details.get("warehouse_id")
-    if wid and str(wid) in warehouse_ids:
-        return True
-    return False
 
 
 async def scan_security_alerts(
@@ -119,7 +97,7 @@ async def scan_security_alerts(
         logs = [
             e
             for e in logs
-            if _audit_in_store_manager_scope(
+            if audit_in_store_manager_scope(
                 e,
                 user_id=scoped_user_id,
                 store_ids=managed_stores,

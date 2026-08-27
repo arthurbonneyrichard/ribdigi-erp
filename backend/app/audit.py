@@ -17,6 +17,33 @@ from app import models as m
 GENESIS_HASH = "0" * 64
 
 
+def audit_in_store_manager_scope(
+    event: m.AuditLog,
+    *,
+    user_id: str | None,
+    store_ids: list[str],
+    warehouse_ids: list[str],
+) -> bool:
+    """Fail-closed store scope for audit reads (no ``store_id`` column; ADR-005 open).
+
+    Store managers may see:
+    - events they themselves authored (``user_id`` match)
+    - events whose ``details`` carry a managed ``store_id`` or ``warehouse_id``
+
+    Unattributed foreign-user events are excluded.
+    """
+    if user_id and event.user_id == user_id:
+        return True
+    details = event.details or {}
+    sid = details.get("store_id")
+    if sid and str(sid) in store_ids:
+        return True
+    wid = details.get("warehouse_id")
+    if wid and str(wid) in warehouse_ids:
+        return True
+    return False
+
+
 def canonical_payload(
     *,
     tenant_id: str,
@@ -140,7 +167,16 @@ async def query_logs(
     to_date: datetime | None = None,
     limit: int = 200,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
+    scoped_actor_id: str | None = None,
 ) -> list[m.AuditLog]:
+    """Query audit rows. ``store_ids`` set (incl. empty) enables store_manager fail-closed filter."""
+    manager_scope = store_ids is not None
+    want = max(1, min(int(limit or 200), 1000))
+    # Over-fetch then filter so scoped managers still fill the requested page size.
+    fetch_limit = min(max(want * 8, 800), 5000) if manager_scope else want
+
     stmt = select(m.AuditLog).where(m.AuditLog.tenant_id == tenant_id)
     if user_id:
         stmt = stmt.where(m.AuditLog.user_id == user_id)
@@ -159,8 +195,24 @@ async def query_logs(
         stmt = stmt.where(
             or_(m.AuditLog.company_id == company_id, m.AuditLog.company_id.is_(None))
         )
-    stmt = stmt.order_by(m.AuditLog.created_at.desc()).limit(min(limit, 1000))
-    return (await db.execute(stmt)).scalars().all()
+    stmt = stmt.order_by(m.AuditLog.created_at.desc()).limit(fetch_limit)
+    rows = list((await db.execute(stmt)).scalars().all())
+    if manager_scope:
+        managed_stores = list(store_ids or [])
+        managed_wh = list(warehouse_ids or [])
+        actor = scoped_actor_id
+        rows = [
+            r
+            for r in rows
+            if audit_in_store_manager_scope(
+                r,
+                user_id=actor,
+                store_ids=managed_stores,
+                warehouse_ids=managed_wh,
+            )
+        ]
+        rows = rows[:want]
+    return rows
 
 
 async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:

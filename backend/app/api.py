@@ -15401,10 +15401,14 @@ async def audit_logs(
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     role = claims.get("role", "")
     scoped_user = user_id
     if role not in {"super_admin", "company_admin", "store_manager", "accountant"}:
         scoped_user = claims["sub"]
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     rows = await audit_svc.query_logs(
         db,
         tenant_id=claims["tenant_id"],
@@ -15416,6 +15420,9 @@ async def audit_logs(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=limit,
         company_id=claims.get("company_id"),
+        store_ids=managed,
+        warehouse_ids=managed_wh,
+        scoped_actor_id=claims.get("sub") if managed is not None else None,
     )
     return env([audit_svc.serialize_audit(r) for r in rows])
 
@@ -15431,10 +15438,14 @@ async def audit_logs_export(
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     role = claims.get("role", "")
     scoped_user = user_id
     if role not in {"super_admin", "company_admin", "store_manager", "accountant"}:
         scoped_user = claims["sub"]
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     rows = await audit_svc.query_logs(
         db,
         tenant_id=claims["tenant_id"],
@@ -15445,6 +15456,9 @@ async def audit_logs_export(
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=1000,
         company_id=claims.get("company_id"),
+        store_ids=managed,
+        warehouse_ids=managed_wh,
+        scoped_actor_id=claims.get("sub") if managed is not None else None,
     )
     chronological = list(reversed(rows))
     fmt = (format or "csv").strip().lower()
