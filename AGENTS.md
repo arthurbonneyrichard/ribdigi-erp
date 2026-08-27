@@ -88,7 +88,10 @@ store activation — never frontend-only.
    managed-store sales/POS + managed-WH purchase bills/POs (null-store /
    null-WH fail-closed; empty managed → zero), and audit list/export
    fail-closed to self-authored events plus details with managed
-   `store_id`/`warehouse_id` (no audit store column; ADR-005 open). Not
+   `store_id`/`warehouse_id` (no audit store column; ADR-005 open), sales
+   returns via linked invoice store (+ export/asserts), and dashboard
+   expenses / stock-alerts / summary (+ main dashboard inventory KPIs /
+   pending expenses) store+WH scoped (not `product.stock_qty`). Not
    store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
