@@ -3927,3 +3927,255 @@ async def test_store_manager_audit_logs_self_and_store_details_scoped(client, db
     assert "INV-AUD-M" in exported.text or store_ev.id in exported.text
     assert "INV-AUD-O-SECRET" not in exported.text
     assert "ADMIN-ONLY-AUDIT" not in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_sales_returns_and_dashboard_slices_scoped(client, db_session):
+    """Sales returns via invoice store; dashboard expenses/stock slices store+WH scoped."""
+    from datetime import timedelta
+
+    from app.inventory import apply_stock_change
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Ops Leftover Mine",
+        code="OPS-LF-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Ops Leftover Other",
+        code="OPS-LF-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Ops LF Mine WH",
+        code="OPS-LF-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Ops LF Other WH",
+        code="OPS-LF-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-OPS-LF-M",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=40,
+        tax_amount=0,
+        total_amount=40,
+        posted_at=today,
+        created_by=mgr.id,
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-OPS-LF-O",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=400,
+        tax_amount=0,
+        total_amount=400,
+        posted_at=today,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add_all([inv_mine, inv_other])
+    await db_session.flush()
+
+    ret_mine = m.SalesReturn(
+        tenant_id=tid,
+        company_id=cid,
+        return_number="SR-OPS-M",
+        customer_id=seed["party1"].id,
+        sales_invoice_id=inv_mine.id,
+        status="draft",
+        reason="damaged",
+        restock=True,
+        subtotal=10,
+        tax_amount=0,
+        total_amount=10,
+        created_by=mgr.id,
+    )
+    ret_other = m.SalesReturn(
+        tenant_id=tid,
+        company_id=cid,
+        return_number="SR-OPS-O",
+        customer_id=seed["party1"].id,
+        sales_invoice_id=inv_other.id,
+        status="draft",
+        reason="damaged",
+        restock=True,
+        subtotal=100,
+        tax_amount=0,
+        total_amount=100,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add_all([ret_mine, ret_other])
+
+    from app.expenses import ensure_default_categories
+
+    await ensure_default_categories(db_session, tid, company_id=cid)
+    cat = (
+        await db_session.execute(
+            select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tid)
+        )
+    ).scalars().first()
+    assert cat is not None
+    db_session.add_all(
+        [
+            m.Expense(
+                tenant_id=tid,
+                company_id=cid,
+                category_id=cat.id,
+                category=cat.name,
+                description="Ops LF mine exp",
+                amount=12,
+                store_id=mine.id,
+                status="approved",
+                expense_date=today,
+                created_by=mgr.id,
+                approved_by=mgr.id,
+                approved_at=today,
+            ),
+            m.Expense(
+                tenant_id=tid,
+                company_id=cid,
+                category_id=cat.id,
+                category=cat.name,
+                description="Ops LF other exp",
+                amount=900,
+                store_id=other.id,
+                status="approved",
+                expense_date=today,
+                created_by=seed["admin1"].id,
+                approved_by=seed["admin1"].id,
+                approved_at=today,
+            ),
+        ]
+    )
+
+    seed["p1"].stock_qty = 2
+    seed["p1"].reorder_level = 20
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=seed["p1"].id,
+        quantity_delta=2,
+        movement_type="stock_in",
+        user_id=mgr.id,
+        warehouse_id=wh_mine.id,
+    )
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=seed["p1"].id,
+        quantity_delta=2,
+        movement_type="stock_in",
+        user_id=seed["admin1"].id,
+        warehouse_id=wh_other.id,
+    )
+    for wid in (wh_mine.id, wh_other.id):
+        stock = (
+            await db_session.execute(
+                select(m.WarehouseStock).where(
+                    m.WarehouseStock.warehouse_id == wid,
+                    m.WarehouseStock.product_id == seed["p1"].id,
+                )
+            )
+        ).scalar_one()
+        stock.minimum_stock = 10
+        stock.reorder_level = 20
+    soon = datetime.utcnow() + timedelta(days=5)
+    db_session.add_all(
+        [
+            m.ProductBatch(
+                tenant_id=tid,
+                company_id=cid,
+                product_id=seed["p1"].id,
+                warehouse_id=wh_mine.id,
+                batch_number="OPS-LF-M-LOT",
+                expiry_date=soon,
+                quantity=2,
+            ),
+            m.ProductBatch(
+                tenant_id=tid,
+                company_id=cid,
+                product_id=seed["p1"].id,
+                warehouse_id=wh_other.id,
+                batch_number="OPS-LF-O-LOT",
+                expiry_date=soon,
+                quantity=2,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/sales/returns", headers=headers)
+    assert listed.status_code == 200, listed.text
+    nums = {r["return_number"] for r in listed.json()["data"]}
+    assert "SR-OPS-M" in nums
+    assert "SR-OPS-O" not in nums
+
+    denied = await ac.get(f"/api/v1/sales/returns/{ret_other.id}", headers=headers)
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_create = await ac.post(
+        "/api/v1/sales/returns",
+        headers=headers,
+        json={
+            "sales_invoice_id": inv_other.id,
+            "reason": "other",
+            "restock": True,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert denied_create.status_code == 403
+
+    exported = await ac.get("/api/v1/sales/returns/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "SR-OPS-M" in exported.text
+    assert "SR-OPS-O" not in exported.text
+
+    expenses = await ac.get("/api/v1/dashboard/expenses", headers=headers)
+    assert expenses.status_code == 200, expenses.text
+    ebody = expenses.json()["data"]
+    assert float(ebody["total_expenses"]) == pytest.approx(12.0)
+    assert all(float(r["total"]) < 100 for r in ebody["expenses_by_category"])
+
+    alerts = await ac.get("/api/v1/dashboard/stock-alerts", headers=headers)
+    assert alerts.status_code == 200, alerts.text
+    abody = alerts.json()["data"]
+    assert int(abody["low_stock"]) == 1
+    assert int(abody["expiring_batches"]) == 1
+
+    summary = await ac.get("/api/v1/dashboard/summary", headers=headers)
+    assert summary.status_code == 200, summary.text
+    sbody = summary.json()["data"]
+    assert float(sbody["total_expenses"]) == pytest.approx(12.0)
+    assert int(sbody["low_stock"]) == 1

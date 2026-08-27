@@ -3704,7 +3704,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
     )
 
     expenses_by_category = await dashboard_slices_svc.expenses_by_category(
-        db, tid, company_id=cid
+        db, tid, company_id=cid, store_ids=managed_ids
     )
     ar_aging = await credit_svc.ar_aging(
         db, tid, company_id=cid, store_ids=managed_ids
@@ -3810,6 +3810,50 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
             prior_month_start=prior_month_start,
         )
         payload.update(scoped)
+        # Inventory KPIs: WH-scoped (not product.stock_qty); pending expenses store-scoped
+        from app import reports as reports_svc
+
+        low_payload = await reports_svc.inventory_low_stock(
+            db, tid, company_id=cid, warehouse_ids=managed_wh
+        )
+        expiry = await reports_svc.inventory_expiry(
+            db, tid, within_days=30, company_id=cid, warehouse_ids=managed_wh
+        )
+        payload["low_stock"] = int(low_payload.get("warehouse_count") or 0)
+        payload["expiring_batches"] = int(expiry.get("count") or 0)
+        if managed_wh:
+            payload["out_of_stock"] = int(
+                await scalar(
+                    select(func.count(m.WarehouseStock.id)).where(
+                        m.WarehouseStock.tenant_id == tid,
+                        m.WarehouseStock.warehouse_id.in_(managed_wh),
+                        m.WarehouseStock.quantity <= 0,
+                    )
+                )
+            )
+            payload["products"] = int(
+                await scalar(
+                    select(func.count(func.distinct(m.WarehouseStock.product_id))).where(
+                        m.WarehouseStock.tenant_id == tid,
+                        m.WarehouseStock.warehouse_id.in_(managed_wh),
+                    )
+                )
+            )
+        else:
+            payload["out_of_stock"] = 0
+            payload["products"] = 0
+        if managed_ids:
+            payload["pending_expenses"] = int(
+                await scalar(
+                    select(func.count(m.Expense.id)).where(
+                        *_co(m.Expense),
+                        m.Expense.status == "pending",
+                        m.Expense.store_id.in_(managed_ids),
+                    )
+                )
+            )
+        else:
+            payload["pending_expenses"] = 0
     # Stage 80 T1 — permission + role scoped view (cashier omits accounting/users/etc.)
     _ = has_permission  # imported for clarity; filtering uses dashboard_views
     payload = dashboard_views_svc.filter_dashboard_payload(payload, claims)
@@ -7806,19 +7850,25 @@ async def list_sales_returns(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 98 R1 — optional status filter (draft/posted)."""
+    """Stage 98 R1 — optional status filter (draft/posted); store_manager via invoice store."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if managed is not None and not managed:
+        return env([])
     stmt = (
         select(m.SalesReturn)
         .where(*workspace_svc.company_scope_filter(m.SalesReturn, claims))
         .order_by(m.SalesReturn.created_at.desc())
     )
+    stmt = dashboard_scope_svc.apply_sales_return_store_scope(stmt, managed)
     if status:
         key = status.strip().lower()
         if key not in {"draft", "posted"}:
             raise HTTPException(status_code=400, detail="status must be draft or posted")
         stmt = stmt.where(m.SalesReturn.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
-    rows = (await db.execute(stmt)).scalars().all()
+    rows = (await db.execute(stmt)).scalars().unique().all()
     return env([await sales_docs_svc.serialize_return(db, r) for r in rows])
 
 
@@ -7847,9 +7897,15 @@ async def create_sales_return(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], payload.sales_invoice_id)
     assert_record_access(claims, invoice.created_by)
     workspace_svc.assert_record_company(claims, invoice)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(invoice, "store_id", None), allow_unset=False
+    )
     ret = await sales_docs_svc.create_return(
         db,
         tenant_id=claims["tenant_id"],
@@ -7871,9 +7927,12 @@ async def get_sales_return(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     workspace_svc.assert_record_company(claims, ret)
     assert_record_access(claims, ret.created_by)
+    await dashboard_scope_svc.assert_sales_return_in_manager_scope(db, claims, ret)
     return env(await sales_docs_svc.serialize_return(db, ret))
 
 
@@ -7885,11 +7944,13 @@ async def print_sales_return_credit_note(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import tenants as tenants_svc
 
     ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, ret.created_by)
     workspace_svc.assert_record_company(claims, ret)
+    await dashboard_scope_svc.assert_sales_return_in_manager_scope(db, claims, ret)
     if ret.status != "posted" or not ret.credit_note_number:
         raise HTTPException(
             status_code=409,
@@ -7991,9 +8052,12 @@ async def post_sales_return(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    await dashboard_scope_svc.assert_sales_return_in_manager_scope(db, claims, existing)
     ret = await sales_docs_svc.post_return(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], return_id=return_id
     )

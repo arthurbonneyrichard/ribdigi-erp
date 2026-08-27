@@ -212,6 +212,30 @@ def apply_warehouse_scope_filter(stmt, model, managed_wh_ids: list[str] | None):
     return stmt.where(getattr(model, "warehouse_id").in_(managed_wh_ids))
 
 
+def apply_sales_return_store_scope(stmt, store_ids: list[str] | None):
+    """Scope sales returns via linked ``SalesInvoice.store_id`` (null-store fail-closed)."""
+    if store_ids is None:
+        return stmt
+    stmt = stmt.join(
+        m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
+    )
+    if not store_ids:
+        return stmt.where(m.SalesInvoice.id.is_(None))  # empty managed → no rows
+    return stmt.where(m.SalesInvoice.store_id.in_(store_ids))
+
+
+async def assert_sales_return_in_manager_scope(
+    db: AsyncSession, claims: dict, sales_return: m.SalesReturn
+) -> None:
+    """403 when return's invoice store is outside managed scope."""
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+    inv = await db.get(m.SalesInvoice, sales_return.sales_invoice_id)
+    sid = getattr(inv, "store_id", None) if inv else None
+    assert_store_in_manager_scope(managed, sid, allow_unset=False)
+
+
 def apply_purchase_invoice_warehouse_scope(stmt, managed_wh_ids: list[str] | None):
     """Scope purchase invoices via direct warehouse_id, else linked GRN/PO warehouse.
 
