@@ -652,6 +652,7 @@ async def build_report_payload(
     limit: int | None = None,
     compare: bool = False,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -665,10 +666,14 @@ async def build_report_payload(
     now = datetime.utcnow()
 
     if report_type == "summary":
-        daily = await reports_svc.sales_daily(db, tenant_id, now)
-        monthly = await reports_svc.sales_monthly(db, tenant_id, now.year, now.month)
-        low = await reports_svc.inventory_low_stock(db, tenant_id)
-        expenses = await reports_svc.expenses_summary(db, tenant_id)
+        daily = await reports_svc.sales_daily(db, tenant_id, now, company_id=company_id)
+        monthly = await reports_svc.sales_monthly(
+            db, tenant_id, now.year, now.month, company_id=company_id
+        )
+        low = await reports_svc.inventory_low_stock(
+            db, tenant_id, company_id=company_id, warehouse_ids=warehouse_ids
+        )
+        expenses = await reports_svc.expenses_summary(db, tenant_id, company_id=company_id)
         return {
             "today_sales": daily,
             "month_sales": monthly,
@@ -697,14 +702,30 @@ async def build_report_payload(
     if report_type == "sales_by_store":
         return await reports_svc.sales_by_store(db, tenant_id, from_date=fd, to_date=td)
     if report_type == "inventory_balance":
-        return await reports_svc.inventory_balance(db, tenant_id, warehouse_id)
+        return await reports_svc.inventory_balance(
+            db, tenant_id, warehouse_id, company_id=company_id, warehouse_ids=warehouse_ids
+        )
     if report_type == "inventory_movements":
-        return await reports_svc.inventory_movements(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.inventory_movements(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "inventory_low_stock":
-        return await reports_svc.inventory_low_stock(db, tenant_id)
+        return await reports_svc.inventory_low_stock(
+            db, tenant_id, company_id=company_id, warehouse_ids=warehouse_ids
+        )
     if report_type == "inventory_valuation":
         return await reports_svc.inventory_valuation(
-            db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+            db,
+            tenant_id,
+            warehouse_id=warehouse_id,
+            store_id=store_id,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "purchases_summary":
         return await reports_svc.purchases_summary(db, tenant_id, from_date=fd, to_date=td)

@@ -32,7 +32,12 @@ async def test_reports_suite_outline_endpoints(client, db_session):
     await ensure_default_categories(db_session, tenant_id)
 
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="S16R1", name="S16 R1 Store"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="S16R1",
+        name="S16 R1 Store",
+        manager_id=seed["mgr1"].id,
     )
     await db_session.flush()
 
@@ -40,6 +45,7 @@ async def test_reports_suite_outline_endpoints(client, db_session):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="INV-S16-R1",
             customer_id=seed["party1"].id,
             status="posted",
@@ -64,6 +70,7 @@ async def test_reports_suite_outline_endpoints(client, db_session):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             category_id=cat.id,
             category=cat.name,
             amount=55,
@@ -72,6 +79,7 @@ async def test_reports_suite_outline_endpoints(client, db_session):
             status="approved",
             expense_date=today,
             created_by=seed["mgr1"].id,
+            store_id=store.id,
         )
     )
     seed["p1"].reorder_level = 100

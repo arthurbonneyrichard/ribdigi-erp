@@ -12301,6 +12301,13 @@ async def reports_export(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, _multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    if warehouse_id:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(managed_wh, warehouse_id)
     content, media, filename = await report_export_svc.export_report(
         db,
         claims["tenant_id"],
@@ -12313,7 +12320,7 @@ async def reports_export(
         year=year,
         month=month,
         warehouse_id=warehouse_id,
-        store_id=store_id,
+        store_id=single or store_id,
         branch_id=branch_id,
         category_id=category_id,
         jurisdiction=jurisdiction,
@@ -12323,6 +12330,7 @@ async def reports_export(
         limit=limit,
         compare=compare,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=content,
@@ -12587,12 +12595,19 @@ async def report_inventory_balance(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Inventory balance; store_manager WH-scoped (no product.stock_qty fallback)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    if warehouse_id:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(managed_wh, warehouse_id)
     return env(
         await reports_svc.inventory_balance(
             db,
             claims["tenant_id"],
             warehouse_id,
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -12604,13 +12619,22 @@ async def report_inventory_valuation(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Stock valuation; store_manager WH-scoped (no product.stock_qty fallback)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, _multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    if warehouse_id:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(managed_wh, warehouse_id)
     return env(
         await reports_svc.inventory_valuation(
             db,
             claims["tenant_id"],
             warehouse_id=warehouse_id,
-            store_id=store_id,
+            store_id=single or store_id,
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -12623,6 +12647,10 @@ async def report_inventory_movements(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Inventory movements report; store_manager WH-scoped (null WH excluded)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     return env(
         await reports_svc.inventory_movements(
             db,
@@ -12631,6 +12659,7 @@ async def report_inventory_movements(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
     )
 
@@ -14743,8 +14772,11 @@ async def cancel_inventory_stock_transfer(
 
 @api.get("/reports/summary")
 async def report(claims=Depends(require_permission("reports", "read")), db: AsyncSession = Depends(get_db)):
+    from app import dashboard_scope as dashboard_scope_svc
+
     dash = await dashboard(claims, db)
     now = datetime.utcnow()
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     daily = await reports_svc.sales_daily(
         db, claims["tenant_id"], now, company_id=claims.get("company_id")
     )
@@ -14752,7 +14784,10 @@ async def report(claims=Depends(require_permission("reports", "read")), db: Asyn
         db, claims["tenant_id"], now.year, now.month, company_id=claims.get("company_id")
     )
     low = await reports_svc.inventory_low_stock(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     expenses = await reports_svc.expenses_summary(
         db, claims["tenant_id"], company_id=claims.get("company_id")

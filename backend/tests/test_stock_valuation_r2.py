@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -13,22 +14,46 @@ async def _mgr(ac):
     return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
 
+async def _super(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
 @pytest.mark.asyncio
 async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
 
-    store_a = await create_store(db_session, tenant_id=tenant_id, code="R2A", name="R2 Store A")
-    store_b = await create_store(db_session, tenant_id=tenant_id, code="R2B", name="R2 Store B")
-    wh_a = await warehouse_for_store(db_session, tenant_id, store_a.id)
-    wh_b = await warehouse_for_store(db_session, tenant_id, store_b.id)
+    store_a = await create_store(
+        db_session,
+        tenant_id=tenant_id,
+        company_id=cid,
+        code="R2A",
+        name="R2 Store A",
+        manager_id=mgr.id,
+    )
+    store_b = await create_store(
+        db_session,
+        tenant_id=tenant_id,
+        company_id=cid,
+        code="R2B",
+        name="R2 Store B",
+        manager_id=None,
+    )
+    wh_a = await warehouse_for_store(db_session, tenant_id, store_a.id, company_id=cid)
+    wh_b = await warehouse_for_store(db_session, tenant_id, store_b.id, company_id=cid)
 
     p1 = seed["p1"]
     p1.cost_price = 2.5
     p1.stock_qty = 0
     p2 = m.Product(
         tenant_id=tenant_id,
+        company_id=cid,
         name="R2 Widget B",
         sku="R2-B",
         cost_price=4,
@@ -43,18 +68,21 @@ async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
         [
             m.WarehouseStock(
                 tenant_id=tenant_id,
+                company_id=cid,
                 warehouse_id=wh_a.id,
                 product_id=p1.id,
                 quantity=10,
             ),
             m.WarehouseStock(
                 tenant_id=tenant_id,
+                company_id=cid,
                 warehouse_id=wh_b.id,
                 product_id=p1.id,
                 quantity=4,
             ),
             m.WarehouseStock(
                 tenant_id=tenant_id,
+                company_id=cid,
                 warehouse_id=wh_a.id,
                 product_id=p2.id,
                 quantity=3,
@@ -63,33 +91,37 @@ async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
     )
     await db_session.commit()
 
-    all_val = await ac.get("/api/v1/reports/inventory/valuation", headers=headers)
-    assert all_val.status_code == 200, all_val.text
-    body = all_val.json()["data"]
+    # Manager sees only managed store A warehouses (not store B).
+    scoped = await ac.get("/api/v1/reports/inventory/valuation", headers=headers)
+    assert scoped.status_code == 200, scoped.text
+    body = scoped.json()["data"]
     assert body["costing_method"] == "standard_cost"
     assert "FIFO" in body["costing_method_note"]
     assert "not used" in body["costing_method_note"].lower()
-    # 10*2.5 + 4*2.5 + 3*4 = 25 + 10 + 12 = 47
-    assert body["total_value"] == pytest.approx(47.0)
-    assert body["total_quantity"] == pytest.approx(17.0)
-    assert body["line_count"] == 3
-    assert len(body["by_warehouse"]) == 2
-
-    by_wh = {w["warehouse_id"]: w for w in body["by_warehouse"]}
-    assert by_wh[wh_a.id]["total_value"] == pytest.approx(37.0)  # 25 + 12
-    assert by_wh[wh_b.id]["total_value"] == pytest.approx(10.0)
+    # 10*2.5 + 3*4 = 25 + 12 = 37 (wh_b excluded)
+    assert body["total_value"] == pytest.approx(37.0)
+    assert body["total_quantity"] == pytest.approx(13.0)
+    assert body["line_count"] == 2
+    assert len(body["by_warehouse"]) == 1
+    assert body["by_warehouse"][0]["warehouse_id"] == wh_a.id
+    assert body["by_warehouse"][0]["total_value"] == pytest.approx(37.0)
 
     filtered = await ac.get(
         "/api/v1/reports/inventory/valuation",
         headers=headers,
-        params={"warehouse_id": wh_b.id},
+        params={"warehouse_id": wh_a.id},
     )
     assert filtered.status_code == 200, filtered.text
     fbody = filtered.json()["data"]
-    assert fbody["total_value"] == pytest.approx(10.0)
-    assert fbody["line_count"] == 1
-    assert fbody["items"][0]["cost_price"] == pytest.approx(2.5)
-    assert fbody["items"][0]["value"] == pytest.approx(10.0)
+    assert fbody["total_value"] == pytest.approx(37.0)
+
+    denied = await ac.get(
+        "/api/v1/reports/inventory/valuation",
+        headers=headers,
+        params={"warehouse_id": wh_b.id},
+    )
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     by_store = await ac.get(
         "/api/v1/reports/inventory/valuation",
@@ -101,24 +133,39 @@ async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
     assert sbody["warehouse_id"] == wh_a.id
     assert sbody["total_value"] == pytest.approx(37.0)
 
+    cross_store = await ac.get(
+        "/api/v1/reports/inventory/valuation",
+        headers=headers,
+        params={"store_id": store_b.id},
+    )
+    assert cross_store.status_code == 403
+
 
 @pytest.mark.asyncio
 async def test_stock_valuation_product_fallback_and_isolation(client, db_session):
+    """Product.stock_qty fallback is for tenant-wide roles; managers omit it."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _super(ac, seed)
     product = seed["p1"]
     product.cost_price = 3
     product.stock_qty = 5
     product.is_active = True
     await db_session.commit()
 
-    # No warehouse stock rows → fallback to product.stock_qty
     val = await ac.get("/api/v1/reports/inventory/valuation", headers=headers)
     assert val.status_code == 200, val.text
     body = val.json()["data"]
     row = next(i for i in body["items"] if i["product_id"] == product.id)
     assert row["quantity"] == pytest.approx(5.0)
     assert row["value"] == pytest.approx(15.0)
+
+    mgr = await _mgr(ac)
+    mgr_val = await ac.get("/api/v1/reports/inventory/valuation", headers=mgr)
+    assert mgr_val.status_code == 200, mgr_val.text
+    assert not any(
+        i["product_id"] == product.id and i.get("warehouse_id") is None
+        for i in mgr_val.json()["data"]["items"]
+    )
 
     beta = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")
     cross = await ac.get("/api/v1/reports/inventory/valuation", headers=beta)
@@ -150,4 +197,4 @@ async def test_stock_valuation_export_type():
     )
     assert title == "Stock Valuation"
     assert rows[0]["sku"] == "A-1"
-    assert any("standard_cost" in line for line in lines)
+    assert any("A-1" in line for line in lines)

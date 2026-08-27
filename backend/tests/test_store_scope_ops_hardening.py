@@ -1388,3 +1388,108 @@ async def test_store_manager_low_stock_and_expiry_warehouse_scoped(client, db_se
     )
     assert ok_po.status_code == 200, ok_po.text
     assert ok_po.json()["data"]["warehouse_id"] == wh_mine.id
+
+
+@pytest.mark.asyncio
+async def test_store_manager_inventory_reports_warehouse_scoped(client, db_session):
+    """Balance / valuation / movements reports omit other-store WHs and product fallback."""
+    from app.inventory import apply_stock_change
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="InvRep Mine",
+        code="IR-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="InvRep Other",
+        code="IR-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="IR Mine WH",
+        code="IR-M-WH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="IR Other WH",
+        code="IR-O-WH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    seed["p1"].cost_price = 2
+    seed["p1"].stock_qty = 99
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=seed["p1"].id,
+        quantity_delta=5,
+        movement_type="stock_in",
+        user_id=mgr.id,
+        warehouse_id=wh_mine.id,
+    )
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=seed["p1"].id,
+        quantity_delta=7,
+        movement_type="stock_in",
+        user_id=seed["admin1"].id,
+        warehouse_id=wh_other.id,
+    )
+    await db_session.commit()
+
+    balance = await ac.get("/api/v1/reports/inventory/balance", headers=headers)
+    assert balance.status_code == 200, balance.text
+    bal_items = balance.json()["data"]["items"]
+    assert all(i.get("warehouse_id") == wh_mine.id for i in bal_items)
+    assert any(float(i["quantity"]) == 5 for i in bal_items)
+    assert not any(float(i["quantity"]) == 99 and i.get("warehouse_id") is None for i in bal_items)
+
+    valuation = await ac.get("/api/v1/reports/inventory/valuation", headers=headers)
+    assert valuation.status_code == 200, valuation.text
+    vbody = valuation.json()["data"]
+    wh_ids = {w["warehouse_id"] for w in vbody["by_warehouse"]}
+    assert wh_mine.id in wh_ids
+    assert wh_other.id not in wh_ids
+    assert vbody["total_quantity"] == pytest.approx(5.0)
+    assert vbody["total_value"] == pytest.approx(10.0)
+
+    movements = await ac.get("/api/v1/reports/inventory/movements", headers=headers)
+    assert movements.status_code == 200, movements.text
+    mov_wh = {mrow["warehouse_id"] for mrow in movements.json()["data"]["movements"]}
+    assert wh_mine.id in mov_wh
+    assert wh_other.id not in mov_wh
+
+    summary = await ac.get("/api/v1/reports/summary", headers=headers)
+    assert summary.status_code == 200, summary.text
+    low = summary.json()["data"]["low_stock_report"]
+    assert low.get("count") == 0
+    assert low.get("products") == []
+
+    exported = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "inventory_valuation", "format": "csv"},
+    )
+    assert exported.status_code == 200, exported.text
+    assert wh_other.code not in exported.text or "IR-O-WH" not in exported.text

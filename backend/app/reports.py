@@ -974,25 +974,41 @@ async def inventory_balance(
     warehouse_id: str | None = None,
     *,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    if warehouse_id:
+    """Inventory balance.
+
+    ``warehouse_ids`` None = tenant/company-wide (product.stock_qty when no WH filter).
+    When set (store_manager), omit product fallback and restrict to managed WHs.
+    """
+    if warehouse_ids is not None and not warehouse_ids and not warehouse_id:
+        return {
+            "warehouse_id": warehouse_id,
+            "items": [],
+            "total_quantity": 0.0,
+            "total_value": 0.0,
+        }
+
+    use_wh = warehouse_id is not None or warehouse_ids is not None
+    if use_wh:
         stmt = (
             select(m.WarehouseStock, m.Product)
             .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-            .where(
-                m.WarehouseStock.tenant_id == tenant_id,
-                m.WarehouseStock.warehouse_id == warehouse_id,
-            )
+            .where(m.WarehouseStock.tenant_id == tenant_id)
             .order_by(m.Product.name)
         )
         stmt = apply_company_filter(stmt, m.WarehouseStock.company_id, company_id)
+        if warehouse_id:
+            stmt = stmt.where(m.WarehouseStock.warehouse_id == warehouse_id)
+        elif warehouse_ids is not None:
+            stmt = stmt.where(m.WarehouseStock.warehouse_id.in_(warehouse_ids))
         rows = (await db.execute(stmt)).all()
         items = [
             {
                 "product_id": p.id,
                 "sku": p.sku,
                 "name": p.name,
-                "warehouse_id": warehouse_id,
+                "warehouse_id": s.warehouse_id,
                 "quantity": float(s.quantity or 0),
                 "cost_price": float(p.cost_price or 0),
                 "value": round(float(s.quantity or 0) * float(p.cost_price or 0), 2),
@@ -1032,10 +1048,13 @@ async def inventory_valuation(
     warehouse_id: str | None = None,
     store_id: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """Stock valuation at standard cost: quantity × product.cost_price (Stage 9 R2).
 
     FIFO, LIFO, and weighted-average layer costing are intentionally out of scope.
+    ``warehouse_ids`` set (store_manager) omits product.stock_qty fallback and
+    restricts warehouse rows to that set.
     """
     from app import stores as stores_svc
 
@@ -1050,6 +1069,22 @@ async def inventory_valuation(
 
         await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
 
+    if warehouse_ids is not None and not warehouse_ids and not resolved_warehouse_id:
+        return {
+            "costing_method": "standard_cost",
+            "costing_method_note": (
+                "Value = quantity × product.cost_price. "
+                "FIFO, LIFO, and weighted average are not used in commercial MVP."
+            ),
+            "warehouse_id": resolved_warehouse_id,
+            "store_id": store_id,
+            "items": [],
+            "by_warehouse": [],
+            "total_quantity": 0.0,
+            "total_value": 0.0,
+            "line_count": 0,
+        }
+
     stmt = (
         select(m.WarehouseStock, m.Product, m.Warehouse)
         .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
@@ -1061,6 +1096,8 @@ async def inventory_valuation(
         stmt = stmt.where(m.Warehouse.company_id == company_id)
     if resolved_warehouse_id:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == resolved_warehouse_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.WarehouseStock.warehouse_id.in_(warehouse_ids))
     rows = (await db.execute(stmt)).all()
 
     items: list[dict] = []
@@ -1098,7 +1135,8 @@ async def inventory_valuation(
         bucket["total_value"] = round(bucket["total_value"] + value, 2)
 
     # Fallback when tenant stock lives only on product.stock_qty (no warehouse rows yet).
-    if not items and not resolved_warehouse_id:
+    # Store managers never use this fallback (warehouse_ids is set).
+    if not items and not resolved_warehouse_id and warehouse_ids is None:
         products = (
             await db.execute(
                 select(m.Product)
@@ -1106,6 +1144,8 @@ async def inventory_valuation(
                 .order_by(m.Product.name)
             )
         ).scalars().all()
+        if company_id:
+            products = [p for p in products if getattr(p, "company_id", None) == company_id]
         for product in products:
             qty = float(product.stock_qty or 0)
             if qty == 0:
@@ -1151,11 +1191,17 @@ async def inventory_movements(
     to_date: datetime | None = None,
     limit: int = 200,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """Movement report. ``warehouse_ids`` set excludes null-WH and out-of-scope rows."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {"count": 0, "movements": []}
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
     stmt = apply_company_filter(stmt, m.StockMovement.company_id, company_id)
     if product_id:
         stmt = stmt.where(m.StockMovement.product_id == product_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.StockMovement.warehouse_id.in_(warehouse_ids))
     if from_date:
         stmt = stmt.where(m.StockMovement.created_at >= from_date)
     if to_date:
