@@ -81,8 +81,11 @@ store activation — never frontend-only.
    balance zeroed under scope), and credit statements / outstanding /
    payment registers (+ exports) plus customer/supplier payment write
    asserts (invoice/PO/PI required in managed scope; unallocated payments
-   denied). Accounting P&L/TB and tax reports may still be company-wide.
-   Not store-scoped RBAC Complete.
+   denied), and accounting P&L / trial balance / cash-flow / balance-sheet
+   (+ path CSVs, `/reports/export`, dashboard MTD P&L) from managed-store
+   journals (null-store fail-closed; foreign `store_id` denied). Tax reports
+   and company-wide audit log reads may still be company-wide. Not
+   store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
