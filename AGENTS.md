@@ -57,9 +57,10 @@ store activation — never frontend-only.
    daily/monthly/products/customers/salesperson/by-store reports, purchasing
    summary/suppliers/pending/returns reports, transfer history report,
    inventory stock-transfer write asserts (from-WH required; mutations must touch
-   managed stores), and expenses summary + category budget spent/pending
-   (null-store fail-closed; budget limits remain company-level); not store-scoped
-   RBAC Complete.
+   managed stores), expenses summary + category budget spent/pending
+   (null-store fail-closed; budget limits remain company-level), and expense +
+   recurring create / expense patch store asserts (foreign `store_id` denied);
+   not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
