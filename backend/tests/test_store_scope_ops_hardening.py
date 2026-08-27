@@ -4179,3 +4179,189 @@ async def test_store_manager_sales_returns_and_dashboard_slices_scoped(client, d
     sbody = summary.json()["data"]
     assert float(sbody["total_expenses"]) == pytest.approx(12.0)
     assert int(sbody["low_stock"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_store_manager_journal_entries_store_scoped(client, db_session):
+    """Journal list/get/export (+ write asserts) fail-closed on foreign/null store_id."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    # Grant accounting write so create/unpost hit store asserts (role default is read-only).
+    # Company membership permissions override user.permissions in company workspace.
+    perms = dict(permissions_for_role("store_manager"))
+    perms["accounting"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="JE Scope Mine",
+        code="JE-SCOPE-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="JE Scope Other",
+        code="JE-SCOPE-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    je_mine = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        description="Mine store JE",
+        reference="JE-SCOPE-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 25, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 25},
+        ],
+    )
+    je_other = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Other store JE",
+        reference="JE-SCOPE-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 75, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 75},
+        ],
+    )
+    je_null = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Null store JE",
+        reference="JE-SCOPE-NULL",
+        store_id=None,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 15, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 15},
+        ],
+    )
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/accounting/journal-entries", headers=headers)
+    assert listed.status_code == 200, listed.text
+    refs = {row["reference"] for row in listed.json()["data"]}
+    assert "JE-SCOPE-MINE" in refs
+    assert "JE-SCOPE-OTH" not in refs
+    assert "JE-SCOPE-NULL" not in refs
+
+    ok = await ac.get(f"/api/v1/accounting/journal-entries/{je_mine.id}", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    denied_other = await ac.get(
+        f"/api/v1/accounting/journal-entries/{je_other.id}", headers=headers
+    )
+    assert denied_other.status_code == 403
+    assert denied_other.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null = await ac.get(
+        f"/api/v1/accounting/journal-entries/{je_null.id}", headers=headers
+    )
+    assert denied_null.status_code == 403
+    assert denied_null.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    cross = await ac.get(
+        "/api/v1/accounting/journal-entries",
+        headers=headers,
+        params={"store_id": other.id},
+    )
+    assert cross.status_code == 403
+    assert cross.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    exported = await ac.get("/api/v1/accounting/journal-entries/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "JE-SCOPE-MINE" in exported.text
+    assert "JE-SCOPE-OTH" not in exported.text
+    assert "JE-SCOPE-NULL" not in exported.text
+
+    create_ok = await ac.post(
+        "/api/v1/accounting/journal-entries",
+        headers=headers,
+        json={
+            "description": "Mgr in-scope JE",
+            "reference": "JE-SCOPE-CREATE",
+            "store_id": mine.id,
+            "lines": [
+                {"account_code": "1000", "debit": 5, "credit": 0},
+                {"account_code": "4000", "debit": 0, "credit": 5},
+            ],
+        },
+    )
+    assert create_ok.status_code == 200, create_ok.text
+
+    create_other = await ac.post(
+        "/api/v1/accounting/journal-entries",
+        headers=headers,
+        json={
+            "description": "Mgr foreign JE",
+            "reference": "JE-SCOPE-CREATE-O",
+            "store_id": other.id,
+            "lines": [
+                {"account_code": "1000", "debit": 5, "credit": 0},
+                {"account_code": "4000", "debit": 0, "credit": 5},
+            ],
+        },
+    )
+    assert create_other.status_code == 403
+    assert create_other.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_unset = await ac.post(
+        "/api/v1/accounting/journal-entries",
+        headers=headers,
+        json={
+            "description": "Mgr null-store JE",
+            "reference": "JE-SCOPE-CREATE-N",
+            "lines": [
+                {"account_code": "1000", "debit": 5, "credit": 0},
+                {"account_code": "4000", "debit": 0, "credit": 5},
+            ],
+        },
+    )
+    assert create_unset.status_code == 403
+    assert create_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_unpost = await ac.post(
+        f"/api/v1/accounting/journal-entries/{je_other.id}/unpost",
+        headers=headers,
+    )
+    assert denied_unpost.status_code == 403
+    assert denied_unpost.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_attach = await ac.get(
+        f"/api/v1/accounting/journal-entries/{je_null.id}/attachment",
+        headers=headers,
+    )
+    assert denied_attach.status_code == 403
+    assert denied_attach.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

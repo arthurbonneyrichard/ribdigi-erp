@@ -107,6 +107,7 @@ async def list_journals(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
     limit: int = 100,
 ) -> list[m.JournalEntry]:
@@ -120,6 +121,11 @@ async def list_journals(
         stmt = stmt.where(m.JournalEntry.company_id == company_id)
     if store_id:
         stmt = stmt.where(m.JournalEntry.store_id == store_id)
+    elif store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.JournalEntry.id.is_(None))
     status_n = (status or "").strip().lower() or None
     if status_n and status_n != "all":
         stmt = stmt.where(m.JournalEntry.status == status_n)
@@ -132,6 +138,7 @@ async def export_journals_csv(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     rows = await list_journals(
@@ -139,6 +146,7 @@ async def export_journals_csv(
         tenant_id=tenant_id,
         status=status,
         store_id=store_id,
+        store_ids=store_ids,
         company_id=company_id,
         limit=200,
     )

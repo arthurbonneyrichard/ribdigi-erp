@@ -11805,8 +11805,9 @@ async def list_journals(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 100 G1 — optional status filter (posted / unposted / all)."""
+    """Stage 100 G1 — optional status filter (posted / unposted / all); store_manager scoped."""
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     status_filter = (status or "").strip().lower() or None
     if status_filter and status_filter not in ("posted", "unposted", "all"):
@@ -11815,14 +11816,21 @@ async def list_journals(
             detail="status must be one of: posted, unposted, all",
         )
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    if managed is not None and not managed and not single:
+        return env([])
+
     stmt = (
         select(m.JournalEntry)
         .where(*workspace_svc.company_scope_filter(m.JournalEntry, claims))
         .order_by(m.JournalEntry.created_at.desc())
         .limit(100)
     )
-    if store_id:
-        stmt = stmt.where(m.JournalEntry.store_id == store_id)
+    if single:
+        stmt = stmt.where(m.JournalEntry.store_id == single)
+    elif multi is not None:
+        stmt = stmt.where(m.JournalEntry.store_id.in_(multi))
     if status_filter and status_filter != "all":
         stmt = stmt.where(m.JournalEntry.status == status_filter)
     rows = (await db.execute(stmt)).scalars().all()
@@ -11837,17 +11845,22 @@ async def export_journal_entries_csv(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 131 J1 — journal entry header CSV (no line dump)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     status_filter = (status or "").strip().lower() or None
     if status_filter and status_filter not in ("posted", "unposted", "all"):
         raise HTTPException(
             status_code=400,
             detail="status must be one of: posted, unposted, all",
         )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_journals_csv(
         db,
         tenant_id=claims["tenant_id"],
         status=None if status_filter == "all" else status_filter,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         company_id=claims.get("company_id"),
     )
     return Response(
@@ -11866,6 +11879,7 @@ async def get_journal(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     entry = (
         await db.execute(
@@ -11878,6 +11892,10 @@ async def get_journal(
     if not entry:
         raise HTTPException(status_code=404, detail="Journal entry not found")
     workspace_svc.assert_record_company(claims, entry)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(entry, "store_id", None), allow_unset=False
+    )
     return env(await accounting_svc.serialize_journal(db, entry))
 
 
@@ -11888,7 +11906,12 @@ async def create_journal(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id, allow_unset=False
+    )
     entry = await accounting_svc.post_journal_entry(
         db,
         tenant_id=claims["tenant_id"],
@@ -11974,11 +11997,16 @@ async def unpost_journal(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     existing = await _get_journal_entry_or_404(
         db, tenant_id=claims["tenant_id"], entry_id=entry_id
     )
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(existing, "store_id", None), allow_unset=False
+    )
     entry = await accounting_svc.unpost_journal_entry(
         db,
         tenant_id=claims["tenant_id"],
@@ -12013,12 +12041,17 @@ async def upload_journal_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     entry = await _get_journal_entry_or_404(
         db, tenant_id=claims["tenant_id"], entry_id=entry_id
     )
     assert_record_access(claims, entry.created_by)
     workspace_svc.assert_record_company(claims, entry)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(entry, "store_id", None), allow_unset=False
+    )
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
         category="journals",
@@ -12056,11 +12089,17 @@ async def download_journal_attachment(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     entry = await _get_journal_entry_or_404(
         db, tenant_id=claims["tenant_id"], entry_id=entry_id
     )
     assert_record_access(claims, entry.created_by)
     workspace_svc.assert_record_company(claims, entry)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(entry, "store_id", None), allow_unset=False
+    )
     if not entry.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" in entry.attachment_url:
@@ -12080,12 +12119,17 @@ async def delete_journal_attachment(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     entry = await _get_journal_entry_or_404(
         db, tenant_id=claims["tenant_id"], entry_id=entry_id
     )
     assert_record_access(claims, entry.created_by)
     workspace_svc.assert_record_company(claims, entry)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(entry, "store_id", None), allow_unset=False
+    )
     if not entry.attachment_url:
         raise HTTPException(status_code=404, detail="No attachment uploaded")
     if "://" not in entry.attachment_url:
