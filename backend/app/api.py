@@ -6807,10 +6807,15 @@ async def sale(
 @api.get("/sales/invoices")
 async def list_sales_invoices(
     status: str | None = None,
+    store_id: str | None = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 97 S1 — optional status filter (`unpaid` → posted∪sent)."""
+    """Stage 97 S1 — optional status filter (`unpaid` → posted∪sent); store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     stmt = (
         select(m.SalesInvoice)
         .where(*workspace_svc.company_scope_filter(m.SalesInvoice, claims))
@@ -6828,6 +6833,12 @@ async def list_sales_invoices(
             stmt = stmt.where(m.SalesInvoice.status.in_(["posted", "sent"]))
         else:
             stmt = stmt.where(m.SalesInvoice.status == key)
+    if single:
+        stmt = stmt.where(m.SalesInvoice.store_id == single)
+    elif multi is not None:
+        if not multi:
+            return env([])
+        stmt = stmt.where(m.SalesInvoice.store_id.in_(multi))
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     out = [await sales_svc.serialize_invoice(db, inv) for inv in rows]
@@ -6884,9 +6895,13 @@ async def get_sales_invoice(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     workspace_svc.assert_record_company(claims, invoice)
     assert_record_access(claims, invoice.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, getattr(invoice, "store_id", None))
     data = await sales_svc.serialize_invoice(db, invoice)
     await db.commit()
     return env(data)
@@ -6901,10 +6916,13 @@ async def print_sales_invoice(
     db: AsyncSession = Depends(get_db),
 ):
     from app import tenants as tenants_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     invoice = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, invoice.created_by)
     workspace_svc.assert_record_company(claims, invoice)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(managed, getattr(invoice, "store_id", None))
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     company = None
     cid = claims.get("company_id") or getattr(invoice, "company_id", None)
@@ -9044,12 +9062,17 @@ async def pos_list_sales(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 142 S1 — POS sales register list."""
+    """Stage 142 S1 — POS sales register list (store_manager scoped via manager_id)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     rows = await pos_ops_export_svc.list_pos_sales(
         db,
         tenant_id=claims["tenant_id"],
         session_id=session_id,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         company_id=claims.get("company_id"),
@@ -9068,12 +9091,17 @@ async def pos_sales_export(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 142 S1 — POS sales register CSV."""
+    """Stage 142 S1 — POS sales register CSV (store_manager scoped via manager_id)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await pos_ops_export_svc.export_pos_sales_csv(
         db,
         tenant_id=claims["tenant_id"],
         session_id=session_id,
-        store_id=store_id,
+        store_id=single,
+        store_ids=multi,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         company_id=claims.get("company_id"),

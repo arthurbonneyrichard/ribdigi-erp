@@ -1,9 +1,14 @@
-"""Store-scoped dashboard resolution for Store Managers (Stage 81 S1 / ADR-005 adjacency)."""
+"""Store-scoped dashboard resolution for Store Managers (Stage 81 S1 / ADR-005 adjacency).
+
+Also used for operational list/read hardening (POS sales, sales invoices) — still
+``stores.manager_id`` only; ADR-005 membership tables remain deferred.
+"""
 
 from __future__ import annotations
 
 from datetime import datetime
 
+from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,6 +49,45 @@ def store_scope_payload(store_ids: list[str] | None) -> dict:
         "managed_store_count": len(store_ids),
     }
 
+
+def assert_store_in_manager_scope(
+    managed_ids: list[str] | None, store_id: str | None
+) -> None:
+    """403 when a store_manager requests a store outside ``manager_id`` scope."""
+    if managed_ids is None:
+        return
+    sid = (store_id or "").strip()
+    if not sid:
+        return
+    if sid not in managed_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Store is outside your managed store scope.",
+                "store_id": sid,
+            },
+        )
+
+
+def constrain_store_query(
+    managed_ids: list[str] | None,
+    requested_store_id: str | None = None,
+) -> tuple[str | None, list[str] | None]:
+    """Resolve list filters for store_manager.
+
+    Returns ``(single_store_id, store_ids_in)``:
+    - tenant-wide roles: ``(requested, None)``
+    - store_manager with request: validates then ``(requested, None)``
+    - store_manager without request: ``(None, managed_ids)`` (may be empty)
+    """
+    req = (requested_store_id or "").strip() or None
+    if managed_ids is None:
+        return req, None
+    if req:
+        assert_store_in_manager_scope(managed_ids, req)
+        return req, None
+    return None, list(managed_ids)
 
 async def scoped_financial_kpis(
     db: AsyncSession,
