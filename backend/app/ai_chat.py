@@ -374,13 +374,18 @@ async def handle_chat(
             answer = "You do not have permission to view AI predictions."
         else:
             from app import ai_inventory as ai_inventory_svc
+            from app import dashboard_scope as dashboard_scope_svc
 
+            managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+            managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
             pred = await ai_inventory_svc.predict_low_stock(
                 db,
                 tenant_id,
                 at_risk_only=True,
                 horizon_days=14,
                 company_id=company_id,
+                store_ids=managed_stores,
+                warehouse_ids=managed_wh,
             )
             if not pred["at_risk_count"]:
                 answer = "No products are predicted to stock out within 14 days."

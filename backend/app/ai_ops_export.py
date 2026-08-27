@@ -406,6 +406,8 @@ async def export_low_stock_predictions_csv(
     lead_time_days: int = 7,
     at_risk_only: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 146 L1 — low-stock prediction rows CSV."""
     data = await ai_inventory_svc.predict_low_stock(
@@ -416,6 +418,8 @@ async def export_low_stock_predictions_csv(
         lead_time_days=lead_time_days,
         at_risk_only=at_risk_only,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=LOW_STOCK_EXPORT_COLUMNS)
@@ -433,6 +437,8 @@ async def export_demand_forecast_csv(
     lead_time_days: int = 7,
     product_id: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 146 F1 — demand forecast rows CSV."""
     data = await ai_inventory_svc.forecast_demand(
@@ -442,6 +448,8 @@ async def export_demand_forecast_csv(
         lead_time_days=lead_time_days,
         product_id=product_id,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=DEMAND_FORECAST_EXPORT_COLUMNS)
@@ -458,6 +466,8 @@ async def export_dead_stock_csv(
     lookback_days: int = 90,
     min_stock: float = 0,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 146 K1 — dead-stock items CSV."""
     data = await ai_inventory_svc.identify_dead_stock(
@@ -466,6 +476,8 @@ async def export_dead_stock_csv(
         lookback_days=lookback_days,
         min_stock=min_stock,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=DEAD_STOCK_EXPORT_COLUMNS)
@@ -513,6 +525,8 @@ async def export_inventory_predictions_csv(
     horizon_days: int = 14,
     lead_time_days: int = 7,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 157 P1 — combined demand forecast + low-stock predictions CSV.
 
@@ -524,6 +538,8 @@ async def export_inventory_predictions_csv(
         lookback_days=lookback_days,
         lead_time_days=lead_time_days,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     low = await ai_inventory_svc.predict_low_stock(
         db,
@@ -533,6 +549,8 @@ async def export_inventory_predictions_csv(
         lead_time_days=lead_time_days,
         at_risk_only=False,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=INVENTORY_PREDICTIONS_EXPORT_COLUMNS)

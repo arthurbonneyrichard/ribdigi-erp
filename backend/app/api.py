@@ -16523,8 +16523,12 @@ async def ai_low_stock_prediction(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Low-stock prediction; store_manager scoped via managed stores/warehouses."""
     from app import ai_inventory as ai_inventory_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_inventory_svc.predict_low_stock(
         db,
         claims["tenant_id"],
@@ -16533,6 +16537,8 @@ async def ai_low_stock_prediction(
         lead_time_days=lead_time_days,
         at_risk_only=at_risk_only,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return env(data)
 
@@ -16546,7 +16552,11 @@ async def ai_low_stock_prediction_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 146 L1 — low-stock prediction CSV."""
+    """Stage 146 L1 — low-stock prediction CSV; store_manager WH/store scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_low_stock_predictions_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16555,6 +16565,8 @@ async def ai_low_stock_prediction_export(
         lead_time_days=lead_time_days,
         at_risk_only=at_risk_only,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -16573,9 +16585,12 @@ async def ai_demand_forecast(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """BR-21.3 — 7/30/90-day demand forecast, seasonality, optimal reorder qty."""
+    """BR-21.3 — 7/30/90-day demand forecast; store_manager scoped."""
     from app import ai_inventory as ai_inventory_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_inventory_svc.forecast_demand(
         db,
         claims["tenant_id"],
@@ -16583,6 +16598,8 @@ async def ai_demand_forecast(
         lead_time_days=lead_time_days,
         product_id=product_id,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return env(data)
 
@@ -16595,7 +16612,11 @@ async def ai_demand_forecast_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 146 F1 — demand forecast CSV."""
+    """Stage 146 F1 — demand forecast CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_demand_forecast_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16603,6 +16624,8 @@ async def ai_demand_forecast_export(
         lead_time_days=lead_time_days,
         product_id=product_id,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -16620,15 +16643,20 @@ async def ai_dead_stock(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """BR-21.3 — identify products with stock and no sales in the lookback window."""
+    """BR-21.3 — dead stock; store_manager WH/store scoped."""
     from app import ai_inventory as ai_inventory_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await ai_inventory_svc.identify_dead_stock(
         db,
         claims["tenant_id"],
         lookback_days=lookback_days,
         min_stock=min_stock,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return env(data)
 
@@ -16640,13 +16668,19 @@ async def ai_dead_stock_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 146 K1 — dead-stock items CSV."""
+    """Stage 146 K1 — dead-stock items CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_dead_stock_csv(
         db,
         tenant_id=claims["tenant_id"],
         lookback_days=lookback_days,
         min_stock=min_stock,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -16665,15 +16699,20 @@ async def ai_inventory_predictions(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Inventory intelligence: demand forecasts plus low-stock predictions."""
+    """Inventory intelligence: demand forecasts plus low-stock predictions; store_manager scoped."""
     from app import ai_inventory as ai_inventory_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     forecast = await ai_inventory_svc.forecast_demand(
         db,
         claims["tenant_id"],
         lookback_days=lookback_days,
         lead_time_days=lead_time_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     low = await ai_inventory_svc.predict_low_stock(
         db,
@@ -16683,6 +16722,8 @@ async def ai_inventory_predictions(
         lead_time_days=lead_time_days,
         at_risk_only=False,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return env(
         {
@@ -16696,6 +16737,7 @@ async def ai_inventory_predictions(
             "predictions": low["predictions"],
             "at_risk_count": low["at_risk_count"],
             "forecast_count": forecast["count"],
+            "scope": forecast.get("scope") or low.get("scope") or "company",
         }
     )
 
@@ -16708,7 +16750,11 @@ async def ai_inventory_predictions_export(
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 157 P1 — combined inventory predictions CSV (distinct from Stage 146 F1/L1)."""
+    """Stage 157 P1 — combined inventory predictions CSV; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ai_ops_export_svc.export_inventory_predictions_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16716,6 +16762,8 @@ async def ai_inventory_predictions_export(
         horizon_days=horizon_days,
         lead_time_days=lead_time_days,
         company_id=claims.get("company_id"),
+        store_ids=managed_stores,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,

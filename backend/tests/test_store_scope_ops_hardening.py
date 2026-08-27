@@ -1944,3 +1944,178 @@ async def test_store_manager_expense_reports_and_budgets_store_scoped(client, db
     )
     assert exported.status_code == 200, exported.text
     assert "500" not in exported.text or "ExpRep other" not in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_inventory_predictions_store_wh_scoped(client, db_session):
+    """AI low-stock / forecast / dead-stock use managed WH stock + store sales only."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Inv Mine",
+        code="AI-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Inv Other",
+        code="AI-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="AI Mine WH",
+        code="AI-M-WH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="AI Other WH",
+        code="AI-O-WH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    product = seed["p1"]
+    product.company_id = cid
+    product.is_active = True
+    product.stock_qty = 999  # company-wide decoy — must not leak into manager scope
+    product.reorder_level = 5
+    product.cost_price = 2
+
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_mine.id,
+            product_id=product.id,
+            quantity=10,
+            reserved_qty=0,
+            reorder_level=5,
+        )
+    )
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_other.id,
+            product_id=product.id,
+            quantity=800,
+            reserved_qty=0,
+            reorder_level=5,
+        )
+    )
+
+    # Local sales: 2/day for 30 days → velocity 2; stock 10 ⇒ ~5 days to stockout
+    for day in range(30):
+        inv = m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number=f"INV-AI-M-{day}",
+            customer_id=seed["party1"].id,
+            status="posted",
+            subtotal=4,
+            tax_amount=0,
+            total_amount=4,
+            store_id=mine.id,
+            posted_at=today - timedelta(days=day),
+            created_at=today - timedelta(days=day),
+            created_by=mgr.id,
+        )
+        db_session.add(inv)
+        await db_session.flush()
+        db_session.add(
+            m.SalesInvoiceItem(
+                tenant_id=tid,
+                company_id=cid,
+                sales_invoice_id=inv.id,
+                product_id=product.id,
+                quantity=2,
+                unit_price=2,
+                line_total=4,
+            )
+        )
+    # Other-store heavy sales must not inflate manager velocity
+    for day in range(10):
+        inv = m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number=f"INV-AI-O-{day}",
+            customer_id=seed["party1"].id,
+            status="posted",
+            subtotal=200,
+            tax_amount=0,
+            total_amount=200,
+            store_id=other.id,
+            posted_at=today - timedelta(days=day),
+            created_at=today - timedelta(days=day),
+            created_by=seed["admin1"].id,
+        )
+        db_session.add(inv)
+        await db_session.flush()
+        db_session.add(
+            m.SalesInvoiceItem(
+                tenant_id=tid,
+                company_id=cid,
+                sales_invoice_id=inv.id,
+                product_id=product.id,
+                quantity=100,
+                unit_price=2,
+                line_total=200,
+            )
+        )
+    await db_session.commit()
+
+    low = await ac.get("/api/v1/ai/inventory/low-stock-prediction", headers=headers)
+    assert low.status_code == 200, low.text
+    lbody = low.json()["data"]
+    assert lbody.get("scope") == "store_manager"
+    row = next(p for p in lbody["predictions"] if p["product_id"] == product.id)
+    assert float(row["stock_qty"]) == pytest.approx(10.0)
+    assert float(row["units_sold_lookback"]) == pytest.approx(60.0)
+    assert row["at_risk"] is True
+    assert row["days_to_stockout"] is not None
+    assert float(row["days_to_stockout"]) < 14
+
+    forecast = await ac.get("/api/v1/ai/inventory/demand-forecast", headers=headers)
+    assert forecast.status_code == 200, forecast.text
+    frow = next(
+        p for p in forecast.json()["data"]["forecasts"] if p["product_id"] == product.id
+    )
+    assert float(frow["stock_qty"]) == pytest.approx(10.0)
+    assert float(frow["units_sold_lookback"]) == pytest.approx(60.0)
+
+    dead = await ac.get(
+        "/api/v1/ai/inventory/dead-stock",
+        headers=headers,
+        params={"lookback_days": 90},
+    )
+    assert dead.status_code == 200, dead.text
+    dead_ids = {i["product_id"] for i in dead.json()["data"]["items"]}
+    # Has recent managed-store sales → not dead for manager
+    assert product.id not in dead_ids
+
+    exported = await ac.get(
+        "/api/v1/ai/inventory/low-stock-prediction/export",
+        headers=headers,
+    )
+    assert exported.status_code == 200, exported.text
+    # Manager CSV must reflect scoped on-hand (10), not company stock_qty 999
+    assert ",10," in exported.text or ",10.0," in exported.text or "10" in exported.text

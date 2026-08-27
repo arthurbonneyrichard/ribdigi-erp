@@ -57,13 +57,45 @@ async def _load_active_products(
     return (await db.execute(stmt)).scalars().all()
 
 
+async def _warehouse_stock_maps(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    warehouse_ids: list[str],
+    company_id: str | None = None,
+) -> tuple[dict[str, float], dict[str, float], dict[str, float]]:
+    """Sum on-hand / reserved / max reorder across managed warehouses per product."""
+    stock: dict[str, float] = defaultdict(float)
+    reserved: dict[str, float] = defaultdict(float)
+    reorder: dict[str, float] = {}
+    if not warehouse_ids:
+        return {}, {}, {}
+    stmt = select(m.WarehouseStock).where(
+        m.WarehouseStock.tenant_id == tenant_id,
+        m.WarehouseStock.warehouse_id.in_(warehouse_ids),
+    )
+    stmt = apply_company_filter(stmt, m.WarehouseStock.company_id, company_id)
+    for row in (await db.execute(stmt)).scalars().all():
+        pid = str(row.product_id)
+        stock[pid] += float(row.quantity or 0)
+        reserved[pid] += float(row.reserved_qty or 0)
+        lvl = float(row.reorder_level or 0)
+        if lvl > 0:
+            reorder[pid] = max(reorder.get(pid, 0.0), lvl)
+    return dict(stock), dict(reserved), reorder
+
+
 async def _sales_rows_since(
     db: AsyncSession,
     tenant_id: str,
     *,
     window_start: datetime,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ):
+    """Posted invoice lines since window. ``store_ids`` set = manager scope (null-store fail-closed)."""
+    if store_ids is not None and not store_ids:
+        return []
     stmt = (
         select(m.SalesInvoiceItem, m.SalesInvoice)
         .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
@@ -77,6 +109,8 @@ async def _sales_rows_since(
     stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
     if company_id:
         stmt = apply_company_filter(stmt, m.SalesInvoiceItem.company_id, company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     return (await db.execute(stmt)).all()
 
 
@@ -124,9 +158,15 @@ def _velocity_fields(
     sold_prior: dict[str, float],
     days_seen: dict[str, set],
     lookback_days: int,
+    stock_qty: float | None = None,
+    reserved_qty: float | None = None,
 ) -> dict:
-    stock = float(product.stock_qty or 0)
-    reserved = float(getattr(product, "reserved_qty", 0) or 0)
+    stock = float(product.stock_qty or 0) if stock_qty is None else float(stock_qty)
+    reserved = (
+        float(getattr(product, "reserved_qty", 0) or 0)
+        if reserved_qty is None
+        else float(reserved_qty)
+    )
     available = max(0.0, stock - reserved)
     units = round(sold_total.get(product.id, 0.0), 3)
     velocity = round(units / lookback_days, 4) if lookback_days else 0.0
@@ -186,18 +226,48 @@ async def predict_low_stock(
     lead_time_days: int = DEFAULT_LEAD_TIME_DAYS,
     at_risk_only: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """Predict stockouts from average daily sales velocity + short-window seasonality."""
+    """Predict stockouts from average daily sales velocity + short-window seasonality.
+
+    ``store_ids`` / ``warehouse_ids`` None = tenant/company-wide. When set (store_manager),
+    sales are store-scoped (null-store fail-closed) and on-hand uses managed WarehouseStock
+    (product.stock_qty fallback omitted).
+    """
     lookback_days = max(7, min(int(lookback_days), 90))
     horizon_days = max(1, min(int(horizon_days), 60))
     lead_time_days = max(0, min(int(lead_time_days), 60))
 
     now = datetime.utcnow()
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "generated_at": now,
+            "lookback_days": lookback_days,
+            "horizon_days": horizon_days,
+            "lead_time_days": lead_time_days,
+            "method": "sales_velocity_v1",
+            "at_risk_count": 0,
+            "predictions": [],
+            "scope": "store_manager",
+        }
+
     window_start = now - timedelta(days=lookback_days)
     products = await _load_active_products(db, tenant_id, company_id=company_id)
     by_id = {p.id: p for p in products}
+    stock_map: dict[str, float] | None = None
+    reserved_map: dict[str, float] | None = None
+    reorder_map: dict[str, float] = {}
+    if warehouse_ids is not None:
+        stock_map, reserved_map, reorder_map = await _warehouse_stock_maps(
+            db, tenant_id, warehouse_ids=warehouse_ids, company_id=company_id
+        )
     rows = await _sales_rows_since(
-        db, tenant_id, window_start=window_start, company_id=company_id
+        db,
+        tenant_id,
+        window_start=window_start,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     sold_total, sold_recent, sold_prior, days_seen, _last = _aggregate_sales(
         rows, product_ids=set(by_id), now=now, lookback_days=lookback_days
@@ -205,6 +275,10 @@ async def predict_low_stock(
 
     predictions: list[dict] = []
     for product in products:
+        scoped_stock = stock_map.get(product.id, 0.0) if stock_map is not None else None
+        scoped_reserved = (
+            reserved_map.get(product.id, 0.0) if reserved_map is not None else None
+        )
         v = _velocity_fields(
             product,
             sold_total=sold_total,
@@ -212,11 +286,18 @@ async def predict_low_stock(
             sold_prior=sold_prior,
             days_seen=days_seen,
             lookback_days=lookback_days,
+            stock_qty=scoped_stock,
+            reserved_qty=scoped_reserved,
         )
+        # Managers: skip catalog noise with no local stock and no local sales
+        if warehouse_ids is not None and v["stock_qty"] <= 0 and v["units_sold_lookback"] <= 0:
+            continue
         available = v["available_qty"]
         adjusted_velocity = v["adjusted_velocity_per_day"]
         units = v["units_sold_lookback"]
         reorder_floor = float(product.reorder_level or 0)
+        if warehouse_ids is not None and product.id in reorder_map:
+            reorder_floor = max(reorder_floor, reorder_map[product.id])
 
         if adjusted_velocity <= 0:
             days_to_stockout = None
@@ -289,6 +370,7 @@ async def predict_low_stock(
         "method": "sales_velocity_v1",
         "at_risk_count": at_risk_count,
         "predictions": predictions,
+        "scope": "store_manager" if warehouse_ids is not None else "company",
     }
 
 
@@ -300,19 +382,46 @@ async def forecast_demand(
     lead_time_days: int = DEFAULT_LEAD_TIME_DAYS,
     product_id: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """BR-21.3 — demand forecast for 7/30/90 days with reorder + seasonality."""
+    """BR-21.3 — demand forecast for 7/30/90 days with reorder + seasonality.
+
+    ``store_ids`` / ``warehouse_ids`` set (store_manager) scopes sales + on-hand stock.
+    """
     lookback_days = max(14, min(int(lookback_days), 180))
     lead_time_days = max(0, min(int(lead_time_days), 60))
     now = datetime.utcnow()
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "generated_at": now,
+            "lookback_days": lookback_days,
+            "lead_time_days": lead_time_days,
+            "horizons_days": list(FORECAST_HORIZONS),
+            "method": "sales_velocity_v1",
+            "count": 0,
+            "forecasts": [],
+            "scope": "store_manager",
+        }
     # Need enough history for seasonality (14d) and velocity
     window_start = now - timedelta(days=max(lookback_days, 90))
     products = await _load_active_products(db, tenant_id, company_id=company_id)
     if product_id:
         products = [p for p in products if p.id == product_id]
     by_id = {p.id: p for p in products}
+    stock_map: dict[str, float] | None = None
+    reserved_map: dict[str, float] | None = None
+    reorder_map: dict[str, float] = {}
+    if warehouse_ids is not None:
+        stock_map, reserved_map, reorder_map = await _warehouse_stock_maps(
+            db, tenant_id, warehouse_ids=warehouse_ids, company_id=company_id
+        )
     rows = await _sales_rows_since(
-        db, tenant_id, window_start=window_start, company_id=company_id
+        db,
+        tenant_id,
+        window_start=window_start,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     sold_total, sold_recent, sold_prior, days_seen, last_sale = _aggregate_sales(
         rows, product_ids=set(by_id), now=now, lookback_days=lookback_days
@@ -337,6 +446,10 @@ async def forecast_demand(
 
     forecasts: list[dict] = []
     for product in products:
+        scoped_stock = stock_map.get(product.id, 0.0) if stock_map is not None else None
+        scoped_reserved = (
+            reserved_map.get(product.id, 0.0) if reserved_map is not None else None
+        )
         v = _velocity_fields(
             product,
             sold_total=sold_lookback,
@@ -344,9 +457,15 @@ async def forecast_demand(
             sold_prior=sold_prior,
             days_seen=days_lookback,
             lookback_days=lookback_days,
+            stock_qty=scoped_stock,
+            reserved_qty=scoped_reserved,
         )
+        if warehouse_ids is not None and v["stock_qty"] <= 0 and v["units_sold_lookback"] <= 0:
+            continue
         adj = v["adjusted_velocity_per_day"]
         reorder_floor = float(product.reorder_level or 0)
+        if warehouse_ids is not None and product.id in reorder_map:
+            reorder_floor = max(reorder_floor, reorder_map[product.id])
         optimal = _optimal_reorder_qty(
             available=v["available_qty"],
             adjusted_velocity=adj,
@@ -391,6 +510,7 @@ async def forecast_demand(
         "method": "sales_velocity_v1",
         "count": len(forecasts),
         "forecasts": forecasts,
+        "scope": "store_manager" if warehouse_ids is not None else "company",
     }
 
 
@@ -401,19 +521,44 @@ async def identify_dead_stock(
     lookback_days: int = DEFAULT_DEAD_STOCK_DAYS,
     min_stock: float = 0.0,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """BR-21.3 — products with on-hand stock and no posted sales in the lookback window."""
+    """BR-21.3 — products with on-hand stock and no posted sales in the lookback window.
+
+    ``store_ids`` / ``warehouse_ids`` set (store_manager) scopes sales + WarehouseStock.
+    """
     lookback_days = max(30, min(int(lookback_days), 365))
     min_stock = max(0.0, float(min_stock))
     now = datetime.utcnow()
     window_start = now - timedelta(days=lookback_days)
 
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "generated_at": now,
+            "lookback_days": lookback_days,
+            "method": "sales_velocity_v1",
+            "count": 0,
+            "items": [],
+            "total_carrying_cost": 0.0,
+            "scope": "store_manager",
+        }
+
     products = await _load_active_products(db, tenant_id, company_id=company_id)
     by_id = {p.id: p for p in products}
+    stock_map: dict[str, float] | None = None
+    if warehouse_ids is not None:
+        stock_map, _reserved, _reorder = await _warehouse_stock_maps(
+            db, tenant_id, warehouse_ids=warehouse_ids, company_id=company_id
+        )
     # Wider window to find last sale even beyond lookback
     history_start = now - timedelta(days=max(lookback_days, 365))
     rows = await _sales_rows_since(
-        db, tenant_id, window_start=history_start, company_id=company_id
+        db,
+        tenant_id,
+        window_start=history_start,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     _t, _r, _p, _d, last_sale = _aggregate_sales(
         rows, product_ids=set(by_id), now=now, lookback_days=lookback_days
@@ -421,7 +566,11 @@ async def identify_dead_stock(
 
     items: list[dict] = []
     for product in products:
-        stock = float(product.stock_qty or 0)
+        stock = (
+            float(stock_map.get(product.id, 0.0))
+            if stock_map is not None
+            else float(product.stock_qty or 0)
+        )
         if stock <= min_stock:
             continue
         last = last_sale.get(product.id)
@@ -461,6 +610,7 @@ async def identify_dead_stock(
         "count": len(items),
         "items": items,
         "total_carrying_cost": round(sum(i["estimated_carrying_cost"] for i in items), 2),
+        "scope": "store_manager" if warehouse_ids is not None else "company",
     }
 
 

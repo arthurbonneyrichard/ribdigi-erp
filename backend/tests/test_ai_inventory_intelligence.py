@@ -15,16 +15,27 @@ async def _mgr(ac):
     return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
 
-async def _seed_steady_sales(db_session, seeded, *, days: int = 30, qty_per_day: float = 4):
+async def _seed_steady_sales(
+    db_session,
+    seeded,
+    *,
+    days: int = 30,
+    qty_per_day: float = 4,
+    store_id: str | None = None,
+    company_id: str | None = None,
+):
     tenant_id = seeded["t1"].id
     product = seeded["p1"]
     product.stock_qty = 80
     product.cost_price = 2.5
     product.is_active = True
     await db_session.flush()
+    cid = company_id or getattr(seeded.get("c1"), "id", None)
     for day in range(days):
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store_id,
             invoice_number=f"INV-FC-{day}",
             customer_id=seeded["party1"].id,
             status="posted",
@@ -38,6 +49,7 @@ async def _seed_steady_sales(db_session, seeded, *, days: int = 30, qty_per_day:
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=cid,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=qty_per_day,
@@ -110,7 +122,47 @@ async def test_dead_stock_identification(db_session, seeded):
 async def test_demand_forecast_and_dead_stock_api_tenant_scoped(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
-    await _seed_steady_sales(db_session, seed, days=30, qty_per_day=3)
+    # Bind manager to store + warehouse so WH/store-scoped AI endpoints are non-empty.
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="AI FC Mgr",
+        code="AIFC",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="AI FC WH",
+        code="AIFC-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    seed["p1"].company_id = seed["c1"].id
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            warehouse_id=wh.id,
+            product_id=seed["p1"].id,
+            quantity=80,
+            reserved_qty=0,
+            reorder_level=5,
+        )
+    )
+    await db_session.commit()
+    await _seed_steady_sales(
+        db_session,
+        seed,
+        days=30,
+        qty_per_day=3,
+        store_id=store.id,
+        company_id=seed["c1"].id,
+    )
 
     # Beta product with stock but no alpha leakage
     seed["p2"].stock_qty = 99
@@ -120,6 +172,7 @@ async def test_demand_forecast_and_dead_stock_api_tenant_scoped(client, db_sessi
     fc = await ac.get("/api/v1/ai/inventory/demand-forecast", headers=headers)
     assert fc.status_code == 200, fc.text
     body = fc.json()["data"]
+    assert body.get("scope") == "store_manager"
     ids = {f["product_id"] for f in body["forecasts"]}
     assert seed["p1"].id in ids
     assert seed["p2"].id not in ids
@@ -133,6 +186,7 @@ async def test_demand_forecast_and_dead_stock_api_tenant_scoped(client, db_sessi
     pred = await ac.get("/api/v1/ai/inventory/predictions", headers=headers)
     assert pred.status_code == 200, pred.text
     pdata = pred.json()["data"]
+    assert pdata.get("scope") == "store_manager"
     assert "forecasts" in pdata
     assert "predictions" in pdata
     assert pdata["forecast_count"] >= 1
