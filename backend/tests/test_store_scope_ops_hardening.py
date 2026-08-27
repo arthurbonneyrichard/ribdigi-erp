@@ -4837,3 +4837,321 @@ async def test_store_manager_expense_lifecycle_writes_store_scoped(client, db_se
 
     ok_delete = await ac.delete(f"/api/v1/expenses/{exp_mine_del.id}", headers=headers)
     assert ok_delete.status_code == 200, ok_delete.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_history_store_wh_scoped(client, db_session):
+    """Customer/supplier history (+ export) hide foreign-store/WH and null-bound docs."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Hist Scope Mine",
+        code="HIST-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Hist Scope Other",
+        code="HIST-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Hist Mine WH",
+        code="HIST-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Hist Other WH",
+        code="HIST-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Hist Shared Customer",
+        kind="customer",
+        status="active",
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Hist Shared Supplier",
+        kind="supplier",
+        status="active",
+    )
+    db_session.add_all([cust, supplier])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-HIST-M",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=40,
+        total_amount=40,
+        paid_amount=10,
+        posted_at=datetime.utcnow(),
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-HIST-O",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=900,
+        total_amount=900,
+        paid_amount=0,
+        posted_at=datetime.utcnow(),
+    )
+    inv_null = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=None,
+        invoice_number="INV-HIST-N",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=15,
+        total_amount=15,
+        paid_amount=0,
+        posted_at=datetime.utcnow(),
+    )
+    db_session.add_all([inv_mine, inv_other, inv_null])
+    await db_session.flush()
+
+    order_mine = m.SalesOrder(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        order_number="SO-HIST-M",
+        customer_id=cust.id,
+        status="confirmed",
+        subtotal=20,
+        total_amount=20,
+    )
+    order_other = m.SalesOrder(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        order_number="SO-HIST-O",
+        customer_id=cust.id,
+        status="confirmed",
+        subtotal=80,
+        total_amount=80,
+    )
+    quote_open = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-HIST-OPEN",
+        customer_id=cust.id,
+        status="sent",
+        subtotal=12,
+        total_amount=12,
+    )
+    quote_converted = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-HIST-CONV",
+        customer_id=cust.id,
+        status="converted",
+        subtotal=40,
+        total_amount=40,
+        converted_invoice_id=None,  # set after flush of inv_mine
+    )
+    db_session.add_all([order_mine, order_other, quote_open, quote_converted])
+    await db_session.flush()
+    quote_converted.converted_invoice_id = inv_mine.id
+
+    ret_mine = m.SalesReturn(
+        tenant_id=tid,
+        company_id=cid,
+        return_number="SR-HIST-M",
+        customer_id=cust.id,
+        sales_invoice_id=inv_mine.id,
+        status="posted",
+        subtotal=5,
+        total_amount=5,
+    )
+    ret_other = m.SalesReturn(
+        tenant_id=tid,
+        company_id=cid,
+        return_number="SR-HIST-O",
+        customer_id=cust.id,
+        sales_invoice_id=inv_other.id,
+        status="posted",
+        subtotal=9,
+        total_amount=9,
+    )
+    pay_mine = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CP-HIST-M",
+        customer_id=cust.id,
+        sales_invoice_id=inv_mine.id,
+        amount=10,
+        payment_method="cash",
+    )
+    pay_other = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CP-HIST-O",
+        customer_id=cust.id,
+        sales_invoice_id=inv_other.id,
+        amount=50,
+        payment_method="cash",
+    )
+    pay_unalloc = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CP-HIST-U",
+        customer_id=cust.id,
+        sales_invoice_id=None,
+        amount=3,
+        payment_method="cash",
+    )
+    db_session.add_all([ret_mine, ret_other, pay_mine, pay_other, pay_unalloc])
+
+    po_mine = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-HIST-M",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="ordered",
+        subtotal=30,
+        total_amount=30,
+    )
+    po_other = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-HIST-O",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="ordered",
+        subtotal=700,
+        total_amount=700,
+    )
+    pi_mine = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-HIST-M",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="unpaid",
+        subtotal=30,
+        total_amount=30,
+        paid_amount=8,
+    )
+    pi_other = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-HIST-O",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="unpaid",
+        subtotal=700,
+        total_amount=700,
+        paid_amount=0,
+    )
+    pi_null = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-HIST-N",
+        supplier_id=supplier.id,
+        warehouse_id=None,
+        status="unpaid",
+        subtotal=11,
+        total_amount=11,
+        paid_amount=0,
+    )
+    db_session.add_all([po_mine, po_other, pi_mine, pi_other, pi_null])
+    await db_session.flush()
+
+    sp_mine = m.SupplierPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="SP-HIST-M",
+        supplier_id=supplier.id,
+        purchase_invoice_id=pi_mine.id,
+        amount=8,
+        payment_method="bank_transfer",
+    )
+    sp_other = m.SupplierPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="SP-HIST-O",
+        supplier_id=supplier.id,
+        purchase_invoice_id=pi_other.id,
+        amount=40,
+        payment_method="bank_transfer",
+    )
+    db_session.add_all([sp_mine, sp_other])
+    await db_session.commit()
+
+    cust_hist = await ac.get(f"/api/v1/customers/{cust.id}/history", headers=headers)
+    assert cust_hist.status_code == 200, cust_hist.text
+    cbody = cust_hist.json()["data"]
+    inv_nums = {r["invoice_number"] for r in cbody["invoices"]}
+    assert "INV-HIST-M" in inv_nums
+    assert "INV-HIST-O" not in inv_nums
+    assert "INV-HIST-N" not in inv_nums
+    so_nums = {r["order_number"] for r in cbody["orders"]}
+    assert "SO-HIST-M" in so_nums
+    assert "SO-HIST-O" not in so_nums
+    ret_nums = {r["return_number"] for r in cbody["returns"]}
+    assert "SR-HIST-M" in ret_nums
+    assert "SR-HIST-O" not in ret_nums
+    assert len(cbody["payments"]) == 1
+    assert float(cbody["payments"][0]["amount"]) == pytest.approx(10.0)
+    q_nums = {r["quotation_number"] for r in cbody["quotations"]}
+    assert "QT-HIST-CONV" in q_nums
+    assert "QT-HIST-OPEN" not in q_nums
+
+    cust_csv = await ac.get(
+        f"/api/v1/customers/{cust.id}/history/export", headers=headers
+    )
+    assert cust_csv.status_code == 200, cust_csv.text
+    assert "INV-HIST-M" in cust_csv.text
+    assert "INV-HIST-O" not in cust_csv.text
+    assert "QT-HIST-OPEN" not in cust_csv.text
+
+    supp_hist = await ac.get(f"/api/v1/suppliers/{supplier.id}/history", headers=headers)
+    assert supp_hist.status_code == 200, supp_hist.text
+    sbody = supp_hist.json()["data"]
+    po_nums = {r["po_number"] for r in sbody["orders"]}
+    assert "PO-HIST-M" in po_nums
+    assert "PO-HIST-O" not in po_nums
+    pi_nums = {r["invoice_number"] for r in sbody["invoices"]}
+    assert "PI-HIST-M" in pi_nums
+    assert "PI-HIST-O" not in pi_nums
+    assert "PI-HIST-N" not in pi_nums
+    assert len(sbody["payments"]) == 1
+    assert float(sbody["payments"][0]["amount"]) == pytest.approx(8.0)
+
+    supp_csv = await ac.get(
+        f"/api/v1/suppliers/{supplier.id}/history/export", headers=headers
+    )
+    assert supp_csv.status_code == 200, supp_csv.text
+    assert "PO-HIST-M" in supp_csv.text
+    assert "PO-HIST-O" not in supp_csv.text
+    assert "PI-HIST-N" not in supp_csv.text

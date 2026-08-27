@@ -6633,13 +6633,17 @@ async def customer_history(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, party)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     data = await customers_svc.customer_history(
         db,
         tenant_id=claims["tenant_id"],
         customer_id=customer_id,
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     return env(data)
 
@@ -6651,13 +6655,17 @@ async def customer_history_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 153 C1 — customer sales history CSV (distinct from Stage 119 roster export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, party)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     data = await customers_svc.customer_history(
         db,
         tenant_id=claims["tenant_id"],
         customer_id=customer_id,
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     text = tenant_ops_export_svc.export_customer_history_csv(history=data)
     return Response(
@@ -6839,13 +6847,17 @@ async def supplier_history(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, party)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await suppliers_svc.supplier_history(
         db,
         tenant_id=claims["tenant_id"],
         supplier_id=supplier_id,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return env(data)
 
@@ -6857,13 +6869,17 @@ async def supplier_history_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 153 S1 — supplier purchase history CSV (distinct from Stage 119 roster export)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, party)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await suppliers_svc.supplier_history(
         db,
         tenant_id=claims["tenant_id"],
         supplier_id=supplier_id,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     text = tenant_ops_export_svc.export_supplier_history_csv(history=data)
     return Response(

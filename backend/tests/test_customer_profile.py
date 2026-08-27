@@ -12,9 +12,24 @@ async def _sales(ac):
 
 
 @pytest.mark.asyncio
-async def test_customer_profile_contacts_history_and_deactivate(client):
+async def test_customer_profile_contacts_history_and_deactivate(client, db_session):
+    from app import models as m
+
     ac, seed = client
     headers = await _sales(ac)
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Customer Profile Store",
+        code="CUST-PROF",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
 
     created = await ac.post(
         "/api/v1/customers",
@@ -92,6 +107,7 @@ async def test_customer_profile_contacts_history_and_deactivate(client):
         headers=headers,
         json={
             "customer_id": customer["id"],
+            "store_id": store.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
         },
     )
