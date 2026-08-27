@@ -5197,6 +5197,12 @@ async def low_stock_reorder_po(
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
     workspace_svc.assert_record_company(claims, supplier)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     if payload.warehouse_id:
         from app.inventory import get_warehouse
 
@@ -7957,6 +7963,8 @@ async def list_purchase_requests(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 99 C1 — optional status filter for PR pipeline."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     stmt = (
         select(m.PurchaseRequest)
         .where(*workspace_svc.company_scope_filter(m.PurchaseRequest, claims))
@@ -7972,6 +7980,10 @@ async def list_purchase_requests(
             )
         stmt = stmt.where(m.PurchaseRequest.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseRequest, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.PurchaseRequest, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_pr(db, pr) for pr in rows])
 
@@ -8048,6 +8060,12 @@ async def create_purchase_request(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     pr = await purchasing_svc.create_purchase_request(
         db,
         tenant_id=claims["tenant_id"],
@@ -8070,9 +8088,15 @@ async def get_purchase_request(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     pr = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     workspace_svc.assert_record_company(claims, pr)
     assert_record_access(claims, pr.created_by)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(pr, "warehouse_id", None), allow_unset=False
+    )
     return env(await purchasing_svc.serialize_pr(db, pr))
 
 
@@ -8085,6 +8109,12 @@ async def submit_purchase_request(
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     pr = await purchasing_svc.submit_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -8107,6 +8137,12 @@ async def approve_purchase_request(
 ):
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     pr = await purchasing_svc.approve_purchase_request(
         db,
         tenant_id=claims["tenant_id"],
@@ -8134,6 +8170,12 @@ async def reject_purchase_request(
 ):
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     pr = await purchasing_svc.reject_purchase_request(
         db,
         tenant_id=claims["tenant_id"],
@@ -8155,6 +8197,12 @@ async def cancel_purchase_request(
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     pr = await purchasing_svc.cancel_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -8171,6 +8219,12 @@ async def convert_purchase_request(
     existing = await purchasing_svc.get_purchase_request(db, claims["tenant_id"], request_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     pr, po = await purchasing_svc.convert_purchase_request_to_po(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
@@ -8191,6 +8245,8 @@ async def list_purchase_orders(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 99 C1 — optional status filter (`open` → sent∪partially_received)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     stmt = (
         select(m.PurchaseOrder)
         .where(*workspace_svc.company_scope_filter(m.PurchaseOrder, claims))
@@ -8216,6 +8272,10 @@ async def list_purchase_orders(
         else:
             stmt = stmt.where(m.PurchaseOrder.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseOrder, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.PurchaseOrder, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_po(db, po) for po in rows])
 
@@ -8245,6 +8305,12 @@ async def create_purchase_order(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     po = await purchasing_svc.create_purchase_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -8266,9 +8332,15 @@ async def get_purchase_order(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     workspace_svc.assert_record_company(claims, po)
     assert_record_access(claims, po.created_by)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(po, "warehouse_id", None), allow_unset=False
+    )
     return env(await purchasing_svc.serialize_po(db, po))
 
 
@@ -8282,7 +8354,17 @@ async def patch_purchase_order(
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     data = payload.model_dump(exclude_unset=True)
+    if "warehouse_id" in data:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(
+            managed_wh, data.get("warehouse_id"), allow_unset=False
+        )
     po = await purchasing_svc.update_purchase_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -8313,7 +8395,17 @@ async def amend_purchase_order(
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     data = payload.model_dump(exclude_unset=True)
+    if "warehouse_id" in data:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(
+            managed_wh, data.get("warehouse_id"), allow_unset=False
+        )
     po = await purchasing_svc.amend_purchase_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -8339,9 +8431,15 @@ async def list_purchase_order_amendments(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     workspace_svc.assert_record_company(claims, po)
     assert_record_access(claims, po.created_by)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(po, "warehouse_id", None), allow_unset=False
+    )
     rows = await purchasing_svc.list_po_amendments(db, claims["tenant_id"], po_id)
     return env([purchasing_svc.serialize_po_amendment(r) for r in rows])
 
@@ -8376,6 +8474,12 @@ async def send_purchase_order(
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     po, delivery = await purchasing_svc.send_purchase_order(
         db,
         tenant_id=claims["tenant_id"],
@@ -8401,10 +8505,15 @@ async def print_purchase_order(
     db: AsyncSession = Depends(get_db),
 ):
     from app import tenants as tenants_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, po.created_by)
     workspace_svc.assert_record_company(claims, po)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(po, "warehouse_id", None), allow_unset=False
+    )
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], po.supplier_id)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     company = None
@@ -8431,9 +8540,15 @@ async def cancel_purchase_order(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     po = await purchasing_svc.cancel_purchase_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id
     )
@@ -8448,6 +8563,8 @@ async def list_grns(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 99 C1 — optional status filter for GRN discoverability."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     stmt = (
         select(m.GoodsReceipt)
         .where(*workspace_svc.company_scope_filter(m.GoodsReceipt, claims))
@@ -8459,6 +8576,10 @@ async def list_grns(
             raise HTTPException(status_code=400, detail="status must be draft or posted")
         stmt = stmt.where(m.GoodsReceipt.status == key)
     stmt = apply_created_by_scope(stmt, m.GoodsReceipt, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.GoodsReceipt, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_grn(db, g) for g in rows])
 
@@ -8486,7 +8607,13 @@ async def create_grn(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     # Receiving may be done by warehouse staff who did not create the PO; do not gate on PO creator.
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, payload.warehouse_id, allow_unset=False
+    )
     grn = await purchasing_svc.create_grn(
         db,
         tenant_id=claims["tenant_id"],
@@ -8507,9 +8634,15 @@ async def get_grn(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     grn = await purchasing_svc.get_grn(db, claims["tenant_id"], grn_id)
     workspace_svc.assert_record_company(claims, grn)
     assert_record_access(claims, grn.created_by)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(grn, "warehouse_id", None), allow_unset=False
+    )
     return env(await purchasing_svc.serialize_grn(db, grn))
 
 
@@ -8520,6 +8653,8 @@ async def list_purchase_returns(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 98 R1 — optional status filter (draft/posted)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     stmt = (
         select(m.PurchaseReturn)
         .where(*workspace_svc.company_scope_filter(m.PurchaseReturn, claims))
@@ -8531,6 +8666,10 @@ async def list_purchase_returns(
             raise HTTPException(status_code=400, detail="status must be draft or posted")
         stmt = stmt.where(m.PurchaseReturn.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseReturn, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.PurchaseReturn, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_return(db, r) for r in rows])
 
@@ -8560,6 +8699,14 @@ async def create_purchase_return(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    grn = await purchasing_svc.get_grn(db, claims["tenant_id"], payload.goods_receipt_id)
+    workspace_svc.assert_record_company(claims, grn)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(grn, "warehouse_id", None), allow_unset=False
+    )
     ret = await purchasing_svc.create_purchase_return(
         db,
         tenant_id=claims["tenant_id"],
@@ -8580,9 +8727,15 @@ async def get_purchase_return(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
     workspace_svc.assert_record_company(claims, ret)
     assert_record_access(claims, ret.created_by)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(ret, "warehouse_id", None), allow_unset=False
+    )
     return env(await purchasing_svc.serialize_purchase_return(db, ret))
 
 
@@ -8593,10 +8746,15 @@ async def print_purchase_return_debit_note(
     db: AsyncSession = Depends(get_db),
 ):
     from app import tenants as tenants_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, ret.created_by)
     workspace_svc.assert_record_company(claims, ret)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(ret, "warehouse_id", None), allow_unset=False
+    )
     if ret.status != "posted" or not ret.debit_note_number:
         raise HTTPException(
             status_code=409,
@@ -8641,9 +8799,15 @@ async def post_purchase_return(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(existing, "warehouse_id", None), allow_unset=False
+    )
     ret = await purchasing_svc.post_purchase_return(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], return_id=return_id
     )

@@ -623,3 +623,208 @@ async def test_store_manager_warehouses_and_inventory_ops_scoped(client, db_sess
     )
     assert create_wh_denied.status_code == 403
     assert create_wh_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_purchasing_pipeline_scoped(client, db_session):
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PO Mgr Store",
+        code="PO-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PO Other Store",
+        code="PO-OTH",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([store, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="PO Mgr WH",
+        code="WH-PO-MGR",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="PO Other WH",
+        code="WH-PO-OTH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Scope Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add_all([wh_mine, wh_other, supplier])
+    await db_session.flush()
+
+    mine_po = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-SCOPE-MINE",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="draft",
+        created_by=mgr.id,
+    )
+    other_po = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-SCOPE-OTH",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="draft",
+        created_by=mgr.id,
+    )
+    unset_po = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-SCOPE-UNSET",
+        supplier_id=supplier.id,
+        warehouse_id=None,
+        status="draft",
+        created_by=mgr.id,
+    )
+    mine_pr = m.PurchaseRequest(
+        tenant_id=tid,
+        company_id=cid,
+        request_number="PR-SCOPE-MINE",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="draft",
+        created_by=mgr.id,
+    )
+    other_pr = m.PurchaseRequest(
+        tenant_id=tid,
+        company_id=cid,
+        request_number="PR-SCOPE-OTH",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="draft",
+        created_by=mgr.id,
+    )
+    db_session.add_all([mine_po, other_po, unset_po, mine_pr, other_pr])
+    await db_session.flush()
+    mine_grn = m.GoodsReceipt(
+        tenant_id=tid,
+        company_id=cid,
+        grn_number="GRN-SCOPE-MINE",
+        purchase_order_id=mine_po.id,
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="posted",
+        created_by=mgr.id,
+    )
+    other_grn = m.GoodsReceipt(
+        tenant_id=tid,
+        company_id=cid,
+        grn_number="GRN-SCOPE-OTH",
+        purchase_order_id=other_po.id,
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="posted",
+        created_by=mgr.id,
+    )
+    db_session.add_all([mine_grn, other_grn])
+    await db_session.flush()
+    mine_ret = m.PurchaseReturn(
+        tenant_id=tid,
+        company_id=cid,
+        return_number="RET-SCOPE-MINE",
+        debit_note_number="DN-SCOPE-MINE",
+        supplier_id=supplier.id,
+        purchase_order_id=mine_po.id,
+        goods_receipt_id=mine_grn.id,
+        warehouse_id=wh_mine.id,
+        status="draft",
+        created_by=mgr.id,
+    )
+    other_ret = m.PurchaseReturn(
+        tenant_id=tid,
+        company_id=cid,
+        return_number="RET-SCOPE-OTH",
+        debit_note_number="DN-SCOPE-OTH",
+        supplier_id=supplier.id,
+        purchase_order_id=other_po.id,
+        goods_receipt_id=other_grn.id,
+        warehouse_id=wh_other.id,
+        status="draft",
+        created_by=mgr.id,
+    )
+    db_session.add_all([mine_ret, other_ret])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    orders = await ac.get("/api/v1/purchasing/orders", headers=headers)
+    assert orders.status_code == 200, orders.text
+    po_nums = {row["po_number"] for row in orders.json()["data"]}
+    assert "PO-SCOPE-MINE" in po_nums
+    assert "PO-SCOPE-OTH" not in po_nums
+    assert "PO-SCOPE-UNSET" not in po_nums
+
+    assert (await ac.get(f"/api/v1/purchasing/orders/{other_po.id}", headers=headers)).status_code == 403
+    assert (await ac.get(f"/api/v1/purchasing/orders/{unset_po.id}", headers=headers)).status_code == 403
+    ok = await ac.get(f"/api/v1/purchasing/orders/{mine_po.id}", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    reqs = await ac.get("/api/v1/purchasing/requests", headers=headers)
+    assert reqs.status_code == 200, reqs.text
+    pr_nums = {row["request_number"] for row in reqs.json()["data"]}
+    assert "PR-SCOPE-MINE" in pr_nums
+    assert "PR-SCOPE-OTH" not in pr_nums
+
+    grns = await ac.get("/api/v1/purchasing/grn", headers=headers)
+    assert grns.status_code == 200, grns.text
+    grn_nums = {row["grn_number"] for row in grns.json()["data"]}
+    assert "GRN-SCOPE-MINE" in grn_nums
+    assert "GRN-SCOPE-OTH" not in grn_nums
+
+    rets = await ac.get("/api/v1/purchasing/returns", headers=headers)
+    assert rets.status_code == 200, rets.text
+    ret_nums = {row["return_number"] for row in rets.json()["data"]}
+    assert "RET-SCOPE-MINE" in ret_nums
+    assert "RET-SCOPE-OTH" not in ret_nums
+
+    create_denied = await ac.post(
+        "/api/v1/purchasing/orders",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "warehouse_id": wh_other.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert create_denied.status_code == 403
+    assert create_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    create_unset = await ac.post(
+        "/api/v1/purchasing/orders",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
+        },
+    )
+    assert create_unset.status_code == 403
+    assert create_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

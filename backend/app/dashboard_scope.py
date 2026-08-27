@@ -202,6 +202,15 @@ def constrain_warehouse_query(
     return None, list(managed_wh_ids)
 
 
+def apply_warehouse_scope_filter(stmt, model, managed_wh_ids: list[str] | None):
+    """Restrict rows to managed warehouses; null warehouse_id excluded for managers."""
+    if managed_wh_ids is None:
+        return stmt
+    if not managed_wh_ids:
+        return stmt.where(func.false())
+    return stmt.where(getattr(model, "warehouse_id").in_(managed_wh_ids))
+
+
 async def scoped_financial_kpis(
     db: AsyncSession,
     *,
