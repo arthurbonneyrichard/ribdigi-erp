@@ -18,6 +18,7 @@ import {
   listPendingOfflineOps,
   newClientOpId,
 } from '../../lib/offlineQueue';
+import { nextOfflineReceiptNumber } from '../../lib/offlineReceiptNumber';
 import {
   getOfflineAuthStatus,
   offlineAuthBlockedMessage,
@@ -131,6 +132,7 @@ export default function Page() {
   const [heldCarts, setHeldCarts] = useState<any[]>([]);
   const [holdLabel, setHoldLabel] = useState('');
   const [pendingOffline, setPendingOffline] = useState(0);
+  const [pendingOfflineReceipts, setPendingOfflineReceipts] = useState<string[]>([]);
   const [online, setOnline] = useState(true);
   const [catalogAsOf, setCatalogAsOf] = useState<string | null>(null);
   const [catalogExpired, setCatalogExpired] = useState(false);
@@ -198,8 +200,13 @@ export default function Page() {
     try {
       const rows = await listPendingOfflineOps();
       setPendingOffline(rows.length);
+      const receipts = rows
+        .map((r) => r.payload?.offline_receipt_number as string | undefined)
+        .filter(Boolean) as string[];
+      setPendingOfflineReceipts(receipts);
     } catch {
       setPendingOffline(0);
+      setPendingOfflineReceipts([]);
     }
   }
 
@@ -650,11 +657,16 @@ export default function Page() {
       }
 
       try {
+        const offlineReceiptNumber = await nextOfflineReceiptNumber(deviceId);
         await enqueueOfflineOp({
           client_op_id: clientRequestId,
           op_type: 'pos_sale',
           device_id: deviceId,
-          payload: body,
+          payload: {
+            ...body,
+            client_request_id: clientRequestId,
+            offline_receipt_number: offlineReceiptNumber,
+          },
         });
         setCart([]);
         setCartDiscount('0');
@@ -662,8 +674,8 @@ export default function Page() {
         await refreshOfflinePending();
         setMessage(
           prep.userMessage
-            ? `Sale queued offline (${clientRequestId}). ${prep.userMessage}`
-            : `Sale queued offline (${clientRequestId}). Flush when online.`,
+            ? `Receipt ${offlineReceiptNumber} queued offline. ${prep.userMessage}`
+            : `Receipt ${offlineReceiptNumber} queued offline — flush when online.`,
         );
       } catch (err: any) {
         setError(err.message || 'Failed to queue offline sale');
@@ -865,6 +877,11 @@ export default function Page() {
         <p className="muted" style={{ color: '#92400e' }}>
           Pending offline ops on this device — export recovery pack before clearing browser data.
           Export never wipes the queue.
+          {pendingOfflineReceipts.length
+            ? ` Receipts: ${pendingOfflineReceipts.slice(0, 5).join(', ')}${
+                pendingOfflineReceipts.length > 5 ? '…' : ''
+              }`
+            : ''}
         </p>
       ) : null}
       {catalogStaleNote ? <p className="muted">{catalogStaleNote}</p> : null}

@@ -1229,6 +1229,7 @@ class PosSaleCreate(BaseModel):
     party_id: str | None = None
     # Stage 164 I1 — optional online; required for offline sync push pos_sale ops
     client_request_id: str | None = None
+    offline_receipt_number: str | None = Field(default=None, max_length=64)
     subtotal: float = 0
     tax: float = 0
     total: float = 0
