@@ -11180,7 +11180,13 @@ async def create_coa_account(
 ):
     from app import accounting as accounting_svc
     from app import audit as audit_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_accounting_write_denied(
+        managed,
+        message="Store managers cannot create chart-of-accounts entries.",
+    )
     row = await accounting_svc.create_coa_account(
         db,
         tenant_id=claims["tenant_id"],
@@ -11212,7 +11218,13 @@ async def patch_coa_account(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_accounting_write_denied(
+        managed,
+        message="Store managers cannot edit chart-of-accounts entries.",
+    )
     existing = await accounting_svc.get_tenant_account(
         db, claims["tenant_id"], account_id, company_id=claims.get("company_id")
     )
@@ -11346,7 +11358,13 @@ async def create_liquid_account(
     from app import accounting as accounting_svc
     from app import bank_recon as bank_recon_svc
     from app import audit as audit_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_accounting_write_denied(
+        managed,
+        message="Store managers cannot create liquid cash/bank accounts.",
+    )
     row = await accounting_svc.create_liquid_account(
         db,
         tenant_id=claims["tenant_id"],
@@ -11385,7 +11403,17 @@ async def update_liquid_account(
 ):
     from app import accounting as accounting_svc
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        account_id,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     row = await accounting_svc.update_liquid_account(
         db,
         tenant_id=claims["tenant_id"],

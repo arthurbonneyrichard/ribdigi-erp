@@ -404,6 +404,23 @@ async def managed_liquid_account_ids(
     ]
 
 
+def assert_company_level_accounting_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot perform company-level accounting writes.",
+) -> None:
+    """403 when store_manager attempts company-level chart/liquid account structure writes."""
+    if managed_ids is None:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+        },
+    )
+
+
 async def assert_liquid_account_in_manager_scope(
     db: AsyncSession,
     tenant_id: str,
