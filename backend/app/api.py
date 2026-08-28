@@ -6123,6 +6123,11 @@ async def opening_stock(
     """BR-5.2 Opening Stock — initialize levels for existing products / fiscal start."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_opening_stock_denied(
+        managed_stores,
+        message="Store managers cannot record opening stock (company fiscal inventory init).",
+    )
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if payload.items:
         for item in payload.items:

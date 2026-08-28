@@ -722,6 +722,19 @@ def assert_company_level_stock_import_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_opening_stock_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot record opening stock (company fiscal inventory init).",
+) -> None:
+    """403 when store_manager attempts opening-stock fiscal init (BR-5.2).
+
+    Day-to-day stock-in/out on managed warehouses remain allowed; opening stock is
+    company inventory-master / fiscal-start seeding (alongside stock CSV import deny).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_ai_report_template_write_denied(
     managed_ids: list[str] | None,
     *,

@@ -163,7 +163,9 @@ store activation — never frontend-only.
    store_manager** (activate/deactivate admin-only; name/address remain), and
    **store is_active lifecycle writes denied for store_manager**
    (activate/deactivate admin-only / entitlement-gated; name/phone/address/
-   operating_hours remain), and
+   operating_hours remain), and **opening stock writes denied for
+   store_manager** (company fiscal inventory init / BR-5.2; stock-in/out on
+   managed WH remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

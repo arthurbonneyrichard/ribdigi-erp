@@ -9609,3 +9609,80 @@ async def test_store_manager_store_lifecycle_writes_denied(client, db_session):
     assert store.is_active is True
     assert store.name == "Store Lifecycle Deny Updated"
     assert store.phone == "555-0199"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_opening_stock_denied(client, db_session):
+    """Opening stock (fiscal init) denied for store_manager; stock-in on managed WH remains."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Opening Stock Deny Store",
+        code="OPEN-STK-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        code="OPEN-STK-WH",
+        name="Opening Stock Deny WH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+
+    denied_single = await ac.post(
+        "/api/v1/inventory/opening-stock",
+        headers=headers,
+        json={
+            "product_id": seed["p1"].id,
+            "quantity": 10,
+            "mode": "add",
+            "warehouse_id": wh.id,
+            "notes": "mgr opening deny",
+        },
+    )
+    assert denied_single.status_code == 403, denied_single.text
+    assert denied_single.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert "opening stock" in denied_single.json()["detail"]["message"].lower()
+
+    denied_batch = await ac.post(
+        "/api/v1/inventory/opening-stock",
+        headers=headers,
+        json={
+            "items": [
+                {
+                    "product_id": seed["p1"].id,
+                    "quantity": 3,
+                    "warehouse_id": wh.id,
+                }
+            ],
+            "fiscal_period": "2026",
+        },
+    )
+    assert denied_batch.status_code == 403, denied_batch.text
+    assert denied_batch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    stock_in_ok = await ac.post(
+        "/api/v1/inventory/stock-in",
+        headers=headers,
+        json={
+            "product_id": seed["p1"].id,
+            "quantity": 2,
+            "warehouse_id": wh.id,
+            "notes": "day-to-day stock-in remains",
+        },
+    )
+    assert stock_in_ok.status_code == 200, stock_in_ok.text
