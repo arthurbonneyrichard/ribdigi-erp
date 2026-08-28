@@ -36,6 +36,7 @@ type Category = {
 type Expense = {
   id: string;
   category: string;
+  category_id?: string | null;
   description: string;
   amount: number;
   payment_method: string;
@@ -100,6 +101,7 @@ export default function Page() {
     description: string;
     reference: string;
     payment_method: string;
+    category_id: string;
   } | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -622,6 +624,7 @@ export default function Page() {
       description: r.description || '',
       reference: r.reference || '',
       payment_method: r.payment_method || 'cash',
+      category_id: r.category_id || '',
     });
   }
 
@@ -646,6 +649,7 @@ export default function Page() {
         description: editDraft.description.trim() || null,
         reference: editDraft.reference.trim() || null,
         payment_method: editDraft.payment_method.trim() || 'cash',
+        category_id: editDraft.category_id.trim() || null,
       };
       const r = await api(`/expenses/${editFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage(
@@ -1441,6 +1445,21 @@ export default function Page() {
               placeholder="Reference"
               aria-label="Edit reference"
             />
+            <select
+              value={editDraft.category_id}
+              onChange={(e) => setEditDraft({ ...editDraft, category_id: e.target.value })}
+              aria-label="Edit expense category"
+              title="Optional spend category (UuidIdValue); blank → no change / clear path"
+            >
+              <option value="">Keep current category</option>
+              {categories
+                .filter((c) => c.is_active !== false || c.id === editDraft.category_id)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.code} — {c.name}
+                  </option>
+                ))}
+            </select>
             <select
               value={editDraft.payment_method}
               onChange={(e) => setEditDraft({ ...editDraft, payment_method: e.target.value })}
