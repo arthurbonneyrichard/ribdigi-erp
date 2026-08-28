@@ -755,7 +755,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           from_store_id: fromStore.trim(),
-          to_store_id: toStore,
+          to_store_id: toStore.trim(),
           submit: true,
           // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
           items: [{ product_id: productId.trim(), quantity: Number(qty) }],
@@ -1131,7 +1131,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={toStore} onChange={(e) => setToStore(e.target.value)}>
+            <select
+              value={toStore}
+              onChange={(e) => setToStore(e.target.value)}
+              aria-label="Stock transfer to store"
+              title="Destination store for inter-store transfer"
+            >
               {stores
                 .filter((s) => s.is_active !== false)
                 .map((s) => (
