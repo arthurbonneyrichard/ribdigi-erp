@@ -4952,6 +4952,13 @@ async def catalog_categories(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 M1 — active_only / is_active for honest inactive-only category lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_read_denied(
+        managed,
+        message="Store managers cannot list company catalog categories.",
+    )
     tid = claims["tenant_id"]
     company_id = claims.get("company_id")
     use_cache = not active_only and is_active is None
@@ -5108,6 +5115,13 @@ async def catalog_brands(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 M1 — active_only / is_active for honest inactive-only brand lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_read_denied(
+        managed,
+        message="Store managers cannot list company catalog brands.",
+    )
     rows = await catalog_meta_svc.list_brands(
         db,
         claims["tenant_id"],
@@ -5322,6 +5336,13 @@ async def catalog_units(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 M1 — active_only / is_active for honest inactive-only unit lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_read_denied(
+        managed,
+        message="Store managers cannot list company catalog units.",
+    )
     company_id = claims.get("company_id")
     await catalog_meta_svc.ensure_default_catalog(
         db, claims["tenant_id"], company_id=company_id

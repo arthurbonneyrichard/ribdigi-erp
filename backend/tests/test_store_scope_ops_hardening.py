@@ -9325,7 +9325,7 @@ async def test_store_manager_expense_store_clear_writes_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_catalog_meta_writes_denied(client, db_session):
-    """Catalog category/brand/unit create/patch/deactivate/export denied for store_manager."""
+    """Catalog category/brand/unit list/create/patch/deactivate/export denied for store_manager."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9356,6 +9356,36 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_cat_list = await ac.get("/api/v1/catalog/categories", headers=headers)
+    assert denied_cat_list.status_code == 403, denied_cat_list.text
+    assert denied_cat_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_brand_list = await ac.get("/api/v1/catalog/brands", headers=headers)
+    assert denied_brand_list.status_code == 403, denied_brand_list.text
+    assert denied_brand_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_unit_list = await ac.get("/api/v1/catalog/units", headers=headers)
+    assert denied_unit_list.status_code == 403, denied_unit_list.text
+    assert denied_unit_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cats = await ac.get("/api/v1/catalog/categories", headers=admin_headers)
+    assert ok_cats.status_code == 200, ok_cats.text
+    assert any(row["code"] == "CAT-META-DENY" for row in ok_cats.json()["data"])
+
+    ok_brands = await ac.get("/api/v1/catalog/brands", headers=admin_headers)
+    assert ok_brands.status_code == 200, ok_brands.text
+    assert any(row["code"] == "BR-META-DENY" for row in ok_brands.json()["data"])
+
+    ok_units = await ac.get("/api/v1/catalog/units", headers=admin_headers)
+    assert ok_units.status_code == 200, ok_units.text
+    assert any(row["code"] == "U-META-DENY" for row in ok_units.json()["data"])
 
     denied_cat_create = await ac.post(
         "/api/v1/catalog/categories",
@@ -9434,20 +9464,6 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
         denied_export = await ac.get(path, headers=headers)
         assert denied_export.status_code == 403, denied_export.text
         assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
-
-    # Reads remain allowed
-    listed_cats = await ac.get("/api/v1/catalog/categories", headers=headers)
-    assert listed_cats.status_code == 200, listed_cats.text
-    assert any(row["code"] == "CAT-META-DENY" for row in listed_cats.json()["data"])
-
-    listed_brands = await ac.get("/api/v1/catalog/brands", headers=headers)
-    assert listed_brands.status_code == 200, listed_brands.text
-    assert any(row["code"] == "BR-META-DENY" for row in listed_brands.json()["data"])
-
-    listed_units = await ac.get("/api/v1/catalog/units", headers=headers)
-    assert listed_units.status_code == 200, listed_units.text
-    assert any(row["code"] == "U-META-DENY" for row in listed_units.json()["data"])
-
 
 @pytest.mark.asyncio
 async def test_store_manager_customer_groups_writes_denied(client, db_session):

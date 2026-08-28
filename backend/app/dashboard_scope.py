@@ -1453,8 +1453,25 @@ def assert_company_level_catalog_meta_export_denied(
 ) -> None:
     """403 when store_manager exports categories/brands/units CSV (company catalog dump).
 
-    List/get reads remain; full meta export is company-level administration
+    List GETs also denied; full meta export is company-level administration
     (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_catalog_meta_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company catalog categories, brands, or units; "
+        "managed WH stock ops + product reads remain."
+    ),
+) -> None:
+    """403 when store_manager lists catalog categories/brands/units (company meta dump).
+
+    Create/patch/deactivate + CSV export already denied; ``GET /catalog/categories``,
+    ``GET /catalog/brands``, and ``GET /catalog/units`` dumped full catalog masters.
+    Brand logo binary GET + units/convert remain; inventory UIs soft-fail empty lists.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
