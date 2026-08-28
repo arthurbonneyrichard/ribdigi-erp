@@ -14234,10 +14234,17 @@ async def reports_exportable(
 @api.get("/reports/schedules")
 async def report_schedules_list(
     enabled: bool | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 127 S1 — optional enabled filter for honest schedule lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_report_schedule_read_denied(
+        managed,
+        message="Store managers cannot list company report email schedules.",
+    )
     rows = await report_schedules_svc.list_schedules(
         db, claims["tenant_id"], enabled=enabled, company_id=claims.get("company_id")
     )
@@ -14247,10 +14254,17 @@ async def report_schedules_list(
 @api.get("/reports/schedules/export")
 async def report_schedules_export(
     enabled: bool | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 127 S1 — report schedules CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_report_schedule_read_denied(
+        managed,
+        message="Store managers cannot export company report email schedules CSV.",
+    )
     text = await api_fx_schedule_export_svc.export_report_schedules_csv(
         db,
         tenant_id=claims["tenant_id"],

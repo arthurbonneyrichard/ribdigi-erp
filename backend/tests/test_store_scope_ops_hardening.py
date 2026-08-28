@@ -10818,7 +10818,7 @@ async def test_store_manager_purchasing_settings_write_denied(client, db_session
 
 @pytest.mark.asyncio
 async def test_store_manager_report_schedule_writes_denied(client, db_session):
-    """Company report schedule create/patch/delete/run denied for store_manager."""
+    """Company report schedule create/patch/delete/run + list/export denied for store_manager."""
     from app import report_schedules as report_schedules_svc
     from app.rbac import permissions_for_role
 
@@ -10901,6 +10901,25 @@ async def test_store_manager_report_schedule_writes_denied(client, db_session):
     )
     assert denied_run_due.status_code == 403, denied_run_due.text
     assert denied_run_due.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_list = await ac.get("/api/v1/reports/schedules", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get("/api/v1/reports/schedules/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    ok_list = await ac.get("/api/v1/reports/schedules", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    ok_export = await ac.get("/api/v1/reports/schedules/export", headers=admin_headers)
+    assert ok_export.status_code == 200, ok_export.text
 
     ok_daily = await ac.get("/api/v1/reports/sales/daily", headers=headers)
     assert ok_daily.status_code == 200, ok_daily.text

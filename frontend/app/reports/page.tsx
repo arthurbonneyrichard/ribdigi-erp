@@ -241,7 +241,7 @@ export default function Page() {
             : scheduleEnabledFilter === 'false'
               ? '?enabled=false'
               : '';
-        const r = await api(`/reports/schedules${schedQs}`);
+        const r = await api(`/reports/schedules${schedQs}`).catch(() => ({ data: [] }));
         setSchedules(r.data || []);
         setData(null);
         return;
@@ -1626,7 +1626,7 @@ export default function Page() {
                   next === 'true' ? '?enabled=true' : next === 'false' ? '?enabled=false' : '';
                 api(`/reports/schedules${schedQs}`)
                   .then((r) => setSchedules(r.data || []))
-                  .catch((err) => setError(err.message));
+                  .catch(() => setSchedules([]));
               }}
               aria-label="Filter schedules by enabled"
             >

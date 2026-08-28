@@ -1983,8 +1983,24 @@ def assert_company_level_report_schedule_write_denied(
 ) -> None:
     """403 when store_manager attempts company-level report schedule CRUD/run.
 
-    Store-scoped ``/reports/*`` reads remain available; schedule list/export stay
-    admin-only via role allowlist.
+    Store-scoped ``/reports/*`` reads remain available; schedule list/export
+    use ``assert_company_level_report_schedule_read_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_report_schedule_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export company report email schedules; "
+        "store-scoped /reports/* reads remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /reports/schedules or /export.
+
+    Writes already denied; schedule list/export dump company email cadence +
+    recipients. Store-scoped report tabs remain.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
