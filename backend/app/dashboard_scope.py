@@ -7,6 +7,7 @@ transfers, warehouses / inventory movements) and accounting statement reads
 ADR-005 membership tables remain deferred. Warehouse scope maps via
 ``Warehouse.store_id`` ∈ managed stores. POS holds scope via
 ``PosSession.store_id``; drawer-settings export uses managed store IDs.
+POS sale receipt get/send scopes via ``PosSession.store_id`` (null session fail-closed).
 """
 
 from __future__ import annotations
@@ -118,6 +119,50 @@ async def assert_pos_session_store_in_manager_scope(
         raise HTTPException(status_code=404, detail="POS session not found")
     assert_store_in_manager_scope(
         managed, getattr(session, "store_id", None), allow_unset=False
+    )
+
+
+async def assert_pos_sale_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    sale_id: str,
+) -> None:
+    """403 when a store_manager reads or sends a receipt for a POS sale outside managed stores.
+
+    Scope follows ``PosSession.store_id`` via ``Transaction.session_id``; null session
+    fail-closed (same as POS holds).
+    """
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+    sid = (sale_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    tx = (
+        await db.execute(
+            select(m.Transaction).where(
+                m.Transaction.id == sid,
+                m.Transaction.tenant_id == claims.get("tenant_id"),
+                m.Transaction.tx_type == "pos_sale",
+            )
+        )
+    ).scalar_one_or_none()
+    if not tx:
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    company_id = claims.get("company_id")
+    if company_id and tx.company_id and tx.company_id != company_id:
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    session = None
+    if tx.session_id:
+        session = await db.get(m.PosSession, tx.session_id)
+        if not session or session.tenant_id != claims.get("tenant_id"):
+            raise HTTPException(status_code=404, detail="POS sale not found")
+        if company_id and session.company_id and session.company_id != company_id:
+            raise HTTPException(status_code=404, detail="POS sale not found")
+    assert_store_in_manager_scope(
+        managed,
+        getattr(session, "store_id", None) if session else None,
+        allow_unset=False,
     )
 
 
@@ -404,12 +449,12 @@ async def managed_liquid_account_ids(
     ]
 
 
-def assert_company_level_accounting_write_denied(
+def assert_company_level_write_denied(
     managed_ids: list[str] | None,
     *,
-    message: str = "Store managers cannot perform company-level accounting writes.",
+    message: str = "Store managers cannot perform company-level writes.",
 ) -> None:
-    """403 when store_manager attempts company-level chart/liquid account structure writes."""
+    """403 when store_manager attempts tenant/company-level configuration writes."""
     if managed_ids is None:
         return
     raise HTTPException(
@@ -419,6 +464,24 @@ def assert_company_level_accounting_write_denied(
             "message": message,
         },
     )
+
+
+def assert_company_level_accounting_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot perform company-level accounting writes.",
+) -> None:
+    """403 when store_manager attempts company-level chart/liquid account structure writes."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company-level settings.",
+) -> None:
+    """403 when store_manager attempts tenant/company settings writes (approval matrix, FX, FEFO)."""
+    assert_company_level_write_denied(managed_ids, message=message)
 
 
 async def assert_liquid_account_in_manager_scope(
