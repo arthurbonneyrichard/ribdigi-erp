@@ -19,21 +19,23 @@ def test_ai_customer_assist_body_schema_forbid():
     assert empty.query is None
     assert empty.message is None
 
+    _valid = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"
     ok = AiCustomerAssistBody.model_validate(
         {
-            "customer_id": "  cust-1  ",
+            "customer_id": f"  {_valid}  ",
             "query": "  best customers  ",
         }
     )
-    assert ok.customer_id == "cust-1"
+    assert ok.customer_id == _valid.lower()
     assert ok.query == "best customers"
 
     via_message = AiCustomerAssistBody.model_validate({"message": "  churn  "})
     assert via_message.message == "churn"
 
-    blank_id = AiCustomerAssistBody.model_validate({"customer_id": "   "})
-    assert blank_id.customer_id is None
-
+    with pytest.raises(ValidationError):
+        AiCustomerAssistBody.model_validate({"customer_id": "   "})
+    with pytest.raises(ValidationError):
+        AiCustomerAssistBody.model_validate({"customer_id": "cust-1"})
     with pytest.raises(ValidationError):
         AiCustomerAssistBody.model_validate({"query": ""})
     with pytest.raises(ValidationError):
@@ -47,14 +49,18 @@ def test_ai_customer_assist_body_schema_forbid():
 def test_ai_customer_assist_ui_and_docs():
     page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer assist"' in page
+    assert 'aria-label="AI customer assist customer"' in page
+    assert "customer_id: assistCustomerId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI customer assist body OpenAPI" in agents
     assert "AiCustomerAssistBody" in agents
     assert "AiChatMessageValue" in agents
+    assert "UuidIdValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "AiCustomerAssistBody" in docs
     assert "POST /ai/customer/assist" in docs
     assert "extra=forbid" in docs
+    assert "AI customer assist customer" in docs
 
 
 @pytest.mark.asyncio

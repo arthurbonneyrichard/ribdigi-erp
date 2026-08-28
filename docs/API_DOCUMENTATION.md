@@ -1736,7 +1736,7 @@ Form fields: `file` (required), `document_type` ∈ `receipt`|`invoice`|`purchas
 ### 16.9 AI Customer Assistant
 **Endpoint:** `POST /ai/customer/assist`
 
-Typed body `AiCustomerAssistBody` `{ "customer_id"?, "query"? | "message"? }` (`extra=forbid`; unknown keys → **422**; omit/`{}` → overview; optional `query`/`message` ∈ `AiChatMessageValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; omit/`null` → overview; blank/`!!!`/`http://…` → **422** — was free `str` stripped to null / garbage could silently become overview). AI UI **Customer assist** (`aria-label`).
+Typed body `AiCustomerAssistBody` `{ "customer_id"?, "query"? | "message"? }` (`extra=forbid`; unknown keys → **422**; omit/`{}` → overview; optional `customer_id` ∈ `UuidIdValue` strip/lower; omit/`null` → overview / all-customers path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str` with blank coerced to omit; optional `query`/`message` ∈ `AiChatMessageValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; omit/`null` → overview; blank/`!!!`/`http://…` → **422** — was free `str` stripped to null / garbage could silently become overview). AI UI **AI customer assist customer** select + **Customer assist** (`aria-label`s); Customer assist sends `customer_id` trim or `null` when blank.
 
 ```json
 {

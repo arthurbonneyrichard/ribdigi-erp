@@ -42,9 +42,11 @@ def test_ai_chat_message_value_schema():
         AiCustomerAssistBody.model_validate({"query": ""})
     with pytest.raises(ValidationError):
         AiCustomerAssistBody.model_validate({"message": "http://x"})
-    # blank customer_id still omits
-    blank_id = AiCustomerAssistBody.model_validate({"customer_id": "   "})
-    assert blank_id.customer_id is None
+    # blank / non-UUID customer_id → 422 (UuidIdValue honesty)
+    with pytest.raises(ValidationError):
+        AiCustomerAssistBody.model_validate({"customer_id": "   "})
+    with pytest.raises(ValidationError):
+        AiCustomerAssistBody.model_validate({"customer_id": "cust-1"})
 
 
 def test_ai_chat_message_ui_and_docs():

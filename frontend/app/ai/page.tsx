@@ -39,6 +39,8 @@ export default function Page() {
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [assistCustomerId, setAssistCustomerId] = useState('');
 
   useEffect(() => {
     api('/expenses/categories')
@@ -56,6 +58,9 @@ export default function Page() {
     api('/suppliers')
       .then((r) => setSuppliers(r.data || []))
       .catch(() => setSuppliers([]));
+    api('/customers')
+      .then((r) => setCustomers(r.data || []))
+      .catch(() => setCustomers([]));
   }, []);
 
   async function go() {
@@ -406,7 +411,10 @@ export default function Page() {
       const prompt = q.trim() || 'overview of best customers and churn';
       const r = await api('/ai/customer/assist', {
         method: 'POST',
-        body: JSON.stringify({ query: prompt }),
+        body: JSON.stringify({
+          query: prompt,
+          customer_id: assistCustomerId.trim() || null,
+        }),
       });
       const d = r.data || {};
       setA(
@@ -590,6 +598,21 @@ export default function Page() {
           >
             Save template
           </button>
+          <select
+            value={assistCustomerId}
+            onChange={(e) => setAssistCustomerId(e.target.value)}
+            aria-label="AI customer assist customer"
+            title="Optional customer (UuidIdValue); blank → overview / all customers"
+          >
+            <option value="">All customers / overview</option>
+            {customers
+              .filter((c) => c.is_active !== false)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code ? `${c.code} — ${c.name}` : c.name || c.id}
+                </option>
+              ))}
+          </select>
           <button onClick={customerAssist} aria-label="Customer assist">
             Customer assist
           </button>

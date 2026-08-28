@@ -1647,22 +1647,19 @@ class AiCustomerAssistBody(BaseModel):
     Optional `query` / `message` (alias) ∈ `AiChatMessageValue` (strip; 1–16000;
     ≥1 letter/digit; no `://`/`@`); omit/`null` → overview; blank/`!!!`/`http://…`
     → **422** (was free `str` stripped to null — punctuation could silently become
-    overview). Blank `customer_id` still coerces to omit.
+    overview). Optional `customer_id` ∈ `UuidIdValue`; omit/`null` → overview /
+    all-customers path; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`
+    with blank coerced to omit).
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    customer_id: str | None = None
+    # Optional customer ∈ UuidIdValue; omit/`null` → overview / all-customers path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; blank silently
+    # coerced to omit). Existence remains tenant-scoped customer lookup when set.
+    customer_id: UuidIdValue | None = None
     query: AiChatMessageValue | None = None
     message: AiChatMessageValue | None = None
-
-    @field_validator("customer_id", mode="before")
-    @classmethod
-    def _strip_customer_id(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
-        return value
 
 
 class AiDocumentExpenseCreate(BaseModel):
