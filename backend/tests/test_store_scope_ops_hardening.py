@@ -6008,6 +6008,24 @@ async def test_store_manager_coa_and_liquid_account_writes_scoped(client, db_ses
     assert denied_fiscal_close.status_code == 403
     assert denied_fiscal_close.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_fiscal_export = await ac.get(
+        "/api/v1/accounting/fiscal-period/export", headers=headers
+    )
+    assert denied_fiscal_export.status_code == 403, denied_fiscal_export.text
+    assert denied_fiscal_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_fiscal_get = await ac.get("/api/v1/accounting/fiscal-period", headers=headers)
+    assert ok_fiscal_get.status_code == 200, ok_fiscal_get.text
+
+    denied_bank_feed_export = await ac.get(
+        "/api/v1/settings/bank-feed/export", headers=headers
+    )
+    assert denied_bank_feed_export.status_code == 403, denied_bank_feed_export.text
+    assert denied_bank_feed_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_bank_feed_get = await ac.get("/api/v1/settings/bank-feed", headers=headers)
+    assert ok_bank_feed_get.status_code == 200, ok_bank_feed_get.text
+
 
 @pytest.mark.asyncio
 async def test_store_manager_bank_recon_unmatched_book_store_scoped(client, db_session):

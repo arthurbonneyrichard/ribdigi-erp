@@ -12352,8 +12352,13 @@ async def bank_feed_settings(claims=Depends(require_permission("accounting", "re
 @api.get("/settings/bank-feed/export")
 async def bank_feed_settings_export(
     claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
     """Stage 156 F1 — secret-free bank-feed settings CSV (no tokens/credentials)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bank_feed_settings_export_denied(managed)
     text = bank_webhook_export_svc.export_bank_feed_settings_csv()
     return Response(
         content=text,
@@ -13431,6 +13436,10 @@ async def export_fiscal_period(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 139 F1 — fiscal period status CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_fiscal_period_export_denied(managed)
     text = await finance_ops_export_svc.export_fiscal_period_csv(
         db, tenant_id=claims["tenant_id"]
     )

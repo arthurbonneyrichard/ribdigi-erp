@@ -532,6 +532,32 @@ def assert_company_level_accounting_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_fiscal_period_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company fiscal period status CSV.",
+) -> None:
+    """403 when store_manager exports fiscal period status CSV (company close state).
+
+    GET fiscal-period status remains; CSV dump is company-level administration
+    (close already denied; reopen is admin-role gated).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bank_feed_settings_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export bank-feed connector settings CSV.",
+) -> None:
+    """403 when store_manager exports bank-feed capability/settings CSV.
+
+    GET ``/settings/bank-feed`` remains for capability discovery; CSV dump is
+    company-level administration (connection CRUD already gated).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,
