@@ -3942,6 +3942,173 @@ async def test_store_manager_credit_statements_payments_store_scoped(client, db_
 
 
 @pytest.mark.asyncio
+async def test_store_manager_credit_early_discount_store_scoped(client, db_session):
+    """Early-discount quotes fail-closed on foreign/null-store AR and out-of-scope AP."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    today = datetime.utcnow().date()
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Early Disc Mine",
+        code="ED-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Early Disc Other",
+        code="ED-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Early Disc Mine WH",
+        code="ED-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Early Disc Other WH",
+        code="ED-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Early Disc Customer",
+        kind="customer",
+        status="active",
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Early Disc Supplier",
+        kind="supplier",
+        status="active",
+    )
+    db_session.add_all([cust, supplier])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-ED-M-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=100,
+        total_amount=100,
+        paid_amount=0,
+        due_date=today + timedelta(days=10),
+        posted_at=today,
+        created_at=today,
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-ED-O-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=200,
+        total_amount=200,
+        paid_amount=0,
+        due_date=today + timedelta(days=10),
+        posted_at=today,
+        created_at=today,
+    )
+    inv_null = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=None,
+        invoice_number="INV-ED-N-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=50,
+        total_amount=50,
+        paid_amount=0,
+        due_date=today + timedelta(days=10),
+        posted_at=today,
+        created_at=today,
+    )
+    pi_mine = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-ED-M-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="unpaid",
+        subtotal=80,
+        total_amount=80,
+        paid_amount=0,
+        invoice_date=today,
+        due_date=today + timedelta(days=10),
+        created_at=today,
+    )
+    pi_other = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-ED-O-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="unpaid",
+        subtotal=90,
+        total_amount=90,
+        paid_amount=0,
+        invoice_date=today,
+        due_date=today + timedelta(days=10),
+        created_at=today,
+    )
+    db_session.add_all([inv_mine, inv_other, inv_null, pi_mine, pi_other])
+    await db_session.commit()
+
+    ok_ar = await ac.get(
+        f"/api/v1/credit/invoices/{inv_mine.id}/early-discount", headers=headers
+    )
+    assert ok_ar.status_code == 200, ok_ar.text
+
+    denied_ar_foreign = await ac.get(
+        f"/api/v1/credit/invoices/{inv_other.id}/early-discount", headers=headers
+    )
+    assert denied_ar_foreign.status_code == 403
+    assert denied_ar_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_ar_null = await ac.get(
+        f"/api/v1/credit/invoices/{inv_null.id}/early-discount", headers=headers
+    )
+    assert denied_ar_null.status_code == 403
+    assert denied_ar_null.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_ap = await ac.get(
+        f"/api/v1/credit/purchase-invoices/{pi_mine.id}/early-discount", headers=headers
+    )
+    assert ok_ap.status_code == 200, ok_ap.text
+
+    denied_ap = await ac.get(
+        f"/api/v1/credit/purchase-invoices/{pi_other.id}/early-discount", headers=headers
+    )
+    assert denied_ap.status_code == 403
+    assert denied_ap.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_expense_payment_liquid_account_writes_scoped(
     client, db_session
 ):

@@ -14857,10 +14857,16 @@ async def invoice_early_discount_quote(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     ep = credit_svc.early_pay_settings(tenant)
     inv = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     workspace_svc.assert_record_company(claims, inv)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, getattr(inv, "store_id", None), allow_unset=False
+    )
     quote = credit_svc.invoice_early_discount(
         inv,
         pct=ep["early_pay_discount_pct"],
@@ -14875,9 +14881,12 @@ async def purchase_invoice_early_discount_quote(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     workspace_svc.assert_record_company(claims, inv)
+    await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, inv)
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], inv.supplier_id)
     ep = credit_svc.resolve_early_pay_settings(tenant, supplier)
     quote = credit_svc.purchase_invoice_early_discount(
