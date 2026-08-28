@@ -2293,10 +2293,43 @@ def assert_company_level_party_export_denied(
 ) -> None:
     """403 when store_manager exports customers/suppliers CSV (company CRM dump).
 
-    List/get and scoped party history (+ CSV) remain; full master export is
-    company-level PII (email/phone/address/notes already gated on writes).
+    Full master CSV is company-level PII (email/phone/address/notes already
+    gated on writes). List/get remain with PII redacted via
+    ``redact_party_master_pii``; scoped party history (+ CSV) remain.
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_master_pii(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party CRM PII on customer/supplier JSON.
+
+    Party master CSV export already denied; list/get must not re-dump
+    email/phone/address/geo/notes (or nested contact email/phone). Name, code,
+    status, credit fields, and scoped history remain for ops.
+    """
+    return managed_ids is not None
+
+
+def redact_party_master_pii(payload: dict) -> dict:
+    """Null company CRM PII fields on a serialized customer/supplier (+ contacts)."""
+    out = dict(payload)
+    for key in ("email", "phone", "address", "latitude", "longitude", "notes"):
+        if key in out:
+            out[key] = None
+    contacts = out.get("contacts")
+    if isinstance(contacts, list):
+        redacted: list = []
+        for contact in contacts:
+            if not isinstance(contact, dict):
+                redacted.append(contact)
+                continue
+            row = dict(contact)
+            for key in ("email", "phone"):
+                if key in row:
+                    row[key] = None
+            redacted.append(row)
+        out["contacts"] = redacted
+    return out
 
 
 def assert_company_level_user_admin_export_denied(

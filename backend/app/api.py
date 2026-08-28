@@ -7085,8 +7085,14 @@ async def party_list(kind: str, claims: dict, db: AsyncSession):
 
 
 async def _serialize_customer_response(
-    db: AsyncSession, tenant_id: str, party: m.Party
+    db: AsyncSession,
+    tenant_id: str,
+    party: m.Party,
+    *,
+    managed_store_ids: list[str] | None = None,
 ) -> dict:
+    from app import dashboard_scope as dashboard_scope_svc
+
     contacts = await customers_svc.list_contacts(db, tenant_id, party.id)
     group = None
     if party.customer_group_id:
@@ -7094,7 +7100,26 @@ async def _serialize_customer_response(
             db, tenant_id, [party.customer_group_id]
         )
         group = groups.get(party.customer_group_id)
-    return customers_svc.serialize_customer(party, contacts, group)
+    payload = customers_svc.serialize_customer(party, contacts, group)
+    if dashboard_scope_svc.omit_party_master_pii(managed_store_ids):
+        return dashboard_scope_svc.redact_party_master_pii(payload)
+    return payload
+
+
+async def _serialize_supplier_response(
+    db: AsyncSession,
+    tenant_id: str,
+    party: m.Party,
+    *,
+    managed_store_ids: list[str] | None = None,
+) -> dict:
+    from app import dashboard_scope as dashboard_scope_svc
+
+    contacts = await suppliers_svc.list_contacts(db, tenant_id, party.id)
+    payload = suppliers_svc.serialize_supplier(party, contacts)
+    if dashboard_scope_svc.omit_party_master_pii(managed_store_ids):
+        return dashboard_scope_svc.redact_party_master_pii(payload)
+    return payload
 
 
 @api.get("/customers/groups")
@@ -7243,6 +7268,10 @@ async def customers(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 118 C1 — status=active|inactive for honest inactive-only lists; active_only=true remains active-only."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    omit_pii = dashboard_scope_svc.omit_party_master_pii(managed)
     await customers_svc.ensure_default_customer_groups(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )
@@ -7268,11 +7297,12 @@ async def customers(
     out = []
     for row in rows:
         contacts = await customers_svc.list_contacts(db, claims["tenant_id"], row.id)
-        out.append(
-            customers_svc.serialize_customer(
-                row, contacts, group_map.get(row.customer_group_id) if row.customer_group_id else None
-            )
+        payload = customers_svc.serialize_customer(
+            row, contacts, group_map.get(row.customer_group_id) if row.customer_group_id else None
         )
+        if omit_pii:
+            payload = dashboard_scope_svc.redact_party_master_pii(payload)
+        out.append(payload)
     await db.commit()
     return env(out)
 
@@ -7385,7 +7415,9 @@ async def add_customer(
     )
     await db.commit()
     return env(
-        await _serialize_customer_response(db, claims["tenant_id"], party),
+        await _serialize_customer_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        ),
         "Customer created",
     )
 
@@ -7396,9 +7428,16 @@ async def get_customer(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     party = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, party)
-    return env(await _serialize_customer_response(db, claims["tenant_id"], party))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    return env(
+        await _serialize_customer_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        )
+    )
 
 
 @api.patch("/customers/{customer_id}")
@@ -7469,7 +7508,9 @@ async def patch_customer(
     )
     await db.commit()
     return env(
-        await _serialize_customer_response(db, claims["tenant_id"], party),
+        await _serialize_customer_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        ),
         "Customer updated",
     )
 
@@ -7494,7 +7535,9 @@ async def delete_customer(
     )
     await db.commit()
     return env(
-        await _serialize_customer_response(db, claims["tenant_id"], party),
+        await _serialize_customer_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        ),
         "Customer deactivated",
     )
 
@@ -7609,6 +7652,10 @@ async def suppliers(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 S1 — status=active|inactive for honest inactive-only lists; active_only=true remains active-only."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    omit_pii = dashboard_scope_svc.omit_party_master_pii(managed)
     stmt = (
         select(m.Party)
         .where(
@@ -7628,7 +7675,10 @@ async def suppliers(
     out = []
     for row in rows:
         contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], row.id)
-        out.append(suppliers_svc.serialize_supplier(row, contacts))
+        payload = suppliers_svc.serialize_supplier(row, contacts)
+        if omit_pii:
+            payload = dashboard_scope_svc.redact_party_master_pii(payload)
+        out.append(payload)
     return env(out)
 
 
@@ -7732,8 +7782,12 @@ async def add_supplier(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    contacts_rows = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(suppliers_svc.serialize_supplier(party, contacts_rows), "Supplier created")
+    return env(
+        await _serialize_supplier_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        ),
+        "Supplier created",
+    )
 
 
 @api.get("/suppliers/{supplier_id}")
@@ -7742,10 +7796,16 @@ async def get_supplier(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     party = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, party)
-    contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(suppliers_svc.serialize_supplier(party, contacts))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    return env(
+        await _serialize_supplier_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        )
+    )
 
 
 @api.patch("/suppliers/{supplier_id}")
@@ -7810,8 +7870,12 @@ async def patch_supplier(
         fields=fields,
     )
     await db.commit()
-    contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(suppliers_svc.serialize_supplier(party, contacts), "Supplier updated")
+    return env(
+        await _serialize_supplier_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        ),
+        "Supplier updated",
+    )
 
 
 @api.delete("/suppliers/{supplier_id}")
@@ -7833,8 +7897,12 @@ async def delete_supplier(
         db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
     )
     await db.commit()
-    contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
-    return env(suppliers_svc.serialize_supplier(party, contacts), "Supplier deactivated")
+    return env(
+        await _serialize_supplier_response(
+            db, claims["tenant_id"], party, managed_store_ids=managed
+        ),
+        "Supplier deactivated",
+    )
 
 
 @api.post("/suppliers/{supplier_id}/contacts")

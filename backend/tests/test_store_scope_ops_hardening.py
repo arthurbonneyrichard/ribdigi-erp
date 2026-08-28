@@ -10028,6 +10028,146 @@ async def test_store_manager_party_export_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_master_pii_redacted(client, db_session):
+    """store_manager customer/supplier JSON omits CRM PII; name/status remain; admin intact."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cust = seed["party1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["sales"] = ["read", "write"]
+    perms["purchasing"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Party PII Redact Store",
+        code="PII-RD-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+
+    cust.email = "secret-cust@example.com"
+    cust.phone = "555-0100"
+    cust.address = "12 Hidden Lane"
+    cust.notes = "VIP credit memo"
+    cust.latitude = 5.55
+    cust.longitude = -0.2
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="PII Redact Supplier",
+        kind="supplier",
+        email="secret-sup@example.com",
+        phone="555-0200",
+        address="99 Vendor Rd",
+        notes="Net-30 preferred",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.flush()
+
+    contact = m.PartyContact(
+        tenant_id=tid,
+        company_id=cid,
+        party_id=cust.id,
+        name="Hidden Contact",
+        email="contact-secret@example.com",
+        phone="555-0300",
+        is_primary=True,
+    )
+    db_session.add(contact)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_cust = await ac.get(f"/api/v1/customers/{cust.id}", headers=admin_headers)
+    assert admin_cust.status_code == 200, admin_cust.text
+    admin_body = admin_cust.json()["data"]
+    assert admin_body["email"] == "secret-cust@example.com"
+    assert admin_body["phone"] == "555-0100"
+    assert admin_body["address"] == "12 Hidden Lane"
+    assert admin_body["notes"] == "VIP credit memo"
+    assert any(
+        c.get("email") == "contact-secret@example.com" for c in (admin_body.get("contacts") or [])
+    )
+
+    mgr_list = await ac.get("/api/v1/customers", headers=headers)
+    assert mgr_list.status_code == 200, mgr_list.text
+    mgr_row = next(r for r in mgr_list.json()["data"] if r["id"] == cust.id)
+    assert mgr_row["name"] == "Alpha Customer"
+    assert mgr_row.get("email") is None
+    assert mgr_row.get("phone") is None
+    assert mgr_row.get("address") is None
+    assert mgr_row.get("notes") is None
+    assert mgr_row.get("latitude") is None
+    assert mgr_row.get("longitude") is None
+    for c in mgr_row.get("contacts") or []:
+        assert c.get("email") is None
+        assert c.get("phone") is None
+        assert c.get("name") == "Hidden Contact"
+
+    mgr_get = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert mgr_get.status_code == 200, mgr_get.text
+    got = mgr_get.json()["data"]
+    assert got.get("email") is None
+    assert got.get("phone") is None
+
+    # Name patch remains; response stays redacted for store_manager.
+    patched = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Alpha Customer Renamed"},
+    )
+    assert patched.status_code == 200, patched.text
+    pbody = patched.json()["data"]
+    assert pbody["name"] == "Alpha Customer Renamed"
+    assert pbody.get("email") is None
+    assert pbody.get("phone") is None
+
+    admin_sup = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=admin_headers)
+    assert admin_sup.status_code == 200, admin_sup.text
+    assert admin_sup.json()["data"]["email"] == "secret-sup@example.com"
+
+    mgr_sup_list = await ac.get("/api/v1/suppliers", headers=headers)
+    assert mgr_sup_list.status_code == 200, mgr_sup_list.text
+    mgr_sup = next(r for r in mgr_sup_list.json()["data"] if r["id"] == supplier.id)
+    assert mgr_sup["name"] == "PII Redact Supplier"
+    assert mgr_sup.get("email") is None
+    assert mgr_sup.get("phone") is None
+    assert mgr_sup.get("address") is None
+    assert mgr_sup.get("notes") is None
+
+    mgr_sup_get = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=headers)
+    assert mgr_sup_get.status_code == 200, mgr_sup_get.text
+    assert mgr_sup_get.json()["data"].get("email") is None
+    assert mgr_sup_get.json()["data"].get("phone") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_product_import_denied(client, db_session):
     """Company-level product CSV import + template denied; scoped products export remains."""
     ac, seed = client

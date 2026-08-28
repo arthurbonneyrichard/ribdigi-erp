@@ -341,7 +341,14 @@ export default function Page() {
       const res = await fetch(`${apiBase}/suppliers/export`, {
         headers: authHeaders(),
       });
-      if (!res.ok) throw new Error('Supplier export failed');
+      if (!res.ok) {
+        // Soft-fail store_manager STORE_SCOPE_DENIED (company party CRM dump).
+        if (res.status === 403) {
+          setMessage('Suppliers CSV export requires a company administrator.');
+          return;
+        }
+        throw new Error('Supplier export failed');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
