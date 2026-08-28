@@ -9553,3 +9553,56 @@ async def test_store_manager_warehouse_lifecycle_writes_denied(client, db_sessio
     await db_session.refresh(wh)
     assert wh.is_active is False
     assert wh.name == "WH Lifecycle Deny Updated"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_store_lifecycle_writes_denied(client, db_session):
+    """store_manager cannot activate/deactivate stores; name/address remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Store Life Deny",
+        code="ST-LIFE",
+        manager_id=mgr.id,
+        address="Bay 1",
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
+    denied_off = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert denied_off.status_code == 403, denied_off.text
+    assert denied_off.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    store.is_active = False
+    await db_session.commit()
+
+    denied_on = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"is_active": True},
+    )
+    assert denied_on.status_code == 403, denied_on.text
+    assert denied_on.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"name": "Store Life Deny Updated", "address": "Bay 2"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+    await db_session.refresh(store)
+    assert store.is_active is False
+    assert store.name == "Store Life Deny Updated"
+    assert store.address == "Bay 2"

@@ -643,6 +643,23 @@ def assert_warehouse_lifecycle_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_store_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate stores.",
+) -> None:
+    """403 when store_manager attempts company-level store is_active lifecycle.
+
+    Store create is already denied; soft activate/deactivate (incl. entitlement
+    reactivation) stays admin-only. Name/address/phone/hours on managed stores
+    remain allowed.
+    """
+    if not changing_active:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_unit_write_denied(
     managed_ids: list[str] | None,
     *,

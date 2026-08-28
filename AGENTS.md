@@ -161,6 +161,8 @@ store activation — never frontend-only.
    store_manager** (company inventory-master attributes; name/address on managed
    WH remain), and **warehouse is_active lifecycle writes denied for
    store_manager** (activate/deactivate admin-only; name/address remain), and
+   **store is_active lifecycle writes denied for store_manager**
+   (activate/deactivate admin-only; name/address/phone/hours remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

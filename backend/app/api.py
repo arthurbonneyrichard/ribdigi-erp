@@ -15510,6 +15510,12 @@ async def update_store(
         changing_branch=changing_branch,
         message="Store managers cannot assign or clear store branch org links.",
     )
+    changing_store_active = payload.is_active is not None
+    dashboard_scope_svc.assert_store_lifecycle_write_denied(
+        managed,
+        changing_active=changing_store_active,
+        message="Store managers cannot activate or deactivate stores.",
+    )
     branch_id = payload.branch_id
     if payload.branch_id:
         branch_id, _ = await org_units_svc.assert_user_org_assignment(
