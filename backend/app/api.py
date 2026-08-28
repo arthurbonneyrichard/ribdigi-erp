@@ -759,9 +759,16 @@ async def tenant_me_activate(
 @api.post("/tenants/me/logo")
 async def tenant_me_logo_upload(
     file: UploadFile = File(...),
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_logo_write_denied(
+        managed,
+        message="Store managers cannot upload tenant logo branding.",
+    )
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     stored = await storage_svc.save_upload(
@@ -812,9 +819,16 @@ async def tenant_me_logo_get(
 
 @api.delete("/tenants/me/logo")
 async def tenant_me_logo_delete(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_logo_write_denied(
+        managed,
+        message="Store managers cannot delete tenant logo branding.",
+    )
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     if not tenant.logo_url:

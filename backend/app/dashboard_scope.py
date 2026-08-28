@@ -1199,7 +1199,26 @@ def assert_company_level_company_branding_write_denied(
     *,
     message: str = "Store managers cannot update company profile or branding.",
 ) -> None:
-    """403 when store_manager attempts company profile/logo branding writes (companies module)."""
+    """403 when store_manager attempts company profile/logo branding writes (companies module).
+
+    Tenant-level ``/tenants/me/logo`` uses ``assert_company_level_tenant_logo_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_logo_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot upload or delete tenant logo branding; "
+        "logo binary GET remains."
+    ),
+) -> None:
+    """403 when store_manager POSTs/DELETEs /tenants/me/logo.
+
+    Company logo writes already denied; tenant logo is company branding admin.
+    Binary GET remains for workspace chrome.
+    """
     assert_company_level_write_denied(managed_ids, message=message)
 
 

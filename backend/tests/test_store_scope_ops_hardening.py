@@ -11022,6 +11022,49 @@ async def test_store_manager_company_branding_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tenant_logo_writes_denied(client, db_session, tmp_path, monkeypatch):
+    """POST/DELETE /tenants/me/logo denied for store_manager; admin upload remains."""
+    import io
+
+    from app import storage as storage_svc
+
+    monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
+
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_headers["X-Workspace-Kind"] = "tenant"
+
+    png = b"\x89PNG\r\n\x1a\n" + b"fake-png-bytes"
+    denied_upload = await ac.post(
+        "/api/v1/tenants/me/logo",
+        headers=headers,
+        files={"file": ("logo.png", io.BytesIO(png), "image/png")},
+    )
+    assert denied_upload.status_code == 403, denied_upload.text
+    assert denied_upload.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete = await ac.delete("/api/v1/tenants/me/logo", headers=headers)
+    assert denied_delete.status_code == 403, denied_delete.text
+    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_upload = await ac.post(
+        "/api/v1/tenants/me/logo",
+        headers=admin_headers,
+        files={"file": ("logo.png", io.BytesIO(png), "image/png")},
+    )
+    assert ok_upload.status_code == 200, ok_upload.text
+    ok_delete = await ac.delete("/api/v1/tenants/me/logo", headers=admin_headers)
+    assert ok_delete.status_code == 200, ok_delete.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_me_workspace_company_profile_redacted(client, db_session):
     """GET /me + /workspace redact company legal/tax dump + company_entitlement for store_manager."""
     ac, seed = client
