@@ -17427,6 +17427,10 @@ async def audit_logs_verify(
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_audit_chain_verify_denied(managed)
     return env(await audit_svc.verify_chain(db, claims["tenant_id"]))
 
 

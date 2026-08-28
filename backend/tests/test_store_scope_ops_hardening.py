@@ -4942,6 +4942,15 @@ async def test_store_manager_audit_logs_self_and_store_details_scoped(client, db
     assert denied_archives_export.status_code == 403, denied_archives_export.text
     assert denied_archives_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_verify = await ac.get("/api/v1/audit-logs/verify", headers=headers)
+    assert denied_verify.status_code == 403, denied_verify.text
+    assert denied_verify.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Static retention policy remains discoverable (no tenant dump).
+    ok_retention = await ac.get("/api/v1/audit-logs/retention", headers=headers)
+    assert ok_retention.status_code == 200, ok_retention.text
+    assert ok_retention.json()["data"]["purge_allowed"] is False
+
 
 @pytest.mark.asyncio
 async def test_store_manager_sales_returns_and_dashboard_slices_scoped(client, db_session):

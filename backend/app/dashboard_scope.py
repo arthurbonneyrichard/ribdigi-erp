@@ -635,6 +635,22 @@ def assert_company_level_audit_cold_archive_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_audit_chain_verify_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot verify the company-wide audit hash chain; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager runs tenant-wide audit integrity verification.
+
+    Live scoped ``/audit-logs`` list/export remain; full-chain verify is company
+    compliance administration (cold archive list/export already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_membership_write_denied(
     managed_ids: list[str] | None,
     *,
