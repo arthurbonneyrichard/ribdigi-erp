@@ -1183,7 +1183,10 @@ class ProductCategoryCreate(BaseModel):
     # Required category label ∈ CategoryNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog category create).
     name: CategoryNameValue
-    parent_id: str | None = None
+    # Optional parent category FK ∈ UuidIdValue; omit/`null` → root; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach parent
+    # lookup). Existence remains tenant-scoped category lookup (**404**).
+    parent_id: UuidIdValue | None = None
     tax_rate_id: str | None = None
 
 

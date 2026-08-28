@@ -2226,7 +2226,12 @@ export default function Page() {
               aria-label="Category name"
               title="Category name (1–120 chars; letters/digits required)"
             />
-            <select value={catParentId} onChange={(e) => setCatParentId(e.target.value)}>
+            <select
+              value={catParentId}
+              onChange={(e) => setCatParentId(e.target.value)}
+              aria-label="Category parent"
+              title="Parent category (optional — root when blank)"
+            >
               <option value="">Parent (optional — root)</option>
               {categories
                 .filter((c) => c.is_active !== false)
@@ -2256,7 +2261,7 @@ export default function Page() {
                     body: JSON.stringify({
                       code: catCode.trim(),
                       name: catName.trim(),
-                      parent_id: catParentId || null,
+                      parent_id: catParentId.trim() || null,
                       tax_rate_id: catTaxRateId || null,
                     }),
                   });
