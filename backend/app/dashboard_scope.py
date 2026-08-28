@@ -12,6 +12,7 @@ POS sale receipt get/send scopes via ``PosSession.store_id`` (null session fail-
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -3203,6 +3204,8 @@ def omit_party_credit_master(managed_ids: list[str] | None) -> bool:
 
     Credit-limit / payment-terms / early-pay writes already denied;
     customer/supplier list/get/patch must not re-dump company credit master.
+    AI customer insights/assist/export also omit ``credit_limit`` when
+    ``store_ids`` is set (see ``ai_customers`` / ``redact_ai_customer_credit``).
     Name/status/balance and scoped history remain; POS credit checks stay
     server-side on DB ``party.credit_limit``.
     """
@@ -3215,6 +3218,40 @@ def redact_party_credit_master(payload: dict) -> dict:
     for key in PARTY_CREDIT_MASTER_FIELDS:
         if key in out:
             out[key] = None
+    return out
+
+
+def redact_ai_customer_credit(payload: dict) -> dict:
+    """Null ``credit_limit`` on AI customer insights/assist nested customer rows.
+
+    Defense-in-depth after ``ai_customers`` omits credit for store_manager scope;
+    strips residual credit-limit phrases from assist ``answer`` text.
+    """
+    out = dict(payload)
+
+    def _row(row: object) -> object:
+        if not isinstance(row, dict):
+            return row
+        item = dict(row)
+        if "credit_limit" in item:
+            item["credit_limit"] = None
+        return item
+
+    for key in ("best_customers", "churn_risks"):
+        rows = out.get(key)
+        if isinstance(rows, list):
+            out[key] = [_row(r) for r in rows]
+    if isinstance(out.get("customer"), dict):
+        out["customer"] = _row(out["customer"])
+    answer = out.get("answer")
+    if isinstance(answer, str) and "credit limit" in answer.lower():
+        # Drop trailing "(credit limit N)" clauses from balance answers.
+        out["answer"] = re.sub(
+            r"\s*\(credit limit [^)]*\)\.?",
+            ".",
+            answer,
+            flags=re.IGNORECASE,
+        ).replace("..", ".")
     return out
 
 

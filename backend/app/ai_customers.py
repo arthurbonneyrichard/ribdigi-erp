@@ -170,7 +170,11 @@ async def customer_intelligence(
             "customer_id": cust.id,
             "name": cust.name,
             "code": cust.code,
-            "credit_limit": float(cust.credit_limit or 0),
+            # store_manager: party credit master already redacted on list/get;
+            # do not re-dump company credit_limit via AI insights/assist/export.
+            "credit_limit": (
+                None if store_ids is not None else float(cust.credit_limit or 0)
+            ),
             "balance": float(cust.balance or 0),
             "recency_days": recency,
             "frequency": int(stats["count"]),
@@ -247,7 +251,9 @@ async def assist_customer(
                 "customer_id": party.id,
                 "name": party.name,
                 "balance": float(party.balance or 0) if store_ids is None else 0.0,
-                "credit_limit": float(party.credit_limit or 0),
+                "credit_limit": (
+                    None if store_ids is not None else float(party.credit_limit or 0)
+                ),
                 "monetary": 0,
                 "frequency": 0,
                 "recency_days": None,
@@ -258,10 +264,16 @@ async def assist_customer(
 
         answer = None
         if re.search(r"\b(balance|outstanding|owe|owing|due)\b", q.lower() or "balance"):
-            answer = (
-                f"{party.name} has outstanding balance {profile.get('open_invoice_balance', profile.get('balance', 0)):.2f} "
-                f"(credit limit {float(party.credit_limit or 0):.2f})."
+            bal = float(
+                profile.get("open_invoice_balance", profile.get("balance", 0)) or 0
             )
+            if store_ids is not None:
+                answer = f"{party.name} has outstanding balance {bal:.2f}."
+            else:
+                answer = (
+                    f"{party.name} has outstanding balance {bal:.2f} "
+                    f"(credit limit {float(party.credit_limit or 0):.2f})."
+                )
         elif re.search(r"\b(churn|risk|inactive)\b", q.lower()):
             answer = (
                 f"Churn risk for {party.name} is {profile['churn']['band']} "
