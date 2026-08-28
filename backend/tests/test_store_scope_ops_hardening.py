@@ -3305,6 +3305,104 @@ async def test_store_manager_ai_customer_credit_limit_redacted(client, db_sessio
 
 
 @pytest.mark.asyncio
+async def test_store_manager_ai_customer_party_code_redacted(client, db_session):
+    """store_manager AI insights/assist/export omit party master code; admin intact."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Code Redact Store",
+        code="AI-CODE-RD",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(mine)
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Code Buyer",
+        kind="customer",
+        status="active",
+        code="SECRET-PARTY-CODE-99",
+        credit_limit=0,
+        balance=0,
+    )
+    db_session.add(cust)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=mine.id,
+            invoice_number="INV-AI-CODE-1",
+            customer_id=cust.id,
+            status="posted",
+            subtotal=55,
+            total_amount=55,
+            paid_amount=55,
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+    )
+    await db_session.commit()
+
+    insights = await ac.get("/api/v1/ai/customers/insights", headers=headers)
+    assert insights.status_code == 200, insights.text
+    body = insights.json()["data"]
+    row = next(c for c in body["best_customers"] if c["customer_id"] == cust.id)
+    assert row.get("code") is None
+    assert float(row["monetary"]) == pytest.approx(55.0)
+
+    assist = await ac.post(
+        "/api/v1/ai/customer/assist",
+        headers=headers,
+        json={"customer_id": cust.id, "query": "What is the outstanding balance?"},
+    )
+    assert assist.status_code == 200, assist.text
+    adata = assist.json()["data"]
+    assert adata["customer"].get("code") is None
+    assert "SECRET-PARTY-CODE-99" not in (adata.get("answer") or "")
+
+    exported = await ac.get("/api/v1/ai/customers/insights/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "AI Code Buyer" in exported.text
+    assert "SECRET-PARTY-CODE-99" not in exported.text
+
+    admin_insights = await ac.get("/api/v1/ai/customers/insights", headers=admin_headers)
+    assert admin_insights.status_code == 200, admin_insights.text
+    admin_row = next(
+        c
+        for c in admin_insights.json()["data"]["best_customers"]
+        if c["customer_id"] == cust.id
+    )
+    assert admin_row.get("code") == "SECRET-PARTY-CODE-99"
+
+    admin_assist = await ac.post(
+        "/api/v1/ai/customer/assist",
+        headers=admin_headers,
+        json={"customer_id": cust.id, "query": "summary"},
+    )
+    assert admin_assist.status_code == 200, admin_assist.text
+    assert admin_assist.json()["data"]["customer"].get("code") == "SECRET-PARTY-CODE-99"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_ai_chat_sales_helpers_store_scoped(client, db_session):
     """Chat top-product / sales-month / expenses / low-stock ignore foreign store+WH."""
     from datetime import timedelta

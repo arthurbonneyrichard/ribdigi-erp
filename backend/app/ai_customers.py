@@ -169,7 +169,9 @@ async def customer_intelligence(
         item = {
             "customer_id": cust.id,
             "name": cust.name,
-            "code": cust.code,
+            # store_manager: party master code already redacted on list/get;
+            # do not re-dump company party codes via AI insights/assist/export.
+            "code": None if store_ids is not None else cust.code,
             # store_manager: party credit master already redacted on list/get;
             # do not re-dump company credit_limit via AI insights/assist/export.
             "credit_limit": (
@@ -250,6 +252,7 @@ async def assist_customer(
             profile = {
                 "customer_id": party.id,
                 "name": party.name,
+                "code": None if store_ids is not None else party.code,
                 "balance": float(party.balance or 0) if store_ids is None else 0.0,
                 "credit_limit": (
                     None if store_ids is not None else float(party.credit_limit or 0)

@@ -20421,6 +20421,8 @@ async def ai_customer_assist(
     )
     if dashboard_scope_svc.omit_party_credit_master(managed_stores):
         data = dashboard_scope_svc.redact_ai_customer_credit(data)
+    if dashboard_scope_svc.omit_party_code(managed_stores):
+        data = dashboard_scope_svc.redact_ai_customer_party_code(data)
     await ai_guard_svc.audit_ai_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -20455,6 +20457,8 @@ async def ai_customers_insights(
     )
     if dashboard_scope_svc.omit_party_credit_master(managed_stores):
         data = dashboard_scope_svc.redact_ai_customer_credit(data)
+    if dashboard_scope_svc.omit_party_code(managed_stores):
+        data = dashboard_scope_svc.redact_ai_customer_party_code(data)
     return env(data)
 
 

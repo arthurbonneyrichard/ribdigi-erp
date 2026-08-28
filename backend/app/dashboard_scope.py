@@ -2421,7 +2421,9 @@ def omit_party_code(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit party master ``code`` on JSON.
 
     Code assign/clear already denied; customer/supplier list/get/patch must not
-    re-dump company party master codes. Name/status and scoped history remain;
+    re-dump company party master codes. AI customer insights/assist/export also
+    omit ``code`` when ``store_ids`` is set (see ``ai_customers`` /
+    ``redact_ai_customer_party_code``). Name/status and scoped history remain;
     credit master fields are separately redacted.
     """
     return managed_ids is not None
@@ -2432,6 +2434,31 @@ def redact_party_code(payload: dict) -> dict:
     out = dict(payload)
     if "code" in out:
         out["code"] = None
+    return out
+
+
+def redact_ai_customer_party_code(payload: dict) -> dict:
+    """Null ``code`` on AI customer insights/assist nested customer rows.
+
+    Defense-in-depth after ``ai_customers`` omits party master codes for
+    store_manager scope (list/get already redacted via ``redact_party_code``).
+    """
+    out = dict(payload)
+
+    def _row(row: object) -> object:
+        if not isinstance(row, dict):
+            return row
+        item = dict(row)
+        if "code" in item:
+            item["code"] = None
+        return item
+
+    for key in ("best_customers", "churn_risks"):
+        rows = out.get(key)
+        if isinstance(rows, list):
+            out[key] = [_row(r) for r in rows]
+    if isinstance(out.get("customer"), dict):
+        out["customer"] = _row(out["customer"])
     return out
 
 

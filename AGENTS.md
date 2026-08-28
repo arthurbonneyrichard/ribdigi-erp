@@ -146,7 +146,9 @@ store activation — never frontend-only.
    + **party credit master redacted on list/get/patch JSON** (credit_limit /
    payment_terms_days / early-pay null; balance/name remain; POS credit checks
    server-side) + **AI customer insights/assist/export credit_limit redacted**
-   (nested customer rows + balance-answer text; monetary/churn remain),
+   (nested customer rows + balance-answer text; monetary/churn remain) + **AI
+   customer insights/assist/export party ``code`` redacted** (list/get code
+   already redacted; name/monetary/churn remain),
    and **AI report template create/delete denied for store_manager** (company-
    level NL report templates; list/export reads allowed), and **AI NL report
    generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
