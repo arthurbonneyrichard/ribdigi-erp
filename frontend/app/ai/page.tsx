@@ -31,9 +31,11 @@ export default function Page() {
   const [draftDocCategoryId, setDraftDocCategoryId] = useState('');
   const [draftDocStoreId, setDraftDocStoreId] = useState('');
   const [draftDocBranchId, setDraftDocBranchId] = useState('');
+  const [draftDocDepartmentId, setDraftDocDepartmentId] = useState('');
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
 
   useEffect(() => {
     api('/expenses/categories')
@@ -45,6 +47,9 @@ export default function Page() {
     api('/branches')
       .then((r) => setBranches(r.data || []))
       .catch(() => setBranches([]));
+    api('/departments')
+      .then((r) => setDepartments(r.data || []))
+      .catch(() => setDepartments([]));
   }, []);
 
   async function go() {
@@ -471,6 +476,7 @@ export default function Page() {
           payment_method: 'cash',
           store_id: draftDocStoreId.trim() || null,
           branch_id: draftDocBranchId.trim() || null,
+          department_id: draftDocDepartmentId.trim() || null,
         }),
       });
       const exp = r.data?.expense || r.data;
@@ -648,6 +654,7 @@ export default function Page() {
             onChange={(e) => {
               setDraftDocBranchId(e.target.value);
               setDraftDocStoreId('');
+              setDraftDocDepartmentId('');
             }}
             aria-label="AI document expense branch"
             title="Optional branch (UuidIdValue); blank → no branch"
@@ -658,6 +665,22 @@ export default function Page() {
               .map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.code} — {b.name}
+                </option>
+              ))}
+          </select>
+          <select
+            value={draftDocDepartmentId}
+            onChange={(e) => setDraftDocDepartmentId(e.target.value)}
+            aria-label="AI document expense department"
+            title="Optional department (UuidIdValue); blank → no department"
+          >
+            <option value="">No department</option>
+            {departments
+              .filter((d) => d.is_active !== false)
+              .filter((d) => !draftDocBranchId || !d.branch_id || d.branch_id === draftDocBranchId)
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.code} — {d.name}
                 </option>
               ))}
           </select>
