@@ -1395,8 +1395,24 @@ def assert_company_level_user_admin_export_denied(
 ) -> None:
     """403 when store_manager exports users/roles/permissions matrix CSVs.
 
-    List/get for users and roles remain; full roster and matrix dumps are
-    company-level admin surfaces (writes already denied).
+    ``GET /users`` list/get remain; roles catalog/detail are separately denied.
+    Full roster and matrix dumps are company-level admin surfaces (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_roles_catalog_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view the company roles catalog or role permission details; "
+        "use users list/get for operational staff lookup."
+    ),
+) -> None:
+    """403 when store_manager reads roles catalog or role detail (permission matrix dump).
+
+    ``GET /users`` list/get remain; roles CSV / permissions-matrix CSV already denied;
+    role create/patch/delete already denied.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -1406,14 +1422,14 @@ def assert_company_level_user_stats_read_denied(
     *,
     message: str = (
         "Store managers cannot view company-wide user/role dashboard KPIs; "
-        "use list/get for users and roles."
+        "use list/get for users."
     ),
 ) -> None:
     """403 when store_manager reads tenant-wide dashboard user-stats KPIs.
 
     Dedicated ``/dashboard/user-stats`` (+ export) and main-dashboard
-    ``user_stats`` embed are company-admin surfaces; ``GET /users`` / ``/roles``
-    list/get remain.
+    ``user_stats`` embed are company-admin surfaces; ``GET /users`` list/get remain
+    (roles catalog/detail separately denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

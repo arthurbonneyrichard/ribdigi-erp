@@ -8597,10 +8597,15 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert "user_stats" not in dash_data
     assert "users" not in (dash_data.get("sections") or [])
 
-    # Reads remain allowed (default users read)
+    # Users list/get remain; roles catalog/detail dump permission matrices (denied).
     assert (await ac.get("/api/v1/users", headers=headers)).status_code == 200
     assert (await ac.get(f"/api/v1/users/{target.id}", headers=headers)).status_code == 200
-    assert (await ac.get("/api/v1/roles", headers=headers)).status_code == 200
+    denied_roles_list = await ac.get("/api/v1/roles", headers=headers)
+    assert denied_roles_list.status_code == 403, denied_roles_list.text
+    assert denied_roles_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    denied_role_detail = await ac.get("/api/v1/roles/cashier", headers=headers)
+    assert denied_role_detail.status_code == 403, denied_role_detail.text
+    assert denied_role_detail.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 @pytest.mark.asyncio
 async def test_store_manager_warehouse_company_create_denied(client, db_session):

@@ -96,7 +96,12 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
 @pytest.mark.asyncio
 async def test_roles_catalog_includes_record_scope(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     r = await ac.get("/api/v1/roles", headers=headers)
     assert r.status_code == 200
     by_role = {row["role"]: row for row in r.json()["data"]}

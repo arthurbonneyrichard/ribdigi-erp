@@ -2696,6 +2696,10 @@ async def roles_catalog(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 124 R1 — active_only / is_active for honest inactive-only custom role lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_roles_catalog_read_denied(managed)
     return env(
         await roles_svc.list_role_catalog(
             db, claims["tenant_id"], active_only=active_only, is_active=is_active
@@ -2767,6 +2771,10 @@ async def role_detail(
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_roles_catalog_read_denied(managed)
     if role in VALID_ROLES:
         return env(roles_svc.role_detail_payload(role))
     custom = await roles_svc.get_custom_role(db, claims["tenant_id"], role)
