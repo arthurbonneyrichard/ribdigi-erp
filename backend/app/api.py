@@ -12205,6 +12205,12 @@ async def update_bank_connection(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    changing_connection_active = payload.is_active is not None
+    dashboard_scope_svc.assert_bank_connection_lifecycle_write_denied(
+        managed,
+        changing_active=changing_connection_active,
+        message="Store managers cannot activate or deactivate bank connections.",
+    )
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     existing = await bank_connectors_svc.get_connection(
         db,

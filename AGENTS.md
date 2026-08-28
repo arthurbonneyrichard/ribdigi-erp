@@ -102,7 +102,10 @@ store activation — never frontend-only.
    account ledger (+ export) from managed-store journals (null-store
    fail-closed), and bank statements list/export/get/reconcile writes
    (+ create/import) scoped to managed liquid accounts, and bank connections
-   list/export/create/patch/delete/sync scoped to managed liquid accounts,
+   list/export/create/patch/delete/sync scoped to managed liquid accounts
+   (**bank connection is_active lifecycle writes denied for store_manager**;
+   display name / auto-sync patches on managed connections remain; credential
+   field patches also denied),
    and expense approve/reject/delete + OCR suggest/apply +
    attachment upload/delete writes store scoped, and customer/supplier
    history (+ CSV) store+WH scoped (open quotations omit without store
@@ -171,13 +174,15 @@ store activation — never frontend-only.
    (company maintenance; list/create/resume auto-expire own holds remain), and
    **liquid account is_active lifecycle writes denied for store_manager**
    (activate/deactivate admin-only; name/bank details on managed liquid
-   accounts remain), and **party customer_group assignment denied for
-   store_manager** (company sales-master party↔group link; name/phone
+   accounts remain), and **bank connection is_active lifecycle writes denied
+   for store_manager** (activate/deactivate admin-only; display name / auto-sync
+   patches on managed connections remain), and **party customer_group assignment
+   denied for store_manager** (company sales-master party↔group link; name/phone
    party patches remain), and **bank connection create/delete denied for
    store_manager** (company bank-feed credentials; list/export/patch/sync on
    managed liquid accounts remain), and **bank connection credential field
    patches denied for store_manager** (access_token/feed_url/provider/external
-   id; display_name/auto-sync/is_active on managed connections remain), and
+   id; display_name/auto-sync on managed connections remain), and
    **party category/party_type classification writes denied for store_manager**
    (company party master classification; name/phone remain), and **party
    code master writes denied for store_manager** (customer/supplier ``code``;
