@@ -11491,13 +11491,23 @@ async def list_bank_connections(
 ):
     """Stage 126 C1 — active_only / is_active for honest inactive-only bank connection lists."""
     from app import bank_connectors as bank_connectors_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    account_ids = await dashboard_scope_svc.managed_liquid_account_ids(
+        db,
+        claims["tenant_id"],
+        store_ids=multi,
+        company_id=claims.get("company_id"),
+    )
     rows = await bank_connectors_svc.list_connections(
         db,
         claims["tenant_id"],
         active_only=active_only,
         is_active=is_active,
         company_id=claims.get("company_id"),
+        account_ids=account_ids,
     )
     return env([bank_connectors_svc.serialize_connection(r) for r in rows])
 
@@ -11510,12 +11520,23 @@ async def bank_connections_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 126 X1 — bank connections CSV export (no credentials)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    account_ids = await dashboard_scope_svc.managed_liquid_account_ids(
+        db,
+        claims["tenant_id"],
+        store_ids=multi,
+        company_id=claims.get("company_id"),
+    )
     text = await bank_webhook_export_svc.export_bank_connections_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
         company_id=claims.get("company_id"),
+        account_ids=account_ids,
     )
     return Response(
         content=text,
@@ -11533,8 +11554,18 @@ async def create_bank_connection(
     from app.accounting import ensure_default_accounts
     from app import bank_connectors as bank_connectors_svc
     from app import audit as audit_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        payload.account_id,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     row = await bank_connectors_svc.create_connection(
         db,
         tenant_id=claims["tenant_id"],
@@ -11571,7 +11602,23 @@ async def update_bank_connection(
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_connectors as bank_connectors_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    existing = await bank_connectors_svc.get_connection(
+        db,
+        tenant_id=claims["tenant_id"],
+        connection_id=connection_id,
+        company_id=claims.get("company_id"),
+    )
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        existing.account_id,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     row = await bank_connectors_svc.update_connection(
         db,
         tenant_id=claims["tenant_id"],
@@ -11591,7 +11638,23 @@ async def delete_bank_connection(
 ):
     from app import bank_connectors as bank_connectors_svc
     from app import audit as audit_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    existing = await bank_connectors_svc.get_connection(
+        db,
+        tenant_id=claims["tenant_id"],
+        connection_id=connection_id,
+        company_id=claims.get("company_id"),
+    )
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        existing.account_id,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     await bank_connectors_svc.delete_connection(
         db,
         tenant_id=claims["tenant_id"],
@@ -11620,8 +11683,24 @@ async def sync_bank_connection(
     from app.accounting import ensure_default_accounts
     from app import bank_connectors as bank_connectors_svc
     from app import audit as audit_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    existing = await bank_connectors_svc.get_connection(
+        db,
+        tenant_id=claims["tenant_id"],
+        connection_id=connection_id,
+        company_id=claims.get("company_id"),
+    )
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        existing.account_id,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     result = await bank_connectors_svc.sync_connection(
         db,
         tenant_id=claims["tenant_id"],
