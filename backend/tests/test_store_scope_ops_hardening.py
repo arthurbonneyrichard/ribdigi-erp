@@ -11404,6 +11404,81 @@ async def test_store_manager_webhooks_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+
+@pytest.mark.asyncio
+async def test_store_manager_webhooks_writes_denied(client, db_session):
+    """Webhook create/patch/delete/test denied for store_manager; admin create remains."""
+    from app import webhooks as webhooks_svc
+
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    row, _secret = await webhooks_svc.create_endpoint(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        url="https://hooks.example.com/ribdigi-write",
+        events=["sale.created"],
+        secret=None,
+        description="Admin webhook for write deny",
+        is_active=True,
+    )
+    await db_session.commit()
+    webhook_id = row.id
+
+    denied_create = await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={
+            "url": "https://hooks.example.com/mgr",
+            "events": ["sale.created"],
+            "description": "Mgr webhook",
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/webhooks/{webhook_id}",
+        headers=headers,
+        json={"description": "Hijacked"},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_test = await ac.post(
+        f"/api/v1/webhooks/{webhook_id}/test",
+        headers=headers,
+    )
+    assert denied_test.status_code == 403, denied_test.text
+    assert denied_test.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete = await ac.delete(
+        f"/api/v1/webhooks/{webhook_id}",
+        headers=headers,
+    )
+    assert denied_delete.status_code == 403, denied_delete.text
+    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/webhooks",
+        headers=admin_headers,
+        json={
+            "url": "https://hooks.example.com/admin-ok",
+            "events": ["sale.created"],
+            "description": "Admin ok",
+        },
+    )
+    assert ok_create.status_code == 200, ok_create.text
+
+
+
 async def test_store_manager_backup_settings_read_denied(client, db_session):
     """GET /backup/settings + CSV export denied for store_manager; admin remains."""
     ac, seed = client

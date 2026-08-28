@@ -18452,9 +18452,16 @@ async def webhooks_deliveries_export(
 async def webhooks_create(
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhooks_write_denied(
+        managed,
+        message="Store managers cannot create company webhooks.",
+    )
     tenants_svc.assert_writable(claims)
     body = payload or {}
     row, secret = await webhooks_svc.create_endpoint(
@@ -18508,9 +18515,16 @@ async def webhooks_patch(
     webhook_id: str,
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhooks_write_denied(
+        managed,
+        message="Store managers cannot update company webhooks.",
+    )
     tenants_svc.assert_writable(claims)
     body = payload or {}
     row, new_secret = await webhooks_svc.update_endpoint(
@@ -18546,9 +18560,16 @@ async def webhooks_patch(
 async def webhooks_delete(
     webhook_id: str,
     request: Request,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhooks_write_denied(
+        managed,
+        message="Store managers cannot delete company webhooks.",
+    )
     tenants_svc.assert_writable(claims)
     await webhooks_svc.delete_endpoint(db, claims["tenant_id"], webhook_id)
     await audit_svc.record_event(
@@ -18571,10 +18592,17 @@ async def webhooks_delete(
 async def webhooks_test_delivery(
     webhook_id: str,
     request: Request,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Send a signed webhook.test event to the endpoint (delivery proof)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhooks_write_denied(
+        managed,
+        message="Store managers cannot test company webhooks.",
+    )
     tenants_svc.assert_writable(claims)
     endpoint = await webhooks_svc.get_endpoint(db, claims["tenant_id"], webhook_id)
     delivery = await webhooks_svc.deliver_to_endpoint(

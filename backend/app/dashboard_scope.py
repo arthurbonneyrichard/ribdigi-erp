@@ -665,7 +665,22 @@ def assert_company_level_webhooks_read_denied(
 
     Endpoint URL/event subscription dump is company security admin.
     Deliveries use ``assert_company_level_webhook_deliveries_read_denied``.
-    Create/patch/delete/test remain admin-role gated for a later slice.
+    Mutations use ``assert_company_level_webhooks_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_webhooks_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot create, update, delete, or test company webhooks; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager mutates webhooks (create/patch/delete/test).
+
+    Reads already denied; endpoint URL/secret management is company security admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
