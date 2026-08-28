@@ -216,6 +216,10 @@ async def bi_put_settings(
 @router.get("/formulas")
 async def bi_formulas(
     claims=Depends(require_permission("business_insights", "read")),
-    _db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bi_formulas_read_denied(managed)
     return {"formulas": FORMULA_DOCS, "external_ai": False}

@@ -10710,7 +10710,7 @@ async def test_store_manager_bi_insight_lifecycle_writes_scoped(client, db_sessi
 
 @pytest.mark.asyncio
 async def test_store_manager_bi_settings_write_denied(client, db_session):
-    """Business-insights settings GET/PUT denied for store_manager."""
+    """Business-insights settings GET/PUT + formulas GET denied for store_manager."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
@@ -10739,8 +10739,14 @@ async def test_store_manager_bi_settings_write_denied(client, db_session):
     payload = body.get("data", body)
     assert "settings" in payload or "formulas" in payload
 
-    # Static formula docs remain for store_manager transparency.
-    ok_formulas = await ac.get("/api/v1/business-insights/formulas", headers=headers)
+    # Formula docs dump denied for store_manager; admin remains.
+    denied_formulas = await ac.get("/api/v1/business-insights/formulas", headers=headers)
+    assert denied_formulas.status_code == 403, denied_formulas.text
+    assert denied_formulas.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_formulas = await ac.get(
+        "/api/v1/business-insights/formulas", headers=admin_headers
+    )
     assert ok_formulas.status_code == 200, ok_formulas.text
     assert ok_formulas.json().get("external_ai") is False
 

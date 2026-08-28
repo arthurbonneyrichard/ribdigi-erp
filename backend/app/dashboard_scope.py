@@ -1855,7 +1855,24 @@ def assert_company_level_bi_settings_read_denied(
 
     PUT already denied; GET dumped slow_moving_days/health_weights and related
     thresholds. Scoped BI overview/history/acknowledge/dismiss remain; static
-    ``/formulas`` docs remain.
+    ``/formulas`` docs separately denied.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bi_formulas_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company business-insights formula docs; "
+        "scoped overview/history/acknowledge/dismiss remain."
+    ),
+) -> None:
+    """403 when store_manager reads company BI formula documentation dump.
+
+    Settings GET/PUT already denied; GET ``/business-insights/formulas`` exposed
+    Layer-1 formula catalog / threshold semantics. Scoped BI overview/history/
+    acknowledge/dismiss remain.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
