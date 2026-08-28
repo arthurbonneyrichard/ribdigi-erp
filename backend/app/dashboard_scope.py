@@ -596,6 +596,22 @@ def assert_company_level_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_expense_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company expense approval settings; "
+        "scoped expense ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads expense approval matrix (company admin dump).
+
+    PATCH and CSV export already denied; GET dumped thresholds/levels/roles.
+    Scoped expense create/approve/list remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_settings_export_denied(
     managed_ids: list[str] | None,
     *,
@@ -603,8 +619,9 @@ def assert_company_level_settings_export_denied(
 ) -> None:
     """403 when store_manager exports company settings CSVs (approval/FX/FEFO/early-pay).
 
-    Expense/credit/inventory settings GETs remain; FX exchange-rates GET is separately
-    denied. Full CSV dumps are company-level administration (writes already denied).
+    Expense approval settings GET is separately denied; credit/inventory settings GETs
+    remain. FX exchange-rates GET is separately denied. Full CSV dumps are
+    company-level administration (writes already denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

@@ -11245,6 +11245,10 @@ async def expense_settings(
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_expense_settings_read_denied(managed)
     return env(await expenses_svc.get_approval_settings(db, claims["tenant_id"]))
 
 

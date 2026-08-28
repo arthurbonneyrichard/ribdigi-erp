@@ -165,7 +165,7 @@ export default function Page() {
       await Promise.all([
         api(`/expenses${expQs}`),
         api(`/expenses/categories${catQs}`),
-        api('/expenses/settings'),
+        api('/expenses/settings').catch(() => ({ data: { levels: [] } })),
         api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
         api(`/expenses/recurring${recQs}`).catch(() => ({ data: [] })),
         api('/expenses/budgets').catch(() => ({ data: null })),
