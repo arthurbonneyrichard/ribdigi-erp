@@ -8340,7 +8340,7 @@ async def test_store_manager_notifications_broadcast_scoped(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session):
-    """Product list/get/export/lookup use managed WH stock, not product.stock_qty."""
+    """Product list/get/export/lookup use managed WH stock; cost_price redacted."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -8349,6 +8349,8 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
     product.company_id = cid
     product.is_active = True
     product.stock_qty = 999  # company-wide decoy
+    product.cost_price = 77.25
+    product.selling_price = 19.99
 
     mine = m.Store(
         tenant_id=tid,
@@ -8417,22 +8419,32 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
     assert row["reserved_qty"] == 2
     assert row["available_qty"] == 10
     assert row["stock_qty"] != 999
+    assert row.get("cost_price") is None
+    assert float(row.get("selling_price") or 0) == 19.99
 
     got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
     assert got.status_code == 200, got.text
     assert got.json()["data"]["stock_qty"] == 12
+    assert got.json()["data"].get("cost_price") is None
 
     exported = await ac.get("/api/v1/products/export", headers=headers)
     assert exported.status_code == 200, exported.text
     assert product.sku in exported.text
     assert "999.00" not in exported.text
     assert "12.00" in exported.text
+    assert "77.25" not in exported.text
+
+    variants = await ac.get(f"/api/v1/products/{product.id}/variants", headers=headers)
+    assert variants.status_code == 200, variants.text
+    for vrow in variants.json()["data"]:
+        assert vrow.get("cost_price") is None
 
     lookup = await ac.get(
         f"/api/v1/inventory/products/lookup?q={product.sku}", headers=headers
     )
     assert lookup.status_code == 200, lookup.text
     assert lookup.json()["data"][0]["stock_qty"] == 12
+    assert "cost_price" not in lookup.json()["data"][0]
 
     pos = await ac.get(
         f"/api/v1/pos/products/search?q={product.sku}", headers=headers
@@ -8449,6 +8461,19 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
     assert wh_data["reserved_qty"] == 2
     assert len(wh_data["warehouses"]) == 1
     assert wh_data["warehouses"][0]["code"] == "CAT-MWH"
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_got = await ac.get(f"/api/v1/products/{product.id}", headers=admin_headers)
+    assert admin_got.status_code == 200, admin_got.text
+    assert float(admin_got.json()["data"].get("cost_price") or 0) == 77.25
+    admin_export = await ac.get("/api/v1/products/export", headers=admin_headers)
+    assert admin_export.status_code == 200, admin_export.text
+    assert "77.25" in admin_export.text
 
 
 @pytest.mark.asyncio

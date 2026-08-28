@@ -4623,6 +4623,7 @@ async def products(
 
     tid = claims["tenant_id"]
     cid = claims.get("company_id")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     use_cache = not active_only and is_active is None and managed_wh is None
     if use_cache:
@@ -4649,6 +4650,8 @@ async def products(
         company_id=cid,
         warehouse_ids=managed_wh,
     )
+    if dashboard_scope_svc.omit_product_cost_price(managed):
+        payload = [dashboard_scope_svc.redact_product_cost_price(row) for row in payload]
     if use_cache:
         await cache_svc.app_cache.set_json(
             products_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
@@ -4706,12 +4709,14 @@ async def products_export(
     """Stage 118 E1 — catalog CSV export aligned with the product import template columns."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await product_import_svc.export_products_csv(
         db,
         tenant_id=claims["tenant_id"],
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
+        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed),
     )
     return Response(
         content=text,
@@ -4950,6 +4955,7 @@ async def get_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     workspace_svc.assert_record_company(claims, product)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     payload = await catalog_meta_svc.serialize_products_scoped(
         db,
@@ -4958,7 +4964,10 @@ async def get_product(
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
     )
-    return env(payload[0])
+    row = payload[0]
+    if dashboard_scope_svc.omit_product_cost_price(managed):
+        row = dashboard_scope_svc.redact_product_cost_price(row)
+    return env(row)
 
 
 @api.patch("/products/{product_id}")
@@ -6627,6 +6636,8 @@ async def list_product_variants(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 124 V1 — active_only / is_active for honest inactive-only variant lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     rows = await catalog_svc.list_variants(
@@ -6636,7 +6647,13 @@ async def list_product_variants(
         active_only=active_only,
         is_active=is_active,
     )
-    return env([catalog_svc.serialize_variant(v) for v in rows])
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    serialized = [catalog_svc.serialize_variant(v) for v in rows]
+    if dashboard_scope_svc.omit_product_cost_price(managed):
+        serialized = [
+            dashboard_scope_svc.redact_product_cost_price(row) for row in serialized
+        ]
+    return env(serialized)
 
 
 @api.get("/products/{product_id}/variants/export")
@@ -6648,14 +6665,18 @@ async def export_product_variants(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 156 V1 — path-scoped per-product variants CSV (distinct from Stage 124 roster)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await variant_role_export_svc.export_product_variants_csv(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
         is_active=is_active,
         active_only=active_only,
+        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed),
     )
     return Response(
         content=text,

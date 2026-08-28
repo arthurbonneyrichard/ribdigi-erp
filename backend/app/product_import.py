@@ -59,6 +59,7 @@ async def export_products_csv(
     tenant_id: str,
     company_id: str | None = None,
     warehouse_ids: list[str] | None = None,
+    omit_cost_price: bool = False,
 ) -> str:
     """Stage 118 E1 — export tenant products using the same columns as the import template."""
     await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
@@ -108,7 +109,9 @@ async def export_products_csv(
                 "category_code": cats.get(p.category_id) or "",
                 "brand_code": brands.get(p.brand_id) or "",
                 "unit_code": units.get(p.unit_id) or "",
-                "cost_price": f"{float(p.cost_price or 0):.2f}",
+                "cost_price": (
+                    "" if omit_cost_price else f"{float(p.cost_price or 0):.2f}"
+                ),
                 "selling_price": f"{float(p.selling_price or 0):.2f}",
                 "reorder_level": f"{float(p.reorder_level or 0):.2f}",
                 "stock_qty": f"{sq:.2f}",

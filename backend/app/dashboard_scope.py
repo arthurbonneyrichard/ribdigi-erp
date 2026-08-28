@@ -2613,6 +2613,24 @@ def assert_company_level_product_master_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def omit_product_cost_price(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit catalog ``cost_price`` on JSON/CSV.
+
+    Product master writes already denied; catalog list/get/export and per-product
+    variants must not dump company COGS. Selling price + WH stock remain for POS.
+    Inventory valuation reports that still use cost are intentional leftovers.
+    """
+    return managed_ids is not None
+
+
+def redact_product_cost_price(payload: dict) -> dict:
+    """Null ``cost_price`` on a serialized product or variant dict."""
+    out = dict(payload)
+    if "cost_price" in out:
+        out["cost_price"] = None
+    return out
+
+
 def assert_company_level_product_variants_export_denied(
     managed_ids: list[str] | None,
     *,
