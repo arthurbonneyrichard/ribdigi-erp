@@ -587,8 +587,25 @@ def assert_company_level_settings_export_denied(
 ) -> None:
     """403 when store_manager exports company settings CSVs (approval/FX/FEFO/early-pay).
 
-    GET settings reads remain; full settings dumps are company-level administration
-    (writes already denied).
+    Expense/credit/inventory settings GETs remain; FX exchange-rates GET is separately
+    denied. Full CSV dumps are company-level administration (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_exchange_rates_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company exchange rates or FX provider settings; "
+        "scoped credit ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company FX rates + provider settings.
+
+    Upsert/delete/refresh/settings PATCH and CSV export already denied; GET dumped
+    base currency, ``fx_auto_refresh``, provider, and full rate table. Credit AR/AP
+    ops remain store+WH scoped.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

@@ -8377,9 +8377,15 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
 
 @pytest.mark.asyncio
 async def test_store_manager_company_settings_writes_denied(client, db_session):
-    """Company-level settings writes + CSV exports denied for store_manager; GET remains."""
+    """Company-level settings writes + CSV exports + FX rates GET denied; other settings GETs remain."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     denied_expense = await ac.patch(
         "/api/v1/expenses/settings",
@@ -8446,11 +8452,17 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
         assert denied_export.status_code == 403, denied_export.text
         assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    # Reads remain allowed
+    # Expense/credit/inventory settings GETs remain; FX rates catalog denied.
     assert (await ac.get("/api/v1/expenses/settings", headers=headers)).status_code == 200
     assert (await ac.get("/api/v1/credit/settings", headers=headers)).status_code == 200
     assert (await ac.get("/api/v1/inventory/settings", headers=headers)).status_code == 200
-    assert (await ac.get("/api/v1/credit/exchange-rates", headers=headers)).status_code == 200
+    denied_fx_get = await ac.get("/api/v1/credit/exchange-rates", headers=headers)
+    assert denied_fx_get.status_code == 403, denied_fx_get.text
+    assert denied_fx_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_fx_get = await ac.get("/api/v1/credit/exchange-rates", headers=admin_headers)
+    assert ok_fx_get.status_code == 200, ok_fx_get.text
+    assert "base_currency" in ok_fx_get.json()["data"]
 
 
 @pytest.mark.asyncio

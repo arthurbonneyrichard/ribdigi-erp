@@ -14892,7 +14892,11 @@ async def list_exchange_rates(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import fx as fx_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_exchange_rates_read_denied(managed)
 
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == claims["tenant_id"]))
