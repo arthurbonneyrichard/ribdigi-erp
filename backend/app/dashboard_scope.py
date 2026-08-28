@@ -637,6 +637,22 @@ def assert_company_level_storage_settings_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_api_keys_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export company API keys; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /api-keys or /export.
+
+    API key metadata/prefix dump is company security admin. Create/revoke/detail/
+    usage remain admin-role gated for a later slice.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,

@@ -18136,10 +18136,17 @@ async def offline_devices_revoke(
 async def api_keys_list(
     status: str | None = None,
     active_only: bool = False,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 127 K1 — status / active_only for honest API-key status lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_api_keys_read_denied(
+        managed,
+        message="Store managers cannot list company API keys.",
+    )
     rows = await api_keys_svc.list_keys(
         db, claims["tenant_id"], status=status, active_only=active_only
     )
@@ -18150,10 +18157,17 @@ async def api_keys_list(
 async def api_keys_export(
     status: str | None = None,
     active_only: bool = False,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 127 K1 — API keys CSV export (raw secrets never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_api_keys_read_denied(
+        managed,
+        message="Store managers cannot export company API keys CSV.",
+    )
     text = await api_fx_schedule_export_svc.export_api_keys_csv(
         db,
         tenant_id=claims["tenant_id"],
