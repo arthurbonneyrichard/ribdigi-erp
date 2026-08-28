@@ -328,7 +328,7 @@ export default function Page() {
           payee: recPayee.trim() || null,
           frequency: recFrequency,
           payment_method: recPaymentMethod,
-          branch_id: recBranchId || null,
+          branch_id: recBranchId.trim() || null,
           department_id: recDepartmentId || null,
         }),
       });
@@ -1105,6 +1105,10 @@ export default function Page() {
               setRecBranchId(e.target.value);
               setRecDepartmentId('');
             }}
+            aria-label={
+              recEditId ? 'Edit recurring expense branch' : 'Recurring expense branch'
+            }
+            title="Recurring expense branch (optional org dim)"
           >
             <option value="">No branch</option>
             {branches

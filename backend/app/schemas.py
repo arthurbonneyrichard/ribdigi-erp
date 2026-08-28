@@ -1869,7 +1869,11 @@ class RecurringExpenseCreate(BaseModel):
     # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on recurring create).
     payee: ExpensePayeeValue | None = None
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as ExpenseCreate.branch_id.
+    branch_id: UuidIdValue | None = None
     department_id: str | None = None
 
 
