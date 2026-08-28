@@ -1491,10 +1491,21 @@ def assert_company_level_user_admin_export_denied(
 ) -> None:
     """403 when store_manager exports users/roles/permissions matrix CSVs.
 
-    ``GET /users`` list/get remain; roles catalog/detail are separately denied.
-    Full roster and matrix dumps are company-level admin surfaces (writes already denied).
+    ``GET /users`` list/get remain with permission matrices redacted; roles catalog/detail
+    are separately denied. Full roster and matrix dumps are company-level admin surfaces
+    (writes already denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_user_permission_matrix(managed_ids: list[str] | None) -> bool:
+    """True when store_manager users list/get must omit permission maps.
+
+    Roles catalog/detail already denied; returning full ``permissions`` on
+    ``GET /users`` would re-expose the same company permission matrix. Staff
+    identity fields (email/name/role/active) remain for operational lookup.
+    """
+    return managed_ids is not None
 
 
 def assert_company_level_roles_catalog_read_denied(
@@ -1507,8 +1518,8 @@ def assert_company_level_roles_catalog_read_denied(
 ) -> None:
     """403 when store_manager reads roles catalog or role detail (permission matrix dump).
 
-    ``GET /users`` list/get remain; roles CSV / permissions-matrix CSV already denied;
-    role create/patch/delete already denied.
+    ``GET /users`` list/get remain with permission matrices redacted; roles CSV /
+    permissions-matrix CSV already denied; role create/patch/delete already denied.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -1525,7 +1536,7 @@ def assert_company_level_user_stats_read_denied(
 
     Dedicated ``/dashboard/user-stats`` (+ export) and main-dashboard
     ``user_stats`` embed are company-admin surfaces; ``GET /users`` list/get remain
-    (roles catalog/detail separately denied).
+    with permission matrices redacted (roles catalog/detail separately denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

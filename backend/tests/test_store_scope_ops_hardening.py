@@ -8478,7 +8478,7 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_user_admin_writes_denied(client, db_session):
-    """User/role admin writes + CSV/KPI exports denied for store_manager; list/get remain."""
+    """User/role admin writes + CSV/KPI exports denied; users list/get remain without permission maps."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -8620,9 +8620,33 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert "user_stats" not in dash_data
     assert "users" not in (dash_data.get("sections") or [])
 
-    # Users list/get remain; roles catalog/detail dump permission matrices (denied).
-    assert (await ac.get("/api/v1/users", headers=headers)).status_code == 200
-    assert (await ac.get(f"/api/v1/users/{target.id}", headers=headers)).status_code == 200
+    # Users list/get remain for staff lookup; permission matrices redacted
+    # (roles catalog/detail already denied).
+    listed = await ac.get("/api/v1/users", headers=headers)
+    assert listed.status_code == 200, listed.text
+    listed_rows = listed.json()["data"]
+    assert listed_rows
+    assert all("permissions" not in row for row in listed_rows)
+    assert all("record_scope" not in row for row in listed_rows)
+    assert any(row.get("email") == target.email for row in listed_rows)
+
+    got = await ac.get(f"/api/v1/users/{target.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    got_body = got.json()["data"]
+    assert got_body.get("email") == target.email
+    assert "permissions" not in got_body
+    assert "record_scope" not in got_body
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_got = await ac.get(f"/api/v1/users/{target.id}", headers=admin_headers)
+    assert admin_got.status_code == 200, admin_got.text
+    assert isinstance(admin_got.json()["data"].get("permissions"), dict)
+
     denied_roles_list = await ac.get("/api/v1/roles", headers=headers)
     assert denied_roles_list.status_code == 403, denied_roles_list.text
     assert denied_roles_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

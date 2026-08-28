@@ -462,10 +462,13 @@ def list_role_catalog() -> list[dict]:
     return list_system_role_catalog()
 
 
-def serialize_user(user) -> dict:
-    """Safe user payload — never include password hashes or TOTP secrets."""
-    perms = user.permissions if isinstance(user.permissions, dict) and user.permissions else permissions_for_role(user.role)
-    return {
+def serialize_user(user, *, include_permissions: bool = True) -> dict:
+    """Safe user payload — never include password hashes or TOTP secrets.
+
+    When ``include_permissions`` is False (store_manager users list/get), omit the
+    permission matrix and record_scope so staff lookup does not dump role catalogs.
+    """
+    payload = {
         "id": user.id,
         "tenant_id": user.tenant_id,
         "email": user.email,
@@ -476,11 +479,20 @@ def serialize_user(user) -> dict:
         "department_id": getattr(user, "department_id", None),
         "is_active": bool(user.is_active),
         "email_verified": bool(user.email_verified),
-        "permissions": perms,
-        "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
         "totp_enabled": bool(getattr(user, "totp_enabled", False)),
         "created_at": user.created_at,
     }
+    if include_permissions:
+        perms = (
+            user.permissions
+            if isinstance(user.permissions, dict) and user.permissions
+            else permissions_for_role(user.role)
+        )
+        payload["permissions"] = perms
+        payload["record_scope"] = record_scope_from_permissions(
+            user.role, perms if isinstance(perms, dict) else None
+        )
+    return payload
 
 
 def has_permission(
