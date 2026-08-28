@@ -9294,3 +9294,68 @@ async def test_store_manager_store_branch_assignment_denied(client, db_session):
     await db_session.refresh(store)
     assert store.branch_id == branch.id
     assert store.name == "Mgr Branch Assign Deny Store Updated"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_warehouse_manager_assignment_denied(client, db_session):
+    """store_manager cannot assign/clear warehouse manager_id; other managed WH patches remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="WH Mgr Assign Store",
+        code="WH-MGR-ASSIGN-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        code="WH-MGR-ASSIGN",
+        name="WH Manager Assign Deny",
+        warehouse_type="retail",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+
+    denied_assign = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"manager_id": admin.id},
+    )
+    assert denied_assign.status_code == 403, denied_assign.text
+    assert denied_assign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    wh.manager_id = admin.id
+    await db_session.commit()
+
+    denied_clear = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"clear_manager": True},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"name": "WH Manager Assign Deny Updated"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+    await db_session.refresh(wh)
+    assert wh.manager_id == admin.id
+    assert wh.name == "WH Manager Assign Deny Updated"

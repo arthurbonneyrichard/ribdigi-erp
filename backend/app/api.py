@@ -16153,6 +16153,14 @@ async def update_warehouse(
         managed_wh, existing.id, allow_unset=False
     )
     managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    changing_wh_manager = payload.manager_id is not None or bool(
+        getattr(payload, "clear_manager", False)
+    )
+    dashboard_scope_svc.assert_warehouse_manager_assignment_write_denied(
+        managed_stores,
+        changing_manager=changing_wh_manager,
+        message="Store managers cannot assign or clear warehouse managers.",
+    )
     if payload.clear_store:
         dashboard_scope_svc.assert_store_in_manager_scope(
             managed_stores, None, allow_unset=False
