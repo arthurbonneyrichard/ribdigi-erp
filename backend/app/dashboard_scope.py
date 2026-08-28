@@ -1413,6 +1413,23 @@ async def assert_liquid_account_in_manager_scope(
         )
 
 
+async def assert_optional_liquid_account_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    liquid_account_id: str | None,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when store_manager supplies ``liquid_account_id`` outside managed stores."""
+    aid = (liquid_account_id or "").strip()
+    if store_ids is None or not aid:
+        return
+    await assert_liquid_account_in_manager_scope(
+        db, tenant_id, aid, store_ids, company_id=company_id
+    )
+
+
 async def _posted_journal_store_ids_for_account(
     db: AsyncSession,
     tenant_id: str,

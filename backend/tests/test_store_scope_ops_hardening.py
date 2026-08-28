@@ -3801,6 +3801,218 @@ async def test_store_manager_credit_statements_payments_store_scoped(client, db_
 
 
 @pytest.mark.asyncio
+async def test_store_manager_expense_payment_liquid_account_writes_scoped(
+    client, db_session
+):
+    """Expense create and AR/AP payment writes deny foreign-only liquid_account_id."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    today = datetime.utcnow().date()
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liq Pay Mine",
+        code="LIQ-P-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liq Pay Other",
+        code="LIQ-P-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Liq Pay Mine WH",
+        code="LIQ-P-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Liq Pay Other WH",
+        code="LIQ-P-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    cash = await accounting_svc.get_account_by_code(db_session, tid, "1000", company_id=cid)
+    bank = await accounting_svc.get_account_by_code(db_session, tid, "1010", company_id=cid)
+    assert cash is not None and bank is not None
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Managed cash activity",
+        reference="JE-LIQ-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 200, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 200},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Foreign bank activity",
+        reference="JE-LIQ-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 500, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 500},
+        ],
+    )
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liq Pay Customer",
+        kind="customer",
+        status="active",
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liq Pay Supplier",
+        kind="supplier",
+        status="active",
+    )
+    db_session.add_all([cust, supplier])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-LIQ-M-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=40,
+        total_amount=40,
+        paid_amount=0,
+        due_date=today,
+        posted_at=today,
+        created_at=today,
+    )
+    pi_mine = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-LIQ-M-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="unpaid",
+        subtotal=25,
+        total_amount=25,
+        paid_amount=0,
+        invoice_date=today,
+        due_date=today + timedelta(days=7),
+        created_at=today,
+    )
+    db_session.add_all([inv_mine, pi_mine])
+    await db_session.commit()
+
+    denied_expense = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "amount": 5,
+            "description": "Foreign liquid expense",
+            "category": "Travel",
+            "store_id": mine.id,
+            "liquid_account_id": bank.id,
+        },
+    )
+    assert denied_expense.status_code == 403, denied_expense.text
+    assert denied_expense.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_expense = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "amount": 3,
+            "description": "Managed liquid expense",
+            "category": "Travel",
+            "store_id": mine.id,
+            "liquid_account_id": cash.id,
+        },
+    )
+    assert ok_expense.status_code == 200, ok_expense.text
+
+    denied_cpay = await ac.post(
+        f"/api/v1/customers/{cust.id}/payments",
+        headers=headers,
+        json={
+            "customer_id": cust.id,
+            "amount": 2,
+            "sales_invoice_id": inv_mine.id,
+            "payment_method": "bank_transfer",
+            "liquid_account_id": bank.id,
+        },
+    )
+    assert denied_cpay.status_code == 403, denied_cpay.text
+    assert denied_cpay.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cpay = await ac.post(
+        f"/api/v1/customers/{cust.id}/payments",
+        headers=headers,
+        json={
+            "customer_id": cust.id,
+            "amount": 2,
+            "sales_invoice_id": inv_mine.id,
+            "payment_method": "cash",
+            "liquid_account_id": cash.id,
+        },
+    )
+    assert ok_cpay.status_code == 200, ok_cpay.text
+
+    denied_spay = await ac.post(
+        f"/api/v1/suppliers/{supplier.id}/payments",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "amount": 2,
+            "purchase_invoice_id": pi_mine.id,
+            "payment_method": "bank_transfer",
+            "liquid_account_id": bank.id,
+        },
+    )
+    assert denied_spay.status_code == 403, denied_spay.text
+    assert denied_spay.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_spay = await ac.post(
+        f"/api/v1/suppliers/{supplier.id}/payments",
+        headers=headers,
+        json={
+            "supplier_id": supplier.id,
+            "amount": 2,
+            "purchase_invoice_id": pi_mine.id,
+            "payment_method": "cash",
+            "liquid_account_id": cash.id,
+        },
+    )
+    assert ok_spay.status_code == 200, ok_spay.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_accounting_pnl_tb_store_scoped(client, db_session):
     """P&L / TB / cash-flow / balance-sheet (+ exports, dashboard) exclude foreign-store journals."""
     ac, seed = client

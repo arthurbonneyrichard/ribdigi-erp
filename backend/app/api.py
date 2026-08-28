@@ -8918,6 +8918,13 @@ async def record_sales_payment(
         dashboard_scope_svc.assert_store_in_manager_scope(
             managed_stores, getattr(inv, "store_id", None), allow_unset=False
         )
+        await dashboard_scope_svc.assert_optional_liquid_account_in_manager_scope(
+            db,
+            claims["tenant_id"],
+            payload.liquid_account_id,
+            managed_stores,
+            company_id=claims.get("company_id"),
+        )
     payment = await sales_svc.record_customer_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -11332,6 +11339,13 @@ async def add_expense(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
+    await dashboard_scope_svc.assert_optional_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        payload.liquid_account_id,
+        managed,
+        company_id=claims.get("company_id"),
+    )
     expense = await expenses_svc.create_expense(
         db,
         tenant_id=claims["tenant_id"],
@@ -15049,6 +15063,13 @@ async def customer_payment_alias(
         dashboard_scope_svc.assert_store_in_manager_scope(
             managed_stores, getattr(inv, "store_id", None), allow_unset=False
         )
+        await dashboard_scope_svc.assert_optional_liquid_account_in_manager_scope(
+            db,
+            claims["tenant_id"],
+            payload.liquid_account_id,
+            managed_stores,
+            company_id=claims.get("company_id"),
+        )
     payment = await sales_svc.record_customer_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -15203,6 +15224,7 @@ async def supplier_payment(
     workspace_svc.assert_record_company(claims, party)
     from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if managed_wh is not None:
         if payload.purchase_invoice_id:
@@ -15227,6 +15249,13 @@ async def supplier_payment(
                     "message": "purchase_invoice_id or purchase_order_id is required within your managed store scope.",
                 },
             )
+        await dashboard_scope_svc.assert_optional_liquid_account_in_manager_scope(
+            db,
+            claims["tenant_id"],
+            payload.liquid_account_id,
+            managed_stores,
+            company_id=claims.get("company_id"),
+        )
     payment = await purchasing_svc.record_supplier_payment(
         db,
         tenant_id=claims["tenant_id"],
