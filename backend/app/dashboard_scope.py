@@ -563,6 +563,22 @@ def assert_store_manager_assignment_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_store_branch_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_branch: bool,
+    message: str = "Store managers cannot assign or clear store branch org links.",
+) -> None:
+    """403 when store_manager attempts company-level store↔branch org assignment.
+
+    Branch/department master writes are already denied; store ``branch_id`` /
+    ``clear_branch`` is the same company-level org graph and stays admin-only.
+    """
+    if not changing_branch:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_unit_write_denied(
     managed_ids: list[str] | None,
     *,

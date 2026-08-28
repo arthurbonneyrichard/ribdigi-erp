@@ -9231,3 +9231,66 @@ async def test_store_manager_store_manager_assignment_denied(client, db_session)
     await db_session.refresh(store)
     assert store.manager_id == mgr.id
     assert store.phone == "555-0142"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_store_branch_assignment_denied(client, db_session):
+    """store_manager cannot assign/clear store branch_id; other managed patches remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    branch = m.Branch(
+        tenant_id=tid,
+        company_id=cid,
+        code="BR-STORE-LINK",
+        name="Store Link Branch",
+        is_active=True,
+    )
+    db_session.add(branch)
+    await db_session.flush()
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Mgr Branch Assign Deny Store",
+        code="MGR-BR-ASSIGN",
+        manager_id=mgr.id,
+        branch_id=None,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
+    denied_assign = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"branch_id": branch.id},
+    )
+    assert denied_assign.status_code == 403, denied_assign.text
+    assert denied_assign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Seed a branch link as admin path would, then deny clear by store_manager.
+    store.branch_id = branch.id
+    await db_session.commit()
+
+    denied_clear = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"clear_branch": True},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"name": "Mgr Branch Assign Deny Store Updated"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+    await db_session.refresh(store)
+    assert store.branch_id == branch.id
+    assert store.name == "Mgr Branch Assign Deny Store Updated"

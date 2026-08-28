@@ -151,7 +151,9 @@ store activation — never frontend-only.
    and **legacy POST /sales and /purchases denied for store_manager** (unscoped
    Transaction writes; use store-scoped invoices / purchasing pipeline), and
    **store manager_id assign/clear denied for store_manager** (company-level
-   manager assignment; other managed-store patches remain).
+   manager assignment; other managed-store patches remain), and **store
+   branch_id assign/clear denied for store_manager** (company-level store↔branch
+   org link; other managed-store patches remain).
    Not store-scoped RBAC Complete.
    and **company store-limit allocation denied for store_manager**
    (tenant entitlement allocation; even when companies write granted; tenant-admin path retained).
