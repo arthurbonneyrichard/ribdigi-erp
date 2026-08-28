@@ -11117,6 +11117,13 @@ async def list_expense_categories(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 F1 — active_only / is_active for honest inactive-only expense category lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_expense_category_read_denied(
+        managed,
+        message="Store managers cannot list company expense categories.",
+    )
     company_id = claims.get("company_id")
     await expenses_svc.ensure_default_categories(
         db, claims["tenant_id"], company_id=company_id

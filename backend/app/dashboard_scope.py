@@ -1431,8 +1431,25 @@ def assert_company_level_expense_category_export_denied(
 ) -> None:
     """403 when store_manager exports expense categories CSV (company finance master dump).
 
-    List/get and spend/variance reads remain; full category export is company-level
-    administration (writes already denied).
+    List GET also denied; full category export is company-level administration
+    (writes already denied). Spend/pending variance via budgets remains scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_expense_category_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company expense categories; "
+        "scoped spend/pending variance via budgets remain."
+    ),
+) -> None:
+    """403 when store_manager lists expense categories (company budget master dump).
+
+    Create/patch + CSV export already denied; ``GET /expenses/categories`` dumped
+    budget_amount / approval matrix fields. Expense UI soft-fails empty lists;
+    ``/expenses/budgets`` spend/pending remains store-scoped.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

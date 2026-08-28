@@ -8903,11 +8903,17 @@ async def test_store_manager_party_payment_terms_writes_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_expense_category_writes_denied(client, db_session):
-    """Expense category create/patch/export denied for store_manager; list remains."""
+    """Expense category list/create/patch/export denied for store_manager."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     cat = m.ExpenseCategory(
         tenant_id=tid,
@@ -8918,6 +8924,14 @@ async def test_store_manager_expense_category_writes_denied(client, db_session):
     )
     db_session.add(cat)
     await db_session.commit()
+
+    denied_list = await ac.get("/api/v1/expenses/categories", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get("/api/v1/expenses/categories", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    assert any(row["code"] == "CAT-DENY" for row in ok_list.json()["data"])
 
     denied_create = await ac.post(
         "/api/v1/expenses/categories",
@@ -8938,11 +8952,6 @@ async def test_store_manager_expense_category_writes_denied(client, db_session):
     denied_export = await ac.get("/api/v1/expenses/categories/export", headers=headers)
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
-
-    # Reads remain allowed
-    listed = await ac.get("/api/v1/expenses/categories", headers=headers)
-    assert listed.status_code == 200, listed.text
-    assert any(row["code"] == "CAT-DENY" for row in listed.json()["data"])
 
 
 @pytest.mark.asyncio
