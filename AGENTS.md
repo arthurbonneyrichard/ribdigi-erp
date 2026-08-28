@@ -142,7 +142,10 @@ store activation — never frontend-only.
    and **AI report template create/delete denied for store_manager** (company-
    level NL report templates; list/export reads allowed), and **AI NL report
    generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
-   store-scoped ``/reports/*`` + Layer-1 AI insights remain), and **customer/supplier
+   store-scoped ``/reports/*`` + Layer-1 AI insights remain), and **company report
+   schedule CRUD/run denied for store_manager** (even when ``reports:write`` granted;
+   admin allowlist retained; store-scoped ``/reports/*`` reads remain), and
+   **customer/supplier
    contact create/delete denied for store_manager** (company-level party contact
    master; get/list reads remain; nested contacts on create denied), and
    **company membership assign/revoke denied for store_manager** (even when
@@ -153,8 +156,6 @@ store activation — never frontend-only.
    (company-level BI thresholds/formulas; GET settings/formulas + acknowledge/dismiss remain),
    and **purchasing PR approval settings PATCH denied for store_manager**
    (company-level approval matrix; GET/export remain; admin allowlist retained),
-   and **report schedule create/patch/delete/run denied for store_manager**
-   (company-level email schedules; list/export reads remain),
    and **legacy POST /sales and /purchases denied for store_manager** (unscoped
    Transaction writes; use store-scoped invoices / purchasing pipeline), and
    **store manager_id assign/clear denied for store_manager** (company-level
