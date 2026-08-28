@@ -1291,10 +1291,10 @@ export default function Page() {
           // trim so Receive batch (UuidIdValue product_id) does not 422 on whitespace
           product_id: selectedId.trim(),
           quantity: Number(stockQty),
-          unit_id: stockUnitId || null,
+          unit_id: stockUnitId.trim() || null,
           // trim so Receive batch (UuidIdValue warehouse_id) does not 422 on whitespace
           warehouse_id: stockWarehouseId.trim() || null,
-          variant_id: stockVariantId || null,
+          variant_id: stockVariantId.trim() || null,
           notes: stockNotes.trim() || null,
           batch_number: batchNumber.trim(),
           manufacturing_date: mfgDate.trim() || null,
@@ -1339,9 +1339,9 @@ export default function Page() {
         // trim so Opening stock line (UuidIdValue product_id) does not 422 on whitespace
         product_id: selectedId.trim(),
         quantity: Number(openingQty),
-        unit_id: openingUnitId || null,
+        unit_id: openingUnitId.trim() || null,
         warehouse_id: openingWarehouseId.trim() || null,
-        variant_id: openingVariantId || null,
+        variant_id: openingVariantId.trim() || null,
         batch_number: openingBatch.trim() || null,
         manufacturing_date: openingMfg.trim() || null,
         expiry_date: openingExpiry.trim() || null,
@@ -1444,9 +1444,9 @@ export default function Page() {
           reference_id: outRefId.trim() || null,
           notes: outNotes.trim() || null,
           warehouse_id: outWarehouseId.trim() || null,
-          variant_id: outVariantId || null,
-          unit_id: outUnitId || null,
-          batch_id: outBatchId || null,
+          variant_id: outVariantId.trim() || null,
+          unit_id: outUnitId.trim() || null,
+          batch_id: outBatchId.trim() || null,
         }),
       });
       setMessage(
@@ -2894,7 +2894,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={stockVariantId} onChange={(e) => setStockVariantId(e.target.value)}>
+            <select
+              value={stockVariantId}
+              onChange={(e) => setStockVariantId(e.target.value)}
+              aria-label="Stock-in variant"
+            >
               <option value="">Variant (optional)</option>
               {variants
                 .filter((v) => v.is_active !== false)
@@ -2930,7 +2934,11 @@ export default function Page() {
               onChange={(e) => setExpiryDate(e.target.value)}
             />
             <input value={stockQty} onChange={(e) => setStockQty(e.target.value)} placeholder="Quantity" />
-            <select value={stockUnitId} onChange={(e) => setStockUnitId(e.target.value)}>
+            <select
+              value={stockUnitId}
+              onChange={(e) => setStockUnitId(e.target.value)}
+              aria-label="Stock-in unit"
+            >
               <option value="">Unit (default = product stock unit)</option>
               {units
                 .filter((u) => u.is_active !== false)
@@ -3028,7 +3036,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={openingVariantId} onChange={(e) => setOpeningVariantId(e.target.value)}>
+            <select
+              value={openingVariantId}
+              onChange={(e) => setOpeningVariantId(e.target.value)}
+              aria-label="Opening stock variant"
+            >
               <option value="">Variant (optional)</option>
               {variants
                 .filter((v) => v.is_active !== false)
@@ -3043,7 +3055,11 @@ export default function Page() {
               onChange={(e) => setOpeningQty(e.target.value)}
               placeholder="Quantity"
             />
-            <select value={openingUnitId} onChange={(e) => setOpeningUnitId(e.target.value)}>
+            <select
+              value={openingUnitId}
+              onChange={(e) => setOpeningUnitId(e.target.value)}
+              aria-label="Opening stock unit"
+            >
               <option value="">Unit (product default)</option>
               {units
                 .filter((u) => u.is_active !== false)
@@ -3638,7 +3654,11 @@ export default function Page() {
             ))}
           </select>
           <label className="muted">Variant (optional)</label>
-          <select value={outVariantId} onChange={(e) => setOutVariantId(e.target.value)}>
+          <select
+            value={outVariantId}
+            onChange={(e) => setOutVariantId(e.target.value)}
+            aria-label="Stock-out variant"
+          >
             <option value="">None</option>
             {variants
               .filter((v) => v.is_active !== false)
@@ -3649,7 +3669,11 @@ export default function Page() {
               ))}
           </select>
           <label className="muted">Unit (optional)</label>
-          <select value={outUnitId} onChange={(e) => setOutUnitId(e.target.value)}>
+          <select
+            value={outUnitId}
+            onChange={(e) => setOutUnitId(e.target.value)}
+            aria-label="Stock-out unit"
+          >
             <option value="">Default = product stock unit</option>
             {units
               .filter((u) => u.is_active !== false)
@@ -3661,7 +3685,11 @@ export default function Page() {
               ))}
           </select>
           <label className="muted">Batch (optional — otherwise FEFO)</label>
-          <select value={outBatchId} onChange={(e) => setOutBatchId(e.target.value)}>
+          <select
+            value={outBatchId}
+            onChange={(e) => setOutBatchId(e.target.value)}
+            aria-label="Stock-out batch"
+          >
             <option value="">FEFO across open batches</option>
             {batches
               .filter((b) => Number(b.quantity) > 0)

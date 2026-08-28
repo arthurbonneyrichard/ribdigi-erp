@@ -1536,7 +1536,9 @@ class StockMove(BaseModel):
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; converted to product.unit_id for stock
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped / garbage could persist on StockMovement.notes Text).
     notes: StockInNotesValue | None = None
@@ -1544,8 +1546,12 @@ class StockMove(BaseModel):
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
     warehouse_id: UuidIdValue | None = None
-    variant_id: str | None = None
-    batch_id: str | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
+    # Optional existing batch ∈ UuidIdValue; omit/`null` → create/resolve via batch_number;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach batch lookup).
+    batch_id: UuidIdValue | None = None
     # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
     batch_number: BatchNumberValue | None = None
     manufacturing_date: IsoDateQueryValue | None = None
@@ -1575,7 +1581,9 @@ class StockOut(BaseModel):
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    unit_id: str | None = None
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped / garbage could persist on StockMovement.notes Text).
     notes: StockOutNotesValue | None = None
@@ -1583,8 +1591,12 @@ class StockOut(BaseModel):
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
     warehouse_id: UuidIdValue | None = None
-    variant_id: str | None = None
-    batch_id: str | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
+    # Optional batch ∈ UuidIdValue; omit/`null` → no batch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach batch lookup).
+    batch_id: UuidIdValue | None = None
     # OpenAPI Literal → omit/blank/invalid → 422
     reference_type: Literal["sale", "transfer", "adjustment", "damage", "internal", "other"]
     # omit/`null` → no external ref; blank/`!!!`/`http://…` → **422** (was free `str`)
@@ -1608,12 +1620,16 @@ class OpeningStockLine(BaseModel):
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    unit_id: str | None = None
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
     # Optional warehouse ∈ UuidIdValue; omit/`null` → company / product stock path;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
     warehouse_id: UuidIdValue | None = None
-    variant_id: str | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
     # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
     batch_number: BatchNumberValue | None = None
     manufacturing_date: IsoDateQueryValue | None = None
@@ -2994,11 +3010,16 @@ class SalesInvoiceCancel(BaseModel):
 
 
 class SalesReturnItemCreate(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     # Required coded condition (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
     condition: Literal["sellable", "discard"]
-    variant_id: str | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
 
 
 class SalesReturnCreate(BaseModel):

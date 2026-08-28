@@ -581,8 +581,8 @@ export default function Page() {
           notes: returnNotes.trim() || null,
           items: [
             {
-              product_id: productId,
-              variant_id: variantId || null,
+              product_id: productId.trim(),
+              variant_id: variantId.trim() || null,
               quantity: Number(qty),
               condition: returnCondition,
             },

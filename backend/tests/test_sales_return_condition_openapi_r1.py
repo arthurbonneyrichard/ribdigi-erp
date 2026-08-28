@@ -14,18 +14,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_sales_return_condition_literal_schema():
     ok = SalesReturnItemCreate.model_validate(
-        {"product_id": "p", "quantity": 1, "condition": "discard"}
+        {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": "discard"}
     )
     assert ok.condition == "discard"
     with pytest.raises(ValidationError):
-        SalesReturnItemCreate.model_validate({"product_id": "p", "quantity": 1})
+        SalesReturnItemCreate.model_validate({"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1})
     with pytest.raises(ValidationError):
         SalesReturnItemCreate.model_validate(
-            {"product_id": "p", "quantity": 1, "condition": ""}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": ""}
         )
     with pytest.raises(ValidationError):
         SalesReturnItemCreate.model_validate(
-            {"product_id": "p", "quantity": 1, "condition": "broken"}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": "broken"}
         )
 
 

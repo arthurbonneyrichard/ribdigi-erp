@@ -15,9 +15,9 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 _BASE = {
-    "sales_invoice_id": "inv-1",
+    "sales_invoice_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
     "reason": "damaged",
-    "items": [{"product_id": "p1", "quantity": 1, "condition": "discard"}],
+    "items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": "discard"}],
 }
 
 

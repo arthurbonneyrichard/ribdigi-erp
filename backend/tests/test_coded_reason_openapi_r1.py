@@ -27,7 +27,7 @@ def test_stock_adjust_reason_literal():
 
 def test_purchase_return_reason_literal():
     base = {
-        "goods_receipt_id": "g1",
+        "goods_receipt_id": "11111111-2222-3333-4444-555555555555",
         "items": [{"goods_receipt_item_id": "i1", "quantity": 1}],
     }
     ok = PurchaseReturnCreate.model_validate({**base, "reason": "damaged"})
@@ -42,8 +42,8 @@ def test_purchase_return_reason_literal():
 
 def test_sales_return_reason_literal():
     base = {
-        "sales_invoice_id": "inv1",
-        "items": [{"product_id": "p1", "quantity": 1, "condition": "discard"}],
+        "sales_invoice_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+        "items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": "discard"}],
     }
     ok = SalesReturnCreate.model_validate({**base, "reason": "defective"})
     assert ok.reason == "defective"
