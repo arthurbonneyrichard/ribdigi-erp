@@ -2162,7 +2162,10 @@ class WarehouseCreate(BaseModel):
     # (was free `str`; blank reached service **400**; punctuation/URL could persist).
     # Tenant uniqueness remains create_warehouse **409**.
     code: WarehouseCodeValue
-    store_id: str | None = None
+    # Optional linked store ∈ UuidIdValue; omit/`null` → no store; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store lookup).
+    # Existence remains tenant-scoped store lookup (**404**).
+    store_id: UuidIdValue | None = None
     # BR-2.4 — schema Literal; omit defaults to retail; blank/invalid → 422
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] = "retail"
     # Optional warehouse manager user FK ∈ UuidIdValue; omit/`null` → no manager;

@@ -422,7 +422,7 @@ export default function Page() {
           ...(whAddress.trim() ? { address: whAddress.trim() } : {}),
           capacity: whCapacity === '' ? null : Number(whCapacity),
           manager_id: whManagerId.trim() || null,
-          store_id: whStoreId || null,
+          store_id: whStoreId.trim() || null,
         }),
       });
       setWhCode('');
@@ -1066,7 +1066,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={whStoreId} onChange={(e) => setWhStoreId(e.target.value)}>
+            <select
+              value={whStoreId}
+              onChange={(e) => setWhStoreId(e.target.value)}
+              aria-label={editWhId ? 'Edit warehouse store' : 'Warehouse store'}
+              title="Linked store (optional)"
+            >
               <option value="">Linked store (optional)</option>
               {stores
                 .filter((s) => s.is_active !== false)
