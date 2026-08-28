@@ -8195,3 +8195,120 @@ async def test_store_manager_branches_departments_writes_denied(client, db_sessi
     listed_depts = await ac.get("/api/v1/departments", headers=headers)
     assert listed_depts.status_code == 200, listed_depts.text
     assert any(row["code"] == "DP-DENY" for row in listed_depts.json()["data"])
+
+
+@pytest.mark.asyncio
+async def test_store_manager_catalog_meta_writes_denied(client, db_session):
+    """Catalog category/brand/unit create/patch/deactivate denied for store_manager."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+
+    category = m.ProductCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="CAT-META-DENY",
+        name="Category Meta Deny",
+        is_active=True,
+    )
+    brand = m.Brand(
+        tenant_id=tid,
+        company_id=cid,
+        code="BR-META-DENY",
+        name="Brand Meta Deny",
+        is_active=True,
+    )
+    unit = m.UnitOfMeasure(
+        tenant_id=tid,
+        company_id=cid,
+        code="U-META-DENY",
+        name="Unit Meta Deny",
+        conversion_factor=1,
+        is_active=True,
+    )
+    db_session.add_all([category, brand, unit])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_cat_create = await ac.post(
+        "/api/v1/catalog/categories",
+        headers=headers,
+        json={"code": "MGR-CAT", "name": "Mgr Category"},
+    )
+    assert denied_cat_create.status_code == 403
+    assert denied_cat_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_cat_patch = await ac.patch(
+        f"/api/v1/catalog/categories/{category.id}",
+        headers=headers,
+        json={"name": "Hijacked Category"},
+    )
+    assert denied_cat_patch.status_code == 403
+    assert denied_cat_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_cat_delete = await ac.delete(
+        f"/api/v1/catalog/categories/{category.id}",
+        headers=headers,
+    )
+    assert denied_cat_delete.status_code == 403
+    assert denied_cat_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_brand_create = await ac.post(
+        "/api/v1/catalog/brands",
+        headers=headers,
+        json={"code": "MGR-BR", "name": "Mgr Brand"},
+    )
+    assert denied_brand_create.status_code == 403
+    assert denied_brand_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_brand_patch = await ac.patch(
+        f"/api/v1/catalog/brands/{brand.id}",
+        headers=headers,
+        json={"name": "Hijacked Brand"},
+    )
+    assert denied_brand_patch.status_code == 403
+    assert denied_brand_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_brand_delete = await ac.delete(
+        f"/api/v1/catalog/brands/{brand.id}",
+        headers=headers,
+    )
+    assert denied_brand_delete.status_code == 403
+    assert denied_brand_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_unit_create = await ac.post(
+        "/api/v1/catalog/units",
+        headers=headers,
+        json={"code": "MGR-U", "name": "Mgr Unit"},
+    )
+    assert denied_unit_create.status_code == 403
+    assert denied_unit_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_unit_patch = await ac.patch(
+        f"/api/v1/catalog/units/{unit.id}",
+        headers=headers,
+        json={"name": "Hijacked Unit"},
+    )
+    assert denied_unit_patch.status_code == 403
+    assert denied_unit_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_unit_delete = await ac.delete(
+        f"/api/v1/catalog/units/{unit.id}",
+        headers=headers,
+    )
+    assert denied_unit_delete.status_code == 403
+    assert denied_unit_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Reads remain allowed
+    listed_cats = await ac.get("/api/v1/catalog/categories", headers=headers)
+    assert listed_cats.status_code == 200, listed_cats.text
+    assert any(row["code"] == "CAT-META-DENY" for row in listed_cats.json()["data"])
+
+    listed_brands = await ac.get("/api/v1/catalog/brands", headers=headers)
+    assert listed_brands.status_code == 200, listed_brands.text
+    assert any(row["code"] == "BR-META-DENY" for row in listed_brands.json()["data"])
+
+    listed_units = await ac.get("/api/v1/catalog/units", headers=headers)
+    assert listed_units.status_code == 200, listed_units.text
+    assert any(row["code"] == "U-META-DENY" for row in listed_units.json()["data"])

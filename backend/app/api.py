@@ -4778,6 +4778,13 @@ async def catalog_create_category(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot create catalog categories.",
+    )
     row = await catalog_meta_svc.create_category(
         db,
         tenant_id=claims["tenant_id"],
@@ -4801,6 +4808,13 @@ async def catalog_patch_category(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot update catalog categories.",
+    )
     data = payload.model_dump(exclude_unset=True)
     clear_parent = "parent_id" in data and data["parent_id"] is None
     clear_tax_rate = "tax_rate_id" in data and data["tax_rate_id"] is None
@@ -4830,6 +4844,13 @@ async def catalog_delete_category(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot deactivate catalog categories.",
+    )
     row = await catalog_meta_svc.deactivate_category(
         db,
         tenant_id=claims["tenant_id"],
@@ -4889,6 +4910,13 @@ async def catalog_create_brand(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot create catalog brands.",
+    )
     row = await catalog_meta_svc.create_brand(
         db,
         tenant_id=claims["tenant_id"],
@@ -4908,6 +4936,13 @@ async def catalog_patch_brand(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot update catalog brands.",
+    )
     data = payload.model_dump(exclude_unset=True)
     clear_description = "description" in data and data["description"] is None
     row = await catalog_meta_svc.update_brand(
@@ -4931,6 +4966,13 @@ async def catalog_delete_brand(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot deactivate catalog brands.",
+    )
     row = await catalog_meta_svc.deactivate_brand(
         db,
         tenant_id=claims["tenant_id"],
@@ -4948,6 +4990,13 @@ async def catalog_brand_logo_upload(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot upload catalog brand logos.",
+    )
     brand = await catalog_meta_svc.get_brand(
         db, claims["tenant_id"], brand_id, company_id=claims.get("company_id")
     )
@@ -4995,6 +5044,13 @@ async def catalog_brand_logo_delete(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot delete catalog brand logos.",
+    )
     brand = await catalog_meta_svc.get_brand(
         db, claims["tenant_id"], brand_id, company_id=claims.get("company_id")
     )
@@ -5084,6 +5140,13 @@ async def catalog_create_unit(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot create catalog units.",
+    )
     row = await catalog_meta_svc.create_unit(
         db,
         tenant_id=claims["tenant_id"],
@@ -5104,6 +5167,13 @@ async def catalog_patch_unit(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot update catalog units.",
+    )
     data = payload.model_dump(exclude_unset=True)
     row = await catalog_meta_svc.update_unit(
         db,
@@ -5127,6 +5197,13 @@ async def catalog_delete_unit(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_write_denied(
+        managed,
+        message="Store managers cannot deactivate catalog units.",
+    )
     row = await catalog_meta_svc.deactivate_unit(
         db,
         tenant_id=claims["tenant_id"],

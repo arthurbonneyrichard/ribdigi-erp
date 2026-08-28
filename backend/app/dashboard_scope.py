@@ -520,6 +520,15 @@ def assert_company_level_expense_category_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_catalog_meta_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update catalog categories, brands, or units.",
+) -> None:
+    """403 when store_manager attempts company-level catalog meta writes (categories/brands/units)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 PARTY_CREDIT_MASTER_FIELDS = frozenset(
     {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
 )
