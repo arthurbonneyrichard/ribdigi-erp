@@ -105,7 +105,8 @@ store activation — never frontend-only.
    list/export/patch/sync scoped to managed liquid accounts
    (**bank connection create/delete denied for store_manager**;
    **bank connection is_active lifecycle writes denied for store_manager**;
-   display name / feed patches on managed connections remain),
+   **bank connection credential field patches denied for store_manager**;
+   display name / auto-sync patches on managed connections remain),
    and expense approve/reject/delete + OCR suggest/apply +
    attachment upload/delete writes store scoped, and customer/supplier
    history (+ CSV) store+WH scoped (open quotations omit without store
@@ -175,12 +176,14 @@ store activation — never frontend-only.
    **liquid account is_active lifecycle writes denied for store_manager**
    (activate/deactivate admin-only; name/bank details on managed liquid
    accounts remain), and **bank connection is_active lifecycle writes denied
-   for store_manager** (activate/deactivate admin-only; display name / feed
-   patches on managed connections remain), and **party customer_group
+   for store_manager** (activate/deactivate admin-only; display name / auto-sync
+   on managed connections remain), and **party customer_group
    assignment denied for store_manager** (company sales-master party↔group
    link; name/phone party patches remain), and **bank connection create/delete
    denied for store_manager** (company bank-feed credentials; list/export/
-   patch/sync on managed liquid accounts remain), and **party
+   patch/sync on managed liquid accounts remain), and **bank connection
+   credential field patches denied for store_manager** (provider / feed_url /
+   access_token / external_account_id / clear_credentials), and **party
    category/party_type classification writes denied for store_manager**
    (company party master; name/phone remain), and
    **company store-limit allocation denied for store_manager** (tenant
