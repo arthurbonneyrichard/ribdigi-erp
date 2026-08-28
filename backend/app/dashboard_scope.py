@@ -689,6 +689,23 @@ def assert_liquid_account_lifecycle_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_bank_connection_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate bank connections.",
+) -> None:
+    """403 when store_manager attempts company-level bank connection is_active lifecycle.
+
+    Connection create/delete/sync remain liquid-account scoped; soft
+    activate/deactivate stays admin-only. Display name / feed patches on
+    managed connections remain.
+    """
+    if not changing_active:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 async def assert_products_in_manager_warehouse_scope(
     db: AsyncSession,
     tenant_id: str,

@@ -101,8 +101,10 @@ store activation — never frontend-only.
    patch/generate residual store scoped (null-store fail-closed), and COA
    account ledger (+ export) from managed-store journals (null-store
    fail-closed), and bank statements list/export/get/reconcile writes
-   (+ create/import) scoped to managed liquid accounts, and bank connections
-   list/export/create/patch/delete/sync scoped to managed liquid accounts,
+   (+ create/import) scoped to managed liquid accounts,    and bank connections
+   list/export/create/patch/delete/sync scoped to managed liquid accounts
+   (**bank connection is_active lifecycle writes denied for store_manager**;
+   display name / feed patches on managed connections remain),
    and expense approve/reject/delete + OCR suggest/apply +
    attachment upload/delete writes store scoped, and customer/supplier
    history (+ CSV) store+WH scoped (open quotations omit without store
@@ -171,9 +173,11 @@ store activation — never frontend-only.
    (company maintenance; list/create/resume auto-expire own holds remain), and
    **liquid account is_active lifecycle writes denied for store_manager**
    (activate/deactivate admin-only; name/bank details on managed liquid
-   accounts remain), and **party customer_group assignment denied for
-   store_manager** (company sales-master party↔group link; name/phone
-   party patches remain), and
+   accounts remain), and **bank connection is_active lifecycle writes denied
+   for store_manager** (activate/deactivate admin-only; display name / feed
+   patches on managed connections remain), and **party customer_group
+   assignment denied for store_manager** (company sales-master party↔group
+   link; name/phone party patches remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).
