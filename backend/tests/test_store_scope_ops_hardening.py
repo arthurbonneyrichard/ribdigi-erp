@@ -2071,10 +2071,14 @@ async def test_store_manager_inventory_reports_warehouse_scoped(client, db_sessi
 
     balance = await ac.get("/api/v1/reports/inventory/balance", headers=headers)
     assert balance.status_code == 200, balance.text
-    bal_items = balance.json()["data"]["items"]
+    bal_body = balance.json()["data"]
+    bal_items = bal_body["items"]
     assert all(i.get("warehouse_id") == wh_mine.id for i in bal_items)
     assert any(float(i["quantity"]) == 5 for i in bal_items)
     assert not any(float(i["quantity"]) == 99 and i.get("warehouse_id") is None for i in bal_items)
+    assert bal_body.get("total_value") is None
+    assert all(i.get("cost_price") is None for i in bal_items)
+    assert all(i.get("value") is None for i in bal_items)
 
     valuation = await ac.get("/api/v1/reports/inventory/valuation", headers=headers)
     assert valuation.status_code == 200, valuation.text
@@ -2083,7 +2087,11 @@ async def test_store_manager_inventory_reports_warehouse_scoped(client, db_sessi
     assert wh_mine.id in wh_ids
     assert wh_other.id not in wh_ids
     assert vbody["total_quantity"] == pytest.approx(5.0)
-    assert vbody["total_value"] == pytest.approx(10.0)
+    # COGS redacted for store_manager (catalog cost_price already omitted)
+    assert vbody["total_value"] is None
+    assert all(i.get("cost_price") is None for i in vbody["items"])
+    assert all(i.get("value") is None for i in vbody["items"])
+    assert all(w.get("total_value") is None for w in vbody["by_warehouse"])
 
     movements = await ac.get("/api/v1/reports/inventory/movements", headers=headers)
     assert movements.status_code == 200, movements.text
@@ -2104,6 +2112,112 @@ async def test_store_manager_inventory_reports_warehouse_scoped(client, db_sessi
     )
     assert exported.status_code == 200, exported.text
     assert wh_other.code not in exported.text or "IR-O-WH" not in exported.text
+    export_rows = list(csv.DictReader(io.StringIO(exported.text)))
+    for row in export_rows:
+        if row.get("warehouse_id") == wh_mine.id:
+            assert row.get("cost_price") in {None, "", "None"}
+            assert row.get("value") in {None, "", "None"}
+
+
+@pytest.mark.asyncio
+async def test_store_manager_inventory_report_cost_redacted(client, db_session):
+    """store_manager balance/valuation JSON+CSV omit cost_price/value; admin intact; qty remains."""
+    from app.inventory import apply_stock_change
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="InvCost Redact Mine",
+        code="IC-RD-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(mine)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="InvCost WH",
+        code="IC-RD-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    seed["p1"].cost_price = 12.5
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=seed["p1"].id,
+        quantity_delta=4,
+        movement_type="stock_in",
+        user_id=mgr.id,
+        warehouse_id=wh.id,
+    )
+    await db_session.commit()
+
+    admin_val = await ac.get("/api/v1/reports/inventory/valuation", headers=admin_headers)
+    assert admin_val.status_code == 200, admin_val.text
+    admin_body = admin_val.json()["data"]
+    admin_line = next(i for i in admin_body["items"] if i.get("warehouse_id") == wh.id)
+    assert float(admin_line["cost_price"]) == 12.5
+    assert float(admin_line["value"]) == pytest.approx(50.0)
+    assert float(admin_body["total_value"]) >= 50.0
+
+    mgr_val = await ac.get("/api/v1/reports/inventory/valuation", headers=headers)
+    assert mgr_val.status_code == 200, mgr_val.text
+    mgr_body = mgr_val.json()["data"]
+    mgr_line = next(i for i in mgr_body["items"] if i.get("warehouse_id") == wh.id)
+    assert float(mgr_line["quantity"]) == pytest.approx(4.0)
+    assert mgr_line.get("cost_price") is None
+    assert mgr_line.get("value") is None
+    assert mgr_body.get("total_value") is None
+    assert all(w.get("total_value") is None for w in mgr_body["by_warehouse"])
+
+    mgr_bal = await ac.get("/api/v1/reports/inventory/balance", headers=headers)
+    assert mgr_bal.status_code == 200, mgr_bal.text
+    bal = mgr_bal.json()["data"]
+    assert bal.get("total_value") is None
+    assert all(i.get("cost_price") is None and i.get("value") is None for i in bal["items"])
+
+    exported = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "inventory_valuation", "format": "csv"},
+    )
+    assert exported.status_code == 200, exported.text
+    assert "12.5" not in exported.text
+    val_rows = list(csv.DictReader(io.StringIO(exported.text)))
+    assert val_rows
+    for row in val_rows:
+        if row.get("warehouse_id") == wh.id or row.get("warehouse_code") == wh.code:
+            assert row.get("quantity") in {"4", "4.0"}
+            assert row.get("cost_price") in {None, "", "None"}
+            assert row.get("value") in {None, "", "None"}
+
+    bal_export = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "inventory_balance", "format": "csv"},
+    )
+    assert bal_export.status_code == 200, bal_export.text
+    assert "12.5" not in bal_export.text
+    bal_rows = list(csv.DictReader(io.StringIO(bal_export.text)))
+    for row in bal_rows:
+        if row.get("warehouse_id") == wh.id:
+            assert row.get("cost_price") in {None, "", "None"}
+            assert row.get("value") in {None, "", "None"}
 
 
 @pytest.mark.asyncio

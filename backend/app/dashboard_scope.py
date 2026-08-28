@@ -2705,7 +2705,8 @@ def omit_product_cost_price(managed_ids: list[str] | None) -> bool:
 
     Product master writes already denied; catalog list/get/export and per-product
     variants must not dump company COGS. Selling price + WH stock remain for POS.
-    Inventory valuation reports that still use cost are intentional leftovers.
+    Inventory balance/valuation report cost fields are redacted separately via
+    ``redact_inventory_report_cost`` when ``warehouse_ids`` is set.
     """
     return managed_ids is not None
 
@@ -2715,6 +2716,50 @@ def redact_product_cost_price(payload: dict) -> dict:
     out = dict(payload)
     if "cost_price" in out:
         out["cost_price"] = None
+    return out
+
+
+def omit_inventory_report_cost(warehouse_ids: list[str] | None) -> bool:
+    """True when store_manager must omit inventory report COGS fields.
+
+    Catalog ``cost_price`` already redacted; WH-scoped balance/valuation JSON/CSV
+    must not re-dump ``cost_price`` / line ``value`` / ``total_value``. Quantity,
+    SKU, and warehouse identity remain for ops.
+    """
+    return warehouse_ids is not None
+
+
+def redact_inventory_report_cost(payload: dict) -> dict:
+    """Null cost/value fields on inventory balance or valuation payloads."""
+    out = dict(payload)
+    for key in ("cost_price", "value", "total_value"):
+        if key in out:
+            out[key] = None
+    items = out.get("items")
+    if isinstance(items, list):
+        redacted_items: list = []
+        for row in items:
+            if not isinstance(row, dict):
+                redacted_items.append(row)
+                continue
+            item = dict(row)
+            for key in ("cost_price", "value"):
+                if key in item:
+                    item[key] = None
+            redacted_items.append(item)
+        out["items"] = redacted_items
+    by_wh = out.get("by_warehouse")
+    if isinstance(by_wh, list):
+        redacted_wh: list = []
+        for row in by_wh:
+            if not isinstance(row, dict):
+                redacted_wh.append(row)
+                continue
+            bucket = dict(row)
+            if "total_value" in bucket:
+                bucket["total_value"] = None
+            redacted_wh.append(bucket)
+        out["by_warehouse"] = redacted_wh
     return out
 
 

@@ -1150,13 +1150,18 @@ async def inventory_balance(
     ``warehouse_ids`` None = tenant/company-wide (product.stock_qty when no WH filter).
     When set (store_manager), omit product fallback and restrict to managed WHs.
     """
+    from app import dashboard_scope as dashboard_scope_svc
+
     if warehouse_ids is not None and not warehouse_ids and not warehouse_id:
-        return {
+        empty = {
             "warehouse_id": warehouse_id,
             "items": [],
             "total_quantity": 0.0,
             "total_value": 0.0,
         }
+        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+            return dashboard_scope_svc.redact_inventory_report_cost(empty)
+        return empty
 
     use_wh = warehouse_id is not None or warehouse_ids is not None
     if use_wh:
@@ -1202,12 +1207,15 @@ async def inventory_balance(
             }
             for p in products
         ]
-    return {
+    result = {
         "warehouse_id": warehouse_id,
         "items": items,
         "total_quantity": round(sum(i["quantity"] for i in items), 3),
         "total_value": round(sum(i["value"] for i in items), 2),
     }
+    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+        return dashboard_scope_svc.redact_inventory_report_cost(result)
+    return result
 
 
 async def inventory_valuation(
@@ -1239,7 +1247,7 @@ async def inventory_valuation(
         await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
 
     if warehouse_ids is not None and not warehouse_ids and not resolved_warehouse_id:
-        return {
+        empty = {
             "costing_method": "standard_cost",
             "costing_method_note": (
                 "Value = quantity × product.cost_price. "
@@ -1253,6 +1261,11 @@ async def inventory_valuation(
             "total_value": 0.0,
             "line_count": 0,
         }
+        from app import dashboard_scope as dashboard_scope_svc
+
+        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+            return dashboard_scope_svc.redact_inventory_report_cost(empty)
+        return empty
 
     stmt = (
         select(m.WarehouseStock, m.Product, m.Warehouse)
@@ -1335,7 +1348,7 @@ async def inventory_valuation(
             )
 
     by_warehouse = sorted(by_wh.values(), key=lambda x: x["warehouse_code"] or "")
-    return {
+    result = {
         "costing_method": "standard_cost",
         "costing_method_note": (
             "Value = quantity × product.cost_price. "
@@ -1349,6 +1362,11 @@ async def inventory_valuation(
         "total_value": round(sum(i["value"] for i in items), 2),
         "line_count": len(items),
     }
+    from app import dashboard_scope as dashboard_scope_svc
+
+    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+        return dashboard_scope_svc.redact_inventory_report_cost(result)
+    return result
 
 
 async def inventory_movements(
