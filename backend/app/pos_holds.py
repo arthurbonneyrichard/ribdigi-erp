@@ -193,6 +193,7 @@ async def list_holds(
     user_id: str,
     status: str | None = "held",
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.PosHeldCart]:
     # Cleanup before list so cashiers see accurate held/reserved state.
     await expire_stale_holds(
@@ -213,6 +214,14 @@ async def list_holds(
             )
         if wanted != "all":
             q = q.where(m.PosHeldCart.status == wanted)
+    # store_manager: scope via PosSession.store_id (holds have no store_id).
+    # Null session_id rows are fail-closed (excluded) when store_ids is set.
+    if store_ids is not None:
+        if not store_ids:
+            return []
+        q = q.join(m.PosSession, m.PosSession.id == m.PosHeldCart.session_id).where(
+            m.PosSession.store_id.in_(store_ids)
+        )
     q = q.order_by(m.PosHeldCart.held_at.desc())
     return list((await db.execute(q)).scalars().all())
 

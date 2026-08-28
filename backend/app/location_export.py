@@ -231,11 +231,19 @@ async def export_drawer_settings_csv(
     tenant_id: str,
     is_active: bool | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 142 C1 — secret-free cash drawer settings (kick bytes never included)."""
     stmt = select(m.Store).where(m.Store.tenant_id == tenant_id)
     if company_id:
         stmt = stmt.where(m.Store.company_id == company_id)
+    if store_ids is not None:
+        if not store_ids:
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=DRAWER_SETTINGS_EXPORT_COLUMNS)
+            writer.writeheader()
+            return buf.getvalue()
+        stmt = stmt.where(m.Store.id.in_(store_ids))
     if is_active is not None:
         stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
     rows = (await db.execute(stmt.order_by(m.Store.code))).scalars().all()

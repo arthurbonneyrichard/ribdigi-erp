@@ -4,7 +4,8 @@ Also used for operational list/read hardening (POS sales, sales invoices, expens
 transfers, warehouses / inventory movements) and accounting statement reads
 (P&L / TB / cash-flow / balance-sheet) — still ``stores.manager_id`` only;
 ADR-005 membership tables remain deferred. Warehouse scope maps via
-``Warehouse.store_id`` ∈ managed stores.
+``Warehouse.store_id`` ∈ managed stores. POS holds scope via
+``PosSession.store_id``; drawer-settings export uses managed store IDs.
 """
 
 from __future__ import annotations
@@ -87,6 +88,36 @@ def assert_store_in_manager_scope(
                 "store_id": sid,
             },
         )
+
+
+async def assert_pos_session_store_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    session_id: str | None,
+    *,
+    require_session: bool = False,
+) -> None:
+    """403 when a store_manager references a POS session outside managed stores.
+
+    Held carts have no ``store_id``; scope follows ``PosSession.store_id``.
+    When ``require_session`` is True, missing ``session_id`` is denied.
+    """
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+    sid = (session_id or "").strip() or None
+    if not sid:
+        assert_store_in_manager_scope(managed, None, allow_unset=not require_session)
+        return
+    session = await db.get(m.PosSession, sid)
+    if not session or session.tenant_id != claims.get("tenant_id"):
+        raise HTTPException(status_code=404, detail="POS session not found")
+    company_id = claims.get("company_id")
+    if company_id and session.company_id and session.company_id != company_id:
+        raise HTTPException(status_code=404, detail="POS session not found")
+    assert_store_in_manager_scope(
+        managed, getattr(session, "store_id", None), allow_unset=False
+    )
 
 
 def assert_transfer_touches_manager_scope(

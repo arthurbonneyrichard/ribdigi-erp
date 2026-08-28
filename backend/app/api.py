@@ -9777,12 +9777,16 @@ async def pos_holds_list(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 165–167 — list held carts (expires stale soft-reserves first)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     rows = await pos_holds_svc.list_holds(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         status=status,
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     await db.commit()
     return env([pos_holds_svc.serialize_hold(r) for r in rows])
@@ -9795,14 +9799,20 @@ async def pos_holds_create(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 165 H1 park / Stage 166–167 soft reserve with optional expiry (not a sale)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
     body = payload or {}
     reserve_stock = bool(body.get("reserve_stock"))
+    session_id = body.get("session_id")
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session_id, require_session=True
+    )
     row = await pos_holds_svc.create_hold(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        session_id=body.get("session_id"),
+        session_id=session_id,
         label=body.get("label"),
         cart_payload=body.get("cart_payload") or {},
         reserve_stock=reserve_stock,
@@ -9849,7 +9859,19 @@ async def pos_holds_resume(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 165 H1 — resume held cart payload into the client."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
+    row = await pos_holds_svc.get_hold(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        hold_id=hold_id,
+        company_id=claims.get("company_id"),
+    )
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, getattr(row, "session_id", None), require_session=True
+    )
     row = await pos_holds_svc.resume_hold(
         db,
         tenant_id=claims["tenant_id"],
@@ -9868,7 +9890,19 @@ async def pos_holds_discard(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 165 H1 — discard a held cart (soft status)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
+    row = await pos_holds_svc.get_hold(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        hold_id=hold_id,
+        company_id=claims.get("company_id"),
+    )
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, getattr(row, "session_id", None), require_session=True
+    )
     row = await pos_holds_svc.discard_hold(
         db,
         tenant_id=claims["tenant_id"],
@@ -14404,11 +14438,15 @@ async def stores_drawer_settings_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 142 C1 — store cash drawer settings CSV (kick bytes never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await location_export_svc.export_drawer_settings_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     return Response(
         content=text,

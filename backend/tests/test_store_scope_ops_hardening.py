@@ -5536,3 +5536,143 @@ async def test_store_manager_cheques_store_wh_scoped(client, db_session):
         f"/api/v1/accounting/cheques/{chq_iss_mine.id}/cancel", headers=headers
     )
     assert ok_cancel.status_code == 200, ok_cancel.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_pos_holds_and_drawer_export_scoped(client, db_session):
+    """POS holds follow PosSession.store_id; drawer-settings export is store scoped."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Hold Scope Mine",
+        code="HOLD-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Hold Scope Other",
+        code="HOLD-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    sess_mine = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        user_id=mgr.id,
+        session_number="HOLD-SES-M",
+        status="open",
+        opening_cash=0,
+    )
+    sess_other = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        user_id=mgr.id,
+        session_number="HOLD-SES-O",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add_all([sess_mine, sess_other])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    cart = {"items": [{"product_id": product.id, "quantity": 1}]}
+
+    denied_no_session = await ac.post(
+        "/api/v1/pos/holds",
+        headers=headers,
+        json={"label": "no session", "cart_payload": cart},
+    )
+    assert denied_no_session.status_code == 403
+    assert denied_no_session.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_other = await ac.post(
+        "/api/v1/pos/holds",
+        headers=headers,
+        json={
+            "label": "other session",
+            "session_id": sess_other.id,
+            "cart_payload": cart,
+        },
+    )
+    assert denied_other.status_code == 403
+    assert denied_other.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/pos/holds",
+        headers=headers,
+        json={
+            "label": "mine session",
+            "session_id": sess_mine.id,
+            "cart_payload": cart,
+        },
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    hold_id = ok_create.json()["data"]["id"]
+
+    # Seed an out-of-scope hold owned by the manager (pre-scope / foreign session).
+    foreign_hold = m.PosHeldCart(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=mgr.id,
+        session_id=sess_other.id,
+        label="foreign",
+        cart_payload=cart,
+        status="held",
+        stock_reserved=False,
+        reservation_lines=[],
+    )
+    orphan_hold = m.PosHeldCart(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=mgr.id,
+        session_id=None,
+        label="orphan",
+        cart_payload=cart,
+        status="held",
+        stock_reserved=False,
+        reservation_lines=[],
+    )
+    db_session.add_all([foreign_hold, orphan_hold])
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/pos/holds?status=held", headers=headers)
+    assert listed.status_code == 200, listed.text
+    listed_ids = {row["id"] for row in listed.json()["data"]}
+    assert hold_id in listed_ids
+    assert foreign_hold.id not in listed_ids
+    assert orphan_hold.id not in listed_ids
+
+    denied_resume = await ac.post(
+        f"/api/v1/pos/holds/{foreign_hold.id}/resume", headers=headers, json={}
+    )
+    assert denied_resume.status_code == 403
+    assert denied_resume.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_discard_orphan = await ac.delete(
+        f"/api/v1/pos/holds/{orphan_hold.id}", headers=headers
+    )
+    assert denied_discard_orphan.status_code == 403
+    assert denied_discard_orphan.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_discard = await ac.delete(f"/api/v1/pos/holds/{hold_id}", headers=headers)
+    assert ok_discard.status_code == 200, ok_discard.text
+    assert ok_discard.json()["data"]["status"] == "discarded"
+
+    exported = await ac.get("/api/v1/stores/drawer-settings/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    body = exported.text
+    assert "HOLD-M" in body
+    assert "HOLD-O" not in body
