@@ -10907,6 +10907,23 @@ async def test_store_manager_report_schedule_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_reports_exportable_read_denied(client, db_session):
+    """GET /reports/exportable denied for store_manager (company report catalog)."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+
+    denied = await ac.get("/api/v1/reports/exportable", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    assert "types" in ok.json()["data"]
+    assert "formats" in ok.json()["data"]
+
+
+@pytest.mark.asyncio
 async def test_store_manager_company_branding_writes_denied(client, db_session):
     """Company list/profile GET + logo writes denied for store_manager even when companies write granted."""
     from app.rbac import permissions_for_role

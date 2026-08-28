@@ -1920,6 +1920,22 @@ def assert_company_level_report_schedule_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_reports_exportable_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company exportable report catalogs; "
+        "scoped /reports/* exports remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /reports/exportable (company report catalog).
+
+    Report schedule writes already denied; exportable dumped the full EXPORTABLE
+    type/format catalog. Store-scoped report generation/export paths remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_bi_settings_write_denied(
     managed_ids: list[str] | None,
     *,

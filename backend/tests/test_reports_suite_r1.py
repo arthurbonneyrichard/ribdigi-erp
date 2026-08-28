@@ -175,7 +175,8 @@ async def test_reports_suite_outline_endpoints(client, db_session):
 
     assert (await ac.get("/api/v1/reports/trial-balance", headers=headers)).status_code == 200
 
-    exportable = await ac.get("/api/v1/reports/exportable", headers=headers)
+    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    exportable = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
     assert exportable.status_code == 200, exportable.text
     types = set(exportable.json()["data"]["types"])
     for needed in (

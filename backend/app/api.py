@@ -14194,7 +14194,14 @@ async def reports_export(
 
 
 @api.get("/reports/exportable")
-async def reports_exportable(claims=Depends(require_permission("reports", "read"))):
+async def reports_exportable(
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_reports_exportable_read_denied(managed)
     return env(
         {
             "types": sorted(report_export_svc.EXPORTABLE),

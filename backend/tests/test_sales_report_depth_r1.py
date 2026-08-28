@@ -177,7 +177,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
 @pytest.mark.asyncio
 async def test_sales_customers_exportable(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     listed = await ac.get("/api/v1/reports/exportable", headers=headers)
     assert listed.status_code == 200
     assert "sales_customers" in listed.json()["data"]["types"]
