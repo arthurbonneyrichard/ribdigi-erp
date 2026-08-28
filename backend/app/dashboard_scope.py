@@ -760,9 +760,15 @@ def assert_bank_connection_credentials_write_denied(
 ) -> None:
     """403 when store_manager patches bank-feed credential / identity fields.
 
+<<<<<<< HEAD
     ``display_name`` on managed connections remains. Auto-sync / lookback use
     ``assert_bank_connection_feed_policy_write_denied``. ``is_active`` uses
     ``assert_bank_connection_lifecycle_write_denied``.
+=======
+    ``display_name`` on managed connections remains. Sync policy fields use
+    ``assert_bank_connection_sync_policy_write_denied``. ``is_active`` is gated
+    by ``assert_bank_connection_lifecycle_write_denied``.
+>>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     """
     if managed_ids is None:
         return
@@ -779,7 +785,11 @@ def assert_bank_connection_credentials_write_denied(
     )
 
 
+<<<<<<< HEAD
 BANK_CONNECTION_FEED_POLICY_FIELDS = frozenset(
+=======
+BANK_CONNECTION_SYNC_POLICY_FIELDS = frozenset(
+>>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     {
         "auto_sync",
         "auto_match_after_sync",
@@ -788,12 +798,17 @@ BANK_CONNECTION_FEED_POLICY_FIELDS = frozenset(
 )
 
 
+<<<<<<< HEAD
 def assert_bank_connection_feed_policy_write_denied(
+=======
+def assert_bank_connection_sync_policy_write_denied(
+>>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     managed_ids: list[str] | None,
     payload: dict,
     *,
     message: str = "Store managers cannot update bank feed sync policy.",
 ) -> None:
+<<<<<<< HEAD
     """403 when store_manager patches bank-feed automation / lookback policy.
 
     Manual sync on managed connections and ``display_name`` patches remain.
@@ -801,6 +816,16 @@ def assert_bank_connection_feed_policy_write_denied(
     if managed_ids is None:
         return
     fields = sorted(k for k in BANK_CONNECTION_FEED_POLICY_FIELDS if k in payload)
+=======
+    """403 when store_manager patches bank-feed auto-sync / lookback policy.
+
+    ``display_name`` and manual ``/sync`` on managed connections remain;
+    credentials and ``is_active`` stay company-level denied separately.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in BANK_CONNECTION_SYNC_POLICY_FIELDS if k in payload)
+>>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     if not fields:
         return
     raise HTTPException(
@@ -822,7 +847,12 @@ def assert_bank_connection_lifecycle_write_denied(
     """403 when store_manager attempts company-level bank connection is_active lifecycle.
 
     Connection create/delete already denied; soft activate/deactivate stays
+<<<<<<< HEAD
     admin-only. Display name patches on managed connections remain.
+=======
+    admin-only. Display name patches on managed connections remain; sync policy
+    uses ``assert_bank_connection_sync_policy_write_denied``.
+>>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     """
     if not changing_active:
         return
@@ -1067,6 +1097,24 @@ def assert_party_master_deactivate_denied(
     message: str = "Store managers cannot deactivate customers or suppliers.",
 ) -> None:
     """403 when store_manager attempts company-level party deactivate (customer/supplier DELETE)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_status_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot change customer or supplier status.",
+) -> None:
+    """403 when store_manager patches party ``status`` (activate/deactivate lifecycle).
+
+    DELETE deactivate is already denied; PATCH ``status`` must not bypass that
+    company party-master gate. Name/phone/address/notes remain.
+    """
+    if managed_ids is None:
+        return
+    if "status" not in payload:
+        return
     assert_company_level_write_denied(managed_ids, message=message)
 
 

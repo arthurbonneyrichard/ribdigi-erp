@@ -106,8 +106,7 @@ store activation — never frontend-only.
    (**bank connection is_active lifecycle writes denied for store_manager**;
    **bank connection feed-policy patches denied for store_manager**;
    display name patches on managed connections remain; credential field
-   patches denied; manual sync remains),
-   and expense approve/reject/delete + OCR suggest/apply +
+   patches denied; manual sync remains),   and expense approve/reject/delete + OCR suggest/apply +
    attachment upload/delete writes store scoped, and customer/supplier
    history (+ CSV) store+WH scoped (open quotations omit without store
    column), and per-product batches list/export WH scoped (null-WH
@@ -135,7 +134,8 @@ store activation — never frontend-only.
    ops remain), and **stock CSV import denied for store_manager** (company-level
    bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
    and **customer/supplier deactivate denied for store_manager** (company-level
-   party master lifecycle; create/list/get + non-credit patch remain), and
+   party master lifecycle; PATCH status also denied; create/list/get + non-credit
+   patch remain), and
    **party payment_terms_days create/patch denied for store_manager** (credit-
    adjacent company terms; zero-default create allowed; phone/name patch remain),
    and **AI report template create/delete denied for store_manager** (company-
@@ -179,14 +179,15 @@ store activation — never frontend-only.
    for store_manager** (activate/deactivate admin-only; display name patches
    on managed connections remain), and **bank connection feed-policy patches
    denied for store_manager** (auto_sync / auto_match_after_sync /
-   sync_lookback_days; display name + manual sync remain), and **party customer_group assignment
-   denied for store_manager** (company sales-master party↔group link; name/phone
+   sync_lookback_days; display name + manual sync remain), and **party customer_group assignment   denied for store_manager** (company sales-master party↔group link; name/phone
    party patches remain), and **bank connection create/delete denied for
    store_manager** (company bank-feed credentials; list/export/patch/sync on
    managed liquid accounts remain), and **bank connection credential field
    patches denied for store_manager** (access_token/feed_url/provider/external
-   id; display_name on managed connections remain), and
-   **offline device bind store-scoped for store_manager** (managed store_id
+   id; display_name on managed connections remain), and **bank connection sync
+   policy patches denied for store_manager** (auto_sync/auto_match_after_sync/
+   sync_lookback_days; display_name + manual sync on managed connections
+   remain), and   **offline device bind store-scoped for store_manager** (managed store_id
    required; foreign/unset fail-closed; device register/revoke remain admin), and
    **liquid account bank detail patches denied for store_manager**
    (bank_name/account_number/bank_branch/clear_bank_details; name on managed
@@ -195,6 +196,8 @@ store activation — never frontend-only.
    (company party master classification; name/phone remain), and **party master
    code writes denied for store_manager** (customer/supplier ``code`` on
    create/patch; name/phone remain; create without code allowed), and
+   **party status lifecycle patches denied for store_manager** (PATCH status
+   cannot bypass DELETE deactivate deny; name/phone remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).
