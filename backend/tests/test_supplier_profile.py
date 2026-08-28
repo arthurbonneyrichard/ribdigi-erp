@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -9,9 +10,12 @@ from app.emailer import clear_dev_outbox, get_dev_outbox
 from tests.conftest import auth_headers
 
 
-async def _admin(ac):
-    """Company admin — party credit/terms/deactivate/contacts are company-level master writes."""
-    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+async def _company_admin(ac, seed):
+    """Super admin — party credit/terms/deactivate are company-level master writes."""
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _mgr(ac):
@@ -50,7 +54,7 @@ async def _ensure_mgr_warehouse(db_session, seed):
 @pytest.mark.asyncio
 async def test_supplier_profile_contacts_history_and_deactivate(client, db_session):
     ac, seed = client
-    headers = await _admin(ac)
+    headers = await _company_admin(ac, seed)
     _store, wh = await _ensure_mgr_warehouse(db_session, seed)
 
     created = await ac.post(
