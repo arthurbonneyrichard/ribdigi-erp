@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import or_, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -253,6 +253,83 @@ def apply_sales_return_store_scope(stmt, store_ids: list[str] | None):
     if not store_ids:
         return stmt.where(m.SalesInvoice.id.is_(None))  # empty managed → no rows
     return stmt.where(m.SalesInvoice.store_id.in_(store_ids))
+
+
+def apply_quotation_store_scope(
+    stmt,
+    *,
+    managed_store_ids: list[str] | None,
+    user_id: str | None,
+    tenant_id: str,
+    company_id: str | None = None,
+):
+    """Scope quotations without ``store_id``: own drafts + converted in-scope docs.
+
+    Open/unconverted foreign quotes are fail-closed (no store column; ADR-005 deferred).
+    """
+    if managed_store_ids is None:
+        return stmt
+    if not managed_store_ids:
+        if user_id:
+            return stmt.where(m.SalesQuotation.created_by == user_id)
+        return stmt.where(m.SalesQuotation.id.is_(None))
+
+    in_scope_order = select(m.SalesOrder.id).where(
+        m.SalesOrder.tenant_id == tenant_id,
+        m.SalesOrder.store_id.in_(managed_store_ids),
+    )
+    in_scope_inv = select(m.SalesInvoice.id).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.store_id.in_(managed_store_ids),
+    )
+    if company_id:
+        in_scope_order = in_scope_order.where(m.SalesOrder.company_id == company_id)
+        in_scope_inv = in_scope_inv.where(m.SalesInvoice.company_id == company_id)
+
+    visible = or_(
+        m.SalesQuotation.converted_order_id.in_(in_scope_order),
+        m.SalesQuotation.converted_invoice_id.in_(in_scope_inv),
+    )
+    if user_id:
+        visible = or_(visible, m.SalesQuotation.created_by == user_id)
+    return stmt.where(visible)
+
+
+async def assert_quotation_in_manager_scope(
+    db: AsyncSession, claims: dict, quote: m.SalesQuotation
+) -> None:
+    """403 when quotation is outside managed store scope (via conversion or own draft)."""
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+    user_id = claims.get("sub")
+    if user_id and quote.created_by == user_id:
+        return
+    if not managed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Quotation is outside your managed store scope.",
+            },
+        )
+    if quote.converted_order_id:
+        order = await db.get(m.SalesOrder, quote.converted_order_id)
+        sid = getattr(order, "store_id", None) if order else None
+        if sid and str(sid) in managed:
+            return
+    if quote.converted_invoice_id:
+        inv = await db.get(m.SalesInvoice, quote.converted_invoice_id)
+        sid = getattr(inv, "store_id", None) if inv else None
+        if sid and str(sid) in managed:
+            return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": "Quotation is outside your managed store scope.",
+        },
+    )
 
 
 async def assert_sales_return_in_manager_scope(

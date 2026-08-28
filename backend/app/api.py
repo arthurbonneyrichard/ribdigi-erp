@@ -7379,6 +7379,8 @@ async def list_quotations(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 99 T1 — optional status filter for quote pipeline honesty."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     stmt = (
         select(m.SalesQuotation)
         .where(*workspace_svc.company_scope_filter(m.SalesQuotation, claims))
@@ -7394,6 +7396,15 @@ async def list_quotations(
             )
         stmt = stmt.where(m.SalesQuotation.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesQuotation, claims)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if managed is not None:
+        stmt = dashboard_scope_svc.apply_quotation_store_scope(
+            stmt,
+            managed_store_ids=managed,
+            user_id=claims.get("sub"),
+            tenant_id=claims["tenant_id"],
+            company_id=claims.get("company_id"),
+        )
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
 
@@ -7405,8 +7416,15 @@ async def export_sales_quotations_csv(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 133 Q1 — sales quotation header CSV (no line dump)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await sales_pipeline_export_svc.export_quotations_csv(
-        db, tenant_id=claims["tenant_id"], claims=claims, status=status
+        db,
+        tenant_id=claims["tenant_id"],
+        claims=claims,
+        status=status,
+        managed_store_ids=managed,
     )
     return Response(
         content=text,
@@ -7444,9 +7462,12 @@ async def get_quotation(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     workspace_svc.assert_record_company(claims, quote)
     assert_record_access(claims, quote.created_by)
+    await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, quote)
     return env(await sales_docs_svc.serialize_quotation(db, quote))
 
 
@@ -7458,11 +7479,13 @@ async def print_sales_quotation(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import tenants as tenants_svc
 
     quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, quote.created_by)
     workspace_svc.assert_record_company(claims, quote)
+    await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, quote)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     company = None
     cid = claims.get("company_id") or getattr(quote, "company_id", None)
@@ -7557,9 +7580,12 @@ async def send_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     quote, delivery = await sales_docs_svc.send_quotation(
         db, claims["tenant_id"], quotation_id, to=to
     )
@@ -7585,9 +7611,12 @@ async def accept_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     quote = await sales_docs_svc.accept_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation accepted")
@@ -7599,9 +7628,12 @@ async def reject_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     quote = await sales_docs_svc.reject_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation rejected")
@@ -7613,9 +7645,12 @@ async def convert_quotation_order(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     order = await sales_docs_svc.convert_quotation_to_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )
@@ -7633,9 +7668,12 @@ async def convert_quotation_invoice(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     invoice = await sales_docs_svc.convert_quotation_to_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
     )

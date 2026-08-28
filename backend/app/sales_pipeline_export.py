@@ -13,6 +13,7 @@ from app import models as m
 from app import sales_docs as sales_docs_svc
 from app.rbac import apply_created_by_scope
 from app import workspace as workspace_svc
+from app import dashboard_scope as dashboard_scope_svc
 from app.session_passkey_doc_export import _cell
 
 QUOTATION_EXPORT_COLUMNS = [
@@ -81,6 +82,7 @@ async def export_quotations_csv(
     tenant_id: str,
     claims: dict,
     status: str | None = None,
+    managed_store_ids: list[str] | None = None,
 ) -> str:
     stmt = (
         select(m.SalesQuotation)
@@ -97,6 +99,14 @@ async def export_quotations_csv(
             )
         stmt = stmt.where(m.SalesQuotation.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesQuotation, claims)
+    if managed_store_ids is not None:
+        stmt = dashboard_scope_svc.apply_quotation_store_scope(
+            stmt,
+            managed_store_ids=managed_store_ids,
+            user_id=claims.get("sub"),
+            tenant_id=tenant_id,
+            company_id=claims.get("company_id"),
+        )
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=QUOTATION_EXPORT_COLUMNS)

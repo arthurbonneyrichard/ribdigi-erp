@@ -1274,6 +1274,132 @@ async def test_store_manager_sales_orders_scoped(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_sales_quotations_scoped(client, db_session):
+    """Quotations: own drafts + converted in-scope docs; foreign open quotes hidden."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["admin1"]
+    cust = seed["party1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Quote Scope Mine",
+        code="QT-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Quote Scope Other",
+        code="QT-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-QT-M",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=40,
+        total_amount=40,
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-QT-O",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=90,
+        total_amount=90,
+    )
+    db_session.add_all([inv_mine, inv_other])
+    await db_session.flush()
+
+    qt_m_open = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-M-OPEN",
+        customer_id=cust.id,
+        status="draft",
+        subtotal=10,
+        total_amount=10,
+        created_by=mgr.id,
+    )
+    qt_o_open = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-O-OPEN",
+        customer_id=cust.id,
+        status="sent",
+        subtotal=20,
+        total_amount=20,
+        created_by=admin.id,
+    )
+    qt_m_conv = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-M-CONV",
+        customer_id=cust.id,
+        status="converted",
+        subtotal=40,
+        total_amount=40,
+        created_by=admin.id,
+        converted_invoice_id=inv_mine.id,
+    )
+    qt_o_conv = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-O-CONV",
+        customer_id=cust.id,
+        status="converted",
+        subtotal=90,
+        total_amount=90,
+        created_by=admin.id,
+        converted_invoice_id=inv_other.id,
+    )
+    db_session.add_all([qt_m_open, qt_o_open, qt_m_conv, qt_o_conv])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    listed = await ac.get("/api/v1/sales/quotations", headers=headers)
+    assert listed.status_code == 200, listed.text
+    numbers = {row["quotation_number"] for row in listed.json()["data"]}
+    assert "QT-M-OPEN" in numbers
+    assert "QT-M-CONV" in numbers
+    assert "QT-O-OPEN" not in numbers
+    assert "QT-O-CONV" not in numbers
+
+    exported = await ac.get("/api/v1/sales/quotations/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "QT-M-OPEN" in exported.text
+    assert "QT-O-OPEN" not in exported.text
+    assert "QT-O-CONV" not in exported.text
+
+    ok = await ac.get(f"/api/v1/sales/quotations/{qt_m_open.id}", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    denied_get = await ac.get(f"/api/v1/sales/quotations/{qt_o_open.id}", headers=headers)
+    assert denied_get.status_code == 403
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_accept = await ac.post(
+        f"/api/v1/sales/quotations/{qt_o_open.id}/accept", headers=headers
+    )
+    assert denied_accept.status_code == 403
+    assert denied_accept.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_pos_sessions_scoped(client, db_session):
     ac, seed = client
     tid = seed["t1"].id
