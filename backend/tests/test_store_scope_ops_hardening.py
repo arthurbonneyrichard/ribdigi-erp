@@ -4748,7 +4748,7 @@ async def test_store_manager_tax_reports_store_wh_scoped(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_tax_rate_writes_denied(client, db_session):
-    """Tax rate create/patch/default denied for store_manager (company-level config)."""
+    """Tax rate create/patch/default/export denied for store_manager (company-level config)."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -4805,6 +4805,14 @@ async def test_store_manager_tax_rate_writes_denied(client, db_session):
     )
     assert denied_default.status_code == 403
     assert denied_default.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get("/api/v1/tax/rates/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/tax/rates", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["id"] == existing.id for row in listed.json()["data"])
 
 
 @pytest.mark.asyncio
@@ -8771,7 +8779,7 @@ async def test_store_manager_party_payment_terms_writes_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_expense_category_writes_denied(client, db_session):
-    """Expense category create/patch (incl. budget limits) denied for store_manager."""
+    """Expense category create/patch/export denied for store_manager; list remains."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -8802,6 +8810,10 @@ async def test_store_manager_expense_category_writes_denied(client, db_session):
     )
     assert denied_patch.status_code == 403
     assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get("/api/v1/expenses/categories/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     # Reads remain allowed
     listed = await ac.get("/api/v1/expenses/categories", headers=headers)

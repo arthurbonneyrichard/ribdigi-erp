@@ -532,6 +532,19 @@ def assert_company_level_accounting_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_tax_rate_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company tax rates CSV.",
+) -> None:
+    """403 when store_manager exports tax rates CSV (company tax master dump).
+
+    List/get and store-scoped tax reports remain; full rate export is company-level
+    administration (create/patch/default already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_settings_write_denied(
     managed_ids: list[str] | None,
     *,
@@ -1028,6 +1041,19 @@ def assert_company_level_expense_category_write_denied(
     message: str = "Store managers cannot create or update expense categories or budget limits.",
 ) -> None:
     """403 when store_manager attempts expense category master writes (incl. budget limits)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_expense_category_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company expense categories CSV.",
+) -> None:
+    """403 when store_manager exports expense categories CSV (company finance master dump).
+
+    List/get and spend/variance reads remain; full category export is company-level
+    administration (writes already denied).
+    """
     assert_company_level_write_denied(managed_ids, message=message)
 
 

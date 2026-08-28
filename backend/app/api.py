@@ -11005,6 +11005,10 @@ async def expense_categories_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 X1 — expense categories CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_expense_category_export_denied(managed)
     text = await finance_meta_export_svc.export_expense_categories_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -15466,6 +15470,10 @@ async def tax_rates_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 121 X1 — tax rates CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tax_rate_export_denied(managed)
     text = await location_export_svc.export_tax_rates_csv(
         db,
         tenant_id=claims["tenant_id"],
