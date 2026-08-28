@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+import pyotp
 
 from app import models as m
 from app.report_export import EXPORTABLE, build_report_payload, flatten_report
@@ -62,7 +63,12 @@ async def test_credit_aging_exportable_and_http(client, db_session):
     assert float(aging.json()["data"]["total_due"]) >= 120
     assert aging.json()["data"].get("scope") == "store_manager"
 
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     exportable = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
     assert exportable.status_code == 200
     assert "credit_aging" in exportable.json()["data"]["types"]

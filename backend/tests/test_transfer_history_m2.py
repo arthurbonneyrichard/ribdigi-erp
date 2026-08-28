@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import pyotp
 from sqlalchemy import select
 
 from app import models as m
@@ -157,7 +158,12 @@ async def test_transfer_history_exportable(client, db_session):
 
     assert "transfer_history" in EXPORTABLE
 
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     exportable = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
     assert exportable.status_code == 200
     assert "transfer_history" in exportable.json()["data"]["types"]

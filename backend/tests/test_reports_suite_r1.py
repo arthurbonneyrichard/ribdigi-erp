@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+import pyotp
 from sqlalchemy import select
 
 from app import accounting as accounting_svc
@@ -175,7 +176,12 @@ async def test_reports_suite_outline_endpoints(client, db_session):
 
     assert (await ac.get("/api/v1/reports/trial-balance", headers=headers)).status_code == 200
 
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     exportable = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
     assert exportable.status_code == 200, exportable.text
     types = set(exportable.json()["data"]["types"])
