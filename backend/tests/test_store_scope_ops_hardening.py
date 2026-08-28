@@ -8717,3 +8717,141 @@ async def test_store_manager_party_deactivate_denied(client, db_session):
     await db_session.refresh(supplier)
     assert cust.status == "active"
     assert supplier.status == "active"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_contact_writes_denied(client, db_session):
+    """Customer/supplier contact create/delete denied for store_manager; party get remains."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Contact Deny Supplier",
+        kind="supplier",
+        code="SUP-CONTACT-DENY",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    cust_contact = await ac.post(
+        f"/api/v1/customers/{cust.id}/contacts",
+        headers=admin_headers,
+        json={"name": "Cust Contact", "email": "cust.contact@example.com", "is_primary": True},
+    )
+    assert cust_contact.status_code == 200, cust_contact.text
+    cust_contact_id = cust_contact.json()["data"]["id"]
+
+    sup_contact = await ac.post(
+        f"/api/v1/suppliers/{supplier.id}/contacts",
+        headers=admin_headers,
+        json={"name": "Sup Contact", "email": "sup.contact@example.com", "is_primary": True},
+    )
+    assert sup_contact.status_code == 200, sup_contact.text
+    sup_contact_id = sup_contact.json()["data"]["id"]
+
+    denied_cust_add = await ac.post(
+        f"/api/v1/customers/{cust.id}/contacts",
+        headers=headers,
+        json={"name": "Mgr Contact", "phone": "555-0100"},
+    )
+    assert denied_cust_add.status_code == 403, denied_cust_add.text
+    assert denied_cust_add.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_cust_del = await ac.delete(
+        f"/api/v1/customers/{cust.id}/contacts/{cust_contact_id}",
+        headers=headers,
+    )
+    assert denied_cust_del.status_code == 403, denied_cust_del.text
+    assert denied_cust_del.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup_add = await ac.post(
+        f"/api/v1/suppliers/{supplier.id}/contacts",
+        headers=headers,
+        json={"name": "Mgr Sup Contact", "phone": "555-0200"},
+    )
+    assert denied_sup_add.status_code == 403, denied_sup_add.text
+    assert denied_sup_add.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup_del = await ac.delete(
+        f"/api/v1/suppliers/{supplier.id}/contacts/{sup_contact_id}",
+        headers=headers,
+    )
+    assert denied_sup_del.status_code == 403, denied_sup_del.text
+    assert denied_sup_del.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Nested contacts on party create remain allowed (zero credit/terms).
+    ok_nested = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={
+            "name": "Mgr Nested Contact Customer",
+            "contacts": [{"name": "Nested", "email": "nested@example.com", "is_primary": True}],
+        },
+    )
+    assert ok_nested.status_code == 200, ok_nested.text
+    assert len(ok_nested.json()["data"].get("contacts") or []) == 1
+
+    got = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert any(c["id"] == cust_contact_id for c in got.json()["data"].get("contacts") or [])
+
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_report_template_writes_denied(client, db_session):
+    """AI report template create/delete denied for store_manager; list/export reads allowed."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    tmpl = m.AiReportTemplate(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=seed["mgr1"].id,
+        name="Deny Target Template",
+        prompt="Show me monthly sales",
+        report_type="sales_products",
+        format="csv",
+        params={"period_label": "this month"},
+    )
+    db_session.add(tmpl)
+    await db_session.commit()
+
+    denied_create = await ac.post(
+        "/api/v1/ai/reports/templates",
+        headers=headers,
+        json={
+            "name": "Mgr Template",
+            "prompt": "Show me monthly sales",
+            "format": "csv",
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete = await ac.delete(
+        f"/api/v1/ai/reports/templates/{tmpl.id}",
+        headers=headers,
+    )
+    assert denied_delete.status_code == 403, denied_delete.text
+    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/ai/reports/templates", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["id"] == tmpl.id for row in listed.json()["data"])
+
+    exported = await ac.get("/api/v1/ai/reports/templates/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "Deny Target" in exported.text or "sales" in exported.text.lower()
+
+    # Template must still exist after denied delete.
+    await db_session.refresh(tmpl)
+    assert tmpl.name == "Deny Target Template"

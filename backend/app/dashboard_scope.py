@@ -565,12 +565,34 @@ def assert_company_level_stock_import_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_ai_report_template_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or delete company AI report templates.",
+) -> None:
+    """403 when store_manager attempts company-level AI report template create/delete."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_party_master_deactivate_denied(
     managed_ids: list[str] | None,
     *,
     message: str = "Store managers cannot deactivate customers or suppliers.",
 ) -> None:
     """403 when store_manager attempts company-level party deactivate (customer/supplier DELETE)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_master_contact_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot add or remove party contacts.",
+) -> None:
+    """403 when store_manager attempts company-level party contact create/delete.
+
+    Nested contacts on customer/supplier *create* remain allowed; dedicated
+    ``/contacts`` POST/DELETE endpoints are company-level master writes.
+    """
     assert_company_level_write_denied(managed_ids, message=message)
 
 

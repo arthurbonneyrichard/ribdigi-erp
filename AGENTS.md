@@ -133,7 +133,9 @@ store activation — never frontend-only.
    and **customer/supplier deactivate denied for store_manager** (company-level
    party master lifecycle; create/list/get + non-credit patch remain), and
    **party payment_terms_days create/patch denied for store_manager** (credit-
-   adjacent company terms; zero-default create allowed; phone/name patch remain).
+   adjacent company terms; zero-default create allowed; phone/name patch remain),
+   and **AI report template create/delete denied for store_manager** (company-
+   level NL report templates; list/export reads allowed).
    Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is

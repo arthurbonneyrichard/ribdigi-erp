@@ -6969,8 +6969,15 @@ async def add_customer_contact(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_master_contact_write_denied(
+        managed,
+        message="Store managers cannot add customer contacts.",
+    )
     contact = await customers_svc.add_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -6988,8 +6995,15 @@ async def delete_customer_contact(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_master_contact_write_denied(
+        managed,
+        message="Store managers cannot remove customer contacts.",
+    )
     await customers_svc.delete_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -7204,8 +7218,15 @@ async def add_supplier_contact(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_master_contact_write_denied(
+        managed,
+        message="Store managers cannot add supplier contacts.",
+    )
     contact = await suppliers_svc.add_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -7223,8 +7244,15 @@ async def delete_supplier_contact(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_master_contact_write_denied(
+        managed,
+        message="Store managers cannot remove supplier contacts.",
+    )
     await suppliers_svc.delete_contact(
         db,
         tenant_id=claims["tenant_id"],
@@ -18664,7 +18692,13 @@ async def ai_report_templates_create(
     db: AsyncSession = Depends(get_db),
 ):
     from app import ai_reports as ai_reports_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_ai_report_template_write_denied(
+        managed,
+        message="Store managers cannot create company AI report templates.",
+    )
     prompt = await ai_guard_svc.require_safe_ai_prompt(
         db,
         tenant_id=claims["tenant_id"],
@@ -18703,7 +18737,13 @@ async def ai_report_templates_delete(
     db: AsyncSession = Depends(get_db),
 ):
     from app import ai_reports as ai_reports_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_ai_report_template_write_denied(
+        managed,
+        message="Store managers cannot delete company AI report templates.",
+    )
     await ai_reports_svc.delete_template(
         db, claims["tenant_id"], template_id, company_id=claims.get("company_id")
     )
