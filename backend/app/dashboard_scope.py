@@ -686,6 +686,22 @@ def assert_company_level_webhook_deliveries_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_backup_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company backup schedule settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /backup/settings or /export.
+
+    Backup schedule/retention dump is company infra admin. Backup job list/
+    create/restore remain admin-role gated for a later slice.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,

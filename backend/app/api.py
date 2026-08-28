@@ -18628,9 +18628,16 @@ async def onboarding_checklist_restore(
 
 @api.get("/backup/settings")
 async def backup_settings_get(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_settings_read_denied(
+        managed,
+        message="Store managers cannot view company backup schedule settings.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     row = await backup_svc.get_or_create_settings(db, claims["tenant_id"])
     await db.commit()
@@ -18639,10 +18646,17 @@ async def backup_settings_get(
 
 @api.get("/backup/settings/export")
 async def backup_settings_export(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 140 B1 — backup schedule settings CSV (no archive bytes / credentials)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_settings_read_denied(
+        managed,
+        message="Store managers cannot export company backup schedule settings CSV.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     text = await ops_settings_export_svc.export_backup_settings_csv(
         db, tenant_id=claims["tenant_id"]
