@@ -1768,7 +1768,11 @@ class ExpenseUpdate(BaseModel):
     # `datetime`; OpenAPI date-time; padded dates inconsistent). Same
     # IsoDateQueryValue as create / AI draft / payment cheque_date.
     expense_date: IsoDateQueryValue | None = None
-    store_id: str | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Same honesty
+    # as ExpenseCreate.store_id. Use `clear_store` to remove.
+    store_id: UuidIdValue | None = None
     branch_id: str | None = None
     department_id: str | None = None
     clear_store: bool = False

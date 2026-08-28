@@ -102,6 +102,8 @@ export default function Page() {
     reference: string;
     payment_method: string;
     category_id: string;
+    store_id: string;
+    had_store: boolean;
   } | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -625,6 +627,8 @@ export default function Page() {
       reference: r.reference || '',
       payment_method: r.payment_method || 'cash',
       category_id: r.category_id || '',
+      store_id: r.store_id || '',
+      had_store: Boolean(r.store_id),
     });
   }
 
@@ -651,6 +655,12 @@ export default function Page() {
         payment_method: editDraft.payment_method.trim() || 'cash',
         category_id: editDraft.category_id.trim() || null,
       };
+      const storeTrim = editDraft.store_id.trim();
+      if (storeTrim) {
+        body.store_id = storeTrim;
+      } else if (editDraft.had_store) {
+        body.clear_store = true;
+      }
       const r = await api(`/expenses/${editFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage(
         `Updated ${r.data?.reference || editFor.slice(0, 8)} — ${r.data?.payee || 'expense'} (${r.data?.amount})`
@@ -1457,6 +1467,21 @@ export default function Page() {
                 .map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.code} — {c.name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={editDraft.store_id}
+              onChange={(e) => setEditDraft({ ...editDraft, store_id: e.target.value })}
+              aria-label="Edit expense store"
+              title="Optional store (UuidIdValue); blank clears when previously set"
+            >
+              <option value="">{editDraft.had_store ? 'Clear store' : 'No store'}</option>
+              {stores
+                .filter((s) => s.is_active !== false || s.id === editDraft.store_id)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
                   </option>
                 ))}
             </select>
