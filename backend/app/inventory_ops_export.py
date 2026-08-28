@@ -393,6 +393,18 @@ async def export_product_warehouse_stock_csv(
     p_ro = float(product.reorder_level or 0)
     p_qty = float(product.stock_qty or 0)
     p_reserved = float(getattr(product, "reserved_qty", 0) or 0)
+    if warehouse_ids is not None:
+        p_qty = sum(float(stock.quantity or 0) for stock, _wh in rows)
+        p_reserved = sum(float(getattr(stock, "reserved_qty", 0) or 0) for stock, _wh in rows)
+        if rows:
+            wh_mins: list[float] = []
+            wh_ros: list[float] = []
+            for stock, _wh in rows:
+                minimum, reorder = effective_warehouse_thresholds(stock, product)
+                wh_mins.append(minimum)
+                wh_ros.append(reorder)
+            p_min = max(wh_mins) if wh_mins else p_min
+            p_ro = max(wh_ros) if wh_ros else p_ro
     consolidated_status = compute_stock_status(p_qty, p_min, p_ro)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PRODUCT_WAREHOUSE_STOCK_EXPORT_COLUMNS)

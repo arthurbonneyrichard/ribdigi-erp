@@ -6080,3 +6080,116 @@ async def test_store_manager_notifications_broadcast_scoped(client, db_session):
     assert quote.id not in entity_ids
     assert rec_mine.id in entity_ids
     assert rec_other.id not in entity_ids
+
+
+@pytest.mark.asyncio
+async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session):
+    """Product list/get/export/lookup use managed WH stock, not product.stock_qty."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+    product.company_id = cid
+    product.is_active = True
+    product.stock_qty = 999  # company-wide decoy
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cat Stock Mine",
+        code="CAT-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cat Stock Other",
+        code="CAT-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Cat Mine WH",
+        code="CAT-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Cat Other WH",
+        code="CAT-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_mine.id,
+            product_id=product.id,
+            quantity=12,
+            reserved_qty=2,
+            reorder_level=5,
+        )
+    )
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_other.id,
+            product_id=product.id,
+            quantity=800,
+            reserved_qty=0,
+            reorder_level=5,
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    listed = await ac.get("/api/v1/products", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == product.id)
+    assert row["stock_qty"] == 12
+    assert row["reserved_qty"] == 2
+    assert row["available_qty"] == 10
+    assert row["stock_qty"] != 999
+
+    got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"]["stock_qty"] == 12
+
+    exported = await ac.get("/api/v1/products/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert product.sku in exported.text
+    assert "999.00" not in exported.text
+    assert "12.00" in exported.text
+
+    lookup = await ac.get(
+        f"/api/v1/inventory/products/lookup?q={product.sku}", headers=headers
+    )
+    assert lookup.status_code == 200, lookup.text
+    assert lookup.json()["data"][0]["stock_qty"] == 12
+
+    pos = await ac.get(
+        f"/api/v1/pos/products/search?q={product.sku}", headers=headers
+    )
+    assert pos.status_code == 200, pos.text
+    assert pos.json()["data"][0]["stock_qty"] == 12
+
+    wh_view = await ac.get(
+        f"/api/v1/products/{product.id}/warehouse-stock", headers=headers
+    )
+    assert wh_view.status_code == 200, wh_view.text
+    wh_data = wh_view.json()["data"]
+    assert wh_data["stock_qty"] == 12
+    assert wh_data["reserved_qty"] == 2
+    assert len(wh_data["warehouses"]) == 1
+    assert wh_data["warehouses"][0]["code"] == "CAT-MWH"

@@ -54,7 +54,11 @@ def template_csv() -> str:
 
 
 async def export_products_csv(
-    db: AsyncSession, *, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 118 E1 — export tenant products using the same columns as the import template."""
     await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
@@ -82,10 +86,20 @@ async def export_products_csv(
     products = (
         await db.execute(prod_q.order_by(m.Product.sku))
     ).scalars().all()
+    stock_map: dict[str, float] = {}
+    if warehouse_ids is not None:
+        stock_map, _, _ = await catalog_meta_svc.warehouse_stock_totals(
+            db, tenant_id, warehouse_ids=warehouse_ids, company_id=company_id
+        )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TEMPLATE_COLUMNS)
     writer.writeheader()
     for p in products:
+        sq = (
+            stock_map.get(p.id, 0.0)
+            if warehouse_ids is not None
+            else float(p.stock_qty or 0)
+        )
         writer.writerow(
             {
                 "name": p.name or "",
@@ -97,7 +111,7 @@ async def export_products_csv(
                 "cost_price": f"{float(p.cost_price or 0):.2f}",
                 "selling_price": f"{float(p.selling_price or 0):.2f}",
                 "reorder_level": f"{float(p.reorder_level or 0):.2f}",
-                "stock_qty": f"{float(p.stock_qty or 0):.2f}",
+                "stock_qty": f"{sq:.2f}",
                 "tracks_batches": "true" if p.tracks_batches else "false",
             }
         )

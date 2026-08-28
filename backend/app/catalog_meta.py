@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -93,12 +95,26 @@ def serialize_unit(row: m.UnitOfMeasure) -> dict:
     }
 
 
-def serialize_product(row: m.Product) -> dict:
+def serialize_product(
+    row: m.Product,
+    *,
+    stock_qty: float | None = None,
+    reserved_qty: float | None = None,
+    reorder_level: float | None = None,
+    minimum_stock: float | None = None,
+) -> dict:
     from app.inventory import compute_stock_status
 
-    stock_qty = float(row.stock_qty or 0)
-    minimum_stock = float(getattr(row, "minimum_stock", 0) or 0)
-    reorder_level = float(row.reorder_level or 0)
+    sq = float(stock_qty if stock_qty is not None else (row.stock_qty or 0))
+    rq = float(
+        reserved_qty if reserved_qty is not None else (getattr(row, "reserved_qty", 0) or 0)
+    )
+    minimum_stock = float(
+        minimum_stock if minimum_stock is not None else (getattr(row, "minimum_stock", 0) or 0)
+    )
+    reorder_level = float(
+        reorder_level if reorder_level is not None else (row.reorder_level or 0)
+    )
     return {
         "id": row.id,
         "company_id": getattr(row, "company_id", None),
@@ -113,15 +129,12 @@ def serialize_product(row: m.Product) -> dict:
         "has_image": bool(row.image_url),
         "cost_price": float(row.cost_price or 0),
         "selling_price": float(row.selling_price or 0),
-        "stock_qty": stock_qty,
-        "reserved_qty": float(getattr(row, "reserved_qty", 0) or 0),
-        "available_qty": max(
-            stock_qty - float(getattr(row, "reserved_qty", 0) or 0),
-            0.0,
-        ),
+        "stock_qty": sq,
+        "reserved_qty": rq,
+        "available_qty": max(sq - rq, 0.0),
         "minimum_stock": minimum_stock,
         "reorder_level": reorder_level,
-        "stock_status": compute_stock_status(stock_qty, minimum_stock, reorder_level),
+        "stock_status": compute_stock_status(sq, minimum_stock, reorder_level),
         "weight": float(row.weight) if getattr(row, "weight", None) is not None else None,
         "length": float(row.length) if getattr(row, "length", None) is not None else None,
         "width": float(row.width) if getattr(row, "width", None) is not None else None,
@@ -131,6 +144,62 @@ def serialize_product(row: m.Product) -> dict:
         "tracks_batches": bool(row.tracks_batches),
         "is_active": bool(row.is_active),
     }
+
+
+async def warehouse_stock_totals(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    warehouse_ids: list[str],
+    company_id: str | None = None,
+) -> tuple[dict[str, float], dict[str, float], dict[str, float]]:
+    """Sum on-hand / reserved / max reorder across warehouses per product."""
+    stock: dict[str, float] = defaultdict(float)
+    reserved: dict[str, float] = defaultdict(float)
+    reorder: dict[str, float] = {}
+    if not warehouse_ids:
+        return {}, {}, {}
+    stmt = select(m.WarehouseStock).where(
+        m.WarehouseStock.tenant_id == tenant_id,
+        m.WarehouseStock.warehouse_id.in_(warehouse_ids),
+    )
+    stmt = apply_company_filter(stmt, m.WarehouseStock.company_id, company_id)
+    for row in (await db.execute(stmt)).scalars().all():
+        pid = str(row.product_id)
+        stock[pid] += float(row.quantity or 0)
+        reserved[pid] += float(row.reserved_qty or 0)
+        lvl = float(row.reorder_level or 0)
+        if lvl > 0:
+            reorder[pid] = max(reorder.get(pid, 0.0), lvl)
+    return dict(stock), dict(reserved), reorder
+
+
+async def serialize_products_scoped(
+    db: AsyncSession,
+    rows: list[m.Product],
+    *,
+    tenant_id: str,
+    company_id: str | None,
+    warehouse_ids: list[str] | None,
+) -> list[dict]:
+    """Catalog list/get payloads; managers use managed WH totals (no product.stock_qty)."""
+    if warehouse_ids is None:
+        return [serialize_product(p) for p in rows]
+    stock_map, reserved_map, reorder_map = await warehouse_stock_totals(
+        db, tenant_id, warehouse_ids=warehouse_ids, company_id=company_id
+    )
+    out: list[dict] = []
+    for p in rows:
+        ro = reorder_map.get(p.id)
+        out.append(
+            serialize_product(
+                p,
+                stock_qty=stock_map.get(p.id, 0.0),
+                reserved_qty=reserved_map.get(p.id, 0.0),
+                reorder_level=ro if ro is not None else float(p.reorder_level or 0),
+            )
+        )
+    return out
 
 
 # BR-17.1 Product Changes — fields captured on domain audit before/after

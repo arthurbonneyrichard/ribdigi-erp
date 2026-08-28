@@ -4122,12 +4122,16 @@ async def global_search(
         return env({"q": query, "results": results, "total": 0})
 
     if has_permission(role, "inventory", "read", overrides=overrides):
+        from app import dashboard_scope as dashboard_scope_svc
+
+        managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
         products = await product_lookup_svc.lookup_products(
             db,
             tenant_id=claims["tenant_id"],
             q=query,
             limit=12,
             company_id=claims.get("company_id"),
+            warehouse_ids=managed_wh,
         )
         for p in products[:8]:
             results.append(
@@ -4179,9 +4183,12 @@ async def products(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 120 P1 — active_only / is_active for honest inactive-only product lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     tid = claims["tenant_id"]
     cid = claims.get("company_id")
-    use_cache = not active_only and is_active is None
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    use_cache = not active_only and is_active is None and managed_wh is None
     if use_cache:
         products_key = cache_svc.app_cache.products_key(tid)
         if cid:
@@ -4199,7 +4206,13 @@ async def products(
     elif active_only:
         stmt = stmt.where(m.Product.is_active.is_(True))
     rows = (await db.execute(stmt)).scalars().all()
-    payload = [catalog_meta_svc.serialize_product(p) for p in rows]
+    payload = await catalog_meta_svc.serialize_products_scoped(
+        db,
+        rows,
+        tenant_id=tid,
+        company_id=cid,
+        warehouse_ids=managed_wh,
+    )
     if use_cache:
         await cache_svc.app_cache.set_json(
             products_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
@@ -4215,12 +4228,16 @@ async def inventory_products_lookup(
     db: AsyncSession = Depends(get_db),
 ):
     """Resolve SKU/barcode scans for inventory stock ops and counts (no POS permission required)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     rows = await product_lookup_svc.lookup_products(
         db,
         tenant_id=claims["tenant_id"],
         q=q,
         barcode=barcode,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return env(rows)
 
@@ -4243,8 +4260,14 @@ async def products_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 118 E1 — catalog CSV export aligned with the product import template columns."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await product_import_svc.export_products_csv(
-        db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -4441,6 +4464,8 @@ async def get_product(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     product = (
         await db.execute(
             select(m.Product).where(
@@ -4452,7 +4477,15 @@ async def get_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     workspace_svc.assert_record_company(claims, product)
-    return env(catalog_meta_svc.serialize_product(product))
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    payload = await catalog_meta_svc.serialize_products_scoped(
+        db,
+        [product],
+        tenant_id=claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
+    )
+    return env(payload[0])
 
 
 @api.patch("/products/{product_id}")
@@ -5418,9 +5451,6 @@ async def product_warehouse_stock(
         rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
     from app.inventory import compute_stock_status, effective_warehouse_thresholds
 
-    p_min = float(getattr(product, "minimum_stock", 0) or 0)
-    p_ro = float(product.reorder_level or 0)
-    p_qty = float(product.stock_qty or 0)
     warehouses_out = []
     for stock, wh in rows:
         qty = float(stock.quantity or 0)
@@ -5441,6 +5471,17 @@ async def product_warehouse_stock(
                 "reorder_qty": float(stock.reorder_qty or 0),
             }
         )
+    p_min = float(getattr(product, "minimum_stock", 0) or 0)
+    p_ro = float(product.reorder_level or 0)
+    if managed_wh is not None:
+        p_qty = sum(float(w["quantity"]) for w in warehouses_out)
+        p_reserved = sum(float(w["reserved_qty"]) for w in warehouses_out)
+        if warehouses_out:
+            p_ro = max(float(w["reorder_level"]) for w in warehouses_out)
+            p_min = max(float(w["minimum_stock"]) for w in warehouses_out)
+    else:
+        p_qty = float(product.stock_qty or 0)
+        p_reserved = float(getattr(product, "reserved_qty", 0) or 0)
     return env(
         {
             "product_id": product.id,
@@ -5448,8 +5489,8 @@ async def product_warehouse_stock(
             "minimum_stock": p_min,
             "reorder_level": p_ro,
             "stock_status": compute_stock_status(p_qty, p_min, p_ro),
-            "reserved_qty": float(getattr(product, "reserved_qty", 0) or 0),
-            "available_qty": max(p_qty - float(getattr(product, "reserved_qty", 0) or 0), 0.0),
+            "reserved_qty": p_reserved,
+            "available_qty": max(p_qty - p_reserved, 0.0),
             "warehouses": warehouses_out,
         }
     )
@@ -9921,12 +9962,16 @@ async def pos_search(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     out = await product_lookup_svc.lookup_products(
         db,
         tenant_id=claims["tenant_id"],
         q=q,
         barcode=barcode,
         company_id=claims.get("company_id"),
+        warehouse_ids=managed_wh,
     )
     return env(out)
 
