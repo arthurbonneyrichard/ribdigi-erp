@@ -9918,3 +9918,65 @@ async def test_store_manager_pos_hold_expire_stale_denied(client, db_session):
     # Holds list remains readable (auto-expire of own holds happens server-side).
     listed = await ac.get("/api/v1/pos/holds", headers=headers)
     assert listed.status_code == 200, listed.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_customer_group_assignment_denied(client, db_session):
+    """store_manager cannot assign customer_group on create/patch; name/phone remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    group = m.CustomerGroup(
+        tenant_id=tid,
+        company_id=cid,
+        name="Party CG Assign Deny",
+        discount_percent=3,
+        is_active=True,
+    )
+    db_session.add(group)
+    await db_session.commit()
+
+    denied_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={
+            "name": "Mgr Customer CG",
+            "customer_group_id": group.id,
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Mgr Customer Plain", "phone": "555-0100"},
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    cust_id = ok_create.json()["data"]["id"]
+
+    denied_patch = await ac.patch(
+        f"/api/v1/customers/{cust_id}",
+        headers=headers,
+        json={"customer_group_id": group.id},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_name_group = await ac.patch(
+        f"/api/v1/customers/{cust_id}",
+        headers=headers,
+        json={"customer_group": "Wholesale"},
+    )
+    assert denied_name_group.status_code == 403, denied_name_group.text
+    assert denied_name_group.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_patch = await ac.patch(
+        f"/api/v1/customers/{cust_id}",
+        headers=headers,
+        json={"phone": "555-0199"},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+    assert ok_patch.json()["data"]["phone"] == "555-0199"
