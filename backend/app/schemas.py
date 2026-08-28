@@ -1524,7 +1524,10 @@ class OpeningStockLine(BaseModel):
     product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_id: str | None = None
-    warehouse_id: str | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → company / product stock path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
     variant_id: str | None = None
     # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
     batch_number: BatchNumberValue | None = None

@@ -1328,7 +1328,7 @@ export default function Page() {
         product_id: selectedId.trim(),
         quantity: Number(openingQty),
         unit_id: openingUnitId || null,
-        warehouse_id: openingWarehouseId || null,
+        warehouse_id: openingWarehouseId.trim() || null,
         variant_id: openingVariantId || null,
         batch_number: openingBatch.trim() || null,
         manufacturing_date: openingMfg.trim() || null,
@@ -2924,6 +2924,8 @@ export default function Page() {
             <select
               value={openingWarehouseId}
               onChange={(e) => setOpeningWarehouseId(e.target.value)}
+              aria-label="Opening stock warehouse"
+              title="Optional warehouse for opening stock line (UuidIdValue)"
             >
               <option value="">Warehouse (optional)</option>
               {warehouses
