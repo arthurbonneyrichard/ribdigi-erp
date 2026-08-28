@@ -1277,9 +1277,15 @@ class UnitOfMeasureUpdate(BaseModel):
 
 
 class UnitConvertPreview(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    from_unit_id: str | None = None
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    # Existence / conversion remain to_stock_qty (**404**/400).
+    from_unit_id: UuidIdValue | None = None
 
 
 class ProductVariantCreate(BaseModel):
@@ -1446,8 +1452,12 @@ class LineItem(BaseModel):
     # tenant-scoped product lookup (**404**). Shared by TransactionCreate + PosSaleCreate.
     product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; stock converted at checkout
-    variant_id: str | None = None
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
     unit_price: float | None = None
     discount: float = Field(default=0, ge=0)
 
@@ -2756,7 +2766,10 @@ class GrnCreate(BaseModel):
     # (was free `str`; garbage could reach PO lookup). Existence remains tenant-scoped
     # PO lookup (**404**). Purchasing **GRN purchase order** control; Post GRN sends trim.
     purchase_order_id: UuidIdValue
-    warehouse_id: str | None = None
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` → PO warehouse /
+    # default path; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach warehouse lookup). Existence remains tenant-scoped (**404**).
+    warehouse_id: UuidIdValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on GoodsReceipt.notes Text).
     notes: GrnNotesValue | None = None
@@ -2869,11 +2882,18 @@ class SalesInvoiceItemCreate(BaseModel):
     # tenant-scoped product lookup (**404**). Shared by SI / QT / SO create lines.
     product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; post/reserve convert to stock unit
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    # Same honesty as LineItem.unit_id (POS / legacy sale).
+    unit_id: UuidIdValue | None = None
     unit_price: float | None = None
     tax_rate: float | None = None
     discount: float = Field(default=0, ge=0)
-    variant_id: str | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    # Same honesty as LineItem.variant_id.
+    variant_id: UuidIdValue | None = None
+
 
 
 class SalesInvoiceCreate(BaseModel):
