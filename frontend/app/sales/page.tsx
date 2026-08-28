@@ -265,8 +265,8 @@ export default function Page() {
   const lineItems = [
     {
       product_id: productId.trim(),
-      variant_id: variantId || null,
-      unit_id: unitId || null,
+      variant_id: variantId.trim() || null,
+      unit_id: unitId.trim() || null,
       quantity: Number(qty),
       ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
       tax_rate: taxRate === '' ? null : Number(taxRate),
@@ -1243,7 +1243,11 @@ export default function Page() {
             ))}
           </select>
           {variants.length > 0 && (
-            <select value={variantId} onChange={(e) => setVariantId(e.target.value)}>
+            <select
+              value={variantId}
+              onChange={(e) => setVariantId(e.target.value)}
+              aria-label="Sales variant"
+            >
               <option value="">Variant (optional)</option>
               {variants.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -1252,7 +1256,11 @@ export default function Page() {
               ))}
             </select>
           )}
-          <select value={unitId} onChange={(e) => setUnitId(e.target.value)}>
+          <select
+            value={unitId}
+            onChange={(e) => setUnitId(e.target.value)}
+            aria-label="Sales unit"
+          >
             <option value="">Unit (default)</option>
             {units.map((u) => (
               <option key={u.id} value={u.id}>
