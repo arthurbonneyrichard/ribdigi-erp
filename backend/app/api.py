@@ -15494,6 +15494,14 @@ async def update_store(
     dashboard_scope_svc.assert_store_in_manager_scope(
         managed, store_id, allow_unset=False
     )
+    changing_manager = payload.manager_id is not None or bool(
+        getattr(payload, "clear_manager", False)
+    )
+    dashboard_scope_svc.assert_store_manager_assignment_write_denied(
+        managed,
+        changing_manager=changing_manager,
+        message="Store managers cannot assign or clear store managers.",
+    )
     branch_id = payload.branch_id
     if payload.branch_id:
         branch_id, _ = await org_units_svc.assert_user_org_assignment(

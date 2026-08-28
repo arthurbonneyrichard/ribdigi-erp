@@ -551,6 +551,18 @@ def assert_company_level_org_create_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_store_manager_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_manager: bool,
+    message: str = "Store managers cannot assign or clear store managers.",
+) -> None:
+    """403 when store_manager attempts company-level store manager_id assignment."""
+    if not changing_manager:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_unit_write_denied(
     managed_ids: list[str] | None,
     *,

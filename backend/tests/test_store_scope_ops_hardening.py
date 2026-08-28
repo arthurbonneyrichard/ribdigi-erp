@@ -9176,3 +9176,52 @@ async def test_store_manager_company_store_limit_write_denied(client, db_session
     assert denied.status_code == 403, denied.text
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+
+
+@pytest.mark.asyncio
+async def test_store_manager_store_manager_assignment_denied(client, db_session):
+    """store_manager cannot assign/clear manager_id; other managed-store patches remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Mgr Assign Deny Store",
+        code="MGR-ASSIGN-DENY",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
+    denied_assign = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"manager_id": admin.id},
+    )
+    assert denied_assign.status_code == 403, denied_assign.text
+    assert denied_assign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_clear = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"clear_manager": True},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_phone = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"phone": "555-0142"},
+    )
+    assert ok_phone.status_code == 200, ok_phone.text
+
+    await db_session.refresh(store)
+    assert store.manager_id == mgr.id
+    assert store.phone == "555-0142"
