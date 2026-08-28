@@ -509,8 +509,8 @@ export default function Page() {
       const r = await api('/inventory/stock-transfers', {
         method: 'POST',
         body: JSON.stringify({
-          from_warehouse_id: xferFromWh,
-          to_warehouse_id: xferToWh,
+          from_warehouse_id: xferFromWh.trim(),
+          to_warehouse_id: xferToWh.trim(),
           submit: true,
           notes: xferNotes.trim() || null,
           // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
@@ -3729,7 +3729,12 @@ export default function Page() {
               {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
             </p>
             <label className="muted">From warehouse</label>
-            <select value={xferFromWh} onChange={(e) => setXferFromWh(e.target.value)}>
+            <select
+              value={xferFromWh}
+              onChange={(e) => setXferFromWh(e.target.value)}
+              aria-label="Stock transfer from warehouse"
+              title="Source warehouse for transfer (UuidIdValue)"
+            >
               <option value="">Select source</option>
               {warehouses
                 .filter((w) => w.store_id)
@@ -3740,7 +3745,12 @@ export default function Page() {
                 ))}
             </select>
             <label className="muted">To warehouse</label>
-            <select value={xferToWh} onChange={(e) => setXferToWh(e.target.value)}>
+            <select
+              value={xferToWh}
+              onChange={(e) => setXferToWh(e.target.value)}
+              aria-label="Stock transfer to warehouse"
+              title="Destination warehouse for transfer (UuidIdValue)"
+            >
               <option value="">Select destination</option>
               {warehouses
                 .filter((w) => w.store_id)

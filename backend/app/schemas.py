@@ -2077,8 +2077,14 @@ class StockTransferItemCreate(BaseModel):
 class StockTransferCreate(BaseModel):
     from_store_id: str | None = None
     to_store_id: str | None = None
-    from_warehouse_id: str | None = None
-    to_warehouse_id: str | None = None
+    # Optional source warehouse ∈ UuidIdValue; omit/`null` OK when store pair set;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    from_warehouse_id: UuidIdValue | None = None
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` OK when store pair set;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    to_warehouse_id: UuidIdValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped / garbage could persist on StockTransfer.notes Text).
     notes: StockTransferNotesValue | None = None

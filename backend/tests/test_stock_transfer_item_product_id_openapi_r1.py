@@ -34,8 +34,8 @@ def test_stock_transfer_item_product_id_schema():
         StockTransferItemCreate.model_validate({"quantity": 1})
 
     base = {
-        "from_warehouse_id": "wh1",
-        "to_warehouse_id": "wh2",
+        "from_warehouse_id": "11111111-2222-3333-4444-555555555555",
+        "to_warehouse_id": "22222222-3333-4444-5555-666666666666",
         "items": [{"product_id": _VALID, "quantity": 1}],
     }
     wrapped = StockTransferCreate.model_validate(base)
