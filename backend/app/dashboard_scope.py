@@ -759,12 +759,48 @@ def assert_bank_connection_credentials_write_denied(
 ) -> None:
     """403 when store_manager patches bank-feed credential / identity fields.
 
-    ``display_name``, auto-sync flags, and lookback on managed connections remain.
-    ``is_active`` is gated by ``assert_bank_connection_lifecycle_write_denied``.
+    ``display_name`` on managed connections remains. Sync policy fields use
+    ``assert_bank_connection_sync_policy_write_denied``. ``is_active`` is gated
+    by ``assert_bank_connection_lifecycle_write_denied``.
     """
     if managed_ids is None:
         return
     fields = sorted(k for k in BANK_CONNECTION_CREDENTIAL_FIELDS if k in payload)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": fields,
+        },
+    )
+
+
+BANK_CONNECTION_SYNC_POLICY_FIELDS = frozenset(
+    {
+        "auto_sync",
+        "auto_match_after_sync",
+        "sync_lookback_days",
+    }
+)
+
+
+def assert_bank_connection_sync_policy_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot update bank feed sync policy.",
+) -> None:
+    """403 when store_manager patches bank-feed auto-sync / lookback policy.
+
+    ``display_name`` and manual ``/sync`` on managed connections remain;
+    credentials and ``is_active`` stay company-level denied separately.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in BANK_CONNECTION_SYNC_POLICY_FIELDS if k in payload)
     if not fields:
         return
     raise HTTPException(
@@ -786,7 +822,8 @@ def assert_bank_connection_lifecycle_write_denied(
     """403 when store_manager attempts company-level bank connection is_active lifecycle.
 
     Connection create/delete already denied; soft activate/deactivate stays
-    admin-only. Display name / auto-sync patches on managed connections remain.
+    admin-only. Display name patches on managed connections remain; sync policy
+    uses ``assert_bank_connection_sync_policy_write_denied``.
     """
     if not changing_active:
         return

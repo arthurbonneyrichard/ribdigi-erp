@@ -104,7 +104,7 @@ store activation — never frontend-only.
    (+ create/import) scoped to managed liquid accounts, and bank connections
    list/export/create/patch/delete/sync scoped to managed liquid accounts
    (**bank connection is_active lifecycle writes denied for store_manager**;
-   display name / auto-sync patches on managed connections remain; credential
+   display name patches on managed connections remain; sync policy + credential
    field patches also denied),
    and expense approve/reject/delete + OCR suggest/apply +
    attachment upload/delete writes store scoped, and customer/supplier
@@ -176,14 +176,17 @@ store activation — never frontend-only.
    **liquid account is_active lifecycle writes denied for store_manager**
    (activate/deactivate admin-only; name on managed liquid accounts remain), and
    **bank connection is_active lifecycle writes denied
-   for store_manager** (activate/deactivate admin-only; display name / auto-sync
-   patches on managed connections remain), and **party customer_group assignment
+   for store_manager** (activate/deactivate admin-only; display name patches on
+   managed connections remain), and **party customer_group assignment
    denied for store_manager** (company sales-master party↔group link; name/phone
    party patches remain), and **bank connection create/delete denied for
    store_manager** (company bank-feed credentials; list/export/patch/sync on
    managed liquid accounts remain), and **bank connection credential field
    patches denied for store_manager** (access_token/feed_url/provider/external
-   id; display_name/auto-sync on managed connections remain), and
+   id; display_name on managed connections remain), and **bank connection sync
+   policy patches denied for store_manager** (auto_sync/auto_match_after_sync/
+   sync_lookback_days; display_name + manual sync on managed connections
+   remain), and
    **offline device bind store-scoped for store_manager** (managed store_id
    required; foreign/unset fail-closed; device register/revoke remain admin), and
    **liquid account bank detail patches denied for store_manager**
