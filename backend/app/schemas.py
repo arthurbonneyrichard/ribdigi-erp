@@ -2649,7 +2649,7 @@ class LowStockSuggestionsCreate(BaseModel):
 class AiLowStockPredictionLine(BaseModel):
     """One at-risk prediction row for draft PR creation (BR-21.4).
 
-    Unknown keys → **422** (`extra=forbid`). Required non-blank `product_id`.
+    Unknown keys → **422** (`extra=forbid`). Required `product_id` ∈ UuidIdValue.
     Optional confidence 0–1 and order qty ≥0. Aligns with fields read by
     `create_requests_from_predictions` (not the full GET prediction shape).
     Optional `risk_reason` ∈ AiPredictionRiskReasonValue; omit/`null` → service
@@ -2659,12 +2659,18 @@ class AiLowStockPredictionLine(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str` with blank→None strip; garbage could reach catalog lookup).
+    product_id: UuidIdValue
     confidence: float | None = Field(default=None, ge=0, le=1)
     suggested_order_qty: float | None = Field(default=None, ge=0)
     recommended_order_qty: float | None = Field(default=None, ge=0)
-    warehouse_id: str | None = None
-    preferred_supplier_id: str | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; blank silently stripped to null).
+    warehouse_id: UuidIdValue | None = None
+    # Optional preferred supplier ∈ UuidIdValue; omit/`null` → no preference; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; blank silently stripped to null).
+    preferred_supplier_id: UuidIdValue | None = None
     # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`
     # stripped to null; blank/garbage could persist onto draft PR line notes).
     notes: PurchaseRequestNotesValue | None = None
@@ -2672,26 +2678,6 @@ class AiLowStockPredictionLine(BaseModel):
     # `http://…` → **422** (was free `str`; blank silently dropped / garbage could
     # embed into PurchaseRequestItem.notes via create_requests_from_predictions).
     risk_reason: AiPredictionRiskReasonValue | None = None
-
-    @field_validator(
-        "product_id",
-        "warehouse_id",
-        "preferred_supplier_id",
-        mode="before",
-    )
-    @classmethod
-    def _strip_optional_text(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
-        return value
-
-    @field_validator("product_id")
-    @classmethod
-    def _require_product_id(cls, value: str | None) -> str:
-        if not value:
-            raise ValueError("product_id is required")
-        return value
 
 
 class AiLowStockPredictionRequestsBody(BaseModel):

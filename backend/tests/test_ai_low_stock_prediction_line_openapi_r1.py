@@ -16,13 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_ai_low_stock_prediction_line_schema_forbid():
     ok = AiLowStockPredictionLine.model_validate(
         {
-            "product_id": "  p1  ",
+            "product_id": "  aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee  ",
             "confidence": 0.8,
             "suggested_order_qty": 2,
             "risk_reason": "  low  ",
         }
     )
-    assert ok.product_id == "p1"
+    assert ok.product_id == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
     assert ok.confidence == 0.8
     assert ok.suggested_order_qty == 2
     assert ok.risk_reason == "low"
@@ -35,26 +35,26 @@ def test_ai_low_stock_prediction_line_schema_forbid():
         AiLowStockPredictionLine.model_validate({})
     with pytest.raises(ValidationError):
         AiLowStockPredictionLine.model_validate(
-            {"product_id": "p1", "sku": "ABC", "confidence": 0.5}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "sku": "ABC", "confidence": 0.5}
         )
     with pytest.raises(ValidationError):
         AiLowStockPredictionLine.model_validate(
-            {"product_id": "p1", "confidence": "nope"}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "confidence": "nope"}
         )
     with pytest.raises(ValidationError):
         AiLowStockPredictionLine.model_validate(
-            {"product_id": "p1", "suggested_order_qty": -1}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "suggested_order_qty": -1}
         )
     with pytest.raises(ValidationError):
         AiLowStockPredictionLine.model_validate(
-            {"product_id": "p1", "confidence": 1.5}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "confidence": 1.5}
         )
 
     wrapped = AiLowStockPredictionRequestsBody.model_validate(
         {
             "lines": [
                 {
-                    "product_id": "p1",
+                    "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                     "confidence": 0.9,
                     "suggested_order_qty": 3,
                 }
@@ -66,7 +66,7 @@ def test_ai_low_stock_prediction_line_schema_forbid():
 
     with pytest.raises(ValidationError):
         AiLowStockPredictionRequestsBody.model_validate(
-            {"lines": [{"product_id": "p1", "seasonality": 1}]}
+            {"lines": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "seasonality": 1}]}
         )
 
 

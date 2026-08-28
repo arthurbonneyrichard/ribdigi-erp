@@ -26,7 +26,7 @@ def test_ai_low_stock_requests_body_schema_forbid():
             "min_confidence": 0.5,
             "notes": "  hello  ",
             "include_open": True,
-            "lines": [{"product_id": "p1", "confidence": 0.9, "suggested_order_qty": 2}],
+            "lines": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "confidence": 0.9, "suggested_order_qty": 2}],
         }
     )
     assert ok.days_ahead == 30

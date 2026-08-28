@@ -26,11 +26,11 @@ def test_ai_low_stock_prediction_notes_schema():
             AiLowStockPredictionRequestsBody.model_validate({"notes": bad})
 
     line_ok = AiLowStockPredictionLine.model_validate(
-        {"product_id": "p1", "notes": "  Line urgent  "}
+        {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "notes": "  Line urgent  "}
     )
     assert line_ok.notes == "Line urgent"
     with pytest.raises(ValidationError):
-        AiLowStockPredictionLine.model_validate({"product_id": "p1", "notes": "!!!!"})
+        AiLowStockPredictionLine.model_validate({"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "notes": "!!!!"})
 
 
 def test_ai_low_stock_prediction_notes_ui_and_docs():

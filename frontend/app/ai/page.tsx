@@ -189,12 +189,14 @@ export default function Page() {
       // Slim to AiLowStockPredictionLine allow-list (extra=forbid on API).
       if (lastAtRisk.length) {
         body.lines = lastAtRisk.map((x: any) => ({
-          product_id: x.product_id,
+          product_id: String(x.product_id || '').trim(),
           confidence: x.confidence,
           suggested_order_qty: x.suggested_order_qty,
           recommended_order_qty: x.recommended_order_qty,
-          warehouse_id: x.warehouse_id,
-          preferred_supplier_id: x.preferred_supplier_id,
+          warehouse_id: x.warehouse_id ? String(x.warehouse_id).trim() : null,
+          preferred_supplier_id: x.preferred_supplier_id
+            ? String(x.preferred_supplier_id).trim()
+            : null,
           notes: x.notes || null,
           // Optional UI override; else prediction risk_reason; blank → null (omit).
           risk_reason:

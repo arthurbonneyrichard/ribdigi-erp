@@ -15,23 +15,23 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_ai_prediction_risk_reason_schema():
-    omit = AiLowStockPredictionLine.model_validate({"product_id": "p1"})
+    omit = AiLowStockPredictionLine.model_validate({"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"})
     assert omit.risk_reason is None
     ok = AiLowStockPredictionLine.model_validate(
-        {"product_id": "p1", "risk_reason": "  predicted_stockout  "}
+        {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "risk_reason": "  predicted_stockout  "}
     )
     assert ok.risk_reason == "predicted_stockout"
     for bad in ("", " ", "!!!", "!!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             AiLowStockPredictionLine.model_validate(
-                {"product_id": "p1", "risk_reason": bad}
+                {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "risk_reason": bad}
             )
 
     wrapped = AiLowStockPredictionRequestsBody.model_validate(
         {
             "lines": [
                 {
-                    "product_id": "p1",
+                    "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                     "suggested_order_qty": 2,
                     "risk_reason": "below_reorder",
                 }
