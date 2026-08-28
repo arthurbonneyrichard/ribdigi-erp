@@ -11440,8 +11440,23 @@ async def create_liquid_transfer(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     dashboard_scope_svc.assert_store_in_manager_scope(
         managed, payload.store_id, allow_unset=False
+    )
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        payload.from_account_id,
+        multi,
+        company_id=claims.get("company_id"),
+    )
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        payload.to_account_id,
+        multi,
+        company_id=claims.get("company_id"),
     )
     entry = await accounting_svc.transfer_liquid_funds(
         db,

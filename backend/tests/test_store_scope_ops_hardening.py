@@ -5718,6 +5718,54 @@ async def test_store_manager_liquid_transfer_and_opening_balance_writes_scoped(
             {"account_code": "4000", "debit": 0, "credit": 500},
         ],
     )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Seed bank for liquid xfer test",
+        reference="JE-LIQ-BANK",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 100, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 100},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Foreign bank only",
+        reference="JE-LIQ-FOR",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 999, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 999},
+        ],
+    )
+    foreign_bank_only = await accounting_svc.create_liquid_account(
+        db_session,
+        tenant_id=tid,
+        kind="bank",
+        code="1097",
+        name="Foreign Scope Bank",
+        bank_name="Foreign Bank",
+        company_id=cid,
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Foreign-only liquid bank",
+        reference="JE-LIQ-FBO",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1097", "debit": 50, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 50},
+        ],
+    )
     await db_session.commit()
 
     ok_xfer = await ac.post(
@@ -5761,6 +5809,20 @@ async def test_store_manager_liquid_transfer_and_opening_balance_writes_scoped(
     )
     assert denied_unset.status_code == 403
     assert denied_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_foreign_acct = await ac.post(
+        "/api/v1/accounting/liquid-transfers",
+        headers=headers,
+        json={
+            "from_account_id": cash.id,
+            "to_account_id": foreign_bank_only.id,
+            "amount": 5,
+            "kind": "deposit",
+            "store_id": mine.id,
+        },
+    )
+    assert denied_foreign_acct.status_code == 403
+    assert denied_foreign_acct.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     petty = await accounting_svc.create_liquid_account(
         db_session,
