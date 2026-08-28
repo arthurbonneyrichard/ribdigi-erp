@@ -165,7 +165,9 @@ store activation — never frontend-only.
    (activate/deactivate admin-only / entitlement-gated; name/phone/address/
    operating_hours remain), and **opening stock writes denied for
    store_manager** (company fiscal inventory init / BR-5.2; stock-in/out on
-   managed WH remain), and
+   managed WH remain), and **inventory barcode labels WH-scoped for
+   store_manager** (products without managed WarehouseStock denied; in-scope
+   print remains), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

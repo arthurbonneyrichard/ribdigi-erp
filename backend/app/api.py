@@ -6352,11 +6352,21 @@ async def product_barcode_labels(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 97 I1 — `code_type=barcode|qr` for printable product labels."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app import tenants as tenants_svc
 
     ctype = (code_type or "barcode").strip().lower()
     if ctype not in {"barcode", "qr"}:
         raise HTTPException(status_code=400, detail="code_type must be barcode or qr")
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    await dashboard_scope_svc.assert_products_in_manager_warehouse_scope(
+        db,
+        claims["tenant_id"],
+        managed_wh,
+        [product_id],
+        company_id=claims.get("company_id"),
+        message="Product is outside your managed warehouse scope for label printing.",
+    )
     labels = await barcode_labels_svc.resolve_label_targets(
         db,
         tenant_id=claims["tenant_id"],
@@ -6402,16 +6412,27 @@ async def print_barcode_labels(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import tenants as tenants_svc
 
     ctype = (payload.code_type or "barcode").strip().lower()
     if ctype not in {"barcode", "qr"}:
         raise HTTPException(status_code=400, detail="code_type must be barcode or qr")
+    items = [i.model_dump() for i in payload.items]
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    await dashboard_scope_svc.assert_products_in_manager_warehouse_scope(
+        db,
+        claims["tenant_id"],
+        managed_wh,
+        [str(it.get("product_id") or "") for it in items],
+        company_id=claims.get("company_id"),
+        message="Product is outside your managed warehouse scope for label printing.",
+    )
     labels = await barcode_labels_svc.resolve_label_targets(
         db,
         tenant_id=claims["tenant_id"],
         company_id=claims.get("company_id"),
-        items=[i.model_dump() for i in payload.items],
+        items=items,
     )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     currency = tenant.currency or "GHS"

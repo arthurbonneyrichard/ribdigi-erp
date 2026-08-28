@@ -659,6 +659,56 @@ def assert_store_lifecycle_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+async def assert_products_in_manager_warehouse_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    managed_wh_ids: list[str] | None,
+    product_ids: list[str],
+    *,
+    company_id: str | None = None,
+    message: str = "Product is outside your managed warehouse scope for label printing.",
+) -> None:
+    """403 when store_manager targets products without managed-warehouse stock rows.
+
+    Empty managed warehouse set fail-closes. Tenant-wide (``None``) skips.
+    """
+    if managed_wh_ids is None:
+        return
+    pids = [str(p).strip() for p in product_ids if str(p or "").strip()]
+    if not pids:
+        return
+    if not managed_wh_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+            },
+        )
+    stmt = (
+        select(m.WarehouseStock.product_id)
+        .where(
+            m.WarehouseStock.tenant_id == tenant_id,
+            m.WarehouseStock.warehouse_id.in_(managed_wh_ids),
+            m.WarehouseStock.product_id.in_(pids),
+        )
+        .distinct()
+    )
+    if company_id:
+        stmt = stmt.where(m.WarehouseStock.company_id == company_id)
+    allowed = {str(pid) for pid in (await db.execute(stmt)).scalars().all() if pid}
+    missing = [pid for pid in pids if pid not in allowed]
+    if missing:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+                "product_ids": missing,
+            },
+        )
+
+
 def assert_company_level_org_unit_write_denied(
     managed_ids: list[str] | None,
     *,
