@@ -1750,10 +1750,17 @@ async def list_tenant_sessions(
     status: str | None = None,
     active_only: bool = False,
     user_id: str | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 A1 — tenant-wide session inventory (no refresh-token secrets)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_sessions_read_denied(
+        managed,
+        message="Store managers cannot list tenant-wide auth sessions.",
+    )
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"active", "revoked", "all"}:
         raise HTTPException(status_code=400, detail="status must be active, revoked, or all")
@@ -1780,10 +1787,17 @@ async def tenant_sessions_export(
     status: str | None = None,
     active_only: bool = False,
     user_id: str | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 A1 — tenant session inventory CSV (refresh-token secrets never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_sessions_read_denied(
+        managed,
+        message="Store managers cannot export tenant-wide auth sessions CSV.",
+    )
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"active", "revoked", "all"}:
         raise HTTPException(status_code=400, detail="status must be active, revoked, or all")

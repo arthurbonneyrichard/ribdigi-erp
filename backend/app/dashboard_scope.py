@@ -719,6 +719,22 @@ def assert_company_level_backup_jobs_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_tenant_sessions_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export tenant-wide auth sessions; "
+        "own /auth/sessions remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /auth/tenant-sessions or /export.
+
+    Tenant-wide session inventory (all users) is company security admin.
+    Per-user ``/auth/sessions`` self-service remains.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,
