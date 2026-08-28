@@ -1729,7 +1729,10 @@ class AiDocumentPurchaseInvoiceCreate(BaseModel):
     # `str`; garbage could reach PO lookup). Existence remains tenant-scoped
     # purchase-order lookup (**404**). Same honesty as GrnCreate.purchase_order_id.
     purchase_order_id: UuidIdValue
-    supplier_id: str | None = None
+    # Optional supplier ∈ UuidIdValue; omit/`null` → PO's supplier; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach party
+    # lookup). Existence / PO match remains service (**400**/404).
+    supplier_id: UuidIdValue | None = None
     # omit/`null` → no supplier invoice #; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently cleared; punctuation/URL could persist).
     supplier_invoice_number: SupplierInvoiceNumberValue | None = None

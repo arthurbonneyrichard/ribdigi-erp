@@ -33,10 +33,12 @@ export default function Page() {
   const [draftDocBranchId, setDraftDocBranchId] = useState('');
   const [draftDocDepartmentId, setDraftDocDepartmentId] = useState('');
   const [draftDocPurchaseOrderId, setDraftDocPurchaseOrderId] = useState('');
+  const [draftDocSupplierId, setDraftDocSupplierId] = useState('');
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
 
   useEffect(() => {
     api('/expenses/categories')
@@ -51,6 +53,9 @@ export default function Page() {
     api('/departments')
       .then((r) => setDepartments(r.data || []))
       .catch(() => setDepartments([]));
+    api('/suppliers')
+      .then((r) => setSuppliers(r.data || []))
+      .catch(() => setSuppliers([]));
   }, []);
 
   async function go() {
@@ -422,6 +427,7 @@ export default function Page() {
     setMessage('');
     setLastDocExtract(null);
     setDraftDocPurchaseOrderId('');
+    setDraftDocSupplierId('');
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -437,6 +443,9 @@ export default function Page() {
       );
       setDraftDocPurchaseOrderId(
         String(d.matches?.purchase_orders?.[0]?.purchase_order_id || '').trim(),
+      );
+      setDraftDocSupplierId(
+        String(d.matches?.purchase_orders?.[0]?.supplier_id || '').trim(),
       );
       setA(
         [
@@ -515,7 +524,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           purchase_order_id: poId,
-          supplier_id: poMatch?.supplier_id || null,
+          supplier_id: draftDocSupplierId.trim() || null,
           supplier_invoice_number: ex.reference || null,
           notes: ex.description || null,
           invoice_date: invoiceDate,
@@ -704,7 +713,14 @@ export default function Page() {
           </button>
           <select
             value={draftDocPurchaseOrderId}
-            onChange={(e) => setDraftDocPurchaseOrderId(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setDraftDocPurchaseOrderId(next);
+              const match = (lastDocExtract?.matches?.purchase_orders || []).find(
+                (m: any) => String(m.purchase_order_id) === next,
+              );
+              setDraftDocSupplierId(String(match?.supplier_id || '').trim());
+            }}
             aria-label="AI document purchase order"
             title="Matched purchase order (UuidIdValue); required for draft PI"
           >
@@ -714,6 +730,21 @@ export default function Page() {
                 {m.po_number || m.purchase_order_id}
               </option>
             ))}
+          </select>
+          <select
+            value={draftDocSupplierId}
+            onChange={(e) => setDraftDocSupplierId(e.target.value)}
+            aria-label="AI document supplier"
+            title="Optional supplier (UuidIdValue); omit → PO supplier; must match PO"
+          >
+            <option value="">PO default supplier</option>
+            {suppliers
+              .filter((s) => s.is_active !== false)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code ? `${s.code} — ${s.name}` : s.name}
+                </option>
+              ))}
           </select>
           <button
             type="button"
