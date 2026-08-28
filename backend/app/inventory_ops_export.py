@@ -291,6 +291,7 @@ async def export_low_stock_csv(
     stock_status: str | None = None,
     company_id: str | None = None,
     warehouse_ids: list[str] | None = None,
+    omit_cost_price: bool = False,
 ) -> str:
     rows = await list_low_stock_alerts(
         db,
@@ -303,7 +304,10 @@ async def export_low_stock_csv(
     writer = csv.DictWriter(buf, fieldnames=LOW_STOCK_EXPORT_COLUMNS)
     writer.writeheader()
     for row in rows:
-        writer.writerow({k: _cell(row.get(k)) for k in LOW_STOCK_EXPORT_COLUMNS})
+        out = {k: _cell(row.get(k)) for k in LOW_STOCK_EXPORT_COLUMNS}
+        if omit_cost_price:
+            out["cost_price"] = ""
+        writer.writerow(out)
     return buf.getvalue()
 
 

@@ -1933,6 +1933,8 @@ async def test_store_manager_low_stock_and_expiry_warehouse_scoped(client, db_se
     wh_ids = {r.get("warehouse_id") for r in low_rows if r.get("scope") == "warehouse"}
     assert wh_mine.id in wh_ids
     assert wh_other.id not in wh_ids
+    for row in low_rows:
+        assert row.get("cost_price") is None
 
     report = await ac.get("/api/v1/reports/inventory/low-stock", headers=headers)
     assert report.status_code == 200, report.text
@@ -1999,6 +2001,111 @@ async def test_store_manager_low_stock_and_expiry_warehouse_scoped(client, db_se
     )
     assert ok_po.status_code == 200, ok_po.text
     assert ok_po.json()["data"]["warehouse_id"] == wh_mine.id
+
+
+@pytest.mark.asyncio
+async def test_store_manager_low_stock_cost_price_redacted(client, db_session):
+    """store_manager low-stock list/export omit cost_price; admin intact; qty remain."""
+    from app.inventory import apply_stock_change
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["inventory"] = ["read"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="LS Cost Redact Store",
+        code="LSCR-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="LS Cost WH",
+        code="LSCR-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    product.cost_price = 88.5
+    product.reorder_level = 20
+    product.minimum_stock = 5
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=product.id,
+        quantity_delta=2,
+        movement_type="stock_in",
+        user_id=mgr.id,
+        warehouse_id=wh.id,
+    )
+    stock = (
+        await db_session.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.warehouse_id == wh.id,
+                m.WarehouseStock.product_id == product.id,
+            )
+        )
+    ).scalar_one()
+    stock.reorder_level = 20
+    stock.minimum_stock = 5
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_low = await ac.get("/api/v1/inventory/low-stock", headers=admin_headers)
+    assert admin_low.status_code == 200, admin_low.text
+    admin_row = next(
+        r
+        for r in admin_low.json()["data"]
+        if r.get("id") == product.id and r.get("warehouse_id") == wh.id
+    )
+    assert float(admin_row["cost_price"]) == 88.5
+
+    mgr_low = await ac.get("/api/v1/inventory/low-stock", headers=headers)
+    assert mgr_low.status_code == 200, mgr_low.text
+    mgr_row = next(
+        r
+        for r in mgr_low.json()["data"]
+        if r.get("id") == product.id and r.get("warehouse_id") == wh.id
+    )
+    assert float(mgr_row["stock_qty"]) == 2.0
+    assert mgr_row.get("cost_price") is None
+
+    exported = await ac.get("/api/v1/inventory/low-stock/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "88.5" not in exported.text
+    assert product.sku in exported.text
+
+    admin_export = await ac.get("/api/v1/inventory/low-stock/export", headers=admin_headers)
+    assert admin_export.status_code == 200, admin_export.text
+    assert "88.5" in admin_export.text
 
 
 @pytest.mark.asyncio

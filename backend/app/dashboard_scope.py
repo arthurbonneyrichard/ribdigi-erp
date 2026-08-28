@@ -2707,7 +2707,9 @@ def omit_product_cost_price(managed_ids: list[str] | None) -> bool:
     Product master writes already denied; catalog list/get/export and per-product
     variants must not dump company COGS. Selling price + WH stock remain for POS.
     Inventory balance/valuation report cost fields are redacted separately via
-    ``redact_inventory_report_cost`` when ``warehouse_ids`` is set.
+    ``redact_inventory_report_cost`` when ``warehouse_ids`` is set. Low-stock
+    alert list/export also omit ``cost_price`` via this helper. AI inventory
+    cost embeds may remain PARTIAL leftovers.
     """
     return managed_ids is not None
 

@@ -5890,6 +5890,7 @@ async def lowstock(
     """Stage 137 L1 — optional stock_status=red|yellow; store_manager WH-scoped."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     out = await inventory_ops_export_svc.list_low_stock_alerts(
         db,
@@ -5898,6 +5899,8 @@ async def lowstock(
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
     )
+    if dashboard_scope_svc.omit_product_cost_price(managed):
+        out = [dashboard_scope_svc.redact_product_cost_price(row) for row in out]
     return env(out)
 
 
@@ -5910,6 +5913,7 @@ async def export_low_stock_csv(
     """Stage 137 L1 — low-stock alert CSV; store_manager WH-scoped."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await inventory_ops_export_svc.export_low_stock_csv(
         db,
@@ -5917,6 +5921,7 @@ async def export_low_stock_csv(
         stock_status=stock_status,
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
+        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed),
     )
     return Response(
         content=text,
