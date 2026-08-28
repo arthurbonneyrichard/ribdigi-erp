@@ -10067,6 +10067,18 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     assert variants.status_code == 200, variants.text
     assert any(row["sku"] == "A-1-V-DENY" for row in variants.json()["data"])
 
+    denied_variants_export = await ac.get("/api/v1/products/variants/export", headers=headers)
+    assert denied_variants_export.status_code == 403, denied_variants_export.text
+    assert denied_variants_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Per-product variants CSV remains (path-scoped read; company roster dump denied above).
+    ok_product_variants_export = await ac.get(
+        f"/api/v1/products/{product.id}/variants/export",
+        headers=headers,
+    )
+    assert ok_product_variants_export.status_code == 200, ok_product_variants_export.text
+    assert "A-1-V-DENY" in ok_product_variants_export.text or "sku" in ok_product_variants_export.text.lower()
+
 
 @pytest.mark.asyncio
 async def test_store_manager_stock_import_denied(client, db_session):

@@ -6334,6 +6334,10 @@ async def products_variants_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 124 X1 — product variants CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_variants_export_denied(managed)
     text = await variant_role_export_svc.export_variants_csv(
         db,
         tenant_id=claims["tenant_id"],

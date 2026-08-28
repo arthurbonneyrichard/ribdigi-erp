@@ -6,23 +6,32 @@ from pathlib import Path
 
 import pytest
 
+from app import models as m
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.asyncio
-async def test_product_variants_path_export_csv(client):
+async def test_product_variants_path_export_csv(client, db_session):
+    """Per-product variants CSV remains for store_manager (company roster dump is denied elsewhere)."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     product_id = seed["p1"].id
 
-    created = await ac.post(
-        f"/api/v1/products/{product_id}/variants",
-        headers=headers,
-        json={"name": "Stage 156 Variant", "sku": "P1-156-V", "selling_price": 9.5},
+    variant = m.ProductVariant(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        product_id=product_id,
+        name="Stage 156 Variant",
+        sku="P1-156-V",
+        cost_price=1,
+        selling_price=9.5,
+        stock_qty=0,
+        is_active=True,
     )
-    assert created.status_code == 200, created.text
+    db_session.add(variant)
+    await db_session.commit()
 
     exported = await ac.get(
         f"/api/v1/products/{product_id}/variants/export",

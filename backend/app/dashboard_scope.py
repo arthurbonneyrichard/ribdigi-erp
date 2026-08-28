@@ -1404,6 +1404,19 @@ def assert_company_level_product_master_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_product_variants_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company product variants CSV.",
+) -> None:
+    """403 when store_manager exports company-wide product variants CSV (catalog master dump).
+
+    Per-product variants list/get and WH-scoped products export remain; full variants roster
+    export is company-level administration (variant writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_stock_import_denied(
     managed_ids: list[str] | None,
     *,
