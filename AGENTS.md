@@ -81,9 +81,7 @@ store activation — never frontend-only.
    balance zeroed under scope), and credit statements / outstanding /
    payment registers (+ exports) plus customer/supplier payment write
    asserts (invoice/PO/PI required in managed scope; unallocated payments
-   denied), and credit_limit_override on sales invoice post / POS credit
-   denied for store_manager (`STORE_SCOPE_DENIED`; default role still has
-   `credit:approve` for other credit ops), and accounting P&L / trial balance / cash-flow / balance-sheet
+   denied), and accounting P&L / trial balance / cash-flow / balance-sheet
    (+ path CSVs, `/reports/export`, dashboard MTD P&L) from managed-store
    journals (null-store fail-closed; foreign `store_id` denied), and tax
    report / filing (+ path CSV, `/reports/export` tax/tax_filing*) from
