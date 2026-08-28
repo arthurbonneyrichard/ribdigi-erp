@@ -102,8 +102,9 @@ def assert_offline_sync_store_scope(
 
     Mirrors offline device bind: envelope refresh on ``/sync/push``,
     ``/sync/pull``, and ``/sync/ack`` must not company-bind or touch unmanaged
-    stores. Register / revoke remain admin; conflict resolve uses
-    ``assert_company_level_sync_conflict_resolve_denied``. Offline Complete remains MISSING.
+    stores. Device list/get/register/revoke use offline-devices admin denies;
+    conflict resolve uses ``assert_company_level_sync_conflict_resolve_denied``.
+    Offline Complete remains MISSING.
     """
     if managed_ids is None:
         return
@@ -126,6 +127,38 @@ def assert_offline_sync_store_scope(
                 "store_id": sid,
             },
         )
+
+
+def assert_company_level_offline_devices_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or inspect company offline device inventory; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager GETs /offline/devices or /offline/devices/{id}.
+
+    Tenant-wide device inventory is company admin. Bind remains store-scoped;
+    register/revoke use write deny. Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_offline_devices_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot register or revoke company offline devices; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager POSTs /offline/devices or DELETE /offline/devices/{id}.
+
+    List/get already denied; register/revoke are company admin. Bind remains
+    store-scoped. Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
 
 
 def assert_company_level_sync_conflict_resolve_denied(

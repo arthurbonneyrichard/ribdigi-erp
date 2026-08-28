@@ -18022,10 +18022,17 @@ async def sync_conflicts_resolve(
 async def offline_devices_list(
     status: str | None = None,
     active_only: bool = False,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 163 V1 — tenant offline device list (soft-revoke status)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_offline_devices_read_denied(
+        managed,
+        message="Store managers cannot list company offline device inventory.",
+    )
     rows = await offline_devices_svc.list_devices(
         db, claims["tenant_id"], status=status, active_only=active_only
     )
@@ -18062,10 +18069,17 @@ async def offline_alerts_notify(
 async def offline_devices_create(
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 163 V1 — register an offline/PWA device for this tenant."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_offline_devices_write_denied(
+        managed,
+        message="Store managers cannot register company offline devices.",
+    )
     tenants_svc.assert_writable(claims)
     body = payload or {}
     row = await offline_devices_svc.create_device(
@@ -18099,9 +18113,16 @@ async def offline_devices_create(
 @api.get("/offline/devices/{device_id}")
 async def offline_devices_get(
     device_id: str,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_offline_devices_read_denied(
+        managed,
+        message="Store managers cannot inspect company offline device inventory.",
+    )
     row = await offline_devices_svc.get_device(db, claims["tenant_id"], device_id)
     return env(offline_devices_svc.serialize_device(row))
 
@@ -18174,10 +18195,17 @@ async def offline_devices_bind(
 async def offline_devices_revoke(
     device_id: str,
     request: Request,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Soft-revoke + soft lockdown: expire server envelope; queue retained (not auto-applied)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_offline_devices_write_denied(
+        managed,
+        message="Store managers cannot revoke company offline devices.",
+    )
     tenants_svc.assert_writable(claims)
     pending = await sync_engine_svc.device_pending_queue_stats(
         db, tenant_id=claims["tenant_id"], device_id=device_id

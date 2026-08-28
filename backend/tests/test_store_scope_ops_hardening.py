@@ -12044,6 +12044,53 @@ async def test_store_manager_sync_conflict_resolve_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_offline_devices_admin_denied(client, db_session):
+    """Offline device list/get/register/revoke denied for store_manager; admin register remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_list = await ac.get("/api/v1/offline/devices", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_create = await ac.post(
+        "/api/v1/offline/devices",
+        headers=headers,
+        json={"name": "SM should not register", "platform": "web"},
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/offline/devices",
+        headers=admin_headers,
+        json={"name": "Admin device for deny test", "platform": "web"},
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    device_id = ok_create.json()["data"]["id"]
+
+    denied_get = await ac.get(f"/api/v1/offline/devices/{device_id}", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_revoke = await ac.delete(
+        f"/api/v1/offline/devices/{device_id}", headers=headers
+    )
+    assert denied_revoke.status_code == 403, denied_revoke.text
+    assert denied_revoke.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get("/api/v1/offline/devices", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    assert any(r["id"] == device_id for r in ok_list.json()["data"])
+
+
+@pytest.mark.asyncio
 async def test_store_manager_business_types_read_denied(client, db_session):
     """Business-types catalog GET denied for store_manager; admin remains."""
     ac, seed = client
