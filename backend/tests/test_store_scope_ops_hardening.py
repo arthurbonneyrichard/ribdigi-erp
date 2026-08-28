@@ -11342,7 +11342,9 @@ async def test_store_manager_api_keys_read_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_webhooks_read_denied(client, db_session):
-    """GET /webhooks + deliveries list/export denied for store_manager; admin remains."""
+    """GET /webhooks list/export/detail + deliveries denied for store_manager; admin remains."""
+    from app import webhooks as webhooks_svc
+
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
@@ -11352,6 +11354,19 @@ async def test_store_manager_webhooks_read_denied(client, db_session):
         totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
     )
 
+    row, _secret = await webhooks_svc.create_endpoint(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        url="https://hooks.example.com/ribdigi",
+        events=["sale.created"],
+        secret=None,
+        description="Admin webhook",
+        is_active=True,
+    )
+    await db_session.commit()
+    webhook_id = row.id
+
     denied = await ac.get("/api/v1/webhooks", headers=headers)
     assert denied.status_code == 403, denied.text
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
@@ -11359,6 +11374,10 @@ async def test_store_manager_webhooks_read_denied(client, db_session):
     denied_export = await ac.get("/api/v1/webhooks/export", headers=headers)
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_get = await ac.get(f"/api/v1/webhooks/{webhook_id}", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     denied_deliveries = await ac.get("/api/v1/webhooks/deliveries", headers=headers)
     assert denied_deliveries.status_code == 403, denied_deliveries.text
@@ -11374,6 +11393,8 @@ async def test_store_manager_webhooks_read_denied(client, db_session):
     assert ok.status_code == 200, ok.text
     ok_export = await ac.get("/api/v1/webhooks/export", headers=admin_headers)
     assert ok_export.status_code == 200, ok_export.text
+    ok_get = await ac.get(f"/api/v1/webhooks/{webhook_id}", headers=admin_headers)
+    assert ok_get.status_code == 200, ok_get.text
     ok_deliveries = await ac.get("/api/v1/webhooks/deliveries", headers=admin_headers)
     assert ok_deliveries.status_code == 200, ok_deliveries.text
     ok_deliveries_export = await ac.get(

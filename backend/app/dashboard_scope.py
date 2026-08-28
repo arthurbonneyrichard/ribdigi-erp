@@ -657,11 +657,11 @@ def assert_company_level_webhooks_read_denied(
     managed_ids: list[str] | None,
     *,
     message: str = (
-        "Store managers cannot list or export company webhooks; "
+        "Store managers cannot list, export, or inspect company webhooks; "
         "managed store ops remain."
     ),
 ) -> None:
-    """403 when store_manager reads GET /webhooks or /export.
+    """403 when store_manager reads GET /webhooks, /export, or /{id}.
 
     Endpoint URL/event subscription dump is company security admin.
     Deliveries use ``assert_company_level_webhook_deliveries_read_denied``.

@@ -18489,9 +18489,16 @@ async def webhooks_create(
 @api.get("/webhooks/{webhook_id}")
 async def webhooks_get(
     webhook_id: str,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhooks_read_denied(
+        managed,
+        message="Store managers cannot inspect company webhook detail.",
+    )
     row = await webhooks_svc.get_endpoint(db, claims["tenant_id"], webhook_id)
     return env(webhooks_svc.serialize_endpoint(row))
 
