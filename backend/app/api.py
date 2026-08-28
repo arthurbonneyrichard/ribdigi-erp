@@ -18589,7 +18589,13 @@ async def ai_reports_generate(
 ):
     """BR-21.7 — generate (or export) a report from a natural-language prompt."""
     from app import ai_reports as ai_reports_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_ai_report_generate_denied(
+        managed,
+        message="Store managers cannot run company-level AI NL report generation.",
+    )
     prompt = str((payload or {}).get("prompt") or (payload or {}).get("message") or "").strip()
     # API-doc shape also accepts report_type + period without free text
     if not prompt and (payload or {}).get("report_type"):
