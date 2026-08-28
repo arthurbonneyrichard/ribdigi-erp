@@ -452,9 +452,16 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
 
 @api.get("/tenants/me")
 async def tenant_me(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_me_read_denied(
+        managed,
+        message="Store managers cannot read GET /tenants/me company/tenant profile.",
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
     if tenant.status == "suspended":

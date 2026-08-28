@@ -11168,6 +11168,19 @@ async def test_store_manager_document_settings_writes_denied(client, db_session)
     )
     assert ok_profile_export.status_code == 200, ok_profile_export.text
 
+    denied_tenant_me = await ac.get(
+        "/api/v1/tenants/me",
+        headers=headers,
+    )
+    assert denied_tenant_me.status_code == 403, denied_tenant_me.text
+    assert denied_tenant_me.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_tenant_me = await ac.get(
+        "/api/v1/tenants/me",
+        headers=admin_headers,
+    )
+    assert ok_tenant_me.status_code == 200, ok_tenant_me.text
+
 
 @pytest.mark.asyncio
 async def test_store_manager_onboarding_checklist_denied(client, db_session):
