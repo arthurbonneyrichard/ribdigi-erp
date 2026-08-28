@@ -33,9 +33,9 @@ export default function Page() {
   const [unpostReason, setUnpostReason] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
-  type ManualLine = { account_code: string; debit: string; credit: string; description: string };
+  type ManualLine = { account_id: string; debit: string; credit: string; description: string };
   const emptyManualLine = (): ManualLine => ({
-    account_code: '',
+    account_id: '',
     debit: '',
     credit: '',
     description: '',
@@ -282,7 +282,7 @@ export default function Page() {
     setMessage('');
     try {
       const lines = manualLines.map((l) => ({
-        account_code: l.account_code.trim(),
+        account_id: l.account_id.trim() || null,
         debit: Math.max(0, Number(l.debit) || 0),
         credit: Math.max(0, Number(l.credit) || 0),
         description: l.description.trim() || null,
@@ -291,7 +291,7 @@ export default function Page() {
         throw new Error('Journal entry requires at least two lines');
       }
       for (const line of lines) {
-        if (!line.account_code) throw new Error('Each line needs an account code');
+        if (!line.account_id) throw new Error('Each line needs an account');
         if (line.debit <= 0 && line.credit <= 0) {
           throw new Error('Each line needs a debit or credit amount');
         }
@@ -1019,7 +1019,7 @@ export default function Page() {
               <table className="table" aria-label="Manual journal lines">
                 <thead>
                   <tr>
-                    <th>Account code</th>
+                    <th>Account</th>
                     <th>Debit</th>
                     <th>Credit</th>
                     <th>Line desc</th>
@@ -1030,19 +1030,25 @@ export default function Page() {
                   {manualLines.map((line, idx) => (
                     <tr key={idx}>
                       <td>
-                        <input
-                          list="manual-journal-accounts"
-                          value={line.account_code}
+                        <select
+                          value={line.account_id}
                           onChange={(e) =>
                             setManualLines((prev) =>
                               prev.map((row, i) =>
-                                i === idx ? { ...row, account_code: e.target.value } : row,
+                                i === idx ? { ...row, account_id: e.target.value } : row,
                               ),
                             )
                           }
-                          placeholder="e.g. 6000"
-                          aria-label={`Journal line ${idx + 1} account code`}
-                        />
+                          aria-label={`Journal line ${idx + 1} account`}
+                          title="Optional COA account (UuidIdValue); blank/garbage → 422"
+                        >
+                          <option value="">Select account</option>
+                          {activeAccounts.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.code} — {a.name}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td>
                         <input
@@ -1110,13 +1116,6 @@ export default function Page() {
                   ))}
                 </tbody>
               </table>
-              <datalist id="manual-journal-accounts">
-                {activeAccounts.map((a) => (
-                  <option key={a.id} value={a.code}>
-                    {a.name}
-                  </option>
-                ))}
-              </datalist>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   type="button"

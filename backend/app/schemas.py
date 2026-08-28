@@ -6246,7 +6246,10 @@ class JournalLineCreate(BaseModel):
     `str`; blank/garbage could persist on `JournalEntryLine.description`).
     """
 
-    account_id: str | None = None
+    # Optional COA ∈ UuidIdValue; omit/`null` OK when account_code set; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
+    # Existence remains tenant-scoped account lookup (**404**).
+    account_id: UuidIdValue | None = None
     # Optional COA lookup ∈ AccountCodeValue; omit/`null` OK when account_id set
     account_code: AccountCodeValue | None = None
     debit: float = Field(default=0, ge=0)
