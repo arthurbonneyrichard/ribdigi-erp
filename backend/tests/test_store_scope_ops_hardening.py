@@ -10556,6 +10556,127 @@ async def test_store_manager_party_code_redacted(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_credit_master_redacted(client, db_session):
+    """store_manager customer/supplier JSON omits credit/payment-terms master; name/balance remain; admin intact."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cust = seed["party1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["sales"] = ["read", "write"]
+    perms["purchasing"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Party Credit Redact Store",
+        code="CRD-RD-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+
+    cust.credit_limit = 2500
+    cust.payment_terms_days = 30
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        kind="supplier",
+        name="Credit Redact Supplier",
+        code="CRD-RD-SUP",
+        status="active",
+        credit_limit=4000,
+        payment_terms_days=14,
+        early_pay_discount_pct=2.5,
+        early_pay_discount_days=10,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_cust = await ac.get(f"/api/v1/customers/{cust.id}", headers=admin_headers)
+    assert admin_cust.status_code == 200, admin_cust.text
+    admin_cbody = admin_cust.json()["data"]
+    assert float(admin_cbody["credit_limit"]) == 2500
+    assert int(admin_cbody["payment_terms_days"]) == 30
+
+    admin_sup = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=admin_headers)
+    assert admin_sup.status_code == 200, admin_sup.text
+    admin_sbody = admin_sup.json()["data"]
+    assert float(admin_sbody["credit_limit"]) == 4000
+    assert int(admin_sbody["payment_terms_days"]) == 14
+    assert float(admin_sbody["early_pay_discount_pct"]) == 2.5
+    assert int(admin_sbody["early_pay_discount_days"]) == 10
+
+    mgr_clist = await ac.get("/api/v1/customers", headers=headers)
+    assert mgr_clist.status_code == 200, mgr_clist.text
+    mgr_crow = next(r for r in mgr_clist.json()["data"] if r["id"] == cust.id)
+    assert mgr_crow["name"]
+    assert mgr_crow.get("credit_limit") is None
+    assert mgr_crow.get("payment_terms_days") is None
+    assert "balance" in mgr_crow
+
+    mgr_cget = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert mgr_cget.status_code == 200, mgr_cget.text
+    cgot = mgr_cget.json()["data"]
+    assert cgot.get("credit_limit") is None
+    assert cgot.get("payment_terms_days") is None
+
+    mgr_slist = await ac.get("/api/v1/suppliers", headers=headers)
+    assert mgr_slist.status_code == 200, mgr_slist.text
+    mgr_srow = next(r for r in mgr_slist.json()["data"] if r["id"] == supplier.id)
+    assert mgr_srow["name"]
+    assert mgr_srow.get("credit_limit") is None
+    assert mgr_srow.get("payment_terms_days") is None
+    assert mgr_srow.get("early_pay_discount_pct") is None
+    assert mgr_srow.get("early_pay_discount_days") is None
+
+    mgr_sget = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=headers)
+    assert mgr_sget.status_code == 200, mgr_sget.text
+    sgot = mgr_sget.json()["data"]
+    assert sgot.get("credit_limit") is None
+    assert sgot.get("early_pay_discount_pct") is None
+
+    patched = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Credit Redact Renamed"},
+    )
+    assert patched.status_code == 200, patched.text
+    pbody = patched.json()["data"]
+    assert pbody["name"] == "Credit Redact Renamed"
+    assert pbody.get("credit_limit") is None
+    assert pbody.get("payment_terms_days") is None
+
+    await db_session.refresh(cust)
+    assert float(cust.credit_limit) == 2500
+    assert int(cust.payment_terms_days) == 30
+    assert cust.name == "Credit Redact Renamed"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_party_email_writes_denied(client, db_session):
     """store_manager cannot set customer/supplier master emails; name remain."""
     ac, seed = client

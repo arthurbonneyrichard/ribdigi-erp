@@ -2420,7 +2420,8 @@ def omit_party_code(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit party master ``code`` on JSON.
 
     Code assign/clear already denied; customer/supplier list/get/patch must not
-    re-dump company party master codes. Name/status/credit and scoped history remain.
+    re-dump company party master codes. Name/status and scoped history remain;
+    credit master fields are separately redacted.
     """
     return managed_ids is not None
 
@@ -3121,7 +3122,11 @@ def assert_party_credit_master_write_denied(
         "or early-payment discounts."
     ),
 ) -> None:
-    """403 when store_manager attempts party-level credit/payment-terms master writes."""
+    """403 when store_manager attempts party-level credit/payment-terms master writes.
+
+    List/get/patch JSON redacts the same fields via ``redact_party_credit_master``.
+    Server-side credit / early-pay enforcement still uses DB values (POS ops).
+    """
     if managed_ids is None:
         return
     fields: set[str] = set()
@@ -3146,6 +3151,26 @@ def assert_party_credit_master_write_denied(
             "fields": sorted(fields),
         },
     )
+
+
+def omit_party_credit_master(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party credit/payment-terms master on JSON.
+
+    Credit-limit / payment-terms / early-pay writes already denied;
+    customer/supplier list/get/patch must not re-dump company credit master.
+    Name/status/balance and scoped history remain; POS credit checks stay
+    server-side on DB ``party.credit_limit``.
+    """
+    return managed_ids is not None
+
+
+def redact_party_credit_master(payload: dict) -> dict:
+    """Null credit_limit / payment_terms_days / early-pay fields on party JSON."""
+    out = dict(payload)
+    for key in PARTY_CREDIT_MASTER_FIELDS:
+        if key in out:
+            out[key] = None
+    return out
 
 
 def assert_credit_limit_override_denied(
