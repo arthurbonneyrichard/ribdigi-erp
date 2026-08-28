@@ -119,6 +119,11 @@ async def record_pos_sale(
         session_id=payload.session_id,
         company_id=claims.get("company_id"),
     )
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session.id, require_session=True
+    )
     company_id = claims.get("company_id") or getattr(session, "company_id", None)
     offline_receipt_number = validate_offline_receipt_number(
         getattr(payload, "offline_receipt_number", None)

@@ -242,7 +242,16 @@ async def test_store_manager_pos_sales_scoped(client, db_session):
         status="open",
         opening_cash=0,
     )
-    db_session.add_all([sess_mine, sess_other])
+    sess_null = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=None,
+        user_id=mgr.id,
+        session_number="S-NULL-1",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add_all([sess_mine, sess_other, sess_null])
     await db_session.flush()
     sale_mine = m.Transaction(
         tenant_id=tid,
@@ -307,6 +316,42 @@ async def test_store_manager_pos_sales_scoped(client, db_session):
     )
     assert send_denied.status_code == 403
     assert send_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    item = {"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}
+    denied_create_foreign = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": sess_other.id,
+            "items": [item],
+            "payment_method": "cash",
+        },
+    )
+    assert denied_create_foreign.status_code == 403
+    assert denied_create_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_create_null = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": sess_null.id,
+            "items": [item],
+            "payment_method": "cash",
+        },
+    )
+    assert denied_create_null.status_code == 403
+    assert denied_create_null.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": sess_mine.id,
+            "items": [item],
+            "payment_method": "cash",
+        },
+    )
+    assert ok_create.status_code == 200, ok_create.text
 
 
 @pytest.mark.asyncio
