@@ -11222,7 +11222,12 @@ async def post_opening_balance(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id, allow_unset=False
+    )
     entry = await accounting_svc.post_account_opening_balance(
         db,
         tenant_id=claims["tenant_id"],
@@ -11231,6 +11236,7 @@ async def post_opening_balance(
         amount=payload.amount,
         description=payload.description,
         company_id=claims.get("company_id"),
+        store_id=payload.store_id,
     )
     await db.commit()
     return env(
@@ -11382,7 +11388,12 @@ async def create_liquid_transfer(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id, allow_unset=False
+    )
     entry = await accounting_svc.transfer_liquid_funds(
         db,
         tenant_id=claims["tenant_id"],
@@ -11394,6 +11405,7 @@ async def create_liquid_transfer(
         reference=payload.reference,
         kind=payload.kind,
         company_id=claims.get("company_id"),
+        store_id=payload.store_id,
     )
     await db.commit()
     return env(await accounting_svc.serialize_journal(db, entry), "Liquid transfer posted")

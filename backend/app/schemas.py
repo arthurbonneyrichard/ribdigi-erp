@@ -1163,6 +1163,7 @@ class OpeningBalanceCreate(BaseModel):
 
     amount: float
     description: str | None = None
+    store_id: str | None = None
 
 
 class LiquidAccountCreate(BaseModel):
@@ -1193,6 +1194,7 @@ class LiquidTransferCreate(BaseModel):
     amount: float = Field(gt=0)
     description: str | None = None
     reference: str | None = None
+    store_id: str | None = None
     kind: str | None = Field(
         default=None,
         description="Optional deposit|withdrawal|transfer; inferred from account types when omitted",

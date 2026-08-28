@@ -591,6 +591,7 @@ async def post_account_opening_balance(
     amount: float,
     description: str | None = None,
     company_id: str | None = None,
+    store_id: str | None = None,
 ) -> m.JournalEntry:
     """Post a balanced opening-balance journal for one account (BR-10.1)."""
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
@@ -676,6 +677,7 @@ async def post_account_opening_balance(
         reference=f"OB-{account.code}",
         source_type="opening_balance",
         source_id=account.id,
+        store_id=store_id,
         company_id=company_id,
         lines=lines,
     )
@@ -795,6 +797,7 @@ async def transfer_liquid_funds(
     reference: str | None = None,
     kind: str | None = None,
     company_id: str | None = None,
+    store_id: str | None = None,
 ) -> m.JournalEntry:
     """Move funds between cash/bank accounts (deposit, withdrawal, or transfer)."""
     from app.bank_recon import get_liquid_account
@@ -838,6 +841,7 @@ async def transfer_liquid_funds(
         reference=reference,
         source_type=f"liquid_{kind_norm}",
         source_id=None,
+        store_id=store_id,
         company_id=company_id,
         lines=[
             {

@@ -5073,6 +5073,155 @@ async def test_store_manager_bank_recon_unmatched_book_store_scoped(client, db_s
 
 
 @pytest.mark.asyncio
+async def test_store_manager_liquid_transfer_and_opening_balance_writes_scoped(
+    client, db_session
+):
+    """Liquid transfers and opening balances require managed store_id for store_manager writes."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["accounting"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liquid Write Mine",
+        code="LIQ-W-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liquid Write Other",
+        code="LIQ-W-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    cash = await accounting_svc.get_account_by_code(db_session, tid, "1000", company_id=cid)
+    bank = await accounting_svc.get_account_by_code(db_session, tid, "1010", company_id=cid)
+    assert cash is not None and bank is not None
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Seed cash for liquid xfer test",
+        reference="JE-LIQ-SEED",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 500, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 500},
+        ],
+    )
+    await db_session.commit()
+
+    ok_xfer = await ac.post(
+        "/api/v1/accounting/liquid-transfers",
+        headers=headers,
+        json={
+            "from_account_id": cash.id,
+            "to_account_id": bank.id,
+            "amount": 50,
+            "kind": "deposit",
+            "reference": "LIQ-XFER-MINE",
+            "store_id": mine.id,
+        },
+    )
+    assert ok_xfer.status_code == 200, ok_xfer.text
+    assert ok_xfer.json()["data"]["source_type"] == "liquid_deposit"
+
+    denied_other = await ac.post(
+        "/api/v1/accounting/liquid-transfers",
+        headers=headers,
+        json={
+            "from_account_id": cash.id,
+            "to_account_id": bank.id,
+            "amount": 10,
+            "kind": "deposit",
+            "store_id": other.id,
+        },
+    )
+    assert denied_other.status_code == 403
+    assert denied_other.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_unset = await ac.post(
+        "/api/v1/accounting/liquid-transfers",
+        headers=headers,
+        json={
+            "from_account_id": cash.id,
+            "to_account_id": bank.id,
+            "amount": 10,
+            "kind": "deposit",
+        },
+    )
+    assert denied_unset.status_code == 403
+    assert denied_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    petty = await ac.post(
+        "/api/v1/accounting/liquid-accounts",
+        headers=headers,
+        json={
+            "kind": "cash",
+            "code": "1099",
+            "name": "Scope Test Petty",
+        },
+    )
+    assert petty.status_code == 200, petty.text
+    petty_id = petty.json()["data"]["id"]
+
+    ok_ob = await ac.post(
+        f"/api/v1/accounting/accounts/{petty_id}/opening-balance",
+        headers=headers,
+        json={"amount": 20, "store_id": mine.id},
+    )
+    assert ok_ob.status_code == 200, ok_ob.text
+
+    petty2 = await ac.post(
+        "/api/v1/accounting/liquid-accounts",
+        headers=headers,
+        json={
+            "kind": "cash",
+            "code": "1098",
+            "name": "Scope Test Petty 2",
+        },
+    )
+    assert petty2.status_code == 200, petty2.text
+    petty2_id = petty2.json()["data"]["id"]
+
+    denied_ob = await ac.post(
+        f"/api/v1/accounting/accounts/{petty2_id}/opening-balance",
+        headers=headers,
+        json={"amount": 15},
+    )
+    assert denied_ob.status_code == 403
+    assert denied_ob.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_expense_lifecycle_writes_store_scoped(client, db_session):
     """Approve/reject/delete/OCR/attachment writes fail-closed outside managed stores."""
     ac, seed = client
