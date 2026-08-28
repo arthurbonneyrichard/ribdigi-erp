@@ -590,6 +590,22 @@ def assert_company_level_bank_feed_settings_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_email_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company email/SMTP settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /settings/email or /export.
+
+    Tenant SMTP host/from/username status dump is company infra admin.
+    PATCH/test remain admin-role gated; SMS/storage settings separate.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,

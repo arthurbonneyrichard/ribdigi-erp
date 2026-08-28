@@ -880,21 +880,34 @@ async def tenant_activate_by_ref(
 
 @api.get("/settings/email")
 async def settings_email_get(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import emailer
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_email_settings_read_denied(
+        managed,
+        message="Store managers cannot view company email/SMTP settings.",
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     return env(emailer.email_status(tenant))
 
 
 @api.get("/settings/email/export")
 async def settings_email_export(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 131 E1 — email/SMTP settings CSV (password never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_email_settings_read_denied(
+        managed,
+        message="Store managers cannot export company email/SMTP settings CSV.",
+    )
     text = await finance_ops_export_svc.export_email_settings_csv(
         db, tenant_id=claims["tenant_id"]
     )

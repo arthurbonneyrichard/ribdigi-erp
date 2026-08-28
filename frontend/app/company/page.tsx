@@ -153,9 +153,9 @@ export default function Page() {
           ? '?is_active=false'
           : '';
     const [r, e, s, me, st, br, dep, users] = await Promise.all([
-      api('/tenants/me'),
-      api('/settings/email'),
-      api('/settings/sms'),
+      api('/tenants/me').catch(() => ({ data: null })),
+      api('/settings/email').catch(() => ({ data: null })),
+      api('/settings/sms').catch(() => ({ data: null })),
       api('/me'),
       api('/settings/storage').catch(() => ({ data: null })),
       api(`/branches${branchQs}`).catch(() => ({ data: [] })),
