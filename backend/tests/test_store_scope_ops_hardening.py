@@ -8552,3 +8552,36 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     variants = await ac.get(f"/api/v1/products/{product.id}/variants", headers=headers)
     assert variants.status_code == 200, variants.text
     assert any(row["sku"] == "A-1-V-DENY" for row in variants.json()["data"])
+
+
+@pytest.mark.asyncio
+async def test_store_manager_stock_import_denied(client, db_session):
+    """Company-level stock CSV import denied for store_manager; template read allowed."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    csv_body = (
+        "sku,barcode,qty,mode,warehouse_code,reason\n"
+        "A-1,,5,adjust,,Mgr stock import deny\n"
+    )
+    files = {"file": ("stock.csv", csv_body.encode("utf-8"), "text/csv")}
+
+    denied_dry = await ac.post(
+        "/api/v1/inventory/stock/import?dry_run=true",
+        headers=headers,
+        files=files,
+    )
+    assert denied_dry.status_code == 403, denied_dry.text
+    assert denied_dry.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_apply = await ac.post(
+        "/api/v1/inventory/stock/import?dry_run=false",
+        headers=headers,
+        files=files,
+    )
+    assert denied_apply.status_code == 403, denied_apply.text
+    assert denied_apply.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    template = await ac.get("/api/v1/inventory/stock/import/template", headers=headers)
+    assert template.status_code == 200, template.text
+    assert "sku" in template.text.lower() or "warehouse" in template.text.lower()

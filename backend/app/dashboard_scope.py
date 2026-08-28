@@ -556,6 +556,15 @@ def assert_company_level_product_master_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_stock_import_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot bulk-import stock across company warehouses.",
+) -> None:
+    """403 when store_manager attempts company-level stock CSV import (any warehouse / product.stock_qty)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 PARTY_CREDIT_MASTER_FIELDS = frozenset(
     {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
 )
