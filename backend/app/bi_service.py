@@ -355,6 +355,11 @@ class BusinessIntelligenceService:
             )
 
     async def list_history(self, *, status: str | None = None, limit: int = 50) -> list[dict]:
+        from fastapi import HTTPException
+
+        managed = await managed_store_ids(self.db, self.claims)
+        # Over-fetch when store-scoped so filtered history can still fill ``limit``.
+        fetch_limit = limit if managed is None else min(max(limit * 5, limit), 250)
         q = select(m.BusinessInsight).where(
             m.BusinessInsight.tenant_id == self.tenant_id
         )
@@ -362,9 +367,22 @@ class BusinessIntelligenceService:
             q = q.where(m.BusinessInsight.company_id == self.company_id)
         if status:
             q = q.where(m.BusinessInsight.status == status)
-        q = q.order_by(m.BusinessInsight.created_at.desc()).limit(limit)
+        q = q.order_by(m.BusinessInsight.created_at.desc()).limit(fetch_limit)
         rows = (await self.db.execute(q)).scalars().all()
-        return [self._row_dict(r) for r in rows]
+        if managed is None:
+            return [self._row_dict(r) for r in rows]
+        out: list[dict] = []
+        for row in rows:
+            try:
+                await assert_bi_insight_in_manager_scope(self.db, self.claims, row)
+            except HTTPException as exc:
+                if getattr(exc, "status_code", None) == 403:
+                    continue
+                raise
+            out.append(self._row_dict(row))
+            if len(out) >= limit:
+                break
+        return out
 
     async def get_insight(self, insight_id: str) -> m.BusinessInsight | None:
         row = await self.db.get(m.BusinessInsight, insight_id)

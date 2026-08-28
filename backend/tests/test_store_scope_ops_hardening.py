@@ -10331,7 +10331,7 @@ async def test_store_manager_company_membership_writes_denied(client, db_session
 
 @pytest.mark.asyncio
 async def test_store_manager_bi_insight_lifecycle_writes_scoped(client, db_session):
-    """BI insight acknowledge/dismiss fail-closed outside managed store scope."""
+    """BI insight history + acknowledge/dismiss fail-closed outside managed store scope."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -10407,6 +10407,14 @@ async def test_store_manager_bi_insight_lifecycle_writes_scoped(client, db_sessi
         [insight_foreign, insight_mine, insight_company, insight_mine_dismiss]
     )
     await db_session.commit()
+
+    hist = await ac.get("/api/v1/business-insights/history", headers=headers)
+    assert hist.status_code == 200, hist.text
+    hist_ids = {row["id"] for row in hist.json().get("items", [])}
+    assert insight_mine.id in hist_ids
+    assert insight_mine_dismiss.id in hist_ids
+    assert insight_foreign.id not in hist_ids
+    assert insight_company.id not in hist_ids
 
     denied_ack = await ac.post(
         f"/api/v1/business-insights/{insight_foreign.id}/acknowledge", headers=headers
