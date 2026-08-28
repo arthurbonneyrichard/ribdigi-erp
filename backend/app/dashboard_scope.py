@@ -1242,6 +1242,19 @@ def assert_company_level_bi_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_report_schedule_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot manage company report schedules.",
+) -> None:
+    """403 when store_manager attempts company-level scheduled report writes.
+
+    List/export remain admin-only; on-demand store-scoped ``/reports/*`` exports
+    remain available where RBAC permits.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_party_master_deactivate_denied(
     managed_ids: list[str] | None,
     *,

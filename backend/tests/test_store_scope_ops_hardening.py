@@ -9722,6 +9722,99 @@ async def test_store_manager_document_settings_writes_denied(client, db_session)
 
 
 @pytest.mark.asyncio
+async def test_store_manager_report_schedule_writes_denied(client, db_session):
+    """Scheduled report create/patch/delete/run denied for store_manager; admin list/export remain."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Report Schedule Mgr Store",
+        code="RPT-SCH-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["reports"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/reports/schedules",
+        headers=headers,
+        json={
+            "name": "Denied Daily",
+            "report_type": "summary",
+            "format": "csv",
+            "frequency": "daily",
+            "hour_utc": 6,
+            "recipients": ["mgr@alpha.example.com"],
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    schedule = m.ReportSchedule(
+        tenant_id=tid,
+        company_id=cid,
+        created_by=seed["admin1"].id,
+        name="Existing Schedule",
+        report_type="summary",
+        format="csv",
+        frequency="daily",
+        hour_utc=6,
+        recipients=["admin@alpha.example.com"],
+        enabled=True,
+    )
+    db_session.add(schedule)
+    await db_session.commit()
+
+    denied_patch = await ac.patch(
+        f"/api/v1/reports/schedules/{schedule.id}",
+        headers=headers,
+        json={"name": "Hijacked Schedule"},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete = await ac.delete(
+        f"/api/v1/reports/schedules/{schedule.id}",
+        headers=headers,
+    )
+    assert denied_delete.status_code == 403, denied_delete.text
+    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_run = await ac.post(
+        f"/api/v1/reports/schedules/{schedule.id}/run",
+        headers=headers,
+    )
+    assert denied_run.status_code == 403, denied_run.text
+    assert denied_run.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    await db_session.refresh(schedule)
+    assert schedule.name == "Existing Schedule"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_session):
     """Legacy POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""
     ac, seed = client
