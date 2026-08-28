@@ -9044,7 +9044,7 @@ async def test_store_manager_credit_limit_override_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_branches_departments_writes_denied(client, db_session):
-    """Branch/department create/patch/export denied for store_manager; list/get remain."""
+    """Branch/department list GET + create/patch/export denied for store_manager."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -9127,14 +9127,27 @@ async def test_store_manager_branches_departments_writes_denied(client, db_sessi
     assert denied_depts_export.status_code == 403, denied_depts_export.text
     assert denied_depts_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    # Reads remain allowed
-    listed_branches = await ac.get("/api/v1/branches", headers=headers)
-    assert listed_branches.status_code == 200, listed_branches.text
-    assert any(row["code"] == "BR-DENY" for row in listed_branches.json()["data"])
+    denied_branches_list = await ac.get("/api/v1/branches", headers=headers)
+    assert denied_branches_list.status_code == 403, denied_branches_list.text
+    assert denied_branches_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    listed_depts = await ac.get("/api/v1/departments", headers=headers)
-    assert listed_depts.status_code == 200, listed_depts.text
-    assert any(row["code"] == "DP-DENY" for row in listed_depts.json()["data"])
+    denied_depts_list = await ac.get("/api/v1/departments", headers=headers)
+    assert denied_depts_list.status_code == 403, denied_depts_list.text
+    assert denied_depts_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    ok_branches = await ac.get("/api/v1/branches", headers=admin_headers)
+    assert ok_branches.status_code == 200, ok_branches.text
+    assert any(row["code"] == "BR-DENY" for row in ok_branches.json()["data"])
+
+    ok_depts = await ac.get("/api/v1/departments", headers=admin_headers)
+    assert ok_depts.status_code == 200, ok_depts.text
+    assert any(row["code"] == "DP-DENY" for row in ok_depts.json()["data"])
 
 
 @pytest.mark.asyncio

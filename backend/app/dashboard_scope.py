@@ -1377,8 +1377,24 @@ def assert_company_level_org_unit_export_denied(
 ) -> None:
     """403 when store_manager exports branches/departments CSV (company org master dump).
 
-    List/get reads remain; full org-unit export is company-level administration
+    List GETs also denied; full org-unit export is company-level administration
     (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_org_unit_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company branches or departments; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists branches/departments (company org-unit dump).
+
+    Create/patch + CSV export already denied; ``GET /branches`` and ``GET /departments``
+    dumped full org charts. Store/expense UIs soft-fail empty lists.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
