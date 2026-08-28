@@ -1301,8 +1301,8 @@ def assert_company_level_onboarding_read_denied(
 ) -> None:
     """403 when store_manager reads tenant onboarding checklist (company bootstrap).
 
-    Checklist export/skip/dismiss already admin-role gated; GET was open via
-    ``current_claims`` and dumps company setup progress.
+    Export uses export deny; skip/unskip/dismiss/restore use write deny. GET was
+    open via ``current_claims`` and dumps company setup progress.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -1317,8 +1317,23 @@ def assert_company_level_onboarding_export_denied(
 ) -> None:
     """403 when store_manager exports onboarding checklist CSV (company bootstrap dump).
 
-    Checklist GET already denied; ``GET /onboarding/checklist/export`` dumped the same
-    tenant bootstrap progress pack. Skip/dismiss remain admin-gated.
+    Checklist GET already denied; mutations use
+    ``assert_company_level_onboarding_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_onboarding_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot skip, dismiss, or restore the company onboarding checklist; "
+        "tenant bootstrap progress is company-admin only."
+    ),
+) -> None:
+    """403 when store_manager mutates onboarding checklist (skip/unskip/dismiss/restore).
+
+    GET/export already denied; checklist lifecycle is company bootstrap admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

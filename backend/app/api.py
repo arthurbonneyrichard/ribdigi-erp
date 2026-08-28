@@ -18722,9 +18722,16 @@ async def onboarding_checklist_export(
 @api.post("/onboarding/checklist/steps/{step_id}/skip")
 async def onboarding_checklist_skip(
     step_id: str,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_onboarding_write_denied(
+        managed,
+        message="Store managers cannot mutate the company onboarding checklist.",
+    )
     tenants_svc.assert_writable(claims)
     data = await onboarding_svc.skip_step(db, claims["tenant_id"], step_id)
     await db.commit()
@@ -18734,9 +18741,16 @@ async def onboarding_checklist_skip(
 @api.post("/onboarding/checklist/steps/{step_id}/unskip")
 async def onboarding_checklist_unskip(
     step_id: str,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_onboarding_write_denied(
+        managed,
+        message="Store managers cannot mutate the company onboarding checklist.",
+    )
     tenants_svc.assert_writable(claims)
     data = await onboarding_svc.unskip_step(db, claims["tenant_id"], step_id)
     await db.commit()
@@ -18745,10 +18759,17 @@ async def onboarding_checklist_unskip(
 
 @api.post("/onboarding/checklist/dismiss")
 async def onboarding_checklist_dismiss(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Dismiss banner when progress ≥ 80% (or 100% complete)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_onboarding_write_denied(
+        managed,
+        message="Store managers cannot mutate the company onboarding checklist.",
+    )
     tenants_svc.assert_writable(claims)
     data = await onboarding_svc.dismiss(db, claims["tenant_id"])
     await db.commit()
@@ -18757,9 +18778,16 @@ async def onboarding_checklist_dismiss(
 
 @api.post("/onboarding/checklist/restore")
 async def onboarding_checklist_restore(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_onboarding_write_denied(
+        managed,
+        message="Store managers cannot mutate the company onboarding checklist.",
+    )
     tenants_svc.assert_writable(claims)
     data = await onboarding_svc.restore(db, claims["tenant_id"])
     await db.commit()

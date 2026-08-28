@@ -11933,6 +11933,40 @@ async def test_store_manager_onboarding_checklist_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_onboarding_checklist_writes_denied(client, db_session):
+    """Onboarding skip/unskip/dismiss/restore denied for store_manager; admin skip remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    for path in (
+        "/api/v1/onboarding/checklist/steps/setup_company/skip",
+        "/api/v1/onboarding/checklist/steps/setup_company/unskip",
+        "/api/v1/onboarding/checklist/dismiss",
+        "/api/v1/onboarding/checklist/restore",
+    ):
+        denied = await ac.post(path, headers=headers)
+        assert denied.status_code == 403, denied.text
+        assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_skip = await ac.post(
+        "/api/v1/onboarding/checklist/steps/setup_company/skip",
+        headers=admin_headers,
+    )
+    assert ok_skip.status_code == 200, ok_skip.text
+    ok_unskip = await ac.post(
+        "/api/v1/onboarding/checklist/steps/setup_company/unskip",
+        headers=admin_headers,
+    )
+    assert ok_unskip.status_code == 200, ok_unskip.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_business_types_read_denied(client, db_session):
     """Business-types catalog GET denied for store_manager; admin remains."""
     ac, seed = client
