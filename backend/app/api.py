@@ -4889,6 +4889,13 @@ async def catalog_categories_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — categories CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_export_denied(
+        managed,
+        message="Store managers cannot export company catalog categories CSV.",
+    )
     text = await org_catalog_export_svc.export_categories_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -5021,6 +5028,13 @@ async def catalog_brands_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — brands CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_export_denied(
+        managed,
+        message="Store managers cannot export company catalog brands CSV.",
+    )
     text = await org_catalog_export_svc.export_brands_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -5232,6 +5246,13 @@ async def catalog_units_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — units CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_catalog_meta_export_denied(
+        managed,
+        message="Store managers cannot export company catalog units CSV.",
+    )
     text = await org_catalog_export_svc.export_units_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -6829,6 +6850,10 @@ async def customer_groups_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 X1 — customer groups CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_customer_group_export_denied(managed)
     text = await finance_meta_export_svc.export_customer_groups_csv(
         db,
         tenant_id=claims["tenant_id"],

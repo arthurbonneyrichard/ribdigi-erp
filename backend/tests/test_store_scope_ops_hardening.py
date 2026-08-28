@@ -9176,7 +9176,7 @@ async def test_store_manager_expense_store_clear_writes_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_catalog_meta_writes_denied(client, db_session):
-    """Catalog category/brand/unit create/patch/deactivate denied for store_manager."""
+    """Catalog category/brand/unit create/patch/deactivate/export denied for store_manager."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9277,6 +9277,15 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
     assert denied_unit_delete.status_code == 403
     assert denied_unit_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    for path in (
+        "/api/v1/catalog/categories/export",
+        "/api/v1/catalog/brands/export",
+        "/api/v1/catalog/units/export",
+    ):
+        denied_export = await ac.get(path, headers=headers)
+        assert denied_export.status_code == 403, denied_export.text
+        assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     # Reads remain allowed
     listed_cats = await ac.get("/api/v1/catalog/categories", headers=headers)
     assert listed_cats.status_code == 200, listed_cats.text
@@ -9293,7 +9302,7 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_customer_groups_writes_denied(client, db_session):
-    """Customer group create/patch/deactivate denied for store_manager (company-level)."""
+    """Customer group create/patch/deactivate/export denied for store_manager (company-level)."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9332,6 +9341,10 @@ async def test_store_manager_customer_groups_writes_denied(client, db_session):
     )
     assert denied_delete.status_code == 403, denied_delete.text
     assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get("/api/v1/customers/groups/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     listed = await ac.get("/api/v1/customers/groups", headers=headers)
     assert listed.status_code == 200, listed.text

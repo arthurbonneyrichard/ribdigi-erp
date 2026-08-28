@@ -1040,12 +1040,38 @@ def assert_company_level_catalog_meta_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_catalog_meta_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company catalog meta CSVs.",
+) -> None:
+    """403 when store_manager exports categories/brands/units CSV (company catalog dump).
+
+    List/get reads remain; full meta export is company-level administration
+    (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_customer_group_write_denied(
     managed_ids: list[str] | None,
     *,
     message: str = "Store managers cannot create or update customer groups.",
 ) -> None:
     """403 when store_manager attempts company-level customer group master writes."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_customer_group_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company customer groups CSV.",
+) -> None:
+    """403 when store_manager exports customer groups CSV (company sales master dump).
+
+    List/get reads remain; full group export is company-level administration
+    (writes already denied).
+    """
     assert_company_level_write_denied(managed_ids, message=message)
 
 
