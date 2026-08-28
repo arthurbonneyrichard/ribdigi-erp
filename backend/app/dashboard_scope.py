@@ -575,7 +575,12 @@ def assert_party_master_deactivate_denied(
 
 
 PARTY_CREDIT_MASTER_FIELDS = frozenset(
-    {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
+    {
+        "credit_limit",
+        "early_pay_discount_pct",
+        "early_pay_discount_days",
+        "payment_terms_days",
+    }
 )
 
 
@@ -584,9 +589,13 @@ def assert_party_credit_master_write_denied(
     payload: dict,
     *,
     allow_zero_credit_limit: bool = False,
-    message: str = "Store managers cannot update party credit limits or early-payment terms.",
+    allow_zero_payment_terms: bool = False,
+    message: str = (
+        "Store managers cannot update party credit limits, payment terms, "
+        "or early-payment discounts."
+    ),
 ) -> None:
-    """403 when store_manager attempts party-level credit master data writes."""
+    """403 when store_manager attempts party-level credit/payment-terms master writes."""
     if managed_ids is None:
         return
     fields: set[str] = set()
@@ -594,6 +603,10 @@ def assert_party_credit_master_write_denied(
         val = payload.get("credit_limit")
         if not (allow_zero_credit_limit and (val is None or float(val or 0) == 0)):
             fields.add("credit_limit")
+    if "payment_terms_days" in payload:
+        val = payload.get("payment_terms_days")
+        if not (allow_zero_payment_terms and (val is None or int(val or 0) == 0)):
+            fields.add("payment_terms_days")
     for key in ("early_pay_discount_pct", "early_pay_discount_days"):
         if key in payload and payload.get(key) is not None:
             fields.add(key)

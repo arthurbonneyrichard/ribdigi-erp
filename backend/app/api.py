@@ -6866,7 +6866,10 @@ async def add_customer(
     data = payload.model_dump()
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_party_credit_master_write_denied(
-        managed, data, allow_zero_credit_limit=True
+        managed,
+        data,
+        allow_zero_credit_limit=True,
+        allow_zero_payment_terms=True,
     )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
@@ -7105,7 +7108,10 @@ async def add_supplier(
     data = payload.model_dump()
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_party_credit_master_write_denied(
-        managed, data, allow_zero_credit_limit=True
+        managed,
+        data,
+        allow_zero_credit_limit=True,
+        allow_zero_payment_terms=True,
     )
     contacts = data.pop("contacts", None) or []
     party = await suppliers_svc.create_supplier(

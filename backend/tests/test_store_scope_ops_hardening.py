@@ -7974,6 +7974,86 @@ async def test_store_manager_party_credit_master_writes_denied(client, db_sessio
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_payment_terms_writes_denied(client, db_session):
+    """Party payment_terms_days create/patch denied for store_manager; zero-default create allowed."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Terms Scope Supplier",
+        kind="supplier",
+        code="SUP-TERMS-DENY",
+        status="active",
+        credit_limit=0,
+        payment_terms_days=0,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    denied_cust_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Mgr Terms Customer", "payment_terms_days": 30},
+    )
+    assert denied_cust_create.status_code == 403, denied_cust_create.text
+    assert denied_cust_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert "payment_terms_days" in denied_cust_create.json()["detail"].get("fields", [])
+
+    denied_cust_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"payment_terms_days": 45},
+    )
+    assert denied_cust_patch.status_code == 403, denied_cust_patch.text
+    assert denied_cust_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert "payment_terms_days" in denied_cust_patch.json()["detail"].get("fields", [])
+
+    ok_cust_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Mgr Zero Terms Customer"},
+    )
+    assert ok_cust_create.status_code == 200, ok_cust_create.text
+    assert int(ok_cust_create.json()["data"].get("payment_terms_days") or 0) == 0
+
+    ok_cust_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"phone": "555-0145"},
+    )
+    assert ok_cust_patch.status_code == 200, ok_cust_patch.text
+
+    denied_sup_create = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Mgr Terms Supplier", "payment_terms_days": 14},
+    )
+    assert denied_sup_create.status_code == 403, denied_sup_create.text
+    assert denied_sup_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup_patch = await ac.patch(
+        f"/api/v1/suppliers/{supplier.id}",
+        headers=headers,
+        json={"payment_terms_days": 21},
+    )
+    assert denied_sup_patch.status_code == 403, denied_sup_patch.text
+    assert denied_sup_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_sup_create = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Mgr Zero Terms Supplier"},
+    )
+    assert ok_sup_create.status_code == 200, ok_sup_create.text
+    assert int(ok_sup_create.json()["data"].get("payment_terms_days") or 0) == 0
+
+
+@pytest.mark.asyncio
 async def test_store_manager_expense_category_writes_denied(client, db_session):
     """Expense category create/patch (incl. budget limits) denied for store_manager."""
     ac, seed = client

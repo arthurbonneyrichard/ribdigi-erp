@@ -131,7 +131,9 @@ store activation — never frontend-only.
    ops remain), and **stock CSV import denied for store_manager** (company-level
    bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
    and **customer/supplier deactivate denied for store_manager** (company-level
-   party master lifecycle; create/list/get + non-credit patch remain).
+   party master lifecycle; create/list/get + non-credit patch remain), and
+   **party payment_terms_days create/patch denied for store_manager** (credit-
+   adjacent company terms; zero-default create allowed; phone/name patch remain).
    Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
