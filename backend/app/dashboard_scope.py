@@ -1435,6 +1435,19 @@ def assert_company_level_ai_report_template_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_ai_report_template_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company AI report templates CSV.",
+) -> None:
+    """403 when store_manager exports AI report templates CSV (company NL template dump).
+
+    GET ``/ai/reports/templates`` list remains for discovery; CSV dump is company-level
+    administration (create/delete already denied; NL generate already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_ai_report_generate_denied(
     managed_ids: list[str] | None,
     *,

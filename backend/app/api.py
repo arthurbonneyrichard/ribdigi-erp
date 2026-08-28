@@ -19343,6 +19343,10 @@ async def ai_report_templates_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 145 T1 — AI report templates CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_ai_report_template_export_denied(managed)
     text = await ai_ops_export_svc.export_report_templates_csv(
         db,
         tenant_id=claims["tenant_id"],

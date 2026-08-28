@@ -10271,11 +10271,17 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_ai_report_template_writes_denied(client, db_session):
-    """AI report template create/delete denied for store_manager; list/export reads allowed."""
+    """AI report template create/delete/export denied for store_manager; list remains."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     tmpl = m.AiReportTemplate(
         tenant_id=tid,
@@ -10313,9 +10319,14 @@ async def test_store_manager_ai_report_template_writes_denied(client, db_session
     assert listed.status_code == 200, listed.text
     assert any(row["id"] == tmpl.id for row in listed.json()["data"])
 
-    exported = await ac.get("/api/v1/ai/reports/templates/export", headers=headers)
-    assert exported.status_code == 200, exported.text
-    assert "Deny Target" in exported.text or "sales" in exported.text.lower()
+    denied_export = await ac.get("/api/v1/ai/reports/templates/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_export = await ac.get("/api/v1/ai/reports/templates/export", headers=admin_headers)
+    assert ok_export.status_code == 200, ok_export.text
+    header = ok_export.text.splitlines()[0]
+    assert "name" in header and "prompt" in header
 
     # Template must still exist after denied delete.
     await db_session.refresh(tmpl)
