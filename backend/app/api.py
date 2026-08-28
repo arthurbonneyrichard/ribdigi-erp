@@ -11628,6 +11628,7 @@ async def list_bank_statements(
 ):
     """Stage 131 B1 — optional status=draft|in_progress|reconciled for statement honesty."""
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"draft", "in_progress", "reconciled"}:
@@ -11635,11 +11636,21 @@ async def list_bank_statements(
             status_code=400,
             detail="status must be draft, in_progress, or reconciled",
         )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    account_ids = await dashboard_scope_svc.managed_liquid_account_ids(
+        db,
+        claims["tenant_id"],
+        store_ids=multi,
+        company_id=claims.get("company_id"),
+    )
     rows = await finance_ops_export_svc.list_bank_statements(
         db,
         tenant_id=claims["tenant_id"],
         status=status_n,
         company_id=claims.get("company_id"),
+        account_ids=account_ids,
+        store_ids=multi,
     )
     out = []
     for row in rows:
@@ -11655,17 +11666,29 @@ async def bank_statements_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 131 B1 — bank statement header CSV (line details omitted)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"draft", "in_progress", "reconciled"}:
         raise HTTPException(
             status_code=400,
             detail="status must be draft, in_progress, or reconciled",
         )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    account_ids = await dashboard_scope_svc.managed_liquid_account_ids(
+        db,
+        claims["tenant_id"],
+        store_ids=multi,
+        company_id=claims.get("company_id"),
+    )
     text = await finance_ops_export_svc.export_bank_statements_csv(
         db,
         tenant_id=claims["tenant_id"],
         status=status_n,
         company_id=claims.get("company_id"),
+        account_ids=account_ids,
+        store_ids=multi,
     )
     return Response(
         content=text,
@@ -11684,8 +11707,18 @@ async def create_bank_statement(
 ):
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        payload.get("account_id") or "",
+        multi,
+        company_id=claims.get("company_id"),
+    )
     lines_in = payload.get("lines") or []
     stmt = await bank_recon_svc.create_statement(
         db,
@@ -11731,8 +11764,18 @@ async def import_bank_statement(
     """Import a CSV or OFX/QFX bank statement file into a reconcilable statement."""
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        account_id,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     raw = await file.read()
     if not raw:
         raise HTTPException(status_code=400, detail="Empty upload")
@@ -11787,10 +11830,11 @@ async def get_bank_statement(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
-    stmt = await bank_recon_svc.get_statement(
+    stmt = await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
         db,
-        claims["tenant_id"],
-        statement_id,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
         company_id=claims.get("company_id"),
     )
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], statement_id)
@@ -11826,10 +11870,11 @@ async def clear_bank_statement_group(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
-    await bank_recon_svc.get_statement(
+    await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
         db,
-        claims["tenant_id"],
-        statement_id,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
         company_id=claims.get("company_id"),
     )
     result = await bank_recon_svc.create_clearing_group(
@@ -11879,11 +11924,15 @@ async def dissolve_bank_clearing_group(
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
-    stmt = await bank_recon_svc.get_statement(
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    stmt = await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
         db,
-        claims["tenant_id"],
-        statement_id,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
         company_id=claims.get("company_id"),
     )
     result = await bank_recon_svc.dissolve_clearing_group(
@@ -11917,10 +11966,11 @@ async def auto_clear_bank_statement(
     body = payload or {}
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
-    await bank_recon_svc.get_statement(
+    await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
         db,
-        claims["tenant_id"],
-        statement_id,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
         company_id=claims.get("company_id"),
     )
     result = await bank_recon_svc.apply_auto_matches(
@@ -11964,10 +12014,11 @@ async def match_bank_statement_line(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
-    stmt = await bank_recon_svc.get_statement(
+    stmt = await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
         db,
-        claims["tenant_id"],
-        statement_id,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
         company_id=claims.get("company_id"),
     )
     line = await bank_recon_svc.match_line(
@@ -11991,11 +12042,15 @@ async def unmatch_bank_statement_line(
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
-    stmt = await bank_recon_svc.get_statement(
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    stmt = await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
         db,
-        claims["tenant_id"],
-        statement_id,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
         company_id=claims.get("company_id"),
     )
     line = await bank_recon_svc.unmatch_line(db, tenant_id=claims["tenant_id"], line_id=line_id)
@@ -12013,11 +12068,15 @@ async def ignore_bank_statement_line(
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
-    stmt = await bank_recon_svc.get_statement(
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    stmt = await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
         db,
-        claims["tenant_id"],
-        statement_id,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
         company_id=claims.get("company_id"),
     )
     line = await bank_recon_svc.ignore_line(db, tenant_id=claims["tenant_id"], line_id=line_id)
@@ -12034,7 +12093,17 @@ async def complete_bank_statement(
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    await dashboard_scope_svc.assert_bank_statement_in_manager_scope(
+        db,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        managed_store_ids=multi,
+        company_id=claims.get("company_id"),
+    )
     stmt = await bank_recon_svc.complete_statement(
         db,
         tenant_id=claims["tenant_id"],

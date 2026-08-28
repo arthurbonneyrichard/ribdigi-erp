@@ -165,13 +165,25 @@ async def list_bank_statements(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    account_ids: list[str] | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.BankStatement]:
+    from app import dashboard_scope as dashboard_scope_svc
+
     q = select(m.BankStatement).where(m.BankStatement.tenant_id == tenant_id)
     if company_id:
         q = q.where(m.BankStatement.company_id == company_id)
+    if account_ids is not None:
+        if account_ids:
+            q = q.where(m.BankStatement.account_id.in_(account_ids))
+        else:
+            q = q.where(m.BankStatement.id.is_(None))
     status_n = (status or "").strip().lower() or None
     if status_n:
         q = q.where(m.BankStatement.status == status_n)
+    q = dashboard_scope_svc.apply_bank_statement_store_scope(
+        q, store_ids, tenant_id=tenant_id
+    )
     q = q.order_by(m.BankStatement.created_at.desc())
     return list((await db.execute(q)).scalars().all())
 
@@ -182,9 +194,16 @@ async def export_bank_statements_csv(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    account_ids: list[str] | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     rows = await list_bank_statements(
-        db, tenant_id=tenant_id, status=status, company_id=company_id
+        db,
+        tenant_id=tenant_id,
+        status=status,
+        company_id=company_id,
+        account_ids=account_ids,
+        store_ids=store_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=BANK_STATEMENT_EXPORT_COLUMNS)

@@ -14,7 +14,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import or_, select, func
+from sqlalchemy import exists, or_, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -363,6 +363,73 @@ async def assert_quotation_in_manager_scope(
     )
 
 
+async def managed_liquid_account_ids(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    store_ids: list[str] | None,
+    company_id: str | None = None,
+) -> list[str] | None:
+    """Liquid (cash/bank) account IDs touched by posted journals in scoped stores.
+
+    Returns ``None`` when ``store_ids`` is ``None`` (tenant-wide). Empty list when
+    no managed stores or no in-scope liquid activity.
+    """
+    if store_ids is None:
+        return None
+    if not store_ids:
+        return []
+    stmt = (
+        select(m.JournalEntryLine.account_id)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntry.status == "posted",
+            m.JournalEntry.store_id.in_(store_ids),
+            or_(
+                m.Account.is_cash_account.is_(True),
+                m.Account.is_bank_account.is_(True),
+            ),
+        )
+        .distinct()
+    )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+    return [
+        str(aid)
+        for aid in (await db.execute(stmt)).scalars().all()
+        if aid
+    ]
+
+
+async def assert_liquid_account_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when a store_manager reads a liquid account outside managed-store journals."""
+    if store_ids is None:
+        return
+    allowed = await managed_liquid_account_ids(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    aid = (account_id or "").strip()
+    if not allowed or aid not in allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Bank/cash account is outside your managed store scope.",
+                "account_id": aid or None,
+            },
+        )
+
+
 async def assert_sales_return_in_manager_scope(
     db: AsyncSession, claims: dict, sales_return: m.SalesReturn
 ) -> None:
@@ -652,3 +719,112 @@ async def scoped_financial_kpis(
         "recent_sales": recent,
         "top_products": top_products,
     }
+
+
+def apply_bank_statement_store_scope(
+    stmt,
+    managed_store_ids: list[str] | None,
+    *,
+    tenant_id: str | None = None,
+):
+    """Filter bank statements to those a store_manager may list/read/reconcile.
+
+    Fail-closed: hide when any matched line points to a null-store or foreign-store
+    journal. Visible when at least one in-scope matched line exists, or the statement
+    account still has unmatched book lines in managed stores.
+    """
+    if managed_store_ids is None:
+        return stmt
+    if not managed_store_ids:
+        return stmt.where(func.false())
+
+    BS = m.BankStatement
+    BSL = m.BankStatementLine
+    JEL = m.JournalEntryLine
+    JE = m.JournalEntry
+
+    foreign_taint = (
+        select(BSL.id)
+        .select_from(BSL)
+        .join(JEL, JEL.id == BSL.matched_journal_line_id)
+        .join(JE, JE.id == JEL.journal_entry_id)
+        .where(
+            BSL.statement_id == BS.id,
+            BSL.matched_journal_line_id.is_not(None),
+            or_(JE.store_id.is_(None), ~JE.store_id.in_(managed_store_ids)),
+        )
+    )
+    in_scope_match = (
+        select(BSL.id)
+        .select_from(BSL)
+        .join(JEL, JEL.id == BSL.matched_journal_line_id)
+        .join(JE, JE.id == JEL.journal_entry_id)
+        .where(
+            BSL.statement_id == BS.id,
+            BSL.matched_journal_line_id.is_not(None),
+            JE.store_id.in_(managed_store_ids),
+        )
+    )
+    matched_jl = select(BSL.matched_journal_line_id).where(
+        BSL.matched_journal_line_id.is_not(None)
+    )
+    cleared_jl = select(m.BankClearingBookLink.journal_line_id)
+    if tenant_id:
+        foreign_taint = foreign_taint.where(BSL.tenant_id == tenant_id)
+        in_scope_match = in_scope_match.where(BSL.tenant_id == tenant_id)
+        matched_jl = matched_jl.where(BSL.tenant_id == tenant_id)
+        cleared_jl = cleared_jl.where(m.BankClearingBookLink.tenant_id == tenant_id)
+
+    in_scope_book = (
+        select(JEL.id)
+        .select_from(JEL)
+        .join(JE, JE.id == JEL.journal_entry_id)
+        .where(
+            JEL.account_id == BS.account_id,
+            JE.store_id.in_(managed_store_ids),
+            ~JEL.id.in_(matched_jl),
+            ~JEL.id.in_(cleared_jl),
+            or_(JEL.debit > 0, JEL.credit > 0),
+        )
+    )
+    if tenant_id:
+        in_scope_book = in_scope_book.where(JEL.tenant_id == tenant_id)
+
+    return stmt.where(
+        ~exists(foreign_taint.correlate(BS)),
+        or_(
+            exists(in_scope_match.correlate(BS)),
+            exists(in_scope_book.correlate(BS)),
+        ),
+    )
+
+
+async def assert_bank_statement_in_manager_scope(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    statement_id: str,
+    managed_store_ids: list[str] | None,
+    company_id: str | None = None,
+) -> m.BankStatement:
+    """403 when a store_manager accesses a bank statement outside managed-store scope."""
+    stmt = select(m.BankStatement).where(
+        m.BankStatement.id == statement_id,
+        m.BankStatement.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.BankStatement.company_id == company_id)
+    stmt = apply_bank_statement_store_scope(
+        stmt, managed_store_ids, tenant_id=tenant_id
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if not row:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Bank statement is outside your managed store scope.",
+                "statement_id": statement_id,
+            },
+        )
+    return row

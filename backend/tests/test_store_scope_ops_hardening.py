@@ -5111,6 +5111,148 @@ async def test_store_manager_bank_recon_unmatched_book_store_scoped(client, db_s
 
 
 @pytest.mark.asyncio
+async def test_store_manager_bank_statements_list_export_scoped(client, db_session):
+    """Bank statement list/export scoped via liquid accounts + statement touch points."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["admin1"]
+    mgr_headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="BS List Mine",
+        code="BS-M",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="BS List Other",
+        code="BS-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    bank = await accounting_svc.get_account_by_code(db_session, tid, "1010", company_id=cid)
+    assert bank is not None
+
+    mine_je = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["mgr1"].id,
+        description="Mine bank deposit",
+        reference="JE-BS-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 120, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 120},
+        ],
+    )
+    other_je = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        description="Other bank deposit",
+        reference="JE-BS-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 7500, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 7500},
+        ],
+    )
+    await db_session.commit()
+
+    from app import bank_recon as bank_recon_svc
+
+    stmt_in_scope = await bank_recon_svc.create_statement(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        account_id=bank.id,
+        statement_date="2026-08-21",
+        opening_balance=0,
+        closing_balance=120,
+        notes="BS list in-scope",
+        lines=[
+            {
+                "txn_date": "2026-08-21",
+                "amount": 120,
+                "description": "Mine deposit",
+                "external_ref": "JE-BS-MINE",
+            }
+        ],
+        company_id=cid,
+    )
+    stmt_foreign = await bank_recon_svc.create_statement(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        account_id=bank.id,
+        statement_date="2026-08-22",
+        opening_balance=0,
+        closing_balance=7500,
+        notes="BS list foreign match",
+        lines=[
+            {
+                "txn_date": "2026-08-22",
+                "amount": 7500,
+                "description": "Other deposit",
+                "external_ref": "JE-BS-OTH",
+            }
+        ],
+        company_id=cid,
+    )
+    await db_session.flush()
+
+    foreign_jl = next(
+        row["journal_line_id"]
+        for row in (
+            await bank_recon_svc.unmatched_book_lines(
+                db_session, tenant_id=tid, account_id=bank.id, store_ids=None
+            )
+        )
+        if row.get("reference") == "JE-BS-OTH"
+    )
+    foreign_line = (
+        await bank_recon_svc.list_statement_lines(db_session, tid, stmt_foreign.id)
+    )[0]
+    await bank_recon_svc.match_line(
+        db_session,
+        tenant_id=tid,
+        line_id=foreign_line.id,
+        journal_line_id=foreign_jl,
+        store_ids=None,
+    )
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/accounting/bank-statements", headers=mgr_headers)
+    assert listed.status_code == 200, listed.text
+    ids = {row["id"] for row in listed.json()["data"]}
+    assert stmt_in_scope.id in ids
+    assert stmt_foreign.id not in ids
+
+    exported = await ac.get("/api/v1/accounting/bank-statements/export", headers=mgr_headers)
+    assert exported.status_code == 200, exported.text
+    assert stmt_in_scope.id in exported.text or "BS list in-scope" in exported.text
+    assert "BS list foreign match" not in exported.text
+
+    denied = await ac.get(
+        f"/api/v1/accounting/bank-statements/{stmt_foreign.id}",
+        headers=mgr_headers,
+    )
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_liquid_transfer_and_opening_balance_writes_scoped(
     client, db_session
 ):
