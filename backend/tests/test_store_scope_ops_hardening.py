@@ -5764,7 +5764,7 @@ async def test_store_manager_bank_statement_create_import_writes_scoped(client, 
 
 @pytest.mark.asyncio
 async def test_store_manager_bank_connections_scoped(client, db_session):
-    """Bank connections list/export/writes scoped via managed liquid account activity."""
+    """Bank connections: create/delete denied; list/export/patch/sync liquid-scoped."""
     from app import bank_connectors as bank_connectors_svc
     from app.rbac import permissions_for_role
 
@@ -5868,13 +5868,22 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
     assert "Mine Cash Feed" in exported.text
     assert "Other Bank Feed" not in exported.text
 
-    denied_create = await ac.post(
+    # Create/delete are company-level (feed credentials); managed liquid scope is not enough.
+    denied_create_foreign = await ac.post(
         "/api/v1/accounting/bank-connections",
         headers=headers,
         json={"account_id": bank.id, "provider": "mock", "display_name": "Denied"},
     )
-    assert denied_create.status_code == 403
-    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert denied_create_foreign.status_code == 403
+    assert denied_create_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_create_mine = await ac.post(
+        "/api/v1/accounting/bank-connections",
+        headers=headers,
+        json={"account_id": cash.id, "provider": "mock", "display_name": "Denied Mine"},
+    )
+    assert denied_create_mine.status_code == 403
+    assert denied_create_mine.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     denied_patch = await ac.patch(
         f"/api/v1/accounting/bank-connections/{conn_other.id}",
@@ -5904,12 +5913,19 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
     )
     assert ok_sync.status_code == 200, ok_sync.text
 
-    denied_delete = await ac.delete(
+    denied_delete_foreign = await ac.delete(
         f"/api/v1/accounting/bank-connections/{conn_other.id}",
         headers=headers,
     )
-    assert denied_delete.status_code == 403
-    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert denied_delete_foreign.status_code == 403
+    assert denied_delete_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete_mine = await ac.delete(
+        f"/api/v1/accounting/bank-connections/{conn_mine.id}",
+        headers=headers,
+    )
+    assert denied_delete_mine.status_code == 403
+    assert denied_delete_mine.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
@@ -8510,6 +8526,68 @@ async def test_store_manager_party_customer_group_assignment_denied(client, db_s
     await db_session.refresh(cust)
     assert cust.name == "Party Group Assign Deny Updated"
     assert cust.phone == "555-0198"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_classification_writes_denied(client, db_session):
+    """store_manager cannot set customer/supplier category or party_type; name/phone remain."""
+    ac, seed = client
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_cust_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Class Deny Cust", "category": "VIP", "party_type": "wholesale"},
+    )
+    assert denied_cust_create.status_code == 403, denied_cust_create.text
+    assert denied_cust_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cust = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Class Ok Cust", "phone": "555-0202"},
+    )
+    assert ok_cust.status_code == 200, ok_cust.text
+
+    denied_cust_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"category": "Hijack"},
+    )
+    assert denied_cust_patch.status_code == 403, denied_cust_patch.text
+    assert denied_cust_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup_create = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Class Deny Sup", "category": "Preferred"},
+    )
+    assert denied_sup_create.status_code == 403, denied_sup_create.text
+    assert denied_sup_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_sup = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Class Ok Sup", "phone": "555-0303"},
+    )
+    assert ok_sup.status_code == 200, ok_sup.text
+    sup_id = ok_sup.json()["data"]["id"]
+
+    denied_sup_patch = await ac.patch(
+        f"/api/v1/suppliers/{sup_id}",
+        headers=headers,
+        json={"party_type": "distributor"},
+    )
+    assert denied_sup_patch.status_code == 403, denied_sup_patch.text
+    assert denied_sup_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Class Deny Cust Updated", "phone": "555-0299"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
 
 
 @pytest.mark.asyncio

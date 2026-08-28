@@ -6943,6 +6943,12 @@ async def add_customer(
         payload.model_dump(exclude_unset=True),
         message="Store managers cannot assign customer groups on create.",
     )
+    dashboard_scope_svc.assert_party_classification_write_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        clear_counts=False,
+        message="Store managers cannot set customer category or party_type on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
@@ -7000,6 +7006,12 @@ async def patch_customer(
         managed,
         fields,
         message="Store managers cannot assign or clear customer groups on parties.",
+    )
+    dashboard_scope_svc.assert_party_classification_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set customer category or party_type.",
     )
     party = await customers_svc.update_customer(
         db,
@@ -7204,6 +7216,12 @@ async def add_supplier(
         allow_zero_credit_limit=True,
         allow_zero_payment_terms=True,
     )
+    dashboard_scope_svc.assert_party_classification_write_denied(
+        managed,
+        data,
+        clear_counts=False,
+        message="Store managers cannot set supplier category or party_type on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await suppliers_svc.create_supplier(
         db,
@@ -7254,6 +7272,12 @@ async def patch_supplier(
     fields = payload.model_dump(exclude_unset=True)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_party_credit_master_write_denied(managed, fields)
+    dashboard_scope_svc.assert_party_classification_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set supplier category or party_type.",
+    )
     party = await suppliers_svc.update_supplier(
         db,
         tenant_id=claims["tenant_id"],
@@ -12106,6 +12130,10 @@ async def create_bank_connection(
 
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bank_connection_write_denied(
+        managed,
+        message="Store managers cannot create or delete bank feed connections.",
+    )
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
         db,
@@ -12189,6 +12217,10 @@ async def delete_bank_connection(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bank_connection_write_denied(
+        managed,
+        message="Store managers cannot create or delete bank feed connections.",
+    )
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     existing = await bank_connectors_svc.get_connection(
         db,

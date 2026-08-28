@@ -173,7 +173,9 @@ store activation — never frontend-only.
    (activate/deactivate admin-only; name/bank details on managed liquid
    accounts remain), and **party customer_group assignment denied for
    store_manager** (company sales-master party↔group link; name/phone
-   party patches remain), and
+   party patches remain), and **bank connection create/delete denied for
+   store_manager** (company bank-feed credentials; list/export/patch/sync on
+   managed liquid accounts remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

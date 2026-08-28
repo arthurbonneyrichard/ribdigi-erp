@@ -689,6 +689,18 @@ def assert_liquid_account_lifecycle_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_bank_connection_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or delete bank feed connections.",
+) -> None:
+    """403 when store_manager creates/deletes bank feed connections (credentials).
+
+    List/export/patch/sync on managed liquid-account connections remain scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 async def assert_products_in_manager_warehouse_scope(
     db: AsyncSession,
     tenant_id: str,
@@ -790,6 +802,36 @@ def assert_party_customer_group_assignment_write_denied(
     if managed_ids is None:
         return
     changing = "customer_group_id" in payload or "customer_group" in payload
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_classification_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party category or party_type.",
+) -> None:
+    """403 when store_manager sets party category / party_type (company classification).
+
+    Name/phone/address/notes remain. On create full dumps, only non-empty values
+    deny (``clear_counts=False``). On PATCH exclude_unset, present keys deny
+    including explicit null clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "category" in payload or "party_type" in payload
+    else:
+        cat = payload.get("category")
+        ptype = payload.get("party_type")
+        changing = (
+            cat is not None and str(cat).strip() != ""
+        ) or (
+            ptype is not None and str(ptype).strip() != ""
+        )
     if not changing:
         return
     assert_company_level_write_denied(managed_ids, message=message)
