@@ -413,7 +413,8 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           opening_cash: Number(openingCash) || 0,
-          store_id: storeId || null,
+          // null when blank so Open shift (UuidIdValue store_id) does not 422
+          store_id: storeId.trim() || null,
         }),
       });
       setSession(r.data);
@@ -661,10 +662,11 @@ export default function Page() {
       discount: Number(c.discount) || 0,
     }));
     const body: Record<string, unknown> = {
-      session_id: session.session_id,
+      // trim so Complete sale (UuidIdValue session_id / party_id) does not 422
+      session_id: String(session.session_id).trim(),
       discount_amount: cartDiscountAmount,
       status: 'completed',
-      party_id: customerId || null,
+      party_id: customerId.trim() || null,
       customer_name: name || null,
       items,
     };
@@ -828,7 +830,7 @@ export default function Page() {
                       setStoreId(e.target.value);
                       setCtxStoreId(e.target.value);
                     }}
-                    aria-label="Store"
+                    aria-label="POS store"
                   >
                     <option value="">Select store</option>
                     {stores.map((s) => (
@@ -847,7 +849,12 @@ export default function Page() {
                   placeholder="Opening cash"
                   aria-label="Opening cash"
                 />
-                <button type="button" className="tpos-btn tpos-btn-primary" onClick={openShift}>
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-primary"
+                  onClick={openShift}
+                  aria-label="Open shift"
+                >
                   Open shift
                 </button>
               </>
@@ -1394,7 +1401,11 @@ export default function Page() {
 
               <label className="tpos-field">
                 <span>Customer {paymentMethod === 'credit' ? '(required)' : '(optional)'}</span>
-                <select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
+                <select
+                  value={customerId}
+                  onChange={(e) => selectCustomer(e.target.value)}
+                  aria-label="POS customer"
+                >
                   <option value="">Walk-in / none</option>
                   {customers
                     .filter((c) => c.status !== 'inactive')

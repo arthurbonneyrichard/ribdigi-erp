@@ -803,7 +803,8 @@ export default function Page() {
       const r = await api('/purchasing/invoices', {
         method: 'POST',
         body: JSON.stringify({
-          goods_receipt_id: invoiceGrnId,
+          // trim so Draft from GRN (UuidIdValue goods_receipt_id) does not 422
+          goods_receipt_id: invoiceGrnId.trim(),
           supplier_invoice_number: supplierInvoiceNo.trim() || null,
           notes: invNotes.trim() || null,
           attachment_url: invAttachmentUrl.trim() || null,
@@ -837,7 +838,8 @@ export default function Page() {
       const r = await api('/purchasing/invoices', {
         method: 'POST',
         body: JSON.stringify({
-          supplier_id: manualInvSupplierId,
+          // trim so Draft manual PI (UuidIdValue supplier_id / product_id) does not 422
+          supplier_id: manualInvSupplierId.trim(),
           supplier_invoice_number: supplierInvoiceNo.trim() || null,
           notes: invNotes.trim() || null,
           attachment_url: invAttachmentUrl.trim() || null,
@@ -847,7 +849,7 @@ export default function Page() {
           exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
           items: [
             {
-              product_id: manualInvProductId,
+              product_id: manualInvProductId.trim(),
               quantity: Number(manualInvQty),
               unit_price: Number(manualInvPrice),
               discount: lineDisc,
@@ -2453,7 +2455,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase invoice from GRN</h3>
         <div className="erp-form-grid">
-          <select value={invoiceGrnId} onChange={(e) => setInvoiceGrnId(e.target.value)}>
+          <select
+            value={invoiceGrnId}
+            onChange={(e) => setInvoiceGrnId(e.target.value)}
+            aria-label="Purchase invoice GRN"
+          >
             <option value="">Select GRN</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
@@ -2525,7 +2531,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create manual purchase invoice</h3>
         <div className="erp-form-grid">
-          <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
+          <select
+            value={manualInvSupplierId}
+            onChange={(e) => setManualInvSupplierId(e.target.value)}
+            aria-label="Purchase invoice supplier"
+          >
             <option value="">Select supplier</option>
             {suppliers
               .filter((s) => s.status !== 'inactive')
@@ -2535,7 +2545,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={manualInvProductId} onChange={(e) => setManualInvProductId(e.target.value)}>
+          <select
+            value={manualInvProductId}
+            onChange={(e) => setManualInvProductId(e.target.value)}
+            aria-label="Purchase invoice product"
+          >
             <option value="">Select product</option>
             {products
               .filter((p) => p.is_active !== false)

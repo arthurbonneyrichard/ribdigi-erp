@@ -2836,7 +2836,11 @@ class PurchaseReturnCancel(BaseModel):
 
 
 class PurchaseInvoiceItemCreate(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Purchasing **Purchase invoice
+    # product** select; Draft manual PI sends trim.
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
     unit_price: float | None = None
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
@@ -2845,9 +2849,20 @@ class PurchaseInvoiceItemCreate(BaseModel):
 
 
 class PurchaseInvoiceCreate(BaseModel):
-    supplier_id: str | None = None
-    goods_receipt_id: str | None = None
-    purchase_order_id: str | None = None
+    # Optional supplier ∈ UuidIdValue; omit/`null` OK when from-GRN / PO path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach party lookup). Existence remains tenant-scoped supplier lookup (**404**).
+    # Purchasing **Purchase invoice supplier** select; Draft manual sends trim.
+    supplier_id: UuidIdValue | None = None
+    # Optional source GRN ∈ UuidIdValue; omit/`null` → manual / PO path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach GRN lookup).
+    # Existence remains tenant-scoped goods-receipt lookup (**404**). Purchasing
+    # **Purchase invoice GRN** select; Draft from GRN sends trim.
+    goods_receipt_id: UuidIdValue | None = None
+    # Optional source PO ∈ UuidIdValue; omit/`null` → manual / GRN path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach PO lookup).
+    # Existence remains tenant-scoped purchase-order lookup (**404**).
+    purchase_order_id: UuidIdValue | None = None
     # omit/`null` → no supplier invoice #; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/`""` could persist or be stored raw; punctuation/URL could persist
     # on PurchaseInvoice.supplier_invoice_number).
@@ -7732,7 +7747,11 @@ class PeriodReopenBody(BaseModel):
 
 
 class PosSessionOpen(BaseModel):
-    store_id: str | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store / HQ path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). POS
+    # **POS store** select (`aria-label`); Open shift sends trim or `null`.
+    store_id: UuidIdValue | None = None
     opening_cash: float = Field(default=0, ge=0)
 
 
@@ -7762,8 +7781,16 @@ class PosPaymentLine(BaseModel):
 
 
 class PosSaleCreate(BaseModel):
-    session_id: str | None = None
-    party_id: str | None = None
+    # Optional open shift ∈ UuidIdValue; omit/`null` → current session path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach session
+    # lookup). Existence remains tenant-scoped POS session lookup (**404**/400).
+    # POS Complete sale sends `session_id` trim when a shift is open.
+    session_id: UuidIdValue | None = None
+    # Optional customer party ∈ UuidIdValue; omit/`null` → walk-in; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach party
+    # lookup). Existence remains tenant-scoped customer lookup (**404**). POS
+    # **POS customer** select (`aria-label`); Complete sale sends trim or `null`.
+    party_id: UuidIdValue | None = None
     # omit/`null` → walk-in (no name); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
     customer_name: PosCustomerNameValue | None = None
     subtotal: float = 0

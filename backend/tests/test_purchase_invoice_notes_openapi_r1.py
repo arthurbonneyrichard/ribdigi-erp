@@ -15,14 +15,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_purchase_invoice_notes_schema():
+    _sup = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    _prod = "11111111-2222-3333-4444-555555555555"
     create_omit = PurchaseInvoiceCreate.model_validate(
-        {"supplier_id": "s1", "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}]}
+        {"supplier_id": _sup, "items": [{"product_id": _prod, "quantity": 1, "unit_price": 1}]}
     )
     assert create_omit.notes is None
     create_ok = PurchaseInvoiceCreate.model_validate(
         {
-            "supplier_id": "s1",
-            "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+            "supplier_id": _sup,
+            "items": [{"product_id": _prod, "quantity": 1, "unit_price": 1}],
             "notes": "  Vendor bill memo  ",
         }
     )
@@ -31,8 +33,8 @@ def test_purchase_invoice_notes_schema():
         with pytest.raises(ValidationError):
             PurchaseInvoiceCreate.model_validate(
                 {
-                    "supplier_id": "s1",
-                    "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+                    "supplier_id": _sup,
+                    "items": [{"product_id": _prod, "quantity": 1, "unit_price": 1}],
                     "notes": bad,
                 }
             )
