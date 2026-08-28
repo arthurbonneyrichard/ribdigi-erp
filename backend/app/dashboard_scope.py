@@ -644,6 +644,22 @@ def assert_company_level_credit_settings_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_inventory_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company inventory FEFO settings; "
+        "scoped warehouse stock ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company FEFO inventory settings (admin dump).
+
+    PATCH and CSV export already denied; GET dumped ``fefo_strict_warehouse``.
+    Scoped warehouse stock-in/out and FEFO enforcement at write time remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_settings_export_denied(
     managed_ids: list[str] | None,
     *,
@@ -651,9 +667,9 @@ def assert_company_level_settings_export_denied(
 ) -> None:
     """403 when store_manager exports company settings CSVs (approval/FX/FEFO/early-pay).
 
-    Expense/credit settings GETs are separately denied; inventory settings GET remains.
-    FX exchange-rates GET is separately denied. Full CSV dumps are company-level
-    administration (writes already denied).
+    Expense/credit/inventory settings GETs are separately denied. FX exchange-rates
+    GET is separately denied. Full CSV dumps are company-level administration
+    (writes already denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
