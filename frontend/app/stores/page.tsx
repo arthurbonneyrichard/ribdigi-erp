@@ -316,8 +316,8 @@ export default function Page() {
           ...(editPhone.trim() ? { phone: editPhone.trim() } : {}),
           manager_id: editManagerId.trim() || null,
           clear_manager: !editManagerId.trim(),
-          branch_id: editBranchId || null,
-          clear_branch: !editBranchId,
+          branch_id: editBranchId.trim() || null,
+          clear_branch: !editBranchId.trim(),
           operating_hours: editHours,
         }),
       });
@@ -1467,7 +1467,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)}>
+            <select
+              value={editBranchId}
+              onChange={(e) => setEditBranchId(e.target.value)}
+              aria-label="Edit store branch"
+              title="Store branch (optional)"
+            >
               <option value="">No branch</option>
               {branches
                 .filter((b) => b.is_active !== false)

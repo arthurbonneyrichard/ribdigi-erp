@@ -2098,7 +2098,11 @@ class StoreUpdate(BaseModel):
     # StoreCreate.manager_id. Use `clear_manager` to remove.
     manager_id: UuidIdValue | None = None
     clear_manager: bool = False
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as StoreCreate.branch_id. Use `clear_branch` to remove.
+    branch_id: UuidIdValue | None = None
     clear_branch: bool = False
     is_active: bool | None = None
     operating_hours: StoreOperatingHours | None = None
