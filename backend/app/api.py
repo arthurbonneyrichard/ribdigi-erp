@@ -2711,6 +2711,13 @@ async def roles_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 124 X1 — custom roles CSV export (system roles excluded)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_user_admin_export_denied(
+        managed,
+        message="Store managers cannot export company custom roles CSV.",
+    )
     text = await variant_role_export_svc.export_custom_roles_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -2732,6 +2739,13 @@ async def roles_permissions_matrix_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 152 M1 — role×module×action permissions matrix CSV (system + custom)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_user_admin_export_denied(
+        managed,
+        message="Store managers cannot export company role permissions matrix CSV.",
+    )
     text = await variant_role_export_svc.export_permissions_matrix_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -3196,6 +3210,13 @@ async def users_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 120 U1 — users CSV export (import-aligned; never includes passwords)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_user_admin_export_denied(
+        managed,
+        message="Store managers cannot export company users CSV.",
+    )
     text = await user_import_svc.export_users_csv(db, tenant_id=claims["tenant_id"])
     return Response(
         content=text,

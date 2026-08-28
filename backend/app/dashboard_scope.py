@@ -1238,6 +1238,21 @@ def assert_company_level_party_export_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_user_admin_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company user/role administration CSVs."
+    ),
+) -> None:
+    """403 when store_manager exports users/roles/permissions matrix CSVs.
+
+    List/get for users and roles remain; full roster and matrix dumps are
+    company-level admin surfaces (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_import_denied(
     managed_ids: list[str] | None,
     *,

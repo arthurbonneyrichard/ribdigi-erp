@@ -8409,7 +8409,7 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_user_admin_writes_denied(client, db_session):
-    """User/role admin writes denied for store_manager even when users write is granted."""
+    """User/role admin writes + CSV exports denied for store_manager; list/get remain."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -8517,9 +8517,24 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert denied_role_delete.status_code == 403
     assert denied_role_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_users_export = await ac.get("/api/v1/users/export", headers=headers)
+    assert denied_users_export.status_code == 403, denied_users_export.text
+    assert denied_users_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_roles_export = await ac.get("/api/v1/roles/export", headers=headers)
+    assert denied_roles_export.status_code == 403, denied_roles_export.text
+    assert denied_roles_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_perms_export = await ac.get(
+        "/api/v1/roles/permissions/export", headers=headers
+    )
+    assert denied_perms_export.status_code == 403, denied_perms_export.text
+    assert denied_perms_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     # Reads remain allowed (default users read)
     assert (await ac.get("/api/v1/users", headers=headers)).status_code == 200
     assert (await ac.get(f"/api/v1/users/{target.id}", headers=headers)).status_code == 200
+    assert (await ac.get("/api/v1/roles", headers=headers)).status_code == 200
 
 @pytest.mark.asyncio
 async def test_store_manager_warehouse_company_create_denied(client, db_session):
