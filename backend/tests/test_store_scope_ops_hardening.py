@@ -12346,6 +12346,50 @@ async def test_store_manager_company_store_limit_write_denied(client, db_session
     assert ok_entitlement.status_code == 200, ok_entitlement.text
 
 
+@pytest.mark.asyncio
+async def test_store_manager_tenant_store_entitlement_read_denied(client, db_session):
+    """GET /tenant/store-entitlement denied for store_manager; admin remains."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    # companies:read required to reach the route; SM still gets STORE_SCOPE_DENIED.
+    perms = dict(permissions_for_role("store_manager"))
+    perms["companies"] = ["read"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = {**headers, "X-Workspace-Kind": "tenant"}
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_headers = {**admin_headers, "X-Workspace-Kind": "tenant"}
+
+    denied = await ac.get("/api/v1/tenant/store-entitlement", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.get("/api/v1/tenant/store-entitlement", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    payload = ok.json()["data"]
+    assert "entitlement" in payload
+    assert "companies" in payload
+
 
 @pytest.mark.asyncio
 async def test_store_manager_store_manager_assignment_denied(client, db_session):

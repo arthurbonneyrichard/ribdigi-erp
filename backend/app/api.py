@@ -2438,7 +2438,14 @@ async def tenant_store_entitlement(
     db: AsyncSession = Depends(get_db),
 ):
     """Tenant Admin view of subscription store allowance + per-company allocations."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app import store_entitlements as store_ent_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_store_entitlement_read_denied(
+        managed,
+        message="Store managers cannot view tenant store entitlement allocations.",
+    )
 
     if claims.get("workspace_kind") not in {None, "tenant"} and not claims.get("tenant_admin"):
         # Allow tenant admins even if header omitted; company workspace still OK for read of own tenant.

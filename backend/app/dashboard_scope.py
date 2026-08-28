@@ -1489,10 +1489,13 @@ def assert_company_level_store_entitlement_read_denied(
         "subscription capacity is company/tenant-admin only."
     ),
 ) -> None:
-    """403 when store_manager reads company store-entitlement (subscription capacity dump).
+    """403 when store_manager reads store-entitlement (subscription capacity dump).
 
-    ``PATCH /companies/{id}/store-limit`` already denied; GET was open via ``stores:read``
-    and dumps company plan/allocation. Managed store list/ops remain.
+    Covers ``GET /companies/{id}/store-entitlement`` and ``GET /tenant/store-entitlement``.
+    ``PATCH /companies/{id}/store-limit`` already denied; company GET was open via
+    ``stores:read``. Tenant GET was tenant-admin-gated only — defense-in-depth
+    ``STORE_SCOPE_DENIED`` when elevated ``companies:read`` is present. Managed
+    store list/ops remain.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
