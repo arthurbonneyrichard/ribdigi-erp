@@ -16318,6 +16318,7 @@ async def stores(
     elif active_only:
         stmt = stmt.where(m.Store.is_active.is_(True))
     rows = (await db.execute(stmt)).scalars().all()
+    omit_branch = dashboard_scope_svc.omit_store_branch_assignment(managed)
     out = []
     for s in rows:
         detail = await stores_svc.serialize_store_detail(db, s)
@@ -16328,6 +16329,8 @@ async def stores(
                 if k != "source"
             }
         )
+        if omit_branch:
+            detail = dashboard_scope_svc.redact_store_branch_assignment(detail)
         out.append(detail)
     return env(out)
 
@@ -16350,6 +16353,7 @@ async def stores_export(
         active_only=active_only,
         company_id=claims.get("company_id"),
         store_ids=managed,
+        omit_branch_id=dashboard_scope_svc.omit_store_branch_assignment(managed),
     )
     return Response(
         content=text,
@@ -16539,7 +16543,10 @@ async def update_store(
         details={"code": store.code},
     )
     await db.commit()
-    return env(await stores_svc.serialize_store_detail(db, store), "Store updated")
+    serialized = await stores_svc.serialize_store_detail(db, store)
+    if dashboard_scope_svc.omit_store_branch_assignment(managed):
+        serialized = dashboard_scope_svc.redact_store_branch_assignment(serialized)
+    return env(serialized, "Store updated")
 
 
 @api.patch("/stores/{store_id}/drawer")

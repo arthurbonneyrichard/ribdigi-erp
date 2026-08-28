@@ -12802,12 +12802,18 @@ async def test_store_manager_store_manager_assignment_denied(client, db_session)
 
 @pytest.mark.asyncio
 async def test_store_manager_store_branch_assignment_denied(client, db_session):
-    """store_manager cannot assign/clear store branch_id; other managed patches remain."""
+    """store_manager cannot assign/clear store branch_id; list/export/patch redact it."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
     mgr = seed["mgr1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     branch = m.Branch(
         tenant_id=tid,
@@ -12843,6 +12849,43 @@ async def test_store_manager_store_branch_assignment_denied(client, db_session):
     store.branch_id = branch.id
     await db_session.commit()
 
+    listed = await ac.get("/api/v1/stores", headers=headers)
+    assert listed.status_code == 200, listed.text
+    mine = next(r for r in listed.json()["data"] if r["id"] == store.id)
+    assert mine["name"] == "Mgr Branch Assign Deny Store"
+    assert mine.get("branch_id") is None
+    assert mine.get("manager_id") == mgr.id
+
+    admin_listed = await ac.get("/api/v1/stores", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_mine = next(r for r in admin_listed.json()["data"] if r["id"] == store.id)
+    assert admin_mine.get("branch_id") == branch.id
+
+    exported = await ac.get("/api/v1/stores/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "MGR-BR-ASSIGN" in exported.text
+    assert "branch_id" in exported.text
+    sm_line = next(
+        line
+        for line in exported.text.splitlines()
+        if "MGR-BR-ASSIGN" in line and "Mgr Branch Assign Deny Store" in line
+    )
+    # code,name,address,phone,manager_id,branch_id,is_active
+    cols = next(csv.reader([sm_line]))
+    assert cols[0] == "MGR-BR-ASSIGN"
+    assert cols[1] == "Mgr Branch Assign Deny Store"
+    assert cols[5] == ""
+
+    admin_exported = await ac.get("/api/v1/stores/export", headers=admin_headers)
+    assert admin_exported.status_code == 200, admin_exported.text
+    admin_line = next(
+        line
+        for line in admin_exported.text.splitlines()
+        if "MGR-BR-ASSIGN" in line and "Mgr Branch Assign Deny Store" in line
+    )
+    admin_cols = next(csv.reader([admin_line]))
+    assert admin_cols[5] == branch.id
+
     denied_clear = await ac.patch(
         f"/api/v1/stores/{store.id}",
         headers=headers,
@@ -12857,6 +12900,9 @@ async def test_store_manager_store_branch_assignment_denied(client, db_session):
         json={"name": "Mgr Branch Assign Deny Store Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
+    ok_body = ok_name.json()["data"]
+    assert ok_body["name"] == "Mgr Branch Assign Deny Store Updated"
+    assert ok_body.get("branch_id") is None
 
     await db_session.refresh(store)
     assert store.branch_id == branch.id

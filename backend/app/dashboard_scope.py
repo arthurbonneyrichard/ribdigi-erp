@@ -1560,10 +1560,29 @@ def assert_store_branch_assignment_write_denied(
 
     Branch/department master writes are already denied; store ``branch_id`` /
     ``clear_branch`` is the same company-level org graph and stays admin-only.
+    List/export/patch JSON redacts ``branch_id`` via ``redact_store_branch_assignment``.
     """
     if not changing_branch:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_store_branch_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit store ``branch_id`` on JSON/CSV.
+
+    Branch assign/clear writes already denied; branches list GET already denied.
+    List/export/patch must not re-dump the company store↔branch org link.
+    Name/phone/address/operating_hours/manager_id/is_active remain for managed-store ops.
+    """
+    return managed_ids is not None
+
+
+def redact_store_branch_assignment(payload: dict) -> dict:
+    """Null ``branch_id`` on a serialized store dict for store_manager."""
+    out = dict(payload)
+    if "branch_id" in out:
+        out["branch_id"] = None
+    return out
 
 
 def assert_expense_department_assignment_write_denied(
