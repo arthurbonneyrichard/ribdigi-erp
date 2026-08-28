@@ -546,6 +546,27 @@ def assert_party_credit_master_write_denied(
     )
 
 
+def assert_credit_limit_override_denied(
+    managed_ids: list[str] | None,
+    *,
+    override: bool,
+    message: str = "Store managers cannot override customer credit limits.",
+) -> None:
+    """403 when store_manager attempts credit_limit_override on invoice post / POS credit.
+
+    Default role includes ``credit:approve``; override remains company/finance admin.
+    """
+    if managed_ids is None or not override:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+        },
+    )
+
+
 async def assert_liquid_account_in_manager_scope(
     db: AsyncSession,
     tenant_id: str,

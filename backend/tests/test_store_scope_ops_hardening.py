@@ -8011,3 +8011,100 @@ async def test_store_manager_expense_category_writes_denied(client, db_session):
     listed = await ac.get("/api/v1/expenses/categories", headers=headers)
     assert listed.status_code == 200, listed.text
     assert any(row["code"] == "CAT-DENY" for row in listed.json()["data"])
+
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_limit_override_denied(client, db_session):
+    """credit_limit_override on invoice post / POS credit denied for store_manager."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Override Mgr Store",
+        code="CRO-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    customer.credit_limit = 50
+    customer.balance = 0
+    customer.party_type = "registered"
+    product.selling_price = 100
+    product.stock_qty = 100
+    product.tax_rate_id = None
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    created = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers,
+        json={
+            "customer_id": customer.id,
+            "store_id": store.id,
+            "items": [
+                {
+                    "product_id": product.id,
+                    "quantity": 1,
+                    "unit_price": 100,
+                    "tax_rate": 0,
+                    "discount": 0,
+                }
+            ],
+        },
+    )
+    assert created.status_code == 200, created.text
+    inv_id = created.json()["data"]["id"]
+
+    blocked = await ac.post(
+        f"/api/v1/sales/invoices/{inv_id}/post",
+        headers=headers,
+        json={},
+    )
+    assert blocked.status_code == 409, blocked.text
+    assert blocked.json()["detail"]["code"] == "CREDIT_LIMIT_EXCEEDED"
+
+    denied = await ac.post(
+        f"/api/v1/sales/invoices/{inv_id}/post",
+        headers=headers,
+        json={
+            "credit_limit_override": True,
+            "credit_override_reason": "Manager VIP exception attempt",
+        },
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+    await db_session.commit()
+
+    opened = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"opening_cash": 20, "store_id": store.id},
+    )
+    assert opened.status_code == 200, opened.text
+    sid = opened.json()["data"]["session_id"]
+
+    pos_denied = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": sid,
+            "party_id": customer.id,
+            "payment_method": "credit",
+            "credit_limit_override": True,
+            "credit_override_reason": "POS manager override attempt",
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 100}],
+        },
+    )
+    assert pos_denied.status_code == 403, pos_denied.text
+    assert pos_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

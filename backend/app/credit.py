@@ -929,8 +929,9 @@ async def enforce_credit_limit(
 ) -> dict:
     """Block over-limit credit unless caller has credit:approve and supplies a reason.
 
-    Returns projection dict. When override is applied, records an audit event
-    (unless ``record_audit`` is False — caller will record with a final entity id).
+    ``store_manager`` is denied even with ``credit:approve`` (company/finance admin
+    override only). Returns projection dict. When override is applied, records an
+    audit event (unless ``record_audit`` is False — caller records with final id).
     """
     from app.rbac import has_permission
     from app import audit as audit_svc
@@ -956,6 +957,19 @@ async def enforce_credit_limit(
             detail={
                 "code": "CREDIT_OVERRIDE_REASON_REQUIRED",
                 "message": "credit_override_reason is required (min 3 characters) to override the credit limit",
+            },
+        )
+
+    # store_manager default role includes credit:approve for operational credit reads/writes,
+    # but company-level limit override remains tenant/finance admin (not store-scoped).
+    from app.dashboard_views import dashboard_view_for_role
+
+    if dashboard_view_for_role(role) == "store_manager":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Store managers cannot override customer credit limits.",
             },
         )
 

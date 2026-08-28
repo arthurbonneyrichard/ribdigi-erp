@@ -7415,6 +7415,9 @@ async def post_sales_invoice(
     dashboard_scope_svc.assert_store_in_manager_scope(
         managed, getattr(existing, "store_id", None), allow_unset=False
     )
+    dashboard_scope_svc.assert_credit_limit_override_denied(
+        managed, override=bool(payload.credit_limit_override)
+    )
     perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
     invoice = await sales_svc.post_sales_invoice(
         db,
