@@ -150,7 +150,9 @@ store activation — never frontend-only.
    (company-level approval matrix; GET/export remain; admin allowlist retained),
    and **legacy POST /sales and /purchases denied for store_manager** (unscoped
    Transaction writes; use store-scoped invoices / purchasing pipeline).
-   Not store-scoped RBAC Complete.
+   Not store-scoped RBAC Complete,
+   and **company store-limit allocation denied for store_manager**
+   (tenant entitlement allocation; even when companies write granted; tenant-admin path retained).
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.

@@ -520,6 +520,15 @@ def assert_company_level_company_branding_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_store_limit_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot allocate company store entitlement limits.",
+) -> None:
+    """403 when store_manager attempts tenant store-limit allocation (companies module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_legacy_transaction_write_denied(
     managed_ids: list[str] | None,
     *,

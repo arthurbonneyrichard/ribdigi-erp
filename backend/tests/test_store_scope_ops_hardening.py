@@ -9141,3 +9141,38 @@ async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_sessi
     )
     assert ok_sale.status_code == 200, ok_sale.text
 
+
+@pytest.mark.asyncio
+async def test_store_manager_company_store_limit_write_denied(client, db_session):
+    """Company store-limit allocation denied for store_manager even with companies write."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["companies"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied = await ac.patch(
+        f"/api/v1/companies/{cid}/store-limit",
+        headers=headers,
+        json={"store_limit": 2},
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
