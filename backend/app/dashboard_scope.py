@@ -653,6 +653,22 @@ def assert_company_level_api_keys_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_webhooks_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export company webhooks; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /webhooks or /export.
+
+    Endpoint URL/event subscription dump is company security admin. Deliveries,
+    create/patch/delete/test remain admin-role gated for a later slice.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,

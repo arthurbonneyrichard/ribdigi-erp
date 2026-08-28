@@ -18294,10 +18294,17 @@ async def api_keys_revoke(
 async def webhooks_list(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 126 W1 — active_only / is_active for honest paused-only webhook lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhooks_read_denied(
+        managed,
+        message="Store managers cannot list company webhooks.",
+    )
     rows = await webhooks_svc.list_endpoints(
         db,
         claims["tenant_id"],
@@ -18311,10 +18318,17 @@ async def webhooks_list(
 async def webhooks_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 126 X1 — webhooks CSV export (signing secrets excluded)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhooks_read_denied(
+        managed,
+        message="Store managers cannot export company webhooks CSV.",
+    )
     text = await bank_webhook_export_svc.export_webhooks_csv(
         db,
         tenant_id=claims["tenant_id"],
