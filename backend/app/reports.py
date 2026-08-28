@@ -1847,21 +1847,25 @@ async def expenses_summary(
     managed stores and excludes null-store expenses (fail closed).
     """
     if store_ids is not None and not store_ids:
+        from app import dashboard_scope as dashboard_scope_svc
+
         return {
             "count": 0,
             "total_amount": 0.0,
             "by_category": [],
-            "budgets": {
-                "from_date": None,
-                "to_date": None,
-                "categories": [],
-                "totals": {
-                    "budget_amount": 0.0,
-                    "spent": 0.0,
-                    "pending": 0.0,
-                    "variance": 0.0,
-                },
-            },
+            "budgets": dashboard_scope_svc.redact_expense_budget_limits(
+                {
+                    "from_date": None,
+                    "to_date": None,
+                    "categories": [],
+                    "totals": {
+                        "budget_amount": 0.0,
+                        "spent": 0.0,
+                        "pending": 0.0,
+                        "variance": 0.0,
+                    },
+                }
+            ),
         }
     stmt = select(m.Expense).where(
         m.Expense.tenant_id == tenant_id,

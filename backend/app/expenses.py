@@ -374,17 +374,21 @@ async def category_budget_variance(
         end = to_date
 
     if store_ids is not None and not store_ids:
-        return {
-            "from_date": start,
-            "to_date": end,
-            "categories": [],
-            "totals": {
-                "budget_amount": 0.0,
-                "spent": 0.0,
-                "pending": 0.0,
-                "variance": 0.0,
-            },
-        }
+        from app import dashboard_scope as dashboard_scope_svc
+
+        return dashboard_scope_svc.redact_expense_budget_limits(
+            {
+                "from_date": start,
+                "to_date": end,
+                "categories": [],
+                "totals": {
+                    "budget_amount": 0.0,
+                    "spent": 0.0,
+                    "pending": 0.0,
+                    "variance": 0.0,
+                },
+            }
+        )
 
     cat_stmt = (
         select(m.ExpenseCategory)
@@ -439,7 +443,7 @@ async def category_budget_variance(
         total_spent += spent
         total_pending += pending
 
-    return {
+    result = {
         "from_date": start,
         "to_date": end,
         "categories": rows,
@@ -450,6 +454,13 @@ async def category_budget_variance(
             "variance": round(total_budget - total_spent, 2),
         },
     }
+    # store_ids set (including empty) = store_manager scope — omit company
+    # budget_amount master while keeping scoped spent/pending.
+    if store_ids is not None:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        return dashboard_scope_svc.redact_expense_budget_limits(result)
+    return result
 
 
 def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:

@@ -2056,9 +2056,52 @@ def assert_company_level_expense_category_read_denied(
 
     Create/patch + CSV export already denied; ``GET /expenses/categories`` dumped
     budget_amount / approval matrix fields. Expense UI soft-fails empty lists;
-    ``/expenses/budgets`` spend/pending remains store-scoped.
+    ``/expenses/budgets`` spend/pending remains store-scoped with company
+    ``budget_amount`` / variance / utilization redacted
+    (``redact_expense_budget_limits``).
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_expense_budget_limits(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit company expense budget limit fields.
+
+    Category list/export already denied; budgets JSON/CSV and embedded report
+    budgets must not re-dump ``budget_amount`` (or variance/utilization derived
+    from it). Scoped ``spent`` / ``pending`` remain.
+    """
+    return managed_ids is not None
+
+
+def redact_expense_budget_limits(payload: dict) -> dict:
+    """Null company budget limit fields on a budgets / variance payload."""
+    out = dict(payload)
+    cats = out.get("categories")
+    if isinstance(cats, list):
+        redacted: list = []
+        for row in cats:
+            if not isinstance(row, dict):
+                redacted.append(row)
+                continue
+            item = dict(row)
+            for key in (
+                "budget_amount",
+                "variance",
+                "utilization_pct",
+                "over_budget",
+            ):
+                if key in item:
+                    item[key] = None
+            redacted.append(item)
+        out["categories"] = redacted
+    totals = out.get("totals")
+    if isinstance(totals, dict):
+        t = dict(totals)
+        for key in ("budget_amount", "variance"):
+            if key in t:
+                t[key] = None
+        out["totals"] = t
+    return out
 
 
 def assert_company_level_catalog_meta_write_denied(

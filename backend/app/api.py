@@ -11511,6 +11511,8 @@ async def expense_category_budgets(
         company_id=claims.get("company_id"),
         store_ids=managed,
     )
+    if dashboard_scope_svc.omit_expense_budget_limits(managed):
+        data = dashboard_scope_svc.redact_expense_budget_limits(data)
     await db.commit()
     return env(data)
 

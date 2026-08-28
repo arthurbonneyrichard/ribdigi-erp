@@ -2487,6 +2487,14 @@ async def test_store_manager_expense_reports_and_budgets_store_scoped(client, db
     budgets = await ac.get("/api/v1/expenses/budgets", headers=headers)
     assert budgets.status_code == 200, budgets.text
     assert float(budgets.json()["data"]["totals"]["spent"]) == pytest.approx(25.0)
+    # Company budget limits redacted for store_manager (categories list already denied).
+    assert budgets.json()["data"]["totals"]["budget_amount"] is None
+    assert budgets.json()["data"]["totals"]["variance"] is None
+    for row in budgets.json()["data"]["categories"]:
+        assert row.get("budget_amount") is None
+        assert row.get("variance") is None
+        assert row.get("utilization_pct") is None
+        assert row.get("over_budget") is None
 
     rollup = await ac.get("/api/v1/reports/summary", headers=headers)
     assert rollup.status_code == 200, rollup.text
@@ -8995,6 +9003,92 @@ async def test_store_manager_expense_category_writes_denied(client, db_session):
     denied_export = await ac.get("/api/v1/expenses/categories/export", headers=headers)
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expense_budget_limits_redacted(client, db_session):
+    """Company budget_amount redacted on budgets JSON/CSV for store_manager; spent remains."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    cat = m.ExpenseCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="BUD-REDACT",
+        name="Budget Redact Target",
+        budget_amount=2500,
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Budget Redact Store",
+        code="BUD-RD-S",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add_all([cat, store])
+    await db_session.flush()
+    db_session.add(
+        m.Expense(
+            tenant_id=tid,
+            company_id=cid,
+            category_id=cat.id,
+            category=cat.name,
+            description="Budget redact mine",
+            amount=75,
+            store_id=store.id,
+            status="approved",
+            expense_date=today,
+            created_by=mgr.id,
+            approved_by=mgr.id,
+            approved_at=today,
+        )
+    )
+    await db_session.commit()
+
+    mgr_budgets = await ac.get("/api/v1/expenses/budgets", headers=headers)
+    assert mgr_budgets.status_code == 200, mgr_budgets.text
+    mbody = mgr_budgets.json()["data"]
+    assert float(mbody["totals"]["spent"]) == pytest.approx(75.0)
+    assert mbody["totals"]["budget_amount"] is None
+    assert mbody["totals"]["variance"] is None
+    target = next(r for r in mbody["categories"] if r.get("code") == "BUD-REDACT")
+    assert float(target["spent"]) == pytest.approx(75.0)
+    assert target.get("budget_amount") is None
+    assert target.get("variance") is None
+    assert target.get("utilization_pct") is None
+    assert target.get("over_budget") is None
+
+    admin_budgets = await ac.get("/api/v1/expenses/budgets", headers=admin_headers)
+    assert admin_budgets.status_code == 200, admin_budgets.text
+    abody = admin_budgets.json()["data"]
+    admin_row = next(r for r in abody["categories"] if r.get("code") == "BUD-REDACT")
+    assert float(admin_row["budget_amount"]) == pytest.approx(2500.0)
+    assert admin_row.get("variance") is not None
+
+    mgr_csv = await ac.get("/api/v1/expenses/budgets/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert "BUD-REDACT" in mgr_csv.text
+    # budget_amount column empty for manager (redacted); spent still present
+    assert "2500" not in mgr_csv.text
+    assert "75" in mgr_csv.text
+
+    summary = await ac.get("/api/v1/reports/expenses/summary", headers=headers)
+    assert summary.status_code == 200, summary.text
+    sbudgets = summary.json()["data"]["budgets"]
+    assert float(sbudgets["totals"]["spent"]) == pytest.approx(75.0)
+    assert sbudgets["totals"]["budget_amount"] is None
 
 
 @pytest.mark.asyncio
