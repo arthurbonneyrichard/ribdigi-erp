@@ -18258,9 +18258,16 @@ async def api_keys_create(
 @api.get("/api-keys/{key_id}")
 async def api_keys_get(
     key_id: str,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_api_keys_read_denied(
+        managed,
+        message="Store managers cannot inspect company API key detail.",
+    )
     row = await api_keys_svc.get_key(db, claims["tenant_id"], key_id)
     return env(api_keys_svc.serialize_key(row))
 
@@ -18269,10 +18276,17 @@ async def api_keys_get(
 async def api_keys_usage(
     key_id: str,
     days: int = 30,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 7 K2 — request totals and per-day series for the usage chart."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_api_keys_read_denied(
+        managed,
+        message="Store managers cannot view company API key usage.",
+    )
     return env(await api_keys_svc.usage_stats(db, claims["tenant_id"], key_id, days=days))
 
 
@@ -18280,10 +18294,17 @@ async def api_keys_usage(
 async def api_keys_usage_export(
     key_id: str,
     days: int = 30,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 154 U1 — API key usage series CSV (no raw secrets)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_api_keys_read_denied(
+        managed,
+        message="Store managers cannot export company API key usage CSV.",
+    )
     text = await api_fx_schedule_export_svc.export_api_key_usage_csv(
         db, tenant_id=claims["tenant_id"], key_id=key_id, days=days
     )

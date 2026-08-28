@@ -11281,7 +11281,9 @@ async def test_store_manager_storage_settings_read_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_api_keys_read_denied(client, db_session):
-    """GET /api-keys + CSV export denied for store_manager; admin remains."""
+    """GET /api-keys list/export + detail/usage denied for store_manager; admin remains."""
+    from app import api_keys as api_keys_svc
+
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
@@ -11291,6 +11293,17 @@ async def test_store_manager_api_keys_read_denied(client, db_session):
         totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
     )
 
+    row, _raw = await api_keys_svc.create_key(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        name="Admin Scope Key",
+        permissions=None,
+        expires_at=None,
+    )
+    await db_session.commit()
+    key_id = row.id
+
     denied = await ac.get("/api/v1/api-keys", headers=headers)
     assert denied.status_code == 403, denied.text
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
@@ -11299,10 +11312,32 @@ async def test_store_manager_api_keys_read_denied(client, db_session):
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_get = await ac.get(f"/api/v1/api-keys/{key_id}", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_usage = await ac.get(f"/api/v1/api-keys/{key_id}/usage", headers=headers)
+    assert denied_usage.status_code == 403, denied_usage.text
+    assert denied_usage.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_usage_export = await ac.get(
+        f"/api/v1/api-keys/{key_id}/usage/export", headers=headers
+    )
+    assert denied_usage_export.status_code == 403, denied_usage_export.text
+    assert denied_usage_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok = await ac.get("/api/v1/api-keys", headers=admin_headers)
     assert ok.status_code == 200, ok.text
     ok_export = await ac.get("/api/v1/api-keys/export", headers=admin_headers)
     assert ok_export.status_code == 200, ok_export.text
+    ok_get = await ac.get(f"/api/v1/api-keys/{key_id}", headers=admin_headers)
+    assert ok_get.status_code == 200, ok_get.text
+    ok_usage = await ac.get(f"/api/v1/api-keys/{key_id}/usage", headers=admin_headers)
+    assert ok_usage.status_code == 200, ok_usage.text
+    ok_usage_export = await ac.get(
+        f"/api/v1/api-keys/{key_id}/usage/export", headers=admin_headers
+    )
+    assert ok_usage_export.status_code == 200, ok_usage_export.text
 
 
 @pytest.mark.asyncio
