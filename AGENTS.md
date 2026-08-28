@@ -52,7 +52,8 @@ store activation — never frontend-only.
    `apply_purchase_invoice_warehouse_scope`, `STORE_SCOPE_DENIED`) — dashboard/BI,
    POS sales, sales invoices, expenses, stores, transfers, warehouse inventory ops,
    purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` or linked
-   PO/GRN warehouse), sales orders, POS sessions, low-stock / expiring-batch
+   PO/GRN warehouse), sales orders, POS sessions (open requires managed
+   ``store_id``; null/unset fail-closed), low-stock / expiring-batch
    list+export+reports, inventory balance/valuation/movements reports, sales
    daily/monthly/products/customers/salesperson/by-store reports, purchasing
    summary/suppliers/pending/returns reports, transfer history report,
@@ -196,8 +197,13 @@ store activation — never frontend-only.
    (company party master classification; name/phone remain), and **party master
    code writes denied for store_manager** (customer/supplier ``code`` on
    create/patch; name/phone remain; create without code allowed), and
+   **party master email writes denied for store_manager** (customer/supplier
+   ``email`` on create/patch; name/phone remain; create without email allowed;
+   nested contact endpoints remain separately denied), and
    **party status lifecycle patches denied for store_manager** (PATCH status
-   cannot bypass DELETE deactivate deny; name/phone remain), and
+   cannot bypass DELETE deactivate deny; name/phone remain), and **POS session
+   open requires managed store_id for store_manager** (null/unset fail-closed;
+   foreign store denied; list/report remain store scoped), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

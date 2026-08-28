@@ -8699,6 +8699,68 @@ async def test_store_manager_party_code_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_email_writes_denied(client, db_session):
+    """store_manager cannot set customer/supplier master emails; name/phone remain."""
+    ac, seed = client
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_cust_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Email Deny Cust", "email": "deny@example.com"},
+    )
+    assert denied_cust_create.status_code == 403, denied_cust_create.text
+    assert denied_cust_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cust = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Email Ok Cust", "phone": "555-0606"},
+    )
+    assert ok_cust.status_code == 200, ok_cust.text
+
+    denied_cust_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"email": "hijack@example.com"},
+    )
+    assert denied_cust_patch.status_code == 403, denied_cust_patch.text
+    assert denied_cust_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup_create = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Email Deny Sup", "email": "sup-deny@example.com"},
+    )
+    assert denied_sup_create.status_code == 403, denied_sup_create.text
+    assert denied_sup_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_sup = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Email Ok Sup", "phone": "555-0707"},
+    )
+    assert ok_sup.status_code == 200, ok_sup.text
+    sup_id = ok_sup.json()["data"]["id"]
+
+    denied_sup_patch = await ac.patch(
+        f"/api/v1/suppliers/{sup_id}",
+        headers=headers,
+        json={"email": "sup-hijack@example.com"},
+    )
+    assert denied_sup_patch.status_code == 403, denied_sup_patch.text
+    assert denied_sup_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Email Deny Cust Updated", "phone": "555-0699"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_product_import_denied(client, db_session):
     """Company-level product CSV import denied for store_manager; template/export reads allowed."""
     ac, seed = client
