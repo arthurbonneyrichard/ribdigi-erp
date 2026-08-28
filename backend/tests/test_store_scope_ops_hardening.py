@@ -6023,8 +6023,9 @@ async def test_store_manager_coa_and_liquid_account_writes_scoped(client, db_ses
     assert denied_fiscal_export.status_code == 403, denied_fiscal_export.text
     assert denied_fiscal_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    ok_fiscal_get = await ac.get("/api/v1/accounting/fiscal-period", headers=headers)
-    assert ok_fiscal_get.status_code == 200, ok_fiscal_get.text
+    denied_fiscal_get = await ac.get("/api/v1/accounting/fiscal-period", headers=headers)
+    assert denied_fiscal_get.status_code == 403, denied_fiscal_get.text
+    assert denied_fiscal_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     denied_bank_feed_export = await ac.get(
         "/api/v1/settings/bank-feed/export", headers=headers

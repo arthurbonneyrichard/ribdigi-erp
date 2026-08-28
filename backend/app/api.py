@@ -13509,7 +13509,10 @@ async def get_fiscal_period(
 ):
     """Stage 118 F1 — open fiscal year bounds + manual close status."""
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_fiscal_period_read_denied(managed)
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == claims["tenant_id"]))
     ).scalar_one_or_none()
