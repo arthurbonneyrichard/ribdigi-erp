@@ -9130,6 +9130,10 @@ async def export_purchasing_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 138 P1 — purchasing PR approval settings CSV (levels as levels_json)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_purchasing_settings_export_denied(managed)
     text = await approval_settings_export_svc.export_purchasing_approval_settings_csv(
         db, tenant_id=claims["tenant_id"]
     )
@@ -11172,6 +11176,13 @@ async def export_expense_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 138 E1 — expense approval settings CSV (levels as levels_json)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_export_denied(
+        managed,
+        message="Store managers cannot export company expense approval settings CSV.",
+    )
     text = await approval_settings_export_svc.export_expense_approval_settings_csv(
         db, tenant_id=claims["tenant_id"]
     )
@@ -14769,6 +14780,13 @@ async def export_credit_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 138 C1 — early-pay settings CSV (tenant terms; no secrets)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_export_denied(
+        managed,
+        message="Store managers cannot export company early-pay settings CSV.",
+    )
     text = await approval_settings_export_svc.export_early_pay_settings_csv(
         db, tenant_id=claims["tenant_id"]
     )
@@ -14829,6 +14847,13 @@ async def exchange_rates_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 127 F1 — exchange rates CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_export_denied(
+        managed,
+        message="Store managers cannot export company exchange rates CSV.",
+    )
     text = await api_fx_schedule_export_svc.export_exchange_rates_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16234,6 +16259,13 @@ async def inventory_settings_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 144 F1 — inventory FEFO settings CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_export_denied(
+        managed,
+        message="Store managers cannot export company inventory FEFO settings CSV.",
+    )
     text = await ops_compliance_export_svc.export_fefo_settings_csv(
         db, tenant_id=claims["tenant_id"]
     )

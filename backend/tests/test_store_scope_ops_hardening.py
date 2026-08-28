@@ -8350,7 +8350,7 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
 
 @pytest.mark.asyncio
 async def test_store_manager_company_settings_writes_denied(client, db_session):
-    """Company-level settings writes denied for store_manager (approval, credit/FX, FEFO)."""
+    """Company-level settings writes + CSV exports denied for store_manager; GET remains."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
@@ -8409,10 +8409,21 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
     assert denied_fefo.status_code == 403
     assert denied_fefo.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    for path in (
+        "/api/v1/expenses/settings/export",
+        "/api/v1/credit/settings/export",
+        "/api/v1/credit/exchange-rates/export",
+        "/api/v1/inventory/settings/export",
+    ):
+        denied_export = await ac.get(path, headers=headers)
+        assert denied_export.status_code == 403, denied_export.text
+        assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     # Reads remain allowed
     assert (await ac.get("/api/v1/expenses/settings", headers=headers)).status_code == 200
     assert (await ac.get("/api/v1/credit/settings", headers=headers)).status_code == 200
     assert (await ac.get("/api/v1/inventory/settings", headers=headers)).status_code == 200
+    assert (await ac.get("/api/v1/credit/exchange-rates", headers=headers)).status_code == 200
 
 
 @pytest.mark.asyncio
@@ -10545,7 +10556,7 @@ async def test_store_manager_bi_settings_write_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_purchasing_settings_write_denied(client, db_session):
-    """Purchasing PR approval settings PATCH denied for store_manager; GET/export remain."""
+    """Purchasing PR approval settings PATCH/export denied for store_manager; GET remains."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
@@ -10564,9 +10575,9 @@ async def test_store_manager_purchasing_settings_write_denied(client, db_session
     ok_get = await ac.get("/api/v1/purchasing/settings", headers=headers)
     assert ok_get.status_code == 200, ok_get.text
 
-    ok_export = await ac.get("/api/v1/purchasing/settings/export", headers=headers)
-    assert ok_export.status_code == 200, ok_export.text
-    assert "text/csv" in (ok_export.headers.get("content-type") or "")
+    denied_export = await ac.get("/api/v1/purchasing/settings/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
