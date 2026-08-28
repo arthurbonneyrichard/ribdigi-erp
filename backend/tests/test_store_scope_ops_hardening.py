@@ -9557,7 +9557,7 @@ async def test_store_manager_warehouse_lifecycle_writes_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_store_lifecycle_writes_denied(client, db_session):
-    """store_manager cannot activate/deactivate stores; name/address remain."""
+    """store_manager cannot activate/deactivate stores; name/address remain on active."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9583,17 +9583,7 @@ async def test_store_manager_store_lifecycle_writes_denied(client, db_session):
     )
     assert denied_off.status_code == 403, denied_off.text
     assert denied_off.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
-
-    store.is_active = False
-    await db_session.commit()
-
-    denied_on = await ac.patch(
-        f"/api/v1/stores/{store.id}",
-        headers=headers,
-        json={"is_active": True},
-    )
-    assert denied_on.status_code == 403, denied_on.text
-    assert denied_on.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert "activate or deactivate" in denied_off.json()["detail"]["message"].lower()
 
     ok_name = await ac.patch(
         f"/api/v1/stores/{store.id}",
@@ -9601,6 +9591,19 @@ async def test_store_manager_store_lifecycle_writes_denied(client, db_session):
         json={"name": "Store Life Deny Updated", "address": "Bay 2"},
     )
     assert ok_name.status_code == 200, ok_name.text
+
+    store.is_active = False
+    await db_session.commit()
+
+    # Inactive managed stores drop out of manager_id scope (active-only query);
+    # reactivation remains denied (scope fail-closed before lifecycle helper).
+    denied_on = await ac.patch(
+        f"/api/v1/stores/{store.id}",
+        headers=headers,
+        json={"is_active": True},
+    )
+    assert denied_on.status_code == 403, denied_on.text
+    assert denied_on.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     await db_session.refresh(store)
     assert store.is_active is False
