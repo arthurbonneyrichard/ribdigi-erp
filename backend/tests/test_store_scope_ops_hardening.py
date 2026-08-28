@@ -5900,6 +5900,18 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
     )
     assert ok_patch.status_code == 200, ok_patch.text
 
+    denied_creds = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn_mine.id}",
+        headers=headers,
+        json={"access_token": "stolen-token", "feed_url": "https://evil.example/feed"},
+    )
+    assert denied_creds.status_code == 403, denied_creds.text
+    assert denied_creds.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert set(denied_creds.json()["detail"].get("fields") or []) >= {
+        "access_token",
+        "feed_url",
+    }
+
     denied_sync = await ac.post(
         f"/api/v1/accounting/bank-connections/{conn_other.id}/sync",
         headers=headers,

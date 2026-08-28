@@ -697,8 +697,46 @@ def assert_company_level_bank_connection_write_denied(
     """403 when store_manager creates/deletes bank feed connections (credentials).
 
     List/export/patch/sync on managed liquid-account connections remain scoped.
+    Credential field patches use ``assert_bank_connection_credentials_write_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+BANK_CONNECTION_CREDENTIAL_FIELDS = frozenset(
+    {
+        "provider",
+        "external_account_id",
+        "feed_url",
+        "access_token",
+        "clear_credentials",
+    }
+)
+
+
+def assert_bank_connection_credentials_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot update bank feed credentials.",
+) -> None:
+    """403 when store_manager patches bank-feed credential / identity fields.
+
+    ``display_name``, auto-sync flags, lookback, and ``is_active`` on managed
+    connections remain allowed.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in BANK_CONNECTION_CREDENTIAL_FIELDS if k in payload)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": fields,
+        },
+    )
 
 
 async def assert_products_in_manager_warehouse_scope(

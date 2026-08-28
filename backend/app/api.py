@@ -12195,11 +12195,17 @@ async def update_bank_connection(
         multi,
         company_id=claims.get("company_id"),
     )
+    patch_data = payload.model_dump(exclude_unset=True)
+    dashboard_scope_svc.assert_bank_connection_credentials_write_denied(
+        managed,
+        patch_data,
+        message="Store managers cannot update bank feed credentials.",
+    )
     row = await bank_connectors_svc.update_connection(
         db,
         tenant_id=claims["tenant_id"],
         connection_id=connection_id,
-        payload=payload.model_dump(exclude_unset=True),
+        payload=patch_data,
         company_id=claims.get("company_id"),
     )
     await db.commit()
