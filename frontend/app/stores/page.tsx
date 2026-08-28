@@ -249,7 +249,7 @@ export default function Page() {
           // Omit blank address so Create does not 422 (AddressValue).
           ...(address.trim() ? { address: address.trim() } : {}),
           phone: phone.trim() || null,
-          manager_id: managerId || null,
+          manager_id: managerId.trim() || null,
           branch_id: branchId || null,
           operating_hours: hours,
         }),
@@ -979,7 +979,12 @@ export default function Page() {
               placeholder="Phone (optional, E.164 e.g. +233...)"
               aria-label="Store phone"
             />
-            <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+            <select
+              value={managerId}
+              onChange={(e) => setManagerId(e.target.value)}
+              aria-label="Store manager"
+              title="Store manager (optional tenant user)"
+            >
               <option value="">Manager (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
