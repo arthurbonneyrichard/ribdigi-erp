@@ -8363,3 +8363,40 @@ async def test_store_manager_customer_groups_writes_denied(client, db_session):
     got = await ac.get(f"/api/v1/customers/groups/{group.id}", headers=headers)
     assert got.status_code == 200, got.text
     assert got.json()["data"]["name"] == "Group Deny Target"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_import_denied(client, db_session):
+    """Company-level product CSV import denied for store_manager; template/export reads allowed."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    csv_body = (
+        "name,sku,barcode,category_code,brand_code,unit_code,"
+        "cost_price,selling_price,reorder_level,stock_qty,tracks_batches\n"
+        "Mgr Import Widget,SKU-MGR-IMP,,,,,10,15,0,0,false\n"
+    )
+    files = {"file": ("products.csv", csv_body.encode("utf-8"), "text/csv")}
+
+    denied_dry = await ac.post(
+        "/api/v1/products/import?dry_run=true",
+        headers=headers,
+        files=files,
+    )
+    assert denied_dry.status_code == 403, denied_dry.text
+    assert denied_dry.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_apply = await ac.post(
+        "/api/v1/products/import?dry_run=false",
+        headers=headers,
+        files=files,
+    )
+    assert denied_apply.status_code == 403, denied_apply.text
+    assert denied_apply.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    template = await ac.get("/api/v1/products/import/template", headers=headers)
+    assert template.status_code == 200, template.text
+    assert "sku" in template.text.lower() or "name" in template.text.lower()
+
+    exported = await ac.get("/api/v1/products/export", headers=headers)
+    assert exported.status_code == 200, exported.text
