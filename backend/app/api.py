@@ -11261,6 +11261,13 @@ async def post_opening_balance(
     dashboard_scope_svc.assert_store_in_manager_scope(
         managed, payload.store_id, allow_unset=False
     )
+    await dashboard_scope_svc.assert_opening_balance_account_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        account_id,
+        managed,
+        company_id=claims.get("company_id"),
+    )
     entry = await accounting_svc.post_account_opening_balance(
         db,
         tenant_id=claims["tenant_id"],

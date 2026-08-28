@@ -447,6 +447,73 @@ async def assert_liquid_account_in_manager_scope(
         )
 
 
+async def assert_opening_balance_account_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when store_manager posts opening balance outside allowed liquid scope.
+
+    Non-cash/bank COA accounts are company-level structure (denied). Cash/bank with
+    no prior journal activity is allowed (first-touch opening balance). Accounts with
+    only foreign-store liquid activity are fail-closed.
+    """
+    if store_ids is None:
+        return
+    aid = (account_id or "").strip()
+    account = await db.get(m.Account, aid)
+    if not account or account.tenant_id != tenant_id:
+        return
+    if company_id and account.company_id and str(account.company_id) != str(company_id):
+        return
+    if not (account.is_cash_account or account.is_bank_account):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": (
+                    "Store managers cannot post opening balances on non-cash/bank accounts."
+                ),
+                "account_id": aid or None,
+            },
+        )
+    stmt = (
+        select(m.JournalEntry.store_id)
+        .join(
+            m.JournalEntryLine,
+            m.JournalEntryLine.journal_entry_id == m.JournalEntry.id,
+        )
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntryLine.account_id == aid,
+            m.JournalEntry.status == "posted",
+        )
+        .distinct()
+    )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+    activity_stores = (await db.execute(stmt)).scalars().all()
+    if not activity_stores:
+        return
+    managed_set = set(store_ids)
+    if any(sid is not None and str(sid) in managed_set for sid in activity_stores):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": (
+                "Bank/cash account has activity only outside your managed store scope."
+            ),
+            "account_id": aid or None,
+        },
+    )
+
+
 async def assert_sales_return_in_manager_scope(
     db: AsyncSession, claims: dict, sales_return: m.SalesReturn
 ) -> None:

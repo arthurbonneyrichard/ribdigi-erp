@@ -5857,6 +5857,53 @@ async def test_store_manager_liquid_transfer_and_opening_balance_writes_scoped(
     assert denied_ob.status_code == 403
     assert denied_ob.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    revenue = await accounting_svc.get_account_by_code(
+        db_session, tid, "4000", company_id=cid
+    )
+    assert revenue is not None
+    denied_revenue_ob = await ac.post(
+        f"/api/v1/accounting/accounts/{revenue.id}/opening-balance",
+        headers=headers,
+        json={"amount": 10, "store_id": mine.id},
+    )
+    assert denied_revenue_ob.status_code == 403
+    assert denied_revenue_ob.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_foreign_ob = await ac.post(
+        f"/api/v1/accounting/accounts/{foreign_bank_only.id}/opening-balance",
+        headers=headers,
+        json={"amount": 5, "store_id": mine.id},
+    )
+    assert denied_foreign_ob.status_code == 403
+    assert denied_foreign_ob.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    inventory = await accounting_svc.get_account_by_code(
+        db_session, tid, "1200", company_id=cid
+    )
+    assert inventory is not None
+    denied_non_liquid = await ac.post(
+        f"/api/v1/accounting/accounts/{inventory.id}/opening-balance",
+        headers=headers,
+        json={"amount": 100, "store_id": mine.id},
+    )
+    assert denied_non_liquid.status_code == 403
+    assert denied_non_liquid.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_ob_managed_cash = await ac.post(
+        f"/api/v1/accounting/accounts/{cash.id}/opening-balance",
+        headers=headers,
+        json={"amount": 25, "store_id": mine.id},
+    )
+    assert ok_ob_managed_cash.status_code == 200, ok_ob_managed_cash.text
+
+    denied_foreign_only = await ac.post(
+        f"/api/v1/accounting/accounts/{foreign_bank_only.id}/opening-balance",
+        headers=headers,
+        json={"amount": 10, "store_id": mine.id},
+    )
+    assert denied_foreign_only.status_code == 403
+    assert denied_foreign_only.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
 
 @pytest.mark.asyncio
 async def test_store_manager_expense_lifecycle_writes_store_scoped(client, db_session):
