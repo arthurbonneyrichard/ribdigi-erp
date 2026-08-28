@@ -889,7 +889,11 @@ class BranchUpdate(BaseModel):
     # blank silently cleared; garbage could persist).
     phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    manager_id: str | None = None
+    # Optional manager user FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**). Same honesty as
+    # BranchCreate.manager_id. Use `clear_manager` to remove.
+    manager_id: UuidIdValue | None = None
     clear_manager: bool = False
     is_active: bool | None = None
 

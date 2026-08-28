@@ -533,8 +533,8 @@ export default function Page() {
           // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
           ...(brPhone.trim() ? { phone: brPhone.trim() } : {}),
           email: brEmail.trim() || null,
-          manager_id: brManagerId || null,
-          clear_manager: !brManagerId,
+          manager_id: brManagerId.trim() || null,
+          clear_manager: !brManagerId.trim(),
         }),
       });
       resetBranchForm();
