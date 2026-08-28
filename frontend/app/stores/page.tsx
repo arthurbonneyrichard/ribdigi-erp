@@ -250,7 +250,7 @@ export default function Page() {
           ...(address.trim() ? { address: address.trim() } : {}),
           phone: phone.trim() || null,
           manager_id: managerId.trim() || null,
-          branch_id: branchId || null,
+          branch_id: branchId.trim() || null,
           operating_hours: hours,
         }),
       });
@@ -992,7 +992,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+            <select
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
+              aria-label="Store branch"
+              title="Store branch (optional)"
+            >
               <option value="">Branch (optional)</option>
               {branches
                 .filter((b) => b.is_active !== false)

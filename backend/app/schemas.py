@@ -2075,7 +2075,10 @@ class StoreCreate(BaseModel):
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
     # Existence remains tenant-scoped user lookup (**404**).
     manager_id: UuidIdValue | None = None
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
     operating_hours: StoreOperatingHours | None = None
 
 
