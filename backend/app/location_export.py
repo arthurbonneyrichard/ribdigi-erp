@@ -164,6 +164,7 @@ async def export_warehouses_csv(
     active_only: bool = False,
     company_id: str | None = None,
     store_ids: list[str] | None = None,
+    omit_structure: bool = False,
 ) -> str:
     stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == tenant_id)
     if company_id:
@@ -189,11 +190,19 @@ async def export_warehouses_csv(
             {
                 "code": _cell(row.code),
                 "name": _cell(row.name),
-                "warehouse_type": _cell(getattr(row, "warehouse_type", None) or "retail"),
+                "warehouse_type": (
+                    ""
+                    if omit_structure
+                    else _cell(getattr(row, "warehouse_type", None) or "retail")
+                ),
                 "store_id": _cell(row.store_id),
                 "manager_id": _cell(getattr(row, "manager_id", None)),
                 "address": _cell(getattr(row, "address", None)),
-                "capacity": "" if capacity is None else _cell(float(capacity)),
+                "capacity": (
+                    ""
+                    if omit_structure or capacity is None
+                    else _cell(float(capacity))
+                ),
                 "is_active": _cell(bool(getattr(row, "is_active", True))),
             }
         )

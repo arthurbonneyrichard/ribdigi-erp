@@ -172,7 +172,7 @@ store activation — never frontend-only.
    denied for store_manager** (company-level WH↔store org link; other managed-WH
    patches remain), and **warehouse type/capacity structure writes denied for
    store_manager** (company inventory-master attributes; name/address on managed
-   WH remain), and **warehouse is_active lifecycle writes denied for
+   WH remain; warehouse_type/capacity redacted on list/export/patch JSON/CSV), and **warehouse is_active lifecycle writes denied for
    store_manager** (activate/deactivate admin-only; name/address remain), and
    **store is_active lifecycle writes denied for store_manager**
    (activate/deactivate admin-only / entitlement-gated; name/phone/address/

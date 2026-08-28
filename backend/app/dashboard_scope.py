@@ -1640,10 +1640,31 @@ def assert_warehouse_structure_write_denied(
 
     ``warehouse_type`` / ``capacity`` are company inventory-master attributes;
     name/address on managed warehouses remain allowed (``is_active`` is lifecycle).
+    List/export/patch JSON redacts those fields via ``redact_warehouse_structure``.
     """
     if not changing_structure:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_warehouse_structure(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit warehouse type/capacity on JSON/CSV.
+
+    Structure writes already denied; list/get/patch and warehouses CSV must not
+    re-dump company inventory-master ``warehouse_type`` / ``capacity``. Name,
+    address, code, store link, and is_active remain for managed-WH ops.
+    """
+    return managed_ids is not None
+
+
+def redact_warehouse_structure(payload: dict) -> dict:
+    """Null warehouse_type / capacity on a serialized warehouse dict."""
+    out = dict(payload)
+    if "warehouse_type" in out:
+        out["warehouse_type"] = None
+    if "capacity" in out:
+        out["capacity"] = None
+    return out
 
 
 def assert_warehouse_lifecycle_write_denied(

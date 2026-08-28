@@ -17035,7 +17035,12 @@ async def warehouses(
     elif active_only:
         stmt = stmt.where(m.Warehouse.is_active.is_(True))
     rows = (await db.execute(stmt)).scalars().all()
-    return env([stores_svc.serialize_warehouse(r) for r in rows])
+    serialized = [stores_svc.serialize_warehouse(r) for r in rows]
+    if dashboard_scope_svc.omit_warehouse_structure(managed_stores):
+        serialized = [
+            dashboard_scope_svc.redact_warehouse_structure(row) for row in serialized
+        ]
+    return env(serialized)
 
 
 @api.get("/warehouses/export")
@@ -17056,6 +17061,7 @@ async def warehouses_export(
         active_only=active_only,
         company_id=claims.get("company_id"),
         store_ids=managed_stores,
+        omit_structure=dashboard_scope_svc.omit_warehouse_structure(managed_stores),
     )
     return Response(
         content=text,
@@ -17222,7 +17228,10 @@ async def update_warehouse(
         details={"code": warehouse.code, "is_active": bool(warehouse.is_active)},
     )
     await db.commit()
-    return env(stores_svc.serialize_warehouse(warehouse), "Warehouse updated")
+    serialized = stores_svc.serialize_warehouse(warehouse)
+    if dashboard_scope_svc.omit_warehouse_structure(managed_stores):
+        serialized = dashboard_scope_svc.redact_warehouse_structure(serialized)
+    return env(serialized, "Warehouse updated")
 
 
 @api.get("/inventory/stock-transfers")

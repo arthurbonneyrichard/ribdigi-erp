@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import io
 import json
 from datetime import datetime
@@ -12997,12 +12998,13 @@ async def test_store_manager_warehouse_store_assignment_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_warehouse_structure_writes_denied(client, db_session):
-    """store_manager cannot change warehouse_type/capacity; name remain."""
+    """store_manager cannot change warehouse_type/capacity; list/export/patch redact them."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
     mgr = seed["mgr1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
 
     store = m.Store(
         tenant_id=tid,
@@ -13028,6 +13030,47 @@ async def test_store_manager_warehouse_structure_writes_denied(client, db_sessio
     db_session.add(wh)
     await db_session.commit()
 
+    listed = await ac.get("/api/v1/warehouses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    rows = listed.json()["data"]
+    mine = next(r for r in rows if r["id"] == wh.id)
+    assert mine["name"] == "WH Structure Deny"
+    assert mine.get("warehouse_type") is None
+    assert mine.get("capacity") is None
+
+    admin_listed = await ac.get("/api/v1/warehouses", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_mine = next(r for r in admin_listed.json()["data"] if r["id"] == wh.id)
+    assert admin_mine.get("warehouse_type") == "retail"
+    assert float(admin_mine.get("capacity") or 0) == 100.0
+
+    exported = await ac.get("/api/v1/warehouses/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "WH-STRUCT" in exported.text
+    # Header retained; structure cells blank for store_manager.
+    assert "warehouse_type" in exported.text
+    assert "capacity" in exported.text
+    sm_line = next(
+        line for line in exported.text.splitlines() if "WH-STRUCT" in line and "WH Structure Deny" in line
+    )
+    # code,name,warehouse_type,store_id,manager_id,address,capacity,is_active
+    cols = next(csv.reader([sm_line]))
+    assert cols[0] == "WH-STRUCT"
+    assert cols[1] == "WH Structure Deny"
+    assert cols[2] == ""
+    assert cols[6] == ""
+
+    admin_exported = await ac.get("/api/v1/warehouses/export", headers=admin_headers)
+    assert admin_exported.status_code == 200, admin_exported.text
+    admin_line = next(
+        line
+        for line in admin_exported.text.splitlines()
+        if "WH-STRUCT" in line and "WH Structure Deny" in line
+    )
+    admin_cols = next(csv.reader([admin_line]))
+    assert admin_cols[2] == "retail"
+    assert float(admin_cols[6]) == 100.0
+
     denied_type = await ac.patch(
         f"/api/v1/warehouses/{wh.id}",
         headers=headers,
@@ -13050,6 +13093,10 @@ async def test_store_manager_warehouse_structure_writes_denied(client, db_sessio
         json={"name": "WH Structure Deny Updated", "address": "Dock 2"},
     )
     assert ok_ops.status_code == 200, ok_ops.text
+    ok_body = ok_ops.json()["data"]
+    assert ok_body["name"] == "WH Structure Deny Updated"
+    assert ok_body.get("warehouse_type") is None
+    assert ok_body.get("capacity") is None
 
     await db_session.refresh(wh)
     assert wh.warehouse_type == "retail"
