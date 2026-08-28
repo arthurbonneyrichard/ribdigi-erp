@@ -10549,3 +10549,86 @@ async def test_store_manager_sync_push_pull_store_scoped(client, db_session):
         },
     )
     assert ok_pull.status_code == 200, ok_pull.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_sync_conflicts_store_scoped(client, db_session):
+    """store_manager sync conflicts list only includes managed-bound devices."""
+    from app import offline_devices as offline_devices_svc
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Conflict Scope Mine",
+        code="CS-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Conflict Scope Other",
+        code="CS-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    dev_mine = await offline_devices_svc.create_device(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        name="Conflict Mine POS",
+        platform="web",
+    )
+    dev_other = await offline_devices_svc.create_device(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        name="Conflict Other POS",
+        platform="web",
+    )
+    await db_session.flush()
+    dev_mine.bound_store_id = mine.id
+    dev_other.bound_store_id = other.id
+
+    conflict_mine = m.SyncConflict(
+        tenant_id=tid,
+        device_id=dev_mine.id,
+        op_type="pos_sale",
+        client_payload={"mine": 1},
+        server_snapshot={"mine": 2},
+        status="open",
+    )
+    conflict_other = m.SyncConflict(
+        tenant_id=tid,
+        device_id=dev_other.id,
+        op_type="pos_sale",
+        client_payload={"other": 1},
+        server_snapshot={"other": 2},
+        status="open",
+    )
+    conflict_unbound = m.SyncConflict(
+        tenant_id=tid,
+        device_id=None,
+        op_type="pos_sale",
+        client_payload={"null": 1},
+        server_snapshot={"null": 2},
+        status="open",
+    )
+    db_session.add_all([conflict_mine, conflict_other, conflict_unbound])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    listed = await ac.get("/api/v1/sync/conflicts?status=open", headers=headers)
+    assert listed.status_code == 200, listed.text
+    ids = {row["id"] for row in listed.json()["data"]}
+    assert conflict_mine.id in ids
+    assert conflict_other.id not in ids
+    assert conflict_unbound.id not in ids

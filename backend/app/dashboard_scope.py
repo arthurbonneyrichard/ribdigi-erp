@@ -127,6 +127,46 @@ def assert_offline_sync_store_scope(
         )
 
 
+async def filter_sync_conflicts_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    managed_ids: list[str] | None,
+    rows: list,
+) -> list:
+    """Fail-closed filter: store_manager sees conflicts only for managed-bound devices.
+
+    Conflicts without ``device_id`` or whose device has null/foreign
+    ``bound_store_id`` are omitted. Tenant-wide (``managed_ids is None``) skips.
+    Empty managed set → empty list. Resolve remains company_admin.
+    Offline Complete remains MISSING.
+    """
+    if managed_ids is None:
+        return list(rows)
+    if not managed_ids or not rows:
+        return []
+    device_ids = sorted({str(r.device_id) for r in rows if getattr(r, "device_id", None)})
+    if not device_ids:
+        return []
+    stmt = select(m.OfflineDevice.id, m.OfflineDevice.bound_store_id).where(
+        m.OfflineDevice.tenant_id == tenant_id,
+        m.OfflineDevice.id.in_(device_ids),
+    )
+    bound = {
+        str(did): (str(sid) if sid else None)
+        for did, sid in (await db.execute(stmt)).all()
+    }
+    allowed = set(managed_ids)
+    out = []
+    for row in rows:
+        did = getattr(row, "device_id", None)
+        if not did:
+            continue
+        sid = bound.get(str(did))
+        if sid and sid in allowed:
+            out.append(row)
+    return out
+
+
 async def assert_pos_session_store_in_manager_scope(
     db: AsyncSession,
     claims: dict,

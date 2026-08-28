@@ -17232,8 +17232,14 @@ async def sync_conflicts_list(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 164 C1 — list sync conflicts (default open)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await sync_engine_svc.list_conflicts(
         db, claims["tenant_id"], status=status
+    )
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    rows = await dashboard_scope_svc.filter_sync_conflicts_in_manager_scope(
+        db, claims["tenant_id"], managed, rows
     )
     return env([sync_engine_svc.serialize_conflict(r) for r in rows])
 
