@@ -1885,7 +1885,11 @@ class RecurringExpenseUpdate(BaseModel):
     description: ExpenseDescriptionValue | None = None
     payment_method: ExpensePaymentMethod | None = None
     frequency: Literal["daily", "weekly", "monthly", "yearly"] | None = None
-    category_id: str | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach category
+    # lookup). Existence remains tenant-scoped category lookup (**404**/400). Same
+    # honesty as RecurringExpenseCreate.category_id.
+    category_id: UuidIdValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # punctuation/URL could persist on RecurringExpense.category). Prefer category_id.
     category: ExpenseCategoryLabelValue | None = None

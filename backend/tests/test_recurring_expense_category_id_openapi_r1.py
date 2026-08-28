@@ -34,7 +34,7 @@ def test_recurring_expense_category_id_schema():
 
 def test_recurring_expense_category_id_ui_and_docs():
     page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Recurring expense category"' in page
+    assert "Recurring expense category" in page
     assert "category_id: recCategoryId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Recurring expense category_id OpenAPI" in agents

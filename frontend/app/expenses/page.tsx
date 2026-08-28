@@ -383,7 +383,7 @@ export default function Page() {
       const r = await api(`/expenses/recurring/${recEditId}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          category_id: recCategoryId || undefined,
+          category_id: recCategoryId.trim() || null,
           amount,
           description: recDescription.trim() || null,
           payee: recPayee.trim() || null,
@@ -1055,7 +1055,9 @@ export default function Page() {
           <select
             value={recCategoryId}
             onChange={(e) => setRecCategoryId(e.target.value)}
-            aria-label="Recurring expense category"
+            aria-label={
+              recEditId ? 'Edit recurring expense category' : 'Recurring expense category'
+            }
             title="Recurring expense category (catalog picker; API category label 1–100)"
           >
             {categories
