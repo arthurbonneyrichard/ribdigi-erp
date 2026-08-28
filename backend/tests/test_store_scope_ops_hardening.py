@@ -9686,3 +9686,133 @@ async def test_store_manager_opening_stock_denied(client, db_session):
         },
     )
     assert stock_in_ok.status_code == 200, stock_in_ok.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_inventory_labels_wh_scoped(client, db_session):
+    """Barcode labels only for products with managed WarehouseStock; foreign WH product denied."""
+    from app import barcodes as barcode_svc
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    in_scope = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="Label In Scope",
+        sku="LBL-IN",
+        barcode=barcode_svc.generate_ean13(body12="200555666777"),
+        cost_price=1,
+        selling_price=2,
+        stock_qty=0,
+        is_active=True,
+    )
+    out_scope = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="Label Out Scope",
+        sku="LBL-OUT",
+        barcode=barcode_svc.generate_ean13(body12="200555666778"),
+        cost_price=1,
+        selling_price=2,
+        stock_qty=50,
+        is_active=True,
+    )
+    db_session.add_all([in_scope, out_scope])
+    await db_session.flush()
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Label Scope Mine",
+        code="LBL-MINE",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Label Scope Other",
+        code="LBL-OTHER",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        code="LBL-MWH",
+        name="Label Mine WH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        code="LBL-OWH",
+        name="Label Other WH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_mine.id,
+            product_id=in_scope.id,
+            quantity=5,
+            reserved_qty=0,
+            reorder_level=1,
+        )
+    )
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh_other.id,
+            product_id=out_scope.id,
+            quantity=40,
+            reserved_qty=0,
+            reorder_level=1,
+        )
+    )
+    await db_session.commit()
+
+    ok_get = await ac.get(
+        f"/api/v1/products/{in_scope.id}/labels?format=html&copies=1",
+        headers=headers,
+    )
+    assert ok_get.status_code == 200, ok_get.text
+    assert "text/html" in (ok_get.headers.get("content-type") or "")
+
+    denied_get = await ac.get(
+        f"/api/v1/products/{out_scope.id}/labels?format=html&copies=1",
+        headers=headers,
+    )
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_post = await ac.post(
+        "/api/v1/inventory/labels",
+        headers=headers,
+        json={"items": [{"product_id": in_scope.id, "copies": 1}], "format": "html"},
+    )
+    assert ok_post.status_code == 200, ok_post.text
+
+    denied_post = await ac.post(
+        "/api/v1/inventory/labels",
+        headers=headers,
+        json={"items": [{"product_id": out_scope.id, "copies": 1}], "format": "html"},
+    )
+    assert denied_post.status_code == 403, denied_post.text
+    assert denied_post.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
