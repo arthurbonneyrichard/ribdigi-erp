@@ -123,8 +123,9 @@ store activation — never frontend-only.
    lookup/POS search stock_qty from managed WarehouseStock (not
    product.stock_qty), and sales quotations list/export/get/lifecycle
    via own drafts + converted in-scope order/invoice (no store_id), and
-   **branches/departments create/patch denied for store_manager** (company-level
-   org units; reads/export allowed even with users:write), and **catalog
+   **branches/departments create/patch/list GET/export denied for store_manager** (company-level
+   org units) + **users list/get branch_id/department_id org assignment redacted** (with email/phone
+   contact PII; name/role/active remain), and **catalog
    categories/brands/units create/patch/deactivate (+ brand logo writes) denied
    for store_manager** (company-level catalog meta; list/export/convert + brand
    logo binary GET denied; product reads + WH stock ops remain), and **customer groups create/patch/deactivate denied for
