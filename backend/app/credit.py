@@ -950,16 +950,6 @@ async def enforce_credit_limit(
     if not override:
         raise HTTPException(status_code=409, detail=detail)
 
-    reason = (override_reason or "").strip()
-    if len(reason) < 3:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "code": "CREDIT_OVERRIDE_REASON_REQUIRED",
-                "message": "credit_override_reason is required (min 3 characters) to override the credit limit",
-            },
-        )
-
     # store_manager default role includes credit:approve for operational credit reads/writes,
     # but company-level limit override remains tenant/finance admin (not store-scoped).
     from app.dashboard_views import dashboard_view_for_role
@@ -970,6 +960,16 @@ async def enforce_credit_limit(
             detail={
                 "code": "STORE_SCOPE_DENIED",
                 "message": "Store managers cannot override customer credit limits.",
+            },
+        )
+
+    reason = (override_reason or "").strip()
+    if len(reason) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "CREDIT_OVERRIDE_REASON_REQUIRED",
+                "message": "credit_override_reason is required (min 3 characters) to override the credit limit",
             },
         )
 

@@ -9958,8 +9958,13 @@ async def pos_sale(
     db: AsyncSession = Depends(get_db),
 ):
     """Online POS sale — Stage 164 I1 adds optional client_request_id idempotency."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app.pos_record import record_pos_sale
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_credit_limit_override_denied(
+        managed, override=bool(payload.credit_limit_override)
+    )
     data = await record_pos_sale(db, claims=claims, payload=payload, commit=True)
     msg = "POS sale recorded (idempotent replay)" if data.get("replayed") else "POS sale recorded"
     return env(data, msg)
