@@ -10950,7 +10950,12 @@ async def test_store_manager_me_workspace_company_profile_redacted(client, db_se
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     me_sm = await ac.get("/api/v1/me", headers=headers)
     assert me_sm.status_code == 200, me_sm.text
