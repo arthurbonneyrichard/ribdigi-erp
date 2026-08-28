@@ -11423,7 +11423,9 @@ async def patch_expense(
         managed, getattr(existing, "store_id", None), allow_unset=False
     )
     if payload.store_id is not None:
-        dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
+        dashboard_scope_svc.assert_store_in_manager_scope(
+            managed, payload.store_id, allow_unset=False
+        )
     dashboard_scope_svc.assert_expense_department_assignment_write_denied(
         managed,
         department_id=payload.department_id,

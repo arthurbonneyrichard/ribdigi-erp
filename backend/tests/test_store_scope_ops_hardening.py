@@ -9060,6 +9060,14 @@ async def test_store_manager_expense_store_clear_writes_denied(client, db_sessio
     assert denied_clear.status_code == 403, denied_clear.text
     assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_blank = await ac.patch(
+        f"/api/v1/expenses/{expense.id}",
+        headers=headers,
+        json={"store_id": ""},
+    )
+    assert denied_blank.status_code == 403, denied_blank.text
+    assert denied_blank.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok_patch = await ac.patch(
         f"/api/v1/expenses/{expense.id}",
         headers=headers,
@@ -9067,6 +9075,9 @@ async def test_store_manager_expense_store_clear_writes_denied(client, db_sessio
     )
     assert ok_patch.status_code == 200, ok_patch.text
     assert ok_patch.json()["data"]["store_id"] == store.id
+
+    await db_session.refresh(expense)
+    assert expense.store_id == store.id
 
 
 @pytest.mark.asyncio
