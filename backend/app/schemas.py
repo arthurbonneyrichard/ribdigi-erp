@@ -1590,7 +1590,10 @@ class ExpenseCreate(BaseModel):
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
     # lookup). Existence remains tenant-scoped branch lookup (**404**).
     branch_id: UuidIdValue | None = None
-    department_id: str | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no department; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**).
+    department_id: UuidIdValue | None = None
     # omit/`null` → service default (today); blank/`not-a-date`/`01/02/2024` → **422**
     # (was free `datetime`; OpenAPI date-time; padded dates inconsistent). Same
     # IsoDateQueryValue as AI draft expense_date / payment cheque_date.

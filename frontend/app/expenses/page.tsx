@@ -288,7 +288,7 @@ export default function Page() {
           liquid_account_id: liquidAccountId.trim() || null,
           reference: reference.trim() || null,
           branch_id: branchId.trim() || null,
-          department_id: departmentId || null,
+          department_id: departmentId.trim() || null,
           store_id: storeId || null,
         }),
       });
@@ -1305,7 +1305,8 @@ export default function Page() {
           <select
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
-            title="Department (optional)"
+            aria-label="Expense department"
+            title="Optional department (UuidIdValue)"
           >
             <option value="">No department</option>
             {departments
