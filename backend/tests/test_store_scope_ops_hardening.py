@@ -10973,7 +10973,7 @@ async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_sessi
 
 @pytest.mark.asyncio
 async def test_store_manager_company_store_limit_write_denied(client, db_session):
-    """Company store-limit allocation denied for store_manager even with companies write."""
+    """Company store-limit write + store-entitlement GET denied for store_manager."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -10996,6 +10996,12 @@ async def test_store_manager_company_store_limit_write_denied(client, db_session
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     denied = await ac.patch(
         f"/api/v1/companies/{cid}/store-limit",
@@ -11004,6 +11010,20 @@ async def test_store_manager_company_store_limit_write_denied(client, db_session
     )
     assert denied.status_code == 403, denied.text
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # stores:read alone previously exposed company plan/allocation dump.
+    denied_entitlement = await ac.get(
+        f"/api/v1/companies/{cid}/store-entitlement",
+        headers=headers,
+    )
+    assert denied_entitlement.status_code == 403, denied_entitlement.text
+    assert denied_entitlement.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_entitlement = await ac.get(
+        f"/api/v1/companies/{cid}/store-entitlement",
+        headers=admin_headers,
+    )
+    assert ok_entitlement.status_code == 200, ok_entitlement.text
 
 
 

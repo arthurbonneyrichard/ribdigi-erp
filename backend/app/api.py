@@ -2304,7 +2304,11 @@ async def company_store_entitlement(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import store_entitlements as store_ent_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_store_entitlement_read_denied(managed)
 
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     co = await companies_svc.get_company(

@@ -712,6 +712,22 @@ def assert_company_level_store_limit_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_store_entitlement_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company store entitlement allocations; "
+        "subscription capacity is company/tenant-admin only."
+    ),
+) -> None:
+    """403 when store_manager reads company store-entitlement (subscription capacity dump).
+
+    ``PATCH /companies/{id}/store-limit`` already denied; GET was open via ``stores:read``
+    and dumps company plan/allocation. Managed store list/ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_legacy_transaction_write_denied(
     managed_ids: list[str] | None,
     *,
