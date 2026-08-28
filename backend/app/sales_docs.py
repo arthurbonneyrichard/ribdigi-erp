@@ -892,6 +892,7 @@ async def convert_quotation_to_order(
     tenant_id: str,
     user_id: str,
     quotation_id: str,
+    store_id: str | None = None,
 ) -> m.SalesOrder:
     quote = await get_quotation(db, tenant_id, quotation_id)
     if quote.status not in {"draft", "sent", "accepted"}:
@@ -920,6 +921,7 @@ async def convert_quotation_to_order(
         discount_amount=float(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
+        store_id=store_id,
         company_id=getattr(quote, "company_id", None),
     )
     quote.status = "converted"
@@ -1035,9 +1037,14 @@ async def convert_quotation_to_invoice(
     tenant_id: str,
     user_id: str,
     quotation_id: str,
+    store_id: str | None = None,
 ) -> m.SalesInvoice:
     order = await convert_quotation_to_order(
-        db, tenant_id=tenant_id, user_id=user_id, quotation_id=quotation_id
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        quotation_id=quotation_id,
+        store_id=store_id,
     )
     return await convert_order_to_invoice(db, tenant_id=tenant_id, user_id=user_id, order_id=order.id)
 

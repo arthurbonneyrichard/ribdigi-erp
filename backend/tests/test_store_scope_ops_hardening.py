@@ -1264,6 +1264,17 @@ async def test_store_manager_sales_orders_scoped(client, db_session):
     )
     assert create_ok.status_code == 200, create_ok.text
 
+    create_unset = await ac.post(
+        "/api/v1/sales/orders",
+        headers=headers,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}],
+        },
+    )
+    assert create_unset.status_code == 403
+    assert create_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     cross = await ac.get(
         "/api/v1/sales/orders",
         headers=headers,
@@ -1397,6 +1408,33 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
     )
     assert denied_accept.status_code == 403
     assert denied_accept.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    draft = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=headers,
+        json={
+            "customer_id": cust.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 12}],
+        },
+    )
+    assert draft.status_code == 200, draft.text
+    qid = draft.json()["data"]["id"]
+
+    denied_convert = await ac.post(
+        f"/api/v1/sales/quotations/{qid}/convert-order",
+        headers=headers,
+        json={},
+    )
+    assert denied_convert.status_code == 403
+    assert denied_convert.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_convert = await ac.post(
+        f"/api/v1/sales/quotations/{qid}/convert-order",
+        headers=headers,
+        json={"store_id": mine.id},
+    )
+    assert ok_convert.status_code == 200, ok_convert.text
+    assert ok_convert.json()["data"]["store_id"] == mine.id
 
 
 @pytest.mark.asyncio

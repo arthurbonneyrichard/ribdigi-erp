@@ -1007,6 +1007,12 @@ class SalesQuotationCreate(BaseModel):
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 
+class SalesQuotationConvert(BaseModel):
+    """Store binding when converting a quotation (required for store_manager scope)."""
+
+    store_id: str | None = None
+
+
 class SalesOrderCreate(BaseModel):
     customer_id: str
     quotation_id: str | None = None

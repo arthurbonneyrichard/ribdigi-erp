@@ -168,6 +168,7 @@ from app.schemas import (
     SalesOrderCreate,
     SalesOrderUpdate,
     SalesQuotationCreate,
+    SalesQuotationConvert,
     SalesReturnCreate,
     InvoiceSendRequest,
     SmsTestRequest,
@@ -7642,17 +7643,27 @@ async def reject_quotation(
 @api.post("/sales/quotations/{quotation_id}/convert-order")
 async def convert_quotation_order(
     quotation_id: str,
+    payload: SalesQuotationConvert | None = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import dashboard_scope as dashboard_scope_svc
 
+    body = payload or SalesQuotationConvert()
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, body.store_id, allow_unset=False
+    )
     order = await sales_docs_svc.convert_quotation_to_order(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        quotation_id=quotation_id,
+        store_id=body.store_id,
     )
     await db.commit()
     # Stage 99 T1 — honesty: convert creates draft order; Confirm reserves stock
@@ -7665,17 +7676,27 @@ async def convert_quotation_order(
 @api.post("/sales/quotations/{quotation_id}/convert-invoice")
 async def convert_quotation_invoice(
     quotation_id: str,
+    payload: SalesQuotationConvert | None = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import dashboard_scope as dashboard_scope_svc
 
+    body = payload or SalesQuotationConvert()
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, body.store_id, allow_unset=False
+    )
     invoice = await sales_docs_svc.convert_quotation_to_invoice(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], quotation_id=quotation_id
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        quotation_id=quotation_id,
+        store_id=body.store_id,
     )
     await db.commit()
     # Stage 97 S1 — honesty: convert creates draft; Post required before AR recognition
@@ -7761,7 +7782,7 @@ async def create_sales_order(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, payload.store_id
+        managed, payload.store_id, allow_unset=False
     )
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     dashboard_scope_svc.assert_warehouse_in_manager_scope(
