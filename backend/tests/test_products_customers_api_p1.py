@@ -16,10 +16,6 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-
-
 async def _admin(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(
@@ -151,7 +147,8 @@ async def test_products_catalog_crud_import_stock_barcode_jwt(client, db_session
 async def test_customers_groups_balance_history_jwt(client):
     """BR-18.3: customers/groups CRUD, balance field, purchase history via JWT."""
     ac, seed = client
-    headers = await _mgr(ac)
+    # Company admin — store_manager denied groups catalog + party group assignment.
+    headers = await _admin(ac, seed)
 
     group = await ac.post(
         "/api/v1/customers/groups",

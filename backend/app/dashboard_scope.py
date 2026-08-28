@@ -1194,8 +1194,23 @@ def assert_company_level_customer_group_export_denied(
 ) -> None:
     """403 when store_manager exports customer groups CSV (company sales master dump).
 
-    List/get reads remain; full group export is company-level administration
-    (writes already denied).
+    List/get already denied alongside create/patch/deactivate and party↔group assignment.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_customer_group_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view the company customer groups catalog; "
+        "customer list/get and sales ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists/gets customer groups (company sales-master catalog).
+
+    Create/patch/deactivate/export and party↔group assignment already denied; GET list/detail
+    was a leftover company dump. Customer list/get + name patches remain.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

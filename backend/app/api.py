@@ -6875,6 +6875,11 @@ async def list_customer_groups(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 G1 — active_only / is_active for honest inactive-only customer group lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_customer_group_read_denied(managed)
+
     rows = await customers_svc.list_groups(
         db,
         claims["tenant_id"],
@@ -6942,6 +6947,11 @@ async def get_customer_group(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_customer_group_read_denied(managed)
+
     row = await customers_svc.get_customer_group(db, claims["tenant_id"], group_id)
     workspace_svc.assert_record_company(claims, row)
     return env(customers_svc.serialize_group(row))

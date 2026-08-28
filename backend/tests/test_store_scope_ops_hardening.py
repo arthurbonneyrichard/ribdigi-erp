@@ -9361,7 +9361,7 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_customer_groups_writes_denied(client, db_session):
-    """Customer group create/patch/deactivate/export denied for store_manager (company-level)."""
+    """Customer group list/get/create/patch/deactivate/export denied for store_manager."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9377,6 +9377,12 @@ async def test_store_manager_customer_groups_writes_denied(client, db_session):
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     denied_create = await ac.post(
         "/api/v1/customers/groups",
@@ -9405,13 +9411,21 @@ async def test_store_manager_customer_groups_writes_denied(client, db_session):
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    listed = await ac.get("/api/v1/customers/groups", headers=headers)
-    assert listed.status_code == 200, listed.text
-    assert any(row["name"] == "Group Deny Target" for row in listed.json()["data"])
+    denied_list = await ac.get("/api/v1/customers/groups", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    got = await ac.get(f"/api/v1/customers/groups/{group.id}", headers=headers)
-    assert got.status_code == 200, got.text
-    assert got.json()["data"]["name"] == "Group Deny Target"
+    denied_get = await ac.get(f"/api/v1/customers/groups/{group.id}", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get("/api/v1/customers/groups", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    assert any(row["name"] == "Group Deny Target" for row in ok_list.json()["data"])
+
+    ok_get = await ac.get(f"/api/v1/customers/groups/{group.id}", headers=admin_headers)
+    assert ok_get.status_code == 200, ok_get.text
+    assert ok_get.json()["data"]["name"] == "Group Deny Target"
 
 
 @pytest.mark.asyncio
