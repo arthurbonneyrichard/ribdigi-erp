@@ -11341,6 +11341,53 @@ async def test_store_manager_api_keys_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+
+@pytest.mark.asyncio
+async def test_store_manager_api_keys_writes_denied(client, db_session):
+    """API key create/revoke denied for store_manager; admin create remains."""
+    from app import api_keys as api_keys_svc
+
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    row, _raw = await api_keys_svc.create_key(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        name="Admin Key For Revoke Deny",
+        permissions=None,
+        expires_at=None,
+    )
+    await db_session.commit()
+    key_id = row.id
+
+    denied_create = await ac.post(
+        "/api/v1/api-keys",
+        headers=headers,
+        json={"name": "Mgr Key"},
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_revoke = await ac.delete(f"/api/v1/api-keys/{key_id}", headers=headers)
+    assert denied_revoke.status_code == 403, denied_revoke.text
+    assert denied_revoke.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/api-keys",
+        headers=admin_headers,
+        json={"name": "Admin Ok Key"},
+    )
+    assert ok_create.status_code == 200, ok_create.text
+
+
+
 async def test_store_manager_webhooks_read_denied(client, db_session):
     """GET /webhooks list/export/detail + deliveries denied for store_manager; admin remains."""
     from app import webhooks as webhooks_svc

@@ -648,7 +648,22 @@ def assert_company_level_api_keys_read_denied(
     """403 when store_manager reads GET /api-keys, /export, /{id}, or usage.
 
     API key metadata/prefix + usage series dumps are company security admin.
-    Create/revoke remain admin-role gated for a later slice.
+    Mutations use ``assert_company_level_api_keys_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_api_keys_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot create or revoke company API keys; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager creates or revokes company API keys.
+
+    Reads already denied; API key lifecycle is company security admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

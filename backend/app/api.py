@@ -18216,10 +18216,17 @@ async def api_keys_export(
 async def api_keys_create(
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Create an API key. Raw secret is returned once in the response."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_api_keys_write_denied(
+        managed,
+        message="Store managers cannot create company API keys.",
+    )
     tenants_svc.assert_writable(claims)
     body = payload or {}
     expires_at = None
@@ -18321,9 +18328,16 @@ async def api_keys_usage_export(
 async def api_keys_revoke(
     key_id: str,
     request: Request,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_api_keys_write_denied(
+        managed,
+        message="Store managers cannot revoke company API keys.",
+    )
     tenants_svc.assert_writable(claims)
     row = await api_keys_svc.revoke_key(db, claims["tenant_id"], key_id)
     await audit_svc.record_event(
