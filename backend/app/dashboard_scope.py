@@ -961,8 +961,8 @@ def assert_party_customer_group_assignment_write_denied(
     """403 when store_manager sets customer_group_id / customer_group on a party.
 
     Customer group master CRUD is already denied; party↔group assignment is the
-    same company sales-master graph and stays admin-only. Name/phone/address
-    party patches remain.
+    same company sales-master graph and stays admin-only. Name/address/notes
+    party patches remain (phone/email gated separately).
     """
     if managed_ids is None:
         return
@@ -981,7 +981,7 @@ def assert_party_classification_write_denied(
 ) -> None:
     """403 when store_manager sets party category / party_type (company classification).
 
-    Name/phone/address/notes remain. On create full dumps, only non-empty values
+    Name/address/notes remain. On create full dumps, only non-empty values
     deny (``clear_counts=False``). On PATCH exclude_unset, present keys deny
     including explicit null clears (``clear_counts=True``).
     """
@@ -1011,7 +1011,7 @@ def assert_party_code_write_denied(
 ) -> None:
     """403 when store_manager sets customer/supplier ``code`` (company party master).
 
-    Name/phone/address/notes remain. Create without a code still allowed
+    Name/address/notes remain. Create without a code still allowed
     (``clear_counts=False`` ignores empty/null). PATCH present ``code`` key
     denies including clears (``clear_counts=True``).
     """
@@ -1037,7 +1037,8 @@ def assert_party_email_write_denied(
     """403 when store_manager sets customer/supplier ``email`` (company contact master).
 
     Nested contact create/delete is already denied; primary party email is the
-    same company CRM identity surface. Name/phone/address/notes remain.
+    same company CRM identity surface. Name/address/notes remain (phone is
+    separately gated).
     Create without email still allowed (``clear_counts=False``). PATCH present
     ``email`` denies including clears (``clear_counts=True``).
     """
@@ -1048,6 +1049,32 @@ def assert_party_email_write_denied(
     else:
         email = payload.get("email")
         changing = email is not None and str(email).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_phone_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master phones.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``phone`` (company contact master).
+
+    Nested contact create/delete and primary email are already denied; primary
+    party phone is the same company CRM identity surface. Name/address/notes
+    remain. Create without phone still allowed (``clear_counts=False``). PATCH
+    present ``phone`` denies including clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "phone" in payload
+    else:
+        phone = payload.get("phone")
+        changing = phone is not None and str(phone).strip() != ""
     if not changing:
         return
     assert_company_level_write_denied(managed_ids, message=message)
@@ -1141,7 +1168,7 @@ def assert_party_status_write_denied(
     """403 when store_manager patches party ``status`` (activate/deactivate lifecycle).
 
     DELETE deactivate is already denied; PATCH ``status`` must not bypass that
-    company party-master gate. Name/phone/address/notes remain.
+    company party-master gate. Name/address/notes remain (phone/email gated).
     """
     if managed_ids is None:
         return

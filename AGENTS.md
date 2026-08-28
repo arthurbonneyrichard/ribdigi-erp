@@ -138,7 +138,7 @@ store activation — never frontend-only.
    party master lifecycle; PATCH status also denied; create/list/get + non-credit
    patch remain), and
    **party payment_terms_days create/patch denied for store_manager** (credit-
-   adjacent company terms; zero-default create allowed; phone/name patch remain),
+   adjacent company terms; zero-default create allowed; name/address patch remain),
    and **AI report template create/delete denied for store_manager** (company-
    level NL report templates; list/export reads allowed), and **AI NL report
    generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
@@ -179,7 +179,7 @@ store activation — never frontend-only.
    **bank connection is_active lifecycle writes denied
    for store_manager** (activate/deactivate admin-only; display name patches on
    managed connections remain), and **party customer_group assignment
-   denied for store_manager** (company sales-master party↔group link; name/phone
+   denied for store_manager** (company sales-master party↔group link; name/address
    party patches remain), and **bank connection create/delete denied for
    store_manager** (company bank-feed credentials; list/export/patch/sync on
    managed liquid accounts remain), and **bank connection credential field
@@ -198,14 +198,17 @@ store activation — never frontend-only.
    (bank_name/account_number/bank_branch/clear_bank_details; name on managed
    liquid accounts remain), and
    **party category/party_type classification writes denied for store_manager**
-   (company party master classification; name/phone remain), and **party master
+   (company party master classification; name/address remain), and **party master
    code writes denied for store_manager** (customer/supplier ``code`` on
-   create/patch; name/phone remain; create without code allowed), and
+   create/patch; name/address remain; create without code allowed), and
    **party master email writes denied for store_manager** (customer/supplier
-   ``email`` on create/patch; name/phone remain; create without email allowed;
+   ``email`` on create/patch; name/address remain; create without email allowed;
    nested contact endpoints remain separately denied), and
+   **party master phone writes denied for store_manager** (customer/supplier
+   ``phone`` on create/patch; name/address/notes remain; create without phone
+   allowed), and
    **party status lifecycle patches denied for store_manager** (PATCH status
-   cannot bypass DELETE deactivate deny; name/phone remain), and **POS session
+   cannot bypass DELETE deactivate deny; name/address remain), and **POS session
    open requires managed store_id for store_manager** (null/unset fail-closed;
    foreign store denied; list/report remain store scoped), and
    **company store-limit allocation denied for store_manager** (tenant
