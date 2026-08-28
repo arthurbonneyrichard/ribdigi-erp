@@ -32,6 +32,7 @@ export default function Page() {
   const [draftDocStoreId, setDraftDocStoreId] = useState('');
   const [draftDocBranchId, setDraftDocBranchId] = useState('');
   const [draftDocDepartmentId, setDraftDocDepartmentId] = useState('');
+  const [draftDocPurchaseOrderId, setDraftDocPurchaseOrderId] = useState('');
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -420,6 +421,7 @@ export default function Page() {
     setError('');
     setMessage('');
     setLastDocExtract(null);
+    setDraftDocPurchaseOrderId('');
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -432,6 +434,9 @@ export default function Page() {
       setDraftDocDescription(String(d.extracted?.description || '').trim());
       setDraftDocCategoryId(
         String(d.extracted?.category_id || d.category_suggestion?.category_id || '').trim(),
+      );
+      setDraftDocPurchaseOrderId(
+        String(d.matches?.purchase_orders?.[0]?.purchase_order_id || '').trim(),
       );
       setA(
         [
@@ -491,11 +496,15 @@ export default function Page() {
   }
 
   async function createDraftPurchaseInvoiceFromDoc() {
-    const poMatch = lastDocExtract?.matches?.purchase_orders?.[0];
-    if (!poMatch?.purchase_order_id) {
+    const poId = draftDocPurchaseOrderId.trim();
+    if (!poId) {
       setError('No matched purchase order — analyze an invoice that references a PO number first');
       return;
     }
+    const poMatch =
+      (lastDocExtract?.matches?.purchase_orders || []).find(
+        (m: any) => String(m.purchase_order_id) === poId,
+      ) || lastDocExtract?.matches?.purchase_orders?.[0];
     const ex = lastDocExtract?.extracted || {};
     setError('');
     setMessage('');
@@ -505,8 +514,8 @@ export default function Page() {
       const r = await api('/ai/documents/create-purchase-invoice', {
         method: 'POST',
         body: JSON.stringify({
-          purchase_order_id: poMatch.purchase_order_id,
-          supplier_id: poMatch.supplier_id || null,
+          purchase_order_id: poId,
+          supplier_id: poMatch?.supplier_id || null,
           supplier_invoice_number: ex.reference || null,
           notes: ex.description || null,
           invoice_date: invoiceDate,
@@ -514,7 +523,7 @@ export default function Page() {
         }),
       });
       const inv = r.data?.purchase_invoice || r.data;
-      const poNum = r.data?.po_number || poMatch.po_number || '';
+      const poNum = r.data?.po_number || poMatch?.po_number || '';
       setMessage(
         `Draft purchase invoice ${inv?.invoice_number || inv?.id || ''} created from ${poNum} (${inv?.status || 'draft'}) — open Purchasing → Invoices to review/approve.`
       );
@@ -525,7 +534,7 @@ export default function Page() {
     }
   }
 
-  const hasPoMatch = Boolean(lastDocExtract?.matches?.purchase_orders?.[0]?.purchase_order_id);
+  const hasPoMatch = Boolean(draftDocPurchaseOrderId.trim());
 
   return (
     <Shell>
@@ -693,11 +702,24 @@ export default function Page() {
           >
             {draftExpenseBusy ? 'Creating draft expense…' : 'Create draft expense'}
           </button>
+          <select
+            value={draftDocPurchaseOrderId}
+            onChange={(e) => setDraftDocPurchaseOrderId(e.target.value)}
+            aria-label="AI document purchase order"
+            title="Matched purchase order (UuidIdValue); required for draft PI"
+          >
+            <option value="">Select matched PO</option>
+            {(lastDocExtract?.matches?.purchase_orders || []).map((m: any) => (
+              <option key={m.purchase_order_id} value={m.purchase_order_id}>
+                {m.po_number || m.purchase_order_id}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={createDraftPurchaseInvoiceFromDoc}
             disabled={draftPiBusy || !hasPoMatch}
-            title="Creates a draft purchase invoice by copying lines from the top matched PO (requires purchasing:write)"
+            title="Creates a draft purchase invoice by copying lines from the selected matched PO (requires purchasing:write)"
             aria-label="Create draft purchase invoice"
           >
             {draftPiBusy ? 'Creating draft PI…' : 'Create draft purchase invoice'}

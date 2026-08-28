@@ -1725,7 +1725,10 @@ class AiDocumentPurchaseInvoiceCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    purchase_order_id: str
+    # Required PO ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach PO lookup). Existence remains tenant-scoped
+    # purchase-order lookup (**404**). Same honesty as GrnCreate.purchase_order_id.
+    purchase_order_id: UuidIdValue
     supplier_id: str | None = None
     # omit/`null` → no supplier invoice #; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently cleared; punctuation/URL could persist).

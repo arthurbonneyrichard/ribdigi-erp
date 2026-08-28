@@ -44,21 +44,34 @@ def test_ai_document_draft_date_schema_rejects_invalid():
 
     with pytest.raises(ValidationError):
         AiDocumentPurchaseInvoiceCreate.model_validate(
-            {"purchase_order_id": "po", "invoice_date": "not-a-date"}
+            {
+                "purchase_order_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+                "invoice_date": "not-a-date",
+            }
         )
     with pytest.raises(ValidationError):
         AiDocumentPurchaseInvoiceCreate.model_validate(
-            {"purchase_order_id": "po", "invoice_date": ""}
+            {
+                "purchase_order_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+                "invoice_date": "",
+            }
         )
     with pytest.raises(ValidationError):
         AiDocumentPurchaseInvoiceCreate.model_validate(
-            {"purchase_order_id": "po", "extra": 1}
+            {
+                "purchase_order_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+                "extra": 1,
+            }
         )
 
     pi = AiDocumentPurchaseInvoiceCreate.model_validate(
-        {"purchase_order_id": "po", "invoice_date": " 2026-08-10 "}
+        {
+            "purchase_order_id": "  AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE  ",
+            "invoice_date": " 2026-08-10 ",
+        }
     )
     assert pi.invoice_date == "2026-08-10"
+    assert pi.purchase_order_id == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
 
 def test_ai_document_draft_date_ui_and_docs():
