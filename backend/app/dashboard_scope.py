@@ -161,6 +161,38 @@ def assert_company_level_offline_devices_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_offline_alerts_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company offline owner alerts; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager GETs /offline/alerts.
+
+    Tenant-wide owner/admin offline signals (envelope, backlog, conflicts) are
+    company admin. Notify uses write deny. Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_offline_alerts_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot notify company offline owner alerts; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager POSTs /offline/alerts/notify.
+
+    Critical security-email notify is company admin. GET already denied.
+    Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_sync_conflict_resolve_denied(
     managed_ids: list[str] | None,
     *,

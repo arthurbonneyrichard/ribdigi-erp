@@ -18055,22 +18055,52 @@ async def offline_devices_list(
 
 @api.get("/offline/alerts")
 async def offline_alerts_list(
-    claims=Depends(require_roles("company_admin", "super_admin", "tenant_admin", "tenant_owner")),
+    claims=Depends(
+        require_roles(
+            "company_admin",
+            "super_admin",
+            "tenant_admin",
+            "tenant_owner",
+            "store_manager",
+        )
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """Owner/admin offline signals — envelope expiry, sync backlog, open conflicts."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_offline_alerts_read_denied(
+        managed,
+        message="Store managers cannot list company offline owner alerts.",
+    )
     return env(await offline_alerts_svc.collect_offline_alerts(db, claims["tenant_id"]))
 
 
 @api.post("/offline/alerts/notify")
 async def offline_alerts_notify(
-    claims=Depends(require_roles("company_admin", "super_admin", "tenant_admin", "tenant_owner")),
+    claims=Depends(
+        require_roles(
+            "company_admin",
+            "super_admin",
+            "tenant_admin",
+            "tenant_owner",
+            "store_manager",
+        )
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """Email/dashboard notify for current critical offline alerts (security channel).
 
     Push delivery and Offline Complete remain deferred.
     """
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_offline_alerts_write_denied(
+        managed,
+        message="Store managers cannot notify company offline owner alerts.",
+    )
     tenants_svc.assert_writable(claims)
     result = await offline_alerts_svc.notify_critical_offline_alerts(
         db, claims["tenant_id"]

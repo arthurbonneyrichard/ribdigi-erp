@@ -12134,6 +12134,33 @@ async def test_store_manager_offline_devices_admin_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_offline_alerts_admin_denied(client, db_session):
+    """Offline owner alerts GET/notify denied for store_manager; admin GET remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_list = await ac.get("/api/v1/offline/alerts", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_notify = await ac.post("/api/v1/offline/alerts/notify", headers=headers)
+    assert denied_notify.status_code == 403, denied_notify.text
+    assert denied_notify.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get("/api/v1/offline/alerts", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    payload = ok_list.json()["data"]
+    assert "alerts" in payload
+    assert "summary" in payload
+
+
+@pytest.mark.asyncio
 async def test_store_manager_business_types_read_denied(client, db_session):
     """Business-types catalog GET denied for store_manager; admin remains."""
     ac, seed = client
