@@ -11185,6 +11185,10 @@ async def create_recurring_expense(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
+    dashboard_scope_svc.assert_expense_department_assignment_write_denied(
+        managed,
+        department_id=payload.department_id,
+    )
     row = await expenses_svc.create_recurring(
         db,
         tenant_id=claims["tenant_id"],
@@ -11339,6 +11343,10 @@ async def add_expense(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
+    dashboard_scope_svc.assert_expense_department_assignment_write_denied(
+        managed,
+        department_id=payload.department_id,
+    )
     await dashboard_scope_svc.assert_optional_liquid_account_in_manager_scope(
         db,
         claims["tenant_id"],
@@ -11403,6 +11411,11 @@ async def patch_expense(
     )
     if payload.store_id is not None:
         dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
+    dashboard_scope_svc.assert_expense_department_assignment_write_denied(
+        managed,
+        department_id=payload.department_id,
+        clear_department=bool(payload.clear_department),
+    )
     expense = await expenses_svc.update_expense(
         db,
         tenant_id=claims["tenant_id"],

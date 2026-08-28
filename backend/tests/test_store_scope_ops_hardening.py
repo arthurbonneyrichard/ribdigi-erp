@@ -8600,6 +8600,118 @@ async def test_store_manager_branches_departments_writes_denied(client, db_sessi
 
 
 @pytest.mark.asyncio
+async def test_store_manager_expense_department_assignment_writes_denied(
+    client, db_session
+):
+    """Expense create/patch/recurring-create deny department_id org assignment."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    branch = m.Branch(
+        tenant_id=tid,
+        company_id=cid,
+        code="EXP-DP-BR",
+        name="Expense Dept Branch",
+        is_active=True,
+    )
+    db_session.add(branch)
+    await db_session.flush()
+    dept = m.Department(
+        tenant_id=tid,
+        company_id=cid,
+        branch_id=branch.id,
+        code="EXP-DP-DEPT",
+        name="Expense Dept Target",
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Expense Dept Store",
+        code="EXP-DP-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Dept assign target",
+        amount=15,
+        store_id=store.id,
+        status="pending",
+        created_by=mgr.id,
+    )
+    db_session.add_all([dept, store, expense])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "category": "Travel",
+            "amount": 9,
+            "description": "Dept on create denied",
+            "payment_method": "cash",
+            "store_id": store.id,
+            "department_id": dept.id,
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "category": "Travel",
+            "amount": 8,
+            "description": "No dept create ok",
+            "payment_method": "cash",
+            "store_id": store.id,
+        },
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    assert ok_create.json()["data"].get("department_id") in (None, "")
+
+    denied_patch = await ac.patch(
+        f"/api/v1/expenses/{expense.id}",
+        headers=headers,
+        json={"department_id": dept.id},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_clear = await ac.patch(
+        f"/api/v1/expenses/{expense.id}",
+        headers=headers,
+        json={"clear_department": True},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_recurring = await ac.post(
+        "/api/v1/expenses/recurring",
+        headers=headers,
+        json={
+            "category": "Rent",
+            "amount": 40,
+            "description": "Dept recurring denied",
+            "frequency": "monthly",
+            "payment_method": "cash",
+            "store_id": store.id,
+            "department_id": dept.id,
+        },
+    )
+    assert denied_recurring.status_code == 403, denied_recurring.text
+    assert denied_recurring.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_catalog_meta_writes_denied(client, db_session):
     """Catalog category/brand/unit create/patch/deactivate denied for store_manager."""
     ac, seed = client

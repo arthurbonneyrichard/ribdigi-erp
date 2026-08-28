@@ -632,6 +632,26 @@ def assert_store_branch_assignment_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_expense_department_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    department_id: str | None = None,
+    clear_department: bool = False,
+    message: str = "Store managers cannot assign or clear expense department org links.",
+) -> None:
+    """403 when store_manager attempts company-level expense↔department org assignment.
+
+    Department master writes are already denied; ``department_id`` / ``clear_department``
+    on expense create/patch/recurring-create is the same company-level org graph.
+    """
+    if managed_ids is None:
+        return
+    changing = bool(clear_department) or bool((department_id or "").strip())
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_warehouse_manager_assignment_write_denied(
     managed_ids: list[str] | None,
     *,
