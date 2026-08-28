@@ -8988,3 +8988,30 @@ async def test_store_manager_bi_settings_write_denied(client, db_session):
     body = ok_get.json()
     payload = body.get("data", body)
     assert "settings" in payload or "formulas" in payload
+
+
+@pytest.mark.asyncio
+async def test_store_manager_purchasing_settings_write_denied(client, db_session):
+    """Purchasing PR approval settings PATCH denied for store_manager; GET/export remain."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied = await ac.patch(
+        "/api/v1/purchasing/settings",
+        headers=headers,
+        json={
+            "levels": [
+                {"min_amount": 0.01, "roles": ["store_manager"], "label": "L1 Manager"},
+            ]
+        },
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_get = await ac.get("/api/v1/purchasing/settings", headers=headers)
+    assert ok_get.status_code == 200, ok_get.text
+
+    ok_export = await ac.get("/api/v1/purchasing/settings/export", headers=headers)
+    assert ok_export.status_code == 200, ok_export.text
+    assert "text/csv" in (ok_export.headers.get("content-type") or "")
+

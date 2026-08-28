@@ -8780,9 +8780,15 @@ async def patch_purchasing_settings(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import tenants as tenants_svc
 
-    # Company admins configure matrix; store managers have purchasing write — restrict to admin roles.
+    # Store managers have purchasing write for PR/PO ops — company-level approval matrix is admin-only.
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_purchasing_settings_write_denied(
+        managed,
+        message="Store managers cannot update company-level purchasing approval settings.",
+    )
     if claims.get("role") not in {"company_admin", "super_admin"}:
         raise HTTPException(status_code=403, detail="Only company admins can update purchasing settings")
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])

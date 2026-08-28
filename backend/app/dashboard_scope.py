@@ -484,6 +484,15 @@ def assert_company_level_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_purchasing_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company-level purchasing approval settings.",
+) -> None:
+    """403 when store_manager attempts purchasing PR approval matrix writes (company-level)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_admin_write_denied(
     managed_ids: list[str] | None,
     *,
