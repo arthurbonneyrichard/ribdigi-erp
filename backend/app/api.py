@@ -12237,6 +12237,11 @@ async def update_bank_connection(
         patch_data,
         message="Store managers cannot update bank feed credentials.",
     )
+    dashboard_scope_svc.assert_bank_connection_feed_policy_write_denied(
+        managed,
+        patch_data,
+        message="Store managers cannot update bank feed sync policy.",
+    )
     row = await bank_connectors_svc.update_connection(
         db,
         tenant_id=claims["tenant_id"],

@@ -736,6 +736,7 @@ def assert_company_level_bank_connection_write_denied(
     List/export/patch/sync on managed liquid-account connections remain scoped.
     Credential field patches use ``assert_bank_connection_credentials_write_denied``.
     Soft ``is_active`` uses ``assert_bank_connection_lifecycle_write_denied``.
+    Feed automation / lookback use ``assert_bank_connection_feed_policy_write_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -759,12 +760,47 @@ def assert_bank_connection_credentials_write_denied(
 ) -> None:
     """403 when store_manager patches bank-feed credential / identity fields.
 
-    ``display_name``, auto-sync flags, and lookback on managed connections remain.
-    ``is_active`` is gated by ``assert_bank_connection_lifecycle_write_denied``.
+    ``display_name`` on managed connections remains. Auto-sync / lookback use
+    ``assert_bank_connection_feed_policy_write_denied``. ``is_active`` uses
+    ``assert_bank_connection_lifecycle_write_denied``.
     """
     if managed_ids is None:
         return
     fields = sorted(k for k in BANK_CONNECTION_CREDENTIAL_FIELDS if k in payload)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": fields,
+        },
+    )
+
+
+BANK_CONNECTION_FEED_POLICY_FIELDS = frozenset(
+    {
+        "auto_sync",
+        "auto_match_after_sync",
+        "sync_lookback_days",
+    }
+)
+
+
+def assert_bank_connection_feed_policy_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot update bank feed sync policy.",
+) -> None:
+    """403 when store_manager patches bank-feed automation / lookback policy.
+
+    Manual sync on managed connections and ``display_name`` patches remain.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in BANK_CONNECTION_FEED_POLICY_FIELDS if k in payload)
     if not fields:
         return
     raise HTTPException(
@@ -786,7 +822,7 @@ def assert_bank_connection_lifecycle_write_denied(
     """403 when store_manager attempts company-level bank connection is_active lifecycle.
 
     Connection create/delete already denied; soft activate/deactivate stays
-    admin-only. Display name / auto-sync patches on managed connections remain.
+    admin-only. Display name patches on managed connections remain.
     """
     if not changing_active:
         return

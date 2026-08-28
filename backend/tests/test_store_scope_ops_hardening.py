@@ -5912,6 +5912,18 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
         "feed_url",
     }
 
+    denied_policy = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn_mine.id}",
+        headers=headers,
+        json={"auto_sync": False, "sync_lookback_days": 7},
+    )
+    assert denied_policy.status_code == 403, denied_policy.text
+    assert denied_policy.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert set(denied_policy.json()["detail"].get("fields") or []) >= {
+        "auto_sync",
+        "sync_lookback_days",
+    }
+
     denied_sync = await ac.post(
         f"/api/v1/accounting/bank-connections/{conn_other.id}/sync",
         headers=headers,
