@@ -5749,10 +5749,8 @@ async def test_store_manager_coa_and_liquid_balances_store_scoped(client, db_ses
     assert float(liq_cash["balance"]) == pytest.approx(55.0)
 
     liq_csv = await ac.get("/api/v1/accounting/liquid-accounts/export", headers=headers)
-    assert liq_csv.status_code == 200, liq_csv.text
-    assert "900" not in liq_csv.text.splitlines()[1] if len(liq_csv.text.splitlines()) > 1 else True
-    assert "55" in liq_csv.text
-
+    assert liq_csv.status_code == 403, liq_csv.text
+    assert liq_csv.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 @pytest.mark.asyncio
 async def test_store_manager_coa_account_read_scoped(client, db_session):
@@ -13255,6 +13253,30 @@ async def test_store_manager_liquid_account_lifecycle_writes_denied(client, db_s
     await db_session.refresh(cash)
     assert cash.is_active is False
     assert cash.name == "Managed Cash Renamed"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_liquid_accounts_export_denied(client, db_session):
+    """Liquid accounts CSV export denied for store_manager; admin remains; list OK."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied = await ac.get("/api/v1/accounting/liquid-accounts/export", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)
+    assert ok_list.status_code == 200, ok_list.text
+
+    ok = await ac.get("/api/v1/accounting/liquid-accounts/export", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    assert "code" in ok.text.lower() or "name" in ok.text.lower()
 
 
 @pytest.mark.asyncio

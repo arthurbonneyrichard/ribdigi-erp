@@ -12484,9 +12484,13 @@ async def liquid_accounts_export(
     from app.accounting import ensure_default_accounts
     from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_liquid_accounts_export_denied(
+        managed,
+        message="Store managers cannot export liquid accounts CSV (company bank detail dump).",
+    )
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     await db.commit()
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     text = await liquid_recurring_export_svc.export_liquid_accounts_csv(
         db,

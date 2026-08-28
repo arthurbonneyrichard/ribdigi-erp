@@ -1745,6 +1745,23 @@ def assert_liquid_account_bank_details_write_denied(
     )
 
 
+def assert_company_level_liquid_accounts_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export liquid accounts CSV "
+        "(company bank detail dump); scoped liquid list remains."
+    ),
+) -> None:
+    """403 when store_manager GETs /accounting/liquid-accounts/export.
+
+    CSV includes bank_name/account_number/bank_branch for all company liquid
+    accounts (store_ids only affect balances). Bank detail patches already
+    denied; list GET remains for cash ops with scoped balances.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_bank_connection_write_denied(
     managed_ids: list[str] | None,
     *,
