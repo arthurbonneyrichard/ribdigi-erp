@@ -1200,7 +1200,11 @@ class ProductCategoryUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on category display name).
     name: CategoryNameValue | None = None
-    parent_id: str | None = None
+    # Optional parent category FK ∈ UuidIdValue; omit → no change; `null` → root;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # parent lookup). Existence / cycle checks remain tenant-scoped (**404**/400).
+    # Same honesty as ProductCategoryCreate.parent_id.
+    parent_id: UuidIdValue | None = None
     tax_rate_id: str | None = None
     is_active: bool | None = None
 

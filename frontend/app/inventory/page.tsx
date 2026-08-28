@@ -2348,12 +2348,12 @@ export default function Page() {
                     ) : (
                       <>
                         <select
-                          aria-label={`Parent for ${c.code}`}
+                          aria-label={`Edit category parent ${c.code}`}
                           value={c.parent_id || ''}
                           onChange={async (e) => {
                             setError('');
                             try {
-                              const value = e.target.value || null;
+                              const value = e.target.value.trim() || null;
                               await api(`/catalog/categories/${c.id}`, {
                                 method: 'PATCH',
                                 body: JSON.stringify({ parent_id: value }),
