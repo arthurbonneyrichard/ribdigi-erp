@@ -69,9 +69,17 @@ async def export_cheques_csv(
     direction: str | None = None,
     status: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     rows = await cheques_svc.list_cheques(
-        db, tenant_id, direction=direction, status=status, company_id=company_id
+        db,
+        tenant_id,
+        direction=direction,
+        status=status,
+        company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CHEQUE_EXPORT_COLUMNS)

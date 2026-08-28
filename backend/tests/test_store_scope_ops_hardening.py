@@ -5253,3 +5253,286 @@ async def test_store_manager_product_batches_wh_scoped(client, db_session):
     assert "LOT-PB-MINE" in exported.text
     assert "LOT-PB-OTH" not in exported.text
     assert "LOT-PB-NULL" not in exported.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_cheques_store_wh_scoped(client, db_session):
+    """Cheques list/get/export (+ cancel assert) follow payment invoice/WH scope."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["accounting"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cheque Scope Mine",
+        code="CHQ-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cheque Scope Other",
+        code="CHQ-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Cheque Mine WH",
+        code="CHQ-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Cheque Other WH",
+        code="CHQ-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cheque Cust",
+        kind="customer",
+        status="active",
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cheque Supp",
+        kind="supplier",
+        status="active",
+    )
+    db_session.add_all([cust, supplier])
+    await db_session.flush()
+
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-CHQ-M",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=50,
+        total_amount=50,
+        paid_amount=50,
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-CHQ-O",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=80,
+        total_amount=80,
+        paid_amount=80,
+    )
+    db_session.add_all([inv_mine, inv_other])
+    await db_session.flush()
+
+    pay_mine = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CP-CHQ-M",
+        customer_id=cust.id,
+        sales_invoice_id=inv_mine.id,
+        amount=50,
+        payment_method="cheque",
+    )
+    pay_other = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CP-CHQ-O",
+        customer_id=cust.id,
+        sales_invoice_id=inv_other.id,
+        amount=80,
+        payment_method="cheque",
+    )
+    pay_unalloc = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CP-CHQ-U",
+        customer_id=cust.id,
+        sales_invoice_id=None,
+        amount=5,
+        payment_method="cheque",
+    )
+    db_session.add_all([pay_mine, pay_other, pay_unalloc])
+    await db_session.flush()
+
+    chq_recv_mine = m.Cheque(
+        tenant_id=tid,
+        company_id=cid,
+        direction="received",
+        status="pending",
+        cheque_number="RCV-MINE",
+        amount=50,
+        party_id=cust.id,
+        customer_payment_id=pay_mine.id,
+    )
+    chq_recv_other = m.Cheque(
+        tenant_id=tid,
+        company_id=cid,
+        direction="received",
+        status="pending",
+        cheque_number="RCV-OTH",
+        amount=80,
+        party_id=cust.id,
+        customer_payment_id=pay_other.id,
+    )
+    chq_recv_unalloc = m.Cheque(
+        tenant_id=tid,
+        company_id=cid,
+        direction="received",
+        status="pending",
+        cheque_number="RCV-UNA",
+        amount=5,
+        party_id=cust.id,
+        customer_payment_id=pay_unalloc.id,
+    )
+
+    pi_mine = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-CHQ-M",
+        supplier_id=supplier.id,
+        warehouse_id=wh_mine.id,
+        status="unpaid",
+        subtotal=40,
+        total_amount=40,
+        paid_amount=40,
+    )
+    pi_other = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-CHQ-O",
+        supplier_id=supplier.id,
+        warehouse_id=wh_other.id,
+        status="unpaid",
+        subtotal=90,
+        total_amount=90,
+        paid_amount=90,
+    )
+    db_session.add_all([pi_mine, pi_other])
+    await db_session.flush()
+
+    sp_mine = m.SupplierPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="SP-CHQ-M",
+        supplier_id=supplier.id,
+        purchase_invoice_id=pi_mine.id,
+        amount=40,
+        payment_method="cheque",
+    )
+    sp_other = m.SupplierPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="SP-CHQ-O",
+        supplier_id=supplier.id,
+        purchase_invoice_id=pi_other.id,
+        amount=90,
+        payment_method="cheque",
+    )
+    db_session.add_all([sp_mine, sp_other])
+    await db_session.flush()
+
+    chq_iss_mine = m.Cheque(
+        tenant_id=tid,
+        company_id=cid,
+        direction="issued",
+        status="pending",
+        cheque_number="ISS-MINE",
+        amount=40,
+        party_id=supplier.id,
+        supplier_payment_id=sp_mine.id,
+    )
+    chq_iss_other = m.Cheque(
+        tenant_id=tid,
+        company_id=cid,
+        direction="issued",
+        status="pending",
+        cheque_number="ISS-OTH",
+        amount=90,
+        party_id=supplier.id,
+        supplier_payment_id=sp_other.id,
+    )
+    db_session.add_all(
+        [
+            chq_recv_mine,
+            chq_recv_other,
+            chq_recv_unalloc,
+            chq_iss_mine,
+            chq_iss_other,
+        ]
+    )
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/accounting/cheques", headers=headers)
+    assert listed.status_code == 200, listed.text
+    nums = {r["cheque_number"] for r in listed.json()["data"]}
+    assert "RCV-MINE" in nums
+    assert "ISS-MINE" in nums
+    assert "RCV-OTH" not in nums
+    assert "ISS-OTH" not in nums
+    assert "RCV-UNA" not in nums
+
+    ok = await ac.get(f"/api/v1/accounting/cheques/{chq_recv_mine.id}", headers=headers)
+    assert ok.status_code == 200, ok.text
+
+    denied = await ac.get(
+        f"/api/v1/accounting/cheques/{chq_recv_other.id}", headers=headers
+    )
+    assert denied.status_code == 403
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_iss = await ac.get(
+        f"/api/v1/accounting/cheques/{chq_iss_other.id}", headers=headers
+    )
+    assert denied_iss.status_code == 403
+
+    exported = await ac.get("/api/v1/accounting/cheques/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "RCV-MINE" in exported.text
+    assert "ISS-MINE" in exported.text
+    assert "RCV-OTH" not in exported.text
+    assert "ISS-OTH" not in exported.text
+
+    denied_cancel = await ac.post(
+        f"/api/v1/accounting/cheques/{chq_recv_other.id}/cancel", headers=headers
+    )
+    assert denied_cancel.status_code == 403
+    assert denied_cancel.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cancel = await ac.post(
+        f"/api/v1/accounting/cheques/{chq_iss_mine.id}/cancel", headers=headers
+    )
+    assert ok_cancel.status_code == 200, ok_cancel.text

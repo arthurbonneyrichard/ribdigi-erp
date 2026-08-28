@@ -11824,12 +11824,18 @@ async def list_cheques(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     rows = await cheques_svc.list_cheques(
         db,
         claims["tenant_id"],
         direction=direction,
         status=status,
         company_id=claims.get("company_id"),
+        store_ids=managed,
+        warehouse_ids=managed_wh,
     )
     return env([cheques_svc.serialize_cheque(r) for r in rows])
 
@@ -11841,13 +11847,19 @@ async def cheques_export(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 130 C1 — cheques CSV honoring direction/status filters."""
+    """Stage 130 C1 — cheques CSV honoring direction/status filters; store_manager scoped."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await ops_lifecycle_export_svc.export_cheques_csv(
         db,
         tenant_id=claims["tenant_id"],
         direction=direction,
         status=status,
         company_id=claims.get("company_id"),
+        store_ids=managed,
+        warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -11865,6 +11877,7 @@ async def get_cheque_detail(
     row = await cheques_svc.get_cheque(
         db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
     )
+    await cheques_svc.assert_cheque_in_manager_scope(db, claims, row)
     return env(cheques_svc.serialize_cheque(row))
 
 
@@ -11874,6 +11887,10 @@ async def deposit_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await cheques_svc.get_cheque(
+        db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
+    )
+    await cheques_svc.assert_cheque_in_manager_scope(db, claims, existing)
     row = await cheques_svc.deposit_cheque(
         db,
         tenant_id=claims["tenant_id"],
@@ -11891,6 +11908,10 @@ async def clear_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await cheques_svc.get_cheque(
+        db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
+    )
+    await cheques_svc.assert_cheque_in_manager_scope(db, claims, existing)
     row = await cheques_svc.clear_cheque(
         db,
         tenant_id=claims["tenant_id"],
@@ -11909,6 +11930,10 @@ async def bounce_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await cheques_svc.get_cheque(
+        db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
+    )
+    await cheques_svc.assert_cheque_in_manager_scope(db, claims, existing)
     row = await cheques_svc.bounce_cheque(
         db,
         tenant_id=claims["tenant_id"],
@@ -11928,6 +11953,10 @@ async def cancel_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await cheques_svc.get_cheque(
+        db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
+    )
+    await cheques_svc.assert_cheque_in_manager_scope(db, claims, existing)
     row = await cheques_svc.cancel_cheque(
         db,
         tenant_id=claims["tenant_id"],
