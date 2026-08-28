@@ -104,6 +104,8 @@ export default function Page() {
     category_id: string;
     store_id: string;
     had_store: boolean;
+    branch_id: string;
+    had_branch: boolean;
   } | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -629,6 +631,8 @@ export default function Page() {
       category_id: r.category_id || '',
       store_id: r.store_id || '',
       had_store: Boolean(r.store_id),
+      branch_id: r.branch_id || '',
+      had_branch: Boolean(r.branch_id),
     });
   }
 
@@ -660,6 +664,12 @@ export default function Page() {
         body.store_id = storeTrim;
       } else if (editDraft.had_store) {
         body.clear_store = true;
+      }
+      const branchTrim = editDraft.branch_id.trim();
+      if (branchTrim) {
+        body.branch_id = branchTrim;
+      } else if (editDraft.had_branch) {
+        body.clear_branch = true;
       }
       const r = await api(`/expenses/${editFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage(
@@ -1479,9 +1489,31 @@ export default function Page() {
               <option value="">{editDraft.had_store ? 'Clear store' : 'No store'}</option>
               {stores
                 .filter((s) => s.is_active !== false || s.id === editDraft.store_id)
+                .filter((s) => !editDraft.branch_id || s.branch_id === editDraft.branch_id)
                 .map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.code} — {s.name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={editDraft.branch_id}
+              onChange={(e) =>
+                setEditDraft({
+                  ...editDraft,
+                  branch_id: e.target.value,
+                  store_id: '',
+                })
+              }
+              aria-label="Edit expense branch"
+              title="Optional branch (UuidIdValue); blank clears when previously set"
+            >
+              <option value="">{editDraft.had_branch ? 'Clear branch' : 'No branch'}</option>
+              {branches
+                .filter((b) => b.is_active !== false || b.id === editDraft.branch_id)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
                   </option>
                 ))}
             </select>
