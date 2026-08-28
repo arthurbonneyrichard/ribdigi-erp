@@ -216,7 +216,8 @@ store activation — never frontend-only.
    (company party master classification; name remain) + **party category/party_type
    redacted on list/get/patch JSON**, and **party master
    code writes denied for store_manager** (customer/supplier ``code`` on
-   create/patch; name remain; create without code allowed), and
+   create/patch; name remain; create without code allowed) + **party master
+   code redacted on list/get/patch JSON**, and
    **party master email writes denied for store_manager** (customer/supplier
    ``email`` on create/patch; name remain; create without email allowed;
    nested contact endpoints remain separately denied), and

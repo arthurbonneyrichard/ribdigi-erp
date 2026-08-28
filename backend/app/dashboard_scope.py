@@ -2402,6 +2402,7 @@ def assert_party_code_write_denied(
     Name remains. Create without a code still allowed
     (``clear_counts=False`` ignores empty/null). PATCH present ``code`` key
     denies including clears (``clear_counts=True``).
+    List/get/patch JSON redacts ``code`` via ``redact_party_code``.
     """
     if managed_ids is None:
         return
@@ -2413,6 +2414,23 @@ def assert_party_code_write_denied(
     if not changing:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_code(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party master ``code`` on JSON.
+
+    Code assign/clear already denied; customer/supplier list/get/patch must not
+    re-dump company party master codes. Name/status/credit and scoped history remain.
+    """
+    return managed_ids is not None
+
+
+def redact_party_code(payload: dict) -> dict:
+    """Null ``code`` on customer/supplier JSON."""
+    out = dict(payload)
+    if "code" in out:
+        out["code"] = None
+    return out
 
 
 def assert_party_email_write_denied(

@@ -10457,6 +10457,105 @@ async def test_store_manager_party_code_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_code_redacted(client, db_session):
+    """store_manager customer/supplier JSON omits code; name remain; admin intact."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cust = seed["party1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["sales"] = ["read", "write"]
+    perms["purchasing"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Party Code Redact Store",
+        code="CODE-RD-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+
+    cust.code = "CUST-RD-CODE"
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        kind="supplier",
+        name="Code Redact Supplier",
+        code="SUP-RD-CODE",
+        status="active",
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_cust = await ac.get(f"/api/v1/customers/{cust.id}", headers=admin_headers)
+    assert admin_cust.status_code == 200, admin_cust.text
+    assert admin_cust.json()["data"]["code"] == "CUST-RD-CODE"
+
+    admin_sup = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=admin_headers)
+    assert admin_sup.status_code == 200, admin_sup.text
+    assert admin_sup.json()["data"]["code"] == "SUP-RD-CODE"
+
+    mgr_clist = await ac.get("/api/v1/customers", headers=headers)
+    assert mgr_clist.status_code == 200, mgr_clist.text
+    mgr_crow = next(r for r in mgr_clist.json()["data"] if r["id"] == cust.id)
+    assert mgr_crow["name"]
+    assert mgr_crow.get("code") is None
+
+    mgr_cget = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert mgr_cget.status_code == 200, mgr_cget.text
+    assert mgr_cget.json()["data"].get("code") is None
+
+    mgr_slist = await ac.get("/api/v1/suppliers", headers=headers)
+    assert mgr_slist.status_code == 200, mgr_slist.text
+    mgr_srow = next(r for r in mgr_slist.json()["data"] if r["id"] == supplier.id)
+    assert mgr_srow["name"]
+    assert mgr_srow.get("code") is None
+
+    mgr_sget = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=headers)
+    assert mgr_sget.status_code == 200, mgr_sget.text
+    assert mgr_sget.json()["data"].get("code") is None
+
+    patched = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Code Redact Renamed"},
+    )
+    assert patched.status_code == 200, patched.text
+    pbody = patched.json()["data"]
+    assert pbody["name"] == "Code Redact Renamed"
+    assert pbody.get("code") is None
+
+    await db_session.refresh(cust)
+    assert cust.code == "CUST-RD-CODE"
+    assert cust.name == "Code Redact Renamed"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_party_email_writes_denied(client, db_session):
     """store_manager cannot set customer/supplier master emails; name remain."""
     ac, seed = client

@@ -7154,6 +7154,8 @@ async def _serialize_customer_response(
         payload = dashboard_scope_svc.redact_party_customer_group_assignment(payload)
     if dashboard_scope_svc.omit_party_classification(managed_store_ids):
         payload = dashboard_scope_svc.redact_party_classification(payload)
+    if dashboard_scope_svc.omit_party_code(managed_store_ids):
+        payload = dashboard_scope_svc.redact_party_code(payload)
     return payload
 
 
@@ -7172,6 +7174,8 @@ async def _serialize_supplier_response(
         payload = dashboard_scope_svc.redact_party_master_pii(payload)
     if dashboard_scope_svc.omit_party_classification(managed_store_ids):
         payload = dashboard_scope_svc.redact_party_classification(payload)
+    if dashboard_scope_svc.omit_party_code(managed_store_ids):
+        payload = dashboard_scope_svc.redact_party_code(payload)
     return payload
 
 
@@ -7327,6 +7331,7 @@ async def customers(
     omit_pii = dashboard_scope_svc.omit_party_master_pii(managed)
     omit_group = dashboard_scope_svc.omit_party_customer_group_assignment(managed)
     omit_class = dashboard_scope_svc.omit_party_classification(managed)
+    omit_code = dashboard_scope_svc.omit_party_code(managed)
     await customers_svc.ensure_default_customer_groups(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )
@@ -7361,6 +7366,8 @@ async def customers(
             payload = dashboard_scope_svc.redact_party_customer_group_assignment(payload)
         if omit_class:
             payload = dashboard_scope_svc.redact_party_classification(payload)
+        if omit_code:
+            payload = dashboard_scope_svc.redact_party_code(payload)
         out.append(payload)
     await db.commit()
     return env(out)
@@ -7716,6 +7723,7 @@ async def suppliers(
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     omit_pii = dashboard_scope_svc.omit_party_master_pii(managed)
     omit_class = dashboard_scope_svc.omit_party_classification(managed)
+    omit_code = dashboard_scope_svc.omit_party_code(managed)
     stmt = (
         select(m.Party)
         .where(
@@ -7740,6 +7748,8 @@ async def suppliers(
             payload = dashboard_scope_svc.redact_party_master_pii(payload)
         if omit_class:
             payload = dashboard_scope_svc.redact_party_classification(payload)
+        if omit_code:
+            payload = dashboard_scope_svc.redact_party_code(payload)
         out.append(payload)
     return env(out)
 
