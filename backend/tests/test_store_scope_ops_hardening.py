@@ -13004,7 +13004,12 @@ async def test_store_manager_warehouse_structure_writes_denied(client, db_sessio
     cid = seed["c1"].id
     mgr = seed["mgr1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     store = m.Store(
         tenant_id=tid,
