@@ -5777,3 +5777,306 @@ async def test_store_manager_stores_export_and_writes_scoped(client, db_session)
         },
     )
     assert ok_reorder.status_code == 200, ok_reorder.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_notifications_broadcast_scoped(client, db_session):
+    """Broadcast notifications join-filter by store/WH; personal rows stay visible."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Notif Scope Mine",
+        code="NTF-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Notif Scope Other",
+        code="NTF-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Notif Mine WH",
+        code="NTF-MWH",
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Notif Other WH",
+        code="NTF-OWH",
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    now = __import__("datetime").datetime.utcnow()
+    inv_mine = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        invoice_number="INV-NTF-M",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=40,
+        total_amount=40,
+        paid_amount=0,
+        due_date=now + timedelta(days=1),
+    )
+    inv_other = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        invoice_number="INV-NTF-O",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=60,
+        total_amount=60,
+        paid_amount=0,
+        due_date=now + timedelta(days=1),
+    )
+    pi_mine = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-NTF-M",
+        supplier_id=seed["party1"].id,
+        warehouse_id=wh_mine.id,
+        status="unpaid",
+        subtotal=25,
+        total_amount=25,
+        paid_amount=0,
+        due_date=now + timedelta(days=1),
+    )
+    pi_other = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-NTF-O",
+        supplier_id=seed["party1"].id,
+        warehouse_id=wh_other.id,
+        status="unpaid",
+        subtotal=35,
+        total_amount=35,
+        paid_amount=0,
+        due_date=now + timedelta(days=1),
+    )
+    quote = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="Q-NTF-1",
+        customer_id=seed["party1"].id,
+        status="sent",
+        valid_until=now + timedelta(hours=12),
+        subtotal=10,
+        total_amount=10,
+    )
+    rec_mine = m.RecurringExpense(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        category="Rent",
+        description="Mine recurring",
+        amount=100,
+        frequency="monthly",
+        next_run_at=now + timedelta(hours=6),
+        is_active=True,
+    )
+    rec_other = m.RecurringExpense(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        category="Rent",
+        description="Other recurring",
+        amount=200,
+        frequency="monthly",
+        next_run_at=now + timedelta(hours=6),
+        is_active=True,
+    )
+    db_session.add_all(
+        [inv_mine, inv_other, pi_mine, pi_other, quote, rec_mine, rec_other]
+    )
+    await db_session.flush()
+
+    n_mine = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="payment_due",
+        title="AR mine",
+        message="mine",
+        status="unread",
+        entity_type="sales_invoice",
+        entity_id=inv_mine.id,
+    )
+    n_other = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="payment_due",
+        title="AR other",
+        message="other",
+        status="unread",
+        entity_type="sales_invoice",
+        entity_id=inv_other.id,
+    )
+    n_pi_mine = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="payment_due",
+        title="AP mine",
+        message="pi mine",
+        status="unread",
+        entity_type="purchase_invoice",
+        entity_id=pi_mine.id,
+    )
+    n_pi_other = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="payment_due",
+        title="AP other",
+        message="pi other",
+        status="unread",
+        entity_type="purchase_invoice",
+        entity_id=pi_other.id,
+    )
+    n_quote = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="quotation_expiry",
+        title="Quote leak",
+        message="quote",
+        status="unread",
+        entity_type="sales_quotation",
+        entity_id=quote.id,
+    )
+    n_product = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="low_stock",
+        title="Product leak",
+        message="product",
+        status="unread",
+        entity_type="product",
+        entity_id=product.id,
+    )
+    n_wh_mine = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="low_stock",
+        title="WH mine",
+        message="wh mine",
+        status="unread",
+        entity_type="warehouse_stock",
+        entity_id=f"{wh_mine.id}:{product.id}",
+    )
+    n_wh_other = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=None,
+        category="low_stock",
+        title="WH other",
+        message="wh other",
+        status="unread",
+        entity_type="warehouse_stock",
+        entity_id=f"{wh_other.id}:{product.id}",
+    )
+    n_personal = m.Notification(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=mgr.id,
+        category="expense_approval",
+        title="Personal",
+        message="personal",
+        status="unread",
+        entity_type="expense",
+        entity_id=None,
+    )
+    db_session.add_all(
+        [
+            n_mine,
+            n_other,
+            n_pi_mine,
+            n_pi_other,
+            n_quote,
+            n_product,
+            n_wh_mine,
+            n_wh_other,
+            n_personal,
+        ]
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    listed = await ac.get("/api/v1/notifications", headers=headers)
+    assert listed.status_code == 200, listed.text
+    titles = {row["title"] for row in listed.json()["data"]}
+    assert "AR mine" in titles
+    assert "AP mine" in titles
+    assert "WH mine" in titles
+    assert "Personal" in titles
+    assert "AR other" not in titles
+    assert "AP other" not in titles
+    assert "Quote leak" not in titles
+    assert "Product leak" not in titles
+    assert "WH other" not in titles
+
+    exported = await ac.get("/api/v1/notifications/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "AR mine" in exported.text
+    assert "AR other" not in exported.text
+    assert "Quote leak" not in exported.text
+
+    unread = await ac.get("/api/v1/notifications/unread-count", headers=headers)
+    assert unread.status_code == 200, unread.text
+    assert unread.json()["data"]["count"] >= 4
+
+    denied_read = await ac.patch(
+        f"/api/v1/notifications/{n_other.id}/read", headers=headers
+    )
+    assert denied_read.status_code == 403
+    assert denied_read.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_read = await ac.patch(f"/api/v1/notifications/{n_mine.id}/read", headers=headers)
+    assert ok_read.status_code == 200, ok_read.text
+
+    # Clear unread payment_due for scan assertions
+    for row in (n_mine, n_other, n_pi_mine, n_pi_other):
+        row.status = "read"
+    await db_session.commit()
+
+    scanned = await ac.post("/api/v1/notifications/scan-due", headers=headers)
+    assert scanned.status_code == 200, scanned.text
+    body = scanned.json()["data"]
+    assert body["quotation_expiry"]["reminded"] == 0
+    assert body["quotation_expiry"]["expired"] == 0
+    assert int(body["payment_due"]) >= 1
+    assert int(body["recurring_expense"]["reminded"]) >= 1
+
+    listed2 = await ac.get("/api/v1/notifications?status=unread", headers=headers)
+    assert listed2.status_code == 200, listed2.text
+    entity_ids = {row.get("entity_id") for row in listed2.json()["data"]}
+    assert inv_mine.id in entity_ids
+    assert inv_other.id not in entity_ids
+    assert pi_other.id not in entity_ids
+    assert quote.id not in entity_ids
+    assert rec_mine.id in entity_ids
+    assert rec_other.id not in entity_ids

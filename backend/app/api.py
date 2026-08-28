@@ -15500,6 +15500,10 @@ async def notifications(
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     rows = await notifications_svc.list_notifications(
         db,
         tenant_id=claims["tenant_id"],
@@ -15508,6 +15512,8 @@ async def notifications(
         category=category,
         group=group,
         company_id=claims.get("company_id"),
+        managed_store_ids=managed,
+        managed_warehouse_ids=managed_wh,
     )
     # Array payload preserved for existing clients; history window is HISTORY_DAYS (BR-4.4).
     return env([notifications_svc.serialize_notification(n) for n in rows])
@@ -15522,6 +15528,10 @@ async def notifications_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 N1 — notifications CSV honoring status/group/category filters."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await admin_ops_export_svc.export_notifications_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -15530,6 +15540,8 @@ async def notifications_export(
         category=category,
         group=group,
         company_id=claims.get("company_id"),
+        managed_store_ids=managed,
+        managed_warehouse_ids=managed_wh,
     )
     return Response(
         content=text,
@@ -15545,8 +15557,17 @@ async def notifications_unread_count(
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     count = await notifications_svc.unread_count(
-        db, claims["tenant_id"], claims["sub"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        claims["sub"],
+        company_id=claims.get("company_id"),
+        managed_store_ids=managed,
+        managed_warehouse_ids=managed_wh,
     )
     return env({"count": count})
 
@@ -15557,12 +15578,18 @@ async def notification_read(
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     note = await notifications_svc.mark_read(
         db,
         tenant_id=claims["tenant_id"],
         notification_id=nid,
         user_id=claims["sub"],
         company_id=claims.get("company_id"),
+        managed_store_ids=managed,
+        managed_warehouse_ids=managed_wh,
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked read")
@@ -15574,12 +15601,18 @@ async def notification_unread(
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     note = await notifications_svc.mark_unread(
         db,
         tenant_id=claims["tenant_id"],
         notification_id=nid,
         user_id=claims["sub"],
         company_id=claims.get("company_id"),
+        managed_store_ids=managed,
+        managed_warehouse_ids=managed_wh,
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked unread")
@@ -15590,11 +15623,17 @@ async def notifications_read_all(
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     count = await notifications_svc.mark_all_read(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         company_id=claims.get("company_id"),
+        managed_store_ids=managed,
+        managed_warehouse_ids=managed_wh,
     )
     await db.commit()
     return env({"marked": count}, "All notifications marked read")
@@ -15645,14 +15684,29 @@ async def scan_due_notifications(
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     payment_created = await notifications_svc.scan_payment_due(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed,
+        warehouse_ids=managed_wh,
     )
+    # Quotations lack store_id — store_managers must not expire/remind company-wide.
     quote_scan = await notifications_svc.scan_quotation_expiry(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        skip=managed is not None,
     )
     recurring_scan = await notifications_svc.scan_recurring_expense_upcoming(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     await db.commit()
     total = (
