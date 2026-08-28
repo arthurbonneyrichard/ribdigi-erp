@@ -391,9 +391,9 @@ export default function Page() {
           frequency: recFrequency,
           payment_method: recPaymentMethod,
           branch_id: recBranchId.trim() || null,
-          department_id: recDepartmentId || null,
+          department_id: recDepartmentId.trim() || null,
           clear_branch: !recBranchId.trim(),
-          clear_department: !recDepartmentId,
+          clear_department: !recDepartmentId.trim(),
         }),
       });
       setMessage(
