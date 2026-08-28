@@ -8477,6 +8477,133 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
 
 
 @pytest.mark.asyncio
+async def test_store_manager_product_catalog_assignment_redacted(client, db_session):
+    """store_manager product JSON/CSV omits catalog FK + tax_rate_id; name/category string remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+    product.company_id = cid
+    product.is_active = True
+    product.category = "Widgets"
+
+    category = m.ProductCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="CAT-ASGN-RD",
+        name="Catalog Assign Category",
+        is_active=True,
+    )
+    brand = m.Brand(
+        tenant_id=tid,
+        company_id=cid,
+        code="BR-ASGN-RD",
+        name="Catalog Assign Brand",
+        is_active=True,
+    )
+    unit = m.UnitOfMeasure(
+        tenant_id=tid,
+        company_id=cid,
+        code="U-ASGN-RD",
+        name="Catalog Assign Unit",
+        conversion_factor=1,
+        is_active=True,
+    )
+    tax = m.TaxRate(
+        tenant_id=tid,
+        company_id=cid,
+        name="Catalog Assign VAT",
+        rate=12.5,
+        is_active=True,
+        is_default=False,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Catalog Assign Store",
+        code="CAT-ASGN-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add_all([category, brand, unit, tax, store])
+    await db_session.flush()
+    product.category_id = category.id
+    product.brand_id = brand.id
+    product.unit_id = unit.id
+    product.tax_rate_id = tax.id
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Catalog Assign WH",
+        code="CAT-ASGN-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh.id,
+            product_id=product.id,
+            quantity=4,
+            reserved_qty=0,
+            reorder_level=1,
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    listed = await ac.get("/api/v1/products", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == product.id)
+    assert row.get("category_id") is None
+    assert row.get("brand_id") is None
+    assert row.get("unit_id") is None
+    assert row.get("tax_rate_id") is None
+    assert row.get("category") == "Widgets"
+    assert float(row.get("selling_price") or 0) == 2.0
+
+    got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    body = got.json()["data"]
+    assert body.get("category_id") is None
+    assert body.get("brand_id") is None
+    assert body.get("unit_id") is None
+    assert body.get("tax_rate_id") is None
+    assert body.get("category") == "Widgets"
+
+    exported = await ac.get("/api/v1/products/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert product.sku in exported.text
+    assert "CAT-ASGN-RD" not in exported.text
+    assert "BR-ASGN-RD" not in exported.text
+    assert "U-ASGN-RD" not in exported.text
+
+    admin_got = await ac.get(f"/api/v1/products/{product.id}", headers=admin_headers)
+    assert admin_got.status_code == 200, admin_got.text
+    admin_body = admin_got.json()["data"]
+    assert admin_body.get("category_id") == category.id
+    assert admin_body.get("brand_id") == brand.id
+    assert admin_body.get("unit_id") == unit.id
+    assert admin_body.get("tax_rate_id") == tax.id
+
+    admin_export = await ac.get("/api/v1/products/export", headers=admin_headers)
+    assert admin_export.status_code == 200, admin_export.text
+    assert "CAT-ASGN-RD" in admin_export.text
+    assert "BR-ASGN-RD" in admin_export.text
+    assert "U-ASGN-RD" in admin_export.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_company_settings_writes_denied(client, db_session):
     """Company-level settings writes/exports + expense/credit/inventory/FX GETs denied."""
     ac, seed = client

@@ -4652,6 +4652,10 @@ async def products(
     )
     if dashboard_scope_svc.omit_product_cost_price(managed):
         payload = [dashboard_scope_svc.redact_product_cost_price(row) for row in payload]
+    if dashboard_scope_svc.omit_product_catalog_assignment(managed):
+        payload = [
+            dashboard_scope_svc.redact_product_catalog_assignment(row) for row in payload
+        ]
     if use_cache:
         await cache_svc.app_cache.set_json(
             products_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
@@ -4717,6 +4721,7 @@ async def products_export(
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
         omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed),
+        omit_catalog_codes=dashboard_scope_svc.omit_product_catalog_assignment(managed),
     )
     return Response(
         content=text,
@@ -4967,6 +4972,8 @@ async def get_product(
     row = payload[0]
     if dashboard_scope_svc.omit_product_cost_price(managed):
         row = dashboard_scope_svc.redact_product_cost_price(row)
+    if dashboard_scope_svc.omit_product_catalog_assignment(managed):
+        row = dashboard_scope_svc.redact_product_catalog_assignment(row)
     return env(row)
 
 

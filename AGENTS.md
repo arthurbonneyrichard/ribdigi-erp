@@ -123,7 +123,7 @@ store activation — never frontend-only.
    scan-due (payment/recurring) via entity store/WH joins (quotations
    omitted/skipped — no store_id), and products catalog list/get/export/
    lookup/POS search stock_qty from managed WarehouseStock (not
-   product.stock_qty; cost_price redacted on list/get/export + per-product variants), and sales quotations list/export/get/lifecycle
+   product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export), and sales quotations list/export/get/lifecycle
    via own drafts + converted in-scope order/invoice (no store_id), and
    **branches/departments create/patch/list GET/export denied for store_manager** (company-level
    org units) + **users list/get branch_id/department_id org assignment + totp_enabled MFA status + email_verified redacted** (with email/phone

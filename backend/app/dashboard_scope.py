@@ -2679,6 +2679,27 @@ def redact_product_cost_price(payload: dict) -> dict:
     return out
 
 
+def omit_product_catalog_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit product catalog FK / tax assignment fields.
+
+    Categories/brands/units list GET + tax rates list/detail already denied; product
+    master writes already denied. List/get/export must not re-dump
+    ``category_id`` / ``brand_id`` / ``unit_id`` / ``tax_rate_id`` (or CSV
+    ``category_code`` / ``brand_code`` / ``unit_code``). Name / ``category`` string /
+    selling price / WH stock / ``tax_exempt`` remain; tax apply stays server-side.
+    """
+    return managed_ids is not None
+
+
+def redact_product_catalog_assignment(payload: dict) -> dict:
+    """Null catalog meta + tax assignment FKs on a serialized product dict."""
+    out = dict(payload)
+    for key in ("category_id", "brand_id", "unit_id", "tax_rate_id"):
+        if key in out:
+            out[key] = None
+    return out
+
+
 def assert_company_level_product_variants_export_denied(
     managed_ids: list[str] | None,
     *,

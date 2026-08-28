@@ -60,6 +60,7 @@ async def export_products_csv(
     company_id: str | None = None,
     warehouse_ids: list[str] | None = None,
     omit_cost_price: bool = False,
+    omit_catalog_codes: bool = False,
 ) -> str:
     """Stage 118 E1 — export tenant products using the same columns as the import template."""
     await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
@@ -106,9 +107,15 @@ async def export_products_csv(
                 "name": p.name or "",
                 "sku": p.sku or "",
                 "barcode": p.barcode or "",
-                "category_code": cats.get(p.category_id) or "",
-                "brand_code": brands.get(p.brand_id) or "",
-                "unit_code": units.get(p.unit_id) or "",
+                "category_code": (
+                    "" if omit_catalog_codes else (cats.get(p.category_id) or "")
+                ),
+                "brand_code": (
+                    "" if omit_catalog_codes else (brands.get(p.brand_id) or "")
+                ),
+                "unit_code": (
+                    "" if omit_catalog_codes else (units.get(p.unit_id) or "")
+                ),
                 "cost_price": (
                     "" if omit_cost_price else f"{float(p.cost_price or 0):.2f}"
                 ),
@@ -119,7 +126,6 @@ async def export_products_csv(
             }
         )
     return buf.getvalue()
-
 
 def _norm_header(h: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", (h or "").strip().lower()).strip("_")
