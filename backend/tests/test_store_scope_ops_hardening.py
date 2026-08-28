@@ -12356,6 +12356,8 @@ async def test_store_manager_tenant_store_entitlement_read_denied(client, db_ses
     mgr = seed["mgr1"]
 
     # companies:read required to reach the route; SM still gets STORE_SCOPE_DENIED.
+    # Do not send X-Workspace-Kind: tenant — that fails closed as TENANT_ADMIN_REQUIRED
+    # before the route assert (company workspace still reaches companies:read).
     perms = dict(permissions_for_role("store_manager"))
     perms["companies"] = ["read"]
     mgr.permissions = perms
@@ -12371,7 +12373,6 @@ async def test_store_manager_tenant_store_entitlement_read_denied(client, db_ses
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    headers = {**headers, "X-Workspace-Kind": "tenant"}
     admin_headers = await auth_headers(
         ac,
         email="super@alpha.example.com",
