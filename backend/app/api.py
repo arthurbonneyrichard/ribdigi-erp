@@ -6940,7 +6940,7 @@ async def add_customer(
     )
     dashboard_scope_svc.assert_party_customer_group_assignment_write_denied(
         managed,
-        data,
+        payload.model_dump(exclude_unset=True),
         message="Store managers cannot assign customer groups on create.",
     )
     contacts = data.pop("contacts", None) or []
