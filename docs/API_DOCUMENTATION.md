@@ -504,7 +504,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
   "full_name": "John Doe",
   "role": "store_manager",
   "branch_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-  "department_id": "dept_001",
+  "department_id": "11111111-2222-3333-4444-555555555555",
   "record_scope": "branch",
   "phone": "+1-555-0199",
   "password": "TempPass123!"
@@ -520,6 +520,8 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 `phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`; blank/garbage could persist). Users **User phone** input (`aria-label`); create sends `null` when blank.
 
 Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Users **User branch** select (`aria-label`); Create user sends trim or `null` when blank.
+
+Optional `department_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no department; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach department lookup; existence remains tenant-scoped department lookup **404**). Users **User department** select (`aria-label`); Create user sends trim or `null` when blank.
 
 `record_scope` schema `Literal["own","department","branch","all"]` (omit = role default; blank/invalid → **422** — no silent `all` from `""`). Response wraps `{ "user": {...}, ... }`.
 

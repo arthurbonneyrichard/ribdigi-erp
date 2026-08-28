@@ -186,7 +186,7 @@ export default function Page() {
           role: form.role,
           phone: form.phone || null,
           branch_id: form.branch_id.trim() || null,
-          department_id: form.department_id || null,
+          department_id: form.department_id.trim() || null,
           record_scope: form.record_scope || null,
         }),
       });
@@ -642,6 +642,8 @@ export default function Page() {
           <select
             value={form.department_id}
             onChange={(e) => setForm({ ...form, department_id: e.target.value })}
+            aria-label="User department"
+            title="Optional department assignment (UuidIdValue)"
           >
             <option value="">Department (optional)</option>
             {activeDepartments(form.branch_id).map((d) => (
