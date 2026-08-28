@@ -1051,13 +1051,13 @@ export default function Page() {
       const r = await api('/purchasing/requests', {
         method: 'POST',
         body: JSON.stringify({
-          preferred_supplier_id: prSupplierId || null,
+          preferred_supplier_id: prSupplierId.trim() || null,
           department: prDepartment.trim() || null,
           notes: prNotes.trim() || null,
           required_date: prRequiredDate.trim() || null,
           items: [
             {
-              product_id: prProductId,
+              product_id: prProductId.trim(),
               quantity: Number(prQty) || 1,
               notes: prItemNotes.trim() || null,
             },
@@ -1464,7 +1464,11 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Create purchase request</h3>
             <div className="erp-form-grid">
-              <select value={prSupplierId} onChange={(e) => setPrSupplierId(e.target.value)}>
+              <select
+                value={prSupplierId}
+                onChange={(e) => setPrSupplierId(e.target.value)}
+                aria-label="Purchase request preferred supplier"
+              >
                 <option value="">Preferred supplier (optional)</option>
                 {suppliers
                   .filter((s) => s.status !== 'inactive')
@@ -1474,7 +1478,11 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <select value={prProductId} onChange={(e) => setPrProductId(e.target.value)}>
+              <select
+                value={prProductId}
+                onChange={(e) => setPrProductId(e.target.value)}
+                aria-label="Purchase request product"
+              >
                 <option value="">Select product</option>
                 {products
                   .filter((p) => p.is_active !== false)

@@ -2536,8 +2536,14 @@ class PurchaseRequestCreate(BaseModel):
     `http://…` → **422** (was free `str`; blank/garbage could persist on PREQ).
     """
 
-    preferred_supplier_id: str | None = None
-    warehouse_id: str | None = None
+    # Optional preferred supplier ∈ UuidIdValue; omit/`null` → no preference; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach supplier lookup).
+    # Existence / active-supplier rules remain require_active_supplier (**404**/400).
+    preferred_supplier_id: UuidIdValue | None = None
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup).
+    # Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
     required_date: IsoDateQueryValue | None = None
     # omit/`null` → no department label; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/garbage could persist on PurchaseRequest.department).
