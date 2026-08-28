@@ -17788,10 +17788,17 @@ async def audit_logs_archives_export(
 async def audit_logs_archive_cold(
     older_than_days: int | None = None,
     limit: int = 5000,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Copy aged audit rows to cold object storage; mark archived_at (never delete)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_audit_cold_archive_write_denied(
+        managed,
+        message="Store managers cannot run company-wide cold audit archive jobs.",
+    )
     tenants_svc.assert_writable(claims)
     result = await audit_svc.archive_cold_logs(
         db,

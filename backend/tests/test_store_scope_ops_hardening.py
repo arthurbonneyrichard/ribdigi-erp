@@ -4960,6 +4960,13 @@ async def test_store_manager_audit_logs_self_and_store_details_scoped(client, db
     assert denied_archives_export.status_code == 403, denied_archives_export.text
     assert denied_archives_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_archive_cold = await ac.post(
+        "/api/v1/audit-logs/archive-cold?older_than_days=30",
+        headers=headers,
+    )
+    assert denied_archive_cold.status_code == 403, denied_archive_cold.text
+    assert denied_archive_cold.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     denied_verify = await ac.get("/api/v1/audit-logs/verify", headers=headers)
     assert denied_verify.status_code == 403, denied_verify.text
     assert denied_verify.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
@@ -11866,6 +11873,34 @@ async def test_store_manager_fiscal_period_reopen_denied(client, db_session):
     ok = await ac.post("/api/v1/accounting/fiscal-period/reopen", headers=admin_headers)
     assert ok.status_code == 200, ok.text
     assert ok.json()["data"]["current_period_closed"] is False
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_cold_archive_write_denied(client, db_session):
+    """POST /audit-logs/archive-cold denied for store_manager; admin no-op remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied = await ac.post(
+        "/api/v1/audit-logs/archive-cold?older_than_days=30",
+        headers=headers,
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # No aged rows → admin still 200 with archived=0 (nothing to archive).
+    ok = await ac.post(
+        "/api/v1/audit-logs/archive-cold?older_than_days=30",
+        headers=admin_headers,
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["archived"] == 0
 
 
 @pytest.mark.asyncio

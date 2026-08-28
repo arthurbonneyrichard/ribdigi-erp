@@ -1064,7 +1064,26 @@ def assert_company_level_audit_cold_archive_read_denied(
         "use live audit-logs scoped to self and managed store/warehouse details."
     ),
 ) -> None:
-    """403 when store_manager lists/exports cold audit archive manifests (tenant-wide packs)."""
+    """403 when store_manager lists/exports cold audit archive manifests (tenant-wide packs).
+
+    Mutations use ``assert_company_level_audit_cold_archive_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_audit_cold_archive_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot run company-wide cold audit archive jobs; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager POSTs /audit-logs/archive-cold.
+
+    List/export already denied; packing aged audit rows to cold storage is company
+    compliance administration.
+    """
     assert_company_level_write_denied(managed_ids, message=message)
 
 
@@ -1079,7 +1098,7 @@ def assert_company_level_audit_chain_verify_denied(
     """403 when store_manager runs tenant-wide audit integrity verification.
 
     Live scoped ``/audit-logs`` list/export remain; full-chain verify is company
-    compliance administration (cold archive list/export already denied).
+    compliance administration (cold archive list/export/write already denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
