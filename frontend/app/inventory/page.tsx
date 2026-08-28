@@ -161,6 +161,7 @@ export default function Page() {
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editBrandId, setEditBrandId] = useState('');
   const [editUnitId, setEditUnitId] = useState('');
+  const [editTaxRateId, setEditTaxRateId] = useState('');
   const [labelCopies, setLabelCopies] = useState('1');
   const [barcodeSymbology, setBarcodeSymbology] = useState('code128');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -626,6 +627,7 @@ export default function Page() {
         setEditCategoryId(String(p.category_id || ''));
         setEditBrandId(String(p.brand_id || ''));
         setEditUnitId(String(p.unit_id || ''));
+        setEditTaxRateId(String(p.tax_rate_id || ''));
       }
     }
   }, [selectedId, products]);
@@ -649,6 +651,7 @@ export default function Page() {
           category_id: editCategoryId.trim() || null,
           brand_id: editBrandId.trim() || null,
           unit_id: editUnitId.trim() || null,
+          tax_rate_id: editTaxRateId.trim() || null,
         }),
       });
       setMessage('Product updated');
@@ -1783,7 +1786,23 @@ export default function Page() {
                 .filter((u) => u.is_active !== false)
                 .map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name || u.code}
+                    {u.code} — {u.name}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Tax rate</label>
+            <select
+              value={editTaxRateId}
+              onChange={(e) => setEditTaxRateId(e.target.value)}
+              aria-label="Edit product tax rate"
+              title="Product tax rate (optional — category/tenant default when blank)"
+            >
+              <option value="">Tax rate (optional — category/tenant default)</option>
+              {taxRates
+                .filter((r) => r.is_active !== false)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
                   </option>
                 ))}
             </select>

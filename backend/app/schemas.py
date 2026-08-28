@@ -1110,7 +1110,11 @@ class ProductUpdate(BaseModel):
     width: float | None = Field(default=None, ge=0)
     height: float | None = Field(default=None, ge=0)
     reorder_level: float | None = None
-    tax_rate_id: str | None = None
+    # Optional product tax rate FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup / FK). Existence remains tenant-scoped tax-rate lookup
+    # (**404**/integrity). Same honesty as ProductCreate.tax_rate_id.
+    tax_rate_id: UuidIdValue | None = None
     tax_exempt: bool | None = None
     # BR-12.1 — omit = no change; blank/invalid → 422 (no silent standard)
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] | None = None
