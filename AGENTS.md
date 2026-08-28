@@ -125,7 +125,10 @@ store activation — never frontend-only.
    allowed), and **customer groups create/patch/deactivate denied for
    store_manager** (company-level sales master; list/export/get reads allowed),
    and **product CSV import denied for store_manager** (company-level catalog
-   master bulk seed; template/export reads + single-SKU create/patch remain).
+   master bulk seed; template/export reads allowed), and **product catalog
+   master writes denied for store_manager** (create/patch + variants + barcode
+   assign + image writes; list/get/export/lookup/POS search reads + WH stock
+   ops remain).
    Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is

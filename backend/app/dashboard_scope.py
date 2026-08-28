@@ -547,6 +547,15 @@ def assert_company_level_product_import_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_product_master_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update company catalog products.",
+) -> None:
+    """403 when store_manager attempts product master writes (create/patch/variants/images/barcode)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 PARTY_CREDIT_MASTER_FIELDS = frozenset(
     {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
 )

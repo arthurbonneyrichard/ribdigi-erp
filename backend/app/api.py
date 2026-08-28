@@ -4494,6 +4494,13 @@ async def add_product(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot create company catalog products.",
+    )
     data = payload.model_dump()
     category_id, brand_id, unit_id, category_label = await catalog_meta_svc.resolve_product_refs(
         db,
@@ -4601,6 +4608,13 @@ async def patch_product(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot update company catalog products.",
+    )
     product = (
         await db.execute(
             select(m.Product).where(
@@ -5228,6 +5242,13 @@ async def product_image_upload(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot upload company catalog product images.",
+    )
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     stored = await storage_svc.save_upload(
@@ -5278,6 +5299,13 @@ async def product_image_delete(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot delete company catalog product images.",
+    )
     product = await product_images_svc.delete_primary_product_image(
         db,
         tenant_id=claims["tenant_id"],
@@ -5334,6 +5362,13 @@ async def product_images_upload(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot upload company catalog product images.",
+    )
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     stored = await storage_svc.save_upload(
@@ -5365,6 +5400,13 @@ async def product_images_patch(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot update company catalog product images.",
+    )
     if not payload.is_primary:
         raise HTTPException(status_code=400, detail="Only setting primary is supported")
     row = await product_images_svc.set_primary_product_image(
@@ -5385,6 +5427,13 @@ async def product_images_delete(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot delete company catalog product images.",
+    )
     await product_images_svc.delete_product_image(
         db,
         tenant_id=claims["tenant_id"],
@@ -6198,6 +6247,13 @@ async def generate_product_barcode(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot assign company catalog product barcodes.",
+    )
     product = (
         await db.execute(
             select(m.Product).where(
@@ -6344,6 +6400,13 @@ async def create_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot create company catalog product variants.",
+    )
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     data = payload.model_dump()
@@ -6371,6 +6434,13 @@ async def patch_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot update company catalog product variants.",
+    )
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     data = payload.model_dump(exclude_unset=True)
@@ -6414,6 +6484,13 @@ async def generate_variant_barcode(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot assign company catalog variant barcodes.",
+    )
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     variant = await barcode_svc.assign_variant_barcode(
@@ -6447,6 +6524,13 @@ async def delete_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_master_write_denied(
+        managed,
+        message="Store managers cannot deactivate company catalog product variants.",
+    )
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
     variant = await catalog_svc.deactivate_variant(
