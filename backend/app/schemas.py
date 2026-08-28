@@ -1187,7 +1187,10 @@ class ProductCategoryCreate(BaseModel):
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach parent
     # lookup). Existence remains tenant-scoped category lookup (**404**).
     parent_id: UuidIdValue | None = None
-    tax_rate_id: str | None = None
+    # Optional category tax rate FK ∈ UuidIdValue; omit/`null` → tenant default path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup). Existence remains tenant-scoped tax-rate lookup (**404**).
+    tax_rate_id: UuidIdValue | None = None
 
 
 class ProductCategoryUpdate(BaseModel):

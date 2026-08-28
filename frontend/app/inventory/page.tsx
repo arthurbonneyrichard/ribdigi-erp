@@ -2242,7 +2242,12 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <select value={catTaxRateId} onChange={(e) => setCatTaxRateId(e.target.value)}>
+            <select
+              value={catTaxRateId}
+              onChange={(e) => setCatTaxRateId(e.target.value)}
+              aria-label="Category tax rate"
+              title="Category tax rate (optional — tenant default when blank)"
+            >
               <option value="">Tax rate (optional — tenant default)</option>
               {taxRates
                 .filter((r) => r.is_active !== false)
@@ -2262,7 +2267,7 @@ export default function Page() {
                       code: catCode.trim(),
                       name: catName.trim(),
                       parent_id: catParentId.trim() || null,
-                      tax_rate_id: catTaxRateId || null,
+                      tax_rate_id: catTaxRateId.trim() || null,
                     }),
                   });
                   setCatCode('');
