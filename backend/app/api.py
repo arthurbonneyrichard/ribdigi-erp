@@ -5493,6 +5493,10 @@ async def product_images_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 156 G1 — per-product image metadata CSV (no binary payloads)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_images_export_denied(managed)
     text = await product_images_svc.export_product_images_csv(
         db,
         tenant_id=claims["tenant_id"],

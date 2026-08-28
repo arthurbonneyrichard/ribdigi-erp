@@ -10064,6 +10064,17 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     assert denied_gallery_delete.status_code == 403, denied_gallery_delete.text
     assert denied_gallery_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    listed_images = await ac.get(f"/api/v1/products/{product.id}/images", headers=headers)
+    assert listed_images.status_code == 200, listed_images.text
+    assert any(row["id"] == image.id for row in listed_images.json()["data"])
+
+    denied_images_export = await ac.get(
+        f"/api/v1/products/{product.id}/images/export",
+        headers=headers,
+    )
+    assert denied_images_export.status_code == 403, denied_images_export.text
+    assert denied_images_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     listed = await ac.get("/api/v1/products", headers=headers)
     assert listed.status_code == 200, listed.text
     assert any(row["sku"] == "A-1" for row in listed.json()["data"])

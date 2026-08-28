@@ -1433,6 +1433,19 @@ def assert_company_level_product_variants_export_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_product_images_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company product images CSV.",
+) -> None:
+    """403 when store_manager exports product images metadata CSV (catalog master dump).
+
+    Per-product images list/get remain; CSV dump is company-level administration
+    (image upload/patch/delete already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_stock_import_denied(
     managed_ids: list[str] | None,
     *,
