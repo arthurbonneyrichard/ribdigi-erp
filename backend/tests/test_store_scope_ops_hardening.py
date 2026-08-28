@@ -8762,6 +8762,56 @@ async def test_store_manager_expense_department_assignment_writes_denied(
 
 
 @pytest.mark.asyncio
+async def test_store_manager_expense_store_clear_writes_denied(client, db_session):
+    """Expense patch denies clear_store for store_manager; other patches remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Expense Clear Store",
+        code="EXP-CLR-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Clear store target",
+        amount=22,
+        store_id=store.id,
+        status="pending",
+        created_by=mgr.id,
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_clear = await ac.patch(
+        f"/api/v1/expenses/{expense.id}",
+        headers=headers,
+        json={"clear_store": True},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_patch = await ac.patch(
+        f"/api/v1/expenses/{expense.id}",
+        headers=headers,
+        json={"description": "Still scoped after patch"},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+    assert ok_patch.json()["data"]["store_id"] == store.id
+
+
+@pytest.mark.asyncio
 async def test_store_manager_catalog_meta_writes_denied(client, db_session):
     """Catalog category/brand/unit create/patch/deactivate denied for store_manager."""
     ac, seed = client

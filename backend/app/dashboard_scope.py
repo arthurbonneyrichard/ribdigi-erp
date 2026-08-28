@@ -674,6 +674,18 @@ def assert_expense_department_assignment_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_expense_store_clear_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    clear_store: bool,
+    message: str = "Store managers cannot clear expense store assignment.",
+) -> None:
+    """403 when store_manager clears expense.store_id (company null-store escape)."""
+    if not clear_store:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_warehouse_manager_assignment_write_denied(
     managed_ids: list[str] | None,
     *,

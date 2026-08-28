@@ -11425,6 +11425,10 @@ async def patch_expense(
         department_id=payload.department_id,
         clear_department=bool(payload.clear_department),
     )
+    dashboard_scope_svc.assert_expense_store_clear_write_denied(
+        managed,
+        clear_store=bool(payload.clear_store),
+    )
     expense = await expenses_svc.update_expense(
         db,
         tenant_id=claims["tenant_id"],
