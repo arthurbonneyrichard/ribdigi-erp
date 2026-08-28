@@ -144,11 +144,7 @@ store activation — never frontend-only.
    generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
    store-scoped ``/reports/*`` + Layer-1 AI insights remain), and **customer/supplier
    contact create/delete denied for store_manager** (company-level party contact
-<<<<<<< HEAD
    master; get/list reads remain; nested contacts on create denied), and
-=======
-   master; get/list reads remain; nested contacts on create also denied), and
->>>>>>> e0073c1025 (feat(rbac): deny party master CSV export for store_manager)
    **company membership assign/revoke denied for store_manager** (even when
    companies write is granted; list/read remain when permitted).
    and **company profile/logo branding writes denied for store_manager** (even when
