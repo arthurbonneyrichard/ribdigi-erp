@@ -72,8 +72,8 @@ export default function CompaniesPage() {
   async function load() {
     setWorkspaceContext('tenant');
     const [list, bt, dash, tenantStores] = await Promise.all([
-      api('/companies'),
-      api('/business-types'),
+      api('/companies').catch(() => ({ data: [] })),
+      api('/business-types').catch(() => ({ data: [] })),
       api('/tenant/dashboard').catch(() => ({ data: null })),
       api('/tenant/store-entitlement').catch(() => ({ data: null })),
     ]);

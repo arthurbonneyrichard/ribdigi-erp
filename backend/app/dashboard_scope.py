@@ -866,6 +866,22 @@ def assert_company_level_company_profile_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_company_list_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company profiles (branding/legal dump); "
+        "workspace switcher + managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists companies (same profile dump as detail GET).
+
+    ``GET /companies`` returned full ``serialize_company`` rows after detail GET was
+    denied. Workspace ``/workspace`` company switcher payload remains for chrome.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_document_settings_write_denied(
     managed_ids: list[str] | None,
     *,

@@ -2169,6 +2169,10 @@ async def list_companies(
     claims=Depends(require_permission("companies", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_company_list_read_denied(managed)
     user = await db.get(m.User, claims["sub"])
     rows = await companies_svc.list_companies_for_user(
         db,
