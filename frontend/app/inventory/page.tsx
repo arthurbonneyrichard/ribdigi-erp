@@ -2598,7 +2598,11 @@ export default function Page() {
               aria-label="Unit name"
               title="Unit name (1–80 chars; letters/digits required)"
             />
-            <select value={unitBaseId} onChange={(e) => setUnitBaseId(e.target.value)}>
+            <select
+              value={unitBaseId}
+              onChange={(e) => setUnitBaseId(e.target.value)}
+              aria-label="Unit base unit"
+            >
               <option value="">Base unit (root / none)</option>
               {units
                 .filter((u) => u.is_active !== false && !u.base_unit_id)
@@ -2623,8 +2627,8 @@ export default function Page() {
                     body: JSON.stringify({
                       code: unitCode.trim(),
                       name: unitName.trim(),
-                      base_unit_id: unitBaseId || null,
-                      conversion_ratio: unitBaseId ? Number(unitRatio) || 1 : 1,
+                      base_unit_id: unitBaseId.trim() || null,
+                      conversion_ratio: unitBaseId.trim() ? Number(unitRatio) || 1 : 1,
                     }),
                   });
                   setUnitCode('');

@@ -1247,7 +1247,10 @@ class UnitOfMeasureCreate(BaseModel):
     # Required UoM label ∈ UnitNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog unit create).
     name: UnitNameValue
-    base_unit_id: str | None = None
+    # Optional base UoM ∈ UuidIdValue; omit/`null` → root unit; blank/`!!!`/`http://…`/
+    # non-UUID → **422** (was free `str`; garbage could reach base lookup).
+    # Existence / root-base rules remain validate_unit_base (**404**/400).
+    base_unit_id: UuidIdValue | None = None
     conversion_ratio: float | None = 1
 
 
@@ -1259,7 +1262,10 @@ class UnitOfMeasureUpdate(BaseModel):
     # blank/garbage could persist on unit display name).
     name: UnitNameValue | None = None
     is_active: bool | None = None
-    base_unit_id: str | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach base lookup). clear_base remains explicit root clear.
+    # Existence / root-base rules remain validate_unit_base (**404**/400).
+    base_unit_id: UuidIdValue | None = None
     conversion_ratio: float | None = None
     clear_base: bool = False
 
