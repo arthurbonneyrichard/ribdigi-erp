@@ -103,7 +103,9 @@ store activation — never frontend-only.
    history (+ CSV) store+WH scoped (open quotations omit without store
    column), and per-product batches list/export WH scoped (null-WH
    fail-closed), and cheques list/get/export/lifecycle via payment
-   invoice store / WH scope (null/unallocated fail-closed). Not
+   invoice store / WH scope (null/unallocated fail-closed), and POS
+   holds list/create/resume/discard via `PosSession.store_id` (null
+   session fail-closed) + drawer-settings CSV export store scoped. Not
    store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
