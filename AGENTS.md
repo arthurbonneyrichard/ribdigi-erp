@@ -149,8 +149,10 @@ store activation — never frontend-only.
    and **purchasing PR approval settings PATCH denied for store_manager**
    (company-level approval matrix; GET/export remain; admin allowlist retained),
    and **legacy POST /sales and /purchases denied for store_manager** (unscoped
-   Transaction writes; use store-scoped invoices / purchasing pipeline).
-   Not store-scoped RBAC Complete,
+   Transaction writes; use store-scoped invoices / purchasing pipeline), and
+   **store manager_id assign/clear denied for store_manager** (company-level
+   manager assignment; other managed-store patches remain).
+   Not store-scoped RBAC Complete.
    and **company store-limit allocation denied for store_manager**
    (tenant entitlement allocation; even when companies write granted; tenant-admin path retained).
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
