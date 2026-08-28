@@ -595,6 +595,22 @@ def assert_warehouse_manager_assignment_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_warehouse_store_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_store: bool,
+    message: str = "Store managers cannot assign or clear warehouse store links.",
+) -> None:
+    """403 when store_manager attempts company-level warehouse↔store org assignment.
+
+    Warehouse create is already denied; ``store_id`` / ``clear_store`` re-homes
+    inventory scope across the company org graph and stays admin-only.
+    """
+    if not changing_store:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_unit_write_denied(
     managed_ids: list[str] | None,
     *,

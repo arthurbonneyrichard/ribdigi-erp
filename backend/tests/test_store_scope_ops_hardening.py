@@ -9359,3 +9359,71 @@ async def test_store_manager_warehouse_manager_assignment_denied(client, db_sess
     await db_session.refresh(wh)
     assert wh.manager_id == admin.id
     assert wh.name == "WH Manager Assign Deny Updated"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_warehouse_store_assignment_denied(client, db_session):
+    """store_manager cannot assign/clear warehouse store_id; other managed WH patches remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store_a = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="WH Store Link A",
+        code="WH-STORE-LINK-A",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    store_b = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="WH Store Link B",
+        code="WH-STORE-LINK-B",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add_all([store_a, store_b])
+    await db_session.flush()
+
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store_a.id,
+        code="WH-STORE-LINK",
+        name="WH Store Assign Deny",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+
+    denied_rehome = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"store_id": store_b.id},
+    )
+    assert denied_rehome.status_code == 403, denied_rehome.text
+    assert denied_rehome.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_clear = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"clear_store": True},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"name": "WH Store Assign Deny Updated"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+    await db_session.refresh(wh)
+    assert wh.store_id == store_a.id
+    assert wh.name == "WH Store Assign Deny Updated"

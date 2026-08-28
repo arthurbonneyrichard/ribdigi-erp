@@ -16161,6 +16161,14 @@ async def update_warehouse(
         changing_manager=changing_wh_manager,
         message="Store managers cannot assign or clear warehouse managers.",
     )
+    changing_wh_store = payload.store_id is not None or bool(
+        getattr(payload, "clear_store", False)
+    )
+    dashboard_scope_svc.assert_warehouse_store_assignment_write_denied(
+        managed_stores,
+        changing_store=changing_wh_store,
+        message="Store managers cannot assign or clear warehouse store links.",
+    )
     if payload.clear_store:
         dashboard_scope_svc.assert_store_in_manager_scope(
             managed_stores, None, allow_unset=False
