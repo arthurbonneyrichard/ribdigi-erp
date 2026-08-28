@@ -872,7 +872,10 @@ class BranchCreate(BaseModel):
     # blank/garbage could persist on create).
     phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    manager_id: str | None = None
+    # Optional manager user FK ∈ UuidIdValue; omit/`null` → no manager; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**).
+    manager_id: UuidIdValue | None = None
 
 
 class BranchUpdate(BaseModel):

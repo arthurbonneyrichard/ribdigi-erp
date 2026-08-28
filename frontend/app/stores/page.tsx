@@ -508,7 +508,7 @@ export default function Page() {
           ...(brAddress.trim() ? { address: brAddress.trim() } : {}),
           phone: brPhone.trim() || null,
           email: brEmail.trim() || null,
-          manager_id: brManagerId || null,
+          manager_id: brManagerId.trim() || null,
         }),
       });
       resetBranchForm();
@@ -849,7 +849,12 @@ export default function Page() {
               aria-label="Branch phone"
             />
             <input value={brEmail} onChange={(e) => setBrEmail(e.target.value)} placeholder="Email" />
-            <select value={brManagerId} onChange={(e) => setBrManagerId(e.target.value)}>
+            <select
+              value={brManagerId}
+              onChange={(e) => setBrManagerId(e.target.value)}
+              aria-label={editBrId ? 'Edit branch manager' : 'Branch manager'}
+              title="Branch manager (optional tenant user)"
+            >
               <option value="">Manager (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
