@@ -1233,6 +1233,19 @@ def assert_company_level_ai_report_generate_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_report_schedule_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot manage company report schedules.",
+) -> None:
+    """403 when store_manager attempts company-level report schedule CRUD/run.
+
+    Store-scoped ``/reports/*`` reads remain available; schedule list/export stay
+    admin-only via role allowlist.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_bi_settings_write_denied(
     managed_ids: list[str] | None,
     *,

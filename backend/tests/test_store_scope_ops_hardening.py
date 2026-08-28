@@ -9722,6 +9722,50 @@ async def test_store_manager_document_settings_writes_denied(client, db_session)
 
 
 @pytest.mark.asyncio
+async def test_store_manager_report_schedule_writes_denied(client, db_session):
+    """Report schedule CRUD/run denied for store_manager even when reports write granted."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["reports"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/reports/schedules",
+        headers=headers,
+        json={
+            "name": "Mgr schedule",
+            "report_type": "inventory_low_stock",
+            "format": "pdf",
+            "frequency": "daily",
+            "hour_utc": 7,
+            "recipients": ["mgr@alpha.example.com"],
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_daily = await ac.get("/api/v1/reports/sales/daily", headers=headers)
+    assert ok_daily.status_code == 200, ok_daily.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_session):
     """Legacy POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""
     ac, seed = client
