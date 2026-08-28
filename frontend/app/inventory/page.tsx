@@ -160,6 +160,7 @@ export default function Page() {
   const [editSupplyClass, setEditSupplyClass] = useState('standard');
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editBrandId, setEditBrandId] = useState('');
+  const [editUnitId, setEditUnitId] = useState('');
   const [labelCopies, setLabelCopies] = useState('1');
   const [barcodeSymbology, setBarcodeSymbology] = useState('code128');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -624,6 +625,7 @@ export default function Page() {
         setEditSupplyClass(String(p.tax_supply_class || (p.tax_exempt ? 'exempt' : 'standard')));
         setEditCategoryId(String(p.category_id || ''));
         setEditBrandId(String(p.brand_id || ''));
+        setEditUnitId(String(p.unit_id || ''));
       }
     }
   }, [selectedId, products]);
@@ -646,6 +648,7 @@ export default function Page() {
           tax_supply_class: editSupplyClass,
           category_id: editCategoryId.trim() || null,
           brand_id: editBrandId.trim() || null,
+          unit_id: editUnitId.trim() || null,
         }),
       });
       setMessage('Product updated');
@@ -1765,6 +1768,22 @@ export default function Page() {
                 .map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Unit</label>
+            <select
+              value={editUnitId}
+              onChange={(e) => setEditUnitId(e.target.value)}
+              aria-label="Edit product unit"
+              title="Product unit (optional catalog picker; API unit_id UUID)"
+            >
+              <option value="">Unit</option>
+              {units
+                .filter((u) => u.is_active !== false)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name || u.code}
                   </option>
                 ))}
             </select>

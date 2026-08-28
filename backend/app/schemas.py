@@ -1098,7 +1098,11 @@ class ProductUpdate(BaseModel):
     # brand lookup / FK). Existence remains tenant-scoped brand lookup (**404**/integrity).
     # Same honesty as ProductCreate.brand_id.
     brand_id: UuidIdValue | None = None
-    unit_id: str | None = None
+    # Optional catalog unit FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # unit lookup / FK). Existence remains tenant-scoped unit lookup (**404**/integrity).
+    # Same honesty as ProductCreate.unit_id.
+    unit_id: UuidIdValue | None = None
     cost_price: float | None = None
     selling_price: float | None = None
     weight: float | None = Field(default=None, ge=0)
