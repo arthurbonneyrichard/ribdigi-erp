@@ -144,7 +144,7 @@ store activation — never frontend-only.
    generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
    store-scoped ``/reports/*`` + Layer-1 AI insights remain), and **customer/supplier
    contact create/delete denied for store_manager** (company-level party contact
-   master; get/list reads remain; nested contacts on create remain allowed), and
+   master; get/list reads remain; nested contacts on create denied), and
    **company membership assign/revoke denied for store_manager** (even when
    companies write is granted; list/read remain when permitted).
    and **company profile/logo branding writes denied for store_manager** (even when
