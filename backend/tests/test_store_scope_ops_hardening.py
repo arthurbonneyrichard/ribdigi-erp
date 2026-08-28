@@ -8513,7 +8513,7 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_user_admin_writes_denied(client, db_session):
-    """User/role admin writes + CSV/KPI exports denied; users list/get remain without permission maps."""
+    """User/role admin writes + CSV/KPI exports denied; users list/get remain without permission maps or contact PII."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -8655,20 +8655,24 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert "user_stats" not in dash_data
     assert "users" not in (dash_data.get("sections") or [])
 
-    # Users list/get remain for staff lookup; permission matrices redacted
-    # (roles catalog/detail already denied).
+    # Users list/get remain for staff lookup; permission matrices + contact PII
+    # (email/phone) redacted (roles catalog/detail + users CSV already denied).
     listed = await ac.get("/api/v1/users", headers=headers)
     assert listed.status_code == 200, listed.text
     listed_rows = listed.json()["data"]
     assert listed_rows
     assert all("permissions" not in row for row in listed_rows)
     assert all("record_scope" not in row for row in listed_rows)
-    assert any(row.get("email") == target.email for row in listed_rows)
+    assert any(row.get("id") == target.id for row in listed_rows)
+    assert all(row.get("email") is None for row in listed_rows)
+    assert all(row.get("phone") is None for row in listed_rows)
 
     got = await ac.get(f"/api/v1/users/{target.id}", headers=headers)
     assert got.status_code == 200, got.text
     got_body = got.json()["data"]
-    assert got_body.get("email") == target.email
+    assert got_body.get("id") == target.id
+    assert got_body.get("email") is None
+    assert got_body.get("phone") is None
     assert "permissions" not in got_body
     assert "record_scope" not in got_body
 
@@ -8680,6 +8684,7 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     )
     admin_got = await ac.get(f"/api/v1/users/{target.id}", headers=admin_headers)
     assert admin_got.status_code == 200, admin_got.text
+    assert admin_got.json()["data"].get("email") == target.email
     assert isinstance(admin_got.json()["data"].get("permissions"), dict)
 
     denied_roles_list = await ac.get("/api/v1/roles", headers=headers)

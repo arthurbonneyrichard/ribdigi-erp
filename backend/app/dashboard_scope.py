@@ -2387,9 +2387,27 @@ def omit_user_permission_matrix(managed_ids: list[str] | None) -> bool:
 
     Roles catalog/detail already denied; returning full ``permissions`` on
     ``GET /users`` would re-expose the same company permission matrix. Staff
-    identity fields (email/name/role/active) remain for operational lookup.
+    name/role/active remain for operational lookup; contact PII is redacted via
+    ``redact_user_contact_pii``.
     """
     return managed_ids is not None
+
+
+def omit_user_contact_pii(managed_ids: list[str] | None) -> bool:
+    """True when store_manager users list/get must redact email/phone.
+
+    Users CSV export already denied; permission matrices already omitted. Contact
+    fields on list/get were a leftover staff PII dump. Name/role/active remain.
+    """
+    return managed_ids is not None
+
+
+def redact_user_contact_pii(payload: dict) -> dict:
+    """Null email/phone on a serialized user dict for store_manager responses."""
+    out = dict(payload)
+    out["email"] = None
+    out["phone"] = None
+    return out
 
 
 def assert_company_level_roles_catalog_read_denied(
@@ -2402,8 +2420,9 @@ def assert_company_level_roles_catalog_read_denied(
 ) -> None:
     """403 when store_manager reads roles catalog or role detail (permission matrix dump).
 
-    ``GET /users`` list/get remain with permission matrices redacted; roles CSV /
-    permissions-matrix CSV already denied; role create/patch/delete already denied.
+    ``GET /users`` list/get remain with permission matrices redacted and contact
+    PII (email/phone) redacted; roles CSV / permissions-matrix CSV already denied;
+    role create/patch/delete already denied.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

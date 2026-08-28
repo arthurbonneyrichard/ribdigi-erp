@@ -3416,6 +3416,7 @@ async def users(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     include_permissions = not dashboard_scope_svc.omit_user_permission_matrix(managed)
+    redact_contact = dashboard_scope_svc.omit_user_contact_pii(managed)
 
     filters = [m.User.tenant_id == claims["tenant_id"]]
     q_filter = (q or "").strip() or None
@@ -3430,9 +3431,10 @@ async def users(
     rows = (
         await db.execute(select(m.User).where(*filters).order_by(m.User.full_name.asc()))
     ).scalars().all()
-    return env(
-        [serialize_user(u, include_permissions=include_permissions) for u in rows]
-    )
+    out = [serialize_user(u, include_permissions=include_permissions) for u in rows]
+    if redact_contact:
+        out = [dashboard_scope_svc.redact_user_contact_pii(row) for row in out]
+    return env(out)
 
 
 @api.get("/users/export")
@@ -3467,7 +3469,10 @@ async def get_user(
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     include_permissions = not dashboard_scope_svc.omit_user_permission_matrix(managed)
     user = await _get_tenant_user(db, claims["tenant_id"], user_id)
-    return env(serialize_user(user, include_permissions=include_permissions))
+    payload = serialize_user(user, include_permissions=include_permissions)
+    if dashboard_scope_svc.omit_user_contact_pii(managed):
+        payload = dashboard_scope_svc.redact_user_contact_pii(payload)
+    return env(payload)
 
 
 @api.post("/users")
