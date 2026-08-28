@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -16,8 +17,11 @@ PROMPT_Q2 = "Show me monthly sales for Q2 2026"
 
 
 async def _admin(ac, seed):
-    """Company admin — NL generate/template writes denied only for store_manager."""
-    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    """Super admin with TOTP — store_manager is denied company-level NL generate."""
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _seed_q2_sale(db_session, seed):

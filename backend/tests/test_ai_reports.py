@@ -14,7 +14,7 @@ from tests.conftest import auth_headers
 
 
 async def _admin(ac, seed):
-    """Super admin — company-level NL generate/template writes require non–store_manager."""
+    """Super admin with TOTP — store_manager is denied company-level NL generate."""
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -52,6 +52,7 @@ async def test_generate_and_save_template(client, db_session):
     # Seed a posted sale so product sales preview is non-empty-capable
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-AI-RPT-1",
         customer_id=seed["party1"].id,
         status="posted",
@@ -65,6 +66,7 @@ async def test_generate_and_save_template(client, db_session):
     db_session.add(
         m.SalesInvoiceItem(
             tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
             sales_invoice_id=inv.id,
             product_id=seed["p1"].id,
             quantity=4,
@@ -111,7 +113,8 @@ async def test_generate_and_save_template(client, db_session):
     )
     assert exported.status_code == 200, exported.text
     assert "text/csv" in exported.headers.get("content-type", "")
-    assert b"sku" in exported.content.lower() or b"Alpha" in exported.content or len(exported.content) > 0
+    assert b"no rows" not in exported.content.lower()
+    assert b"sku" in exported.content.lower() or b"Alpha" in exported.content
 
     deleted = await ac.delete(f"/api/v1/ai/reports/templates/{tmpl_id}", headers=headers)
     assert deleted.status_code == 200
