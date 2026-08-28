@@ -705,8 +705,14 @@ class UserUpdate(BaseModel):
     password: UserPasswordValue | None = None
     # Record visibility: own | department | branch | all (omit = no change; blank → 422)
     record_scope: RecordScopeValue | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach branch lookup). clear_branch remains explicit clear.
+    # Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach department lookup). clear_department remains explicit clear.
+    # Existence remains tenant-scoped department lookup (**404**).
+    department_id: UuidIdValue | None = None
     clear_branch: bool = False
     clear_department: bool = False
 

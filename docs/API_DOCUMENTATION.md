@@ -534,7 +534,7 @@ Optional `department_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null
 ### 4.4 Update User
 **Endpoint:** `PATCH /users/{user_id}`
 
-Supports `full_name` ∈ `UserFullNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; empty/whitespace/`!!!`/URL could persist), `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank silently cleared; garbage could persist), `role` (same `RoleKeyValue`; omit = no change; blank/malformed → **422**), `password`, `is_active`, `branch_id`, `clear_branch`, `department_id`, `clear_department`, `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**). Users row **Change role** select (`aria-label`).
+Supports `full_name` ∈ `UserFullNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; empty/whitespace/`!!!`/URL could persist), `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank silently cleared; garbage could persist), `role` (same `RoleKeyValue`; omit = no change; blank/malformed → **422**), `password`, `is_active`, `branch_id` ∈ `UuidIdValue` (omit → no change; blank/`!!!`/`http://…`/non-UUID → **422**; `clear_branch` for explicit clear), `department_id` ∈ `UuidIdValue` (omit → no change; blank/`!!!`/`http://…`/non-UUID → **422**; `clear_department` for explicit clear), `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**). Users row **Change role** / **Edit user branch** / **Edit user department** selects (`aria-label`s).
 
 ### 4.5 Delete / Deactivate User
 **Endpoint:** `DELETE /users/{user_id}` (soft deactivate)

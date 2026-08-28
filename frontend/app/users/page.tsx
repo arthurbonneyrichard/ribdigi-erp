@@ -277,19 +277,21 @@ export default function Page() {
   }
 
   async function setBranch(userId: string, branchId: string) {
+    const trimmed = branchId.trim();
     await patchUser(
       userId,
-      branchId
-        ? { branch_id: branchId }
+      trimmed
+        ? { branch_id: trimmed }
         : { clear_branch: true, clear_department: true },
       'Branch assignment updated',
     );
   }
 
   async function setDepartment(userId: string, departmentId: string) {
+    const trimmed = departmentId.trim();
     await patchUser(
       userId,
-      departmentId ? { department_id: departmentId } : { clear_department: true },
+      trimmed ? { department_id: trimmed } : { clear_department: true },
       'Department assignment updated',
     );
   }
@@ -740,6 +742,7 @@ export default function Page() {
                   <select
                     value={r.branch_id || ''}
                     onChange={(e) => setBranch(r.id, e.target.value)}
+                    aria-label={`Edit user branch for ${r.email}`}
                   >
                     <option value="">None</option>
                     {activeBranches.map((b) => (
@@ -757,6 +760,7 @@ export default function Page() {
                   <select
                     value={r.department_id || ''}
                     onChange={(e) => setDepartment(r.id, e.target.value)}
+                    aria-label={`Edit user department for ${r.email}`}
                   >
                     <option value="">None</option>
                     {activeDepartments(r.branch_id || undefined).map((d) => (
