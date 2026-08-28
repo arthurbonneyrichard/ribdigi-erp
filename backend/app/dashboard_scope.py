@@ -736,7 +736,6 @@ def assert_company_level_bank_connection_write_denied(
     List/export/patch/sync on managed liquid-account connections remain scoped.
     Credential field patches use ``assert_bank_connection_credentials_write_denied``.
     Soft ``is_active`` uses ``assert_bank_connection_lifecycle_write_denied``.
-    Feed automation / lookback use ``assert_bank_connection_feed_policy_write_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -760,15 +759,9 @@ def assert_bank_connection_credentials_write_denied(
 ) -> None:
     """403 when store_manager patches bank-feed credential / identity fields.
 
-<<<<<<< HEAD
-    ``display_name`` on managed connections remains. Auto-sync / lookback use
-    ``assert_bank_connection_feed_policy_write_denied``. ``is_active`` uses
-    ``assert_bank_connection_lifecycle_write_denied``.
-=======
     ``display_name`` on managed connections remains. Sync policy fields use
     ``assert_bank_connection_sync_policy_write_denied``. ``is_active`` is gated
     by ``assert_bank_connection_lifecycle_write_denied``.
->>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     """
     if managed_ids is None:
         return
@@ -785,11 +778,7 @@ def assert_bank_connection_credentials_write_denied(
     )
 
 
-<<<<<<< HEAD
-BANK_CONNECTION_FEED_POLICY_FIELDS = frozenset(
-=======
 BANK_CONNECTION_SYNC_POLICY_FIELDS = frozenset(
->>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     {
         "auto_sync",
         "auto_match_after_sync",
@@ -798,25 +787,12 @@ BANK_CONNECTION_SYNC_POLICY_FIELDS = frozenset(
 )
 
 
-<<<<<<< HEAD
-def assert_bank_connection_feed_policy_write_denied(
-=======
 def assert_bank_connection_sync_policy_write_denied(
->>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     managed_ids: list[str] | None,
     payload: dict,
     *,
     message: str = "Store managers cannot update bank feed sync policy.",
 ) -> None:
-<<<<<<< HEAD
-    """403 when store_manager patches bank-feed automation / lookback policy.
-
-    Manual sync on managed connections and ``display_name`` patches remain.
-    """
-    if managed_ids is None:
-        return
-    fields = sorted(k for k in BANK_CONNECTION_FEED_POLICY_FIELDS if k in payload)
-=======
     """403 when store_manager patches bank-feed auto-sync / lookback policy.
 
     ``display_name`` and manual ``/sync`` on managed connections remain;
@@ -825,7 +801,6 @@ def assert_bank_connection_sync_policy_write_denied(
     if managed_ids is None:
         return
     fields = sorted(k for k in BANK_CONNECTION_SYNC_POLICY_FIELDS if k in payload)
->>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     if not fields:
         return
     raise HTTPException(
@@ -847,12 +822,8 @@ def assert_bank_connection_lifecycle_write_denied(
     """403 when store_manager attempts company-level bank connection is_active lifecycle.
 
     Connection create/delete already denied; soft activate/deactivate stays
-<<<<<<< HEAD
-    admin-only. Display name patches on managed connections remain.
-=======
     admin-only. Display name patches on managed connections remain; sync policy
     uses ``assert_bank_connection_sync_policy_write_denied``.
->>>>>>> origin/cursor/transfer-genemonyuglaze-gate-427f
     """
     if not changing_active:
         return
@@ -1016,6 +987,32 @@ def assert_party_code_write_denied(
     else:
         code = payload.get("code")
         changing = code is not None and str(code).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_email_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master emails.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``email`` (company contact master).
+
+    Nested contact create/delete is already denied; primary party email is the
+    same company CRM identity surface. Name/phone/address/notes remain.
+    Create without email still allowed (``clear_counts=False``). PATCH present
+    ``email`` denies including clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "email" in payload
+    else:
+        email = payload.get("email")
+        changing = email is not None and str(email).strip() != ""
     if not changing:
         return
     assert_company_level_write_denied(managed_ids, message=message)
