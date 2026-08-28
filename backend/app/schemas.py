@@ -1697,7 +1697,11 @@ class AiDocumentExpenseCreate(BaseModel):
     category: ExpenseCategoryLabelValue | None = None
     payment_method: ExpensePaymentMethod = "cash"
     expense_date: IsoDateQueryValue | None = None
-    store_id: str | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Same honesty
+    # as ExpenseCreate.store_id.
+    store_id: UuidIdValue | None = None
     branch_id: str | None = None
     department_id: str | None = None
 

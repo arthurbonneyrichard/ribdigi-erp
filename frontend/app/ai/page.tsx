@@ -29,12 +29,17 @@ export default function Page() {
   const [draftDocDate, setDraftDocDate] = useState('');
   const [draftDocDescription, setDraftDocDescription] = useState('');
   const [draftDocCategoryId, setDraftDocCategoryId] = useState('');
+  const [draftDocStoreId, setDraftDocStoreId] = useState('');
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
 
   useEffect(() => {
     api('/expenses/categories')
       .then((r) => setExpenseCategories(r.data || []))
       .catch(() => setExpenseCategories([]));
+    api('/stores')
+      .then((r) => setStores(r.data || []))
+      .catch(() => setStores([]));
   }, []);
 
   async function go() {
@@ -459,6 +464,7 @@ export default function Page() {
           category_id: draftDocCategoryId.trim() || null,
           category: ex.category || lastDocExtract.category_suggestion?.category || null,
           payment_method: 'cash',
+          store_id: draftDocStoreId.trim() || null,
         }),
       });
       const exp = r.data?.expense || r.data;
@@ -612,6 +618,21 @@ export default function Page() {
               .map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.code} — {c.name}
+                </option>
+              ))}
+          </select>
+          <select
+            value={draftDocStoreId}
+            onChange={(e) => setDraftDocStoreId(e.target.value)}
+            aria-label="AI document expense store"
+            title="Optional store (UuidIdValue); blank → no store"
+          >
+            <option value="">No store</option>
+            {stores
+              .filter((s) => s.is_active !== false)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
                 </option>
               ))}
           </select>
