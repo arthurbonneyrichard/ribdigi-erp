@@ -18346,10 +18346,17 @@ async def webhooks_export(
 async def webhooks_deliveries_list(
     webhook_id: str | None = None,
     status: str | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 144 W1 — webhook delivery attempt list (payload excluded)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhook_deliveries_read_denied(
+        managed,
+        message="Store managers cannot list company webhook deliveries.",
+    )
     rows = await webhooks_svc.list_deliveries(
         db,
         claims["tenant_id"],
@@ -18363,10 +18370,17 @@ async def webhooks_deliveries_list(
 async def webhooks_deliveries_export(
     webhook_id: str | None = None,
     status: str | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 144 W1 — webhook deliveries CSV (payload / secrets never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_webhook_deliveries_read_denied(
+        managed,
+        message="Store managers cannot export company webhook deliveries CSV.",
+    )
     text = await bank_webhook_export_svc.export_webhook_deliveries_csv(
         db,
         tenant_id=claims["tenant_id"],

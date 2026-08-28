@@ -663,8 +663,25 @@ def assert_company_level_webhooks_read_denied(
 ) -> None:
     """403 when store_manager reads GET /webhooks or /export.
 
-    Endpoint URL/event subscription dump is company security admin. Deliveries,
-    create/patch/delete/test remain admin-role gated for a later slice.
+    Endpoint URL/event subscription dump is company security admin.
+    Deliveries use ``assert_company_level_webhook_deliveries_read_denied``.
+    Create/patch/delete/test remain admin-role gated for a later slice.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_webhook_deliveries_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export company webhook deliveries; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /webhooks/deliveries or /export.
+
+    Delivery attempt history dump is company security admin. Endpoint
+    list/export already denied; mutations remain admin-role gated.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

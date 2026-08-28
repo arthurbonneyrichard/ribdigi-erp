@@ -11307,7 +11307,7 @@ async def test_store_manager_api_keys_read_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_webhooks_read_denied(client, db_session):
-    """GET /webhooks + CSV export denied for store_manager; admin remains."""
+    """GET /webhooks + deliveries list/export denied for store_manager; admin remains."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
@@ -11325,10 +11325,26 @@ async def test_store_manager_webhooks_read_denied(client, db_session):
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_deliveries = await ac.get("/api/v1/webhooks/deliveries", headers=headers)
+    assert denied_deliveries.status_code == 403, denied_deliveries.text
+    assert denied_deliveries.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_deliveries_export = await ac.get(
+        "/api/v1/webhooks/deliveries/export", headers=headers
+    )
+    assert denied_deliveries_export.status_code == 403, denied_deliveries_export.text
+    assert denied_deliveries_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok = await ac.get("/api/v1/webhooks", headers=admin_headers)
     assert ok.status_code == 200, ok.text
     ok_export = await ac.get("/api/v1/webhooks/export", headers=admin_headers)
     assert ok_export.status_code == 200, ok_export.text
+    ok_deliveries = await ac.get("/api/v1/webhooks/deliveries", headers=admin_headers)
+    assert ok_deliveries.status_code == 200, ok_deliveries.text
+    ok_deliveries_export = await ac.get(
+        "/api/v1/webhooks/deliveries/export", headers=admin_headers
+    )
+    assert ok_deliveries_export.status_code == 200, ok_deliveries_export.text
 
 
 @pytest.mark.asyncio
