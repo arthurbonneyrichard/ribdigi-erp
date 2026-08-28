@@ -11987,6 +11987,12 @@ async def update_liquid_account(
         changing_active=changing_liquid_active,
         message="Store managers cannot activate or deactivate liquid accounts.",
     )
+    patch_data = payload.model_dump(exclude_unset=True)
+    dashboard_scope_svc.assert_liquid_account_bank_details_write_denied(
+        managed,
+        patch_data,
+        message="Store managers cannot update liquid account bank details.",
+    )
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
         db,
@@ -17318,10 +17324,17 @@ async def offline_devices_bind(
     db: AsyncSession = Depends(get_db),
 ):
     """§13–14 — online bind/refresh: issue 7-day offline authorization envelope."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app.offline_auth_envelope import issue_envelope
 
     tenants_svc.assert_writable(claims)
     body = payload or {}
+    store_id = str(body.get("store_id") or "").strip() or None
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    # store_manager: require a managed store_id (no company-wide / foreign bind).
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, store_id, allow_unset=False
+    )
     row = await offline_devices_svc.get_device(db, claims["tenant_id"], device_id)
     if row.revoked_at is not None:
         raise HTTPException(
@@ -17336,7 +17349,7 @@ async def offline_devices_bind(
         db,
         row,
         claims=claims,
-        store_id=str(body.get("store_id") or "").strip() or None,
+        store_id=store_id,
         catalog_version=str(body.get("catalog_version") or "").strip() or None,
         app_version=str(body.get("app_version") or "").strip() or None,
     )
