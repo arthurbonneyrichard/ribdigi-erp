@@ -682,11 +682,48 @@ def assert_liquid_account_lifecycle_write_denied(
     """403 when store_manager attempts company-level liquid account is_active lifecycle.
 
     Liquid account create is already denied; soft activate/deactivate stays
-    admin-only. Name/bank detail patches on managed liquid accounts remain.
+    admin-only. Name patches on managed liquid accounts remain; bank identity
+    fields use ``assert_liquid_account_bank_details_write_denied``.
     """
     if not changing_active:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+LIQUID_ACCOUNT_BANK_DETAIL_FIELDS = frozenset(
+    {
+        "bank_name",
+        "account_number",
+        "bank_branch",
+        "clear_bank_details",
+    }
+)
+
+
+def assert_liquid_account_bank_details_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot update liquid account bank details.",
+) -> None:
+    """403 when store_manager patches bank identity fields on liquid accounts.
+
+    ``name`` on managed liquid accounts remains allowed; create / ``is_active``
+    lifecycle stay company-level denied separately.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in LIQUID_ACCOUNT_BANK_DETAIL_FIELDS if k in payload)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": fields,
+        },
+    )
 
 
 def assert_company_level_bank_connection_write_denied(

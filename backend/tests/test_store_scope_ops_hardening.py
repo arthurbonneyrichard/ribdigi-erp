@@ -10151,6 +10151,32 @@ async def test_store_manager_liquid_account_lifecycle_writes_denied(client, db_s
     assert ok_name.status_code == 200, ok_name.text
     assert ok_name.json()["data"]["name"] == "Managed Cash Renamed"
 
+    denied_bank = await ac.patch(
+        f"/api/v1/accounting/liquid-accounts/{cash.id}",
+        headers=headers,
+        json={
+            "bank_name": "Stolen Bank",
+            "account_number": "999999",
+            "bank_branch": "Hack Branch",
+        },
+    )
+    assert denied_bank.status_code == 403, denied_bank.text
+    assert denied_bank.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert set(denied_bank.json()["detail"].get("fields") or []) >= {
+        "bank_name",
+        "account_number",
+        "bank_branch",
+    }
+
+    denied_clear = await ac.patch(
+        f"/api/v1/accounting/liquid-accounts/{cash.id}",
+        headers=headers,
+        json={"clear_bank_details": True},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert "clear_bank_details" in (denied_clear.json()["detail"].get("fields") or [])
+
     await db_session.refresh(cash)
     assert cash.is_active is False
     assert cash.name == "Managed Cash Renamed"
@@ -10171,3 +10197,72 @@ async def test_store_manager_pos_hold_expire_stale_denied(client, db_session):
     # Holds list remains readable (auto-expire of own holds happens server-side).
     listed = await ac.get("/api/v1/pos/holds", headers=headers)
     assert listed.status_code == 200, listed.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_offline_device_bind_store_scoped(client, db_session):
+    """store_manager offline bind requires managed store_id; foreign/unset denied."""
+    from app import offline_devices as offline_devices_svc
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Offline Bind Mine",
+        code="OB-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Offline Bind Other",
+        code="OB-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    device_row = await offline_devices_svc.create_device(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        name="Mgr Scope POS",
+        platform="web",
+    )
+    await db_session.commit()
+    device_id = device_row.id
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_unset = await ac.post(
+        f"/api/v1/offline/devices/{device_id}/bind",
+        headers=headers,
+        json={"app_version": "test-mvp"},
+    )
+    assert denied_unset.status_code == 403, denied_unset.text
+    assert denied_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_foreign = await ac.post(
+        f"/api/v1/offline/devices/{device_id}/bind",
+        headers=headers,
+        json={"store_id": other.id, "app_version": "test-mvp"},
+    )
+    assert denied_foreign.status_code == 403, denied_foreign.text
+    assert denied_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert denied_foreign.json()["detail"].get("store_id") == other.id
+
+    ok_bind = await ac.post(
+        f"/api/v1/offline/devices/{device_id}/bind",
+        headers=headers,
+        json={"store_id": mine.id, "app_version": "test-mvp"},
+    )
+    assert ok_bind.status_code == 200, ok_bind.text
+    envelope = ok_bind.json()["data"]["auth_envelope"]
+    assert envelope["store_id"] == mine.id
+    assert envelope.get("offline_valid_until")

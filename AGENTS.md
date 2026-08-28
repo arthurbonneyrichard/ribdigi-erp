@@ -173,8 +173,8 @@ store activation — never frontend-only.
    print remains), and **POS hold expire-stale denied for store_manager**
    (company maintenance; list/create/resume auto-expire own holds remain), and
    **liquid account is_active lifecycle writes denied for store_manager**
-   (activate/deactivate admin-only; name/bank details on managed liquid
-   accounts remain), and **bank connection is_active lifecycle writes denied
+   (activate/deactivate admin-only; name on managed liquid accounts remain), and
+   **bank connection is_active lifecycle writes denied
    for store_manager** (activate/deactivate admin-only; display name / auto-sync
    patches on managed connections remain), and **party customer_group assignment
    denied for store_manager** (company sales-master party↔group link; name/phone
@@ -183,6 +183,11 @@ store activation — never frontend-only.
    managed liquid accounts remain), and **bank connection credential field
    patches denied for store_manager** (access_token/feed_url/provider/external
    id; display_name/auto-sync on managed connections remain), and
+   **offline device bind store-scoped for store_manager** (managed store_id
+   required; foreign/unset fail-closed; device register/revoke remain admin), and
+   **liquid account bank detail patches denied for store_manager**
+   (bank_name/account_number/bank_branch/clear_bank_details; name on managed
+   liquid accounts remain), and
    **party category/party_type classification writes denied for store_manager**
    (company party master classification; name/phone remain), and
    **company store-limit allocation denied for store_manager** (tenant
