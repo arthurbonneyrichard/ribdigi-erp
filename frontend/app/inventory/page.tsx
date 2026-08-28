@@ -159,6 +159,7 @@ export default function Page() {
   const [productSupplyClass, setProductSupplyClass] = useState('standard');
   const [editSupplyClass, setEditSupplyClass] = useState('standard');
   const [editCategoryId, setEditCategoryId] = useState('');
+  const [editBrandId, setEditBrandId] = useState('');
   const [labelCopies, setLabelCopies] = useState('1');
   const [barcodeSymbology, setBarcodeSymbology] = useState('code128');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -622,6 +623,7 @@ export default function Page() {
         setEditHeight(p.height != null ? String(p.height) : '');
         setEditSupplyClass(String(p.tax_supply_class || (p.tax_exempt ? 'exempt' : 'standard')));
         setEditCategoryId(String(p.category_id || ''));
+        setEditBrandId(String(p.brand_id || ''));
       }
     }
   }, [selectedId, products]);
@@ -643,6 +645,7 @@ export default function Page() {
           height: editHeight === '' ? null : Number(editHeight),
           tax_supply_class: editSupplyClass,
           category_id: editCategoryId.trim() || null,
+          brand_id: editBrandId.trim() || null,
         }),
       });
       setMessage('Product updated');
@@ -1746,6 +1749,22 @@ export default function Page() {
                   <option key={c.id} value={c.id}>
                     {categoryIndent(c.depth)}
                     {categoryLabel(c)}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Brand</label>
+            <select
+              value={editBrandId}
+              onChange={(e) => setEditBrandId(e.target.value)}
+              aria-label="Edit product brand"
+              title="Product brand (optional catalog picker; API brand_id UUID)"
+            >
+              <option value="">Brand</option>
+              {brands
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
                   </option>
                 ))}
             </select>
