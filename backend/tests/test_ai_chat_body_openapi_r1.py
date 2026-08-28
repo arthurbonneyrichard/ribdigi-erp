@@ -26,11 +26,15 @@ def test_ai_chat_body_schema_forbid_and_require_message():
         {
             "message": "hi",
             "context": "  dashboard  ",
-            "conversation_id": "  conv_1  ",
+            "conversation_id": "  AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE  ",
         }
     )
     assert with_opts.context == "dashboard"
-    assert with_opts.conversation_id == "conv_1"
+    assert with_opts.conversation_id == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    with pytest.raises(ValidationError):
+        AiChatBody.model_validate({"message": "hi", "conversation_id": "conv_1"})
+    with pytest.raises(ValidationError):
+        AiChatBody.model_validate({"message": "hi", "conversation_id": ""})
 
     with pytest.raises(ValidationError):
         AiChatBody.model_validate({})

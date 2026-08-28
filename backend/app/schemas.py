@@ -1718,8 +1718,10 @@ class AiChatBody(BaseModel):
     / blank / `!!!` / `http://…` → **422** (blank was late service **400**;
     punctuation/URL could reach `parse_chat_message`). Optional `context` ∈ same
     Value type; omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`
-    stripped to null). Optional `conversation_id` still strip-blank→omit.
-    Service `parse_chat_message` / injection checks remain defense-in-depth.
+    stripped to null). Optional `conversation_id` ∈ `UuidIdValue`; omit/`null` OK;
+    blank/`!!!`/`http://…`/non-UUID → **422** (was free `str` with strip-blank→omit;
+    garbage could pass through). Service `parse_chat_message` / injection checks
+    remain defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -1727,15 +1729,9 @@ class AiChatBody(BaseModel):
     message: AiChatMessageValue | None = None
     prompt: AiChatMessageValue | None = None
     context: AiChatMessageValue | None = None
-    conversation_id: str | None = None
-
-    @field_validator("conversation_id", mode="before")
-    @classmethod
-    def _strip_conversation_id(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
-        return value
+    # Optional conversation ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/`http://…`/
+    # non-UUID → **422** (was free `str` with strip-blank→omit).
+    conversation_id: UuidIdValue | None = None
 
     @model_validator(mode="after")
     def _require_message_or_prompt(self) -> AiChatBody:
@@ -5925,33 +5921,30 @@ class AiReportsGenerateBody(BaseModel):
     `AiReportPromptValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); omit/`null`
     OK when template_id|report_type present; blank/`!!!`/`http://…` → **422** (was free
     `str` stripped to null — punctuation/URL could reach parse_prompt). Optional
-    `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`);
-    omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422** (was free
-    `str` soft-nulled on blank; punctuation/URL could reach period_label /
-    parse_prompt). Invalid `format` / `report_type` → **422** (format garbage was
-    silently remapped to csv; unknown report_type was late **400**). `params` is an
-    alias for `filters`. Service `generate_report` / `parse_prompt` remain
-    defense-in-depth.
+    `template_id` ∈ `UuidIdValue`; omit/`null` OK with prompt|report_type; blank/`!!!`/
+    `http://…`/non-UUID → **422** (was free `str` with strip-blank→omit; garbage could
+    reach template lookup). Optional `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1
+    letter/digit; no `://`/`@`); omit/`null` → service/prompt default; blank/`!!!`/
+    `http://…` → **422** (was free `str` soft-nulled on blank; punctuation/URL could
+    reach period_label / parse_prompt). Invalid `format` / `report_type` → **422**
+    (format garbage was silently remapped to csv; unknown report_type was late **400**).
+    `params` is an alias for `filters`. Service `generate_report` / `parse_prompt`
+    remain defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     prompt: AiReportPromptValue | None = None
     format: ReportExportFormatValue | None = None
-    template_id: str | None = None
+    # Optional saved template ∈ UuidIdValue; omit/`null` OK with prompt|report_type;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str` strip-blank→omit).
+    # Existence remains tenant-scoped template lookup (**404**).
+    template_id: UuidIdValue | None = None
     report_type: ReportTypeValue | None = None
     # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
     period: AiReportPeriodValue | None = None
     filters: dict[str, Any] | None = None
     params: dict[str, Any] | None = None
-
-    @field_validator("template_id", mode="before")
-    @classmethod
-    def _strip_optional_template_id(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
-        return value
 
     @model_validator(mode="after")
     def _require_prompt_template_or_type(self) -> AiReportsGenerateBody:
@@ -5967,33 +5960,31 @@ class AiReportsExportBody(BaseModel):
     or `report_type`. Optional `prompt` ∈ `AiReportPromptValue` (strip; 1–16000; ≥1
     letter/digit; no `://`/`@`); omit/`null` OK when template_id|report_type present;
     blank/`!!!`/`http://…` → **422** (was free `str` stripped to null). Optional
-    `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`);
-    omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422** (field
-    was absent — unknown `period` key → **422** via `extra=forbid`; generate already
-    typed the same Value). `format` ∈ csv|pdf|xlsx (omit → **csv**; blank/invalid →
-    **422** — was free `dict` with `or "csv"`). Invalid `report_type` → **422**.
-    Service `export_from_intent` remains defense-in-depth.
+    `template_id` ∈ `UuidIdValue`; omit/`null` OK with prompt|report_type; blank/`!!!`/
+    `http://…`/non-UUID → **422** (was free `str` with strip-blank→omit; garbage could
+    reach template lookup). Optional `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1
+    letter/digit; no `://`/`@`); omit/`null` → service/prompt default; blank/`!!!`/
+    `http://…` → **422** (field was absent — unknown `period` key → **422** via
+    `extra=forbid`; generate already typed the same Value). `format` ∈ csv|pdf|xlsx
+    (omit → **csv**; blank/invalid → **422** — was free `dict` with `or "csv"`).
+    Invalid `report_type` → **422**. Service `export_from_intent` remains
+    defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     prompt: AiReportPromptValue | None = None
     format: ReportExportFormatValue = "csv"
-    template_id: str | None = None
+    # Optional saved template ∈ UuidIdValue; omit/`null` OK with prompt|report_type;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str` strip-blank→omit).
+    # Same honesty as AiReportsGenerateBody.template_id.
+    template_id: UuidIdValue | None = None
     report_type: ReportTypeValue | None = None
     # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
     # (same AiReportPeriodValue as AiReportsGenerateBody.period).
     period: AiReportPeriodValue | None = None
     filters: dict[str, Any] | None = None
     params: dict[str, Any] | None = None
-
-    @field_validator("template_id", mode="before")
-    @classmethod
-    def _strip_optional(cls, value: object) -> object:
-        if isinstance(value, str):
-            text = value.strip()
-            return text or None
-        return value
 
     @model_validator(mode="after")
     def _require_prompt_template_or_type(self) -> AiReportsExportBody:
