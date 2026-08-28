@@ -1901,7 +1901,11 @@ class RecurringExpenseUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # punctuation/URL could persist on RecurringExpense.category). Prefer category_id.
     category: ExpenseCategoryLabelValue | None = None
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as RecurringExpenseCreate.branch_id. Use `clear_branch` to remove.
+    branch_id: UuidIdValue | None = None
     department_id: str | None = None
     clear_branch: bool = False
     clear_department: bool = False

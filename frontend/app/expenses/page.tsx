@@ -390,9 +390,9 @@ export default function Page() {
           clear_payee: !recPayee.trim(),
           frequency: recFrequency,
           payment_method: recPaymentMethod,
-          branch_id: recBranchId || null,
+          branch_id: recBranchId.trim() || null,
           department_id: recDepartmentId || null,
-          clear_branch: !recBranchId,
+          clear_branch: !recBranchId.trim(),
           clear_department: !recDepartmentId,
         }),
       });
