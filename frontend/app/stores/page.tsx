@@ -455,8 +455,8 @@ export default function Page() {
           clear_capacity: whCapacity === '',
           manager_id: whManagerId.trim() || null,
           clear_manager: !whManagerId.trim(),
-          store_id: whStoreId || null,
-          clear_store: !whStoreId,
+          store_id: whStoreId.trim() || null,
+          clear_store: !whStoreId.trim(),
         }),
       });
       setEditWhId('');

@@ -2182,7 +2182,11 @@ class WarehouseUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on warehouse display name).
     name: WarehouseNameValue | None = None
-    store_id: str | None = None
+    # Optional linked store ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store lookup).
+    # Existence remains tenant-scoped store lookup (**404**). Same honesty as
+    # WarehouseCreate.store_id. Use `clear_store` to remove.
+    store_id: UuidIdValue | None = None
     clear_store: bool = False
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] | None = None
     # Optional warehouse manager user FK ∈ UuidIdValue; omit/`null` → no change;
