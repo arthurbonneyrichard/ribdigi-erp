@@ -12182,17 +12182,30 @@ async def accounts(
         multi,
         company_id=claims.get("company_id"),
     )
+    omit_bank = dashboard_scope_svc.omit_liquid_account_bank_details(managed)
     if tree:
-        return env(accounting_svc.build_account_tree(rows, balance_by_id=balance_by_id))
-    return env(
-        [
-            accounting_svc.serialize_coa_account(
-                r,
-                balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
-            )
-            for r in rows
+        tree_payload = accounting_svc.build_account_tree(
+            rows, balance_by_id=balance_by_id
+        )
+        if omit_bank:
+            tree_payload = [
+                dashboard_scope_svc.redact_liquid_account_bank_details(node)
+                for node in tree_payload
+            ]
+        return env(tree_payload)
+    serialized = [
+        accounting_svc.serialize_coa_account(
+            r,
+            balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
+        )
+        for r in rows
+    ]
+    if omit_bank:
+        serialized = [
+            dashboard_scope_svc.redact_liquid_account_bank_details(row)
+            for row in serialized
         ]
-    )
+    return env(serialized)
 
 
 @api.get("/accounting/accounts/export")
@@ -12250,7 +12263,10 @@ async def get_account(
         store_ids=multi,
     )
     balance = balance_by_id.get(row.id, 0.0) if balance_by_id is not None else None
-    return env(accounting_svc.serialize_coa_account(row, balance=balance))
+    serialized = accounting_svc.serialize_coa_account(row, balance=balance)
+    if dashboard_scope_svc.omit_liquid_account_bank_details(managed):
+        serialized = dashboard_scope_svc.redact_liquid_account_bank_details(serialized)
+    return env(serialized)
 
 
 @api.get("/accounting/accounts/{account_id}/transactions")
@@ -12462,15 +12478,20 @@ async def liquid_accounts(
         is_active=is_active,
         company_id=claims.get("company_id"),
     )
-    return env(
-        [
-            bank_recon_svc.serialize_account(
-                r,
-                balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
-            )
-            for r in rows
+    omit_bank = dashboard_scope_svc.omit_liquid_account_bank_details(managed)
+    serialized = [
+        bank_recon_svc.serialize_account(
+            r,
+            balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
+        )
+        for r in rows
+    ]
+    if omit_bank:
+        serialized = [
+            dashboard_scope_svc.redact_liquid_account_bank_details(row)
+            for row in serialized
         ]
-    )
+    return env(serialized)
 
 
 @api.get("/accounting/liquid-accounts/export")
@@ -12597,7 +12618,10 @@ async def update_liquid_account(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(bank_recon_svc.serialize_account(row), "Liquid account updated")
+    serialized = bank_recon_svc.serialize_account(row)
+    if dashboard_scope_svc.omit_liquid_account_bank_details(managed):
+        serialized = dashboard_scope_svc.redact_liquid_account_bank_details(serialized)
+    return env(serialized, "Liquid account updated")
 
 
 @api.post("/accounting/liquid-transfers")

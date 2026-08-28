@@ -13280,6 +13280,116 @@ async def test_store_manager_liquid_accounts_export_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_liquid_account_bank_details_redacted(client, db_session):
+    """store_manager liquid/COA JSON omits bank identity; balances/name remain."""
+    from app import accounting as accounting_svc
+    from app import models as m
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["accounting"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liq Bank Redact Store",
+        code="LIQ-BANK-RD",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    bank = await accounting_svc.create_liquid_account(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        code="1098",
+        name="Ops Bank",
+        kind="bank",
+        bank_name="Secret Bank Plc",
+        account_number="1234567890",
+        bank_branch="Airport branch",
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Touch ops bank for redact test",
+        reference="JE-LIQ-REDACT",
+        store_id=store.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1098", "debit": 25, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 25},
+        ],
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_list = await ac.get("/api/v1/accounting/liquid-accounts", headers=admin_headers)
+    assert admin_list.status_code == 200, admin_list.text
+    admin_rows = admin_list.json()["data"]
+    admin_bank = next(r for r in admin_rows if r["id"] == bank.id)
+    assert admin_bank["bank_name"] == "Secret Bank Plc"
+    assert admin_bank["account_number"] == "1234567890"
+    assert admin_bank["bank_branch"] == "Airport branch"
+
+    mgr_list = await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)
+    assert mgr_list.status_code == 200, mgr_list.text
+    mgr_rows = mgr_list.json()["data"]
+    mgr_bank = next(r for r in mgr_rows if r["id"] == bank.id)
+    assert mgr_bank["name"] == "Ops Bank"
+    assert mgr_bank.get("bank_name") is None
+    assert mgr_bank.get("account_number") is None
+    assert mgr_bank.get("bank_branch") is None
+    assert "balance" in mgr_bank
+
+    coa = await ac.get(f"/api/v1/accounting/accounts/{bank.id}", headers=headers)
+    assert coa.status_code == 200, coa.text
+    coa_row = coa.json()["data"]
+    assert coa_row.get("bank_name") is None
+    assert coa_row.get("account_number") is None
+    assert coa_row.get("bank_branch") is None
+
+    # Name patch remains; response stays redacted for store_manager.
+    patched = await ac.patch(
+        f"/api/v1/accounting/liquid-accounts/{bank.id}",
+        headers=headers,
+        json={"name": "Ops Bank Renamed"},
+    )
+    assert patched.status_code == 200, patched.text
+    body = patched.json()["data"]
+    assert body["name"] == "Ops Bank Renamed"
+    assert body.get("bank_name") is None
+    assert body.get("account_number") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_pos_hold_expire_stale_denied(client, db_session):
     """store_manager cannot run POS hold expire-stale; list/create auto-expire remains."""
     ac, seed = client

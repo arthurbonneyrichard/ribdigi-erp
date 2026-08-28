@@ -1757,9 +1757,36 @@ def assert_company_level_liquid_accounts_export_denied(
 
     CSV includes bank_name/account_number/bank_branch for all company liquid
     accounts (store_ids only affect balances). Bank detail patches already
-    denied; list GET remains for cash ops with scoped balances.
+    denied; list/get JSON redacts bank fields via
+    ``redact_liquid_account_bank_details`` while keeping cash-ops balances.
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_liquid_account_bank_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit bank identity fields on liquid/COA JSON.
+
+    Liquid CSV export already denied; list/get must not re-dump bank_name /
+    account_number / bank_branch. Name, kind flags, and scoped balances remain.
+    """
+    return managed_ids is not None
+
+
+def redact_liquid_account_bank_details(payload: dict) -> dict:
+    """Null bank identity fields on a serialized account (and nested children)."""
+    out = dict(payload)
+    for key in ("bank_name", "account_number", "bank_branch"):
+        if key in out:
+            out[key] = None
+    children = out.get("children")
+    if isinstance(children, list):
+        out["children"] = [
+            redact_liquid_account_bank_details(child)
+            if isinstance(child, dict)
+            else child
+            for child in children
+        ]
+    return out
 
 
 def assert_company_level_bank_connection_write_denied(
