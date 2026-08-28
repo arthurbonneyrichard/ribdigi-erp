@@ -4748,7 +4748,7 @@ async def test_store_manager_tax_reports_store_wh_scoped(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_tax_rate_writes_denied(client, db_session):
-    """Tax rate list/create/patch/default/export denied for store_manager (company-level)."""
+    """Tax rate list/detail/create/patch/default/export denied for store_manager (company-level)."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -4820,9 +4820,17 @@ async def test_store_manager_tax_rate_writes_denied(client, db_session):
     assert denied_list.status_code == 403, denied_list.text
     assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_detail = await ac.get(f"/api/v1/tax/rates/{existing.id}", headers=headers)
+    assert denied_detail.status_code == 403, denied_detail.text
+    assert denied_detail.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok_list = await ac.get("/api/v1/tax/rates", headers=admin_headers)
     assert ok_list.status_code == 200, ok_list.text
     assert any(row["id"] == existing.id for row in ok_list.json()["data"])
+
+    ok_detail = await ac.get(f"/api/v1/tax/rates/{existing.id}", headers=admin_headers)
+    assert ok_detail.status_code == 200, ok_detail.text
+    assert ok_detail.json()["data"]["id"] == existing.id
 
 
 @pytest.mark.asyncio
