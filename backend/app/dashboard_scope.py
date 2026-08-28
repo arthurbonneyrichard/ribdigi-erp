@@ -601,7 +601,23 @@ def assert_company_level_email_settings_read_denied(
     """403 when store_manager reads GET /settings/email or /export.
 
     Tenant SMTP host/from/username status dump is company infra admin.
-    PATCH/test remain admin-role gated; SMS/storage settings separate.
+    Mutations use ``assert_company_level_email_settings_write_denied``.
+    SMS/storage settings separate.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_email_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot update or test company email/SMTP settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager PATCHes /settings/email or POSTs /settings/email/test.
+
+    Reads already denied; SMTP credentials/test send are company infra admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

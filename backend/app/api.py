@@ -923,11 +923,17 @@ async def settings_email_export(
 @api.patch("/settings/email")
 async def settings_email_update(
     payload: EmailSettingsUpdate,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import emailer
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_email_settings_write_denied(
+        managed,
+        message="Store managers cannot update company email/SMTP settings.",
+    )
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     tenant = await tenants_svc.update_smtp_settings(
@@ -965,11 +971,17 @@ async def settings_email_update(
 @api.post("/settings/email/test")
 async def settings_email_test(
     payload: EmailTestRequest | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import emailer
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_email_settings_write_denied(
+        managed,
+        message="Store managers cannot send company email/SMTP test messages.",
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     user = await db.get(m.User, claims["sub"])
     to = str(payload.to) if payload and payload.to else (user.email if user else None)

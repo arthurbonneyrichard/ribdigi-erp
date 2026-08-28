@@ -11228,6 +11228,48 @@ async def test_store_manager_email_settings_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_email_settings_writes_denied(client, db_session):
+    """PATCH /settings/email + POST /test denied for store_manager; admin remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_patch = await ac.patch(
+        "/api/v1/settings/email",
+        headers=headers,
+        json={"smtp_enabled": False},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_test = await ac.post(
+        "/api/v1/settings/email/test",
+        headers=headers,
+        json={},
+    )
+    assert denied_test.status_code == 403, denied_test.text
+    assert denied_test.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_patch = await ac.patch(
+        "/api/v1/settings/email",
+        headers=admin_headers,
+        json={"smtp_enabled": False},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+    ok_test = await ac.post(
+        "/api/v1/settings/email/test",
+        headers=admin_headers,
+        json={},
+    )
+    assert ok_test.status_code == 200, ok_test.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_sms_settings_read_denied(client, db_session):
     """GET /settings/sms + CSV export denied for store_manager; admin remains."""
     ac, seed = client
