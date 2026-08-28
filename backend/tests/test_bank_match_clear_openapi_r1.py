@@ -14,8 +14,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_bank_match_clear_schema_forbid():
-    ok = BankStatementMatchBody.model_validate({"journal_line_id": "  jl-1  "})
-    assert ok.journal_line_id == "jl-1"
+    _jl = "11111111-2222-3333-4444-555555555555"
+    ok = BankStatementMatchBody.model_validate({"journal_line_id": f"  {_jl}  "})
+    assert ok.journal_line_id == _jl
 
     with pytest.raises(ValidationError):
         BankStatementMatchBody.model_validate({})
@@ -24,8 +25,10 @@ def test_bank_match_clear_schema_forbid():
     with pytest.raises(ValidationError):
         BankStatementMatchBody.model_validate({"journal_line_id": "   "})
     with pytest.raises(ValidationError):
+        BankStatementMatchBody.model_validate({"journal_line_id": "jl-1"})
+    with pytest.raises(ValidationError):
         BankStatementMatchBody.model_validate(
-            {"journal_line_id": "jl-1", "extra": True}
+            {"journal_line_id": _jl, "extra": True}
         )
 
     group = BankClearGroupBody.model_validate(

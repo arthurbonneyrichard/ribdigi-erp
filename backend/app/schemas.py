@@ -1471,7 +1471,11 @@ class LineItem(BaseModel):
 
 
 class TransactionCreate(BaseModel):
-    party_id: str | None = None
+    # Optional customer party ∈ UuidIdValue; omit/`null` → walk-in / no party;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach party lookup). Existence remains tenant-scoped customer lookup
+    # (**404**). Legacy sale create path (POS uses PosSaleCreate.party_id).
+    party_id: UuidIdValue | None = None
     subtotal: float = 0
     tax: float = 0
     total: float = 0
@@ -1904,7 +1908,12 @@ class ExpenseCategoryUpdate(BaseModel):
     name: ExpenseCategoryNameValue | None = None
     budget_amount: float | None = Field(default=None, ge=0)
     is_active: bool | None = None
-    account_id: str | None = None
+    # Optional expense-type GL ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
+    # Existence remains tenant-scoped account lookup (**404**). Use `clear_account`
+    # to remove. Expenses **Edit expense category GL account** select; Save sends
+    # trim, or `clear_account` when cleared.
+    account_id: UuidIdValue | None = None
     clear_account: bool = False
 
 
@@ -2452,7 +2461,11 @@ class TaxUpdate(BaseModel):
 class TaxCalculateRequest(BaseModel):
     amount: float = Field(gt=0)
     rate: float | None = None
-    tax_rate_id: str | None = None
+    # Optional tax rate ∈ UuidIdValue; omit/`null` → use `rate` / tenant default;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach tax-rate lookup). Existence remains tenant-scoped tax-rate lookup
+    # (**404**).
+    tax_rate_id: UuidIdValue | None = None
     # BR-12.1 — omit → exclusive at calc; blank/invalid → 422
     pricing_mode: Literal["exclusive", "inclusive"] | None = None
     components: list[TaxComponent] | None = None
@@ -3120,7 +3133,10 @@ class SalesReturnPost(BaseModel):
     settlement_method: SalesReturnSettlementMethod | None = None
     # BR-7.5 / BR-11 — same settlement Literal as AR payments; omit → cash; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "cash"
-    liquid_account_id: str | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → payment-method default;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    liquid_account_id: UuidIdValue | None = None
 
 
 class CustomerPaymentCreate(BaseModel):
@@ -3153,7 +3169,12 @@ class CustomerPaymentCreate(BaseModel):
     # never set → always null). API parses via reports.parse_date.
     cheque_date: IsoDateQueryValue | None = None
     apply_early_discount: bool | None = None
-    liquid_account_id: str | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → payment-method default GL;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    # Credit **Credit payment liquid account** select; Record payment sends trim
+    # or `null` when blank.
+    liquid_account_id: UuidIdValue | None = None
     # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
@@ -6386,20 +6407,16 @@ class BankStatementCreateBody(BaseModel):
 class BankStatementMatchBody(BaseModel):
     """POST .../bank-statements/{id}/lines/{line_id}/match (BR-10.3).
 
-    Unknown keys → **422** (`extra=forbid`). Blank/omit `journal_line_id` → **422**
-    (was free `dict` that coerced omit/`""` into a late **404**).
+    Unknown keys → **422** (`extra=forbid`). Required `journal_line_id` ∈
+    `UuidIdValue`; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`
+    `min_length=1` — whitespace still reached service **404**; non-UUID garbage
+    could reach journal-line lookup). Existence remains tenant-scoped journal
+    line lookup (**404**). Accounting **Match bank line to journal line**.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    journal_line_id: str = Field(min_length=1)
-
-    @field_validator("journal_line_id", mode="before")
-    @classmethod
-    def _strip_journal_line_id(cls, value: object) -> object:
-        if isinstance(value, str):
-            return value.strip()
-        return value
+    journal_line_id: UuidIdValue
 
 
 class BankClearGroupBody(BaseModel):
@@ -6468,7 +6485,12 @@ class SupplierPaymentCreate(BaseModel):
     # never set → always null). API parses via reports.parse_date.
     cheque_date: IsoDateQueryValue | None = None
     apply_early_discount: bool | None = None
-    liquid_account_id: str | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → payment-method default GL;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    # Same honesty as CustomerPaymentCreate.liquid_account_id. Credit **Credit
+    # payment liquid account** select; Record payment sends trim or `null`.
+    liquid_account_id: UuidIdValue | None = None
     # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
@@ -7812,7 +7834,10 @@ class PosPaymentLine(BaseModel):
     # omit/`null` → no tender reference; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/garbage could persist on POS payment reference).
     reference: PaymentReferenceValue | None = None
-    liquid_account_id: str | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → tender-method default;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    liquid_account_id: UuidIdValue | None = None
 
 
 class PosSaleCreate(BaseModel):

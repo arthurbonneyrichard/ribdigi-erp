@@ -234,10 +234,11 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const accountId = accountDrafts[cat.id] || '';
+      const accountId = (accountDrafts[cat.id] || '').trim();
       const payload: Record<string, unknown> = {
         budget_amount: Number(budgetDrafts[cat.id]) || 0,
       };
+      // trim so Save category (UuidIdValue account_id) does not 422; clear when blank
       if (accountId) payload.account_id = accountId;
       else payload.clear_account = true;
       const r = await api(`/expenses/categories/${cat.id}`, {
@@ -988,6 +989,7 @@ export default function Page() {
                     onChange={(e) =>
                       setAccountDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
                     }
+                    aria-label={`Edit expense category GL account ${c.id}`}
                   >
                     <option value="">Default 6000</option>
                     {expenseAccounts.map((a: any) => (
@@ -999,7 +1001,11 @@ export default function Page() {
                 </td>
                 <td>{c.is_active === false ? 'no' : 'yes'}</td>
                 <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => saveCategoryBudget(c)}>
+                  <button
+                    type="button"
+                    onClick={() => saveCategoryBudget(c)}
+                    aria-label={`Save expense category ${c.id}`}
+                  >
                     Save
                   </button>
                   <button

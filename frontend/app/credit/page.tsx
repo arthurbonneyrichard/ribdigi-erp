@@ -185,7 +185,7 @@ export default function Page() {
             reference: payReference.trim() || null,
             notes: payNotes.trim() || null,
             apply_early_discount: applyEarly,
-            liquid_account_id: liquidAccountId || null,
+            liquid_account_id: liquidAccountId.trim() || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
             ...chequeFields,
           }),
@@ -201,7 +201,8 @@ export default function Page() {
             reference: payReference.trim() || null,
             notes: payNotes.trim() || null,
             apply_early_discount: applyEarly,
-            liquid_account_id: liquidAccountId || null,
+            // null when blank so Pay (UuidIdValue liquid_account_id) does not 422
+            liquid_account_id: liquidAccountId.trim() || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
             ...chequeFields,
           }),
@@ -542,6 +543,7 @@ export default function Page() {
               value={liquidAccountId}
               onChange={(e) => setLiquidAccountId(e.target.value)}
               title="Optional GL override"
+              aria-label="Credit payment liquid account"
             >
               <option value="">GL: method default</option>
               {liquidAccounts.map((a: any) => (

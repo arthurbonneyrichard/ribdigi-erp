@@ -714,7 +714,8 @@ export default function Page() {
     try {
       await api(`/accounting/bank-statements/${selected.id}/lines/${lineId}/match`, {
         method: 'POST',
-        body: JSON.stringify({ journal_line_id: journalLineId }),
+        // trim so Match (UuidIdValue journal_line_id) does not 422 on whitespace
+        body: JSON.stringify({ journal_line_id: String(journalLineId).trim() }),
       });
       setMessage('Matched');
       await openStatement(selected.id);
