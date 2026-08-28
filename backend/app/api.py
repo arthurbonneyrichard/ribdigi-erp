@@ -7142,7 +7142,9 @@ async def _serialize_customer_response(
         group = groups.get(party.customer_group_id)
     payload = customers_svc.serialize_customer(party, contacts, group)
     if dashboard_scope_svc.omit_party_master_pii(managed_store_ids):
-        return dashboard_scope_svc.redact_party_master_pii(payload)
+        payload = dashboard_scope_svc.redact_party_master_pii(payload)
+    if dashboard_scope_svc.omit_party_customer_group_assignment(managed_store_ids):
+        payload = dashboard_scope_svc.redact_party_customer_group_assignment(payload)
     return payload
 
 
@@ -7312,6 +7314,7 @@ async def customers(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     omit_pii = dashboard_scope_svc.omit_party_master_pii(managed)
+    omit_group = dashboard_scope_svc.omit_party_customer_group_assignment(managed)
     await customers_svc.ensure_default_customer_groups(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )
@@ -7342,6 +7345,8 @@ async def customers(
         )
         if omit_pii:
             payload = dashboard_scope_svc.redact_party_master_pii(payload)
+        if omit_group:
+            payload = dashboard_scope_svc.redact_party_customer_group_assignment(payload)
         out.append(payload)
     await db.commit()
     return env(out)

@@ -190,7 +190,9 @@ store activation — never frontend-only.
    for store_manager** (activate/deactivate admin-only; display name patches on
    managed connections remain), and **party customer_group assignment
    denied for store_manager** (company sales-master party↔group link; name/notes
-   party patches remain), and **bank connection create/delete denied for
+   party patches remain) + **party customer_group redacted on list/get/patch**
+   (customer_group_id/customer_group/customer_group_name/group_discount_percent
+   null for store_manager; POS/sales apply discount server-side), and **bank connection create/delete denied for
    store_manager** (company bank-feed credentials; list/patch/sync on
    managed liquid accounts remain; **CSV export denied**; **feed_url/
    external_account_id redacted** on list/patch), and **bank connection credential field

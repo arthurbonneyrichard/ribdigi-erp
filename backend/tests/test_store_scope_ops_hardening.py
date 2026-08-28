@@ -9846,6 +9846,102 @@ async def test_store_manager_party_customer_group_assignment_denied(client, db_s
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_customer_group_redacted(client, db_session):
+    """store_manager customer JSON omits group id/name/discount; name remain; admin intact."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cust = seed["party1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["sales"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Party Group Redact Store",
+        code="GRP-RD-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+
+    group = m.CustomerGroup(
+        tenant_id=tid,
+        company_id=cid,
+        name="VIP Wholesale",
+        discount_percent=12.5,
+        is_active=True,
+    )
+    db_session.add(group)
+    await db_session.flush()
+    cust.customer_group_id = group.id
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_cust = await ac.get(f"/api/v1/customers/{cust.id}", headers=admin_headers)
+    assert admin_cust.status_code == 200, admin_cust.text
+    admin_body = admin_cust.json()["data"]
+    assert admin_body["customer_group_id"] == group.id
+    assert admin_body.get("customer_group_name") == "VIP Wholesale"
+    assert float(admin_body.get("group_discount_percent") or 0) == 12.5
+    assert (admin_body.get("customer_group") or {}).get("discount_percent") == 12.5
+
+    mgr_list = await ac.get("/api/v1/customers", headers=headers)
+    assert mgr_list.status_code == 200, mgr_list.text
+    mgr_row = next(r for r in mgr_list.json()["data"] if r["id"] == cust.id)
+    assert mgr_row["name"]
+    assert mgr_row.get("customer_group_id") is None
+    assert mgr_row.get("customer_group") is None
+    assert mgr_row.get("customer_group_name") is None
+    assert mgr_row.get("group_discount_percent") is None
+
+    mgr_get = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert mgr_get.status_code == 200, mgr_get.text
+    got = mgr_get.json()["data"]
+    assert got.get("customer_group_id") is None
+    assert got.get("customer_group") is None
+    assert got.get("customer_group_name") is None
+    assert got.get("group_discount_percent") is None
+
+    patched = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Group Redact Renamed"},
+    )
+    assert patched.status_code == 200, patched.text
+    pbody = patched.json()["data"]
+    assert pbody["name"] == "Group Redact Renamed"
+    assert pbody.get("customer_group_id") is None
+    assert pbody.get("group_discount_percent") is None
+
+    await db_session.refresh(cust)
+    assert cust.customer_group_id == group.id
+    assert cust.name == "Group Redact Renamed"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_party_classification_writes_denied(client, db_session):
     """store_manager cannot set customer/supplier category or party_type; name remain."""
     ac, seed = client

@@ -2285,6 +2285,7 @@ def assert_party_customer_group_assignment_write_denied(
     Customer group master CRUD is already denied; party↔group assignment is the
     same company sales-master graph and stays admin-only. Name party
     patches remain (phone/email/address/notes gated separately).
+    List/get/patch JSON redacts group fields via ``redact_party_customer_group_assignment``.
     """
     if managed_ids is None:
         return
@@ -2292,6 +2293,31 @@ def assert_party_customer_group_assignment_write_denied(
     if not changing:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_customer_group_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party customer_group fields on JSON.
+
+    Group catalog list/get and party↔group assign/clear already denied; customer
+    list/get/patch must not re-dump sales-master group id/name/discount.
+    Name/status/credit and scoped history remain; POS/sales apply group discount
+    server-side via ``customer_group_discount_percent``.
+    """
+    return managed_ids is not None
+
+
+def redact_party_customer_group_assignment(payload: dict) -> dict:
+    """Null customer_group_id/customer_group/name/discount on customer JSON."""
+    out = dict(payload)
+    for key in (
+        "customer_group_id",
+        "customer_group",
+        "customer_group_name",
+        "group_discount_percent",
+    ):
+        if key in out:
+            out[key] = None
+    return out
 
 
 def assert_party_classification_write_denied(
