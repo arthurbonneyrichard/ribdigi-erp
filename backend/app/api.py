@@ -2510,6 +2510,11 @@ async def list_company_memberships(
     db: AsyncSession = Depends(get_db),
 ):
     """List user↔company memberships (tenant account admin)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_membership_read_denied(managed)
+
     rows = await companies_svc.list_company_memberships(
         db, tenant_id=claims["tenant_id"], company_id=company_id
     )

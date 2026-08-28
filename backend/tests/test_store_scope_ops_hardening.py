@@ -10453,7 +10453,7 @@ async def test_store_manager_ai_report_generate_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_company_membership_writes_denied(client, db_session):
-    """Company membership assign/revoke denied for store_manager even when companies write granted."""
+    """Company membership list/assign/revoke denied for store_manager even with companies write."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -10481,10 +10481,20 @@ async def test_store_manager_company_membership_writes_denied(client, db_session
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
-    listed = await ac.get(f"/api/v1/companies/{cid}/memberships", headers=headers)
-    assert listed.status_code == 200, listed.text
-    assert any(row["user_id"] == cashier.id for row in listed.json()["data"])
+    denied_list = await ac.get(f"/api/v1/companies/{cid}/memberships", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get(f"/api/v1/companies/{cid}/memberships", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    assert any(row["user_id"] == cashier.id for row in ok_list.json()["data"])
 
     denied_assign = await ac.post(
         f"/api/v1/companies/{cid}/memberships",

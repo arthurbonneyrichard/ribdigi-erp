@@ -660,6 +660,22 @@ def assert_company_level_membership_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_membership_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company memberships; "
+        "use users list/get for operational staff lookup."
+    ),
+) -> None:
+    """403 when store_manager lists company user↔company memberships.
+
+    Assign/revoke already denied; GET list was open when ``companies:read`` was
+    over-granted and dumps the company membership graph. ``GET /users`` list/get remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_company_branding_write_denied(
     managed_ids: list[str] | None,
     *,
