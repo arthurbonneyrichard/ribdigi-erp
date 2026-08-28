@@ -4924,6 +4924,16 @@ async def test_store_manager_audit_logs_self_and_store_details_scoped(client, db
     assert "INV-AUD-O-SECRET" not in exported.text
     assert "ADMIN-ONLY-AUDIT" not in exported.text
 
+    denied_archives = await ac.get("/api/v1/audit-logs/archives", headers=headers)
+    assert denied_archives.status_code == 403, denied_archives.text
+    assert denied_archives.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_archives_export = await ac.get(
+        "/api/v1/audit-logs/archives/export", headers=headers
+    )
+    assert denied_archives_export.status_code == 403, denied_archives_export.text
+    assert denied_archives_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
 
 @pytest.mark.asyncio
 async def test_store_manager_sales_returns_and_dashboard_slices_scoped(client, db_session):

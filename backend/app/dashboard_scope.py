@@ -559,6 +559,18 @@ def assert_company_level_admin_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_audit_cold_archive_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company-wide cold audit archives; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager lists/exports cold audit archive manifests (tenant-wide packs)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_membership_write_denied(
     managed_ids: list[str] | None,
     *,

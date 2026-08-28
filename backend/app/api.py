@@ -17300,6 +17300,10 @@ async def audit_logs_archives(
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_audit_cold_archive_read_denied(managed)
     rows = await audit_svc.list_cold_archives(db, tenant_id=claims["tenant_id"])
     return env([audit_svc.serialize_cold_archive(r) for r in rows])
 
@@ -17310,6 +17314,10 @@ async def audit_logs_archives_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 144 A1 — cold audit archive manifest CSV (no blob download)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_audit_cold_archive_read_denied(managed)
     text = await ops_compliance_export_svc.export_audit_archives_csv(
         db, tenant_id=claims["tenant_id"]
     )
