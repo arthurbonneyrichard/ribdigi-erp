@@ -10687,7 +10687,7 @@ async def test_store_manager_document_settings_writes_denied(client, db_session)
 
 @pytest.mark.asyncio
 async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_session):
-    """Legacy POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""
+    """Legacy GET/POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -10766,6 +10766,32 @@ async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_sessi
         },
     )
     assert ok_sale.status_code == 200, ok_sale.text
+
+    ok_purch = await ac.post(
+        "/api/v1/purchases",
+        headers=admin_headers,
+        json={
+            "party_id": supplier.id,
+            "subtotal": 5,
+            "tax": 0,
+            "total": 5,
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 5}],
+        },
+    )
+    assert ok_purch.status_code == 200, ok_purch.text
+
+    admin_sales = await ac.get("/api/v1/sales", headers=admin_headers)
+    assert admin_sales.status_code == 200, admin_sales.text
+    admin_purchases = await ac.get("/api/v1/purchases", headers=admin_headers)
+    assert admin_purchases.status_code == 200, admin_purchases.text
+
+    denied_list_sale = await ac.get("/api/v1/sales", headers=headers)
+    assert denied_list_sale.status_code == 403, denied_list_sale.text
+    assert denied_list_sale.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_list_purch = await ac.get("/api/v1/purchases", headers=headers)
+    assert denied_list_purch.status_code == 403, denied_list_purch.text
+    assert denied_list_purch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio

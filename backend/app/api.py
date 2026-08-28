@@ -7590,6 +7590,16 @@ async def supplier_history_export(
 
 
 async def tx_list(kind: str, claims: dict, db: AsyncSession):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_legacy_transaction_write_denied(
+        managed,
+        message=(
+            f"Store managers cannot list legacy unscoped {kind} transactions; "
+            "use invoices/PO pipeline."
+        ),
+    )
     stmt = (
         select(m.Transaction)
         .where(
