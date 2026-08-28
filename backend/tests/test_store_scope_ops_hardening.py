@@ -11527,7 +11527,7 @@ async def test_store_manager_webhooks_writes_denied(client, db_session):
 
 
 async def test_store_manager_backup_settings_read_denied(client, db_session):
-    """GET /backup/settings + CSV export denied for store_manager; admin remains."""
+    """GET/PATCH /backup/settings + CSV export denied for store_manager; admin remains."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
@@ -11546,10 +11546,24 @@ async def test_store_manager_backup_settings_read_denied(client, db_session):
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_patch = await ac.patch(
+        "/api/v1/backup/settings",
+        headers=headers,
+        json={"enabled": True, "frequency": "daily", "retention_count": 3, "hour_utc": 1},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok = await ac.get("/api/v1/backup/settings", headers=admin_headers)
     assert ok.status_code == 200, ok.text
     ok_export = await ac.get("/api/v1/backup/settings/export", headers=admin_headers)
     assert ok_export.status_code == 200, ok_export.text
+    ok_patch = await ac.patch(
+        "/api/v1/backup/settings",
+        headers=admin_headers,
+        json={"enabled": False, "frequency": "weekly", "retention_count": 7, "hour_utc": 2},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
 
 
 @pytest.mark.asyncio

@@ -18775,9 +18775,16 @@ async def backup_settings_export(
 @api.patch("/backup/settings")
 async def backup_settings_patch(
     payload: dict,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_settings_write_denied(
+        managed,
+        message="Store managers cannot update company backup schedule settings.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     row = await backup_svc.update_settings(
         db,
