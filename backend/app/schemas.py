@@ -1585,7 +1585,10 @@ class ExpenseCreate(BaseModel):
     # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on expense create).
     payee: ExpensePayeeValue | None = None
-    store_id: str | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**).
+    store_id: UuidIdValue | None = None
     # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
     # lookup). Existence remains tenant-scoped branch lookup (**404**).

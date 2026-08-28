@@ -289,7 +289,7 @@ export default function Page() {
           reference: reference.trim() || null,
           branch_id: branchId.trim() || null,
           department_id: departmentId.trim() || null,
-          store_id: storeId || null,
+          store_id: storeId.trim() || null,
         }),
       });
       setMessage(`Expense ${r.data.status}: ${r.data.amount}`);
@@ -1290,7 +1290,8 @@ export default function Page() {
               setStoreId(e.target.value);
               setCtxStoreId(e.target.value);
             }}
-            title="Store (optional)"
+            aria-label="Expense store"
+            title="Optional store (UuidIdValue)"
           >
             <option value="">No store</option>
             {stores
