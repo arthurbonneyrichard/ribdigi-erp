@@ -583,6 +583,18 @@ def assert_company_level_ai_report_template_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_ai_report_generate_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot run company-level AI NL report generation.",
+) -> None:
+    """403 when store_manager attempts company-wide AI NL report generate/export.
+
+    Store-scoped ``/reports/*`` and Layer-1 AI insights remain available.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_bi_settings_write_denied(
     managed_ids: list[str] | None,
     *,

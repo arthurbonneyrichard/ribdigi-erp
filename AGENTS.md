@@ -135,7 +135,9 @@ store activation — never frontend-only.
    **party payment_terms_days create/patch denied for store_manager** (credit-
    adjacent company terms; zero-default create allowed; phone/name patch remain),
    and **AI report template create/delete denied for store_manager** (company-
-   level NL report templates; list/export reads allowed), and **customer/supplier
+   level NL report templates; list/export reads allowed), and **AI NL report
+   generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
+   store-scoped ``/reports/*`` + Layer-1 AI insights remain), and **customer/supplier
    contact create/delete denied for store_manager** (company-level party contact
    master; get/list reads remain; nested contacts on create remain allowed), and
    **company membership assign/revoke denied for store_manager** (even when
