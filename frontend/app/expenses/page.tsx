@@ -285,7 +285,7 @@ export default function Page() {
           // null when blank so Create does not 422 (IsoDateQueryValue); omit → today.
           expense_date: expenseDate.trim() || null,
           payment_method: paymentMethod,
-          liquid_account_id: liquidAccountId || null,
+          liquid_account_id: liquidAccountId.trim() || null,
           reference: reference.trim() || null,
           branch_id: branchId || null,
           department_id: departmentId || null,
@@ -1255,7 +1255,8 @@ export default function Page() {
           <select
             value={liquidAccountId}
             onChange={(e) => setLiquidAccountId(e.target.value)}
-            title="Optional GL override"
+            aria-label="Expense liquid account"
+            title="Optional liquid GL override (UuidIdValue)"
           >
             <option value="">GL: method default</option>
             {liquidAccounts.map((a: any) => (

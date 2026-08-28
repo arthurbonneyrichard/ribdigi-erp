@@ -1575,7 +1575,10 @@ class ExpenseCreate(BaseModel):
     # BR-9.2 — schema Literal (+ aliases via BeforeValidator); omit → cash;
     # blank/invalid → 422 (no silent cash from garbage).
     payment_method: ExpensePaymentMethod = "cash"
-    liquid_account_id: str | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → method default GL; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach liquid-account
+    # lookup). Existence remains tenant-scoped liquid account lookup (**404**/400).
+    liquid_account_id: UuidIdValue | None = None
     # omit/`null` → auto EXP-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently auto-numbered / garbage could persist).
     reference: ExpenseReferenceValue | None = None
