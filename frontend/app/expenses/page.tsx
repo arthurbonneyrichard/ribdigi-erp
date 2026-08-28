@@ -287,7 +287,7 @@ export default function Page() {
           payment_method: paymentMethod,
           liquid_account_id: liquidAccountId.trim() || null,
           reference: reference.trim() || null,
-          branch_id: branchId || null,
+          branch_id: branchId.trim() || null,
           department_id: departmentId || null,
           store_id: storeId || null,
         }),
@@ -1272,7 +1272,8 @@ export default function Page() {
               setDepartmentId('');
               setStoreId('');
             }}
-            title="Branch (optional)"
+            aria-label="Expense branch"
+            title="Optional branch (UuidIdValue)"
           >
             <option value="">All / no branch</option>
             {branches

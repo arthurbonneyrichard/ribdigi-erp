@@ -1586,7 +1586,10 @@ class ExpenseCreate(BaseModel):
     # blank/garbage could persist on expense create).
     payee: ExpensePayeeValue | None = None
     store_id: str | None = None
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
     department_id: str | None = None
     # omit/`null` → service default (today); blank/`not-a-date`/`01/02/2024` → **422**
     # (was free `datetime`; OpenAPI date-time; padded dates inconsistent). Same
