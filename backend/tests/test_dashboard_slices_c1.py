@@ -17,10 +17,12 @@ async def test_dashboard_slice_routes_ok_for_manager(client):
         "/api/v1/dashboard/top-products",
         "/api/v1/dashboard/expenses",
         "/api/v1/dashboard/stock-alerts",
-        "/api/v1/dashboard/user-stats",
     ):
         r = await ac.get(path, headers=headers)
         assert r.status_code == 200, path
+    denied = await ac.get("/api/v1/dashboard/user-stats", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio

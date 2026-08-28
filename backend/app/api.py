@@ -4242,8 +4242,11 @@ async def dashboard_user_stats(
     claims=Depends(require_permission("dashboard", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import dashboard_slices as slices_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_user_stats_read_denied(managed)
     return env(await slices_svc.user_stats_slice(db, claims))
 
 
@@ -4253,8 +4256,11 @@ async def dashboard_user_stats_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 159 U1 — dashboard user-stats KPI CSV (distinct from Stage 153/158 slices)."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app import dashboard_slices as slices_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_user_stats_read_denied(managed)
     payload = await slices_svc.user_stats_slice(db, claims)
     text = tenant_ops_export_svc.export_dashboard_user_stats_csv(payload=payload)
     return Response(

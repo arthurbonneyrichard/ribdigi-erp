@@ -1253,6 +1253,23 @@ def assert_company_level_user_admin_export_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_user_stats_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company-wide user/role dashboard KPIs; "
+        "use list/get for users and roles."
+    ),
+) -> None:
+    """403 when store_manager reads tenant-wide dashboard user-stats KPIs.
+
+    Dedicated ``/dashboard/user-stats`` (+ export) and main-dashboard
+    ``user_stats`` embed are company-admin surfaces; ``GET /users`` / ``/roles``
+    list/get remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_import_denied(
     managed_ids: list[str] | None,
     *,

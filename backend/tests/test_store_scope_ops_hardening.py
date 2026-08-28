@@ -8409,7 +8409,7 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_user_admin_writes_denied(client, db_session):
-    """User/role admin writes + CSV exports denied for store_manager; list/get remain."""
+    """User/role admin writes + CSV/KPI exports denied for store_manager; list/get remain."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -8530,6 +8530,22 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     )
     assert denied_perms_export.status_code == 403, denied_perms_export.text
     assert denied_perms_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_user_stats = await ac.get("/api/v1/dashboard/user-stats", headers=headers)
+    assert denied_user_stats.status_code == 403, denied_user_stats.text
+    assert denied_user_stats.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_user_stats_export = await ac.get(
+        "/api/v1/dashboard/user-stats/export", headers=headers
+    )
+    assert denied_user_stats_export.status_code == 403, denied_user_stats_export.text
+    assert denied_user_stats_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    dash = await ac.get("/api/v1/dashboard", headers=headers)
+    assert dash.status_code == 200, dash.text
+    dash_data = dash.json().get("data", dash.json())
+    assert "user_stats" not in dash_data
+    assert "users" not in (dash_data.get("sections") or [])
 
     # Reads remain allowed (default users read)
     assert (await ac.get("/api/v1/users", headers=headers)).status_code == 200
