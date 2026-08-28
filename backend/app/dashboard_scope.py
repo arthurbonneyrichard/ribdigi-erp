@@ -632,8 +632,23 @@ def assert_company_level_sms_settings_read_denied(
 ) -> None:
     """403 when store_manager reads GET /settings/sms or /export.
 
-    Provider/capability status dump is company infra admin. Test send remains
-    admin-role gated; storage settings separate.
+    Provider/capability status dump is company infra admin. Test send uses
+    ``assert_company_level_sms_settings_write_denied``. Storage settings separate.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_sms_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot send company SMS/Twilio test messages; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /settings/sms/test.
+
+    Reads already denied; SMS provider test send is company infra admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

@@ -1086,11 +1086,17 @@ async def settings_storage_export(
 @api.post("/settings/sms/test")
 async def settings_sms_test(
     payload: SmsTestRequest | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import sms as sms_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_sms_settings_write_denied(
+        managed,
+        message="Store managers cannot send company SMS/Twilio test messages.",
+    )
     user = await db.get(m.User, claims["sub"])
     to = (payload.to if payload and payload.to else None) or (user.phone if user else None)
     if not to:

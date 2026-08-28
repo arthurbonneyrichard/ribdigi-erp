@@ -11296,6 +11296,41 @@ async def test_store_manager_sms_settings_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_sms_settings_writes_denied(client, db_session, monkeypatch):
+    """POST /settings/sms/test denied for store_manager; admin console test remains."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "SMS_ENABLED", True)
+    monkeypatch.setattr(settings, "TWILIO_ACCOUNT_SID", "")
+    monkeypatch.setattr(settings, "TWILIO_AUTH_TOKEN", "")
+    monkeypatch.setattr(settings, "TWILIO_FROM_NUMBER", "")
+
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_test = await ac.post(
+        "/api/v1/settings/sms/test",
+        headers=headers,
+        json={"to": "+233241234567"},
+    )
+    assert denied_test.status_code == 403, denied_test.text
+    assert denied_test.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_test = await ac.post(
+        "/api/v1/settings/sms/test",
+        headers=admin_headers,
+        json={"to": "+233241234567"},
+    )
+    assert ok_test.status_code == 200, ok_test.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_storage_settings_read_denied(client, db_session):
     """GET /settings/storage + CSV export denied for store_manager; admin remains."""
     ac, seed = client
