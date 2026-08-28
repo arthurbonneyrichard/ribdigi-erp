@@ -1584,13 +1584,31 @@ async def test_store_manager_pos_sessions_scoped(client, db_session):
         assert resp.status_code == 403, resp.text
         assert resp.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    # Close mine first so open succeeds on managed store
-    closed = await ac.post(
+    closed_mine = await ac.post(
         f"/api/v1/pos/sessions/{sess_mine.id}/close",
         headers=headers,
         json={"actual_cash": 0},
     )
-    assert closed.status_code == 200, closed.text
+    assert closed_mine.status_code == 200, closed_mine.text
+
+    sess_null_mgr = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=None,
+        user_id=mgr.id,
+        session_number="SES-NULL-MGR",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add(sess_null_mgr)
+    await db_session.commit()
+
+    denied_current = await ac.get("/api/v1/pos/sessions/current", headers=headers)
+    assert denied_current.status_code == 403, denied_current.text
+    assert denied_current.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    sess_null_mgr.status = "closed"
+    await db_session.commit()
 
     open_ok = await ac.post(
         "/api/v1/pos/sessions/open",
@@ -9619,6 +9637,89 @@ async def test_store_manager_purchasing_settings_write_denied(client, db_session
     ok_export = await ac.get("/api/v1/purchasing/settings/export", headers=headers)
     assert ok_export.status_code == 200, ok_export.text
     assert "text/csv" in (ok_export.headers.get("content-type") or "")
+
+
+@pytest.mark.asyncio
+async def test_store_manager_report_schedule_writes_denied(client, db_session):
+    """Company report schedule create/patch/delete/run denied for store_manager."""
+    from app import report_schedules as report_schedules_svc
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["reports"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    schedule = await report_schedules_svc.create_schedule(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        name="Admin Daily Sales",
+        report_type="sales_daily",
+        format="csv",
+        frequency="daily",
+        hour_utc=6,
+        recipients=["admin@alpha.example.com"],
+        enabled=True,
+        company_id=seed["c1"].id,
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/reports/schedules",
+        headers=headers,
+        json={
+            "name": "Mgr Schedule",
+            "report_type": "sales_daily",
+            "format": "csv",
+            "frequency": "daily",
+            "hour_utc": 7,
+            "recipients": ["mgr@alpha.example.com"],
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/reports/schedules/{schedule.id}",
+        headers=headers,
+        json={"name": "Hijacked"},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete = await ac.delete(
+        f"/api/v1/reports/schedules/{schedule.id}",
+        headers=headers,
+    )
+    assert denied_delete.status_code == 403, denied_delete.text
+    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_run = await ac.post(
+        f"/api/v1/reports/schedules/{schedule.id}/run",
+        headers=headers,
+    )
+    assert denied_run.status_code == 403, denied_run.text
+    assert denied_run.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get("/api/v1/reports/schedules", headers=headers)
+    assert ok_list.status_code == 200, ok_list.text
 
 
 @pytest.mark.asyncio
