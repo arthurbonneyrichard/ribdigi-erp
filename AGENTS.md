@@ -213,7 +213,8 @@ store activation — never frontend-only.
    (bank_name/account_number/bank_branch/clear_bank_details; name on managed
    liquid accounts remain), and
    **party category/party_type classification writes denied for store_manager**
-   (company party master classification; name remain), and **party master
+   (company party master classification; name remain) + **party category/party_type
+   redacted on list/get/patch JSON**, and **party master
    code writes denied for store_manager** (customer/supplier ``code`` on
    create/patch; name remain; create without code allowed), and
    **party master email writes denied for store_manager** (customer/supplier

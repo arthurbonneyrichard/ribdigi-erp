@@ -10281,6 +10281,120 @@ async def test_store_manager_party_classification_writes_denied(client, db_sessi
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_classification_redacted(client, db_session):
+    """store_manager customer/supplier JSON omits category/party_type; name remain; admin intact."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cust = seed["party1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["sales"] = ["read", "write"]
+    perms["purchasing"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Party Class Redact Store",
+        code="CLS-RD-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+
+    cust.category = "VIP"
+    cust.party_type = "wholesale"
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        kind="supplier",
+        name="Class Redact Supplier",
+        code="CLS-RD-SUP",
+        category="Preferred",
+        party_type="distributor",
+        status="active",
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_cust = await ac.get(f"/api/v1/customers/{cust.id}", headers=admin_headers)
+    assert admin_cust.status_code == 200, admin_cust.text
+    admin_cbody = admin_cust.json()["data"]
+    assert admin_cbody["category"] == "VIP"
+    assert admin_cbody["party_type"] == "wholesale"
+
+    admin_sup = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=admin_headers)
+    assert admin_sup.status_code == 200, admin_sup.text
+    admin_sbody = admin_sup.json()["data"]
+    assert admin_sbody["category"] == "Preferred"
+    assert admin_sbody["party_type"] == "distributor"
+
+    mgr_clist = await ac.get("/api/v1/customers", headers=headers)
+    assert mgr_clist.status_code == 200, mgr_clist.text
+    mgr_crow = next(r for r in mgr_clist.json()["data"] if r["id"] == cust.id)
+    assert mgr_crow["name"]
+    assert mgr_crow.get("category") is None
+    assert mgr_crow.get("party_type") is None
+
+    mgr_cget = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert mgr_cget.status_code == 200, mgr_cget.text
+    cgot = mgr_cget.json()["data"]
+    assert cgot.get("category") is None
+    assert cgot.get("party_type") is None
+
+    mgr_slist = await ac.get("/api/v1/suppliers", headers=headers)
+    assert mgr_slist.status_code == 200, mgr_slist.text
+    mgr_srow = next(r for r in mgr_slist.json()["data"] if r["id"] == supplier.id)
+    assert mgr_srow["name"]
+    assert mgr_srow.get("category") is None
+    assert mgr_srow.get("party_type") is None
+
+    mgr_sget = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=headers)
+    assert mgr_sget.status_code == 200, mgr_sget.text
+    sgot = mgr_sget.json()["data"]
+    assert sgot.get("category") is None
+    assert sgot.get("party_type") is None
+
+    patched = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Class Redact Renamed"},
+    )
+    assert patched.status_code == 200, patched.text
+    pbody = patched.json()["data"]
+    assert pbody["name"] == "Class Redact Renamed"
+    assert pbody.get("category") is None
+    assert pbody.get("party_type") is None
+
+    await db_session.refresh(cust)
+    assert cust.category == "VIP"
+    assert cust.party_type == "wholesale"
+    assert cust.name == "Class Redact Renamed"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_party_code_writes_denied(client, db_session):
     """store_manager cannot set customer/supplier master codes; name remain."""
     ac, seed = client

@@ -2352,6 +2352,7 @@ def assert_party_classification_write_denied(
     Name remains. On create full dumps, only non-empty values
     deny (``clear_counts=False``). On PATCH exclude_unset, present keys deny
     including explicit null clears (``clear_counts=True``).
+    List/get/patch JSON redacts classification via ``redact_party_classification``.
     """
     if managed_ids is None:
         return
@@ -2368,6 +2369,25 @@ def assert_party_classification_write_denied(
     if not changing:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_classification(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party category/party_type on JSON.
+
+    Classification assign/clear already denied; customer/supplier list/get/patch
+    must not re-dump company party master category or party_type.
+    Name/status/credit and scoped history remain.
+    """
+    return managed_ids is not None
+
+
+def redact_party_classification(payload: dict) -> dict:
+    """Null category and party_type on customer/supplier JSON."""
+    out = dict(payload)
+    for key in ("category", "party_type"):
+        if key in out:
+            out[key] = None
+    return out
 
 
 def assert_party_code_write_denied(
