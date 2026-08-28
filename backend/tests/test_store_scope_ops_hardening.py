@@ -242,34 +242,31 @@ async def test_store_manager_pos_sales_scoped(client, db_session):
     )
     db_session.add_all([sess_mine, sess_other])
     await db_session.flush()
-    db_session.add_all(
-        [
-            m.Transaction(
-                tenant_id=tid,
-                company_id=cid,
-                tx_type="pos_sale",
-                reference="POS-MGR-REF",
-                session_id=sess_mine.id,
-                subtotal=5,
-                tax=0,
-                total=5,
-                status="completed",
-                payload={},
-            ),
-            m.Transaction(
-                tenant_id=tid,
-                company_id=cid,
-                tx_type="pos_sale",
-                reference="POS-OTH-REF",
-                session_id=sess_other.id,
-                subtotal=50,
-                tax=0,
-                total=50,
-                status="completed",
-                payload={},
-            ),
-        ]
+    sale_mine = m.Transaction(
+        tenant_id=tid,
+        company_id=cid,
+        tx_type="pos_sale",
+        reference="POS-MGR-REF",
+        session_id=sess_mine.id,
+        subtotal=5,
+        tax=0,
+        total=5,
+        status="completed",
+        payload={},
     )
+    sale_other = m.Transaction(
+        tenant_id=tid,
+        company_id=cid,
+        tx_type="pos_sale",
+        reference="POS-OTH-REF",
+        session_id=sess_other.id,
+        subtotal=50,
+        tax=0,
+        total=50,
+        status="completed",
+        payload={},
+    )
+    db_session.add_all([sale_mine, sale_other])
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -286,6 +283,28 @@ async def test_store_manager_pos_sales_scoped(client, db_session):
     )
     assert denied.status_code == 403
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    receipt_ok = await ac.get(
+        f"/api/v1/pos/sales/{sale_mine.id}/receipt",
+        headers=headers,
+    )
+    assert receipt_ok.status_code == 200, receipt_ok.text
+    assert receipt_ok.json()["data"]["reference"] == "POS-MGR-REF"
+
+    receipt_denied = await ac.get(
+        f"/api/v1/pos/sales/{sale_other.id}/receipt",
+        headers=headers,
+    )
+    assert receipt_denied.status_code == 403
+    assert receipt_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    send_denied = await ac.post(
+        f"/api/v1/pos/sales/{sale_other.id}/receipt/send",
+        headers=headers,
+        params={"channel": "email", "to": "other@example.com"},
+    )
+    assert send_denied.status_code == 403
+    assert send_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
@@ -4084,6 +4103,67 @@ async def test_store_manager_tax_reports_store_wh_scoped(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tax_rate_writes_denied(client, db_session):
+    """Tax rate create/patch/default denied for store_manager (company-level config)."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["tax"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    existing = m.TaxRate(
+        tenant_id=tid,
+        company_id=cid,
+        name="Standard VAT",
+        rate=15.0,
+        is_active=True,
+        is_default=True,
+    )
+    db_session.add(existing)
+    await db_session.commit()
+
+    denied_create = await ac.post(
+        "/api/v1/tax/rates",
+        headers=headers,
+        json={"name": "Mgr VAT", "rate": 10.0, "is_active": True},
+    )
+    assert denied_create.status_code == 403
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/tax/rates/{existing.id}",
+        headers=headers,
+        json={"rate": 12.0},
+    )
+    assert denied_patch.status_code == 403
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_default = await ac.post(
+        f"/api/v1/tax/rates/{existing.id}/default",
+        headers=headers,
+    )
+    assert denied_default.status_code == 403
+    assert denied_default.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_audit_logs_self_and_store_details_scoped(client, db_session):
     """Audit list/export: mgr sees self + managed store/WH details, not foreign unscoped."""
     ac, seed = client
@@ -7559,3 +7639,70 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
     assert wh_data["reserved_qty"] == 2
     assert len(wh_data["warehouses"]) == 1
     assert wh_data["warehouses"][0]["code"] == "CAT-MWH"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_company_settings_writes_denied(client, db_session):
+    """Company-level settings writes denied for store_manager (approval, credit/FX, FEFO)."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_expense = await ac.patch(
+        "/api/v1/expenses/settings",
+        headers=headers,
+        json={"expense_approval_threshold": 500},
+    )
+    assert denied_expense.status_code == 403
+    assert denied_expense.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_credit = await ac.patch(
+        "/api/v1/credit/settings",
+        headers=headers,
+        json={"early_pay_discount_pct": 2.5, "early_pay_discount_days": 10},
+    )
+    assert denied_credit.status_code == 403
+    assert denied_credit.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_fx_settings = await ac.patch(
+        "/api/v1/credit/exchange-rates/settings",
+        headers=headers,
+        json={"fx_auto_refresh": False},
+    )
+    assert denied_fx_settings.status_code == 403
+    assert denied_fx_settings.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_fx_refresh = await ac.post(
+        "/api/v1/credit/exchange-rates/refresh",
+        headers=headers,
+        json={},
+    )
+    assert denied_fx_refresh.status_code == 403
+    assert denied_fx_refresh.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_fx_upsert = await ac.put(
+        "/api/v1/credit/exchange-rates/USD",
+        headers=headers,
+        json={"currency_code": "USD", "rate_to_base": 12.5},
+    )
+    assert denied_fx_upsert.status_code == 403
+    assert denied_fx_upsert.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_fx_delete = await ac.delete(
+        "/api/v1/credit/exchange-rates/USD",
+        headers=headers,
+    )
+    assert denied_fx_delete.status_code == 403
+    assert denied_fx_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_fefo = await ac.patch(
+        "/api/v1/inventory/settings",
+        headers=headers,
+        json={"fefo_strict_warehouse": True},
+    )
+    assert denied_fefo.status_code == 403
+    assert denied_fefo.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Reads remain allowed
+    assert (await ac.get("/api/v1/expenses/settings", headers=headers)).status_code == 200
+    assert (await ac.get("/api/v1/credit/settings", headers=headers)).status_code == 200
+    assert (await ac.get("/api/v1/inventory/settings", headers=headers)).status_code == 200

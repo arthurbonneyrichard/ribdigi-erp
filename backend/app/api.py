@@ -10044,7 +10044,9 @@ async def pos_receipt(
     db: AsyncSession = Depends(get_db),
 ):
     from app import receipts as receipts_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    await dashboard_scope_svc.assert_pos_sale_in_manager_scope(db, claims, sale_id)
     receipt = await receipts_svc.build_sale_receipt(
         db,
         tenant_id=claims["tenant_id"],
@@ -10095,7 +10097,9 @@ async def pos_receipt_send(
     from app import receipts as receipts_svc
     from app import emailer
     from app import sms as sms_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    await dashboard_scope_svc.assert_pos_sale_in_manager_scope(db, claims, sale_id)
     receipt = await receipts_svc.build_sale_receipt(
         db,
         tenant_id=claims["tenant_id"],
@@ -10409,6 +10413,13 @@ async def update_expense_settings(
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_write_denied(
+        managed,
+        message="Store managers cannot update company-level expense approval settings.",
+    )
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
@@ -13887,6 +13898,13 @@ async def update_credit_settings(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_write_denied(
+        managed,
+        message="Store managers cannot update company-level early payment settings.",
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     tenant.early_pay_discount_pct = payload.early_pay_discount_pct
     tenant.early_pay_discount_days = payload.early_pay_discount_days
@@ -13939,8 +13957,14 @@ async def refresh_exchange_rates(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import fx as fx_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_write_denied(
+        managed,
+        message="Store managers cannot refresh company-level exchange rates.",
+    )
     result = await fx_svc.refresh_tenant_rates(
         db,
         tenant_id=claims["tenant_id"],
@@ -13957,6 +13981,13 @@ async def update_fx_auto_refresh(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_write_denied(
+        managed,
+        message="Store managers cannot update company-level FX auto-refresh settings.",
+    )
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == claims["tenant_id"]))
     ).scalar_one()
@@ -13975,8 +14006,14 @@ async def upsert_exchange_rate(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import fx as fx_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_write_denied(
+        managed,
+        message="Store managers cannot edit company-level exchange rates.",
+    )
     row = await fx_svc.upsert_rate(
         db,
         tenant_id=claims["tenant_id"],
@@ -13994,8 +14031,14 @@ async def delete_exchange_rate(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import fx as fx_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_write_denied(
+        managed,
+        message="Store managers cannot delete company-level exchange rates.",
+    )
     await fx_svc.delete_rate(db, claims["tenant_id"], currency_code)
     await db.commit()
     return env({"currency_code": currency_code.upper()}, "Exchange rate deleted")
@@ -14477,6 +14520,13 @@ async def add_tax(
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_accounting_write_denied(
+        managed,
+        message="Store managers cannot create tax rates.",
+    )
     company_id = claims.get("company_id")
     if payload.is_default:
         await tax_svc.clear_default_flags(db, claims["tenant_id"], company_id=company_id)
@@ -14534,6 +14584,13 @@ async def update_tax_rate_api(
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_accounting_write_denied(
+        managed,
+        message="Store managers cannot edit tax rates.",
+    )
     rate = await tax_svc.update_tax_rate(
         db,
         tenant_id=claims["tenant_id"],
@@ -14551,6 +14608,13 @@ async def set_default_tax(
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_accounting_write_denied(
+        managed,
+        message="Store managers cannot set default tax rates.",
+    )
     company_id = claims.get("company_id")
     rate = await tax_svc.get_tax_rate(
         db, claims["tenant_id"], rate_id, company_id=company_id
@@ -15243,6 +15307,13 @@ async def update_inventory_settings(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_settings_write_denied(
+        managed,
+        message="Store managers cannot update company-level inventory FEFO settings.",
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     tenant.fefo_strict_warehouse = bool(payload.fefo_strict_warehouse)
     await db.commit()
