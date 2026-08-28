@@ -2612,10 +2612,17 @@ class LowStockSuggestionLine(BaseModel):
     blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist).
     """
 
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float | None = Field(default=None, gt=0)
-    warehouse_id: str | None = None
-    preferred_supplier_id: str | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup).
+    warehouse_id: UuidIdValue | None = None
+    # Optional preferred supplier ∈ UuidIdValue; omit/`null` → no preference; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach supplier lookup).
+    preferred_supplier_id: UuidIdValue | None = None
     # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on PurchaseRequestItem.notes).
     notes: PurchaseRequestNotesValue | None = None

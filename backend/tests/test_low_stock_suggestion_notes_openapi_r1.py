@@ -16,12 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_low_stock_suggestion_notes_schema():
     omit = LowStockSuggestionsCreate.model_validate(
-        {"lines": [{"product_id": "p1", "quantity": 1}]}
+        {"lines": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}]}
     )
     assert omit.notes is None
     ok = LowStockSuggestionsCreate.model_validate(
         {
-            "lines": [{"product_id": "p1", "quantity": 1}],
+            "lines": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}],
             "notes": "  Restock floor  ",
         }
     )
@@ -29,16 +29,16 @@ def test_low_stock_suggestion_notes_schema():
     for bad in ("", " ", "!!!", "!!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             LowStockSuggestionsCreate.model_validate(
-                {"lines": [{"product_id": "p1", "quantity": 1}], "notes": bad}
+                {"lines": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}], "notes": bad}
             )
 
     line_ok = LowStockSuggestionLine.model_validate(
-        {"product_id": "p1", "quantity": 2, "notes": "  Bin A  "}
+        {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 2, "notes": "  Bin A  "}
     )
     assert line_ok.notes == "Bin A"
     with pytest.raises(ValidationError):
         LowStockSuggestionLine.model_validate(
-            {"product_id": "p1", "quantity": 2, "notes": "!!!!"}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 2, "notes": "!!!!"}
         )
 
 

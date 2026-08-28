@@ -326,10 +326,12 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           lines: lines.map((ln: any) => ({
-            product_id: ln.product_id,
+            product_id: String(ln.product_id || '').trim(),
             quantity: ln.suggested_order_qty,
-            warehouse_id: ln.warehouse_id || null,
-            preferred_supplier_id: ln.preferred_supplier_id || null,
+            warehouse_id: ln.warehouse_id ? String(ln.warehouse_id).trim() : null,
+            preferred_supplier_id: ln.preferred_supplier_id
+              ? String(ln.preferred_supplier_id).trim()
+              : null,
           })),
           notes: suggestNotes.trim() || null,
         }),
