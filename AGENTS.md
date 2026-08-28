@@ -122,7 +122,8 @@ store activation — never frontend-only.
    org units; reads/export allowed even with users:write), and **catalog
    categories/brands/units create/patch/deactivate (+ brand logo writes) denied
    for store_manager** (company-level catalog meta; list/export/convert reads
-   allowed).
+   allowed), and **customer groups create/patch/deactivate denied for
+   store_manager** (company-level sales master; list/export/get reads allowed).
    Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is

@@ -8312,3 +8312,54 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
     listed_units = await ac.get("/api/v1/catalog/units", headers=headers)
     assert listed_units.status_code == 200, listed_units.text
     assert any(row["code"] == "U-META-DENY" for row in listed_units.json()["data"])
+
+
+@pytest.mark.asyncio
+async def test_store_manager_customer_groups_writes_denied(client, db_session):
+    """Customer group create/patch/deactivate denied for store_manager (company-level)."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+
+    group = m.CustomerGroup(
+        tenant_id=tid,
+        company_id=cid,
+        name="Group Deny Target",
+        discount_percent=5,
+        is_active=True,
+    )
+    db_session.add(group)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/customers/groups",
+        headers=headers,
+        json={"name": "Mgr Group", "discount_percent": 10},
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/customers/groups/{group.id}",
+        headers=headers,
+        json={"name": "Hijacked Group", "discount_percent": 50},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_delete = await ac.delete(
+        f"/api/v1/customers/groups/{group.id}",
+        headers=headers,
+    )
+    assert denied_delete.status_code == 403, denied_delete.text
+    assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/customers/groups", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["name"] == "Group Deny Target" for row in listed.json()["data"])
+
+    got = await ac.get(f"/api/v1/customers/groups/{group.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"]["name"] == "Group Deny Target"

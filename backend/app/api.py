@@ -6622,6 +6622,13 @@ async def create_customer_group(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_customer_group_write_denied(
+        managed,
+        message="Store managers cannot create customer groups.",
+    )
     row = await customers_svc.create_group(
         db,
         tenant_id=claims["tenant_id"],
@@ -6651,6 +6658,13 @@ async def patch_customer_group(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_customer_group_write_denied(
+        managed,
+        message="Store managers cannot update customer groups.",
+    )
     existing = await customers_svc.get_customer_group(db, claims["tenant_id"], group_id)
     workspace_svc.assert_record_company(claims, existing)
     row = await customers_svc.update_group(
@@ -6669,6 +6683,13 @@ async def delete_customer_group(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_customer_group_write_denied(
+        managed,
+        message="Store managers cannot deactivate customer groups.",
+    )
     existing = await customers_svc.get_customer_group(db, claims["tenant_id"], group_id)
     workspace_svc.assert_record_company(claims, existing)
     row = await customers_svc.deactivate_group(

@@ -529,6 +529,15 @@ def assert_company_level_catalog_meta_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_customer_group_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update customer groups.",
+) -> None:
+    """403 when store_manager attempts company-level customer group master writes."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 PARTY_CREDIT_MASTER_FIELDS = frozenset(
     {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
 )
