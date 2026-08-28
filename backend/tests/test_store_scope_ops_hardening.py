@@ -10445,7 +10445,7 @@ async def test_store_manager_offline_device_bind_store_scoped(client, db_session
 
 @pytest.mark.asyncio
 async def test_store_manager_sync_push_pull_store_scoped(client, db_session):
-    """store_manager sync push/pull require managed store_id; foreign/unset denied."""
+    """store_manager sync push/pull/ack require managed store_id; foreign/unset denied."""
     from app import offline_devices as offline_devices_svc
 
     ac, seed = client
@@ -10549,3 +10549,131 @@ async def test_store_manager_sync_push_pull_store_scoped(client, db_session):
         },
     )
     assert ok_pull.status_code == 200, ok_pull.text
+
+    ack_unset = await ac.post(
+        "/api/v1/sync/ack",
+        headers=headers,
+        json={"device_id": device_id, "op_ids": ["noop-ack-id"]},
+    )
+    assert ack_unset.status_code == 403, ack_unset.text
+    assert ack_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ack_foreign = await ac.post(
+        "/api/v1/sync/ack",
+        headers=headers,
+        json={
+            "device_id": device_id,
+            "store_id": other.id,
+            "op_ids": ["noop-ack-id"],
+        },
+    )
+    assert ack_foreign.status_code == 403, ack_foreign.text
+    assert ack_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert ack_foreign.json()["detail"].get("store_id") == other.id
+
+
+@pytest.mark.asyncio
+async def test_store_manager_sync_conflicts_and_status_store_scoped(client, db_session):
+    """store_manager sync conflicts/status limited to managed-store-bound devices."""
+    from app import offline_devices as offline_devices_svc
+    from app.offline_auth_envelope import apply_envelope_to_device
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Conflict Scope Mine",
+        code="CS-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Conflict Scope Other",
+        code="CS-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    device_mine = await offline_devices_svc.create_device(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        name="Conflict Mine Device",
+        platform="web",
+    )
+    device_other = await offline_devices_svc.create_device(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        name="Conflict Other Device",
+        platform="web",
+    )
+    apply_envelope_to_device(
+        device_mine,
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        user_id=mgr.id,
+        permissions={"pos": ["read", "write"]},
+    )
+    apply_envelope_to_device(
+        device_other,
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        user_id=seed["admin1"].id,
+        permissions={"pos": ["read", "write"]},
+    )
+    conflict_mine = m.SyncConflict(
+        tenant_id=tid,
+        device_id=device_mine.id,
+        op_type="pos_sale",
+        client_op_id="conflict-mine-0001",
+        client_payload={"x": 1},
+        server_snapshot={"reason": "mine"},
+        status="open",
+    )
+    conflict_other = m.SyncConflict(
+        tenant_id=tid,
+        device_id=device_other.id,
+        op_type="pos_sale",
+        client_op_id="conflict-other-0001",
+        client_payload={"x": 2},
+        server_snapshot={"reason": "other"},
+        status="open",
+    )
+    conflict_unbound = m.SyncConflict(
+        tenant_id=tid,
+        device_id=None,
+        op_type="ping",
+        client_op_id="conflict-unbound-0001",
+        client_payload={},
+        server_snapshot={"reason": "unbound"},
+        status="open",
+    )
+    db_session.add_all([conflict_mine, conflict_other, conflict_unbound])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    listed = await ac.get("/api/v1/sync/conflicts", headers=headers)
+    assert listed.status_code == 200, listed.text
+    op_ids = {row.get("client_op_id") for row in listed.json()["data"]}
+    assert "conflict-mine-0001" in op_ids
+    assert "conflict-other-0001" not in op_ids
+    assert "conflict-unbound-0001" not in op_ids
+
+    status = await ac.get("/api/v1/sync/status", headers=headers)
+    assert status.status_code == 200, status.text
+    body = status.json()["data"]
+    assert body.get("scope") == "store_manager"
+    assert body.get("conflict_count") == 1
+    assert body.get("registered_devices") == 1
+    assert body.get("active_devices") == 1
