@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -12,8 +13,12 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _admin(ac):
-    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+async def _admin(ac, seed):
+    """Super admin — company-level NL generate/template writes require non–store_manager."""
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _mgr(ac):
@@ -42,7 +47,7 @@ def test_parse_prompt_low_stock_pdf():
 async def test_generate_and_save_template(client, db_session):
     ac, seed = client
     # Company-level NL generate + template writes are denied for store_manager.
-    headers = await _admin(ac)
+    headers = await _admin(ac, seed)
 
     # Seed a posted sale so product sales preview is non-empty-capable
     inv = m.SalesInvoice(
@@ -116,7 +121,7 @@ async def test_generate_and_save_template(client, db_session):
 async def test_report_templates_tenant_isolated(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
-    admin = await _admin(ac)
+    admin = await _admin(ac, seed)
 
     # Plant beta template directly
     db_session.add(

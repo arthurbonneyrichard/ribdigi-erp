@@ -6,6 +6,7 @@ import io
 import json
 from datetime import datetime
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -9086,7 +9087,12 @@ async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_sessi
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     denied_sale = await ac.post(
         "/api/v1/sales",
