@@ -92,6 +92,41 @@ def assert_store_in_manager_scope(
         )
 
 
+def assert_offline_sync_store_scope(
+    managed_ids: list[str] | None,
+    store_id: str | None,
+    *,
+    message: str = "Store managers must bind offline sync to a managed store.",
+) -> None:
+    """403 when store_manager sync push/pull uses foreign or unset ``store_id``.
+
+    Mirrors offline device bind: envelope refresh on ``/sync/push`` and
+    ``/sync/pull`` must not company-bind or touch unmanaged stores. Register /
+    revoke remain admin; Offline Complete remains MISSING.
+    """
+    if managed_ids is None:
+        return
+    sid = (store_id or "").strip()
+    if not sid:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+                "store_id": None,
+            },
+        )
+    if sid not in managed_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+                "store_id": sid,
+            },
+        )
+
+
 async def assert_pos_session_store_in_manager_scope(
     db: AsyncSession,
     claims: dict,
