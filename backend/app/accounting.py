@@ -2105,42 +2105,6 @@ async def scoped_coa_balance_map(
     return bal_by_id
 
 
-async def serialize_coa_accounts_scoped(
-    db: AsyncSession,
-    tenant_id: str,
-    rows: list[m.Account],
-    *,
-    company_id: str | None = None,
-    store_ids: list[str] | None = None,
-) -> list[dict]:
-    """Serialize COA rows; rebuild balances from posted journals when store-scoped."""
-    if store_ids is None:
-        return [serialize_coa_account(r) for r in rows]
-    _, bal_by_id = await account_balances_through(
-        db, tenant_id, store_ids=store_ids, company_id=company_id
-    )
-    return [
-        serialize_coa_account(r, balance=float(bal_by_id.get(r.id, 0.0)))
-        for r in rows
-    ]
-
-
-async def scoped_coa_balance(
-    db: AsyncSession,
-    tenant_id: str,
-    account: m.Account,
-    *,
-    company_id: str | None = None,
-    store_ids: list[str] | None = None,
-) -> float:
-    if store_ids is None:
-        return float(account.balance or 0)
-    _, bal_by_id = await account_balances_through(
-        db, tenant_id, store_ids=store_ids, company_id=company_id
-    )
-    return float(bal_by_id.get(account.id, 0.0))
-
-
 async def account_balances_through(
     db: AsyncSession,
     tenant_id: str,
