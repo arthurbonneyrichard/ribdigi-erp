@@ -10702,9 +10702,13 @@ async def test_store_manager_bi_settings_write_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_purchasing_settings_write_denied(client, db_session):
-    """Purchasing PR approval settings PATCH/export denied for store_manager; GET remains."""
+    """Purchasing PR approval settings GET/PATCH/export denied for store_manager."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_get = await ac.get("/api/v1/purchasing/settings", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     denied = await ac.patch(
         "/api/v1/purchasing/settings",
@@ -10717,9 +10721,6 @@ async def test_store_manager_purchasing_settings_write_denied(client, db_session
     )
     assert denied.status_code == 403, denied.text
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
-
-    ok_get = await ac.get("/api/v1/purchasing/settings", headers=headers)
-    assert ok_get.status_code == 200, ok_get.text
 
     denied_export = await ac.get("/api/v1/purchasing/settings/export", headers=headers)
     assert denied_export.status_code == 403, denied_export.text

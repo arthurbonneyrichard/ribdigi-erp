@@ -272,7 +272,7 @@ export default function Page() {
       api(grnPath),
       api(invPath),
       api(retPath),
-      api('/purchasing/settings'),
+      api('/purchasing/settings').catch(() => ({ data: { levels: [] } })),
       api('/warehouses').catch(() => ({ data: [] })),
     ]);
     setRequests(prRes.data || []);

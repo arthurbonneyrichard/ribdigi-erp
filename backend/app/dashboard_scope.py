@@ -635,6 +635,22 @@ def assert_company_level_purchasing_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_purchasing_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company purchasing approval settings; "
+        "scoped PR/PO ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads purchasing PR approval matrix (company admin dump).
+
+    PATCH and CSV export already denied; GET dumped full levels/roles/thresholds.
+    Scoped purchasing PR/PO/GRN ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_purchasing_settings_export_denied(
     managed_ids: list[str] | None,
     *,
@@ -642,7 +658,8 @@ def assert_company_level_purchasing_settings_export_denied(
 ) -> None:
     """403 when store_manager exports purchasing PR approval settings CSV.
 
-    GET settings remains; matrix dump is company-level administration (PATCH already denied).
+    GET settings is separately denied; matrix dump is company-level administration
+    (PATCH already denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

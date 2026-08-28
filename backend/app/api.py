@@ -9195,6 +9195,10 @@ async def get_purchasing_settings(
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_purchasing_settings_read_denied(managed)
     return env(await purchasing_svc.get_pr_approval_settings(db, claims["tenant_id"]))
 
 
