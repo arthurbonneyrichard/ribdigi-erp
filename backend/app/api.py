@@ -11047,6 +11047,13 @@ async def accounts(
     elif active_only:
         q = q.where(m.Account.is_active.is_(True))
     rows = list((await db.execute(q.order_by(m.Account.code))).scalars().all())
+    rows = await dashboard_scope_svc.filter_coa_accounts_for_manager_read(
+        db,
+        claims["tenant_id"],
+        rows,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     if tree:
         return env(accounting_svc.build_account_tree(rows, balance_by_id=balance_by_id))
     return env(
@@ -11068,12 +11075,17 @@ async def accounts_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 X1 — COA accounts CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     text = await finance_meta_export_svc.export_accounts_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
         company_id=claims.get("company_id"),
+        store_ids=multi,
     )
     return Response(
         content=text,
@@ -11096,6 +11108,13 @@ async def get_account(
     )
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    await dashboard_scope_svc.assert_coa_account_read_in_manager_scope(
+        db,
+        claims["tenant_id"],
+        row,
+        multi,
+        company_id=claims.get("company_id"),
+    )
     balance_by_id = await accounting_svc.scoped_coa_balance_map(
         db,
         claims["tenant_id"],

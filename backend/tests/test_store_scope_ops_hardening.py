@@ -4942,6 +4942,9 @@ async def test_store_manager_coa_and_liquid_balances_store_scoped(client, db_ses
 
     coa_list = await ac.get("/api/v1/accounting/accounts", headers=headers)
     assert coa_list.status_code == 200, coa_list.text
+    list_codes = {a["code"] for a in coa_list.json()["data"]}
+    assert "1000" in list_codes
+    assert "4000" not in list_codes
     cash_row = next(a for a in coa_list.json()["data"] if a["code"] == "1000")
     assert float(cash_row["balance"]) == pytest.approx(55.0)
 
@@ -4974,6 +4977,160 @@ async def test_store_manager_coa_and_liquid_balances_store_scoped(client, db_ses
     assert liq_csv.status_code == 200, liq_csv.text
     assert "900" not in liq_csv.text.splitlines()[1] if len(liq_csv.text.splitlines()) > 1 else True
     assert "55" in liq_csv.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_coa_account_read_scoped(client, db_session):
+    """COA get/list/tree/export deny non-liquid reads; liquid scoped like opening balance."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="COA Read Mine",
+        code="COA-R-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="COA Read Other",
+        code="COA-R-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    cash = await accounting_svc.get_account_by_code(db_session, tid, "1000", company_id=cid)
+    bank = await accounting_svc.get_account_by_code(db_session, tid, "1010", company_id=cid)
+    revenue = await accounting_svc.get_account_by_code(db_session, tid, "4000", company_id=cid)
+    assert cash is not None and bank is not None and revenue is not None
+
+    foreign_bank_only = await accounting_svc.create_liquid_account(
+        db_session,
+        tenant_id=tid,
+        kind="bank",
+        code="1096",
+        name="Foreign Read Bank",
+        bank_name="Foreign Bank",
+        company_id=cid,
+    )
+    untouched_petty = await accounting_svc.create_liquid_account(
+        db_session,
+        tenant_id=tid,
+        kind="cash",
+        code="1095",
+        name="Untouched Petty",
+        company_id=cid,
+    )
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Mine cash read",
+        reference="JE-READ-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 30, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 30},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Other bank read",
+        reference="JE-READ-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 500, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 500},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Foreign-only bank read",
+        reference="JE-READ-FOR",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": foreign_bank_only.code, "debit": 80, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 80},
+        ],
+    )
+    await db_session.commit()
+
+    denied_revenue = await ac.get(
+        f"/api/v1/accounting/accounts/{revenue.id}", headers=headers
+    )
+    assert denied_revenue.status_code == 403
+    assert denied_revenue.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cash = await ac.get(f"/api/v1/accounting/accounts/{cash.id}", headers=headers)
+    assert ok_cash.status_code == 200, ok_cash.text
+    assert float(ok_cash.json()["data"]["balance"]) == pytest.approx(30.0)
+
+    ok_untouched = await ac.get(
+        f"/api/v1/accounting/accounts/{untouched_petty.id}", headers=headers
+    )
+    assert ok_untouched.status_code == 200, ok_untouched.text
+
+    denied_bank = await ac.get(f"/api/v1/accounting/accounts/{bank.id}", headers=headers)
+    assert denied_bank.status_code == 403
+    assert denied_bank.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_foreign = await ac.get(
+        f"/api/v1/accounting/accounts/{foreign_bank_only.id}", headers=headers
+    )
+    assert denied_foreign.status_code == 403
+    assert denied_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    coa_list = await ac.get("/api/v1/accounting/accounts", headers=headers)
+    assert coa_list.status_code == 200, coa_list.text
+    list_codes = {a["code"] for a in coa_list.json()["data"]}
+    assert "1000" in list_codes
+    assert "1095" in list_codes
+    assert "1010" not in list_codes
+    assert "1096" not in list_codes
+    assert "4000" not in list_codes
+
+    coa_tree = await ac.get(
+        "/api/v1/accounting/accounts", headers=headers, params={"tree": "true"}
+    )
+    assert coa_tree.status_code == 200, coa_tree.text
+
+    def _collect_codes(nodes):
+        codes = set()
+        for n in nodes:
+            codes.add(n.get("code"))
+            codes.update(_collect_codes(n.get("children") or []))
+        return codes
+
+    tree_codes = _collect_codes(coa_tree.json()["data"])
+    assert "1000" in tree_codes
+    assert "1095" in tree_codes
+    assert "4000" not in tree_codes
+    assert "1010" not in tree_codes
+
+    exported = await ac.get("/api/v1/accounting/accounts/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    export_lines = exported.text.splitlines()
+    assert any("1000" in line for line in export_lines[1:])
+    assert any("1095" in line for line in export_lines[1:])
+    assert not any("4000" in line for line in export_lines[1:])
+    assert not any("1010" in line for line in export_lines[1:])
 
 
 @pytest.mark.asyncio

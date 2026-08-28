@@ -447,6 +447,134 @@ async def assert_liquid_account_in_manager_scope(
         )
 
 
+async def _posted_journal_store_ids_for_account(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    company_id: str | None = None,
+) -> list[str | None]:
+    """Distinct journal store_ids with posted activity on one COA account."""
+    aid = (account_id or "").strip()
+    if not aid:
+        return []
+    stmt = (
+        select(m.JournalEntry.store_id)
+        .join(
+            m.JournalEntryLine,
+            m.JournalEntryLine.journal_entry_id == m.JournalEntry.id,
+        )
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntryLine.account_id == aid,
+            m.JournalEntry.status == "posted",
+        )
+        .distinct()
+    )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+    return list((await db.execute(stmt)).scalars().all())
+
+
+def _liquid_account_has_managed_journal_activity(
+    activity_stores: list[str | None],
+    store_ids: list[str],
+) -> bool:
+    managed_set = set(store_ids)
+    return any(sid is not None and str(sid) in managed_set for sid in activity_stores)
+
+
+async def _coa_account_readable_by_manager(
+    db: AsyncSession,
+    tenant_id: str,
+    account: m.Account,
+    store_ids: list[str],
+    *,
+    company_id: str | None = None,
+) -> bool:
+    """True when store_manager may read one COA account (liquid-only; first-touch allowed)."""
+    if not (account.is_cash_account or account.is_bank_account):
+        return False
+    allowed_liquid = await managed_liquid_account_ids(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    if allowed_liquid and account.id in allowed_liquid:
+        return True
+    activity_stores = await _posted_journal_store_ids_for_account(
+        db, tenant_id, account.id, company_id=company_id
+    )
+    if not activity_stores:
+        return True
+    return _liquid_account_has_managed_journal_activity(activity_stores, store_ids)
+
+
+async def assert_coa_account_read_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    account: m.Account,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when store_manager reads COA outside allowed liquid scope.
+
+    Non-cash/bank accounts are company-level chart structure (denied). Liquid accounts
+    with no prior journal activity are allowed (first-touch). Accounts with only
+    foreign-store liquid activity are fail-closed.
+    """
+    if store_ids is None:
+        return
+    if company_id and account.company_id and str(account.company_id) != str(company_id):
+        return
+    aid = account.id
+    if not (account.is_cash_account or account.is_bank_account):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": (
+                    "Store managers cannot read non-cash/bank chart-of-accounts entries."
+                ),
+                "account_id": aid or None,
+            },
+        )
+    if await _coa_account_readable_by_manager(
+        db, tenant_id, account, store_ids, company_id=company_id
+    ):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": (
+                "Bank/cash account has activity only outside your managed store scope."
+            ),
+            "account_id": aid or None,
+        },
+    )
+
+
+async def filter_coa_accounts_for_manager_read(
+    db: AsyncSession,
+    tenant_id: str,
+    accounts: list[m.Account],
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> list[m.Account]:
+    """Return COA rows readable by store_manager (liquid-only; first-touch allowed)."""
+    if store_ids is None:
+        return accounts
+    readable: list[m.Account] = []
+    for account in accounts:
+        if await _coa_account_readable_by_manager(
+            db, tenant_id, account, store_ids, company_id=company_id
+        ):
+            readable.append(account)
+    return readable
+
+
 async def assert_opening_balance_account_in_manager_scope(
     db: AsyncSession,
     tenant_id: str,
@@ -480,27 +608,12 @@ async def assert_opening_balance_account_in_manager_scope(
                 "account_id": aid or None,
             },
         )
-    stmt = (
-        select(m.JournalEntry.store_id)
-        .join(
-            m.JournalEntryLine,
-            m.JournalEntryLine.journal_entry_id == m.JournalEntry.id,
-        )
-        .where(
-            m.JournalEntryLine.tenant_id == tenant_id,
-            m.JournalEntry.tenant_id == tenant_id,
-            m.JournalEntryLine.account_id == aid,
-            m.JournalEntry.status == "posted",
-        )
-        .distinct()
+    activity_stores = await _posted_journal_store_ids_for_account(
+        db, tenant_id, aid, company_id=company_id
     )
-    if company_id:
-        stmt = stmt.where(m.JournalEntry.company_id == company_id)
-    activity_stores = (await db.execute(stmt)).scalars().all()
     if not activity_stores:
         return
-    managed_set = set(store_ids)
-    if any(sid is not None and str(sid) in managed_set for sid in activity_stores):
+    if _liquid_account_has_managed_journal_activity(activity_stores, store_ids):
         return
     raise HTTPException(
         status_code=403,
