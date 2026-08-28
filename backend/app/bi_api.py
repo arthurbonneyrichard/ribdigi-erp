@@ -197,6 +197,13 @@ async def bi_put_settings(
     claims=Depends(require_permission("business_insights", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bi_settings_write_denied(
+        managed,
+        message="Store managers cannot update company business-insights settings.",
+    )
     patch = {k: v for k, v in body.model_dump().items() if v is not None}
     settings = await _svc(db, claims).save_settings(patch)
     return {"settings": settings}

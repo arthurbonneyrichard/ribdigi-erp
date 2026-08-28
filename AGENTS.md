@@ -140,6 +140,8 @@ store activation — never frontend-only.
    master; get/list reads remain; nested contacts on create remain allowed), and
    **company membership assign/revoke denied for store_manager** (even when
    companies write is granted; list/read remain when permitted).
+   and **business-insights settings PUT denied for store_manager**
+   (company-level BI thresholds/formulas; GET settings/formulas + acknowledge/dismiss remain).
    Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is

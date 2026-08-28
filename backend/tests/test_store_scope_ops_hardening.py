@@ -8857,6 +8857,65 @@ async def test_store_manager_ai_report_template_writes_denied(client, db_session
     await db_session.refresh(tmpl)
     assert tmpl.name == "Deny Target Template"
 
+
+@pytest.mark.asyncio
+async def test_store_manager_ai_report_generate_denied(client, db_session):
+    """Company-level AI NL report generate/export denied for store_manager; template list remains."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    tmpl = m.AiReportTemplate(
+        tenant_id=tid,
+        company_id=cid,
+        user_id=seed["mgr1"].id,
+        name="Generate Deny Template",
+        prompt="Show me monthly sales",
+        report_type="sales_products",
+        format="csv",
+        params={"period_label": "this month"},
+    )
+    db_session.add(tmpl)
+    await db_session.commit()
+
+    denied_generate = await ac.post(
+        "/api/v1/ai/reports/generate",
+        headers=headers,
+        json={"prompt": "Show me monthly sales"},
+    )
+    assert denied_generate.status_code == 403, denied_generate.text
+    assert denied_generate.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_typed = await ac.post(
+        "/api/v1/ai/reports/generate",
+        headers=headers,
+        json={"report_type": "sales_products", "period": "this month"},
+    )
+    assert denied_typed.status_code == 403, denied_typed.text
+    assert denied_typed.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_from_tmpl = await ac.post(
+        "/api/v1/ai/reports/generate",
+        headers=headers,
+        json={"template_id": tmpl.id},
+    )
+    assert denied_from_tmpl.status_code == 403, denied_from_tmpl.text
+    assert denied_from_tmpl.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.post(
+        "/api/v1/ai/reports/generate?export=true",
+        headers=headers,
+        json={"prompt": "Show me monthly sales", "format": "csv"},
+    )
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/ai/reports/templates", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["id"] == tmpl.id for row in listed.json()["data"])
+
+
 @pytest.mark.asyncio
 async def test_store_manager_company_membership_writes_denied(client, db_session):
     """Company membership assign/revoke denied for store_manager even when companies write granted."""
@@ -8907,3 +8966,25 @@ async def test_store_manager_company_membership_writes_denied(client, db_session
     assert denied_revoke.status_code == 403, denied_revoke.text
     assert denied_revoke.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+
+
+@pytest.mark.asyncio
+async def test_store_manager_bi_settings_write_denied(client, db_session):
+    """Business-insights settings PUT denied for store_manager; GET settings remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied = await ac.put(
+        "/api/v1/business-insights/settings",
+        headers=headers,
+        json={"slow_moving_days": 45},
+    )
+    assert denied.status_code == 403, denied.text
+    detail = denied.json()["detail"]
+    assert detail["code"] == "STORE_SCOPE_DENIED"
+
+    ok_get = await ac.get("/api/v1/business-insights/settings", headers=headers)
+    assert ok_get.status_code == 200, ok_get.text
+    body = ok_get.json()
+    payload = body.get("data", body)
+    assert "settings" in payload or "formulas" in payload
