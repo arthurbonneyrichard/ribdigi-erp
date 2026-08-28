@@ -493,6 +493,15 @@ def assert_company_level_admin_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_org_create_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create company-level org structures.",
+) -> None:
+    """403 when store_manager attempts tenant/company org creates (companies, warehouses)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 async def assert_liquid_account_in_manager_scope(
     db: AsyncSession,
     tenant_id: str,
