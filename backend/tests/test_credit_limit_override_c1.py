@@ -199,9 +199,8 @@ async def test_pos_credit_override_and_cashier_denied(client, db_session):
     assert denied.status_code == 403
     assert denied.json()["detail"]["code"] == "CREDIT_OVERRIDE_FORBIDDEN"
 
-    # Manager with credit:approve via store_manager — but seed mgr lacks 2FA? store_manager doesn't require 2FA
+    # store_manager has credit:approve but credit_limit_override remains finance/admin only
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    # Manager needs open session — open for manager
     opened_m = await ac.post(
         "/api/v1/pos/sessions/open",
         headers=mgr,
@@ -209,7 +208,7 @@ async def test_pos_credit_override_and_cashier_denied(client, db_session):
     )
     assert opened_m.status_code == 200, opened_m.text
     sid_m = opened_m.json()["data"]["session_id"]
-    ok = await ac.post(
+    mgr_denied = await ac.post(
         "/api/v1/pos/sales",
         headers=mgr,
         json={
@@ -218,6 +217,30 @@ async def test_pos_credit_override_and_cashier_denied(client, db_session):
             "payment_method": "credit",
             "credit_limit_override": True,
             "credit_override_reason": "Store manager VIP approval",
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert mgr_denied.status_code == 403, mgr_denied.text
+    assert mgr_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Finance/admin (super_admin) may still override
+    headers_super = await _super(ac, seed)
+    opened_s = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers_super,
+        json={"opening_cash": 50},
+    )
+    assert opened_s.status_code == 200, opened_s.text
+    sid_s = opened_s.json()["data"]["session_id"]
+    ok = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers_super,
+        json={
+            "session_id": sid_s,
+            "party_id": customer.id,
+            "payment_method": "credit",
+            "credit_limit_override": True,
+            "credit_override_reason": "Finance VIP approval",
             "items": [{"product_id": seed["p1"].id, "quantity": 1}],
         },
     )

@@ -766,7 +766,7 @@ Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-K
 }
 ```
 
-Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Missing permission → `403 CREDIT_OVERRIDE_FORBIDDEN`. Successful override writes audit action `credit_limit_override` and sets invoice `credit_limit_overridden` / `credit_override_reason` / `credit_override_by` / `credit_override_at`.
+Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Missing permission → `403 CREDIT_OVERRIDE_FORBIDDEN`. `store_manager` is denied override with `403 STORE_SCOPE_DENIED` despite default `credit:approve` (finance/admin only). Successful override writes audit action `credit_limit_override` and sets invoice `credit_limit_overridden` / `credit_override_reason` / `credit_override_by` / `credit_override_at`.
 
 **Create Invoice:**
 ```json
@@ -846,7 +846,7 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 Single tender: set `payment_method` (`cash`|`card`|`wallet`|`credit`|`other`).  
 Split tender: set `payments[]` with `{ "payment_method", "amount", "reference?", "liquid_account_id?" }` summing to the computed sale total (`PAYMENT_TOTAL_MISMATCH` if not). Response includes `payments` rows and `payment_method` (`split` when multiple). Credit portion only increases customer AR balance.
 
-Credit tender (full or split portion) enforces the same credit-limit gate as invoice post. Optional body fields: `credit_limit_override` (bool), `credit_override_reason` (string). Same `CREDIT_LIMIT_*` error codes and audit action apply.
+Credit tender (full or split portion) enforces the same credit-limit gate as invoice post. Optional body fields: `credit_limit_override` (bool), `credit_override_reason` (string). Same `CREDIT_LIMIT_*` / `STORE_SCOPE_DENIED` (store_manager override deny) error codes and audit action apply. `store_manager` override attempts return `403 STORE_SCOPE_DENIED`.
 
 **Stock integrity (Stage 13 H1):** Aggregated line quantities are checked before the sale transaction is created. Insufficient available stock returns `409` with `detail.code = INSUFFICIENT_STOCK`. No `Transaction`, `PosPayment`, or `pos_sale` journal is committed; open session totals are unchanged.
 
