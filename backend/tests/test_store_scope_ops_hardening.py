@@ -9718,6 +9718,13 @@ async def test_store_manager_report_schedule_writes_denied(client, db_session):
     assert denied_run.status_code == 403, denied_run.text
     assert denied_run.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_run_due = await ac.post(
+        "/api/v1/reports/schedules/run-due",
+        headers=headers,
+    )
+    assert denied_run_due.status_code == 403, denied_run_due.text
+    assert denied_run_due.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok_daily = await ac.get("/api/v1/reports/sales/daily", headers=headers)
     assert ok_daily.status_code == 200, ok_daily.text
 
