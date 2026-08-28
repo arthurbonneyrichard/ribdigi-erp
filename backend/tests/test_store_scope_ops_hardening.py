@@ -11847,6 +11847,28 @@ async def test_store_manager_jobs_catalog_run_denied(client, db_session, monkeyp
 
 
 @pytest.mark.asyncio
+async def test_store_manager_fiscal_period_reopen_denied(client, db_session):
+    """POST /accounting/fiscal-period/reopen denied for store_manager; admin remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied = await ac.post("/api/v1/accounting/fiscal-period/reopen", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Admin reopen is idempotent when period is already open.
+    ok = await ac.post("/api/v1/accounting/fiscal-period/reopen", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["current_period_closed"] is False
+
+
+@pytest.mark.asyncio
 async def test_store_manager_onboarding_checklist_denied(client, db_session):
     """Company onboarding checklist GET + CSV export denied for store_manager; admin remains."""
     ac, seed = client

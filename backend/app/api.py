@@ -13733,12 +13733,18 @@ async def close_fiscal_period(
 
 @api.post("/accounting/fiscal-period/reopen")
 async def reopen_fiscal_period(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 118 F1 — reopen current fiscal year (company admin / super admin)."""
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_fiscal_period_write_denied(
+        managed,
+        message="Store managers cannot reopen fiscal periods.",
+    )
     data = await accounting_svc.reopen_current_fiscal_period(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
     )

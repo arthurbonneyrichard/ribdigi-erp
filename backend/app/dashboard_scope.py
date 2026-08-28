@@ -540,7 +540,8 @@ def assert_company_level_fiscal_period_export_denied(
     """403 when store_manager exports fiscal period status CSV (company close state).
 
     GET fiscal-period status is separately denied; CSV dump is company-level
-    administration (close already denied; reopen is admin-role gated).
+    administration. Close uses accounting write deny; reopen uses
+    ``assert_company_level_fiscal_period_write_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -555,8 +556,23 @@ def assert_company_level_fiscal_period_read_denied(
 ) -> None:
     """403 when store_manager reads fiscal period open/close status (company admin dump).
 
-    Close/export already denied; GET dumped year bounds and ``current_period_closed``.
-    Scoped journal/report ops remain (server-side open-period checks still apply).
+    Close/export already denied; reopen uses write deny. GET dumped year bounds
+    and ``current_period_closed``. Scoped journal/report ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_fiscal_period_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot reopen company fiscal periods; "
+        "scoped journal/report ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /accounting/fiscal-period/reopen.
+
+    Reads/export/close already denied; fiscal reopen is company accounting admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
