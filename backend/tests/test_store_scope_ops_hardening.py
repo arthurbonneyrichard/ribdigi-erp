@@ -8727,7 +8727,6 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
     cid = seed["c1"].id
     cust = seed["party1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
 
     supplier = m.Party(
         tenant_id=tid,
@@ -8738,24 +8737,26 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
         status="active",
         credit_limit=0,
     )
-    db_session.add(supplier)
+    cust_contact = m.PartyContact(
+        tenant_id=tid,
+        company_id=cid,
+        party_id=cust.id,
+        name="Cust Contact",
+        email="cust.contact@example.com",
+        is_primary=True,
+    )
+    db_session.add_all([supplier, cust_contact])
+    await db_session.flush()
+    sup_contact = m.PartyContact(
+        tenant_id=tid,
+        company_id=cid,
+        party_id=supplier.id,
+        name="Sup Contact",
+        email="sup.contact@example.com",
+        is_primary=True,
+    )
+    db_session.add(sup_contact)
     await db_session.commit()
-
-    cust_contact = await ac.post(
-        f"/api/v1/customers/{cust.id}/contacts",
-        headers=admin_headers,
-        json={"name": "Cust Contact", "email": "cust.contact@example.com", "is_primary": True},
-    )
-    assert cust_contact.status_code == 200, cust_contact.text
-    cust_contact_id = cust_contact.json()["data"]["id"]
-
-    sup_contact = await ac.post(
-        f"/api/v1/suppliers/{supplier.id}/contacts",
-        headers=admin_headers,
-        json={"name": "Sup Contact", "email": "sup.contact@example.com", "is_primary": True},
-    )
-    assert sup_contact.status_code == 200, sup_contact.text
-    sup_contact_id = sup_contact.json()["data"]["id"]
 
     denied_cust_add = await ac.post(
         f"/api/v1/customers/{cust.id}/contacts",
@@ -8766,7 +8767,7 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
     assert denied_cust_add.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     denied_cust_del = await ac.delete(
-        f"/api/v1/customers/{cust.id}/contacts/{cust_contact_id}",
+        f"/api/v1/customers/{cust.id}/contacts/{cust_contact.id}",
         headers=headers,
     )
     assert denied_cust_del.status_code == 403, denied_cust_del.text
@@ -8781,7 +8782,7 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
     assert denied_sup_add.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     denied_sup_del = await ac.delete(
-        f"/api/v1/suppliers/{supplier.id}/contacts/{sup_contact_id}",
+        f"/api/v1/suppliers/{supplier.id}/contacts/{sup_contact.id}",
         headers=headers,
     )
     assert denied_sup_del.status_code == 403, denied_sup_del.text
@@ -8801,7 +8802,7 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
 
     got = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
     assert got.status_code == 200, got.text
-    assert any(c["id"] == cust_contact_id for c in got.json()["data"].get("contacts") or [])
+    assert any(c["id"] == cust_contact.id for c in got.json()["data"].get("contacts") or [])
 
 
 @pytest.mark.asyncio
