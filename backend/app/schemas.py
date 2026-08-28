@@ -1351,7 +1351,10 @@ class PartyCreate(BaseModel):
     longitude: float | None = None
     credit_limit: float = 0
     payment_terms_days: int = Field(default=30, ge=0, le=3650)
-    customer_group_id: str | None = None
+    # Optional customer group ∈ UuidIdValue; omit/`null` → no group; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach group lookup).
+    # Existence / active-group rules remain require_active_group (**404**/400).
+    customer_group_id: UuidIdValue | None = None
 
 
 class PartyUpdate(BaseModel):
@@ -1382,7 +1385,10 @@ class PartyUpdate(BaseModel):
     longitude: float | None = None
     credit_limit: float | None = None
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
-    customer_group_id: str | None = None
+    # omit → no change; `null` → clear group; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach group lookup). Existence / active-group
+    # rules remain require_active_group (**404**/400). Same honesty as create.
+    customer_group_id: UuidIdValue | None = None
 
 
 class PartyContactCreate(BaseModel):

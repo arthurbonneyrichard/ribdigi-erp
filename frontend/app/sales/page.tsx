@@ -316,7 +316,7 @@ export default function Page() {
           longitude: customerLng === '' ? null : Number(customerLng),
           credit_limit: Number(creditLimit) || 0,
           payment_terms_days: Number(paymentTermsDays) || 0,
-          customer_group_id: customerGroupId || null,
+          customer_group_id: customerGroupId.trim() || null,
         }),
       });
       setCustomerId(r.data.id);
@@ -425,7 +425,7 @@ export default function Page() {
     try {
       await api(`/customers/${customerId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ customer_group_id: customerGroupId }),
+        body: JSON.stringify({ customer_group_id: customerGroupId.trim() }),
       });
       await refresh();
       setMessage('Customer group assigned');
@@ -1179,7 +1179,11 @@ export default function Page() {
             style={{ width: 90 }}
             title="GPS longitude"
           />
-          <select value={customerGroupId} onChange={(e) => setCustomerGroupId(e.target.value)}>
+          <select
+            value={customerGroupId}
+            onChange={(e) => setCustomerGroupId(e.target.value)}
+            aria-label="Customer group"
+          >
             <option value="">Group (optional)</option>
             {groups
               .filter((g) => g.is_active !== false)
