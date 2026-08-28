@@ -12000,6 +12000,50 @@ async def test_store_manager_tenant_lifecycle_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_sync_conflict_resolve_denied(client, db_session):
+    """POST /sync/conflicts/{id}/resolve denied for store_manager; admin keep_server remains."""
+    ac, seed = client
+    tid = seed["t1"].id
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    conflict = m.SyncConflict(
+        tenant_id=tid,
+        device_id=None,
+        op_type="ping",
+        client_op_id="sm-resolve-deny-0001",
+        client_payload={"n": 1},
+        server_snapshot={"reason": "seed"},
+        status="open",
+    )
+    db_session.add(conflict)
+    await db_session.commit()
+    await db_session.refresh(conflict)
+
+    denied = await ac.post(
+        f"/api/v1/sync/conflicts/{conflict.id}/resolve",
+        headers=headers,
+        json={"resolution": "keep_server"},
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.post(
+        f"/api/v1/sync/conflicts/{conflict.id}/resolve",
+        headers=admin_headers,
+        json={"resolution": "keep_server"},
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["status"] == "resolved"
+    assert ok.json()["data"]["resolution"] == "keep_server"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_business_types_read_denied(client, db_session):
     """Business-types catalog GET denied for store_manager; admin remains."""
     ac, seed = client

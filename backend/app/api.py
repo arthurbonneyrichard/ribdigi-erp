@@ -17977,10 +17977,17 @@ async def sync_conflicts_resolve(
     conflict_id: str,
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 165 R1 / Stage 166 A1 — resolve conflict; accept_client may re-apply safely."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_sync_conflict_resolve_denied(
+        managed,
+        message="Store managers cannot resolve company sync conflicts.",
+    )
     tenants_svc.assert_writable(claims)
     body = payload or {}
     data = await sync_engine_svc.resolve_conflict(

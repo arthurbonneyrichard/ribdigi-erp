@@ -102,7 +102,8 @@ def assert_offline_sync_store_scope(
 
     Mirrors offline device bind: envelope refresh on ``/sync/push``,
     ``/sync/pull``, and ``/sync/ack`` must not company-bind or touch unmanaged
-    stores. Register / revoke remain admin; Offline Complete remains MISSING.
+    stores. Register / revoke remain admin; conflict resolve uses
+    ``assert_company_level_sync_conflict_resolve_denied``. Offline Complete remains MISSING.
     """
     if managed_ids is None:
         return
@@ -125,6 +126,22 @@ def assert_offline_sync_store_scope(
                 "store_id": sid,
             },
         )
+
+
+def assert_company_level_sync_conflict_resolve_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot resolve company sync conflicts; "
+        "scoped conflict list remains; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager POSTs /sync/conflicts/{id}/resolve.
+
+    Conflict list/status remain store-scoped; explicit resolve is company admin
+    (accept_client / keep_server). Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
 
 
 async def assert_pos_session_store_in_manager_scope(
