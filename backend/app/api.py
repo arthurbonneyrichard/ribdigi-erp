@@ -3346,7 +3346,15 @@ async def add_user(
 @api.get("/users/import/template")
 async def users_import_template(
     claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot download company user import templates.",
+    )
     text = user_import_svc.template_csv()
     return Response(
         content=text,
@@ -4447,7 +4455,15 @@ async def inventory_products_lookup(
 @api.get("/products/import/template")
 async def products_import_template(
     claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_import_denied(
+        managed,
+        message="Store managers cannot download company product import templates.",
+    )
     text = product_import_svc.template_csv()
     return Response(
         content=text,
@@ -4535,7 +4551,15 @@ async def products_import(
 @api.get("/inventory/stock/import/template")
 async def stock_import_template(
     claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_stock_import_denied(
+        managed,
+        message="Store managers cannot download company stock import templates.",
+    )
     text = stock_import_svc.template_csv()
     return Response(
         content=text,

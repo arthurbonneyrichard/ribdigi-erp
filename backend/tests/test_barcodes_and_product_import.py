@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 
+import pyotp
 import pytest
 from fastapi import HTTPException
 
@@ -12,6 +13,15 @@ from app import catalog_meta as catalog_meta_svc
 from app import models as m
 from app.product_import import template_csv
 from tests.conftest import auth_headers
+
+
+async def _admin(ac, seed):
+    return await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
 
 def test_ean13_check_digit_and_formats():
@@ -132,7 +142,7 @@ async def test_pos_search_matches_barcode(client, db_session):
 @pytest.mark.asyncio
 async def test_product_csv_import_dry_run_and_commit(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _admin(ac, seed)
 
     tmpl = await ac.get("/api/v1/products/import/template", headers=headers)
     assert tmpl.status_code == 200

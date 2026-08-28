@@ -29,9 +29,9 @@ async def _admin(ac, seed):
 
 @pytest.mark.asyncio
 async def test_products_catalog_crud_import_stock_barcode_jwt(client, db_session):
-    """BR-18.2: catalog CRUD, import, stock levels, barcode lookup via JWT."""
+    """BR-18.2: catalog CRUD, import, stock levels, barcode lookup via JWT (admin)."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _admin(ac, seed)
     await catalog_meta_svc.ensure_default_catalog(db_session, seed["t1"].id)
     await db_session.commit()
 
@@ -119,7 +119,7 @@ async def test_products_catalog_crud_import_stock_barcode_jwt(client, db_session
 
     csv_body = (
         "name,sku,barcode,category_code,brand_code,unit_code,cost_price,selling_price,reorder_level,stock_qty,tracks_batches\n"
-        "S19 Import,S19-P1-IMP,,GEN,,PCS,1,2,1,0,false\n"
+        "S19 Import,S19-P1-IMP,,S19P1C,S19P1B,S19P1U,1,2,1,0,false\n"
     )
     dry = await ac.post(
         "/api/v1/products/import?dry_run=true",

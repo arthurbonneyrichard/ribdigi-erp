@@ -8518,6 +8518,10 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert denied_import.status_code == 403
     assert denied_import.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_template = await ac.get("/api/v1/users/import/template", headers=headers)
+    assert denied_template.status_code == 403
+    assert denied_template.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     denied_role_create = await ac.post(
         "/api/v1/roles",
         headers=headers,
@@ -9877,7 +9881,7 @@ async def test_store_manager_party_export_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_product_import_denied(client, db_session):
-    """Company-level product CSV import denied for store_manager; template/export reads allowed."""
+    """Company-level product CSV import + template denied; scoped products export remains."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
@@ -9904,9 +9908,9 @@ async def test_store_manager_product_import_denied(client, db_session):
     assert denied_apply.status_code == 403, denied_apply.text
     assert denied_apply.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    template = await ac.get("/api/v1/products/import/template", headers=headers)
-    assert template.status_code == 200, template.text
-    assert "sku" in template.text.lower() or "name" in template.text.lower()
+    denied_template = await ac.get("/api/v1/products/import/template", headers=headers)
+    assert denied_template.status_code == 403, denied_template.text
+    assert denied_template.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     exported = await ac.get("/api/v1/products/export", headers=headers)
     assert exported.status_code == 200, exported.text
@@ -10066,7 +10070,7 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_stock_import_denied(client, db_session):
-    """Company-level stock CSV import denied for store_manager; template read allowed."""
+    """Company-level stock CSV import + template denied for store_manager."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
@@ -10092,9 +10096,9 @@ async def test_store_manager_stock_import_denied(client, db_session):
     assert denied_apply.status_code == 403, denied_apply.text
     assert denied_apply.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    template = await ac.get("/api/v1/inventory/stock/import/template", headers=headers)
-    assert template.status_code == 200, template.text
-    assert "sku" in template.text.lower() or "warehouse" in template.text.lower()
+    denied_template = await ac.get("/api/v1/inventory/stock/import/template", headers=headers)
+    assert denied_template.status_code == 403, denied_template.text
+    assert denied_template.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
