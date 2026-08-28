@@ -1422,7 +1422,10 @@ class StockAdjust(BaseModel):
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped / garbage could persist on StockMovement.notes Text).
     notes: StockAdjustNotesValue | None = None
-    warehouse_id: str | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → company / product stock path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
 
 
 class StockMove(BaseModel):

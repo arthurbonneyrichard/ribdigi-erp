@@ -1386,7 +1386,7 @@ export default function Page() {
           quantity: qty,
           reason,
           notes: adjNotes.trim() || null,
-          warehouse_id: adjWarehouseId || null,
+          warehouse_id: adjWarehouseId.trim() || null,
         }),
       });
       setMessage(
@@ -3452,7 +3452,12 @@ export default function Page() {
             <option value="lost">lost</option>
           </select>
           <label className="muted">Warehouse (optional)</label>
-          <select value={adjWarehouseId} onChange={(e) => setAdjWarehouseId(e.target.value)}>
+          <select
+            value={adjWarehouseId}
+            onChange={(e) => setAdjWarehouseId(e.target.value)}
+            aria-label="Stock adjustment warehouse"
+            title="Optional warehouse for adjustment (UuidIdValue)"
+          >
             <option value="">Company / product stock only</option>
             {warehouses
                 .filter((w) => w.is_active !== false)
