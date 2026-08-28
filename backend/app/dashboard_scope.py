@@ -659,6 +659,36 @@ def assert_store_lifecycle_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_pos_hold_expire_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot run POS hold expire-stale maintenance.",
+) -> None:
+    """403 when store_manager hits company POS hold expire-stale maintenance.
+
+    List/create/resume already auto-expire the caller's own soft-reserves.
+    Explicit ``POST /pos/holds/expire-stale`` stays admin/cashier maintenance
+    (cashiers keep self-expire; store_manager view is company-ops denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_liquid_account_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate liquid accounts.",
+) -> None:
+    """403 when store_manager attempts company-level liquid account is_active lifecycle.
+
+    Liquid account create is already denied; soft activate/deactivate stays
+    admin-only. Name/bank detail patches on managed liquid accounts remain.
+    """
+    if not changing_active:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 async def assert_products_in_manager_warehouse_scope(
     db: AsyncSession,
     tenant_id: str,

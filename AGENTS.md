@@ -167,7 +167,11 @@ store activation — never frontend-only.
    store_manager** (company fiscal inventory init / BR-5.2; stock-in/out on
    managed WH remain), and **inventory barcode labels WH-scoped for
    store_manager** (products without managed WarehouseStock denied; in-scope
-   print remains), and
+   print remains), and **POS hold expire-stale denied for store_manager**
+   (company maintenance; list/create/resume auto-expire own holds remain), and
+   **liquid account is_active lifecycle writes denied for store_manager**
+   (activate/deactivate admin-only; name/bank details on managed liquid
+   accounts remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

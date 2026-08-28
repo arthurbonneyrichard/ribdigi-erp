@@ -10392,7 +10392,14 @@ async def pos_holds_expire_stale(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 167 E1 — expire soft-reserved holds past expires_at; release reserved_qty."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_pos_hold_expire_denied(
+        managed,
+        message="Store managers cannot run POS hold expire-stale maintenance.",
+    )
     # Cashiers expire their own; company_admin may pass via elevated path later.
     rows = await pos_holds_svc.expire_stale_holds(
         db,
@@ -11916,6 +11923,12 @@ async def update_liquid_account(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    changing_liquid_active = payload.is_active is not None
+    dashboard_scope_svc.assert_liquid_account_lifecycle_write_denied(
+        managed,
+        changing_active=changing_liquid_active,
+        message="Store managers cannot activate or deactivate liquid accounts.",
+    )
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
         db,
