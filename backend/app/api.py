@@ -17047,6 +17047,11 @@ async def warehouses(
         serialized = [
             dashboard_scope_svc.redact_warehouse_structure(row) for row in serialized
         ]
+    if dashboard_scope_svc.omit_warehouse_manager_assignment(managed_stores):
+        serialized = [
+            dashboard_scope_svc.redact_warehouse_manager_assignment(row)
+            for row in serialized
+        ]
     return env(serialized)
 
 
@@ -17069,6 +17074,9 @@ async def warehouses_export(
         company_id=claims.get("company_id"),
         store_ids=managed_stores,
         omit_structure=dashboard_scope_svc.omit_warehouse_structure(managed_stores),
+        omit_manager_id=dashboard_scope_svc.omit_warehouse_manager_assignment(
+            managed_stores
+        ),
     )
     return Response(
         content=text,
@@ -17238,6 +17246,8 @@ async def update_warehouse(
     serialized = stores_svc.serialize_warehouse(warehouse)
     if dashboard_scope_svc.omit_warehouse_structure(managed_stores):
         serialized = dashboard_scope_svc.redact_warehouse_structure(serialized)
+    if dashboard_scope_svc.omit_warehouse_manager_assignment(managed_stores):
+        serialized = dashboard_scope_svc.redact_warehouse_manager_assignment(serialized)
     return env(serialized, "Warehouse updated")
 
 

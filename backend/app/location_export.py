@@ -166,6 +166,7 @@ async def export_warehouses_csv(
     company_id: str | None = None,
     store_ids: list[str] | None = None,
     omit_structure: bool = False,
+    omit_manager_id: bool = False,
 ) -> str:
     stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == tenant_id)
     if company_id:
@@ -197,7 +198,11 @@ async def export_warehouses_csv(
                     else _cell(getattr(row, "warehouse_type", None) or "retail")
                 ),
                 "store_id": _cell(row.store_id),
-                "manager_id": _cell(getattr(row, "manager_id", None)),
+                "manager_id": (
+                    ""
+                    if omit_manager_id
+                    else _cell(getattr(row, "manager_id", None))
+                ),
                 "address": _cell(getattr(row, "address", None)),
                 "capacity": (
                     ""

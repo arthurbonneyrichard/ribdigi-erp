@@ -1627,10 +1627,30 @@ def assert_warehouse_manager_assignment_write_denied(
 
     Warehouse create is already denied; ``manager_id`` / ``clear_manager`` on
     managed warehouses stays admin-only (same org-assignment class as stores).
+    List/export/patch JSON redacts ``manager_id`` via
+    ``redact_warehouse_manager_assignment``.
     """
     if not changing_manager:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_warehouse_manager_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit warehouse ``manager_id`` on JSON/CSV.
+
+    Manager assign/clear writes already denied; list/export/patch must not
+    re-dump company WH manager org assignment. Name/address/code/store link and
+    managed-WH stock ops remain.
+    """
+    return managed_ids is not None
+
+
+def redact_warehouse_manager_assignment(payload: dict) -> dict:
+    """Null ``manager_id`` on a serialized warehouse dict for store_manager."""
+    out = dict(payload)
+    if "manager_id" in out:
+        out["manager_id"] = None
+    return out
 
 
 def assert_warehouse_store_assignment_write_denied(

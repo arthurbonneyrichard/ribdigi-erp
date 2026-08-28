@@ -12916,13 +12916,19 @@ async def test_store_manager_store_branch_assignment_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_warehouse_manager_assignment_denied(client, db_session):
-    """store_manager cannot assign/clear warehouse manager_id; other managed WH patches remain."""
+    """store_manager cannot assign/clear warehouse manager_id; list/export/patch redact it."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
     mgr = seed["mgr1"]
     admin = seed["admin1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     store = m.Store(
         tenant_id=tid,
@@ -12967,12 +12973,47 @@ async def test_store_manager_warehouse_manager_assignment_denied(client, db_sess
     assert denied_clear.status_code == 403, denied_clear.text
     assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    listed = await ac.get("/api/v1/warehouses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    mine = next(r for r in listed.json()["data"] if r["id"] == wh.id)
+    assert mine.get("manager_id") is None
+    assert mine["name"] == "WH Manager Assign Deny"
+
+    admin_listed = await ac.get("/api/v1/warehouses", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_mine = next(r for r in admin_listed.json()["data"] if r["id"] == wh.id)
+    assert admin_mine.get("manager_id") == admin.id
+
+    exported = await ac.get("/api/v1/warehouses/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "WH-MGR-ASSIGN" in exported.text
+    sm_line = next(
+        line
+        for line in exported.text.splitlines()
+        if "WH-MGR-ASSIGN" in line and "WH Manager Assign Deny" in line
+    )
+    # code,name,warehouse_type,store_id,manager_id,address,capacity,is_active
+    cols = next(csv.reader([sm_line]))
+    assert cols[0] == "WH-MGR-ASSIGN"
+    assert cols[4] == ""
+
+    admin_exported = await ac.get("/api/v1/warehouses/export", headers=admin_headers)
+    assert admin_exported.status_code == 200, admin_exported.text
+    admin_line = next(
+        line
+        for line in admin_exported.text.splitlines()
+        if "WH-MGR-ASSIGN" in line and "WH Manager Assign Deny" in line
+    )
+    admin_cols = next(csv.reader([admin_line]))
+    assert admin_cols[4] == admin.id
+
     ok_name = await ac.patch(
         f"/api/v1/warehouses/{wh.id}",
         headers=headers,
         json={"name": "WH Manager Assign Deny Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
+    assert ok_name.json()["data"].get("manager_id") is None
 
     await db_session.refresh(wh)
     assert wh.manager_id == admin.id

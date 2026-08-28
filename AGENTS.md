@@ -169,7 +169,8 @@ store activation — never frontend-only.
    org link; other managed-store patches remain; branch_id redacted on
    list/export/patch JSON/CSV), and **warehouse manager_id
    assign/clear denied for store_manager** (company-level WH manager assignment;
-   other managed-WH patches remain), and **warehouse store_id assign/clear
+   other managed-WH patches remain; manager_id redacted on list/export/patch
+   JSON/CSV), and **warehouse store_id assign/clear
    denied for store_manager** (company-level WH↔store org link; other managed-WH
    patches remain), and **warehouse type/capacity structure writes denied for
    store_manager** (company inventory-master attributes; name/address on managed
