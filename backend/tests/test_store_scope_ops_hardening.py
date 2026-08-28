@@ -1300,7 +1300,31 @@ async def test_store_manager_sales_orders_scoped(client, db_session):
         store_id=other.id,
         created_by=seed["admin1"].id,
     )
-    db_session.add_all([mine, theirs])
+    unset = m.SalesOrder(
+        tenant_id=tid,
+        company_id=cid,
+        order_number="SO-SCOPE-NULL",
+        customer_id=seed["party1"].id,
+        status="draft",
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        store_id=None,
+        created_by=seed["admin1"].id,
+    )
+    unset_confirm = m.SalesOrder(
+        tenant_id=tid,
+        company_id=cid,
+        order_number="SO-SCOPE-NULL-CFM",
+        customer_id=seed["party1"].id,
+        status="draft",
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        store_id=None,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add_all([mine, theirs, unset, unset_confirm])
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -1309,10 +1333,35 @@ async def test_store_manager_sales_orders_scoped(client, db_session):
     numbers = {row["order_number"] for row in listed.json()["data"]}
     assert "SO-SCOPE-MINE" in numbers
     assert "SO-SCOPE-THEIRS" not in numbers
+    assert "SO-SCOPE-NULL" not in numbers
 
     denied = await ac.get(f"/api/v1/sales/orders/{theirs.id}", headers=headers)
     assert denied.status_code == 403
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null_get = await ac.get(f"/api/v1/sales/orders/{unset.id}", headers=headers)
+    assert denied_null_get.status_code == 403
+    assert denied_null_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null_patch = await ac.patch(
+        f"/api/v1/sales/orders/{unset.id}",
+        headers=headers,
+        json={"notes": "should fail"},
+    )
+    assert denied_null_patch.status_code == 403
+    assert denied_null_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null_confirm = await ac.post(
+        f"/api/v1/sales/orders/{unset_confirm.id}/confirm", headers=headers
+    )
+    assert denied_null_confirm.status_code == 403
+    assert denied_null_confirm.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_null_convert = await ac.post(
+        f"/api/v1/sales/orders/{unset.id}/convert-invoice", headers=headers
+    )
+    assert denied_null_convert.status_code == 403
+    assert denied_null_convert.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     ok = await ac.get(f"/api/v1/sales/orders/{mine.id}", headers=headers)
     assert ok.status_code == 200, ok.text

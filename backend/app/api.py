@@ -8483,7 +8483,7 @@ async def get_sales_order(
     assert_record_access(claims, order.created_by)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(order, "store_id", None)
+        managed, getattr(order, "store_id", None), allow_unset=False
     )
     return env(await sales_docs_svc.serialize_order(db, order))
 
@@ -8502,12 +8502,12 @@ async def patch_sales_order(
     workspace_svc.assert_record_company(claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+        managed, getattr(existing, "store_id", None), allow_unset=False
     )
     fields = payload.model_dump(exclude_unset=True)
     if "store_id" in fields:
         dashboard_scope_svc.assert_store_in_manager_scope(
-            managed, fields.get("store_id")
+            managed, fields.get("store_id"), allow_unset=False
         )
     if "warehouse_id" in fields:
         managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
@@ -8542,7 +8542,7 @@ async def confirm_sales_order(
     workspace_svc.assert_record_company(claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+        managed, getattr(existing, "store_id", None), allow_unset=False
     )
     order = await sales_docs_svc.confirm_order(
         db, claims["tenant_id"], order_id, user_id=claims["sub"]
@@ -8564,7 +8564,7 @@ async def process_sales_order(
     workspace_svc.assert_record_company(claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+        managed, getattr(existing, "store_id", None), allow_unset=False
     )
     order = await sales_docs_svc.advance_order_status(
         db,
@@ -8590,7 +8590,7 @@ async def ship_sales_order(
     workspace_svc.assert_record_company(claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+        managed, getattr(existing, "store_id", None), allow_unset=False
     )
     order = await sales_docs_svc.advance_order_status(
         db,
@@ -8616,7 +8616,7 @@ async def deliver_sales_order(
     workspace_svc.assert_record_company(claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+        managed, getattr(existing, "store_id", None), allow_unset=False
     )
     order = await sales_docs_svc.advance_order_status(
         db,
@@ -8642,7 +8642,7 @@ async def cancel_sales_order(
     workspace_svc.assert_record_company(claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+        managed, getattr(existing, "store_id", None), allow_unset=False
     )
     order = await sales_docs_svc.cancel_order(
         db, claims["tenant_id"], order_id, user_id=claims["sub"]
@@ -8664,7 +8664,7 @@ async def convert_order_invoice(
     workspace_svc.assert_record_company(claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+        managed, getattr(existing, "store_id", None), allow_unset=False
     )
     invoice = await sales_docs_svc.convert_order_to_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], order_id=order_id
