@@ -728,8 +728,8 @@ def assert_company_level_backup_settings_read_denied(
 
     Backup schedule/retention dump is company infra admin. Job list/export use
     ``assert_company_level_backup_jobs_read_denied``. PATCH uses
-    ``assert_company_level_backup_settings_write_denied``. Create/restore remain
-    admin-role gated for a later slice.
+    ``assert_company_level_backup_settings_write_denied``. Job mutations use
+    ``assert_company_level_backup_jobs_write_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -760,8 +760,22 @@ def assert_company_level_backup_jobs_read_denied(
     """403 when store_manager reads GET /backup, /export, /{id}, or /download.
 
     Backup job metadata + archive download are company infra admin. Settings
-    already denied; create/run-due/verify/restore remain admin-role gated for a
-    later slice.
+    already denied. Mutations use ``assert_company_level_backup_jobs_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_backup_jobs_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot create, schedule-run, verify, or restore company backups; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager creates/runs/verifies/restores company backups.
+
+    Reads already denied; backup lifecycle is company infra admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

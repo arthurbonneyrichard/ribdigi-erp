@@ -11620,6 +11620,71 @@ async def test_store_manager_backup_jobs_read_denied(client, db_session, tmp_pat
 
 
 @pytest.mark.asyncio
+async def test_store_manager_backup_jobs_writes_denied(client, db_session, tmp_path, monkeypatch):
+    """Backup create/run-due/verify/restore denied for store_manager; admin create remains."""
+    from app import backup as backup_svc
+
+    monkeypatch.setattr("app.backup.settings.BACKUP_DIR", str(tmp_path))
+    monkeypatch.setattr("app.backup.settings.BACKUP_ENCRYPTION_KEY", "")
+
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_headers["X-Workspace-Kind"] = "tenant"
+
+    job = await backup_svc.create_backup(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        notes="scope-deny-writes",
+    )
+    await db_session.commit()
+    backup_id = job.id
+
+    denied_create = await ac.post(
+        "/api/v1/backup",
+        headers=headers,
+        json={"notes": "mgr-backup"},
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_run_due = await ac.post("/api/v1/backup/run-due", headers=headers)
+    assert denied_run_due.status_code == 403, denied_run_due.text
+    assert denied_run_due.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_verify = await ac.post(
+        f"/api/v1/backup/{backup_id}/verify",
+        headers=headers,
+        json={},
+    )
+    assert denied_verify.status_code == 403, denied_verify.text
+    assert denied_verify.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_restore = await ac.post(
+        f"/api/v1/backup/{backup_id}/restore",
+        headers=headers,
+        json={"dry_run": True},
+    )
+    assert denied_restore.status_code == 403, denied_restore.text
+    assert denied_restore.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/backup",
+        headers=admin_headers,
+        json={"notes": "admin-ok-backup"},
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    ok_run_due = await ac.post("/api/v1/backup/run-due", headers=admin_headers)
+    assert ok_run_due.status_code == 200, ok_run_due.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_tenant_sessions_read_denied(client, db_session):
     """GET /auth/tenant-sessions + CSV export denied for store_manager; admin remains."""
     ac, seed = client

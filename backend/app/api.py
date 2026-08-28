@@ -18850,9 +18850,16 @@ async def backup_export(
 async def backup_create(
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_write_denied(
+        managed,
+        message="Store managers cannot create company backups.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     backup_svc.ensure_backup_dir_writable()
     notes = (payload or {}).get("notes")
@@ -18880,10 +18887,17 @@ async def backup_create(
 
 @api.post("/backup/run-due")
 async def backup_run_due(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Run a backup when schedule is enabled and due (manual/cron trigger)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_write_denied(
+        managed,
+        message="Store managers cannot trigger scheduled company backups.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     result = await backup_svc.run_scheduled_backup_if_due(
         db, tenant_id=claims["tenant_id"], user_id=claims.get("sub")
@@ -18957,10 +18971,17 @@ async def backup_verify(
     backup_id: str,
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 5 B1 — decrypt backup and prove field match against live tenant data."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_write_denied(
+        managed,
+        message="Store managers cannot verify company backups.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     body = payload or {}
     sample_limit = int(body.get("sample_limit") or 100)
@@ -18997,9 +19018,16 @@ async def backup_restore(
     backup_id: str,
     request: Request,
     payload: dict | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_write_denied(
+        managed,
+        message="Store managers cannot restore company backups.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     body = payload or {}
     dry_run = bool(body.get("dry_run", True))
