@@ -10864,7 +10864,7 @@ async def test_store_manager_report_schedule_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_company_branding_writes_denied(client, db_session):
-    """Company profile/logo writes denied for store_manager even when companies write granted."""
+    """Company profile GET + logo writes denied for store_manager even when companies write granted."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -10886,8 +10886,18 @@ async def test_store_manager_company_branding_writes_denied(client, db_session):
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
-    ok_get = await ac.get(f"/api/v1/companies/{cid}", headers=headers)
+    denied_get = await ac.get(f"/api/v1/companies/{cid}", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_get = await ac.get(f"/api/v1/companies/{cid}", headers=admin_headers)
     assert ok_get.status_code == 200, ok_get.text
 
     denied_patch = await ac.patch(

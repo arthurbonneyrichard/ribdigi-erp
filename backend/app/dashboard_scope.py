@@ -850,6 +850,22 @@ def assert_company_level_company_branding_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_company_profile_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company profile branding details; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company profile (branding/legal dump).
+
+    Profile/logo writes already denied; GET ``/companies/{id}`` dumped name/tax/address
+    branding fields. Company logo binary GET remains for workspace chrome.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_document_settings_write_denied(
     managed_ids: list[str] | None,
     *,
