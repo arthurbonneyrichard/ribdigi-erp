@@ -30,8 +30,10 @@ export default function Page() {
   const [draftDocDescription, setDraftDocDescription] = useState('');
   const [draftDocCategoryId, setDraftDocCategoryId] = useState('');
   const [draftDocStoreId, setDraftDocStoreId] = useState('');
+  const [draftDocBranchId, setDraftDocBranchId] = useState('');
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
 
   useEffect(() => {
     api('/expenses/categories')
@@ -40,6 +42,9 @@ export default function Page() {
     api('/stores')
       .then((r) => setStores(r.data || []))
       .catch(() => setStores([]));
+    api('/branches')
+      .then((r) => setBranches(r.data || []))
+      .catch(() => setBranches([]));
   }, []);
 
   async function go() {
@@ -465,6 +470,7 @@ export default function Page() {
           category: ex.category || lastDocExtract.category_suggestion?.category || null,
           payment_method: 'cash',
           store_id: draftDocStoreId.trim() || null,
+          branch_id: draftDocBranchId.trim() || null,
         }),
       });
       const exp = r.data?.expense || r.data;
@@ -630,9 +636,28 @@ export default function Page() {
             <option value="">No store</option>
             {stores
               .filter((s) => s.is_active !== false)
+              .filter((s) => !draftDocBranchId || s.branch_id === draftDocBranchId)
               .map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.code} — {s.name}
+                </option>
+              ))}
+          </select>
+          <select
+            value={draftDocBranchId}
+            onChange={(e) => {
+              setDraftDocBranchId(e.target.value);
+              setDraftDocStoreId('');
+            }}
+            aria-label="AI document expense branch"
+            title="Optional branch (UuidIdValue); blank → no branch"
+          >
+            <option value="">No branch</option>
+            {branches
+              .filter((b) => b.is_active !== false)
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
                 </option>
               ))}
           </select>

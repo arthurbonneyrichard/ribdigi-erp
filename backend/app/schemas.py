@@ -1702,7 +1702,11 @@ class AiDocumentExpenseCreate(BaseModel):
     # lookup). Existence remains tenant-scoped store lookup (**404**). Same honesty
     # as ExpenseCreate.store_id.
     store_id: UuidIdValue | None = None
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as ExpenseCreate.branch_id.
+    branch_id: UuidIdValue | None = None
     department_id: str | None = None
 
 
