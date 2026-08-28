@@ -2233,7 +2233,10 @@ class StockTransferItemCreate(BaseModel):
 
 
 class StockTransferCreate(BaseModel):
-    from_store_id: str | None = None
+    # Optional source store ∈ UuidIdValue; omit/`null` OK when warehouse pair set;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # store lookup). Existence remains tenant-scoped store lookup (**404**).
+    from_store_id: UuidIdValue | None = None
     to_store_id: str | None = None
     # Optional source warehouse ∈ UuidIdValue; omit/`null` OK when store pair set;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach

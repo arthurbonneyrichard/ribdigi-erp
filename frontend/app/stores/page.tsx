@@ -754,7 +754,7 @@ export default function Page() {
       const r = await api('/stores/transfers', {
         method: 'POST',
         body: JSON.stringify({
-          from_store_id: fromStore,
+          from_store_id: fromStore.trim(),
           to_store_id: toStore,
           submit: true,
           // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
@@ -1117,7 +1117,12 @@ export default function Page() {
         <div className="card">
           <h3>New transfer</h3>
           <div style={{ display: 'grid', gap: 8 }}>
-            <select value={fromStore} onChange={(e) => setFromStore(e.target.value)}>
+            <select
+              value={fromStore}
+              onChange={(e) => setFromStore(e.target.value)}
+              aria-label="Stock transfer from store"
+              title="Source store for inter-store transfer"
+            >
               {stores
                 .filter((s) => s.is_active !== false)
                 .map((s) => (
