@@ -9064,3 +9064,80 @@ async def test_store_manager_company_branding_writes_denied(client, db_session):
     assert denied_del.status_code == 403, denied_del.text
     assert denied_del.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+@pytest.mark.asyncio
+async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_session):
+    """Legacy POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cust = seed["party1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Legacy Tx Mgr Store",
+        code="LEG-TX-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+
+    denied_sale = await ac.post(
+        "/api/v1/sales",
+        headers=headers,
+        json={
+            "party_id": cust.id,
+            "subtotal": 10,
+            "tax": 0,
+            "total": 10,
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 10}],
+        },
+    )
+    assert denied_sale.status_code == 403, denied_sale.text
+    assert denied_sale.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Legacy Tx Supplier",
+        kind="supplier",
+        code="SUP-LEG-TX",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    denied_purch = await ac.post(
+        "/api/v1/purchases",
+        headers=headers,
+        json={
+            "party_id": supplier.id,
+            "subtotal": 5,
+            "tax": 0,
+            "total": 5,
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 5}],
+        },
+    )
+    assert denied_purch.status_code == 403, denied_purch.text
+    assert denied_purch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_sale = await ac.post(
+        "/api/v1/sales",
+        headers=admin_headers,
+        json={
+            "party_id": cust.id,
+            "subtotal": 10,
+            "tax": 0,
+            "total": 10,
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 10}],
+        },
+    )
+    assert ok_sale.status_code == 200, ok_sale.text
+

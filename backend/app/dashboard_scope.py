@@ -520,6 +520,19 @@ def assert_company_level_company_branding_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_legacy_transaction_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot use legacy unscoped sale/purchase transaction writes.",
+) -> None:
+    """403 when store_manager posts legacy ``/sales`` or ``/purchases`` (no store_id).
+
+    Modern sales invoices and purchasing PR/PO/GRN paths remain available when
+    store/warehouse scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_create_denied(
     managed_ids: list[str] | None,
     *,

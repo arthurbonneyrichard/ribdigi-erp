@@ -2312,8 +2312,14 @@ async def patch_company_store_limit(
     db: AsyncSession = Depends(get_db),
 ):
     """Tenant Admin allocates Store capacity to a Company (never exceeds tenant entitlement)."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app import store_entitlements as store_ent_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_store_limit_write_denied(
+        managed,
+        message="Store managers cannot allocate company store entitlement limits.",
+    )
     if claims.get("workspace_kind") != "tenant":
         raise HTTPException(
             status_code=403,
@@ -7452,6 +7458,13 @@ async def sale(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_legacy_transaction_write_denied(
+        managed,
+        message="Store managers cannot use legacy unscoped sale transaction writes.",
+    )
     return await tx_add("sale", payload, claims, db)
 
 
@@ -8715,6 +8728,13 @@ async def purchase(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_legacy_transaction_write_denied(
+        managed,
+        message="Store managers cannot use legacy unscoped purchase transaction writes.",
+    )
     return await tx_add("purchase", payload, claims, db)
 
 
