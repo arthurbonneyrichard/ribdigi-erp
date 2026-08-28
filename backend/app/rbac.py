@@ -467,8 +467,8 @@ def serialize_user(user, *, include_permissions: bool = True) -> dict:
 
     When ``include_permissions`` is False (store_manager users list/get), omit the
     permission matrix and record_scope so staff lookup does not dump role catalogs.
-    Callers may further redact email/phone, branch_id/department_id, and
-    ``totp_enabled`` via ``redact_user_contact_pii``.
+    Callers may further redact email/phone, branch_id/department_id,
+    ``totp_enabled``, and ``email_verified`` via ``redact_user_contact_pii``.
     """
     payload = {
         "id": user.id,

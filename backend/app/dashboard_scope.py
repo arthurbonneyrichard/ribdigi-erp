@@ -2540,23 +2540,25 @@ def omit_user_contact_pii(managed_ids: list[str] | None) -> bool:
     """True when store_manager users list/get must redact staff contact + org + MFA fields.
 
     Users CSV export already denied; permission matrices already omitted. Contact
-    fields (email/phone), org assignment (branch_id/department_id), and MFA status
-    (``totp_enabled``) on list/get were leftover company dumps (branches/departments
-    list GET already denied; MFA enrollment is a security-admin surface).
+    fields (email/phone), org assignment (branch_id/department_id), MFA status
+    (``totp_enabled``), and email verification (``email_verified``) on list/get
+    were leftover company dumps (branches/departments list GET already denied;
+    MFA enrollment + verification are security-admin surfaces).
     Name/role/active remain for operational staff lookup. Own ``/me`` / auth
-    payloads keep ``totp_enabled`` for the signed-in user.
+    payloads keep ``totp_enabled`` / ``email_verified`` for the signed-in user.
     """
     return managed_ids is not None
 
 
 def redact_user_contact_pii(payload: dict) -> dict:
-    """Null email/phone + branch_id/department_id + totp_enabled on user JSON for store_manager."""
+    """Null email/phone + branch_id/department_id + totp_enabled + email_verified on user JSON for store_manager."""
     out = dict(payload)
     out["email"] = None
     out["phone"] = None
     out["branch_id"] = None
     out["department_id"] = None
     out["totp_enabled"] = None
+    out["email_verified"] = None
     return out
 
 
@@ -2572,8 +2574,8 @@ def assert_company_level_roles_catalog_read_denied(
 
     ``GET /users`` list/get remain with permission matrices redacted and contact
     PII (email/phone) plus org assignment (branch_id/department_id) plus MFA status
-    (``totp_enabled``) redacted; roles CSV / permissions-matrix CSV already denied;
-    role create/patch/delete already denied.
+    (``totp_enabled``) plus email verification (``email_verified``) redacted; roles
+    CSV / permissions-matrix CSV already denied; role create/patch/delete already denied.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

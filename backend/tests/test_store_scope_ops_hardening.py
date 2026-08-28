@@ -8580,7 +8580,7 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_user_admin_writes_denied(client, db_session):
-    """User/role admin writes + CSV/KPI exports denied; users list/get remain without permission maps, contact PII, org assignment, or MFA status."""
+    """User/role admin writes + CSV/KPI exports denied; users list/get remain without permission maps, contact PII, org assignment, MFA, or email_verified."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -8624,6 +8624,7 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     target.branch_id = branch.id
     target.department_id = dept.id
     target.totp_enabled = True
+    target.email_verified = True
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -8747,8 +8748,8 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
 
     # Users list/get remain for staff lookup; permission matrices + contact PII
     # (email/phone) + org assignment (branch_id/department_id) + MFA status
-    # (totp_enabled) redacted (roles catalog/detail + users CSV + branches/
-    # departments list already denied).
+    # (totp_enabled) + email_verified redacted (roles catalog/detail + users CSV
+    # + branches/departments list already denied).
     listed = await ac.get("/api/v1/users", headers=headers)
     assert listed.status_code == 200, listed.text
     listed_rows = listed.json()["data"]
@@ -8761,6 +8762,7 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert all(row.get("branch_id") is None for row in listed_rows)
     assert all(row.get("department_id") is None for row in listed_rows)
     assert all(row.get("totp_enabled") is None for row in listed_rows)
+    assert all(row.get("email_verified") is None for row in listed_rows)
 
     got = await ac.get(f"/api/v1/users/{target.id}", headers=headers)
     assert got.status_code == 200, got.text
@@ -8771,6 +8773,7 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert got_body.get("branch_id") is None
     assert got_body.get("department_id") is None
     assert got_body.get("totp_enabled") is None
+    assert got_body.get("email_verified") is None
     assert "permissions" not in got_body
     assert "record_scope" not in got_body
 
@@ -8787,6 +8790,7 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert admin_body.get("branch_id") == branch.id
     assert admin_body.get("department_id") == dept.id
     assert admin_body.get("totp_enabled") is True
+    assert admin_body.get("email_verified") is True
     assert isinstance(admin_body.get("permissions"), dict)
 
     denied_roles_list = await ac.get("/api/v1/roles", headers=headers)

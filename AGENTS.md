@@ -124,7 +124,7 @@ store activation — never frontend-only.
    product.stock_qty; cost_price redacted on list/get/export + per-product variants), and sales quotations list/export/get/lifecycle
    via own drafts + converted in-scope order/invoice (no store_id), and
    **branches/departments create/patch/list GET/export denied for store_manager** (company-level
-   org units) + **users list/get branch_id/department_id org assignment + totp_enabled MFA status redacted** (with email/phone
+   org units) + **users list/get branch_id/department_id org assignment + totp_enabled MFA status + email_verified redacted** (with email/phone
    contact PII; name/role/active remain), and **catalog
    categories/brands/units create/patch/deactivate (+ brand logo writes) denied
    for store_manager** (company-level catalog meta; list/export/convert + brand
