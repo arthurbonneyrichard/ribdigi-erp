@@ -6032,8 +6032,19 @@ async def test_store_manager_coa_and_liquid_account_writes_scoped(client, db_ses
     assert denied_bank_feed_export.status_code == 403, denied_bank_feed_export.text
     assert denied_bank_feed_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    ok_bank_feed_get = await ac.get("/api/v1/settings/bank-feed", headers=headers)
+    denied_bank_feed_get = await ac.get("/api/v1/settings/bank-feed", headers=headers)
+    assert denied_bank_feed_get.status_code == 403, denied_bank_feed_get.text
+    assert denied_bank_feed_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    ok_bank_feed_get = await ac.get("/api/v1/settings/bank-feed", headers=admin_headers)
     assert ok_bank_feed_get.status_code == 200, ok_bank_feed_get.text
+    assert "providers" in ok_bank_feed_get.json()["data"]
 
 
 @pytest.mark.asyncio

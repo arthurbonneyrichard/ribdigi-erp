@@ -552,8 +552,24 @@ def assert_company_level_bank_feed_settings_export_denied(
 ) -> None:
     """403 when store_manager exports bank-feed capability/settings CSV.
 
-    GET ``/settings/bank-feed`` remains for capability discovery; CSV dump is
-    company-level administration (connection CRUD already gated).
+    GET ``/settings/bank-feed`` is separately denied; CSV dump is company-level
+    administration (connection list/patch/sync on managed liquid accounts remain).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bank_feed_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view bank-feed connector capability settings; "
+        "managed bank connection ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads bank-feed capability/settings (infra config dump).
+
+    CSV export already denied; GET dumped sync_enabled/providers/timeouts/celery
+    interval. Scoped bank connection list/export/patch/sync remain.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
