@@ -986,6 +986,23 @@ def assert_company_level_onboarding_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_onboarding_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company onboarding checklist CSV; "
+        "checklist GET already denied."
+    ),
+) -> None:
+    """403 when store_manager exports onboarding checklist CSV (company bootstrap dump).
+
+    Checklist GET already denied; ``GET /onboarding/checklist/export`` dumped the same
+    tenant bootstrap progress pack. Skip/dismiss remain admin-gated.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+
 def assert_company_level_business_types_read_denied(
     managed_ids: list[str] | None,
     *,

@@ -18449,10 +18449,17 @@ async def onboarding_checklist_get(
 
 @api.get("/onboarding/checklist/export")
 async def onboarding_checklist_export(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 143 O1 — onboarding checklist CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_onboarding_export_denied(
+        managed,
+        message="Store managers cannot export company onboarding checklist CSV.",
+    )
     text = await tenant_bootstrap_export_svc.export_onboarding_checklist_csv(
         db, tenant_id=claims["tenant_id"]
     )

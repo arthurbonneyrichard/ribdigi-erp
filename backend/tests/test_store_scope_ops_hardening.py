@@ -11171,7 +11171,7 @@ async def test_store_manager_document_settings_writes_denied(client, db_session)
 
 @pytest.mark.asyncio
 async def test_store_manager_onboarding_checklist_denied(client, db_session):
-    """Company onboarding checklist GET denied for store_manager; admin remains."""
+    """Company onboarding checklist GET + CSV export denied for store_manager; admin remains."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
@@ -11189,6 +11189,13 @@ async def test_store_manager_onboarding_checklist_denied(client, db_session):
     assert ok.status_code == 200, ok.text
     body = ok.json()["data"]
     assert "steps" in body and "progress_pct" in body
+
+    denied_export = await ac.get("/api/v1/onboarding/checklist/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_export = await ac.get("/api/v1/onboarding/checklist/export", headers=admin_headers)
+    assert ok_export.status_code == 200, ok_export.text
 
 
 @pytest.mark.asyncio
