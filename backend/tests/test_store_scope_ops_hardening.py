@@ -1538,6 +1538,23 @@ async def test_store_manager_pos_sessions_scoped(client, db_session):
     assert open_denied.status_code == 403
     assert open_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    # Null / omitted store_id must not open company-wide sessions for store_manager.
+    open_unset = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"opening_cash": 0},
+    )
+    assert open_unset.status_code == 403, open_unset.text
+    assert open_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    open_null = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"store_id": None, "opening_cash": 0},
+    )
+    assert open_null.status_code == 403, open_null.text
+    assert open_null.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     # Close mine first so open succeeds on managed store
     closed = await ac.post(
         f"/api/v1/pos/sessions/{sess_mine.id}/close",
@@ -5910,6 +5927,23 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
     assert set(denied_creds.json()["detail"].get("fields") or []) >= {
         "access_token",
         "feed_url",
+    }
+
+    denied_policy = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn_mine.id}",
+        headers=headers,
+        json={
+            "auto_sync": False,
+            "auto_match_after_sync": False,
+            "sync_lookback_days": 7,
+        },
+    )
+    assert denied_policy.status_code == 403, denied_policy.text
+    assert denied_policy.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert set(denied_policy.json()["detail"].get("fields") or []) >= {
+        "auto_sync",
+        "auto_match_after_sync",
+        "sync_lookback_days",
     }
 
     denied_sync = await ac.post(
