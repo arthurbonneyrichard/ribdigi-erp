@@ -2380,11 +2380,12 @@ export default function Page() {
                             ))}
                         </select>
                         <select
+                          aria-label={`Edit category tax rate ${c.code}`}
                           value={c.tax_rate_id || ''}
                           onChange={async (e) => {
                             setError('');
                             try {
-                              const value = e.target.value || null;
+                              const value = e.target.value.trim() || null;
                               await api(`/catalog/categories/${c.id}`, {
                                 method: 'PATCH',
                                 body: JSON.stringify({ tax_rate_id: value }),

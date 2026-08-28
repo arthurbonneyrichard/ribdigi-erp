@@ -1205,7 +1205,11 @@ class ProductCategoryUpdate(BaseModel):
     # parent lookup). Existence / cycle checks remain tenant-scoped (**404**/400).
     # Same honesty as ProductCategoryCreate.parent_id.
     parent_id: UuidIdValue | None = None
-    tax_rate_id: str | None = None
+    # Optional category tax rate FK ∈ UuidIdValue; omit → no change; `null` → clear;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup). Existence remains tenant-scoped tax-rate lookup (**404**).
+    # Same honesty as ProductCategoryCreate.tax_rate_id.
+    tax_rate_id: UuidIdValue | None = None
     is_active: bool | None = None
 
 
