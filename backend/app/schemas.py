@@ -2449,7 +2449,10 @@ class PurchaseOrderItemCreate(BaseModel):
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; GRN converts to product stock unit
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    # Existence / conversion remain resolve_line_unit (**404**/400).
+    unit_id: UuidIdValue | None = None
     unit_price: float = Field(ge=0)
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
     tax_rate: float | None = Field(default=None, ge=0)
@@ -2461,7 +2464,10 @@ class PurchaseOrderCreate(BaseModel):
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped supplier lookup (**404**).
     supplier_id: UuidIdValue
-    warehouse_id: str | None = None
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup).
+    # Existence / active-warehouse rules remain require_active_warehouse (**404**/400).
+    warehouse_id: UuidIdValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on PurchaseOrder.notes Text).
     notes: PurchaseOrderNotesValue | None = None

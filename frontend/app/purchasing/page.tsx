@@ -466,7 +466,7 @@ export default function Page() {
             {
               product_id: productId.trim(),
               quantity: Number(qty),
-              unit_id: unitId || null,
+              unit_id: unitId.trim() || null,
               unit_price: Number(unitPrice),
               discount: Math.max(0, Number(lineDiscount) || 0),
               // omit tax_rate → backend resolves product/category/default (BR-12.2)
@@ -596,7 +596,7 @@ export default function Page() {
             {
               product_id: line.product_id,
               quantity: Number(amendQty) || line.quantity,
-              unit_id: amendUnitId || line.unit_id || null,
+              unit_id: amendUnitId.trim() || line.unit_id || null,
               unit_price: Number(amendPrice) || line.unit_price,
               discount: Math.max(0, Number(amendDiscount) || 0),
               ...(line.tax_rate != null ? { tax_rate: Number(line.tax_rate) } : {}),
@@ -1868,7 +1868,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={unitId} onChange={(e) => setUnitId(e.target.value)}>
+          <select
+            value={unitId}
+            onChange={(e) => setUnitId(e.target.value)}
+            aria-label="PO unit"
+          >
             <option value="">Unit (product default)</option>
             {units.map((u) => (
               <option key={u.id} value={u.id}>

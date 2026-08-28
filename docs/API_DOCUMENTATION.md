@@ -899,7 +899,9 @@ First contact becomes primary; setting `is_primary` clears other primaries and s
 
 Required `supplier_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped supplier lookup **404**). Purchasing **PO supplier** select (`aria-label`); Create PO sends `supplier_id` trim.
 
-Each line requires `product_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Purchasing **PO product** select (`aria-label`); Create PO sends `product_id` trim. Same type on amend line items.
+Optional `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no warehouse; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence / active-warehouse rules remain `require_active_warehouse` **404**/400).
+
+Each line requires `product_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Purchasing **PO product** select (`aria-label`); Create PO sends `product_id` trim. Same type on amend line items. Optional line `unit_id` ∈ `UuidIdValue` (omit/`null` → product stock unit; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach UoM lookup). Purchasing **PO unit** select (`aria-label`); Create/Amend send trim or `null` when blank.
 
 Optional `delivery_address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Stored on the PO, returned on GET/list/serialize, amendable via `POST /purchasing/orders/{id}/amend`, and included in supplier email bodies when set (BR-6.3). Purchasing **PO delivery address** input (`aria-label`); create sends `null` when blank.
 
