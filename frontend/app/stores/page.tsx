@@ -639,8 +639,8 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           name: deptName.trim() || undefined,
-          branch_id: deptBranchId || null,
-          clear_branch: !deptBranchId,
+          branch_id: deptBranchId.trim() || null,
+          clear_branch: !deptBranchId.trim(),
           head_user_id: deptHeadId.trim() || null,
           clear_head: !deptHeadId.trim(),
         }),
@@ -904,7 +904,8 @@ export default function Page() {
             <select
               value={deptBranchId}
               onChange={(e) => setDeptBranchId(e.target.value)}
-              aria-label="Department branch"
+              aria-label={editDeptId ? 'Edit department branch' : 'Department branch'}
+              title="Department branch (optional)"
             >
               <option value="">Branch (optional)</option>
               {branches

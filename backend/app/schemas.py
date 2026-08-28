@@ -921,7 +921,11 @@ class DepartmentUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on department display name).
     name: DepartmentNameValue | None = None
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as DepartmentCreate.branch_id. Use `clear_branch` to remove.
+    branch_id: UuidIdValue | None = None
     clear_branch: bool = False
     # Optional department head user FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).

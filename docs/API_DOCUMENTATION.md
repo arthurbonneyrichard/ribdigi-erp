@@ -466,7 +466,7 @@ PATCH supports `name`, `address` ∈ `AddressValue` (strip; 1–500 chars; at le
 }
 ```
 
-PATCH supports `name`, `branch_id`, `clear_branch`, optional `head_user_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped **404**). Use `clear_head` to remove. Multi-Store **Edit department head** select; Save department sends trim, or `clear_head` when cleared. Also `is_active`. Soft-deactivate with `is_active: false`. Code unique per tenant.
+PATCH supports `name`, optional `branch_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped **404**). Use `clear_branch` to remove. Multi-Store **Edit department branch** select; Save department sends trim, or `clear_branch` when cleared. Optional `head_user_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped **404**). Use `clear_head` to remove. Multi-Store **Edit department head** select; Save department sends trim, or `clear_head` when cleared. Also `is_active`. Soft-deactivate with `is_active: false`. Code unique per tenant.
 
 ### 3.5b Warehouses (BR-2.4)
 **List:** `GET /warehouses` (`is_active=true|false` optional — Multi-Store manage filter; default returns all)  
