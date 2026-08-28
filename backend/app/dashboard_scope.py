@@ -606,6 +606,22 @@ def assert_company_level_email_settings_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_sms_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company SMS/Twilio settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /settings/sms or /export.
+
+    Provider/capability status dump is company infra admin. Test send remains
+    admin-role gated; storage settings separate.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,

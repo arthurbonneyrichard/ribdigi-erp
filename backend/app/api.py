@@ -996,18 +996,33 @@ async def settings_email_test(
 
 @api.get("/settings/sms")
 async def settings_sms_get(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
     from app import sms as sms_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_sms_settings_read_denied(
+        managed,
+        message="Store managers cannot view company SMS/Twilio settings.",
+    )
     return env(sms_svc.sms_status())
 
 
 @api.get("/settings/sms/export")
 async def settings_sms_export(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
 ):
     """Stage 135 S1 — SMS/Twilio settings CSV (auth token / raw SID never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_sms_settings_read_denied(
+        managed,
+        message="Store managers cannot export company SMS/Twilio settings CSV.",
+    )
     text = finance_ops_export_svc.export_sms_settings_csv()
     return Response(
         content=text,
