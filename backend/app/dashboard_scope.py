@@ -838,7 +838,22 @@ def assert_company_level_jobs_catalog_read_denied(
     """403 when store_manager reads GET /jobs or /jobs/export.
 
     Celery job names/beat intervals (and broker metadata on GET) are company
-    infra admin. Manual job run remains super_admin-gated.
+    infra admin. Manual run uses ``assert_company_level_jobs_catalog_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_jobs_catalog_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot manually run company scheduled jobs; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /jobs/{job_name}/run.
+
+    Catalog reads already denied; manual Celery/job dry-run is company infra admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

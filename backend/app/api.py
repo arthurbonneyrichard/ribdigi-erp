@@ -17596,11 +17596,19 @@ async def jobs_catalog_export(
 async def run_job_now(
     job_name: str,
     enqueue: bool = False,
-    claims=Depends(require_roles("super_admin")),
+    claims=Depends(require_roles("super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
 ):
     """Run a scheduled job immediately (sync) or enqueue to Celery."""
+    from app import dashboard_scope as dashboard_scope_svc
     from app import jobs as jobs_svc
     from app.config import settings as app_settings
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_jobs_catalog_write_denied(
+        managed,
+        message="Store managers cannot manually run company scheduled jobs.",
+    )
 
     if job_name not in jobs_svc.JOB_HANDLERS:
         raise HTTPException(status_code=404, detail=f"Unknown job: {job_name}")

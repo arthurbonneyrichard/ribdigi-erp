@@ -11814,6 +11814,39 @@ async def test_store_manager_jobs_catalog_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_jobs_catalog_run_denied(client, db_session, monkeypatch):
+    """POST /jobs/{name}/run denied for store_manager; super_admin dry-run remains."""
+    from app import jobs as jobs_svc
+
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied = await ac.post("/api/v1/jobs/scan_low_stock/run", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    async def fake_run_job(name: str):
+        assert name == "scan_low_stock"
+        return {
+            "job": name,
+            "tenants": 1,
+            "results": [{"tenant_id": seed["t1"].id, "ok": True, "result": {"created": 0}}],
+        }
+
+    monkeypatch.setattr(jobs_svc, "run_job", fake_run_job)
+
+    ok = await ac.post("/api/v1/jobs/scan_low_stock/run", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["job"] == "scan_low_stock"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_onboarding_checklist_denied(client, db_session):
     """Company onboarding checklist GET + CSV export denied for store_manager; admin remains."""
     ac, seed = client
