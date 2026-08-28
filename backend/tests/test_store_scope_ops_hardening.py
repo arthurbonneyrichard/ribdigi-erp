@@ -9594,6 +9594,10 @@ async def test_store_manager_store_lifecycle_writes_denied(client, db_session):
     assert denied_on.status_code == 403, denied_on.text
     assert denied_on.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    # managed_store_ids filters is_active — restore active for name/phone residual asserts.
+    store.is_active = True
+    await db_session.commit()
+
     ok_ops = await ac.patch(
         f"/api/v1/stores/{store.id}",
         headers=headers,
@@ -9602,6 +9606,6 @@ async def test_store_manager_store_lifecycle_writes_denied(client, db_session):
     assert ok_ops.status_code == 200, ok_ops.text
 
     await db_session.refresh(store)
-    assert store.is_active is False
+    assert store.is_active is True
     assert store.name == "Store Lifecycle Deny Updated"
     assert store.phone == "555-0199"
