@@ -10312,7 +10312,7 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_ai_report_template_writes_denied(client, db_session):
-    """AI report template create/delete/export denied for store_manager; list remains."""
+    """AI report template list/create/delete/export denied for store_manager."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -10356,9 +10356,14 @@ async def test_store_manager_ai_report_template_writes_denied(client, db_session
     assert denied_delete.status_code == 403, denied_delete.text
     assert denied_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    listed = await ac.get("/api/v1/ai/reports/templates", headers=headers)
-    assert listed.status_code == 200, listed.text
-    assert any(row["id"] == tmpl.id for row in listed.json()["data"])
+    denied_list = await ac.get("/api/v1/ai/reports/templates", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Admin list remains (templates are user-scoped; mgr-owned row may not appear).
+    ok_list = await ac.get("/api/v1/ai/reports/templates", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    assert isinstance(ok_list.json()["data"], list)
 
     denied_export = await ac.get("/api/v1/ai/reports/templates/export", headers=headers)
     assert denied_export.status_code == 403, denied_export.text
@@ -10376,7 +10381,7 @@ async def test_store_manager_ai_report_template_writes_denied(client, db_session
 
 @pytest.mark.asyncio
 async def test_store_manager_ai_report_generate_denied(client, db_session):
-    """Company-level AI NL report generate/export denied for store_manager; template list remains."""
+    """Company-level AI NL report generate/export + template list denied for store_manager."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -10427,9 +10432,9 @@ async def test_store_manager_ai_report_generate_denied(client, db_session):
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    listed = await ac.get("/api/v1/ai/reports/templates", headers=headers)
-    assert listed.status_code == 200, listed.text
-    assert any(row["id"] == tmpl.id for row in listed.json()["data"])
+    denied_list = await ac.get("/api/v1/ai/reports/templates", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio

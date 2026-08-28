@@ -21,10 +21,6 @@ async def _admin(ac, seed):
     )
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-
-
 def test_parse_prompt_q2_monthly_sales():
     parsed = ai_reports_svc.parse_prompt(
         "Show me monthly sales for Q2 2026",
@@ -123,7 +119,7 @@ async def test_generate_and_save_template(client, db_session):
 @pytest.mark.asyncio
 async def test_report_templates_tenant_isolated(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    # Template list denied for store_manager; isolation asserted as company admin.
     admin = await _admin(ac, seed)
 
     # Plant beta template directly
@@ -140,7 +136,7 @@ async def test_report_templates_tenant_isolated(client, db_session):
     )
     await db_session.commit()
 
-    listed = await ac.get("/api/v1/ai/reports/templates", headers=headers)
+    listed = await ac.get("/api/v1/ai/reports/templates", headers=admin)
     assert listed.status_code == 200
     names = {t["name"] for t in listed.json()["data"]}
     assert "Beta Secret Report" not in names
