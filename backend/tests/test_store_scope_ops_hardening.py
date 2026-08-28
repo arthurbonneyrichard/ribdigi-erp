@@ -8111,7 +8111,7 @@ async def test_store_manager_credit_limit_override_denied(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_store_manager_branch_department_writes_denied(client, db_session):
+async def test_store_manager_branches_departments_writes_denied(client, db_session):
     """Branch/department create/patch denied for store_manager (company-level org units)."""
     from app.rbac import permissions_for_role
 
