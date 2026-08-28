@@ -17518,10 +17518,19 @@ async def scan_due_notifications(
 
 
 @api.get("/jobs")
-async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin"))):
+async def list_jobs(
+    claims=Depends(require_roles("super_admin", "company_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import dashboard_scope as dashboard_scope_svc
     from app.config import settings as app_settings
     from app import jobs as jobs_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_jobs_catalog_read_denied(
+        managed,
+        message="Store managers cannot view the company jobs catalog.",
+    )
     return env(
         {
             "celery_enabled": bool(app_settings.CELERY_ENABLED),
@@ -17546,9 +17555,17 @@ async def list_jobs(claims=Depends(require_roles("super_admin", "company_admin")
 
 @api.get("/jobs/export")
 async def jobs_catalog_export(
-    claims=Depends(require_roles("super_admin", "company_admin")),
+    claims=Depends(require_roles("super_admin", "company_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
 ):
     """Stage 143 J1 — jobs catalog CSV (broker/result URLs never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_jobs_catalog_read_denied(
+        managed,
+        message="Store managers cannot export the company jobs catalog CSV.",
+    )
     text = tenant_bootstrap_export_svc.export_jobs_catalog_csv()
     return Response(
         content=text,

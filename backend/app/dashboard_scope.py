@@ -735,6 +735,22 @@ def assert_company_level_tenant_sessions_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_jobs_catalog_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export the company jobs catalog; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /jobs or /jobs/export.
+
+    Celery job names/beat intervals (and broker metadata on GET) are company
+    infra admin. Manual job run remains super_admin-gated.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,
