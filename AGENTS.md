@@ -179,7 +179,9 @@ store activation — never frontend-only.
    patches denied for store_manager** (access_token/feed_url/provider/external
    id; display_name/auto-sync/is_active on managed connections remain), and
    **party category/party_type classification writes denied for store_manager**
-   (company party master classification; name/phone remain), and
+   (company party master classification; name/phone remain), and **party
+   code master writes denied for store_manager** (customer/supplier ``code``;
+   name/phone remain; create without code allowed), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).
