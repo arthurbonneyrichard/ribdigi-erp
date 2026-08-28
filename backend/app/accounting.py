@@ -207,7 +207,7 @@ async def ensure_default_accounts(
     await db.flush()
 
 
-def serialize_coa_account(account: m.Account) -> dict:
+def serialize_coa_account(account: m.Account, *, balance: float | None = None) -> dict:
     return {
         "id": account.id,
         "company_id": getattr(account, "company_id", None),
@@ -215,7 +215,7 @@ def serialize_coa_account(account: m.Account) -> dict:
         "name": account.name,
         "account_type": account.account_type,
         "parent_id": account.parent_id,
-        "balance": float(account.balance or 0),
+        "balance": float(balance if balance is not None else (account.balance or 0)),
         "is_cash_account": bool(account.is_cash_account),
         "is_bank_account": bool(account.is_bank_account),
         "is_system": bool(getattr(account, "is_system", False)),
@@ -226,9 +226,22 @@ def serialize_coa_account(account: m.Account) -> dict:
     }
 
 
-def build_account_tree(rows: list[m.Account]) -> list[dict]:
+def build_account_tree(
+    rows: list[m.Account],
+    *,
+    balance_by_id: dict[str, float] | None = None,
+) -> list[dict]:
     """Nest accounts by parent_id; orphans with missing parents become roots."""
-    by_id = {r.id: {**serialize_coa_account(r), "children": []} for r in rows}
+    by_id = {
+        r.id: {
+            **serialize_coa_account(
+                r,
+                balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
+            ),
+            "children": [],
+        }
+        for r in rows
+    }
     roots: list[dict] = []
     for r in rows:
         node = by_id[r.id]
@@ -362,8 +375,12 @@ async def account_transactions(
             }
         )
 
+    scoped_balance = float(account.balance or 0)
+    if store_ids is not None:
+        scoped_balance = running if period_rows else opening
+
     return {
-        "account": serialize_coa_account(account),
+        "account": serialize_coa_account(account, balance=scoped_balance),
         "from_date": from_date.date().isoformat() if from_date else None,
         "to_date": to_date.date().isoformat() if to_date else None,
         "include_unposted": bool(include_unposted),
@@ -2070,6 +2087,58 @@ async def post_pos_sale_journal(
         company_id=cid,
         lines=lines,
     )
+
+
+async def scoped_coa_balance_map(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None,
+    store_ids: list[str] | None,
+) -> dict[str, float] | None:
+    """Rebuild COA balances from posted journals when ``store_ids`` is set; else None."""
+    if store_ids is None:
+        return None
+    _accounts, bal_by_id = await account_balances_through(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    return bal_by_id
+
+
+async def serialize_coa_accounts_scoped(
+    db: AsyncSession,
+    tenant_id: str,
+    rows: list[m.Account],
+    *,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
+) -> list[dict]:
+    """Serialize COA rows; rebuild balances from posted journals when store-scoped."""
+    if store_ids is None:
+        return [serialize_coa_account(r) for r in rows]
+    _, bal_by_id = await account_balances_through(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    return [
+        serialize_coa_account(r, balance=float(bal_by_id.get(r.id, 0.0)))
+        for r in rows
+    ]
+
+
+async def scoped_coa_balance(
+    db: AsyncSession,
+    tenant_id: str,
+    account: m.Account,
+    *,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
+) -> float:
+    if store_ids is None:
+        return float(account.balance or 0)
+    _, bal_by_id = await account_balances_through(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    return float(bal_by_id.get(account.id, 0.0))
 
 
 async def account_balances_through(

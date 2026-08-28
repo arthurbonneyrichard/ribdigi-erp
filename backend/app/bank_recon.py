@@ -11,10 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 
-def serialize_account(account: m.Account) -> dict:
+def serialize_account(account: m.Account, *, balance: float | None = None) -> dict:
     from app.accounting import serialize_coa_account
 
-    return serialize_coa_account(account)
+    return serialize_coa_account(account, balance=balance)
 
 
 def serialize_line(line: m.BankStatementLine) -> dict:

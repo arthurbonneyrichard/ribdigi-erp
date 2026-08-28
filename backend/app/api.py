@@ -11006,11 +11006,20 @@ async def accounts(
 ):
     """Stage 123 F1 — is_active / active_only for honest inactive-only COA lists."""
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     await accounting_svc.ensure_default_accounts(
         db, claims["tenant_id"], company_id=claims.get("company_id")
     )
     await db.commit()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    balance_by_id = await accounting_svc.scoped_coa_balance_map(
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=multi,
+    )
     q = select(m.Account).where(*workspace_svc.company_scope_filter(m.Account, claims))
     if is_active is not None:
         q = q.where(m.Account.is_active.is_(bool(is_active)))
@@ -11018,8 +11027,16 @@ async def accounts(
         q = q.where(m.Account.is_active.is_(True))
     rows = list((await db.execute(q.order_by(m.Account.code))).scalars().all())
     if tree:
-        return env(accounting_svc.build_account_tree(rows))
-    return env([accounting_svc.serialize_coa_account(r) for r in rows])
+        return env(accounting_svc.build_account_tree(rows, balance_by_id=balance_by_id))
+    return env(
+        [
+            accounting_svc.serialize_coa_account(
+                r,
+                balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
+            )
+            for r in rows
+        ]
+    )
 
 
 @api.get("/accounting/accounts/export")
@@ -11051,11 +11068,21 @@ async def get_account(
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     row = await accounting_svc.get_tenant_account(
         db, claims["tenant_id"], account_id, company_id=claims.get("company_id")
     )
-    return env(accounting_svc.serialize_coa_account(row))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    balance_by_id = await accounting_svc.scoped_coa_balance_map(
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=multi,
+    )
+    balance = balance_by_id.get(row.id, 0.0) if balance_by_id is not None else None
+    return env(accounting_svc.serialize_coa_account(row, balance=balance))
 
 
 @api.get("/accounting/accounts/{account_id}/transactions")
@@ -11221,10 +11248,20 @@ async def liquid_accounts(
 ):
     """Stage 125 L1 — active_only / is_active for honest inactive-only liquid lists."""
     from app.accounting import ensure_default_accounts
+    from app import accounting as accounting_svc
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     await db.commit()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
+    balance_by_id = await accounting_svc.scoped_coa_balance_map(
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=multi,
+    )
     rows = await bank_recon_svc.list_liquid_accounts(
         db,
         claims["tenant_id"],
@@ -11232,7 +11269,15 @@ async def liquid_accounts(
         is_active=is_active,
         company_id=claims.get("company_id"),
     )
-    return env([bank_recon_svc.serialize_account(r) for r in rows])
+    return env(
+        [
+            bank_recon_svc.serialize_account(
+                r,
+                balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
+            )
+            for r in rows
+        ]
+    )
 
 
 @api.get("/accounting/liquid-accounts/export")
@@ -11244,15 +11289,19 @@ async def liquid_accounts_export(
 ):
     """Stage 125 X1 — liquid cash/bank accounts CSV export (includes bank details)."""
     from app.accounting import ensure_default_accounts
+    from app import dashboard_scope as dashboard_scope_svc
 
     await ensure_default_accounts(db, claims["tenant_id"], company_id=claims.get("company_id"))
     await db.commit()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     text = await liquid_recurring_export_svc.export_liquid_accounts_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
         company_id=claims.get("company_id"),
+        store_ids=multi,
     )
     return Response(
         content=text,

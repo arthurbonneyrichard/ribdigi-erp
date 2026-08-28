@@ -4830,6 +4830,115 @@ async def test_store_manager_account_ledger_store_scoped(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_coa_and_liquid_balances_store_scoped(client, db_session):
+    """COA list/get and liquid account list/export rebuild balances from managed-store journals."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Bal Scope Mine",
+        code="BAL-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Bal Scope Other",
+        code="BAL-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        description="Mine cash sale",
+        reference="JE-BAL-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 55, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 55},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Other cash sale",
+        reference="JE-BAL-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 900, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 900},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Null cash sale",
+        reference="JE-BAL-NULL",
+        store_id=None,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 70, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 70},
+        ],
+    )
+    await db_session.commit()
+
+    cash = await accounting_svc.get_account_by_code(db_session, tid, "1000", company_id=cid)
+    assert cash is not None
+
+    coa_list = await ac.get("/api/v1/accounting/accounts", headers=headers)
+    assert coa_list.status_code == 200, coa_list.text
+    cash_row = next(a for a in coa_list.json()["data"] if a["code"] == "1000")
+    assert float(cash_row["balance"]) == pytest.approx(55.0)
+
+    coa_tree = await ac.get("/api/v1/accounting/accounts", headers=headers, params={"tree": "true"})
+    assert coa_tree.status_code == 200, coa_tree.text
+
+    def _find_code(nodes, code):
+        for n in nodes:
+            if n.get("code") == code:
+                return n
+            found = _find_code(n.get("children") or [], code)
+            if found:
+                return found
+        return None
+
+    tree_cash = _find_code(coa_tree.json()["data"], "1000")
+    assert tree_cash is not None
+    assert float(tree_cash["balance"]) == pytest.approx(55.0)
+
+    coa_get = await ac.get(f"/api/v1/accounting/accounts/{cash.id}", headers=headers)
+    assert coa_get.status_code == 200, coa_get.text
+    assert float(coa_get.json()["data"]["balance"]) == pytest.approx(55.0)
+
+    liquid = await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)
+    assert liquid.status_code == 200, liquid.text
+    liq_cash = next(a for a in liquid.json()["data"] if a["code"] == "1000")
+    assert float(liq_cash["balance"]) == pytest.approx(55.0)
+
+    liq_csv = await ac.get("/api/v1/accounting/liquid-accounts/export", headers=headers)
+    assert liq_csv.status_code == 200, liq_csv.text
+    assert "900" not in liq_csv.text.splitlines()[1] if len(liq_csv.text.splitlines()) > 1 else True
+    assert "55" in liq_csv.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_expense_lifecycle_writes_store_scoped(client, db_session):
     """Approve/reject/delete/OCR/attachment writes fail-closed outside managed stores."""
     ac, seed = client
@@ -6319,3 +6428,113 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
     assert wh_data["reserved_qty"] == 2
     assert len(wh_data["warehouses"]) == 1
     assert wh_data["warehouses"][0]["code"] == "CAT-MWH"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_coa_liquid_balance_reads_store_scoped(client, db_session):
+    """COA list/get and liquid accounts (+ export) rebuild balances from managed-store journals."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Bal Scope Mine",
+        code="BAL-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Bal Scope Other",
+        code="BAL-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Mine cash sale",
+        reference="JE-BAL-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 75, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 75},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Other cash sale",
+        reference="JE-BAL-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 9500, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 9500},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Null cash sale",
+        reference="JE-BAL-NULL",
+        store_id=None,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 600, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 600},
+        ],
+    )
+    await db_session.commit()
+
+    cash = await accounting_svc.get_account_by_code(db_session, tid, "1000", company_id=cid)
+    assert cash is not None
+
+    coa = await ac.get("/api/v1/accounting/accounts", headers=headers)
+    assert coa.status_code == 200, coa.text
+    cash_row = next(r for r in coa.json()["data"] if r["code"] == "1000")
+    assert float(cash_row["balance"]) == pytest.approx(75.0)
+    assert float(cash_row["balance"]) != pytest.approx(float(cash.balance or 0))
+
+    one = await ac.get(f"/api/v1/accounting/accounts/{cash.id}", headers=headers)
+    assert one.status_code == 200, one.text
+    assert float(one.json()["data"]["balance"]) == pytest.approx(75.0)
+
+    tree = await ac.get("/api/v1/accounting/accounts", headers=headers, params={"tree": "true"})
+    assert tree.status_code == 200, tree.text
+
+    def _find_code(nodes, code):
+        for node in nodes:
+            if node.get("code") == code:
+                return node
+            found = _find_code(node.get("children") or [], code)
+            if found:
+                return found
+        return None
+
+    tree_cash = _find_code(tree.json()["data"], "1000")
+    assert tree_cash is not None
+    assert float(tree_cash["balance"]) == pytest.approx(75.0)
+
+    liquid = await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)
+    assert liquid.status_code == 200, liquid.text
+    liq_cash = next(r for r in liquid.json()["data"] if r["code"] == "1000")
+    assert float(liq_cash["balance"]) == pytest.approx(75.0)
+
+    exported = await ac.get("/api/v1/accounting/liquid-accounts/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "9500" not in exported.text
+    assert "75" in exported.text

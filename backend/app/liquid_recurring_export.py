@@ -63,7 +63,10 @@ async def export_liquid_accounts_csv(
     is_active: bool | None = None,
     active_only: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
+    from app.accounting import scoped_coa_balance_map
+
     stmt = select(m.Account).where(
         m.Account.tenant_id == tenant_id,
         or_(m.Account.is_cash_account.is_(True), m.Account.is_bank_account.is_(True)),
@@ -74,11 +77,19 @@ async def export_liquid_accounts_csv(
         stmt, m.Account.is_active, is_active=is_active, active_only=active_only
     )
     rows = (await db.execute(stmt.order_by(m.Account.code))).scalars().all()
+    balance_by_id = await scoped_coa_balance_map(
+        db, tenant_id, company_id=company_id, store_ids=store_ids
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=LIQUID_EXPORT_COLUMNS)
     writer.writeheader()
     for row in rows:
         kind = "cash" if row.is_cash_account else "bank" if row.is_bank_account else ""
+        bal = (
+            balance_by_id.get(row.id, 0.0)
+            if balance_by_id is not None
+            else float(row.balance or 0)
+        )
         writer.writerow(
             {
                 "code": _cell(row.code),
@@ -87,7 +98,7 @@ async def export_liquid_accounts_csv(
                 "bank_name": _cell(row.bank_name),
                 "account_number": _cell(row.account_number),
                 "bank_branch": _cell(row.bank_branch),
-                "balance": _cell(float(row.balance or 0)),
+                "balance": _cell(bal),
                 "is_active": _cell(bool(row.is_active)),
             }
         )
