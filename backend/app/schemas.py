@@ -2185,7 +2185,11 @@ class WarehouseUpdate(BaseModel):
     store_id: str | None = None
     clear_store: bool = False
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] | None = None
-    manager_id: str | None = None
+    # Optional warehouse manager user FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # user lookup). Existence remains tenant-scoped user lookup (**404**). Same
+    # honesty as WarehouseCreate.manager_id. Use `clear_manager` to remove.
+    manager_id: UuidIdValue | None = None
     clear_manager: bool = False
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared; garbage could persist). Same AddressValue as Company/Store/Branch.
