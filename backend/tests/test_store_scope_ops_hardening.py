@@ -10936,6 +10936,84 @@ async def test_store_manager_company_branding_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_me_workspace_company_profile_redacted(client, db_session):
+    """GET /me + /workspace redact company legal/tax dump + company_entitlement for store_manager."""
+    ac, seed = client
+    cid = seed["c1"].id
+    co = seed["c1"]
+    co.legal_name = "Alpha Legal Holdings Ltd"
+    co.tax_registration_number = "TIN-ALPHA-999"
+    co.registration_number = "RC-ALPHA-1"
+    co.address = "1 Secret Admin Road"
+    co.phone = "+233200000099"
+    co.email = "legal@alpha.example.com"
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+
+    me_sm = await ac.get("/api/v1/me", headers=headers)
+    assert me_sm.status_code == 200, me_sm.text
+    me_data = me_sm.json()["data"]
+    assert me_data.get("company_entitlement") is None
+    company = me_data.get("company")
+    assert company is not None
+    assert company.get("id") == cid
+    assert company.get("name") == co.name
+    assert "has_logo" in company
+    for sensitive in (
+        "legal_name",
+        "tax_registration_number",
+        "registration_number",
+        "address",
+        "phone",
+        "email",
+        "website",
+        "store_limit",
+        "currency",
+        "timezone",
+        "fiscal_year_start",
+        "logo_url",
+        "tenant_id",
+    ):
+        assert sensitive not in company, sensitive
+
+    ws_sm = await ac.get("/api/v1/workspace", headers=headers)
+    assert ws_sm.status_code == 200, ws_sm.text
+    ws_data = ws_sm.json()["data"]
+    assert ws_data.get("company_entitlement") is None
+    rows = ws_data.get("companies") or []
+    assert any(r.get("id") == cid for r in rows)
+    row = next(r for r in rows if r.get("id") == cid)
+    assert row.get("name") == co.name
+    for sensitive in (
+        "legal_name",
+        "tax_registration_number",
+        "registration_number",
+        "address",
+        "store_limit",
+        "phone",
+        "email",
+    ):
+        assert sensitive not in row, sensitive
+
+    me_admin = await ac.get("/api/v1/me", headers=admin_headers)
+    assert me_admin.status_code == 200, me_admin.text
+    admin_me = me_admin.json()["data"]
+    assert admin_me.get("company_entitlement") is not None
+    assert "max_companies" in admin_me["company_entitlement"]
+
+    ws_admin = await ac.get("/api/v1/workspace", headers=admin_headers)
+    assert ws_admin.status_code == 200, ws_admin.text
+    admin_ws = ws_admin.json()["data"]
+    assert admin_ws.get("company_entitlement") is not None
+    admin_row = next(r for r in admin_ws["companies"] if r["id"] == cid)
+    assert admin_row.get("legal_name") == "Alpha Legal Holdings Ltd"
+    assert admin_row.get("tax_registration_number") == "TIN-ALPHA-999"
+    assert admin_row.get("store_limit") == 5
+
+
+@pytest.mark.asyncio
 async def test_store_manager_document_settings_writes_denied(client, db_session):
     """Document numbering / print template PATCH /tenants/me denied for store_manager."""
     ac, seed = client

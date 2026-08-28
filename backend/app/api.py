@@ -2044,6 +2044,7 @@ async def resend_verification(
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     from app.platform_const import home_path_for_principal, principal_for
+    from app import dashboard_scope as dashboard_scope_svc
 
     user = await db.get(m.User, claims["sub"])
     perms = await resolve_user_permissions(db, user)
@@ -2051,6 +2052,10 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
     principal = claims.get("principal") or principal_for(
         tenant_id=user.tenant_id, role=user.role
     )
+    managed = None
+    if principal != "platform":
+        managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    switcher_only = dashboard_scope_svc.omit_company_profile_details(managed)
     memberships = []
     if principal != "platform":
         mems = await workspace_svc.list_user_memberships(
@@ -2074,9 +2079,15 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
     if claims.get("company_id"):
         co = await db.get(m.Company, claims["company_id"])
         if co and co.tenant_id == claims["tenant_id"]:
-            company_payload = await companies_svc.serialize_company_async(db, co)
+            company_payload = await companies_svc.serialize_company_async(
+                db, co, switcher_only=switcher_only
+            )
     company_entitlement = None
-    if principal != "platform" and tenant:
+    if (
+        principal != "platform"
+        and tenant
+        and not dashboard_scope_svc.omit_company_entitlement(managed)
+    ):
         from app import store_entitlements as store_ent_svc
 
         company_entitlement = await store_ent_svc.get_tenant_company_entitlement(db, tenant)
@@ -2122,19 +2133,22 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
 @api.get("/workspace")
 async def get_workspace(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     """Current workspace + switchable companies (ADR-490)."""
+    from app import dashboard_scope as dashboard_scope_svc
+    from app import store_entitlements as store_ent_svc
+
     user = await db.get(m.User, claims["sub"])
     tenant = await db.get(m.Tenant, claims["tenant_id"])
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    switcher_only = dashboard_scope_svc.omit_company_profile_details(managed)
     companies = await companies_svc.list_companies_for_user(
         db,
         tenant_id=claims["tenant_id"],
         user=user,
         tenant_admin=workspace_svc.is_tenant_admin_role(user.role),
     )
-    from app import store_entitlements as store_ent_svc
-
-    company_entitlement = (
-        await store_ent_svc.get_tenant_company_entitlement(db, tenant) if tenant else None
-    )
+    company_entitlement = None
+    if tenant and not dashboard_scope_svc.omit_company_entitlement(managed):
+        company_entitlement = await store_ent_svc.get_tenant_company_entitlement(db, tenant)
     return env(
         {
             "workspace_kind": claims.get("workspace_kind"),
@@ -2145,7 +2159,9 @@ async def get_workspace(claims=Depends(current_claims), db: AsyncSession = Depen
             "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
             "company_entitlement": company_entitlement,
             "companies": [
-                await companies_svc.serialize_company_async(db, c)
+                await companies_svc.serialize_company_async(
+                    db, c, switcher_only=switcher_only
+                )
                 for c in companies
                 if c.is_active
             ],

@@ -877,9 +877,29 @@ def assert_company_level_company_list_read_denied(
     """403 when store_manager lists companies (same profile dump as detail GET).
 
     ``GET /companies`` returned full ``serialize_company`` rows after detail GET was
-    denied. Workspace ``/workspace`` company switcher payload remains for chrome.
+    denied. Workspace ``/me`` + ``/workspace`` remain with switcher-only company
+    fields (legal/tax/address/store_limit + company_entitlement redacted).
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_company_profile_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager session payloads must omit full company profiles.
+
+    Detail/list company GETs already denied; ``GET /me`` and ``GET /workspace``
+    must not re-dump legal/tax/address/store_limit via ``serialize_company``.
+    Switcher chrome fields (id/name/has_logo/industry) remain.
+    """
+    return managed_ids is not None
+
+
+def omit_company_entitlement(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tenant company-entitlement subscription dump.
+
+    ``company_entitlement`` on ``/me`` + ``/workspace`` exposed max_companies /
+    over_entitlement capacity (admin subscription surface). Store ops remain.
+    """
+    return managed_ids is not None
 
 
 def assert_company_level_document_settings_write_denied(
