@@ -11375,6 +11375,33 @@ async def test_store_manager_backup_settings_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_backup_jobs_read_denied(client, db_session):
+    """GET /backup + CSV export denied for store_manager; admin remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_headers["X-Workspace-Kind"] = "tenant"
+
+    denied = await ac.get("/api/v1/backup", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get("/api/v1/backup/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.get("/api/v1/backup", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    ok_export = await ac.get("/api/v1/backup/export", headers=admin_headers)
+    assert ok_export.status_code == 200, ok_export.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_onboarding_checklist_denied(client, db_session):
     """Company onboarding checklist GET + CSV export denied for store_manager; admin remains."""
     ac, seed = client

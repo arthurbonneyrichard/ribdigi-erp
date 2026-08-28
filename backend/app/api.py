@@ -18693,10 +18693,17 @@ async def backup_settings_patch(
 @api.get("/backup")
 async def backup_list(
     status: str | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 B1 — optional status filter for backup job history."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_read_denied(
+        managed,
+        message="Store managers cannot list company backup jobs.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     status_n = (status or "").strip().lower() or None
     rows = await admin_ops_export_svc.list_backup_jobs(
@@ -18708,10 +18715,17 @@ async def backup_list(
 @api.get("/backup/export")
 async def backup_export(
     status: str | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 B1 — backup job metadata CSV (archive bytes not included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_read_denied(
+        managed,
+        message="Store managers cannot export company backup jobs CSV.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     status_n = (status or "").strip().lower() or None
     text = await admin_ops_export_svc.export_backup_jobs_csv(
