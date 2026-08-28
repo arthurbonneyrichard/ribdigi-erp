@@ -866,6 +866,22 @@ def assert_company_level_company_profile_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_company_profile_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company profile CSV; "
+        "workspace switcher + logo binary GET remain for chrome."
+    ),
+) -> None:
+    """403 when store_manager exports company profile CSV (legal/tax/branding dump).
+
+    Company list/detail GET + ``/me``/``/workspace`` profile fields already denied or
+    redacted; ``GET /tenants/me/export`` dumped the same company profile pack.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_company_list_read_denied(
     managed_ids: list[str] | None,
     *,

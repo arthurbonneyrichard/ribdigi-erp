@@ -470,10 +470,17 @@ async def tenant_me(
 
 @api.get("/tenants/me/export")
 async def tenant_me_export(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 143 P1 — company profile CSV (secret-free; billing remains deferred)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_company_profile_export_denied(
+        managed,
+        message="Store managers cannot export company profile CSV.",
+    )
     text = await tenant_bootstrap_export_svc.export_company_profile_csv(
         db, tenant_id=claims["tenant_id"]
     )

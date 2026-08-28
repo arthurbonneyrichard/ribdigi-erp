@@ -57,6 +57,7 @@ async def _seed_inter_store_transfer(ac, db_session, seed, *, qty: float = 5.0):
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M2S",
         name="S16 M2 Source",
         manager_id=mgr_from.id,
@@ -64,6 +65,7 @@ async def _seed_inter_store_transfer(ac, db_session, seed, *, qty: float = 5.0):
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M2D",
         name="S16 M2 Dest",
         manager_id=mgr_to.id,
