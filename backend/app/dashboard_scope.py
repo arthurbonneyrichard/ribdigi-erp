@@ -611,6 +611,22 @@ def assert_warehouse_store_assignment_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_warehouse_structure_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_structure: bool,
+    message: str = "Store managers cannot change warehouse type or capacity.",
+) -> None:
+    """403 when store_manager attempts company-level warehouse structural fields.
+
+    ``warehouse_type`` / ``capacity`` are company inventory-master attributes;
+    name/address/is_active on managed warehouses remain allowed.
+    """
+    if not changing_structure:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_unit_write_denied(
     managed_ids: list[str] | None,
     *,

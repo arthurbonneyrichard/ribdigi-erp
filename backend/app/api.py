@@ -16169,6 +16169,14 @@ async def update_warehouse(
         changing_store=changing_wh_store,
         message="Store managers cannot assign or clear warehouse store links.",
     )
+    changing_wh_structure = (
+        payload.warehouse_type is not None or payload.capacity is not None
+    )
+    dashboard_scope_svc.assert_warehouse_structure_write_denied(
+        managed_stores,
+        changing_structure=changing_wh_structure,
+        message="Store managers cannot change warehouse type or capacity.",
+    )
     if payload.clear_store:
         dashboard_scope_svc.assert_store_in_manager_scope(
             managed_stores, None, allow_unset=False

@@ -9427,3 +9427,66 @@ async def test_store_manager_warehouse_store_assignment_denied(client, db_sessio
     await db_session.refresh(wh)
     assert wh.store_id == store_a.id
     assert wh.name == "WH Store Assign Deny Updated"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_warehouse_structure_writes_denied(client, db_session):
+    """store_manager cannot change warehouse_type/capacity; name/address remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="WH Structure Deny Store",
+        code="WH-STRUCT-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        code="WH-STRUCT",
+        name="WH Structure Deny",
+        warehouse_type="retail",
+        capacity=100.0,
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+
+    denied_type = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"warehouse_type": "bulk"},
+    )
+    assert denied_type.status_code == 403, denied_type.text
+    assert denied_type.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_cap = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"capacity": 250.0},
+    )
+    assert denied_cap.status_code == 403, denied_cap.text
+    assert denied_cap.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_ops = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"name": "WH Structure Deny Updated", "address": "Dock 2"},
+    )
+    assert ok_ops.status_code == 200, ok_ops.text
+
+    await db_session.refresh(wh)
+    assert wh.warehouse_type == "retail"
+    assert float(wh.capacity or 0) == 100.0
+    assert wh.name == "WH Structure Deny Updated"
+    assert wh.address == "Dock 2"

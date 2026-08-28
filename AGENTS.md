@@ -157,7 +157,9 @@ store activation — never frontend-only.
    assign/clear denied for store_manager** (company-level WH manager assignment;
    other managed-WH patches remain), and **warehouse store_id assign/clear
    denied for store_manager** (company-level WH↔store org link; other managed-WH
-   patches remain), and **company store-limit allocation denied for
+   patches remain), and **warehouse type/capacity structure writes denied for
+   store_manager** (company inventory-master attributes; name/address/is_active
+   on managed WH remain), and **company store-limit allocation denied for
    store_manager** (tenant entitlement allocation; even when companies write
    granted; tenant-admin path retained).
    Not store-scoped RBAC Complete.
