@@ -2055,7 +2055,41 @@ def assert_company_level_catalog_meta_read_denied(
 
     Create/patch/deactivate + CSV export already denied; ``GET /catalog/categories``,
     ``GET /catalog/brands``, and ``GET /catalog/units`` dumped full catalog masters.
-    Brand logo binary GET + units/convert remain; inventory UIs soft-fail empty lists.
+    Inventory UIs soft-fail empty lists. Brand logo binary GET + units/convert are
+    denied separately (``assert_company_level_catalog_units_convert_denied`` /
+    ``assert_company_level_catalog_brand_logo_read_denied``).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_catalog_units_convert_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot convert company catalog units; "
+        "managed WH stock ops + product reads remain."
+    ),
+) -> None:
+    """403 when store_manager calls ``GET /catalog/units/convert``.
+
+    Unit list/export/write already denied; convert still exposed conversion factors /
+    unit codes (company UOM master). Product reads + WH stock ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_catalog_brand_logo_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot download company catalog brand logos; "
+        "managed WH stock ops + product reads remain."
+    ),
+) -> None:
+    """403 when store_manager GETs ``/catalog/brands/{id}/logo``.
+
+    Brand list/write/export already denied; binary logo GET was a leftover catalog
+    master asset dump. Company/tenant workspace logo binary GET remains.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

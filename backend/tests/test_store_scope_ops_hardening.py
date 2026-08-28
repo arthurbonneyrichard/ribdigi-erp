@@ -9339,7 +9339,7 @@ async def test_store_manager_expense_store_clear_writes_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_catalog_meta_writes_denied(client, db_session):
-    """Catalog category/brand/unit list/create/patch/deactivate/export denied for store_manager."""
+    """Catalog category/brand/unit list/create/patch/deactivate/export + units/convert + brand logo GET denied for store_manager."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9478,6 +9478,36 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
         denied_export = await ac.get(path, headers=headers)
         assert denied_export.status_code == 403, denied_export.text
         assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_convert = await ac.get(
+        "/api/v1/catalog/units/convert",
+        headers=headers,
+        params={"from_unit_id": unit.id, "to_unit_id": unit.id, "quantity": 2},
+    )
+    assert denied_convert.status_code == 403, denied_convert.text
+    assert denied_convert.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_convert = await ac.get(
+        "/api/v1/catalog/units/convert",
+        headers=admin_headers,
+        params={"from_unit_id": unit.id, "to_unit_id": unit.id, "quantity": 2},
+    )
+    assert ok_convert.status_code == 200, ok_convert.text
+    assert ok_convert.json()["data"]["converted_quantity"] == 2
+
+    brand.logo_url = "tenants/alpha/brand_logos/meta-deny.png"
+    await db_session.commit()
+
+    denied_logo = await ac.get(f"/api/v1/catalog/brands/{brand.id}/logo", headers=headers)
+    assert denied_logo.status_code == 403, denied_logo.text
+    assert denied_logo.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_logo = await ac.get(
+        f"/api/v1/catalog/brands/{brand.id}/logo", headers=admin_headers
+    )
+    # Admin may 200 (bytes) or 404 if storage key missing in test env — not 403.
+    assert ok_logo.status_code != 403, ok_logo.text
+
 
 @pytest.mark.asyncio
 async def test_store_manager_customer_groups_writes_denied(client, db_session):

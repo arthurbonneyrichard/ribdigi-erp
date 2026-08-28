@@ -125,8 +125,8 @@ store activation — never frontend-only.
    **branches/departments create/patch denied for store_manager** (company-level
    org units; reads/export allowed even with users:write), and **catalog
    categories/brands/units create/patch/deactivate (+ brand logo writes) denied
-   for store_manager** (company-level catalog meta; list/export/convert reads
-   allowed), and **customer groups create/patch/deactivate denied for
+   for store_manager** (company-level catalog meta; list/export/convert + brand
+   logo binary GET denied; product reads + WH stock ops remain), and **customer groups create/patch/deactivate denied for
    store_manager** (company-level sales master; list/export/get reads allowed),
    and **product CSV import denied for store_manager** (company-level catalog
    master bulk seed; template/export reads allowed), and **product catalog
