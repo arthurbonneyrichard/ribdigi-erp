@@ -17131,7 +17131,14 @@ async def sync_status(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 164 Q1 — real queue counts (supersedes Stage 163 deferred-only status)."""
-    return env(await sync_engine_svc.sync_status(db, claims["tenant_id"]))
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    return env(
+        await sync_engine_svc.sync_status(
+            db, claims["tenant_id"], managed_store_ids=managed
+        )
+    )
 
 
 @api.post("/sync/push")
@@ -17213,7 +17220,12 @@ async def sync_ack(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 164 A1 — acknowledge delivered sync ops."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     body = payload or {}
+    store_id = str(body.get("store_id") or "").strip() or None
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_offline_sync_store_scope(managed, store_id)
     data = await sync_engine_svc.ack_ops(
         db,
         tenant_id=claims["tenant_id"],
@@ -17232,8 +17244,14 @@ async def sync_conflicts_list(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 164 C1 — list sync conflicts (default open)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     rows = await sync_engine_svc.list_conflicts(
-        db, claims["tenant_id"], status=status
+        db,
+        claims["tenant_id"],
+        status=status,
+        managed_store_ids=managed,
     )
     return env([sync_engine_svc.serialize_conflict(r) for r in rows])
 

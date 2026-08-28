@@ -98,11 +98,11 @@ def assert_offline_sync_store_scope(
     *,
     message: str = "Store managers must bind offline sync to a managed store.",
 ) -> None:
-    """403 when store_manager sync push/pull uses foreign or unset ``store_id``.
+    """403 when store_manager sync push/pull/ack uses foreign or unset ``store_id``.
 
-    Mirrors offline device bind: envelope refresh on ``/sync/push`` and
-    ``/sync/pull`` must not company-bind or touch unmanaged stores. Register /
-    revoke remain admin; Offline Complete remains MISSING.
+    Mirrors offline device bind: envelope refresh on ``/sync/push``,
+    ``/sync/pull``, and ``/sync/ack`` must not company-bind or touch unmanaged
+    stores. Register / revoke remain admin; Offline Complete remains MISSING.
     """
     if managed_ids is None:
         return

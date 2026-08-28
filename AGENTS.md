@@ -190,8 +190,9 @@ store activation — never frontend-only.
    remain), and
    **offline device bind store-scoped for store_manager** (managed store_id
    required; foreign/unset fail-closed; device register/revoke remain admin), and
-   **offline sync push/pull/ack store-scoped for store_manager** (managed store_id
-   required on `/sync/push` + `/sync/pull` + `/sync/ack`; foreign/unset fail-closed;
+   **offline sync push/pull/ack + conflicts/status store-scoped for store_manager**
+   (managed ``store_id`` required on `/sync/push` + `/sync/pull` + `/sync/ack`;
+   conflicts/status limited to managed-store-bound devices; null device fail-closed;
    Offline Complete remains MISSING), and
    **liquid account bank detail patches denied for store_manager**
    (bank_name/account_number/bank_branch/clear_bank_details; name on managed

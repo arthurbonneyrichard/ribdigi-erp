@@ -198,79 +198,107 @@ async def require_active_device(
     return device
 
 
-async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
-    """Stage 164 Q1 — real queue counts; never fabricate success."""
-    pending_pushes = int(
-        (
-            await db.execute(
-                select(func.count())
-                .select_from(m.SyncQueueItem)
-                .where(
-                    m.SyncQueueItem.tenant_id == tenant_id,
-                    m.SyncQueueItem.direction == "push",
-                    m.SyncQueueItem.status.in_(["pending", "failed"]),
+async def sync_status(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    managed_store_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    """Stage 164 Q1 — real queue counts; never fabricate success.
+
+    When ``managed_store_ids`` is set (store_manager), counts are limited to
+    offline devices bound to those stores (null ``bound_store_id`` fail-closed).
+    """
+    if managed_store_ids is not None and not managed_store_ids:
+        return {
+            "sync_enabled": True,
+            "queue_depth": 0,
+            "pending_pushes": 0,
+            "pending_pulls": 0,
+            "last_sync_at": None,
+            "conflict_count": 0,
+            "registered_devices": 0,
+            "active_devices": 0,
+            "scope": "store_manager",
+            "message": (
+                "Stage 164–168 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
+                "Store manager status is scoped to managed-store-bound devices. "
+                "Offline Complete remains deferred — see OFFLINE_COMPLETE_ATTESTATION.md."
+            ),
+        }
+
+    device_filter = None
+    if managed_store_ids is not None:
+        device_ids = list(
+            (
+                await db.execute(
+                    select(m.OfflineDevice.id).where(
+                        m.OfflineDevice.tenant_id == tenant_id,
+                        m.OfflineDevice.bound_store_id.in_(managed_store_ids),
+                    )
                 )
             )
-        ).scalar_one()
-        or 0
-    )
-    pending_pulls = int(
-        (
-            await db.execute(
-                select(func.count())
-                .select_from(m.SyncQueueItem)
-                .where(
-                    m.SyncQueueItem.tenant_id == tenant_id,
-                    m.SyncQueueItem.direction == "pull",
-                    m.SyncQueueItem.status == "pending",
-                )
-            )
-        ).scalar_one()
-        or 0
-    )
-    conflict_count = int(
-        (
-            await db.execute(
-                select(func.count())
-                .select_from(m.SyncConflict)
-                .where(
-                    m.SyncConflict.tenant_id == tenant_id,
-                    m.SyncConflict.status == "open",
-                )
-            )
-        ).scalar_one()
-        or 0
-    )
-    active_devices = int(
-        (
-            await db.execute(
-                select(func.count())
-                .select_from(m.OfflineDevice)
-                .where(
-                    m.OfflineDevice.tenant_id == tenant_id,
-                    m.OfflineDevice.revoked_at.is_(None),
-                )
-            )
-        ).scalar_one()
-        or 0
-    )
-    registered_devices = int(
-        (
-            await db.execute(
-                select(func.count())
-                .select_from(m.OfflineDevice).where(m.OfflineDevice.tenant_id == tenant_id)
-            )
-        ).scalar_one()
-        or 0
-    )
-    last_sync_at = (
-        await db.execute(
-            select(func.max(m.SyncQueueItem.applied_at)).where(
-                m.SyncQueueItem.tenant_id == tenant_id
-            )
+            .scalars()
+            .all()
         )
-    ).scalar_one()
-    return {
+        if not device_ids:
+            return {
+                "sync_enabled": True,
+                "queue_depth": 0,
+                "pending_pushes": 0,
+                "pending_pulls": 0,
+                "last_sync_at": None,
+                "conflict_count": 0,
+                "registered_devices": 0,
+                "active_devices": 0,
+                "scope": "store_manager",
+                "message": (
+                    "Stage 164–168 sync queue APIs are live (push/pull/ack/conflicts/resolve). "
+                    "Store manager status is scoped to managed-store-bound devices. "
+                    "Offline Complete remains deferred — see OFFLINE_COMPLETE_ATTESTATION.md."
+                ),
+            }
+        device_filter = device_ids
+
+    push_q = select(func.count()).select_from(m.SyncQueueItem).where(
+        m.SyncQueueItem.tenant_id == tenant_id,
+        m.SyncQueueItem.direction == "push",
+        m.SyncQueueItem.status.in_(["pending", "failed"]),
+    )
+    pull_q = select(func.count()).select_from(m.SyncQueueItem).where(
+        m.SyncQueueItem.tenant_id == tenant_id,
+        m.SyncQueueItem.direction == "pull",
+        m.SyncQueueItem.status == "pending",
+    )
+    conflict_q = select(func.count()).select_from(m.SyncConflict).where(
+        m.SyncConflict.tenant_id == tenant_id,
+        m.SyncConflict.status == "open",
+    )
+    active_q = select(func.count()).select_from(m.OfflineDevice).where(
+        m.OfflineDevice.tenant_id == tenant_id,
+        m.OfflineDevice.revoked_at.is_(None),
+    )
+    registered_q = select(func.count()).select_from(m.OfflineDevice).where(
+        m.OfflineDevice.tenant_id == tenant_id
+    )
+    last_q = select(func.max(m.SyncQueueItem.applied_at)).where(
+        m.SyncQueueItem.tenant_id == tenant_id
+    )
+    if device_filter is not None:
+        push_q = push_q.where(m.SyncQueueItem.device_id.in_(device_filter))
+        pull_q = pull_q.where(m.SyncQueueItem.device_id.in_(device_filter))
+        conflict_q = conflict_q.where(m.SyncConflict.device_id.in_(device_filter))
+        active_q = active_q.where(m.OfflineDevice.id.in_(device_filter))
+        registered_q = registered_q.where(m.OfflineDevice.id.in_(device_filter))
+        last_q = last_q.where(m.SyncQueueItem.device_id.in_(device_filter))
+
+    pending_pushes = int((await db.execute(push_q)).scalar_one() or 0)
+    pending_pulls = int((await db.execute(pull_q)).scalar_one() or 0)
+    conflict_count = int((await db.execute(conflict_q)).scalar_one() or 0)
+    active_devices = int((await db.execute(active_q)).scalar_one() or 0)
+    registered_devices = int((await db.execute(registered_q)).scalar_one() or 0)
+    last_sync_at = (await db.execute(last_q)).scalar_one()
+    out = {
         "sync_enabled": True,
         "queue_depth": pending_pushes + pending_pulls,
         "pending_pushes": pending_pushes,
@@ -287,6 +315,9 @@ async def sync_status(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             "Offline Complete remains deferred — see OFFLINE_COMPLETE_ATTESTATION.md."
         ),
     }
+    if managed_store_ids is not None:
+        out["scope"] = "store_manager"
+    return out
 
 
 async def _get_by_client_op(
@@ -675,9 +706,21 @@ async def list_conflicts(
     tenant_id: str,
     *,
     status: str | None = "open",
+    managed_store_ids: list[str] | None = None,
 ) -> list[m.SyncConflict]:
-    """Stage 164 C1 — list conflicts (default open only)."""
+    """Stage 164 C1 — list conflicts (default open only).
+
+    When ``managed_store_ids`` is set (store_manager), only conflicts whose
+    device is bound to a managed store are returned (null device / null
+    ``bound_store_id`` fail-closed).
+    """
+    if managed_store_ids is not None and not managed_store_ids:
+        return []
     q = select(m.SyncConflict).where(m.SyncConflict.tenant_id == tenant_id)
+    if managed_store_ids is not None:
+        q = q.join(
+            m.OfflineDevice, m.SyncConflict.device_id == m.OfflineDevice.id
+        ).where(m.OfflineDevice.bound_store_id.in_(managed_store_ids))
     if status is not None:
         wanted = str(status).strip().lower()
         if wanted not in {"open", "resolved", "all"}:
