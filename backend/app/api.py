@@ -6973,6 +6973,12 @@ async def add_customer(
         clear_counts=False,
         message="Store managers cannot set customer master address or geo on create.",
     )
+    dashboard_scope_svc.assert_party_notes_write_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        clear_counts=False,
+        message="Store managers cannot set customer master notes on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
@@ -7065,6 +7071,12 @@ async def patch_customer(
         fields,
         clear_counts=True,
         message="Store managers cannot set customer master address or geo.",
+    )
+    dashboard_scope_svc.assert_party_notes_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set customer master notes.",
     )
     party = await customers_svc.update_customer(
         db,
@@ -7299,6 +7311,12 @@ async def add_supplier(
         clear_counts=False,
         message="Store managers cannot set supplier master address or geo on create.",
     )
+    dashboard_scope_svc.assert_party_notes_write_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        clear_counts=False,
+        message="Store managers cannot set supplier master notes on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await suppliers_svc.create_supplier(
         db,
@@ -7383,6 +7401,12 @@ async def patch_supplier(
         fields,
         clear_counts=True,
         message="Store managers cannot set supplier master address or geo.",
+    )
+    dashboard_scope_svc.assert_party_notes_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set supplier master notes.",
     )
     party = await suppliers_svc.update_supplier(
         db,
@@ -13872,9 +13896,18 @@ async def report_schedules_export(
 @api.post("/reports/schedules")
 async def report_schedules_create(
     payload: dict,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_permission("reports", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_report_schedule_write_denied(
+        managed,
+        message="Store managers cannot create company report schedules.",
+    )
+    if claims.get("role") not in {"company_admin", "super_admin"}:
+        raise HTTPException(status_code=403, detail="Only company admins can manage report schedules")
     row = await report_schedules_svc.create_schedule(
         db,
         tenant_id=claims["tenant_id"],
@@ -13897,9 +13930,18 @@ async def report_schedules_create(
 async def report_schedules_patch(
     schedule_id: str,
     payload: dict,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_permission("reports", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_report_schedule_write_denied(
+        managed,
+        message="Store managers cannot update company report schedules.",
+    )
+    if claims.get("role") not in {"company_admin", "super_admin"}:
+        raise HTTPException(status_code=403, detail="Only company admins can manage report schedules")
     row = await report_schedules_svc.update_schedule(
         db,
         claims["tenant_id"],
@@ -13921,9 +13963,18 @@ async def report_schedules_patch(
 @api.delete("/reports/schedules/{schedule_id}")
 async def report_schedules_delete(
     schedule_id: str,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_permission("reports", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_report_schedule_write_denied(
+        managed,
+        message="Store managers cannot delete company report schedules.",
+    )
+    if claims.get("role") not in {"company_admin", "super_admin"}:
+        raise HTTPException(status_code=403, detail="Only company admins can manage report schedules")
     await report_schedules_svc.delete_schedule(
         db, claims["tenant_id"], schedule_id, company_id=claims.get("company_id")
     )
@@ -13935,9 +13986,18 @@ async def report_schedules_delete(
 async def report_schedules_run(
     schedule_id: str,
     force: bool = True,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_permission("reports", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_report_schedule_write_denied(
+        managed,
+        message="Store managers cannot run company report schedules.",
+    )
+    if claims.get("role") not in {"company_admin", "super_admin"}:
+        raise HTTPException(status_code=403, detail="Only company admins can manage report schedules")
     row = await report_schedules_svc.get_schedule(
         db, claims["tenant_id"], schedule_id, company_id=claims.get("company_id")
     )
@@ -13955,9 +14015,18 @@ async def report_schedules_run(
 
 @api.post("/reports/schedules/run-due")
 async def report_schedules_run_due(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_permission("reports", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_report_schedule_write_denied(
+        managed,
+        message="Store managers cannot run company report schedules.",
+    )
+    if claims.get("role") not in {"company_admin", "super_admin"}:
+        raise HTTPException(status_code=403, detail="Only company admins can manage report schedules")
     result = await report_schedules_svc.run_due_schedules_for_tenant(db, claims["tenant_id"])
     await db.commit()
     return env(result)

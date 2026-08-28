@@ -8004,7 +8004,7 @@ async def test_store_manager_party_credit_master_writes_denied(client, db_sessio
     ok_cust_patch = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"notes": "credit-ok-patch"},
+        json={"name": "Credit Ok Patch Name"},
     )
     assert ok_cust_patch.status_code == 200, ok_cust_patch.text
 
@@ -8087,7 +8087,7 @@ async def test_store_manager_party_payment_terms_writes_denied(client, db_sessio
     ok_cust_patch = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"notes": "terms-ok-patch"},
+        json={"name": "Terms Ok Patch Name"},
     )
     assert ok_cust_patch.status_code == 200, ok_cust_patch.text
 
@@ -8510,7 +8510,7 @@ async def test_store_manager_customer_groups_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_party_customer_group_assignment_denied(client, db_session):
-    """store_manager cannot assign/clear customer_group on parties; name/notes remain."""
+    """store_manager cannot assign/clear customer_group on parties; name remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -8541,7 +8541,7 @@ async def test_store_manager_party_customer_group_assignment_denied(client, db_s
     ok_create = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "No Group Create", "notes": "no-group-ok"},
+        json={"name": "No Group Create"},
     )
     assert ok_create.status_code == 200, ok_create.text
     assert ok_create.json()["data"].get("customer_group_id") in (None, "")
@@ -8565,18 +8565,17 @@ async def test_store_manager_party_customer_group_assignment_denied(client, db_s
     ok_name = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"name": "Party Group Assign Deny Updated", "notes": "group-ok-patch"},
+        json={"name": "Party Group Assign Deny Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
 
     await db_session.refresh(cust)
     assert cust.name == "Party Group Assign Deny Updated"
-    assert cust.notes == "group-ok-patch"
 
 
 @pytest.mark.asyncio
 async def test_store_manager_party_classification_writes_denied(client, db_session):
-    """store_manager cannot set customer/supplier category or party_type; name/notes remain."""
+    """store_manager cannot set customer/supplier category or party_type; name remain."""
     ac, seed = client
     cust = seed["party1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -8592,7 +8591,7 @@ async def test_store_manager_party_classification_writes_denied(client, db_sessi
     ok_cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "Class Ok Cust", "notes": "class-ok-cust"},
+        json={"name": "Class Ok Cust"},
     )
     assert ok_cust.status_code == 200, ok_cust.text
 
@@ -8615,7 +8614,7 @@ async def test_store_manager_party_classification_writes_denied(client, db_sessi
     ok_sup = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "Class Ok Sup", "notes": "class-ok-sup"},
+        json={"name": "Class Ok Sup"},
     )
     assert ok_sup.status_code == 200, ok_sup.text
     sup_id = ok_sup.json()["data"]["id"]
@@ -8631,14 +8630,14 @@ async def test_store_manager_party_classification_writes_denied(client, db_sessi
     ok_name = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"name": "Class Deny Cust Updated", "notes": "class-ok-patch"},
+        json={"name": "Class Deny Cust Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
 
 
 @pytest.mark.asyncio
 async def test_store_manager_party_code_writes_denied(client, db_session):
-    """store_manager cannot set customer/supplier master codes; name/notes remain."""
+    """store_manager cannot set customer/supplier master codes; name remain."""
     ac, seed = client
     cust = seed["party1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -8654,7 +8653,7 @@ async def test_store_manager_party_code_writes_denied(client, db_session):
     ok_cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "Code Ok Cust", "notes": "code-ok-cust"},
+        json={"name": "Code Ok Cust"},
     )
     assert ok_cust.status_code == 200, ok_cust.text
 
@@ -8677,7 +8676,7 @@ async def test_store_manager_party_code_writes_denied(client, db_session):
     ok_sup = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "Code Ok Sup", "notes": "code-ok-sup"},
+        json={"name": "Code Ok Sup"},
     )
     assert ok_sup.status_code == 200, ok_sup.text
     sup_id = ok_sup.json()["data"]["id"]
@@ -8693,14 +8692,14 @@ async def test_store_manager_party_code_writes_denied(client, db_session):
     ok_name = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"name": "Code Deny Cust Updated", "notes": "code-ok-patch"},
+        json={"name": "Code Deny Cust Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
 
 
 @pytest.mark.asyncio
 async def test_store_manager_party_email_writes_denied(client, db_session):
-    """store_manager cannot set customer/supplier master emails; name/notes remain."""
+    """store_manager cannot set customer/supplier master emails; name remain."""
     ac, seed = client
     cust = seed["party1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -8716,7 +8715,7 @@ async def test_store_manager_party_email_writes_denied(client, db_session):
     ok_cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "Email Ok Cust", "notes": "email-ok-cust"},
+        json={"name": "Email Ok Cust"},
     )
     assert ok_cust.status_code == 200, ok_cust.text
 
@@ -8739,7 +8738,7 @@ async def test_store_manager_party_email_writes_denied(client, db_session):
     ok_sup = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "Email Ok Sup", "notes": "email-ok-sup"},
+        json={"name": "Email Ok Sup"},
     )
     assert ok_sup.status_code == 200, ok_sup.text
     sup_id = ok_sup.json()["data"]["id"]
@@ -8755,14 +8754,14 @@ async def test_store_manager_party_email_writes_denied(client, db_session):
     ok_name = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"name": "Email Deny Cust Updated", "notes": "email-ok-patch"},
+        json={"name": "Email Deny Cust Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
 
 
 @pytest.mark.asyncio
 async def test_store_manager_party_phone_writes_denied(client, db_session):
-    """store_manager cannot set customer/supplier master phones; name/notes remain."""
+    """store_manager cannot set customer/supplier master phones; name remain."""
     ac, seed = client
     cust = seed["party1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -8778,7 +8777,7 @@ async def test_store_manager_party_phone_writes_denied(client, db_session):
     ok_cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "Phone Ok Cust", "notes": "phone-ok-cust"},
+        json={"name": "Phone Ok Cust"},
     )
     assert ok_cust.status_code == 200, ok_cust.text
 
@@ -8801,7 +8800,7 @@ async def test_store_manager_party_phone_writes_denied(client, db_session):
     ok_sup = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "Phone Ok Sup", "notes": "phone-deny-ok"},
+        json={"name": "Phone Ok Sup"},
     )
     assert ok_sup.status_code == 200, ok_sup.text
     sup_id = ok_sup.json()["data"]["id"]
@@ -8817,14 +8816,14 @@ async def test_store_manager_party_phone_writes_denied(client, db_session):
     ok_name = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"name": "Phone Deny Cust Updated", "notes": "phone remain name"},
+        json={"name": "Phone Deny Cust Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
 
 
 @pytest.mark.asyncio
 async def test_store_manager_party_address_writes_denied(client, db_session):
-    """store_manager cannot set customer/supplier address/geo; name/notes remain."""
+    """store_manager cannot set customer/supplier address/geo; name remain."""
     ac, seed = client
     cust = seed["party1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -8848,7 +8847,7 @@ async def test_store_manager_party_address_writes_denied(client, db_session):
     ok_cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "Addr Ok Cust", "notes": "addr-ok-cust"},
+        json={"name": "Addr Ok Cust"},
     )
     assert ok_cust.status_code == 200, ok_cust.text
 
@@ -8879,7 +8878,7 @@ async def test_store_manager_party_address_writes_denied(client, db_session):
     ok_sup = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "Addr Ok Sup", "notes": "addr-ok-sup"},
+        json={"name": "Addr Ok Sup"},
     )
     assert ok_sup.status_code == 200, ok_sup.text
     sup_id = ok_sup.json()["data"]["id"]
@@ -8895,7 +8894,69 @@ async def test_store_manager_party_address_writes_denied(client, db_session):
     ok_name = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"name": "Addr Deny Cust Updated", "notes": "addr remain name"},
+        json={"name": "Addr Deny Cust Updated"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_notes_writes_denied(client, db_session):
+    """store_manager cannot set customer/supplier master notes; name remain."""
+    ac, seed = client
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_cust_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Notes Deny Cust", "notes": "secret memo"},
+    )
+    assert denied_cust_create.status_code == 403, denied_cust_create.text
+    assert denied_cust_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cust = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Notes Ok Cust"},
+    )
+    assert ok_cust.status_code == 200, ok_cust.text
+
+    denied_cust_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"notes": "hijack memo"},
+    )
+    assert denied_cust_patch.status_code == 403, denied_cust_patch.text
+    assert denied_cust_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup_create = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Notes Deny Sup", "notes": "sup memo"},
+    )
+    assert denied_sup_create.status_code == 403, denied_sup_create.text
+    assert denied_sup_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_sup = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Notes Ok Sup"},
+    )
+    assert ok_sup.status_code == 200, ok_sup.text
+    sup_id = ok_sup.json()["data"]["id"]
+
+    denied_sup_patch = await ac.patch(
+        f"/api/v1/suppliers/{sup_id}",
+        headers=headers,
+        json={"notes": "sup hijack"},
+    )
+    assert denied_sup_patch.status_code == 403, denied_sup_patch.text
+    assert denied_sup_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Notes Deny Cust Updated"},
     )
     assert ok_name.status_code == 200, ok_name.text
 
@@ -9168,11 +9229,11 @@ async def test_store_manager_party_deactivate_denied(client, db_session):
     assert denied_sup_status.status_code == 403, denied_sup_status.text
     assert denied_sup_status.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    # Operational party writes/reads still allowed (credit/phone/email/address remain separately denied).
+    # Operational party name writes/reads still allowed (credit/phone/email/address/notes denied).
     ok_patch = await ac.patch(
         f"/api/v1/customers/{cust.id}",
         headers=headers,
-        json={"notes": "deact-ok-patch"},
+        json={"name": "Deact Ok Patch Name"},
     )
     assert ok_patch.status_code == 200, ok_patch.text
 
@@ -9902,7 +9963,7 @@ async def test_store_manager_warehouse_store_assignment_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_warehouse_structure_writes_denied(client, db_session):
-    """store_manager cannot change warehouse_type/capacity; name/address remain."""
+    """store_manager cannot change warehouse_type/capacity; name remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9965,7 +10026,7 @@ async def test_store_manager_warehouse_structure_writes_denied(client, db_sessio
 
 @pytest.mark.asyncio
 async def test_store_manager_warehouse_lifecycle_writes_denied(client, db_session):
-    """store_manager cannot activate/deactivate warehouses; name/address remain."""
+    """store_manager cannot activate/deactivate warehouses; name remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id

@@ -198,20 +198,22 @@ store activation — never frontend-only.
    (bank_name/account_number/bank_branch/clear_bank_details; name on managed
    liquid accounts remain), and
    **party category/party_type classification writes denied for store_manager**
-   (company party master classification; name/notes remain), and **party master
+   (company party master classification; name remain), and **party master
    code writes denied for store_manager** (customer/supplier ``code`` on
-   create/patch; name/notes remain; create without code allowed), and
+   create/patch; name remain; create without code allowed), and
    **party master email writes denied for store_manager** (customer/supplier
-   ``email`` on create/patch; name/notes remain; create without email allowed;
+   ``email`` on create/patch; name remain; create without email allowed;
    nested contact endpoints remain separately denied), and
    **party master phone writes denied for store_manager** (customer/supplier
-   ``phone`` on create/patch; name/notes remain; create without phone
+   ``phone`` on create/patch; name remain; create without phone
    allowed), and
    **party master address/geo writes denied for store_manager** (customer/supplier
-   ``address``/``latitude``/``longitude`` on create/patch; name/notes remain;
+   ``address``/``latitude``/``longitude`` on create/patch; name remain;
    create without address allowed), and
+   **party master notes writes denied for store_manager** (customer/supplier
+   ``notes`` on create/patch; name remain; create without notes allowed), and
    **party status lifecycle patches denied for store_manager** (PATCH status
-   cannot bypass DELETE deactivate deny; name/notes remain), and **POS session
+   cannot bypass DELETE deactivate deny; name remain), and **POS session
    open requires managed store_id for store_manager** (null/unset fail-closed;
    foreign store denied; list/report remain store scoped), and
    **company store-limit allocation denied for store_manager** (tenant
