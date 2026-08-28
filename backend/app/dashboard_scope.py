@@ -502,6 +502,41 @@ def assert_company_level_org_create_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+PARTY_CREDIT_MASTER_FIELDS = frozenset(
+    {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
+)
+
+
+def assert_party_credit_master_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    allow_zero_credit_limit: bool = False,
+    message: str = "Store managers cannot update party credit limits or early-payment terms.",
+) -> None:
+    """403 when store_manager attempts party-level credit master data writes."""
+    if managed_ids is None:
+        return
+    fields: set[str] = set()
+    if "credit_limit" in payload:
+        val = payload.get("credit_limit")
+        if not (allow_zero_credit_limit and (val is None or float(val or 0) == 0)):
+            fields.add("credit_limit")
+    for key in ("early_pay_discount_pct", "early_pay_discount_days"):
+        if key in payload and payload.get(key) is not None:
+            fields.add(key)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": sorted(fields),
+        },
+    )
+
+
 async def assert_liquid_account_in_manager_scope(
     db: AsyncSession,
     tenant_id: str,

@@ -6637,7 +6637,13 @@ async def add_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     data = payload.model_dump()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_credit_master_write_denied(
+        managed, data, allow_zero_credit_limit=True
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
@@ -6684,13 +6690,18 @@ async def patch_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, existing)
+    fields = payload.model_dump(exclude_unset=True)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_credit_master_write_denied(managed, fields)
     party = await customers_svc.update_customer(
         db,
         tenant_id=claims["tenant_id"],
         customer_id=customer_id,
-        fields=payload.model_dump(exclude_unset=True),
+        fields=fields,
     )
     await db.commit()
     return env(
@@ -6858,7 +6869,13 @@ async def add_supplier(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     data = payload.model_dump()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_credit_master_write_denied(
+        managed, data, allow_zero_credit_limit=True
+    )
     contacts = data.pop("contacts", None) or []
     party = await suppliers_svc.create_supplier(
         db,
@@ -6902,13 +6919,18 @@ async def patch_supplier(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, existing)
+    fields = payload.model_dump(exclude_unset=True)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_credit_master_write_denied(managed, fields)
     party = await suppliers_svc.update_supplier(
         db,
         tenant_id=claims["tenant_id"],
         supplier_id=supplier_id,
-        fields=payload.model_dump(exclude_unset=True),
+        fields=fields,
     )
     await db.commit()
     contacts = await suppliers_svc.list_contacts(db, claims["tenant_id"], party.id)
@@ -14257,8 +14279,14 @@ async def update_customer_credit_limit(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_credit_master_write_denied(
+        managed, {"credit_limit": payload.credit_limit}
+    )
     customer = await customers_svc.update_customer(
         db,
         tenant_id=claims["tenant_id"],
