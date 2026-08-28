@@ -620,9 +620,25 @@ def assert_warehouse_structure_write_denied(
     """403 when store_manager attempts company-level warehouse structural fields.
 
     ``warehouse_type`` / ``capacity`` are company inventory-master attributes;
-    name/address/is_active on managed warehouses remain allowed.
+    name/address on managed warehouses remain allowed (``is_active`` is lifecycle).
     """
     if not changing_structure:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_warehouse_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate warehouses.",
+) -> None:
+    """403 when store_manager attempts company-level warehouse is_active lifecycle.
+
+    Warehouse create is already denied; soft activate/deactivate stays admin-only.
+    Name/address patches on managed warehouses remain allowed.
+    """
+    if not changing_active:
         return
     assert_company_level_write_denied(managed_ids, message=message)
 

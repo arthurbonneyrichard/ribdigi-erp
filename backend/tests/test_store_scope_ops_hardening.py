@@ -9490,3 +9490,66 @@ async def test_store_manager_warehouse_structure_writes_denied(client, db_sessio
     assert float(wh.capacity or 0) == 100.0
     assert wh.name == "WH Structure Deny Updated"
     assert wh.address == "Dock 2"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_warehouse_lifecycle_writes_denied(client, db_session):
+    """store_manager cannot activate/deactivate warehouses; name/address remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="WH Life Deny Store",
+        code="WH-LIFE-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        code="WH-LIFE",
+        name="WH Lifecycle Deny",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+
+    denied_off = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert denied_off.status_code == 403, denied_off.text
+    assert denied_off.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    wh.is_active = False
+    await db_session.commit()
+
+    denied_on = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"is_active": True},
+    )
+    assert denied_on.status_code == 403, denied_on.text
+    assert denied_on.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/warehouses/{wh.id}",
+        headers=headers,
+        json={"name": "WH Lifecycle Deny Updated"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+    await db_session.refresh(wh)
+    assert wh.is_active is False
+    assert wh.name == "WH Lifecycle Deny Updated"

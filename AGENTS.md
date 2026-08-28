@@ -158,10 +158,12 @@ store activation — never frontend-only.
    other managed-WH patches remain), and **warehouse store_id assign/clear
    denied for store_manager** (company-level WH↔store org link; other managed-WH
    patches remain), and **warehouse type/capacity structure writes denied for
-   store_manager** (company inventory-master attributes; name/address/is_active
-   on managed WH remain), and **company store-limit allocation denied for
-   store_manager** (tenant entitlement allocation; even when companies write
-   granted; tenant-admin path retained).
+   store_manager** (company inventory-master attributes; name/address on managed
+   WH remain), and **warehouse is_active lifecycle writes denied for
+   store_manager** (activate/deactivate admin-only; name/address remain), and
+   **company store-limit allocation denied for store_manager** (tenant
+   entitlement allocation; even when companies write granted; tenant-admin path
+   retained).
    Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is

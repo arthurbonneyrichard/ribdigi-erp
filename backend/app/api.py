@@ -16177,6 +16177,12 @@ async def update_warehouse(
         changing_structure=changing_wh_structure,
         message="Store managers cannot change warehouse type or capacity.",
     )
+    changing_wh_active = payload.is_active is not None
+    dashboard_scope_svc.assert_warehouse_lifecycle_write_denied(
+        managed_stores,
+        changing_active=changing_wh_active,
+        message="Store managers cannot activate or deactivate warehouses.",
+    )
     if payload.clear_store:
         dashboard_scope_svc.assert_store_in_manager_scope(
             managed_stores, None, allow_unset=False
