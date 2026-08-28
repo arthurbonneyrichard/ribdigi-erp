@@ -752,6 +752,22 @@ def assert_company_level_onboarding_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_business_types_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list business types; "
+        "company create/bootstrap catalogs are company-admin only."
+    ),
+) -> None:
+    """403 when store_manager lists business-type catalog (company create bootstrap).
+
+    ``POST /companies`` already denied; GET ``/business-types`` was open via
+    ``current_claims`` as the industry picker for company creation.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_store_limit_write_denied(
     managed_ids: list[str] | None,
     *,

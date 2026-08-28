@@ -2157,6 +2157,10 @@ async def get_workspace(claims=Depends(current_claims), db: AsyncSession = Depen
 async def list_business_types(
     claims=Depends(current_claims), db: AsyncSession = Depends(get_db)
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_business_types_read_denied(managed)
     return env(await companies_svc.list_business_types(db))
 
 

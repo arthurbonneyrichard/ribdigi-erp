@@ -10915,6 +10915,28 @@ async def test_store_manager_onboarding_checklist_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_business_types_read_denied(client, db_session):
+    """Business-types catalog GET denied for store_manager; admin remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied = await ac.get("/api/v1/business-types", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.get("/api/v1/business-types", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    assert isinstance(ok.json()["data"], list)
+    assert any(row.get("code") for row in ok.json()["data"])
+
+
+@pytest.mark.asyncio
 async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_session):
     """Legacy GET/POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""
     ac, seed = client
