@@ -1555,6 +1555,35 @@ async def test_store_manager_pos_sessions_scoped(client, db_session):
     assert open_null.status_code == 403, open_null.text
     assert open_null.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    sess_null = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=None,
+        user_id=seed["admin1"].id,
+        session_number="SES-NULL-1",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add(sess_null)
+    await db_session.commit()
+
+    for path, method, body in [
+        (f"/api/v1/pos/sessions/{sess_null.id}/report", "get", None),
+        (f"/api/v1/pos/sessions/{sess_null.id}/report/export", "get", None),
+        (f"/api/v1/pos/sessions/{sess_null.id}/drawer", "get", None),
+        (
+            f"/api/v1/pos/sessions/{sess_null.id}/close",
+            "post",
+            {"actual_cash": 0},
+        ),
+    ]:
+        if method == "get":
+            resp = await ac.get(path, headers=headers)
+        else:
+            resp = await ac.post(path, headers=headers, json=body)
+        assert resp.status_code == 403, resp.text
+        assert resp.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     # Close mine first so open succeeds on managed store
     closed = await ac.post(
         f"/api/v1/pos/sessions/{sess_mine.id}/close",

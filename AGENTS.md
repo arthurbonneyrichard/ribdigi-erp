@@ -217,7 +217,10 @@ store activation — never frontend-only.
    **party status lifecycle patches denied for store_manager** (PATCH status
    cannot bypass DELETE deactivate deny; name remain), and **POS session
    open requires managed store_id for store_manager** (null/unset fail-closed;
-   foreign store denied; list/report remain store scoped), and
+   foreign store denied; list/report remain store scoped), and **POS session
+   close/drawer/report/current null-store fail-closed for store_manager**
+   (``assert_pos_session_store_in_manager_scope``; foreign store still denied),
+   and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

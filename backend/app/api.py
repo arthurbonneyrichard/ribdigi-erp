@@ -10246,9 +10246,8 @@ async def pos_current_session(
     )
     if not session:
         return env(None, "No open POS shift")
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(session, "store_id", None)
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session.id
     )
     return env(await pos_svc.serialize_session(session))
 
@@ -10320,12 +10319,8 @@ async def pos_close_session(
 ):
     from app import dashboard_scope as dashboard_scope_svc
 
-    existing = await pos_svc.get_session(
-        db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
-    )
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(existing, "store_id", None)
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session_id
     )
     session = await pos_svc.close_session(
         db,
@@ -10349,12 +10344,11 @@ async def pos_session_drawer(
     from app import cash_drawer as cash_drawer_svc
     from app import dashboard_scope as dashboard_scope_svc
 
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session_id
+    )
     session = await pos_svc.get_session(
         db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
-    )
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(session, "store_id", None)
     )
     summary = await pos_svc.drawer_summary(session)
     cfg = await cash_drawer_svc.resolve_config(
@@ -10373,12 +10367,11 @@ async def pos_open_cash_drawer(
     from app import cash_drawer as cash_drawer_svc
     from app import dashboard_scope as dashboard_scope_svc
 
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session_id
+    )
     session = await pos_svc.get_session(
         db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
-    )
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(session, "store_id", None)
     )
     if session.status != "open":
         raise HTTPException(status_code=400, detail="POS session is not open")
@@ -10417,12 +10410,11 @@ async def pos_session_report(
 ):
     from app import dashboard_scope as dashboard_scope_svc
 
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session_id
+    )
     session = await pos_svc.get_session(
         db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
-    )
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(session, "store_id", None)
     )
     return env(await pos_svc.shift_report(db, session))
 
@@ -10436,12 +10428,11 @@ async def pos_session_report_export(
     """Stage 142 Z1 — POS session Z-report CSV (summary + sale lines)."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session_id
+    )
     session = await pos_svc.get_session(
         db, claims["tenant_id"], session_id, company_id=claims.get("company_id")
-    )
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, getattr(session, "store_id", None)
     )
     text = await pos_ops_export_svc.export_session_z_report_csv(
         db,
