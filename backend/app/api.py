@@ -2160,6 +2160,13 @@ async def create_company(
     claims=Depends(require_permission("companies", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_write_denied(
+        managed,
+        message="Store managers cannot create companies.",
+    )
     if claims.get("workspace_kind") != "tenant":
         raise HTTPException(
             status_code=403,
@@ -15664,9 +15671,15 @@ async def add_warehouse(
     tenants_svc.assert_writable(claims)
     data = payload.model_dump()
     managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(
-        managed_stores, data.get("store_id"), allow_unset=False
-    )
+    # store_manager may patch managed warehouses only — create remains tenant/company admin.
+    if managed_stores is not None:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Store managers cannot create warehouses.",
+            },
+        )
     if data.get("store_id"):
         await stores_svc.get_store(
             db, claims["tenant_id"], data["store_id"], company_id=claims.get("company_id")

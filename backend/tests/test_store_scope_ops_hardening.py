@@ -806,6 +806,19 @@ async def test_store_manager_warehouses_and_inventory_ops_scoped(client, db_sess
     assert create_wh_denied.status_code == 403
     assert create_wh_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    create_wh_own_denied = await ac.post(
+        "/api/v1/warehouses",
+        headers=headers,
+        json={
+            "code": "WH-OWN-BAD",
+            "name": "Own Bad WH",
+            "store_id": store.id,
+            "warehouse_type": "retail",
+        },
+    )
+    assert create_wh_own_denied.status_code == 403
+    assert create_wh_own_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
 
 @pytest.mark.asyncio
 async def test_store_manager_purchasing_pipeline_scoped(client, db_session):
@@ -7822,3 +7835,148 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     # Reads remain allowed (default users read)
     assert (await ac.get("/api/v1/users", headers=headers)).status_code == 200
     assert (await ac.get(f"/api/v1/users/{target.id}", headers=headers)).status_code == 200
+
+@pytest.mark.asyncio
+async def test_store_manager_warehouse_company_create_denied(client, db_session):
+    """Warehouse/company create denied for store_manager even when write is granted."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Create Gate Store",
+        code="CRT-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["inventory"] = ["read", "write"]
+    perms["companies"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_wh = await ac.post(
+        "/api/v1/warehouses",
+        headers=headers,
+        json={
+            "code": "WH-CRT-DENY",
+            "name": "Denied WH",
+            "store_id": store.id,
+            "warehouse_type": "retail",
+        },
+    )
+    assert denied_wh.status_code == 403
+    assert denied_wh.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_credit_master_writes_denied(client, db_session):
+    """Party credit limits and supplier early-pay terms denied for store_manager."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Scope Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    denied_credit_limit = await ac.patch(
+        f"/api/v1/customers/{cust.id}/credit-limit",
+        headers=headers,
+        json={"credit_limit": 5000},
+    )
+    assert denied_credit_limit.status_code == 403
+    assert denied_credit_limit.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_cust_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"credit_limit": 2500},
+    )
+    assert denied_cust_patch.status_code == 403
+    assert denied_cust_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_cust_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Mgr Credit Customer", "credit_limit": 1000},
+    )
+    assert denied_cust_create.status_code == 403
+    assert denied_cust_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_cust_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Mgr Zero Credit Customer"},
+    )
+    assert ok_cust_create.status_code == 200, ok_cust_create.text
+
+    ok_cust_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"phone": "555-0100"},
+    )
+    assert ok_cust_patch.status_code == 200, ok_cust_patch.text
+
+    denied_supplier_patch = await ac.patch(
+        f"/api/v1/suppliers/{supplier.id}",
+        headers=headers,
+        json={"credit_limit": 3000, "early_pay_discount_pct": 2.0},
+    )
+    assert denied_supplier_patch.status_code == 403
+    assert denied_supplier_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_supplier_create = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={
+            "name": "Mgr Credit Supplier",
+            "credit_limit": 500,
+            "early_pay_discount_days": 10,
+        },
+    )
+    assert denied_supplier_create.status_code == 403
+    assert denied_supplier_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_supplier_create = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={"name": "Mgr Plain Supplier"},
+    )
+    assert ok_supplier_create.status_code == 200, ok_supplier_create.text
+
+    tenant_headers = {**headers, "X-Workspace-Kind": "tenant"}
+    denied_co = await ac.post(
+        "/api/v1/companies",
+        headers=tenant_headers,
+        json={"name": "Denied Co", "code": "DENY-CO"},
+    )
+    assert denied_co.status_code == 403
+    assert denied_co.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
