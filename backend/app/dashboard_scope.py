@@ -1777,6 +1777,23 @@ def assert_company_level_bi_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_bi_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company business-insights settings; "
+        "scoped overview/history/acknowledge/dismiss remain."
+    ),
+) -> None:
+    """403 when store_manager reads company BI thresholds/settings (admin dump).
+
+    PUT already denied; GET dumped slow_moving_days/health_weights and related
+    thresholds. Scoped BI overview/history/acknowledge/dismiss remain; static
+    ``/formulas`` docs remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 async def assert_bi_insight_in_manager_scope(
     db: AsyncSession,
     claims: dict,

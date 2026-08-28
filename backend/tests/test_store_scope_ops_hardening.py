@@ -10692,9 +10692,15 @@ async def test_store_manager_bi_insight_lifecycle_writes_scoped(client, db_sessi
 
 @pytest.mark.asyncio
 async def test_store_manager_bi_settings_write_denied(client, db_session):
-    """Business-insights settings PUT denied for store_manager; GET settings remains."""
+    """Business-insights settings GET/PUT denied for store_manager."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     denied = await ac.put(
         "/api/v1/business-insights/settings",
@@ -10705,11 +10711,20 @@ async def test_store_manager_bi_settings_write_denied(client, db_session):
     detail = denied.json()["detail"]
     assert detail["code"] == "STORE_SCOPE_DENIED"
 
-    ok_get = await ac.get("/api/v1/business-insights/settings", headers=headers)
+    denied_get = await ac.get("/api/v1/business-insights/settings", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_get = await ac.get("/api/v1/business-insights/settings", headers=admin_headers)
     assert ok_get.status_code == 200, ok_get.text
     body = ok_get.json()
     payload = body.get("data", body)
     assert "settings" in payload or "formulas" in payload
+
+    # Static formula docs remain for store_manager transparency.
+    ok_formulas = await ac.get("/api/v1/business-insights/formulas", headers=headers)
+    assert ok_formulas.status_code == 200, ok_formulas.text
+    assert ok_formulas.json().get("external_ai") is False
 
 
 @pytest.mark.asyncio

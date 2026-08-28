@@ -188,6 +188,10 @@ async def bi_get_settings(
     claims=Depends(require_permission("business_insights", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bi_settings_read_denied(managed)
     return {"settings": await _svc(db, claims).load_settings(), "formulas": FORMULA_DOCS}
 
 
