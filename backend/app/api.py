@@ -17512,8 +17512,13 @@ async def audit_logs_verify(
 @api.get("/audit-logs/retention")
 async def audit_logs_retention(
     claims=Depends(require_permission("audit", "read")),
+    db: AsyncSession = Depends(get_db),
 ):
     """BR-17.2 / Stage 1 G20 — retention policy (7-year minimum, no purge)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_audit_retention_read_denied(managed)
     return env(audit_svc.retention_policy())
 
 

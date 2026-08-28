@@ -766,6 +766,22 @@ def assert_company_level_audit_chain_verify_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_audit_retention_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company audit retention policy; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager reads audit retention policy (compliance admin dump).
+
+    Cold archive list/export and hash-chain verify already denied; GET dumped
+    retention years / purge_allowed. Live scoped ``/audit-logs`` list/export remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_membership_write_denied(
     managed_ids: list[str] | None,
     *,
