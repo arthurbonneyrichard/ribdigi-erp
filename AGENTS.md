@@ -207,6 +207,9 @@ store activation — never frontend-only.
    **party master phone writes denied for store_manager** (customer/supplier
    ``phone`` on create/patch; name/address/notes remain; create without phone
    allowed), and
+   **party master GPS writes denied for store_manager** (customer
+   ``latitude``/``longitude`` on create/patch; name/address/notes remain;
+   create without GPS allowed), and
    **party status lifecycle patches denied for store_manager** (PATCH status
    cannot bypass DELETE deactivate deny; name/address remain), and **POS session
    open requires managed store_id for store_manager** (null/unset fail-closed;

@@ -1080,6 +1080,30 @@ def assert_party_phone_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_party_gps_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master GPS coordinates.",
+) -> None:
+    """403 when store_manager sets customer ``latitude``/``longitude`` (company geo master).
+
+    Freeform ``address`` text remains allowed for store ops. Create without GPS
+    still allowed (``clear_counts=False`` ignores unset/null). PATCH present
+    ``latitude`` or ``longitude`` denies including clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "latitude" in payload or "longitude" in payload
+    else:
+        changing = payload.get("latitude") is not None or payload.get("longitude") is not None
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_import_denied(
     managed_ids: list[str] | None,
     *,

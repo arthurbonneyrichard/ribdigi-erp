@@ -6967,6 +6967,12 @@ async def add_customer(
         clear_counts=False,
         message="Store managers cannot set customer master phones on create.",
     )
+    dashboard_scope_svc.assert_party_gps_write_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        clear_counts=False,
+        message="Store managers cannot set customer master GPS on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
@@ -7053,6 +7059,12 @@ async def patch_customer(
         fields,
         clear_counts=True,
         message="Store managers cannot set customer master phones.",
+    )
+    dashboard_scope_svc.assert_party_gps_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set customer master GPS.",
     )
     party = await customers_svc.update_customer(
         db,

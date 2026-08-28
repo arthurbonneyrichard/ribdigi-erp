@@ -8823,6 +8823,52 @@ async def test_store_manager_party_phone_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_gps_writes_denied(client, db_session):
+    """store_manager cannot set customer latitude/longitude; name/address/notes remain."""
+    ac, seed = client
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "GPS Deny Cust", "latitude": 5.6037, "longitude": -0.1870},
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "GPS Ok Cust", "address": "Accra Road", "notes": "walk-in"},
+    )
+    assert ok_create.status_code == 200, ok_create.text
+
+    denied_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"latitude": 5.55, "longitude": -0.2},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_clear = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"latitude": None, "longitude": None},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_address = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "GPS Deny Cust Updated", "address": "Kumasi Ave", "notes": "updated"},
+    )
+    assert ok_address.status_code == 200, ok_address.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_product_import_denied(client, db_session):
     """Company-level product CSV import denied for store_manager; template/export reads allowed."""
     ac, seed = client
