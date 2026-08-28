@@ -17112,8 +17112,16 @@ async def sync_push(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 164 P1 — device-scoped push ops (idempotent pos_sale via client_op_id)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
     body = payload or {}
+    store_id = str(body.get("store_id") or "").strip() or None
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    # store_manager: envelope refresh must not re-bind foreign/unset stores (matches offline bind).
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, store_id, allow_unset=False
+    )
     data = await sync_engine_svc.push_ops(
         db,
         tenant_id=claims["tenant_id"],
@@ -17122,7 +17130,7 @@ async def sync_push(
         device_id=str(body.get("device_id") or ""),
         ops=body.get("ops") or [],
         auth_envelope=body.get("auth_envelope") if isinstance(body.get("auth_envelope"), dict) else None,
-        store_id=str(body.get("store_id") or "").strip() or None,
+        store_id=store_id,
         catalog_version=str(body.get("catalog_version") or "").strip() or None,
         app_version=str(body.get("app_version") or "").strip() or None,
     )
@@ -17149,7 +17157,14 @@ async def sync_pull(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 164 L1 — pending pull ops + bounded catalog snapshot."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     body = payload or {}
+    store_id = str(body.get("store_id") or "").strip() or None
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, store_id, allow_unset=False
+    )
     data = await sync_engine_svc.pull_ops(
         db,
         tenant_id=claims["tenant_id"],
@@ -17158,7 +17173,7 @@ async def sync_pull(
         include_catalog=bool(body.get("include_catalog", True)),
         claims=claims,
         auth_envelope=body.get("auth_envelope") if isinstance(body.get("auth_envelope"), dict) else None,
-        store_id=str(body.get("store_id") or "").strip() or None,
+        store_id=store_id,
         catalog_version=str(body.get("catalog_version") or "").strip() or None,
         app_version=str(body.get("app_version") or "").strip() or None,
     )

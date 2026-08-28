@@ -10345,3 +10345,104 @@ async def test_store_manager_offline_device_bind_store_scoped(client, db_session
     envelope = ok_bind.json()["data"]["auth_envelope"]
     assert envelope["store_id"] == mine.id
     assert envelope.get("offline_valid_until")
+
+
+@pytest.mark.asyncio
+async def test_store_manager_sync_push_pull_store_scoped(client, db_session):
+    """store_manager sync push/pull require managed store_id (envelope refresh path)."""
+    from app import offline_devices as offline_devices_svc
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Sync Scope Mine",
+        code="SS-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Sync Scope Other",
+        code="SS-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    device_row = await offline_devices_svc.create_device(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        name="Mgr Sync POS",
+        platform="web",
+    )
+    await db_session.commit()
+    device_id = device_row.id
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    # Bind first so device is authorized; sync assert is independent of bind.
+    ok_bind = await ac.post(
+        f"/api/v1/offline/devices/{device_id}/bind",
+        headers=headers,
+        json={"store_id": mine.id, "app_version": "test-mvp"},
+    )
+    assert ok_bind.status_code == 200, ok_bind.text
+    envelope = ok_bind.json()["data"]["auth_envelope"]
+
+    denied_push_unset = await ac.post(
+        "/api/v1/sync/push",
+        headers=headers,
+        json={
+            "device_id": device_id,
+            "auth_envelope": envelope,
+            "ops": [{"client_op_id": "op-unset", "op_type": "ping", "payload": {}}],
+        },
+    )
+    assert denied_push_unset.status_code == 403, denied_push_unset.text
+    assert denied_push_unset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_push_foreign = await ac.post(
+        "/api/v1/sync/push",
+        headers=headers,
+        json={
+            "device_id": device_id,
+            "store_id": other.id,
+            "auth_envelope": envelope,
+            "ops": [{"client_op_id": "op-foreign", "op_type": "ping", "payload": {}}],
+        },
+    )
+    assert denied_push_foreign.status_code == 403, denied_push_foreign.text
+    assert denied_push_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_pull_foreign = await ac.post(
+        "/api/v1/sync/pull",
+        headers=headers,
+        json={
+            "device_id": device_id,
+            "store_id": other.id,
+            "auth_envelope": envelope,
+            "include_catalog": False,
+        },
+    )
+    assert denied_pull_foreign.status_code == 403, denied_pull_foreign.text
+    assert denied_pull_foreign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_pull = await ac.post(
+        "/api/v1/sync/pull",
+        headers=headers,
+        json={
+            "device_id": device_id,
+            "store_id": mine.id,
+            "auth_envelope": envelope,
+            "include_catalog": False,
+        },
+    )
+    assert ok_pull.status_code == 200, ok_pull.text

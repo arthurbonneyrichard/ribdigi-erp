@@ -186,6 +186,8 @@ store activation — never frontend-only.
    id; display_name/auto-sync on managed connections remain), and
    **offline device bind store-scoped for store_manager** (managed store_id
    required; foreign/unset fail-closed; device register/revoke remain admin), and
+   **sync push/pull store-scoped for store_manager** (managed store_id required on
+   envelope refresh; foreign/unset fail-closed; ack unchanged), and
    **liquid account bank detail patches denied for store_manager**
    (bank_name/account_number/bank_branch/clear_bank_details; name on managed
    liquid accounts remain), and
