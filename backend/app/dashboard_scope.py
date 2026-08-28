@@ -1245,9 +1245,32 @@ def assert_party_master_contact_write_denied(
 ) -> None:
     """403 when store_manager attempts company-level party contact create/delete.
 
-    Nested contacts on customer/supplier *create* remain allowed; dedicated
-    ``/contacts`` POST/DELETE endpoints are company-level master writes.
+    Nested ``contacts`` on customer/supplier create use
+    ``assert_party_nested_contacts_create_denied``; dedicated ``/contacts``
+    POST/DELETE endpoints are the same company-level master surface.
     """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_nested_contacts_create_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot attach party contacts on create.",
+) -> None:
+    """403 when store_manager supplies ``contacts`` on customer/supplier create.
+
+    Dedicated ``/contacts`` POST/DELETE are already denied; nested create must
+    not bypass that company party-contact master gate. Name-only party create
+    remains allowed.
+    """
+    if managed_ids is None:
+        return
+    contacts = payload.get("contacts")
+    if not contacts:
+        return
+    if isinstance(contacts, list) and len(contacts) == 0:
+        return
     assert_company_level_write_denied(managed_ids, message=message)
 
 

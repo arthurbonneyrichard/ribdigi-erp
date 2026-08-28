@@ -9321,8 +9321,7 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
     assert denied_sup_del.status_code == 403, denied_sup_del.text
     assert denied_sup_del.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    # Nested contacts on party create remain allowed (zero credit/terms).
-    ok_nested = await ac.post(
+    denied_nested_cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
         json={
@@ -9330,8 +9329,26 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
             "contacts": [{"name": "Nested", "email": "nested@example.com", "is_primary": True}],
         },
     )
-    assert ok_nested.status_code == 200, ok_nested.text
-    assert len(ok_nested.json()["data"].get("contacts") or []) == 1
+    assert denied_nested_cust.status_code == 403, denied_nested_cust.text
+    assert denied_nested_cust.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_nested_sup = await ac.post(
+        "/api/v1/suppliers",
+        headers=headers,
+        json={
+            "name": "Mgr Nested Contact Supplier",
+            "contacts": [{"name": "Nested Sup", "email": "nested.sup@example.com"}],
+        },
+    )
+    assert denied_nested_sup.status_code == 403, denied_nested_sup.text
+    assert denied_nested_sup.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name_only = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Mgr Name Only Customer"},
+    )
+    assert ok_name_only.status_code == 200, ok_name_only.text
 
     got = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
     assert got.status_code == 200, got.text

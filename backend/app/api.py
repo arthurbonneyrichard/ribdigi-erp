@@ -6979,6 +6979,11 @@ async def add_customer(
         clear_counts=False,
         message="Store managers cannot set customer master notes on create.",
     )
+    dashboard_scope_svc.assert_party_nested_contacts_create_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        message="Store managers cannot attach customer contacts on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
