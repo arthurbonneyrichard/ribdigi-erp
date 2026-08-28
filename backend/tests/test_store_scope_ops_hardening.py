@@ -8585,3 +8585,55 @@ async def test_store_manager_stock_import_denied(client, db_session):
     template = await ac.get("/api/v1/inventory/stock/import/template", headers=headers)
     assert template.status_code == 200, template.text
     assert "sku" in template.text.lower() or "warehouse" in template.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_deactivate_denied(client, db_session):
+    """Customer/supplier deactivate denied for store_manager; create/list/patch (non-credit) remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Deactivate Deny Supplier",
+        kind="supplier",
+        code="SUP-DEACT-DENY",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.commit()
+
+    denied_cust = await ac.delete(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert denied_cust.status_code == 403, denied_cust.text
+    assert denied_cust.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup = await ac.delete(f"/api/v1/suppliers/{supplier.id}", headers=headers)
+    assert denied_sup.status_code == 403, denied_sup.text
+    assert denied_sup.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Operational party writes/reads still allowed (credit master fields remain separately denied).
+    ok_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"phone": "555-0199"},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+
+    listed_cust = await ac.get("/api/v1/customers", headers=headers)
+    assert listed_cust.status_code == 200, listed_cust.text
+    assert any(row["id"] == cust.id for row in listed_cust.json()["data"])
+
+    listed_sup = await ac.get("/api/v1/suppliers", headers=headers)
+    assert listed_sup.status_code == 200, listed_sup.text
+    assert any(row["id"] == supplier.id for row in listed_sup.json()["data"])
+
+    # Confirm parties were not deactivated.
+    await db_session.refresh(cust)
+    await db_session.refresh(supplier)
+    assert cust.status == "active"
+    assert supplier.status == "active"

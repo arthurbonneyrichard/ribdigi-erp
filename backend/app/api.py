@@ -6940,8 +6940,15 @@ async def delete_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await customers_svc.get_customer(db, claims["tenant_id"], customer_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_master_deactivate_denied(
+        managed,
+        message="Store managers cannot deactivate customers.",
+    )
     party = await customers_svc.deactivate_customer(
         db, tenant_id=claims["tenant_id"], customer_id=customer_id
     )
@@ -7167,8 +7174,15 @@ async def delete_supplier(
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await suppliers_svc.get_supplier(db, claims["tenant_id"], supplier_id)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_party_master_deactivate_denied(
+        managed,
+        message="Store managers cannot deactivate suppliers.",
+    )
     party = await suppliers_svc.deactivate_supplier(
         db, tenant_id=claims["tenant_id"], supplier_id=supplier_id
     )

@@ -565,6 +565,15 @@ def assert_company_level_stock_import_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_party_master_deactivate_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot deactivate customers or suppliers.",
+) -> None:
+    """403 when store_manager attempts company-level party deactivate (customer/supplier DELETE)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 PARTY_CREDIT_MASTER_FIELDS = frozenset(
     {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
 )
