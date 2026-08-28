@@ -587,8 +587,9 @@ export default function Page() {
       const r = await api('/inventory/warehouse-stock/reorder', {
         method: 'PUT',
         body: JSON.stringify({
-          warehouse_id: whStockWarehouseId,
-          product_id: whReorderProductId,
+          // trim so Save warehouse reorder (UuidIdValue warehouse_id / product_id) does not 422
+          warehouse_id: whStockWarehouseId.trim(),
+          product_id: whReorderProductId.trim(),
           reorder_level: Number(whReorderLevel) || 0,
           reorder_qty: Number(whReorderQty) || 0,
         }),
@@ -777,7 +778,8 @@ export default function Page() {
     setError('');
     try {
       const items = (activeCount.items || []).map((item: any) => ({
-        product_id: item.product_id,
+        // trim so Save count lines (UuidIdValue product_id) does not 422
+        product_id: String(item.product_id).trim(),
         counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
         notes: (countLineNotes[item.product_id] || '').trim() || null,
       }));
@@ -3731,6 +3733,7 @@ export default function Page() {
             <select
               value={whStockWarehouseId}
               onChange={(e) => setWhStockWarehouseId(e.target.value)}
+              aria-label="Warehouse stock warehouse"
             >
               <option value="">Select warehouse</option>
               {warehouses
@@ -3775,6 +3778,7 @@ export default function Page() {
                   setWhReorderQty(String(row.reorder_qty ?? 0));
                 }
               }}
+              aria-label="Warehouse reorder product"
             >
               <option value="">Product</option>
               {products.map((p) => (
@@ -3797,6 +3801,7 @@ export default function Page() {
               type="button"
               onClick={saveWarehouseReorder}
               disabled={!whStockWarehouseId || !whReorderProductId}
+              aria-label="Save warehouse reorder policy"
             >
               Save reorder policy
             </button>

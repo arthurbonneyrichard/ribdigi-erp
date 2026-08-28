@@ -717,7 +717,8 @@ export default function Page() {
       await api(`/stores/${viewStore}/reorder-policy`, {
         method: 'PUT',
         body: JSON.stringify({
-          product_id: reorderProductId,
+          // trim so Save policy (UuidIdValue product_id) does not 422
+          product_id: reorderProductId.trim(),
           reorder_level: Number(reorderLevel) || 0,
           reorder_qty: Number(reorderQty) || 0,
         }),
@@ -1525,7 +1526,11 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Inventory · {storeName(viewStore)}</h3>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            <select value={reorderProductId} onChange={(e) => setReorderProductId(e.target.value)}>
+            <select
+              value={reorderProductId}
+              onChange={(e) => setReorderProductId(e.target.value)}
+              aria-label="Store reorder product"
+            >
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -1544,7 +1549,9 @@ export default function Page() {
               placeholder="Reorder qty"
               style={{ width: 110 }}
             />
-            <button onClick={saveReorder}>Save policy</button>
+            <button onClick={saveReorder} aria-label="Save store reorder policy">
+              Save policy
+            </button>
           </div>
           {inventory.length === 0 && <p className="muted">No warehouse stock / policy rows yet</p>}
           <table className="table">

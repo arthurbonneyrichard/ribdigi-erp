@@ -1162,7 +1162,11 @@ class StockCountCreate(BaseModel):
 
 
 class StockCountItemUpdate(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog / count-line lookup). Existence
+    # remains tenant-scoped product on count (**404**/400). Inventory Counts save
+    # sends `product_id` trim.
+    product_id: UuidIdValue
     counted_qty: float
     # omit/`null` → no line notes (or clear when sent null); blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank silently dropped via strip-to-None / garbage could persist).
@@ -2197,14 +2201,26 @@ class PosDrawerOpen(BaseModel):
 
 
 class StoreReorderPolicyUpdate(BaseModel):
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Multi-Store **Store reorder product**
+    # select; Save policy sends trim.
+    product_id: UuidIdValue
     reorder_level: float = Field(ge=0)
     reorder_qty: float = Field(default=0, ge=0)
 
 
 class WarehouseReorderPolicyUpdate(BaseModel):
-    warehouse_id: str
-    product_id: str
+    # Required warehouse ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach warehouse lookup). Existence remains
+    # tenant-scoped warehouse lookup (**404**). Inventory **Warehouse stock
+    # warehouse** select; Save reorder policy sends trim.
+    warehouse_id: UuidIdValue
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Inventory **Warehouse reorder
+    # product** select; Save reorder policy sends trim.
+    product_id: UuidIdValue
     reorder_level: float = Field(ge=0)
     reorder_qty: float = Field(default=0, ge=0)
 
@@ -2609,7 +2625,12 @@ class PurchaseRequestReject(BaseModel):
 
 
 class PurchaseRequestConvert(BaseModel):
-    supplier_id: str | None = None
+    # Optional supplier override ∈ UuidIdValue; omit/`null` → preferred / first
+    # line supplier path; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach party lookup). Existence remains tenant-scoped
+    # supplier lookup (**404**). Purchasing Convert to PO sends `{}` when no
+    # override (omit).
+    supplier_id: UuidIdValue | None = None
 
 
 class PurchaseApprovalLevelUpdate(BaseModel):
@@ -2992,7 +3013,11 @@ class SalesOrderCreate(BaseModel):
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate.
     customer_id: UuidIdValue
-    quotation_id: str | None = None
+    # Optional source quotation ∈ UuidIdValue; omit/`null` → standalone order;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach quotation lookup). Existence remains tenant-scoped quotation lookup
+    # (**404**). UI convert-order uses path id; API create may pass body trim.
+    quotation_id: UuidIdValue | None = None
     # Optional store ∈ UuidIdValue; omit/`null` → no store until confirm; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
     # lookup). Existence remains tenant-scoped store lookup (**404**). Sales
@@ -3104,7 +3129,11 @@ class CustomerPaymentCreate(BaseModel):
     # tenant-scoped customer lookup (**404**). Distinct from SupplierPaymentCreate.
     customer_id: UuidIdValue
     amount: float = Field(gt=0)
-    sales_invoice_id: str | None = None
+    # Optional target invoice ∈ UuidIdValue; omit/`null` → apply oldest-open;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach invoice lookup). Existence remains tenant-scoped sales-invoice
+    # lookup (**404**). Credit Record payment may omit (FIFO apply).
+    sales_invoice_id: UuidIdValue | None = None
     # BR-11.1 — schema Literal (+ aliases); omit → cash; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "cash"
     # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
@@ -6412,8 +6441,14 @@ class SupplierPaymentCreate(BaseModel):
     # (same Value type; AP payment create path).
     supplier_id: UuidIdValue
     amount: float = Field(gt=0)
-    purchase_order_id: str | None = None
-    purchase_invoice_id: str | None = None
+    # Optional target PO ∈ UuidIdValue; omit/`null` → apply oldest-open; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach PO lookup).
+    # Existence remains tenant-scoped purchase-order lookup (**404**).
+    purchase_order_id: UuidIdValue | None = None
+    # Optional target bill ∈ UuidIdValue; omit/`null` → apply oldest-open; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach PI lookup).
+    # Existence remains tenant-scoped purchase-invoice lookup (**404**).
+    purchase_invoice_id: UuidIdValue | None = None
     # BR-11.2 — same settlement Literal; omit → bank_transfer; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "bank_transfer"
     # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;

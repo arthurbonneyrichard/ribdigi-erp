@@ -16,22 +16,23 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_stock_count_item_notes_schema():
+    _prod = "11111111-2222-3333-4444-555555555555"
     omit = StockCountItemUpdate.model_validate(
-        {"product_id": "p1", "counted_qty": 1}
+        {"product_id": _prod, "counted_qty": 1}
     )
     assert omit.notes is None
     nullish = StockCountItemUpdate.model_validate(
-        {"product_id": "p1", "counted_qty": 1, "notes": None}
+        {"product_id": _prod, "counted_qty": 1, "notes": None}
     )
     assert nullish.notes is None
     ok = StockCountItemUpdate.model_validate(
-        {"product_id": "p1", "counted_qty": 1, "notes": "  Damaged shelf  "}
+        {"product_id": _prod, "counted_qty": 1, "notes": "  Damaged shelf  "}
     )
     assert ok.notes == "Damaged shelf"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             StockCountItemUpdate.model_validate(
-                {"product_id": "p1", "counted_qty": 1, "notes": bad}
+                {"product_id": _prod, "counted_qty": 1, "notes": bad}
             )
 
 

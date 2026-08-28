@@ -1647,6 +1647,7 @@ export default function Page() {
                         type="button"
                         disabled={prBusy === `convert:${r.id}`}
                         onClick={() => prAction(r.id, 'convert')}
+                        aria-label={`Convert purchase request ${r.id}`}
                       >
                         Convert to PO
                       </button>
