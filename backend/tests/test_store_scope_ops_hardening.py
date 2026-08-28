@@ -9640,6 +9640,58 @@ async def test_store_manager_company_branding_writes_denied(client, db_session):
     assert denied_del.status_code == 403, denied_del.text
     assert denied_del.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+
+@pytest.mark.asyncio
+async def test_store_manager_document_settings_writes_denied(client, db_session):
+    """Document numbering / print template PATCH /tenants/me denied for store_manager."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+
+    denied_numbering = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers,
+        json={
+            "document_numbering": {
+                "sales_invoice": {
+                    "prefix": "HIJ",
+                    "include_year": False,
+                    "pad": 4,
+                    "next_number": 99,
+                }
+            }
+        },
+    )
+    assert denied_numbering.status_code == 403, denied_numbering.text
+    assert denied_numbering.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_print = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers,
+        json={
+            "invoice_print_template": "a4",
+            "receipt_print_template": "thermal_80",
+            "document_header": "Hijacked header",
+        },
+    )
+    assert denied_print.status_code == 403, denied_print.text
+    assert denied_print.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_profile = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers,
+        json={"company_name": "Hijacked Tenant"},
+    )
+    assert denied_profile.status_code == 403, denied_profile.text
+    assert denied_profile.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_export = await ac.get(
+        "/api/v1/tenants/me/document-settings/export",
+        headers=admin_headers,
+    )
+    assert ok_export.status_code == 200, ok_export.text
+
+
 @pytest.mark.asyncio
 async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_session):
     """Legacy POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""

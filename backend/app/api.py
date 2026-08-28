@@ -540,10 +540,31 @@ async def tenant_print_templates_preview(
 @api.patch("/tenants/me")
 async def tenant_me_update(
     payload: TenantProfileUpdate,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    fields = payload.model_dump(exclude_unset=True)
+    if managed is not None and fields:
+        doc_settings = {
+            "document_numbering",
+            "invoice_print_template",
+            "receipt_print_template",
+            "document_header",
+            "document_footer",
+        }
+        if doc_settings.intersection(fields):
+            dashboard_scope_svc.assert_company_level_document_settings_write_denied(
+                managed,
+                message="Store managers cannot update company document numbering or print templates.",
+            )
+        dashboard_scope_svc.assert_company_level_tenant_profile_write_denied(
+            managed,
+            message="Store managers cannot update tenant company profile settings.",
+        )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     previous_plan = (getattr(tenant, "plan_code", None) or "trial").strip().lower()
     numbering_company = None

@@ -555,6 +555,24 @@ def assert_company_level_company_branding_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_document_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company document numbering or print templates.",
+) -> None:
+    """403 when store_manager attempts document numbering / print template writes (tenants module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_profile_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update tenant company profile settings.",
+) -> None:
+    """403 when store_manager attempts ``PATCH /tenants/me`` (company-level tenant profile)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_store_limit_write_denied(
     managed_ids: list[str] | None,
     *,
