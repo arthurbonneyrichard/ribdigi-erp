@@ -2092,7 +2092,11 @@ class StoreUpdate(BaseModel):
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank silently cleared; garbage could persist).
     phone: E164PhoneValue | None = None
-    manager_id: str | None = None
+    # Optional store manager user FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**). Same honesty as
+    # StoreCreate.manager_id. Use `clear_manager` to remove.
+    manager_id: UuidIdValue | None = None
     clear_manager: bool = False
     branch_id: str | None = None
     clear_branch: bool = False

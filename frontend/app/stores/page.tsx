@@ -314,8 +314,8 @@ export default function Page() {
           ...(editAddress.trim() ? { address: editAddress.trim() } : {}),
           // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
           ...(editPhone.trim() ? { phone: editPhone.trim() } : {}),
-          manager_id: editManagerId || null,
-          clear_manager: !editManagerId,
+          manager_id: editManagerId.trim() || null,
+          clear_manager: !editManagerId.trim(),
           branch_id: editBranchId || null,
           clear_branch: !editBranchId,
           operating_hours: editHours,
@@ -1454,7 +1454,12 @@ export default function Page() {
               placeholder="Phone (optional, E.164 e.g. +233...)"
               aria-label="Store phone"
             />
-            <select value={editManagerId} onChange={(e) => setEditManagerId(e.target.value)}>
+            <select
+              value={editManagerId}
+              onChange={(e) => setEditManagerId(e.target.value)}
+              aria-label="Edit store manager"
+              title="Store manager (optional tenant user)"
+            >
               <option value="">No manager</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
