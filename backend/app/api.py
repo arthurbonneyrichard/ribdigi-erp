@@ -2226,6 +2226,13 @@ async def patch_company(
     claims=Depends(require_permission("companies", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_company_branding_write_denied(
+        managed,
+        message="Store managers cannot update company profile or branding.",
+    )
     companies_svc.assert_can_manage_company_branding(claims, company_id)
     tenants_svc.assert_writable(claims)
     co = await companies_svc.get_company(
@@ -2356,6 +2363,13 @@ async def company_logo_upload(
     claims=Depends(require_permission("companies", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_company_branding_write_denied(
+        managed,
+        message="Store managers cannot update company profile or branding.",
+    )
     companies_svc.assert_can_manage_company_branding(claims, company_id)
     tenants_svc.assert_writable(claims)
     co = await companies_svc.get_company(
@@ -2427,6 +2441,13 @@ async def company_logo_delete(
     claims=Depends(require_permission("companies", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_company_branding_write_denied(
+        managed,
+        message="Store managers cannot update company profile or branding.",
+    )
     companies_svc.assert_can_manage_company_branding(claims, company_id)
     tenants_svc.assert_writable(claims)
     co = await companies_svc.get_company(

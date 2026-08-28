@@ -142,6 +142,8 @@ store activation — never frontend-only.
    master; get/list reads remain; nested contacts on create remain allowed), and
    **company membership assign/revoke denied for store_manager** (even when
    companies write is granted; list/read remain when permitted).
+   and **company profile/logo branding writes denied for store_manager** (even when
+   companies write is granted; company GET remains when permitted),
    and **business-insights settings PUT denied for store_manager**
    (company-level BI thresholds/formulas; GET settings/formulas + acknowledge/dismiss remain),
    and **purchasing PR approval settings PATCH denied for store_manager**

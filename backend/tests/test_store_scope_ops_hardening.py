@@ -9015,3 +9015,52 @@ async def test_store_manager_purchasing_settings_write_denied(client, db_session
     assert ok_export.status_code == 200, ok_export.text
     assert "text/csv" in (ok_export.headers.get("content-type") or "")
 
+
+@pytest.mark.asyncio
+async def test_store_manager_company_branding_writes_denied(client, db_session):
+    """Company profile/logo writes denied for store_manager even when companies write granted."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["companies"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    ok_get = await ac.get(f"/api/v1/companies/{cid}", headers=headers)
+    assert ok_get.status_code == 200, ok_get.text
+
+    denied_patch = await ac.patch(
+        f"/api/v1/companies/{cid}",
+        headers=headers,
+        json={"name": "Hijacked Brand"},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_logo = await ac.post(
+        f"/api/v1/companies/{cid}/logo",
+        headers=headers,
+        files={"file": ("logo.png", io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"x"), "image/png")},
+    )
+    assert denied_logo.status_code == 403, denied_logo.text
+    assert denied_logo.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_del = await ac.delete(f"/api/v1/companies/{cid}/logo", headers=headers)
+    assert denied_del.status_code == 403, denied_del.text
+    assert denied_del.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+

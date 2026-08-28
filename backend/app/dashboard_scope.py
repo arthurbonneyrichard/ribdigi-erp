@@ -511,6 +511,15 @@ def assert_company_level_membership_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_company_branding_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company profile or branding.",
+) -> None:
+    """403 when store_manager attempts company profile/logo branding writes (companies module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_create_denied(
     managed_ids: list[str] | None,
     *,
