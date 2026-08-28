@@ -86,9 +86,11 @@ export default function Page() {
   const [xferPreview, setXferPreview] = useState('');
   const [newAcctNumber, setNewAcctNumber] = useState('');
   const [newBankBranch, setNewBankBranch] = useState('');
-  const [coaOpenCode, setCoaOpenCode] = useState('1000');
+  const [coaOpenAccountId, setCoaOpenAccountId] = useState('');
   const [coaOpenAmount, setCoaOpenAmount] = useState('0');
-  const [coaOpenLines, setCoaOpenLines] = useState<{ code: string; amount: string }[]>([]);
+  const [coaOpenLines, setCoaOpenLines] = useState<
+    { id: string; code: string; amount: string }[]
+  >([]);
   const [coaOpenRef, setCoaOpenRef] = useState('');
   const [coaOpenNotes, setCoaOpenNotes] = useState('');
   const [coaOpenStatus, setCoaOpenStatus] = useState<any>(null);
@@ -152,6 +154,12 @@ export default function Page() {
       api('/accounting/settings').catch(() => ({ data: null })),
     ]);
     setAccounts(a.data || []);
+    setCoaOpenAccountId((prev) => {
+      if (prev) return prev;
+      const list = a.data || [];
+      const cash = list.find((x: any) => x.code === '1000') || list.find((x: any) => x.is_active !== false);
+      return cash?.id || '';
+    });
     setJournals(j.data || []);
     setTrial(t.data);
     setPnl(p.data);
@@ -434,8 +442,13 @@ export default function Page() {
   }
 
   function addCoaOpenLine() {
-    if (!coaOpenCode || !coaOpenAmount || Number(coaOpenAmount) <= 0) return;
-    setCoaOpenLines((prev) => [...prev, { code: coaOpenCode, amount: coaOpenAmount }]);
+    if (!coaOpenAccountId || !coaOpenAmount || Number(coaOpenAmount) <= 0) return;
+    const acct = accounts.find((a) => a.id === coaOpenAccountId && a.is_active !== false);
+    if (!acct) return;
+    setCoaOpenLines((prev) => [
+      ...prev,
+      { id: coaOpenAccountId, code: acct.code, amount: coaOpenAmount },
+    ]);
     setCoaOpenAmount('0');
   }
 
@@ -453,7 +466,7 @@ export default function Page() {
           reference: coaOpenRef.trim() || null,
           notes: coaOpenNotes.trim() || null,
           lines: coaOpenLines.map((l) => ({
-            account_code: l.code,
+            account_id: l.id.trim(),
             amount: Number(l.amount),
           })),
         }),
@@ -1143,13 +1156,13 @@ export default function Page() {
               <>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <select
-                    value={coaOpenCode}
-                    onChange={(e) => setCoaOpenCode(e.target.value)}
-                    aria-label="Opening balance account code"
-                    title="COA account code for opening balance line"
+                    value={coaOpenAccountId}
+                    onChange={(e) => setCoaOpenAccountId(e.target.value)}
+                    aria-label="Opening balance account"
+                    title="Optional COA account (UuidIdValue); blank/garbage → 422"
                   >
                     {activeAccounts.map((a) => (
-                      <option key={a.id} value={a.code}>
+                      <option key={a.id} value={a.id}>
                         {a.code} — {a.name} ({a.account_type})
                       </option>
                     ))}
@@ -1181,7 +1194,7 @@ export default function Page() {
                 {coaOpenLines.length > 0 && (
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
                     {coaOpenLines.map((l, i) => (
-                      <li key={`${l.code}-${i}`}>
+                      <li key={`${l.id}-${i}`}>
                         {l.code}: {l.amount}{' '}
                         <button
                           type="button"
