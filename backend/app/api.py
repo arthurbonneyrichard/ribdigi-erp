@@ -2902,6 +2902,13 @@ async def create_branch(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_org_unit_write_denied(
+        managed,
+        message="Store managers cannot create branches.",
+    )
     tenants_svc.assert_writable(claims)
     row = await org_units_svc.create_branch(
         db,
@@ -2936,6 +2943,13 @@ async def update_branch(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_org_unit_write_denied(
+        managed,
+        message="Store managers cannot update branches.",
+    )
     tenants_svc.assert_writable(claims)
     row = await org_units_svc.update_branch(
         db,
@@ -3015,6 +3029,13 @@ async def create_department(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_org_unit_write_denied(
+        managed,
+        message="Store managers cannot create departments.",
+    )
     tenants_svc.assert_writable(claims)
     row = await org_units_svc.create_department(
         db,
@@ -3047,6 +3068,13 @@ async def update_department(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_org_unit_write_denied(
+        managed,
+        message="Store managers cannot update departments.",
+    )
     tenants_svc.assert_writable(claims)
     row = await org_units_svc.update_department(
         db,

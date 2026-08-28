@@ -117,7 +117,9 @@ store activation — never frontend-only.
    omitted/skipped — no store_id), and products catalog list/get/export/
    lookup/POS search stock_qty from managed WarehouseStock (not
    product.stock_qty), and sales quotations list/export/get/lifecycle
-   via own drafts + converted in-scope order/invoice (no store_id).
+   via own drafts + converted in-scope order/invoice (no store_id), and
+   **branches/departments create/patch denied for store_manager** (company-level
+   org units; reads/export allowed even with users:write).
    Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is

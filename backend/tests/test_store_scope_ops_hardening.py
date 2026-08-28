@@ -8108,3 +8108,90 @@ async def test_store_manager_credit_limit_override_denied(client, db_session):
     )
     assert pos_denied.status_code == 403, pos_denied.text
     assert pos_denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_branch_department_writes_denied(client, db_session):
+    """Branch/department create/patch denied for store_manager (company-level org units)."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["users"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    branch = m.Branch(
+        tenant_id=tid,
+        company_id=cid,
+        code="BR-DENY",
+        name="Branch Deny Target",
+        is_active=True,
+    )
+    db_session.add(branch)
+    await db_session.flush()
+    dept = m.Department(
+        tenant_id=tid,
+        company_id=cid,
+        branch_id=branch.id,
+        code="DP-DENY",
+        name="Department Deny Target",
+        is_active=True,
+    )
+    db_session.add(dept)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_branch_create = await ac.post(
+        "/api/v1/branches",
+        headers=headers,
+        json={"code": "MGR-BR", "name": "Mgr Branch"},
+    )
+    assert denied_branch_create.status_code == 403
+    assert denied_branch_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_branch_patch = await ac.patch(
+        f"/api/v1/branches/{branch.id}",
+        headers=headers,
+        json={"name": "Hijacked Branch"},
+    )
+    assert denied_branch_patch.status_code == 403
+    assert denied_branch_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_dept_create = await ac.post(
+        "/api/v1/departments",
+        headers=headers,
+        json={"code": "MGR-DP", "name": "Mgr Department", "branch_id": branch.id},
+    )
+    assert denied_dept_create.status_code == 403
+    assert denied_dept_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_dept_patch = await ac.patch(
+        f"/api/v1/departments/{dept.id}",
+        headers=headers,
+        json={"name": "Hijacked Department"},
+    )
+    assert denied_dept_patch.status_code == 403
+    assert denied_dept_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Reads remain allowed
+    listed_branches = await ac.get("/api/v1/branches", headers=headers)
+    assert listed_branches.status_code == 200, listed_branches.text
+    assert any(row["code"] == "BR-DENY" for row in listed_branches.json()["data"])
+
+    listed_depts = await ac.get("/api/v1/departments", headers=headers)
+    assert listed_depts.status_code == 200, listed_depts.text
+    assert any(row["code"] == "DP-DENY" for row in listed_depts.json()["data"])

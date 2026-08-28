@@ -502,6 +502,15 @@ def assert_company_level_org_create_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_org_unit_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update branches or departments.",
+) -> None:
+    """403 when store_manager attempts branch/department org-unit writes (company-level)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_expense_category_write_denied(
     managed_ids: list[str] | None,
     *,
