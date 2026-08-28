@@ -2163,7 +2163,7 @@ async def create_company(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_company_level_write_denied(
+    dashboard_scope_svc.assert_company_level_org_create_denied(
         managed,
         message="Store managers cannot create companies.",
     )

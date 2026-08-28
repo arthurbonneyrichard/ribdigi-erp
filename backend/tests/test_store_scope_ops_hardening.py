@@ -7972,10 +7972,9 @@ async def test_store_manager_party_credit_master_writes_denied(client, db_sessio
     )
     assert ok_supplier_create.status_code == 200, ok_supplier_create.text
 
-    tenant_headers = {**headers, "X-Workspace-Kind": "tenant"}
     denied_co = await ac.post(
         "/api/v1/companies",
-        headers=tenant_headers,
+        headers=headers,
         json={"name": "Denied Co", "code": "DENY-CO"},
     )
     assert denied_co.status_code == 403
