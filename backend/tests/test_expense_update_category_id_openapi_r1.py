@@ -51,13 +51,15 @@ async def test_expense_update_category_id_api_blank_invalid_422(client, seeded):
         "/api/v1/expenses",
         headers=headers,
         json={
-            "amount": 18.5,
+            "amount": 5000,
             "category": "Misc",
             "description": "Tip 313 edit category seed",
         },
     )
     assert created.status_code == 200, created.text
-    exp_id = created.json()["data"]["id"]
+    data = created.json()["data"]
+    exp_id = data["id"]
+    assert data.get("status") == "pending", data
 
     for bad in ("", "!!!", "http://evil", "not-a-uuid", "exp_cat_001"):
         resp = await ac.patch(
