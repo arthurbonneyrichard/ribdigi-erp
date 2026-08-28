@@ -911,7 +911,10 @@ class DepartmentCreate(BaseModel):
     # `str`; garbage could reach branch lookup). Existence remains tenant-scoped
     # branch lookup (**404**).
     branch_id: UuidIdValue | None = None
-    head_user_id: str | None = None
+    # Optional department head user FK ∈ UuidIdValue; omit/`null` → no head; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**).
+    head_user_id: UuidIdValue | None = None
 
 
 class DepartmentUpdate(BaseModel):

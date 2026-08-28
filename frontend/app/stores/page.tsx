@@ -619,7 +619,7 @@ export default function Page() {
           name: deptName.trim(),
           // trim so Create department (UuidIdValue branch_id) does not 422 on whitespace
           branch_id: deptBranchId.trim() || null,
-          head_user_id: deptHeadId || null,
+          head_user_id: deptHeadId.trim() || null,
         }),
       });
       resetDeptForm();
@@ -915,7 +915,12 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <select value={deptHeadId} onChange={(e) => setDeptHeadId(e.target.value)}>
+            <select
+              value={deptHeadId}
+              onChange={(e) => setDeptHeadId(e.target.value)}
+              aria-label={editDeptId ? 'Edit department head' : 'Department head'}
+              title="Department head (optional tenant user)"
+            >
               <option value="">Department head (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
