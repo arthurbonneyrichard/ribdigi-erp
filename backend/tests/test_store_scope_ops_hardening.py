@@ -11967,6 +11967,39 @@ async def test_store_manager_onboarding_checklist_writes_denied(client, db_sessi
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tenant_lifecycle_writes_denied(client, db_session):
+    """POST /tenants/me/suspend + /activate denied for store_manager; admin activate remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_suspend = await ac.post(
+        "/api/v1/tenants/me/suspend",
+        headers=headers,
+        json={"reason": "store_manager should not suspend"},
+    )
+    assert denied_suspend.status_code == 403, denied_suspend.text
+    assert denied_suspend.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_activate = await ac.post("/api/v1/tenants/me/activate", headers=headers)
+    assert denied_activate.status_code == 403, denied_activate.text
+    assert denied_activate.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Admin activate from trial (avoid suspend — revokes sessions).
+    tenant = seed["t1"]
+    tenant.status = "trial"
+    await db_session.commit()
+    ok = await ac.post("/api/v1/tenants/me/activate", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["status"] == "active"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_business_types_read_denied(client, db_session):
     """Business-types catalog GET denied for store_manager; admin remains."""
     ac, seed = client

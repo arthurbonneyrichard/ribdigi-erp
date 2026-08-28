@@ -695,9 +695,16 @@ async def tenant_me_update(
 @api.post("/tenants/me/suspend")
 async def tenant_me_suspend(
     payload: TenantSuspendRequest | None = None,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_lifecycle_write_denied(
+        managed,
+        message="Store managers cannot suspend the company tenant.",
+    )
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     reason = payload.reason if payload else None
@@ -718,10 +725,17 @@ async def tenant_me_suspend(
 
 @api.post("/tenants/me/activate")
 async def tenant_me_activate(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate own tenant when already authenticated (trial/grace → active). Suspended cannot self-activate."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_lifecycle_write_denied(
+        managed,
+        message="Store managers cannot activate the company tenant.",
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     if tenant.status == "suspended":
         raise HTTPException(

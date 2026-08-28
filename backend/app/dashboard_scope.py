@@ -1198,6 +1198,22 @@ def assert_company_level_tenant_me_read_denied(
     Company list/detail GET + profile CSV export already denied or redacted;
     ``GET /tenants/me`` serializes the same legal/tax/branding/document pack.
     Logo binary GET + ``/me`` + ``/workspace`` switcher-only remain.
+    Lifecycle suspend/activate uses ``assert_company_level_tenant_lifecycle_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot suspend or activate the company tenant; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /tenants/me/suspend or /activate.
+
+    Tenant profile GET/PATCH already denied; subscription lifecycle is company admin.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
