@@ -189,7 +189,11 @@ store activation — never frontend-only.
    (bank_name/account_number/bank_branch/clear_bank_details; name on managed
    liquid accounts remain), and
    **party category/party_type classification writes denied for store_manager**
-   (company party master classification; name/phone remain), and
+   (company party master classification; name/phone remain), and **party master
+   code writes denied for store_manager** (customer/supplier ``code`` on
+   create/patch; name/phone remain; create without code allowed), and **party master
+   code writes denied for store_manager** (customer/supplier ``code`` on
+   create/patch; name/phone remain; create without code allowed), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

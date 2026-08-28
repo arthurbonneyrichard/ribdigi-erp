@@ -930,6 +930,31 @@ def assert_party_classification_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_party_code_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master codes.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``code`` (company party master).
+
+    Name/phone/address/notes remain. Create without a code still allowed
+    (``clear_counts=False`` ignores empty/null). PATCH present ``code`` key
+    denies including clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "code" in payload
+    else:
+        code = payload.get("code")
+        changing = code is not None and str(code).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_import_denied(
     managed_ids: list[str] | None,
     *,
