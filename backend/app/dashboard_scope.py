@@ -493,6 +493,15 @@ def assert_company_level_admin_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_membership_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot assign or revoke company memberships.",
+) -> None:
+    """403 when store_manager attempts company membership assign/revoke (companies module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_org_create_denied(
     managed_ids: list[str] | None,
     *,

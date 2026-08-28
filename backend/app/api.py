@@ -2472,6 +2472,13 @@ async def assign_company_membership(
     db: AsyncSession = Depends(get_db),
 ):
     """Assign or reactivate a user on a company (does not grant tenant-wide ops)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_membership_write_denied(
+        managed,
+        message="Store managers cannot assign company memberships.",
+    )
     user_id = (payload or {}).get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id is required")
@@ -2506,6 +2513,13 @@ async def revoke_company_membership(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a user's company membership (ops access revoked)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_membership_write_denied(
+        managed,
+        message="Store managers cannot revoke company memberships.",
+    )
     row = await companies_svc.revoke_company_membership(
         db,
         tenant_id=claims["tenant_id"],

@@ -9,6 +9,11 @@ from app.emailer import clear_dev_outbox, get_dev_outbox
 from tests.conftest import auth_headers
 
 
+async def _admin(ac):
+    """Company admin — party credit/terms/deactivate/contacts are company-level master writes."""
+    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+
+
 async def _mgr(ac):
     return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
@@ -45,7 +50,7 @@ async def _ensure_mgr_warehouse(db_session, seed):
 @pytest.mark.asyncio
 async def test_supplier_profile_contacts_history_and_deactivate(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _admin(ac)
     _store, wh = await _ensure_mgr_warehouse(db_session, seed)
 
     created = await ac.post(
@@ -150,7 +155,6 @@ async def test_po_send_email_console_and_print(client, db_session, monkeypatch):
         json={
             "name": "Email Supplier",
             "email": "po@supplier.example.com",
-            "payment_terms_days": 14,
         },
     )
     assert supplier.status_code == 200, supplier.text
@@ -188,7 +192,6 @@ async def test_po_send_email_console_and_print(client, db_session, monkeypatch):
     assert data["sent_at"]
     assert data["delivery"]["mode"] == "console"
     assert data["delivery"]["sent"] is True
-    assert data["due_date"]
 
     out = get_dev_outbox()
     assert out and po_number in out[0]["subject"]

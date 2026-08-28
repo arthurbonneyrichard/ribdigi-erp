@@ -8855,3 +8855,54 @@ async def test_store_manager_ai_report_template_writes_denied(client, db_session
     # Template must still exist after denied delete.
     await db_session.refresh(tmpl)
     assert tmpl.name == "Deny Target Template"
+
+@pytest.mark.asyncio
+async def test_store_manager_company_membership_writes_denied(client, db_session):
+    """Company membership assign/revoke denied for store_manager even when companies write granted."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cashier = (
+        await db_session.execute(
+            select(m.User).where(m.User.email == "cashier@alpha.example.com")
+        )
+    ).scalar_one()
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["companies"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    listed = await ac.get(f"/api/v1/companies/{cid}/memberships", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["user_id"] == cashier.id for row in listed.json()["data"])
+
+    denied_assign = await ac.post(
+        f"/api/v1/companies/{cid}/memberships",
+        headers=headers,
+        json={"user_id": cashier.id, "role": "cashier"},
+    )
+    assert denied_assign.status_code == 403, denied_assign.text
+    assert denied_assign.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_revoke = await ac.delete(
+        f"/api/v1/companies/{cid}/memberships/{cashier.id}",
+        headers=headers,
+    )
+    assert denied_revoke.status_code == 403, denied_revoke.text
+    assert denied_revoke.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
