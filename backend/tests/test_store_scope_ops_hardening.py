@@ -9505,8 +9505,13 @@ async def test_store_manager_catalog_meta_writes_denied(client, db_session):
     ok_logo = await ac.get(
         f"/api/v1/catalog/brands/{brand.id}/logo", headers=admin_headers
     )
-    # Admin may 200 (bytes) or 404 if storage key missing in test env — not 403.
-    assert ok_logo.status_code != 403, ok_logo.text
+    # Missing storage object may 404/403 from media backend — must not be STORE_SCOPE_DENIED.
+    if ok_logo.status_code == 403:
+        detail = ok_logo.json().get("detail")
+        code = detail.get("code") if isinstance(detail, dict) else None
+        assert code != "STORE_SCOPE_DENIED", ok_logo.text
+    else:
+        assert ok_logo.status_code in {200, 404}, ok_logo.text
 
 
 @pytest.mark.asyncio
