@@ -622,6 +622,21 @@ def assert_company_level_sms_settings_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_storage_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company storage backend settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /settings/storage or /export.
+
+    Storage backend/bucket capability dump is company infra admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tax_rate_export_denied(
     managed_ids: list[str] | None,
     *,

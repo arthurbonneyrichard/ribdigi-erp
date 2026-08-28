@@ -1035,16 +1035,32 @@ async def settings_sms_export(
 
 @api.get("/settings/storage")
 async def settings_storage_get(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_storage_settings_read_denied(
+        managed,
+        message="Store managers cannot view company storage backend settings.",
+    )
     return env(storage_svc.storage_status())
 
 
 @api.get("/settings/storage/export")
 async def settings_storage_export(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
 ):
     """Stage 140 S1 — storage backend status CSV (S3 access/secret keys never included)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_storage_settings_read_denied(
+        managed,
+        message="Store managers cannot export company storage backend settings CSV.",
+    )
     text = ops_settings_export_svc.export_storage_settings_csv()
     return Response(
         content=text,
