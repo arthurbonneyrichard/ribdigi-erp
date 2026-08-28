@@ -107,7 +107,9 @@ store activation — never frontend-only.
    holds list/create/resume/discard via `PosSession.store_id` (null
    session fail-closed) + drawer-settings CSV export store scoped, and
    stores CSV export + patch/drawer/reorder write asserts (create denied
-   for store_manager). Not store-scoped RBAC Complete.
+   for store_manager), and notifications list/export/unread/mark +
+   scan-due (payment/recurring) via entity store/WH joins (quotations
+   omitted/skipped — no store_id). Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
