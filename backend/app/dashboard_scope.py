@@ -597,8 +597,25 @@ def assert_company_level_tax_rate_export_denied(
 ) -> None:
     """403 when store_manager exports tax rates CSV (company tax master dump).
 
-    List/get and store-scoped tax reports remain; full rate export is company-level
-    administration (create/patch/default already denied).
+    List GET is separately denied; store-scoped tax reports/filing remain. Full rate
+    export is company-level administration (create/patch/default already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tax_rate_list_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company tax rates; "
+        "scoped tax reports/filing remain."
+    ),
+) -> None:
+    """403 when store_manager lists company tax rates (master dump).
+
+    Create/patch/default and CSV export already denied; GET ``/tax/rates`` dumped
+    the full company rate table. Store-scoped tax report/filing remain; single-rate
+    get and ``/tax/calculate`` are unchanged in this slice.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

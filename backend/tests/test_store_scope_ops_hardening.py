@@ -4748,7 +4748,7 @@ async def test_store_manager_tax_reports_store_wh_scoped(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_tax_rate_writes_denied(client, db_session):
-    """Tax rate create/patch/default/export denied for store_manager (company-level config)."""
+    """Tax rate list/create/patch/default/export denied for store_manager (company-level)."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -4771,6 +4771,12 @@ async def test_store_manager_tax_rate_writes_denied(client, db_session):
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     existing = m.TaxRate(
         tenant_id=tid,
@@ -4810,9 +4816,13 @@ async def test_store_manager_tax_rate_writes_denied(client, db_session):
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    listed = await ac.get("/api/v1/tax/rates", headers=headers)
-    assert listed.status_code == 200, listed.text
-    assert any(row["id"] == existing.id for row in listed.json()["data"])
+    denied_list = await ac.get("/api/v1/tax/rates", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_list = await ac.get("/api/v1/tax/rates", headers=admin_headers)
+    assert ok_list.status_code == 200, ok_list.text
+    assert any(row["id"] == existing.id for row in ok_list.json()["data"])
 
 
 @pytest.mark.asyncio

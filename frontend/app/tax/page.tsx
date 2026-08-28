@@ -98,7 +98,7 @@ export default function Page() {
           ? '?is_active=false'
           : '';
     const [rates, taxReport, filingPack] = await Promise.all([
-      api(`/tax/rates${taxQs}`),
+      api(`/tax/rates${taxQs}`).catch(() => ({ data: [] })),
       api(`/reports/tax${q}`),
       api(`/reports/tax/filing${q}`),
     ]);

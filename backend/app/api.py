@@ -15553,6 +15553,10 @@ async def taxes(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 F1 — is_active / active_only for honest inactive-only tax rate lists."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tax_rate_list_read_denied(managed)
     stmt = (
         select(m.TaxRate)
         .where(*workspace_svc.company_scope_filter(m.TaxRate, claims))
