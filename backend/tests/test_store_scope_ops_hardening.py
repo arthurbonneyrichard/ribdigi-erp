@@ -9365,7 +9365,7 @@ async def test_store_manager_branches_departments_writes_denied(client, db_sessi
 async def test_store_manager_expense_department_assignment_writes_denied(
     client, db_session
 ):
-    """Expense create/patch/recurring-create deny department_id org assignment."""
+    """Expense create/patch/recurring-create deny department_id; list/export redact it."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -9471,6 +9471,156 @@ async def test_store_manager_expense_department_assignment_writes_denied(
     )
     assert denied_recurring.status_code == 403, denied_recurring.text
     assert denied_recurring.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expense_department_redacted(client, db_session):
+    """Expense/recurring list/get/export/patch omit department_id for store_manager."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    branch = m.Branch(
+        tenant_id=tid,
+        company_id=cid,
+        code="EXP-DR-BR",
+        name="Expense Dept Redact Branch",
+        is_active=True,
+    )
+    db_session.add(branch)
+    await db_session.flush()
+    dept = m.Department(
+        tenant_id=tid,
+        company_id=cid,
+        branch_id=branch.id,
+        code="EXP-DR-DEPT",
+        name="Expense Dept Redact Target",
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Expense Dept Redact Store",
+        code="EXP-DR-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Dept redact target",
+        amount=18,
+        store_id=None,
+        department_id=None,
+        status="pending",
+        created_by=mgr.id,
+    )
+    recurring = m.RecurringExpense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Utilities",
+        description="Dept redact recurring",
+        amount=55,
+        frequency="monthly",
+        payment_method="cash",
+        store_id=None,
+        department_id=None,
+        is_active=True,
+        created_by=mgr.id,
+    )
+    db_session.add_all([dept, store, expense, recurring])
+    await db_session.flush()
+    expense.store_id = store.id
+    expense.department_id = dept.id
+    recurring.store_id = store.id
+    recurring.department_id = dept.id
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/expenses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    mine = next(r for r in listed.json()["data"] if r["id"] == expense.id)
+    assert mine["description"] == "Dept redact target"
+    assert mine.get("department_id") is None
+    assert mine.get("store_id") == store.id
+
+    admin_listed = await ac.get("/api/v1/expenses", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_mine = next(r for r in admin_listed.json()["data"] if r["id"] == expense.id)
+    assert admin_mine.get("department_id") == dept.id
+
+    got = await ac.get(f"/api/v1/expenses/{expense.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"].get("department_id") is None
+
+    exported = await ac.get("/api/v1/expenses/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "Dept redact target" in exported.text
+    assert "department_id" in exported.text
+    sm_line = next(
+        line
+        for line in exported.text.splitlines()
+        if "Dept redact target" in line
+    )
+    # expense_date,category,payee,description,amount,payment_method,reference,status,store_id,department_id,created_by
+    cols = next(csv.reader([sm_line]))
+    assert cols[3] == "Dept redact target"
+    assert cols[9] == ""
+
+    admin_exported = await ac.get("/api/v1/expenses/export", headers=admin_headers)
+    assert admin_exported.status_code == 200, admin_exported.text
+    admin_line = next(
+        line
+        for line in admin_exported.text.splitlines()
+        if "Dept redact target" in line
+    )
+    admin_cols = next(csv.reader([admin_line]))
+    assert admin_cols[9] == dept.id
+
+    ok_patch = await ac.patch(
+        f"/api/v1/expenses/{expense.id}",
+        headers=headers,
+        json={"description": "Dept redact target updated"},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+    assert ok_patch.json()["data"]["description"] == "Dept redact target updated"
+    assert ok_patch.json()["data"].get("department_id") is None
+
+    await db_session.refresh(expense)
+    assert expense.department_id == dept.id
+    assert expense.description == "Dept redact target updated"
+
+    recurring_list = await ac.get("/api/v1/expenses/recurring", headers=headers)
+    assert recurring_list.status_code == 200, recurring_list.text
+    rmine = next(r for r in recurring_list.json()["data"] if r["id"] == recurring.id)
+    assert rmine.get("department_id") is None
+    assert rmine.get("store_id") == store.id
+
+    recurring_export = await ac.get("/api/v1/expenses/recurring/export", headers=headers)
+    assert recurring_export.status_code == 200, recurring_export.text
+    assert "Dept redact recurring" in recurring_export.text
+    r_line = next(
+        line
+        for line in recurring_export.text.splitlines()
+        if "Dept redact recurring" in line
+    )
+    # category,description,amount,frequency,payment_method,payee,store_id,department_id,next_run_at,is_active
+    r_cols = next(csv.reader([r_line]))
+    assert r_cols[1] == "Dept redact recurring"
+    assert r_cols[7] == ""
+
+    admin_recurring = await ac.get("/api/v1/expenses/recurring", headers=admin_headers)
+    assert admin_recurring.status_code == 200, admin_recurring.text
+    admin_r = next(r for r in admin_recurring.json()["data"] if r["id"] == recurring.id)
+    assert admin_r.get("department_id") == dept.id
 
 
 @pytest.mark.asyncio

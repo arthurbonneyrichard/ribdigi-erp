@@ -60,7 +60,9 @@ store activation — never frontend-only.
    inventory stock-transfer write asserts (from-WH required; mutations must touch
    managed stores), expenses summary + category budget spent/pending
    (null-store fail-closed; budget limits company-level — create/patch + categories list denied for store_manager; budget_amount/variance/utilization redacted on budgets JSON/CSV + embeds; spend/pending still scoped), expense +
-   recurring create / expense patch store asserts (foreign `store_id` denied),
+   recurring create / expense patch store asserts (foreign `store_id` denied;
+   **expense department_id assign/clear denied + department_id redacted** on
+   expense/recurring list/get/export/patch JSON/CSV),
    and AI inventory low-stock / demand-forecast / dead-stock / predictions
    (+ exports; chat stockout intent) via managed WarehouseStock + store sales
    (null-store fail-closed; empty managed WH → empty; no `product.stock_qty`

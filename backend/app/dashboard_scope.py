@@ -1596,6 +1596,8 @@ def assert_expense_department_assignment_write_denied(
 
     Department master writes are already denied; ``department_id`` / ``clear_department``
     on expense create/patch/recurring-create is the same company-level org graph.
+    List/export/patch JSON redacts ``department_id`` via
+    ``redact_expense_department_assignment``.
     """
     if managed_ids is None:
         return
@@ -1603,6 +1605,24 @@ def assert_expense_department_assignment_write_denied(
     if not changing:
         return
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_expense_department_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit expense ``department_id`` on JSON/CSV.
+
+    Department assign/clear writes already denied; departments list GET already denied.
+    Expense + recurring list/get/export/patch must not re-dump the company
+    expense↔department org link. Amount/category/store/status remain for managed-store ops.
+    """
+    return managed_ids is not None
+
+
+def redact_expense_department_assignment(payload: dict) -> dict:
+    """Null ``department_id`` on a serialized expense or recurring-expense dict."""
+    out = dict(payload)
+    if "department_id" in out:
+        out["department_id"] = None
+    return out
 
 
 def assert_expense_store_clear_write_denied(

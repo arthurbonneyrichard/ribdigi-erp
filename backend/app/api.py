@@ -11660,7 +11660,10 @@ async def list_recurring_expenses(
         company_id=claims.get("company_id"),
         store_ids=managed,
     )
-    return env([expenses_svc.serialize_recurring(r) for r in rows])
+    out = [expenses_svc.serialize_recurring(r) for r in rows]
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
+    return env(out)
 
 
 @api.get("/expenses/recurring/export")
@@ -11681,6 +11684,7 @@ async def expenses_recurring_export(
         active_only=active_only,
         company_id=claims.get("company_id"),
         store_ids=managed,
+        omit_department_id=dashboard_scope_svc.omit_expense_department_assignment(managed),
     )
     return Response(
         content=text,
@@ -11721,7 +11725,10 @@ async def create_recurring_expense(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(expenses_svc.serialize_recurring(row), "Recurring expense created")
+    payload_out = expenses_svc.serialize_recurring(row)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out, "Recurring expense created")
 
 
 @api.patch("/expenses/recurring/{recurring_id}")
@@ -11755,7 +11762,10 @@ async def update_recurring_expense(
         payee=payload.payee,
     )
     await db.commit()
-    return env(expenses_svc.serialize_recurring(row), "Recurring expense updated")
+    payload_out = expenses_svc.serialize_recurring(row)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out, "Recurring expense updated")
 
 
 @api.post("/expenses/recurring/generate")
@@ -11774,8 +11784,11 @@ async def generate_recurring_expenses(
         store_ids=managed,
     )
     await db.commit()
+    out = [expenses_svc.serialize_expense(e) for e in created]
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
     return env(
-        [expenses_svc.serialize_expense(e) for e in created],
+        out,
         f"Generated {len(created)} expense(s)",
     )
 
@@ -11817,7 +11830,10 @@ async def expenses(
         stmt = stmt.where(m.Expense.status == key)
     stmt = apply_created_by_scope(stmt, m.Expense, claims)
     rows = (await db.execute(stmt)).scalars().all()
-    return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])
+    out = [await expenses_svc.serialize_expense_full(db, e) for e in rows]
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
+    return env(out)
 
 
 @api.get("/expenses/export")
@@ -11841,6 +11857,7 @@ async def expenses_export(
         store_id=single,
         store_ids=multi,
         department_id=department_id,
+        omit_department_id=dashboard_scope_svc.omit_expense_department_assignment(managed),
     )
     return Response(
         content=text,
@@ -11890,7 +11907,10 @@ async def add_expense(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await expenses_svc.serialize_expense_full(db, expense), "Expense recorded")
+    payload_out = await expenses_svc.serialize_expense_full(db, expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out, "Expense recorded")
 
 
 @api.get("/expenses/{expense_id}")
@@ -11908,7 +11928,10 @@ async def get_expense(
     dashboard_scope_svc.assert_store_in_manager_scope(
         managed, getattr(expense, "store_id", None), allow_unset=False
     )
-    return env(await expenses_svc.serialize_expense_full(db, expense))
+    payload_out = await expenses_svc.serialize_expense_full(db, expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out)
 
 
 @api.patch("/expenses/{expense_id}")
@@ -11974,7 +11997,10 @@ async def patch_expense(
         },
     )
     await db.commit()
-    return env(await expenses_svc.serialize_expense_full(db, expense), "Expense updated")
+    payload_out = await expenses_svc.serialize_expense_full(db, expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out, "Expense updated")
 
 
 @api.post("/expenses/{expense_id}/ocr-suggest")
@@ -12066,8 +12092,11 @@ async def expense_ocr_apply(
         },
     )
     await db.commit()
+    payload_out = await expenses_svc.serialize_expense_full(db, expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     return env(
-        await expenses_svc.serialize_expense_full(db, expense),
+        payload_out,
         "OCR suggestions applied to expense",
     )
 
@@ -12110,6 +12139,8 @@ async def upload_expense_attachment(
     )
     await db.commit()
     data = expenses_svc.serialize_expense(expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        data = dashboard_scope_svc.redact_expense_department_assignment(data)
     data["uploaded"] = {
         "key": stored.key,
         "size": stored.size,
@@ -12176,7 +12207,10 @@ async def delete_expense_attachment(
         entity_id=expense.id,
     )
     await db.commit()
-    return env(expenses_svc.serialize_expense(expense), "Attachment removed")
+    payload_out = expenses_svc.serialize_expense(expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out, "Attachment removed")
 
 
 @api.post("/expenses/{expense_id}/approve")
@@ -12206,7 +12240,10 @@ async def approve_expense(
     if expense.status == "approved":
         await cache_svc.app_cache.invalidate_dashboard(claims["tenant_id"])
     msg = "Expense approved" if expense.status == "approved" else f"Level {int(expense.approval_step) - 1} approved; awaiting next level"
-    return env(await expenses_svc.serialize_expense_full(db, expense), msg)
+    payload_out = await expenses_svc.serialize_expense_full(db, expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out, msg)
 
 
 @api.post("/expenses/{expense_id}/reject")
@@ -12233,7 +12270,10 @@ async def reject_expense(
         actor_role=claims.get("role"),
     )
     await db.commit()
-    return env(await expenses_svc.serialize_expense_full(db, expense), "Expense rejected")
+    payload_out = await expenses_svc.serialize_expense_full(db, expense)
+    if dashboard_scope_svc.omit_expense_department_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    return env(payload_out, "Expense rejected")
 
 
 @api.delete("/expenses/{expense_id}")

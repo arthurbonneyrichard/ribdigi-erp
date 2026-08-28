@@ -113,6 +113,7 @@ async def export_recurring_expenses_csv(
     active_only: bool = False,
     company_id: str | None = None,
     store_ids: list[str] | None = None,
+    omit_department_id: bool = False,
 ) -> str:
     stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
     if company_id:
@@ -141,7 +142,11 @@ async def export_recurring_expenses_csv(
                 "payment_method": _cell(row.payment_method),
                 "payee": _cell(row.payee),
                 "store_id": _cell(getattr(row, "store_id", None)),
-                "department_id": _cell(getattr(row, "department_id", None)),
+                "department_id": (
+                    ""
+                    if omit_department_id
+                    else _cell(getattr(row, "department_id", None))
+                ),
                 "next_run_at": _cell(row.next_run_at),
                 "is_active": _cell(bool(row.is_active)),
             }
