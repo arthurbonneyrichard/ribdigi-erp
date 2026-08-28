@@ -1796,11 +1796,51 @@ def assert_company_level_bank_connection_write_denied(
 ) -> None:
     """403 when store_manager creates/deletes bank feed connections (credentials).
 
-    List/export/patch/sync on managed liquid-account connections remain scoped.
-    Credential field patches use ``assert_bank_connection_credentials_write_denied``.
-    Soft ``is_active`` uses ``assert_bank_connection_lifecycle_write_denied``.
+    List/patch/sync on managed liquid-account connections remain scoped; list/patch
+    JSON redact ``feed_url`` / ``external_account_id`` via
+    ``redact_bank_connection_credentials``. CSV export uses
+    ``assert_company_level_bank_connections_export_denied``. Credential field
+    patches use ``assert_bank_connection_credentials_write_denied``. Soft
+    ``is_active`` uses ``assert_bank_connection_lifecycle_write_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bank_connections_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export bank connections CSV "
+        "(company feed identity dump); scoped list remains."
+    ),
+) -> None:
+    """403 when store_manager GETs /accounting/bank-connections/export.
+
+    CSV includes feed_url/external_account_id for scoped connections. Credential
+    patches already denied; list/patch JSON redacts those fields via
+    ``redact_bank_connection_credentials`` while keeping display_name/provider/
+    sync status.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_bank_connection_credentials(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit feed identity fields on connection JSON.
+
+    Bank-connections CSV export already denied; list/patch must not re-dump
+    feed_url / external_account_id. display_name, provider, has_credentials,
+    and sync status remain.
+    """
+    return managed_ids is not None
+
+
+def redact_bank_connection_credentials(payload: dict) -> dict:
+    """Null feed identity fields on a serialized bank connection."""
+    out = dict(payload)
+    for key in ("feed_url", "external_account_id"):
+        if key in out:
+            out[key] = None
+    return out
 
 
 BANK_CONNECTION_CREDENTIAL_FIELDS = frozenset(

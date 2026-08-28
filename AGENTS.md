@@ -103,7 +103,8 @@ store activation — never frontend-only.
    account ledger (+ export) from managed-store journals (null-store
    fail-closed), and bank statements list/export/get/reconcile writes
    (+ create/import) scoped to managed liquid accounts, and bank connections
-   list/export/create/patch/delete/sync scoped to managed liquid accounts
+   list/create/patch/delete/sync scoped to managed liquid accounts
+   (+ CSV export denied; feed identity redacted on list/patch)
    (**bank connection is_active lifecycle writes denied for store_manager**;
    display name patches on managed connections remain; sync policy + credential
    field patches also denied),
@@ -187,8 +188,9 @@ store activation — never frontend-only.
    managed connections remain), and **party customer_group assignment
    denied for store_manager** (company sales-master party↔group link; name/notes
    party patches remain), and **bank connection create/delete denied for
-   store_manager** (company bank-feed credentials; list/export/patch/sync on
-   managed liquid accounts remain), and **bank connection credential field
+   store_manager** (company bank-feed credentials; list/patch/sync on
+   managed liquid accounts remain; **CSV export denied**; **feed_url/
+   external_account_id redacted** on list/patch), and **bank connection credential field
    patches denied for store_manager** (access_token/feed_url/provider/external
    id; display_name on managed connections remain), and **bank connection sync
    policy patches denied for store_manager** (auto_sync/auto_match_after_sync/

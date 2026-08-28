@@ -6472,7 +6472,7 @@ async def test_store_manager_bank_statement_create_import_writes_scoped(client, 
 
 @pytest.mark.asyncio
 async def test_store_manager_bank_connections_scoped(client, db_session):
-    """Bank connections: create/delete denied; list/export/patch/sync liquid-scoped."""
+    """Bank connections: create/delete/export denied; list redacts feed identity; patch/sync liquid-scoped."""
     from app import bank_connectors as bank_connectors_svc
     from app.rbac import permissions_for_role
 
@@ -6497,6 +6497,12 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     mine = m.Store(
         tenant_id=tid,
@@ -6553,6 +6559,8 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
         account_id=cash.id,
         provider="mock",
         display_name="Mine Cash Feed",
+        external_account_id="ext-mine-991",
+        feed_url="https://feeds.example.com/mine.json",
         company_id=cid,
     )
     conn_other = await bank_connectors_svc.create_connection(
@@ -6561,20 +6569,41 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
         account_id=bank.id,
         provider="mock",
         display_name="Other Bank Feed",
+        external_account_id="ext-other-882",
+        feed_url="https://feeds.example.com/other.json",
         company_id=cid,
     )
     await db_session.commit()
 
     listed = await ac.get("/api/v1/accounting/bank-connections", headers=headers)
     assert listed.status_code == 200, listed.text
-    ids = {row["id"] for row in listed.json()["data"]}
+    rows = listed.json()["data"]
+    ids = {row["id"] for row in rows}
     assert conn_mine.id in ids
     assert conn_other.id not in ids
+    mine_row = next(r for r in rows if r["id"] == conn_mine.id)
+    assert mine_row["display_name"] == "Mine Cash Feed"
+    assert mine_row["provider"] == "mock"
+    assert mine_row.get("feed_url") is None
+    assert mine_row.get("external_account_id") is None
 
-    exported = await ac.get("/api/v1/accounting/bank-connections/export", headers=headers)
-    assert exported.status_code == 200, exported.text
-    assert "Mine Cash Feed" in exported.text
-    assert "Other Bank Feed" not in exported.text
+    admin_listed = await ac.get("/api/v1/accounting/bank-connections", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_mine = next(r for r in admin_listed.json()["data"] if r["id"] == conn_mine.id)
+    assert admin_mine["feed_url"] == "https://feeds.example.com/mine.json"
+    assert admin_mine["external_account_id"] == "ext-mine-991"
+
+    denied_export = await ac.get("/api/v1/accounting/bank-connections/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_export = await ac.get(
+        "/api/v1/accounting/bank-connections/export", headers=admin_headers
+    )
+    assert ok_export.status_code == 200, ok_export.text
+    assert "Mine Cash Feed" in ok_export.text
+    assert "https://feeds.example.com/mine.json" in ok_export.text
+    assert "ext-mine-991" in ok_export.text
 
     # Create/delete are company-level (feed credentials); managed liquid scope is not enough.
     denied_create_foreign = await ac.post(
@@ -6607,6 +6636,10 @@ async def test_store_manager_bank_connections_scoped(client, db_session):
         json={"display_name": "Mine Cash Feed Updated"},
     )
     assert ok_patch.status_code == 200, ok_patch.text
+    patched = ok_patch.json()["data"]
+    assert patched["display_name"] == "Mine Cash Feed Updated"
+    assert patched.get("feed_url") is None
+    assert patched.get("external_account_id") is None
 
     denied_creds = await ac.patch(
         f"/api/v1/accounting/bank-connections/{conn_mine.id}",

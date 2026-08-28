@@ -12816,7 +12816,13 @@ async def list_bank_connections(
         company_id=claims.get("company_id"),
         account_ids=account_ids,
     )
-    return env([bank_connectors_svc.serialize_connection(r) for r in rows])
+    omit_creds = dashboard_scope_svc.omit_bank_connection_credentials(managed)
+    serialized = [bank_connectors_svc.serialize_connection(r) for r in rows]
+    if omit_creds:
+        serialized = [
+            dashboard_scope_svc.redact_bank_connection_credentials(row) for row in serialized
+        ]
+    return env(serialized)
 
 
 @api.get("/accounting/bank-connections/export")
@@ -12830,6 +12836,13 @@ async def bank_connections_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bank_connections_export_denied(
+        managed,
+        message=(
+            "Store managers cannot export bank connections CSV "
+            "(company feed identity dump)."
+        ),
+    )
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     account_ids = await dashboard_scope_svc.managed_liquid_account_ids(
         db,
@@ -12955,7 +12968,10 @@ async def update_bank_connection(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(bank_connectors_svc.serialize_connection(row), "Bank connection updated")
+    serialized = bank_connectors_svc.serialize_connection(row)
+    if dashboard_scope_svc.omit_bank_connection_credentials(managed):
+        serialized = dashboard_scope_svc.redact_bank_connection_credentials(serialized)
+    return env(serialized, "Bank connection updated")
 
 
 @api.delete("/accounting/bank-connections/{connection_id}")
