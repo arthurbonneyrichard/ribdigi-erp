@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
@@ -28,6 +28,14 @@ export default function Page() {
   const [analysisToDate, setAnalysisToDate] = useState('');
   const [draftDocDate, setDraftDocDate] = useState('');
   const [draftDocDescription, setDraftDocDescription] = useState('');
+  const [draftDocCategoryId, setDraftDocCategoryId] = useState('');
+  const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    api('/expenses/categories')
+      .then((r) => setExpenseCategories(r.data || []))
+      .catch(() => setExpenseCategories([]));
+  }, []);
 
   async function go() {
     const message = q.trim();
@@ -407,6 +415,9 @@ export default function Page() {
       const rawDate = String(d.extracted?.expense_date || '').trim();
       setDraftDocDate(rawDate.length >= 10 ? rawDate.slice(0, 10) : '');
       setDraftDocDescription(String(d.extracted?.description || '').trim());
+      setDraftDocCategoryId(
+        String(d.extracted?.category_id || d.category_suggestion?.category_id || '').trim(),
+      );
       setA(
         [
           `type=${d.document_type} engine=${d.engine} conf=${d.confidence}`,
@@ -445,7 +456,7 @@ export default function Page() {
           description: draftDocDescription.trim() || null,
           reference: ex.reference || null,
           expense_date: expenseDate,
-          category_id: ex.category_id || lastDocExtract.category_suggestion?.category_id || null,
+          category_id: draftDocCategoryId.trim() || null,
           category: ex.category || lastDocExtract.category_suggestion?.category || null,
           payment_method: 'cash',
         }),
@@ -589,6 +600,21 @@ export default function Page() {
             aria-label="AI document expense description"
             style={{ minWidth: 200 }}
           />
+          <select
+            value={draftDocCategoryId}
+            onChange={(e) => setDraftDocCategoryId(e.target.value)}
+            aria-label="AI document expense category"
+            title="Optional spend category (UuidIdValue); blank → MISC / label path"
+          >
+            <option value="">No category / MISC</option>
+            {expenseCategories
+              .filter((c) => c.is_active !== false)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} — {c.name}
+                </option>
+              ))}
+          </select>
           <button
             type="button"
             onClick={createDraftExpenseFromDoc}

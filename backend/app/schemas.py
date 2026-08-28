@@ -1686,7 +1686,11 @@ class AiDocumentExpenseCreate(BaseModel):
     # omit/`null` → auto / service default; blank/`!!!`/`http://…` → **422** (was
     # free `str`; blank/garbage could persist on AI draft expense).
     reference: ExpenseReferenceValue | None = None
-    category_id: str | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → label-only / MISC path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
+    # Same honesty as ExpenseCreate.category_id.
+    category_id: UuidIdValue | None = None
     # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
     # when `category_id` set; blank/`!!!`/`http://…` → **422** (was free `str`;
     # punctuation/URL could persist on AI draft Expense.category).
