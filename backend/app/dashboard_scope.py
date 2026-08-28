@@ -612,6 +612,22 @@ def assert_company_level_expense_settings_read_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_credit_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company early-pay credit settings; "
+        "scoped credit AR/AP ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company early-pay credit settings (admin dump).
+
+    PATCH and CSV export already denied; GET dumped discount pct/days/enabled.
+    Scoped credit aging/statements/payments remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_settings_export_denied(
     managed_ids: list[str] | None,
     *,
@@ -619,9 +635,9 @@ def assert_company_level_settings_export_denied(
 ) -> None:
     """403 when store_manager exports company settings CSVs (approval/FX/FEFO/early-pay).
 
-    Expense approval settings GET is separately denied; credit/inventory settings GETs
-    remain. FX exchange-rates GET is separately denied. Full CSV dumps are
-    company-level administration (writes already denied).
+    Expense/credit settings GETs are separately denied; inventory settings GET remains.
+    FX exchange-rates GET is separately denied. Full CSV dumps are company-level
+    administration (writes already denied).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

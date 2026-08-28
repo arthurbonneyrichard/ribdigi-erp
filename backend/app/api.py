@@ -14867,6 +14867,10 @@ async def credit_settings(
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_credit_settings_read_denied(managed)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     return env(credit_svc.early_pay_settings(tenant))
 
