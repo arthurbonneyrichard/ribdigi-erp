@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_pr_required_date_schema():
-    base = {"items": [{"product_id": "p1", "quantity": 1}]}
+    base = {"items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}]}
     omit = PurchaseRequestCreate.model_validate(base)
     assert omit.required_date is None
     ok = PurchaseRequestCreate.model_validate({**base, "required_date": " 2026-08-14 "})

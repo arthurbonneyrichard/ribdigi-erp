@@ -2518,11 +2518,17 @@ class PurchaseRequestItemCreate(BaseModel):
     (was free `str`; blank/garbage could persist on `PurchaseRequestItem.notes`).
     """
 
-    product_id: str
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
     quantity: float = Field(gt=0)
-    variant_id: str | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    # Existence / product match remain create_request (**404**).
+    variant_id: UuidIdValue | None = None
     # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
-    # blank/garbage could persist on PurchaseRequestItem.notes Text).
+    # blank/garbage could persist on PurchaseRequestItem.notes text).
     notes: PurchaseRequestNotesValue | None = None
 
 

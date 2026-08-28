@@ -28,22 +28,22 @@ def test_purchase_request_department_value_schema():
     ok = PurchaseRequestCreate.model_validate(
         {
             "department": "  Warehouse  ",
-            "items": [{"product_id": "p1", "quantity": 1}],
+            "items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}],
         }
     )
     assert ok.department == "Warehouse"
     omit = PurchaseRequestCreate.model_validate(
-        {"items": [{"product_id": "p1", "quantity": 1}]}
+        {"items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}]}
     )
     assert omit.department is None
     with pytest.raises(ValidationError):
         PurchaseRequestCreate.model_validate(
-            {"department": "!!!", "items": [{"product_id": "p1", "quantity": 1}]}
+            {"department": "!!!", "items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}]}
         )
     with pytest.raises(ValidationError):
         LowStockSuggestionsCreate.model_validate(
             {
-                "lines": [{"product_id": "p1", "quantity": 1}],
+                "lines": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}],
                 "department": "",
             }
         )

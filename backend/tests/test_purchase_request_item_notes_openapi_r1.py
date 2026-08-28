@@ -15,27 +15,27 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_purchase_request_item_notes_schema():
-    omit = PurchaseRequestItemCreate.model_validate({"product_id": "p1", "quantity": 1})
+    omit = PurchaseRequestItemCreate.model_validate({"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1})
     assert omit.notes is None
     ok = PurchaseRequestItemCreate.model_validate(
-        {"product_id": "p1", "quantity": 1, "notes": "  Urgent SKU  "}
+        {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "notes": "  Urgent SKU  "}
     )
     assert ok.notes == "Urgent SKU"
     for bad in ("", " ", "!!!", "!!!!", "http://evil", "@@"):
         with pytest.raises(ValidationError):
             PurchaseRequestItemCreate.model_validate(
-                {"product_id": "p1", "quantity": 1, "notes": bad}
+                {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "notes": bad}
             )
 
     create_ok = PurchaseRequestCreate.model_validate(
         {
-            "items": [{"product_id": "p1", "quantity": 1, "notes": "  Bin A  "}],
+            "items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "notes": "  Bin A  "}],
         }
     )
     assert create_ok.items[0].notes == "Bin A"
     with pytest.raises(ValidationError):
         PurchaseRequestCreate.model_validate(
-            {"items": [{"product_id": "p1", "quantity": 1, "notes": "!!!!"}]}
+            {"items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "notes": "!!!!"}]}
         )
 
 

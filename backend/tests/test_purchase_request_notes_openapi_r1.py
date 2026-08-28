@@ -13,7 +13,7 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
-_BASE = {"items": [{"product_id": "p1", "quantity": 1}]}
+_BASE = {"items": [{"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1}]}
 
 
 def test_purchase_request_notes_schema():
