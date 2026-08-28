@@ -14416,13 +14416,17 @@ async def stores_export(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 121 X1 — stores CSV export."""
+    """Stage 121 X1 — stores CSV export (store_manager: managed stores only)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await location_export_svc.export_stores_csv(
         db,
         tenant_id=claims["tenant_id"],
         is_active=is_active,
         active_only=active_only,
         company_id=claims.get("company_id"),
+        store_ids=managed,
     )
     return Response(
         content=text,
@@ -14463,6 +14467,18 @@ async def add_store(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    # store_manager may mutate managed stores only — create remains tenant/company admin.
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if managed is not None:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Store managers cannot create stores.",
+            },
+        )
     branch_id = None
     if payload.branch_id:
         branch_id, _ = await org_units_svc.assert_user_org_assignment(
@@ -14536,7 +14552,13 @@ async def update_store(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     tenants_svc.assert_writable(claims)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, store_id, allow_unset=False
+    )
     branch_id = payload.branch_id
     if payload.branch_id:
         branch_id, _ = await org_units_svc.assert_user_org_assignment(
@@ -14583,7 +14605,12 @@ async def update_store_drawer(
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, store_id, allow_unset=False
+    )
     store = await stores_svc.get_store(
         db, claims["tenant_id"], store_id, company_id=claims.get("company_id")
     )
@@ -14735,6 +14762,12 @@ async def set_store_reorder_policy(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, store_id, allow_unset=False
+    )
     store = await stores_svc.get_store(
         db, claims["tenant_id"], store_id, company_id=claims.get("company_id")
     )

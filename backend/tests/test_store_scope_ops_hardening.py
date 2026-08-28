@@ -5676,3 +5676,104 @@ async def test_store_manager_pos_holds_and_drawer_export_scoped(client, db_sessi
     body = exported.text
     assert "HOLD-M" in body
     assert "HOLD-O" not in body
+
+
+@pytest.mark.asyncio
+async def test_store_manager_stores_export_and_writes_scoped(client, db_session):
+    """Stores CSV export + patch/drawer/reorder/create assert managed store scope."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = seed["p1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Stores Residual Mine",
+        code="STR-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Stores Residual Other",
+        code="STR-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    exported = await ac.get("/api/v1/stores/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "STR-M" in exported.text
+    assert "STR-O" not in exported.text
+
+    denied_create = await ac.post(
+        "/api/v1/stores",
+        headers=headers,
+        json={"code": "STR-NEW", "name": "Should Fail"},
+    )
+    assert denied_create.status_code == 403
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/stores/{other.id}",
+        headers=headers,
+        json={"name": "Hacked Other"},
+    )
+    assert denied_patch.status_code == 403
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_patch = await ac.patch(
+        f"/api/v1/stores/{mine.id}",
+        headers=headers,
+        json={"name": "Stores Residual Mine Updated"},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+    assert ok_patch.json()["data"]["name"] == "Stores Residual Mine Updated"
+
+    denied_drawer = await ac.patch(
+        f"/api/v1/stores/{other.id}/drawer",
+        headers=headers,
+        json={"drawer_mode": "none", "drawer_open_on_cash": True},
+    )
+    assert denied_drawer.status_code == 403
+    assert denied_drawer.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_drawer = await ac.patch(
+        f"/api/v1/stores/{mine.id}/drawer",
+        headers=headers,
+        json={"drawer_mode": "none", "drawer_open_on_cash": True},
+    )
+    assert ok_drawer.status_code == 200, ok_drawer.text
+    assert ok_drawer.json()["data"]["drawer_mode"] == "none"
+
+    denied_reorder = await ac.put(
+        f"/api/v1/stores/{other.id}/reorder-policy",
+        headers=headers,
+        json={
+            "product_id": product.id,
+            "minimum_stock": 1,
+            "reorder_level": 2,
+            "reorder_qty": 5,
+        },
+    )
+    assert denied_reorder.status_code == 403
+    assert denied_reorder.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_reorder = await ac.put(
+        f"/api/v1/stores/{mine.id}/reorder-policy",
+        headers=headers,
+        json={
+            "product_id": product.id,
+            "minimum_stock": 1,
+            "reorder_level": 2,
+            "reorder_qty": 5,
+        },
+    )
+    assert ok_reorder.status_code == 200, ok_reorder.text
