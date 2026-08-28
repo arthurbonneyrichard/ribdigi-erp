@@ -329,7 +329,7 @@ export default function Page() {
           frequency: recFrequency,
           payment_method: recPaymentMethod,
           branch_id: recBranchId.trim() || null,
-          department_id: recDepartmentId || null,
+          department_id: recDepartmentId.trim() || null,
         }),
       });
       setMessage(
@@ -1119,7 +1119,16 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <select value={recDepartmentId} onChange={(e) => setRecDepartmentId(e.target.value)}>
+          <select
+            value={recDepartmentId}
+            onChange={(e) => setRecDepartmentId(e.target.value)}
+            aria-label={
+              recEditId
+                ? 'Edit recurring expense department'
+                : 'Recurring expense department'
+            }
+            title="Recurring expense department (optional org dim)"
+          >
             <option value="">No department</option>
             {departments
               .filter((d) => d.is_active !== false)
