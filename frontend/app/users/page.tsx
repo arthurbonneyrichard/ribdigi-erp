@@ -185,7 +185,7 @@ export default function Page() {
           password: trimmedPassword,
           role: form.role,
           phone: form.phone || null,
-          branch_id: form.branch_id || null,
+          branch_id: form.branch_id.trim() || null,
           department_id: form.department_id || null,
           record_scope: form.record_scope || null,
         }),
@@ -629,6 +629,8 @@ export default function Page() {
             onChange={(e) =>
               setForm({ ...form, branch_id: e.target.value, department_id: '' })
             }
+            aria-label="User branch"
+            title="Optional branch assignment (UuidIdValue)"
           >
             <option value="">Branch (optional)</option>
             {activeBranches.map((b) => (

@@ -678,7 +678,10 @@ class UserCreate(BaseModel):
     # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/`garbage` could persist on create).
     phone: E164PhoneValue | None = None
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
     department_id: str | None = None
     # BR-3.3 — omit = role default; blank/invalid → 422 (no silent all from "")
     record_scope: RecordScopeValue | None = None

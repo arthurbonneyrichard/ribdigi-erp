@@ -503,7 +503,7 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
   "email": "manager@acme.com",
   "full_name": "John Doe",
   "role": "store_manager",
-  "branch_id": "br_001",
+  "branch_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
   "department_id": "dept_001",
   "record_scope": "branch",
   "phone": "+1-555-0199",
@@ -518,6 +518,8 @@ PATCH supports `name`, `branch_id`, `clear_branch`, `head_user_id`, `clear_head`
 `password` ∈ `UserPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces; blank/`!!!`/`http://…` → **422** — was free `str`; whitespace/`!!!`/URL could reach hash path; strength still `validate_password_strength` → **400**). PATCH omit/`null` → no change. Users **User password** input (`aria-label`); create requires trim.
 
 `phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`; blank/garbage could persist). Users **User phone** input (`aria-label`); create sends `null` when blank.
+
+Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Users **User branch** select (`aria-label`); Create user sends trim or `null` when blank.
 
 `record_scope` schema `Literal["own","department","branch","all"]` (omit = role default; blank/invalid → **422** — no silent `all` from `""`). Response wraps `{ "user": {...}, ... }`.
 
