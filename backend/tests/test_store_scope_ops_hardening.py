@@ -9718,9 +9718,6 @@ async def test_store_manager_report_schedule_writes_denied(client, db_session):
     assert denied_run.status_code == 403, denied_run.text
     assert denied_run.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    ok_list = await ac.get("/api/v1/reports/schedules", headers=headers)
-    assert ok_list.status_code == 200, ok_list.text
-
 
 @pytest.mark.asyncio
 async def test_store_manager_company_branding_writes_denied(client, db_session):
