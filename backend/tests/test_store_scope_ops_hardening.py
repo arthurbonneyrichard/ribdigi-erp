@@ -8888,7 +8888,7 @@ async def test_store_manager_stock_import_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_party_deactivate_denied(client, db_session):
-    """Customer/supplier deactivate denied for store_manager; create/list/patch (non-credit) remain."""
+    """Customer/supplier DELETE + PATCH status denied; create/list/non-credit patch remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -8914,6 +8914,23 @@ async def test_store_manager_party_deactivate_denied(client, db_session):
     denied_sup = await ac.delete(f"/api/v1/suppliers/{supplier.id}", headers=headers)
     assert denied_sup.status_code == 403, denied_sup.text
     assert denied_sup.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # PATCH status must not bypass DELETE deactivate deny (company party lifecycle).
+    denied_cust_status = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"status": "inactive"},
+    )
+    assert denied_cust_status.status_code == 403, denied_cust_status.text
+    assert denied_cust_status.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup_status = await ac.patch(
+        f"/api/v1/suppliers/{supplier.id}",
+        headers=headers,
+        json={"status": "inactive"},
+    )
+    assert denied_sup_status.status_code == 403, denied_sup_status.text
+    assert denied_sup_status.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     # Operational party writes/reads still allowed (credit master fields remain separately denied).
     ok_patch = await ac.patch(

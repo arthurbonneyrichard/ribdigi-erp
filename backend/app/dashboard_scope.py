@@ -1034,6 +1034,24 @@ def assert_party_master_deactivate_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_party_status_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot change customer or supplier status.",
+) -> None:
+    """403 when store_manager patches party ``status`` (activate/deactivate lifecycle).
+
+    DELETE deactivate is already denied; PATCH ``status`` must not bypass that
+    company party-master gate. Name/phone/address/notes remain.
+    """
+    if managed_ids is None:
+        return
+    if "status" not in payload:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_party_master_contact_write_denied(
     managed_ids: list[str] | None,
     *,

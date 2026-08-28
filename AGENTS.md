@@ -134,7 +134,8 @@ store activation — never frontend-only.
    ops remain), and **stock CSV import denied for store_manager** (company-level
    bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
    and **customer/supplier deactivate denied for store_manager** (company-level
-   party master lifecycle; create/list/get + non-credit patch remain), and
+   party master lifecycle; PATCH status also denied; create/list/get + non-credit
+   patch remain), and
    **party payment_terms_days create/patch denied for store_manager** (credit-
    adjacent company terms; zero-default create allowed; phone/name patch remain),
    and **AI report template create/delete denied for store_manager** (company-
@@ -192,6 +193,8 @@ store activation — never frontend-only.
    (company party master classification; name/phone remain), and **party master
    code writes denied for store_manager** (customer/supplier ``code`` on
    create/patch; name/phone remain; create without code allowed), and
+   **party status lifecycle patches denied for store_manager** (PATCH status
+   cannot bypass DELETE deactivate deny; name/phone remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

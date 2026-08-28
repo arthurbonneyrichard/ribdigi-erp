@@ -7025,6 +7025,11 @@ async def patch_customer(
         clear_counts=True,
         message="Store managers cannot set customer master codes.",
     )
+    dashboard_scope_svc.assert_party_status_write_denied(
+        managed,
+        fields,
+        message="Store managers cannot change customer status.",
+    )
     party = await customers_svc.update_customer(
         db,
         tenant_id=claims["tenant_id"],
@@ -7301,6 +7306,11 @@ async def patch_supplier(
         fields,
         clear_counts=True,
         message="Store managers cannot set supplier master codes.",
+    )
+    dashboard_scope_svc.assert_party_status_write_denied(
+        managed,
+        fields,
+        message="Store managers cannot change supplier status.",
     )
     party = await suppliers_svc.update_supplier(
         db,
