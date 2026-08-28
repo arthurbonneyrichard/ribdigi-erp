@@ -12,6 +12,10 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
+async def _admin(ac):
+    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+
+
 async def _mgr(ac):
     return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
@@ -37,7 +41,8 @@ def test_parse_prompt_low_stock_pdf():
 @pytest.mark.asyncio
 async def test_generate_and_save_template(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    # Company-level NL generate + template writes are denied for store_manager.
+    headers = await _admin(ac)
 
     # Seed a posted sale so product sales preview is non-empty-capable
     inv = m.SalesInvoice(
@@ -111,6 +116,7 @@ async def test_generate_and_save_template(client, db_session):
 async def test_report_templates_tenant_isolated(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
+    admin = await _admin(ac)
 
     # Plant beta template directly
     db_session.add(
@@ -131,11 +137,11 @@ async def test_report_templates_tenant_isolated(client, db_session):
     names = {t["name"] for t in listed.json()["data"]}
     assert "Beta Secret Report" not in names
 
-    # Cannot delete foreign template id
+    # Cannot delete foreign template id (admin can attempt; tenant isolation → 404)
     beta = (
         await db_session.execute(
             select(m.AiReportTemplate).where(m.AiReportTemplate.tenant_id == seed["t2"].id)
         )
     ).scalar_one()
-    missing = await ac.delete(f"/api/v1/ai/reports/templates/{beta.id}", headers=headers)
+    missing = await ac.delete(f"/api/v1/ai/reports/templates/{beta.id}", headers=admin)
     assert missing.status_code == 404
