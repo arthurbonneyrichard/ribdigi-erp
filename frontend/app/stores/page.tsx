@@ -421,7 +421,7 @@ export default function Page() {
           // Omit blank address so Create does not 422 (AddressValue).
           ...(whAddress.trim() ? { address: whAddress.trim() } : {}),
           capacity: whCapacity === '' ? null : Number(whCapacity),
-          manager_id: whManagerId || null,
+          manager_id: whManagerId.trim() || null,
           store_id: whStoreId || null,
         }),
       });
@@ -1053,7 +1053,12 @@ export default function Page() {
               onChange={(e) => setWhCapacity(e.target.value)}
               placeholder="Capacity (optional)"
             />
-            <select value={whManagerId} onChange={(e) => setWhManagerId(e.target.value)}>
+            <select
+              value={whManagerId}
+              onChange={(e) => setWhManagerId(e.target.value)}
+              aria-label={editWhId ? 'Edit warehouse manager' : 'Warehouse manager'}
+              title="Warehouse manager (optional tenant user)"
+            >
               <option value="">Manager (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>

@@ -2165,7 +2165,10 @@ class WarehouseCreate(BaseModel):
     store_id: str | None = None
     # BR-2.4 — schema Literal; omit defaults to retail; blank/invalid → 422
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] = "retail"
-    manager_id: str | None = None
+    # Optional warehouse manager user FK ∈ UuidIdValue; omit/`null` → no manager;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # user lookup). Existence remains tenant-scoped user lookup (**404**).
+    manager_id: UuidIdValue | None = None
     # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on create). Same AddressValue as Company/Store/Branch.
     address: AddressValue | None = None
