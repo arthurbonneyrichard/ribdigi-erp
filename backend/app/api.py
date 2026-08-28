@@ -11750,7 +11750,10 @@ async def get_bank_statement(
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     stmt = await bank_recon_svc.get_statement(
         db,
         claims["tenant_id"],
@@ -11760,10 +11763,16 @@ async def get_bank_statement(
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], statement_id)
     data = bank_recon_svc.serialize_statement(stmt, lines)
     data["unmatched_book_lines"] = await bank_recon_svc.unmatched_book_lines(
-        db, tenant_id=claims["tenant_id"], account_id=stmt.account_id
+        db,
+        tenant_id=claims["tenant_id"],
+        account_id=stmt.account_id,
+        store_ids=multi,
     )
     data["suggestions"] = await bank_recon_svc.auto_match_suggestions(
-        db, tenant_id=claims["tenant_id"], statement_id=statement_id
+        db,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        store_ids=multi,
     )
     data["clearing_groups"] = await bank_recon_svc.list_clearing_groups(
         db, tenant_id=claims["tenant_id"], statement_id=statement_id
@@ -11780,7 +11789,10 @@ async def clear_bank_statement_group(
 ):
     """Clear N bank lines against M book lines when totals match."""
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     await bank_recon_svc.get_statement(
         db,
         claims["tenant_id"],
@@ -11796,6 +11808,7 @@ async def clear_bank_statement_group(
         journal_line_ids=list(payload.get("journal_line_ids") or []),
         notes=payload.get("notes"),
         company_id=claims.get("company_id"),
+        store_ids=multi,
     )
     await db.commit()
     stmt = await bank_recon_svc.get_statement(
@@ -11811,10 +11824,16 @@ async def clear_bank_statement_group(
         db, tenant_id=claims["tenant_id"], statement_id=statement_id
     )
     data["unmatched_book_lines"] = await bank_recon_svc.unmatched_book_lines(
-        db, tenant_id=claims["tenant_id"], account_id=stmt.account_id
+        db,
+        tenant_id=claims["tenant_id"],
+        account_id=stmt.account_id,
+        store_ids=multi,
     )
     data["suggestions"] = await bank_recon_svc.auto_match_suggestions(
-        db, tenant_id=claims["tenant_id"], statement_id=statement_id
+        db,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        store_ids=multi,
     )
     return env(data, "Clearing group applied")
 
@@ -11860,8 +11879,11 @@ async def auto_clear_bank_statement(
 ):
     """Apply high-confidence (default) bank↔book matches in one shot."""
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
     body = payload or {}
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     await bank_recon_svc.get_statement(
         db,
         claims["tenant_id"],
@@ -11875,6 +11897,7 @@ async def auto_clear_bank_statement(
         min_confidence=str(body.get("min_confidence") or "high"),
         date_window_days=int(body.get("date_window_days") or 7),
         company_id=claims.get("company_id"),
+        store_ids=multi,
     )
     await db.commit()
     stmt = await bank_recon_svc.get_statement(
@@ -11887,7 +11910,10 @@ async def auto_clear_bank_statement(
     data = bank_recon_svc.serialize_statement(stmt, lines)
     data["auto_clear"] = result
     data["suggestions"] = await bank_recon_svc.auto_match_suggestions(
-        db, tenant_id=claims["tenant_id"], statement_id=statement_id
+        db,
+        tenant_id=claims["tenant_id"],
+        statement_id=statement_id,
+        store_ids=multi,
     )
     return env(data, f"Auto-cleared {result['applied_count']} line(s)")
 
@@ -11901,7 +11927,10 @@ async def match_bank_statement_line(
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     stmt = await bank_recon_svc.get_statement(
         db,
         claims["tenant_id"],
@@ -11913,6 +11942,7 @@ async def match_bank_statement_line(
         tenant_id=claims["tenant_id"],
         line_id=line_id,
         journal_line_id=payload.get("journal_line_id") or "",
+        store_ids=multi,
     )
     if line.statement_id != stmt.id:
         raise HTTPException(status_code=404, detail="Statement line not found")

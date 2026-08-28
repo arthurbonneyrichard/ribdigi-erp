@@ -4939,6 +4939,140 @@ async def test_store_manager_coa_and_liquid_balances_store_scoped(client, db_ses
 
 
 @pytest.mark.asyncio
+async def test_store_manager_bank_recon_unmatched_book_store_scoped(client, db_session):
+    """Bank statement detail scopes unmatched book lines/suggestions to managed-store journals."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    mgr_headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Bank Recon Mine",
+        code="BR-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Bank Recon Other",
+        code="BR-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    bank = await accounting_svc.get_account_by_code(db_session, tid, "1010", company_id=cid)
+    assert bank is not None
+
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        description="Mine bank deposit",
+        reference="JE-BR-MINE",
+        store_id=mine.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 120, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 120},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Other bank deposit",
+        reference="JE-BR-OTH",
+        store_id=other.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 7500, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 7500},
+        ],
+    )
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Null bank deposit",
+        reference="JE-BR-NULL",
+        store_id=None,
+        company_id=cid,
+        lines=[
+            {"account_code": "1010", "debit": 33, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 33},
+        ],
+    )
+    await db_session.commit()
+
+    from app import bank_recon as bank_recon_svc
+
+    stmt_row = await bank_recon_svc.create_statement(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        account_id=bank.id,
+        statement_date="2026-08-20",
+        opening_balance=0,
+        closing_balance=120,
+        notes="BR scope test",
+        lines=[
+            {
+                "txn_date": "2026-08-20",
+                "amount": 120,
+                "description": "Mine deposit",
+                "external_ref": "JE-BR-MINE",
+            }
+        ],
+        company_id=cid,
+    )
+    await db_session.commit()
+    sid = stmt_row.id
+
+    detail = await ac.get(f"/api/v1/accounting/bank-statements/{sid}", headers=mgr_headers)
+    assert detail.status_code == 200, detail.text
+    body = detail.json()["data"]
+    refs = {row.get("reference") for row in body.get("unmatched_book_lines") or []}
+    assert "JE-BR-MINE" in refs
+    assert "JE-BR-OTH" not in refs
+    assert "JE-BR-NULL" not in refs
+    sug_jl_ids = {s.get("journal_line_id") for s in body.get("suggestions") or []}
+    book_jl_ids = {row.get("journal_line_id") for row in body.get("unmatched_book_lines") or []}
+    assert not sug_jl_ids or sug_jl_ids.issubset(book_jl_ids)
+
+    from fastapi import HTTPException
+
+    foreign_jl = next(
+        row["journal_line_id"]
+        for row in (
+            await bank_recon_svc.unmatched_book_lines(
+                db_session, tenant_id=tid, account_id=bank.id, store_ids=None
+            )
+        )
+        if row.get("reference") == "JE-BR-OTH"
+    )
+    line_id = (
+        await bank_recon_svc.list_statement_lines(db_session, tid, sid)
+    )[0].id
+    with pytest.raises(HTTPException) as exc:
+        await bank_recon_svc.match_line(
+            db_session,
+            tenant_id=tid,
+            line_id=line_id,
+            journal_line_id=foreign_jl,
+            store_ids=[mine.id],
+        )
+    assert exc.value.status_code == 403
+    assert exc.value.detail["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_expense_lifecycle_writes_store_scoped(client, db_session):
     """Approve/reject/delete/OCR/attachment writes fail-closed outside managed stores."""
     ac, seed = client
@@ -6428,113 +6562,3 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
     assert wh_data["reserved_qty"] == 2
     assert len(wh_data["warehouses"]) == 1
     assert wh_data["warehouses"][0]["code"] == "CAT-MWH"
-
-
-@pytest.mark.asyncio
-async def test_store_manager_coa_liquid_balance_reads_store_scoped(client, db_session):
-    """COA list/get and liquid accounts (+ export) rebuild balances from managed-store journals."""
-    ac, seed = client
-    tid = seed["t1"].id
-    cid = seed["c1"].id
-    mgr = seed["mgr1"]
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
-
-    mine = m.Store(
-        tenant_id=tid,
-        company_id=cid,
-        name="Bal Scope Mine",
-        code="BAL-M",
-        manager_id=mgr.id,
-        is_active=True,
-    )
-    other = m.Store(
-        tenant_id=tid,
-        company_id=cid,
-        name="Bal Scope Other",
-        code="BAL-O",
-        manager_id=None,
-        is_active=True,
-    )
-    db_session.add_all([mine, other])
-    await db_session.flush()
-
-    await accounting_svc.post_journal_entry(
-        db_session,
-        tenant_id=tid,
-        user_id=seed["admin1"].id,
-        description="Mine cash sale",
-        reference="JE-BAL-MINE",
-        store_id=mine.id,
-        company_id=cid,
-        lines=[
-            {"account_code": "1000", "debit": 75, "credit": 0},
-            {"account_code": "4000", "debit": 0, "credit": 75},
-        ],
-    )
-    await accounting_svc.post_journal_entry(
-        db_session,
-        tenant_id=tid,
-        user_id=seed["admin1"].id,
-        description="Other cash sale",
-        reference="JE-BAL-OTH",
-        store_id=other.id,
-        company_id=cid,
-        lines=[
-            {"account_code": "1000", "debit": 9500, "credit": 0},
-            {"account_code": "4000", "debit": 0, "credit": 9500},
-        ],
-    )
-    await accounting_svc.post_journal_entry(
-        db_session,
-        tenant_id=tid,
-        user_id=seed["admin1"].id,
-        description="Null cash sale",
-        reference="JE-BAL-NULL",
-        store_id=None,
-        company_id=cid,
-        lines=[
-            {"account_code": "1000", "debit": 600, "credit": 0},
-            {"account_code": "4000", "debit": 0, "credit": 600},
-        ],
-    )
-    await db_session.commit()
-
-    cash = await accounting_svc.get_account_by_code(db_session, tid, "1000", company_id=cid)
-    assert cash is not None
-
-    coa = await ac.get("/api/v1/accounting/accounts", headers=headers)
-    assert coa.status_code == 200, coa.text
-    cash_row = next(r for r in coa.json()["data"] if r["code"] == "1000")
-    assert float(cash_row["balance"]) == pytest.approx(75.0)
-    assert float(cash_row["balance"]) != pytest.approx(float(cash.balance or 0))
-
-    one = await ac.get(f"/api/v1/accounting/accounts/{cash.id}", headers=headers)
-    assert one.status_code == 200, one.text
-    assert float(one.json()["data"]["balance"]) == pytest.approx(75.0)
-
-    tree = await ac.get("/api/v1/accounting/accounts", headers=headers, params={"tree": "true"})
-    assert tree.status_code == 200, tree.text
-
-    def _find_code(nodes, code):
-        for node in nodes:
-            if node.get("code") == code:
-                return node
-            found = _find_code(node.get("children") or [], code)
-            if found:
-                return found
-        return None
-
-    tree_cash = _find_code(tree.json()["data"], "1000")
-    assert tree_cash is not None
-    assert float(tree_cash["balance"]) == pytest.approx(75.0)
-
-    liquid = await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)
-    assert liquid.status_code == 200, liquid.text
-    liq_cash = next(r for r in liquid.json()["data"] if r["code"] == "1000")
-    assert float(liq_cash["balance"]) == pytest.approx(75.0)
-
-    exported = await ac.get("/api/v1/accounting/liquid-accounts/export", headers=headers)
-    assert exported.status_code == 200, exported.text
-    assert "9500" not in exported.text
-    assert "75" in exported.text

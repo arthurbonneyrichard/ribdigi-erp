@@ -2,7 +2,8 @@
 
 Also used for operational list/read hardening (POS sales, sales invoices, expenses,
 transfers, warehouses / inventory movements) and accounting statement reads
-(P&L / TB / cash-flow / balance-sheet) — still ``stores.manager_id`` only;
+(P&L / TB / cash-flow / balance-sheet) and bank recon unmatched book lines — still
+``stores.manager_id`` only;
 ADR-005 membership tables remain deferred. Warehouse scope maps via
 ``Warehouse.store_id`` ∈ managed stores. POS holds scope via
 ``PosSession.store_id``; drawer-settings export uses managed store IDs.
@@ -117,6 +118,36 @@ async def assert_pos_session_store_in_manager_scope(
         raise HTTPException(status_code=404, detail="POS session not found")
     assert_store_in_manager_scope(
         managed, getattr(session, "store_id", None), allow_unset=False
+    )
+
+
+async def assert_journal_line_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    journal_line_id: str,
+    managed_ids: list[str] | None,
+) -> None:
+    """403 when a store_manager references a journal line outside managed stores."""
+    if managed_ids is None:
+        return
+    jid = (journal_line_id or "").strip()
+    if not jid:
+        raise HTTPException(status_code=400, detail="journal_line_id required")
+    row = (
+        await db.execute(
+            select(m.JournalEntryLine, m.JournalEntry)
+            .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+            .where(
+                m.JournalEntryLine.id == jid,
+                m.JournalEntryLine.tenant_id == tenant_id,
+            )
+        )
+    ).one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Journal line not found")
+    _line, entry = row
+    assert_store_in_manager_scope(
+        managed_ids, getattr(entry, "store_id", None), allow_unset=False
     )
 
 
