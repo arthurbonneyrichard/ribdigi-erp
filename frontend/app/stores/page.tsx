@@ -641,8 +641,8 @@ export default function Page() {
           name: deptName.trim() || undefined,
           branch_id: deptBranchId || null,
           clear_branch: !deptBranchId,
-          head_user_id: deptHeadId || null,
-          clear_head: !deptHeadId,
+          head_user_id: deptHeadId.trim() || null,
+          clear_head: !deptHeadId.trim(),
         }),
       });
       resetDeptForm();

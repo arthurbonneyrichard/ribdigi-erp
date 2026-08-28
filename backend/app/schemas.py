@@ -923,7 +923,11 @@ class DepartmentUpdate(BaseModel):
     name: DepartmentNameValue | None = None
     branch_id: str | None = None
     clear_branch: bool = False
-    head_user_id: str | None = None
+    # Optional department head user FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**). Same honesty as
+    # DepartmentCreate.head_user_id. Use `clear_head` to remove.
+    head_user_id: UuidIdValue | None = None
     clear_head: bool = False
     is_active: bool | None = None
 
