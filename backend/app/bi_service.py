@@ -22,7 +22,7 @@ from app.bi_metrics import BusinessMetricsService
 from app.bi_priority import InsightPriorityService
 from app.bi_rules import InsightRulesService
 from app.credit import ar_aging
-from app.dashboard_scope import managed_store_ids
+from app.dashboard_scope import assert_bi_insight_in_manager_scope, managed_store_ids
 from app.notifications import create_notification
 from app.rbac import has_permission
 
@@ -378,6 +378,7 @@ class BusinessIntelligenceService:
         row = await self.get_insight(insight_id)
         if not row:
             return None
+        await assert_bi_insight_in_manager_scope(self.db, self.claims, row)
         row.status = INSIGHT_STATUS_ACKNOWLEDGED
         row.acknowledged_at = datetime.utcnow()
         row.acknowledged_by = self.claims.get("sub")
@@ -389,6 +390,7 @@ class BusinessIntelligenceService:
         row = await self.get_insight(insight_id)
         if not row:
             return None
+        await assert_bi_insight_in_manager_scope(self.db, self.claims, row)
         row.status = INSIGHT_STATUS_DISMISSED
         row.resolved_at = datetime.utcnow()
         row.acknowledged_by = self.claims.get("sub")

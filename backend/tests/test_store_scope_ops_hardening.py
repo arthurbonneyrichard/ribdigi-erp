@@ -9804,6 +9804,116 @@ async def test_store_manager_company_membership_writes_denied(client, db_session
 
 
 @pytest.mark.asyncio
+async def test_store_manager_bi_insight_lifecycle_writes_scoped(client, db_session):
+    """BI insight acknowledge/dismiss fail-closed outside managed store scope."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="BI Insight Mine",
+        code="BI-I-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="BI Insight Other",
+        code="BI-I-O",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+
+    insight_foreign = m.BusinessInsight(
+        tenant_id=tid,
+        company_id=cid,
+        insight_type="branch_outperform",
+        category="locations",
+        priority="INFORMATION",
+        title="Foreign store insight",
+        message="other store outperform",
+        status="ACTIVE",
+        related_entity_type="store",
+        related_entity_id=other.id,
+    )
+    insight_mine = m.BusinessInsight(
+        tenant_id=tid,
+        company_id=cid,
+        insight_type="branch_outperform",
+        category="locations",
+        priority="INFORMATION",
+        title="Managed store insight",
+        message="managed store outperform",
+        status="ACTIVE",
+        related_entity_type="store",
+        related_entity_id=mine.id,
+    )
+    insight_company = m.BusinessInsight(
+        tenant_id=tid,
+        company_id=cid,
+        insight_type="negative_stock",
+        category="inventory",
+        priority="WARNING",
+        title="Company-wide stock alert",
+        message="negative stock company-wide",
+        status="ACTIVE",
+    )
+    insight_mine_dismiss = m.BusinessInsight(
+        tenant_id=tid,
+        company_id=cid,
+        insight_type="low_stock",
+        category="inventory",
+        priority="WARNING",
+        title="Managed store low stock",
+        message="low stock at managed store",
+        status="ACTIVE",
+        related_entity_type="store",
+        related_entity_id=mine.id,
+    )
+    db_session.add_all(
+        [insight_foreign, insight_mine, insight_company, insight_mine_dismiss]
+    )
+    await db_session.commit()
+
+    denied_ack = await ac.post(
+        f"/api/v1/business-insights/{insight_foreign.id}/acknowledge", headers=headers
+    )
+    assert denied_ack.status_code == 403, denied_ack.text
+    assert denied_ack.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_company = await ac.post(
+        f"/api/v1/business-insights/{insight_company.id}/acknowledge", headers=headers
+    )
+    assert denied_company.status_code == 403, denied_company.text
+    assert denied_company.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_ack = await ac.post(
+        f"/api/v1/business-insights/{insight_mine.id}/acknowledge", headers=headers
+    )
+    assert ok_ack.status_code == 200, ok_ack.text
+    assert ok_ack.json()["status"] == "ACKNOWLEDGED"
+
+    denied_dismiss = await ac.post(
+        f"/api/v1/business-insights/{insight_foreign.id}/dismiss", headers=headers
+    )
+    assert denied_dismiss.status_code == 403, denied_dismiss.text
+    assert denied_dismiss.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_dismiss = await ac.post(
+        f"/api/v1/business-insights/{insight_mine_dismiss.id}/dismiss", headers=headers
+    )
+    assert ok_dismiss.status_code == 200, ok_dismiss.text
+    assert ok_dismiss.json()["status"] == "DISMISSED"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_bi_settings_write_denied(client, db_session):
     """Business-insights settings PUT denied for store_manager; GET settings remains."""
     ac, seed = client

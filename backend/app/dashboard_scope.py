@@ -1255,6 +1255,119 @@ def assert_company_level_bi_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+async def assert_bi_insight_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    insight: m.BusinessInsight,
+) -> None:
+    """403 when store_manager acknowledges/dismisses BI insight outside managed scope."""
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+    if not managed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Business insight is outside your managed store scope.",
+            },
+        )
+
+    tenant_id = claims["tenant_id"]
+    company_id = claims.get("company_id")
+    et = (insight.related_entity_type or "").strip().lower()
+    eid = (insight.related_entity_id or "").strip()
+
+    if et == "store":
+        assert_store_in_manager_scope(managed, eid or None, allow_unset=False)
+        return
+
+    if et == "product" and eid:
+        managed_wh = await managed_warehouse_ids(db, claims)
+        await assert_products_in_manager_warehouse_scope(
+            db,
+            tenant_id,
+            managed_wh,
+            [eid],
+            company_id=company_id,
+            message="Business insight product is outside your managed warehouse scope.",
+        )
+        return
+
+    if et == "customer" and eid:
+        stmt = (
+            select(m.SalesInvoice.id)
+            .where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.customer_id == eid,
+                m.SalesInvoice.store_id.in_(managed),
+            )
+            .limit(1)
+        )
+        if company_id:
+            stmt = stmt.where(m.SalesInvoice.company_id == company_id)
+        if (await db.execute(stmt)).scalar_one_or_none():
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Business insight customer is outside your managed store scope.",
+            },
+        )
+
+    if et == "supplier" and eid:
+        managed_wh = await managed_warehouse_ids(db, claims)
+        if not managed_wh:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_SCOPE_DENIED",
+                    "message": "Business insight supplier is outside your managed warehouse scope.",
+                },
+            )
+        wh_expr = func.coalesce(
+            m.PurchaseInvoice.warehouse_id,
+            m.GoodsReceipt.warehouse_id,
+            m.PurchaseOrder.warehouse_id,
+        )
+        stmt = (
+            select(m.PurchaseInvoice.id)
+            .outerjoin(
+                m.GoodsReceipt, m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id
+            )
+            .outerjoin(
+                m.PurchaseOrder, m.PurchaseOrder.id == m.PurchaseInvoice.purchase_order_id
+            )
+            .where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.supplier_id == eid,
+                wh_expr.in_(managed_wh),
+            )
+            .limit(1)
+        )
+        if company_id:
+            stmt = stmt.where(m.PurchaseInvoice.company_id == company_id)
+        if (await db.execute(stmt)).scalar_one_or_none():
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Business insight supplier is outside your managed warehouse scope.",
+            },
+        )
+
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": "Business insight is outside your managed store scope.",
+            "related_entity_type": et or None,
+        },
+    )
+
+
 def assert_party_master_deactivate_denied(
     managed_ids: list[str] | None,
     *,
