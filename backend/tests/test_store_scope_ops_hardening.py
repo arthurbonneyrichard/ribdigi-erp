@@ -5102,6 +5102,13 @@ async def test_store_manager_coa_and_liquid_account_writes_scoped(client, db_ses
     assert denied_liq_patch.status_code == 403
     assert denied_liq_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_fiscal_close = await ac.post(
+        "/api/v1/accounting/fiscal-period/close",
+        headers=headers,
+    )
+    assert denied_fiscal_close.status_code == 403
+    assert denied_fiscal_close.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
 
 @pytest.mark.asyncio
 async def test_store_manager_bank_recon_unmatched_book_store_scoped(client, db_session):
