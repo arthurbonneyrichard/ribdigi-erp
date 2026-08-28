@@ -1009,6 +1009,19 @@ def assert_company_level_org_unit_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_org_unit_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company branch/department CSVs.",
+) -> None:
+    """403 when store_manager exports branches/departments CSV (company org master dump).
+
+    List/get reads remain; full org-unit export is company-level administration
+    (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_expense_category_write_denied(
     managed_ids: list[str] | None,
     *,

@@ -8908,7 +8908,7 @@ async def test_store_manager_credit_limit_override_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_branches_departments_writes_denied(client, db_session):
-    """Branch/department create/patch denied for store_manager (company-level org units)."""
+    """Branch/department create/patch/export denied for store_manager; list/get remain."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -8982,6 +8982,14 @@ async def test_store_manager_branches_departments_writes_denied(client, db_sessi
     )
     assert denied_dept_patch.status_code == 403
     assert denied_dept_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_branches_export = await ac.get("/api/v1/branches/export", headers=headers)
+    assert denied_branches_export.status_code == 403, denied_branches_export.text
+    assert denied_branches_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_depts_export = await ac.get("/api/v1/departments/export", headers=headers)
+    assert denied_depts_export.status_code == 403, denied_depts_export.text
+    assert denied_depts_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     # Reads remain allowed
     listed_branches = await ac.get("/api/v1/branches", headers=headers)

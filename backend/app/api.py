@@ -2958,6 +2958,13 @@ async def branches_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — branches CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_org_unit_export_denied(
+        managed,
+        message="Store managers cannot export company branches CSV.",
+    )
     text = await org_catalog_export_svc.export_branches_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -3084,6 +3091,13 @@ async def departments_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — departments CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_org_unit_export_denied(
+        managed,
+        message="Store managers cannot export company departments CSV.",
+    )
     text = await org_catalog_export_svc.export_departments_csv(
         db,
         tenant_id=claims["tenant_id"],
