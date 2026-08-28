@@ -484,6 +484,15 @@ def assert_company_level_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_admin_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot perform company-level user/role administration.",
+) -> None:
+    """403 when store_manager attempts user/role management writes (users module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 async def assert_liquid_account_in_manager_scope(
     db: AsyncSession,
     tenant_id: str,

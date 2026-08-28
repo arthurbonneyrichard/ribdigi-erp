@@ -2696,6 +2696,13 @@ async def create_custom_role(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot create custom roles.",
+    )
     tenants_svc.assert_writable(claims)
     try:
         row = await roles_svc.create_custom_role(
@@ -2731,6 +2738,13 @@ async def update_custom_role(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot edit custom roles.",
+    )
     tenants_svc.assert_writable(claims)
     if role in VALID_ROLES:
         raise HTTPException(status_code=400, detail="System roles cannot be modified")
@@ -2768,6 +2782,13 @@ async def put_custom_role_permissions(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot edit role permissions.",
+    )
     tenants_svc.assert_writable(claims)
     if role in VALID_ROLES:
         raise HTTPException(status_code=400, detail="System roles cannot be modified")
@@ -2801,6 +2822,13 @@ async def delete_custom_role(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot delete custom roles.",
+    )
     tenants_svc.assert_writable(claims)
     if role in VALID_ROLES:
         raise HTTPException(status_code=400, detail="System roles cannot be deleted")
@@ -3095,6 +3123,13 @@ async def add_user(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot create users.",
+    )
     role = await roles_svc.assert_assignable_role(
         db, claims["tenant_id"], payload.role, actor_role=claims.get("role")
     )
@@ -3195,6 +3230,13 @@ async def users_import(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot import users.",
+    )
     tenants_svc.assert_writable(claims)
     raw = await file.read()
     if not raw:
@@ -3242,6 +3284,13 @@ async def update_user(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot update users.",
+    )
     user = await _get_tenant_user(db, claims["tenant_id"], user_id)
     changes: dict = {}
 
@@ -3353,6 +3402,13 @@ async def admin_password_reset_email(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 85 E1 — Tenant Admin initiates email password reset (not prompt/PATCH password)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot initiate user password resets.",
+    )
     user = await _get_tenant_user(db, claims["tenant_id"], user_id)
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Cannot email reset for inactive user")
@@ -3403,6 +3459,13 @@ async def deactivate_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Soft-delete: deactivate the user and revoke sessions (no hard delete)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot deactivate users.",
+    )
     user = await _get_tenant_user(db, claims["tenant_id"], user_id)
     if user.id == claims["sub"]:
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")

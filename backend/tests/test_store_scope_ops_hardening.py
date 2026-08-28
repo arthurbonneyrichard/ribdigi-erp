@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from datetime import datetime
 
@@ -7706,3 +7707,198 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
     assert (await ac.get("/api/v1/expenses/settings", headers=headers)).status_code == 200
     assert (await ac.get("/api/v1/credit/settings", headers=headers)).status_code == 200
     assert (await ac.get("/api/v1/inventory/settings", headers=headers)).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_store_manager_user_admin_writes_denied(client, db_session):
+    """User/role admin writes denied for store_manager even when users write is granted."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    target = seed["u2"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["users"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/users",
+        headers=headers,
+        json={
+            "email": "newcashier@alpha.example.com",
+            "full_name": "New Cashier",
+            "password": "Str0ngPass!",
+            "role": "cashier",
+        },
+    )
+    assert denied_create.status_code == 403
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/users/{target.id}",
+        headers=headers,
+        json={"full_name": "Renamed User"},
+    )
+    assert denied_patch.status_code == 403
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_reset = await ac.post(
+        f"/api/v1/users/{target.id}/password-reset-email",
+        headers=headers,
+    )
+    assert denied_reset.status_code == 403
+    assert denied_reset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_deactivate = await ac.delete(
+        f"/api/v1/users/{target.id}",
+        headers=headers,
+    )
+    assert denied_deactivate.status_code == 403
+    assert denied_deactivate.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_role = await ac.post(
+        "/api/v1/roles",
+        headers=headers,
+        json={
+            "slug": "floor_lead",
+            "label": "Floor Lead",
+            "base_role": "cashier",
+            "permissions": {"pos": ["read", "write"]},
+        },
+    )
+    assert denied_role.status_code == 403
+    assert denied_role.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Reads remain allowed
+    listed = await ac.get("/api/v1/users", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(u["email"] == target.email for u in listed.json()["data"])
+
+
+@pytest.mark.asyncio
+async def test_store_manager_user_role_admin_writes_denied(client, db_session):
+    """User/role admin writes denied for store_manager even with users write override."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    target = seed["u1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["users"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_create = await ac.post(
+        "/api/v1/users",
+        headers=headers,
+        json={
+            "email": "mgr-created@alpha.example.com",
+            "full_name": "Mgr Created",
+            "password": "SecurePass123!",
+            "role": "cashier",
+        },
+    )
+    assert denied_create.status_code == 403
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/users/{target.id}",
+        headers=headers,
+        json={"role": "sales_officer"},
+    )
+    assert denied_patch.status_code == 403
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_reset = await ac.post(
+        f"/api/v1/users/{target.id}/password-reset-email",
+        headers=headers,
+    )
+    assert denied_reset.status_code == 403
+    assert denied_reset.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_deactivate = await ac.delete(
+        f"/api/v1/users/{target.id}",
+        headers=headers,
+    )
+    assert denied_deactivate.status_code == 403
+    assert denied_deactivate.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    csv_body = (
+        "full_name,email,phone,role,branch_code,department_code,password,record_scope\n"
+        "Imported Mgr,import-mgr@alpha.example.com,,cashier,,,SecurePass123!,own\n"
+    )
+    denied_import = await ac.post(
+        "/api/v1/users/import?dry_run=true",
+        headers=headers,
+        files={"file": ("users.csv", io.BytesIO(csv_body.encode()), "text/csv")},
+    )
+    assert denied_import.status_code == 403
+    assert denied_import.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_role_create = await ac.post(
+        "/api/v1/roles",
+        headers=headers,
+        json={
+            "slug": "mgr_custom",
+            "label": "Mgr Custom",
+            "base_role": "cashier",
+            "permissions": {"sales": ["read"]},
+        },
+    )
+    assert denied_role_create.status_code == 403
+    assert denied_role_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_role_patch = await ac.patch(
+        "/api/v1/roles/mgr_custom",
+        headers=headers,
+        json={"label": "Updated"},
+    )
+    assert denied_role_patch.status_code == 403
+    assert denied_role_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_role_perms = await ac.put(
+        "/api/v1/roles/mgr_custom/permissions",
+        headers=headers,
+        json={"permissions": {"sales": ["read", "write"]}},
+    )
+    assert denied_role_perms.status_code == 403
+    assert denied_role_perms.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_role_delete = await ac.delete(
+        "/api/v1/roles/mgr_custom",
+        headers=headers,
+    )
+    assert denied_role_delete.status_code == 403
+    assert denied_role_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Reads remain allowed (default users read)
+    assert (await ac.get("/api/v1/users", headers=headers)).status_code == 200
+    assert (await ac.get(f"/api/v1/users/{target.id}", headers=headers)).status_code == 200
