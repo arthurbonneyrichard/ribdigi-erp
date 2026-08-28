@@ -2763,9 +2763,24 @@ async def revoke_company_membership(
 
 @api.get("/tenant/dashboard")
 async def tenant_dashboard(
-    claims=Depends(require_permission("tenant_dashboard", "read")),
+    claims=Depends(
+        require_roles(
+            "company_admin",
+            "super_admin",
+            "tenant_admin",
+            "tenant_owner",
+            "store_manager",
+        )
+    ),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_dashboard_read_denied(
+        managed,
+        message="Store managers cannot view the tenant admin dashboard.",
+    )
     if claims.get("workspace_kind") != "tenant":
         raise HTTPException(
             status_code=403,

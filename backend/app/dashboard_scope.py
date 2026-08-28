@@ -1319,6 +1319,22 @@ def assert_company_level_tenant_lifecycle_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_tenant_dashboard_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view the tenant admin dashboard "
+        "(subscription/company entitlement dump); managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager GETs /tenant/dashboard.
+
+    Tenant store-entitlement GET already denied; this dumps subscription /
+    company_entitlement / store allocations for tenant admins. Companies UI
+    soft-fails. Offline Complete / ADR-005 remain MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
 
 def assert_company_level_company_list_read_denied(
     managed_ids: list[str] | None,

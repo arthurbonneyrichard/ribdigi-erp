@@ -12393,6 +12393,29 @@ async def test_store_manager_tenant_store_entitlement_read_denied(client, db_ses
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tenant_dashboard_read_denied(client, db_session):
+    """GET /tenant/dashboard denied for store_manager; admin remains."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_headers = {**admin_headers, "X-Workspace-Kind": "tenant"}
+
+    denied = await ac.get("/api/v1/tenant/dashboard", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok = await ac.get("/api/v1/tenant/dashboard", headers=admin_headers)
+    assert ok.status_code == 200, ok.text
+    payload = ok.json()["data"]
+    assert "subscription" in payload or "companies" in payload or "counts" in payload
+
+
+@pytest.mark.asyncio
 async def test_store_manager_store_manager_assignment_denied(client, db_session):
     """store_manager cannot assign/clear manager_id; other managed-store patches remain."""
     ac, seed = client
