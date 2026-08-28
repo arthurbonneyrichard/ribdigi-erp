@@ -489,10 +489,14 @@ async def tenant_me_export(
 
 @api.get("/tenants/me/document-settings/export")
 async def tenant_document_settings_export(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 128 N1 — document numbering + print template settings CSV (no secrets)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_document_settings_export_denied(managed)
     text = await session_passkey_doc_export_svc.export_document_settings_csv(
         db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
     )

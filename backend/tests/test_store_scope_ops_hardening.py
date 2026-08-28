@@ -11033,7 +11033,7 @@ async def test_store_manager_me_workspace_company_profile_redacted(client, db_se
 
 @pytest.mark.asyncio
 async def test_store_manager_document_settings_writes_denied(client, db_session):
-    """Document numbering / print template PATCH /tenants/me denied for store_manager."""
+    """Document numbering/print PATCH + document-settings CSV export denied for store_manager."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
@@ -11074,6 +11074,13 @@ async def test_store_manager_document_settings_writes_denied(client, db_session)
     )
     assert denied_profile.status_code == 403, denied_profile.text
     assert denied_profile.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get(
+        "/api/v1/tenants/me/document-settings/export",
+        headers=headers,
+    )
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     ok_export = await ac.get(
         "/api/v1/tenants/me/document-settings/export",

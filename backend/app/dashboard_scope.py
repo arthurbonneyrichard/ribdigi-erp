@@ -911,6 +911,22 @@ def assert_company_level_document_settings_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_document_settings_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company document numbering or print template settings; "
+        "admin export remains."
+    ),
+) -> None:
+    """403 when store_manager exports document settings CSV (numbering/print-template dump).
+
+    PATCH writes already denied; ``GET /tenants/me/document-settings/export`` dumped
+    company document numbering + print templates. Logo binary GET remains for chrome.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_tenant_profile_write_denied(
     managed_ids: list[str] | None,
     *,

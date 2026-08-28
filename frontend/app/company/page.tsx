@@ -998,6 +998,11 @@ export default function Page() {
                 headers: { Authorization: `Bearer ${token}` },
               });
               if (!res.ok) {
+                // Soft-fail store_manager STORE_SCOPE_DENIED (company document dump).
+                if (res.status === 403) {
+                  setMessage('Document settings export requires a company administrator.');
+                  return;
+                }
                 setError(await res.text());
                 return;
               }
