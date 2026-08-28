@@ -171,7 +171,9 @@ store activation — never frontend-only.
    (company maintenance; list/create/resume auto-expire own holds remain), and
    **liquid account is_active lifecycle writes denied for store_manager**
    (activate/deactivate admin-only; name/bank details on managed liquid
-   accounts remain), and
+   accounts remain), and **party customer_group assignment denied for
+   store_manager** (company sales-master party↔group link; name/phone
+   party patches remain), and
    **company store-limit allocation denied for store_manager** (tenant
    entitlement allocation; even when companies write granted; tenant-admin path
    retained).

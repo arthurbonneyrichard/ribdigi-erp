@@ -775,6 +775,26 @@ def assert_company_level_customer_group_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_party_customer_group_assignment_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot assign or clear customer groups on parties.",
+) -> None:
+    """403 when store_manager sets customer_group_id / customer_group on a party.
+
+    Customer group master CRUD is already denied; party↔group assignment is the
+    same company sales-master graph and stays admin-only. Name/phone/address
+    party patches remain.
+    """
+    if managed_ids is None:
+        return
+    changing = "customer_group_id" in payload or "customer_group" in payload
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_import_denied(
     managed_ids: list[str] | None,
     *,

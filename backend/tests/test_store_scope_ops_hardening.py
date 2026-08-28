@@ -8447,6 +8447,72 @@ async def test_store_manager_customer_groups_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_customer_group_assignment_denied(client, db_session):
+    """store_manager cannot assign/clear customer_group on parties; name/phone remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    group = m.CustomerGroup(
+        tenant_id=tid,
+        company_id=cid,
+        name="Assign Deny Group",
+        discount_percent=0,
+        is_active=True,
+    )
+    db_session.add(group)
+    await db_session.commit()
+
+    denied_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={
+            "name": "Group Assign Create",
+            "customer_group_id": group.id,
+        },
+    )
+    assert denied_create.status_code == 403, denied_create.text
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_create = await ac.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "No Group Create", "phone": "555-0101"},
+    )
+    assert ok_create.status_code == 200, ok_create.text
+    assert ok_create.json()["data"].get("customer_group_id") in (None, "")
+
+    denied_patch = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"customer_group_id": group.id},
+    )
+    assert denied_patch.status_code == 403, denied_patch.text
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_clear = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"customer_group_id": None},
+    )
+    assert denied_clear.status_code == 403, denied_clear.text
+    assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_name = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": "Party Group Assign Deny Updated", "phone": "555-0198"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+
+    await db_session.refresh(cust)
+    assert cust.name == "Party Group Assign Deny Updated"
+    assert cust.phone == "555-0198"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_product_import_denied(client, db_session):
     """Company-level product CSV import denied for store_manager; template/export reads allowed."""
     ac, seed = client

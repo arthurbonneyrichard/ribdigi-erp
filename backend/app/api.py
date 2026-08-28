@@ -6938,6 +6938,11 @@ async def add_customer(
         allow_zero_credit_limit=True,
         allow_zero_payment_terms=True,
     )
+    dashboard_scope_svc.assert_party_customer_group_assignment_write_denied(
+        managed,
+        data,
+        message="Store managers cannot assign customer groups on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
@@ -6991,6 +6996,11 @@ async def patch_customer(
     fields = payload.model_dump(exclude_unset=True)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_party_credit_master_write_denied(managed, fields)
+    dashboard_scope_svc.assert_party_customer_group_assignment_write_denied(
+        managed,
+        fields,
+        message="Store managers cannot assign or clear customer groups on parties.",
+    )
     party = await customers_svc.update_customer(
         db,
         tenant_id=claims["tenant_id"],
