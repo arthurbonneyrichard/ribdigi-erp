@@ -143,7 +143,8 @@ export default function PlatformStaffPage() {
     try {
       await api('/platform/staff/grant', {
         method: 'POST',
-        body: JSON.stringify({ user_id: row.id, role: grantRole }),
+        // trim so Grant dashboard (UuidIdValue user_id) does not 422 on whitespace
+        body: JSON.stringify({ user_id: String(row.id).trim(), role: grantRole }),
       });
       setMessage(`Granted software owner dashboard to ${row.full_name}`);
       await refresh();
@@ -307,7 +308,12 @@ export default function PlatformStaffPage() {
                       <code>{u.role}</code>
                     </td>
                     <td>
-                      <button type="button" disabled={busy || u.is_active === false} onClick={() => grantAccess(u)}>
+                      <button
+                        type="button"
+                        disabled={busy || u.is_active === false}
+                        onClick={() => grantAccess(u)}
+                        aria-label="Grant dashboard"
+                      >
                         Grant dashboard
                       </button>
                     </td>

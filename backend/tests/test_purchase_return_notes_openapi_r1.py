@@ -18,9 +18,14 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 _BASE = {
-    "goods_receipt_id": "grn-1",
+    "goods_receipt_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "reason": "damaged",
-    "items": [{"goods_receipt_item_id": "gi-1", "quantity": 1}],
+    "items": [
+        {
+            "goods_receipt_item_id": "11111111-2222-3333-4444-555555555555",
+            "quantity": 1,
+        }
+    ],
 }
 
 

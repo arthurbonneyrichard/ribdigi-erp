@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_grn_batch_date_schema():
-    base = {"po_item_id": "poi-1", "received_qty": 1}
+    base = {"po_item_id": "11111111-2222-3333-4444-555555555555", "received_qty": 1}
     omit = GrnItemCreate.model_validate(base)
     assert omit.manufacturing_date is None
     assert omit.expiry_date is None

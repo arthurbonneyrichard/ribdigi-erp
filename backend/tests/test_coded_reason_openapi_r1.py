@@ -28,7 +28,12 @@ def test_stock_adjust_reason_literal():
 def test_purchase_return_reason_literal():
     base = {
         "goods_receipt_id": "11111111-2222-3333-4444-555555555555",
-        "items": [{"goods_receipt_item_id": "i1", "quantity": 1}],
+        "items": [
+            {
+                "goods_receipt_item_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                "quantity": 1,
+            }
+        ],
     }
     ok = PurchaseReturnCreate.model_validate({**base, "reason": "damaged"})
     assert ok.reason == "damaged"

@@ -277,7 +277,8 @@ export default function Page() {
   const linePayload = {
     // trim so Create quotation / Create order (UuidIdValue customer_id) do not 422 on whitespace
     customer_id: customerId.trim(),
-    store_id: storeId || null,
+    // null when blank so Create order / invoice (UuidIdValue store_id) do not 422
+    store_id: storeId.trim() || null,
     delivery_date: deliveryDate.trim() || null,
     // null when blank so Create order does not 422 (AddressValue).
     delivery_address: deliveryAddress.trim() || null,
@@ -288,7 +289,7 @@ export default function Page() {
 
   const invoicePayload = {
     customer_id: customerId.trim(),
-    store_id: storeId || null,
+    store_id: storeId.trim() || null,
     items: lineItems,
     discount_amount: hdrDisc,
     notes: docNotes.trim() || null,
@@ -1070,6 +1071,7 @@ export default function Page() {
               setStoreId(e.target.value);
               setCtxStoreId(e.target.value);
             }}
+            aria-label="Sale store"
           >
             <option value="">Store (required to confirm orders)</option>
             {stores
@@ -1574,9 +1576,9 @@ export default function Page() {
                         act(
                           `/sales/orders/${o.id}/confirm`,
                           'Confirmed',
-                          storeId || o.store_id
+                          storeId.trim() || o.store_id
                             ? {
-                                store_id: storeId || o.store_id,
+                                store_id: (storeId.trim() || o.store_id) as string,
                                 delivery_date: deliveryDate.trim() || null,
                                 // Omit blank delivery so Confirm does not 422 (AddressValue).
                                 ...(deliveryAddress.trim()

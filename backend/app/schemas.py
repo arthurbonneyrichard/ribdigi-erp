@@ -720,7 +720,11 @@ class UserUpdate(BaseModel):
 class PlatformGrantAccess(BaseModel):
     """Grant an existing app user access to the software-owner dashboard."""
 
-    user_id: str
+    # Required app user ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach user lookup). Existence remains
+    # platform-scoped user lookup (**404**). Platform Staff **Grant dashboard**
+    # sends `user_id` trim.
+    user_id: UuidIdValue
     # Platform roles Literal (+ strip/lower); omit → platform_support; blank/invalid → 422
     # (was free str; "" used to silently coerce to platform_support in service)
     role: PlatformRoleValue = "platform_support"
@@ -2752,9 +2756,14 @@ class GrnItemCreate(BaseModel):
     failed model_validator when rejected, but punctuation-only / URL-like garbage
     could persist on GRN line `rejection_reason`). Required when `rejected_qty > 0`
     (or inferred reject from accepted < received).
+
+    Required `po_item_id` ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    (was free `str`; garbage could reach PO-line lookup). Existence remains
+    tenant-scoped purchase-order item lookup (**404**/400). Purchasing Post GRN /
+    Receive all send `po_item_id` trim.
     """
 
-    po_item_id: str
+    po_item_id: UuidIdValue
     received_qty: float = Field(gt=0)
     accepted_qty: float | None = None
     rejected_qty: float = Field(default=0, ge=0)
@@ -2793,7 +2802,11 @@ class GrnCreate(BaseModel):
 
 
 class PurchaseReturnItemCreate(BaseModel):
-    goods_receipt_item_id: str
+    # Required GRN line ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach goods-receipt item lookup). Existence
+    # remains tenant-scoped GRN line lookup (**404**/400). Purchasing **Purchase
+    # return GRN line** select; Draft return sends trim.
+    goods_receipt_item_id: UuidIdValue
     quantity: float = Field(gt=0)
 
 
@@ -2921,7 +2934,11 @@ class SalesInvoiceCreate(BaseModel):
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesInvoice.notes Text).
     notes: SalesDocumentNotesValue | None = None
-    store_id: str | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store / HQ path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Sales
+    # **Sale store** select (`aria-label`); Create invoice sends trim or `null`.
+    store_id: UuidIdValue | None = None
     # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
     exchange_rate: float | None = Field(default=None, gt=0)
@@ -2961,7 +2978,12 @@ class SalesOrderCreate(BaseModel):
     # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate.
     customer_id: UuidIdValue
     quotation_id: str | None = None
-    store_id: str | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store until confirm; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Sales
+    # **Sale store** select (`aria-label`; shared create form); Create order sends
+    # trim or `null` when blank.
+    store_id: UuidIdValue | None = None
     # omit/`null` → no promised date; blank/`not-a-date`/`01/02/2024` → **422**
     # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
     delivery_date: IsoDateQueryValue | None = None
@@ -2976,7 +2998,11 @@ class SalesOrderCreate(BaseModel):
 
 
 class SalesOrderConfirm(BaseModel):
-    store_id: str | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → keep order store / require when
+    # confirming without one; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach store lookup). Existence remains tenant-scoped
+    # (**404**). Sales **Sale store** select; Confirm sends trim when set.
+    store_id: UuidIdValue | None = None
     # omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422**
     # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
     delivery_date: IsoDateQueryValue | None = None

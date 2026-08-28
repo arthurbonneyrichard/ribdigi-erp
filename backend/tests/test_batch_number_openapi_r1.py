@@ -36,7 +36,7 @@ def test_batch_number_value_schema():
     with pytest.raises(ValidationError):
         OpeningStockLine.model_validate({**base, "batch_number": "!!!"})
 
-    grn_base = {"po_item_id": "poi-1", "received_qty": 1}
+    grn_base = {"po_item_id": "11111111-2222-3333-4444-555555555555", "received_qty": 1}
     grn_ok = GrnItemCreate.model_validate({**grn_base, "batch_number": " GRN-1 "})
     assert grn_ok.batch_number == "GRN-1"
     with pytest.raises(ValidationError):

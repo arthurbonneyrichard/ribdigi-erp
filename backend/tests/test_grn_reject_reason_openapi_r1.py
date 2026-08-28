@@ -17,10 +17,13 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
+_PO_ITEM = "11111111-2222-3333-4444-555555555555"
+
+
 def test_grn_rejection_reason_schema():
     ok = GrnItemCreate.model_validate(
         {
-            "po_item_id": "x",
+            "po_item_id": _PO_ITEM,
             "received_qty": 10,
             "accepted_qty": 8,
             "rejected_qty": 2,
@@ -31,13 +34,18 @@ def test_grn_rejection_reason_schema():
 
     # Full accept — reason optional
     GrnItemCreate.model_validate(
-        {"po_item_id": "x", "received_qty": 5, "accepted_qty": 5, "rejected_qty": 0}
+        {
+            "po_item_id": _PO_ITEM,
+            "received_qty": 5,
+            "accepted_qty": 5,
+            "rejected_qty": 0,
+        }
     )
 
     with pytest.raises(ValidationError) as explicit:
         GrnItemCreate.model_validate(
             {
-                "po_item_id": "x",
+                "po_item_id": _PO_ITEM,
                 "received_qty": 10,
                 "accepted_qty": 8,
                 "rejected_qty": 2,
@@ -49,7 +57,7 @@ def test_grn_rejection_reason_schema():
     with pytest.raises(ValidationError) as inferred:
         GrnItemCreate.model_validate(
             {
-                "po_item_id": "x",
+                "po_item_id": _PO_ITEM,
                 "received_qty": 10,
                 "accepted_qty": 7,
                 "rejected_qty": 0,
@@ -61,7 +69,7 @@ def test_grn_rejection_reason_schema():
         with pytest.raises(ValidationError):
             GrnItemCreate.model_validate(
                 {
-                    "po_item_id": "x",
+                    "po_item_id": _PO_ITEM,
                     "received_qty": 10,
                     "accepted_qty": 8,
                     "rejected_qty": 2,
@@ -72,7 +80,7 @@ def test_grn_rejection_reason_schema():
         with pytest.raises(ValidationError):
             GrnItemCreate.model_validate(
                 {
-                    "po_item_id": "x",
+                    "po_item_id": _PO_ITEM,
                     "received_qty": 5,
                     "accepted_qty": 5,
                     "rejected_qty": 0,

@@ -634,7 +634,8 @@ export default function Page() {
             throw new Error(`Batch number required for ${product.name || i.product_id}`);
           }
           return {
-            po_item_id: i.id,
+            // trim so Post GRN / Receive all (UuidIdValue po_item_id) do not 422
+            po_item_id: String(i.id).trim(),
             received_qty: i.outstanding_qty,
             accepted_qty: i.outstanding_qty,
             rejected_qty: 0,
@@ -701,7 +702,8 @@ export default function Page() {
             throw new Error(`Batch number required for ${product.name || i.product_id}`);
           }
           return {
-            po_item_id: i.id,
+            // trim so Post GRN (UuidIdValue po_item_id) does not 422 on whitespace
+            po_item_id: String(i.id).trim(),
             received_qty,
             accepted_qty,
             rejected_qty,
@@ -2960,7 +2962,12 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={grnItemId} onChange={(e) => setGrnItemId(e.target.value)} disabled={!selectedGrn}>
+          <select
+            value={grnItemId}
+            onChange={(e) => setGrnItemId(e.target.value)}
+            disabled={!selectedGrn}
+            aria-label="Purchase return GRN line"
+          >
             <option value="">Select GRN line</option>
             {(selectedGrn?.items || []).map((i) => (
               <option key={i.id} value={i.id}>
