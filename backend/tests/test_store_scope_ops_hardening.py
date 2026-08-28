@@ -8962,6 +8962,32 @@ async def test_store_manager_party_notes_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_party_export_denied(client, db_session):
+    """Company customer/supplier CSV export denied for store_manager; list/get remain."""
+    ac, seed = client
+    cust = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_cust = await ac.get("/api/v1/customers/export", headers=headers)
+    assert denied_cust.status_code == 403, denied_cust.text
+    assert denied_cust.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_sup = await ac.get("/api/v1/suppliers/export", headers=headers)
+    assert denied_sup.status_code == 403, denied_sup.text
+    assert denied_sup.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/customers", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["id"] == cust.id for row in listed.json()["data"])
+
+    got = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert got.status_code == 200, got.text
+
+    listed_sup = await ac.get("/api/v1/suppliers", headers=headers)
+    assert listed_sup.status_code == 200, listed_sup.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_product_import_denied(client, db_session):
     """Company-level product CSV import denied for store_manager; template/export reads allowed."""
     ac, seed = client

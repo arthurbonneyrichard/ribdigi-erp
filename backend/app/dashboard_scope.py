@@ -1141,6 +1141,19 @@ def assert_party_notes_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_party_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company party master CSVs.",
+) -> None:
+    """403 when store_manager exports customers/suppliers CSV (company CRM dump).
+
+    List/get and scoped party history (+ CSV) remain; full master export is
+    company-level PII (email/phone/address/notes already gated on writes).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_import_denied(
     managed_ids: list[str] | None,
     *,

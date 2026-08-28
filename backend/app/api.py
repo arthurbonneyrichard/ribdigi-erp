@@ -6912,6 +6912,13 @@ async def customers_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 E1 — customers CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_party_export_denied(
+        managed,
+        message="Store managers cannot export company customer master CSVs.",
+    )
     text = await party_export_svc.export_customers_csv(
         db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
     )
@@ -7260,6 +7267,13 @@ async def suppliers_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 E1 — suppliers CSV export."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_party_export_denied(
+        managed,
+        message="Store managers cannot export company supplier master CSVs.",
+    )
     text = await party_export_svc.export_suppliers_csv(
         db, tenant_id=claims["tenant_id"], company_id=claims.get("company_id")
     )
@@ -7321,6 +7335,11 @@ async def add_supplier(
         payload.model_dump(exclude_unset=True),
         clear_counts=False,
         message="Store managers cannot set supplier master notes on create.",
+    )
+    dashboard_scope_svc.assert_party_nested_contacts_create_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        message="Store managers cannot attach supplier contacts on create.",
     )
     contacts = data.pop("contacts", None) or []
     party = await suppliers_svc.create_supplier(
