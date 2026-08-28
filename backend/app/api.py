@@ -18264,6 +18264,10 @@ async def onboarding_checklist_get(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 6 N2 — tenant onboarding checklist with auto-detected progress."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_onboarding_read_denied(managed)
     data = await onboarding_svc.build_checklist(db, claims["tenant_id"])
     return env(data)
 

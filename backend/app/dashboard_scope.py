@@ -687,6 +687,22 @@ def assert_company_level_tenant_profile_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_onboarding_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot access the company onboarding checklist; "
+        "tenant bootstrap progress is company-admin only."
+    ),
+) -> None:
+    """403 when store_manager reads tenant onboarding checklist (company bootstrap).
+
+    Checklist export/skip/dismiss already admin-role gated; GET was open via
+    ``current_claims`` and dumps company setup progress.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_store_limit_write_denied(
     managed_ids: list[str] | None,
     *,
