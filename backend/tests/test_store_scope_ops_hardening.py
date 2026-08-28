@@ -10911,7 +10911,12 @@ async def test_store_manager_reports_exportable_read_denied(client, db_session):
     """GET /reports/exportable denied for store_manager (company report catalog)."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     denied = await ac.get("/api/v1/reports/exportable", headers=headers)
     assert denied.status_code == 403, denied.text
@@ -11129,6 +11134,21 @@ async def test_store_manager_document_settings_writes_denied(client, db_session)
         headers=admin_headers,
     )
     assert ok_export.status_code == 200, ok_export.text
+
+    denied_preview = await ac.get(
+        "/api/v1/tenants/me/print-templates/preview",
+        headers=headers,
+        params={"kind": "invoice"},
+    )
+    assert denied_preview.status_code == 403, denied_preview.text
+    assert denied_preview.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_preview = await ac.get(
+        "/api/v1/tenants/me/print-templates/preview",
+        headers=admin_headers,
+        params={"kind": "invoice"},
+    )
+    assert ok_preview.status_code == 200, ok_preview.text
 
 
 @pytest.mark.asyncio

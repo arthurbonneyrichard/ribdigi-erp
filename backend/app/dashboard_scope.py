@@ -927,6 +927,24 @@ def assert_company_level_document_settings_export_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_print_templates_preview_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot preview company print templates; "
+        "document numbering/print writes + CSV export already denied."
+    ),
+) -> None:
+    """403 when store_manager previews company print templates.
+
+    Document settings write/export already denied; GET
+    ``/tenants/me/print-templates/preview`` dumped invoice/receipt
+    branding samples. Operational document print paths remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+
 def assert_company_level_tenant_profile_write_denied(
     managed_ids: list[str] | None,
     *,

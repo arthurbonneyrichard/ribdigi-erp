@@ -514,10 +514,17 @@ async def tenant_print_templates_preview(
     kind: str = "invoice",
     template: str | None = None,
     format: str = "html",
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 T1 — sample invoice/receipt preview using tenant/company print templates."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_print_templates_preview_denied(
+        managed,
+        message="Store managers cannot preview company print templates.",
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     company = None
     if claims.get("company_id"):
