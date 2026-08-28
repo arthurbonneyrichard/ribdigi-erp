@@ -6949,6 +6949,12 @@ async def add_customer(
         clear_counts=False,
         message="Store managers cannot set customer category or party_type on create.",
     )
+    dashboard_scope_svc.assert_party_code_write_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        clear_counts=False,
+        message="Store managers cannot set customer master codes on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
@@ -7012,6 +7018,12 @@ async def patch_customer(
         fields,
         clear_counts=True,
         message="Store managers cannot set customer category or party_type.",
+    )
+    dashboard_scope_svc.assert_party_code_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set customer master codes.",
     )
     party = await customers_svc.update_customer(
         db,
@@ -7222,6 +7234,12 @@ async def add_supplier(
         clear_counts=False,
         message="Store managers cannot set supplier category or party_type on create.",
     )
+    dashboard_scope_svc.assert_party_code_write_denied(
+        managed,
+        data,
+        clear_counts=False,
+        message="Store managers cannot set supplier master codes on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await suppliers_svc.create_supplier(
         db,
@@ -7277,6 +7295,12 @@ async def patch_supplier(
         fields,
         clear_counts=True,
         message="Store managers cannot set supplier category or party_type.",
+    )
+    dashboard_scope_svc.assert_party_code_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set supplier master codes.",
     )
     party = await suppliers_svc.update_supplier(
         db,
