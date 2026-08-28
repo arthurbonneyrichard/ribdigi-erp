@@ -158,6 +158,7 @@ export default function Page() {
   const [productBarcode, setProductBarcode] = useState('');
   const [productSupplyClass, setProductSupplyClass] = useState('standard');
   const [editSupplyClass, setEditSupplyClass] = useState('standard');
+  const [editCategoryId, setEditCategoryId] = useState('');
   const [labelCopies, setLabelCopies] = useState('1');
   const [barcodeSymbology, setBarcodeSymbology] = useState('code128');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -620,6 +621,7 @@ export default function Page() {
         setEditWidth(p.width != null ? String(p.width) : '');
         setEditHeight(p.height != null ? String(p.height) : '');
         setEditSupplyClass(String(p.tax_supply_class || (p.tax_exempt ? 'exempt' : 'standard')));
+        setEditCategoryId(String(p.category_id || ''));
       }
     }
   }, [selectedId, products]);
@@ -640,6 +642,7 @@ export default function Page() {
           width: editWidth === '' ? null : Number(editWidth),
           height: editHeight === '' ? null : Number(editHeight),
           tax_supply_class: editSupplyClass,
+          category_id: editCategoryId.trim() || null,
         }),
       });
       setMessage('Product updated');
@@ -1728,6 +1731,23 @@ export default function Page() {
               <option value="standard">Standard-rated</option>
               <option value="zero_rated">Zero-rated</option>
               <option value="exempt">Exempt</option>
+            </select>
+            <label className="muted">Category</label>
+            <select
+              value={editCategoryId}
+              onChange={(e) => setEditCategoryId(e.target.value)}
+              aria-label="Edit product category"
+              title="Product category (catalog picker; API category_id UUID)"
+            >
+              <option value="">Category</option>
+              {categories
+                .filter((c) => c.is_active !== false)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {categoryIndent(c.depth)}
+                    {categoryLabel(c)}
+                  </option>
+                ))}
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="button" onClick={saveProductEdits} aria-label="Save product">
