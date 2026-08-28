@@ -753,14 +753,15 @@ def assert_company_level_backup_jobs_read_denied(
     managed_ids: list[str] | None,
     *,
     message: str = (
-        "Store managers cannot list or export company backup jobs; "
+        "Store managers cannot list, export, view, or download company backup jobs; "
         "managed store ops remain."
     ),
 ) -> None:
-    """403 when store_manager reads GET /backup or /backup/export.
+    """403 when store_manager reads GET /backup, /export, /{id}, or /download.
 
-    Backup job metadata history dump is company infra admin. Settings already
-    denied; create/download/restore remain admin-role gated for a later slice.
+    Backup job metadata + archive download are company infra admin. Settings
+    already denied; create/run-due/verify/restore remain admin-role gated for a
+    later slice.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

@@ -11567,8 +11567,13 @@ async def test_store_manager_backup_settings_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_store_manager_backup_jobs_read_denied(client, db_session):
-    """GET /backup + CSV export denied for store_manager; admin remains."""
+async def test_store_manager_backup_jobs_read_denied(client, db_session, tmp_path, monkeypatch):
+    """GET /backup list/export/detail/download denied for store_manager; admin remains."""
+    from app import backup as backup_svc
+
+    monkeypatch.setattr("app.backup.settings.BACKUP_DIR", str(tmp_path))
+    monkeypatch.setattr("app.backup.settings.BACKUP_ENCRYPTION_KEY", "")
+
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
@@ -11579,6 +11584,15 @@ async def test_store_manager_backup_jobs_read_denied(client, db_session):
     )
     admin_headers["X-Workspace-Kind"] = "tenant"
 
+    job = await backup_svc.create_backup(
+        db_session,
+        tenant_id=seed["t1"].id,
+        user_id=seed["admin1"].id,
+        notes="scope-deny-detail",
+    )
+    await db_session.commit()
+    backup_id = job.id
+
     denied = await ac.get("/api/v1/backup", headers=headers)
     assert denied.status_code == 403, denied.text
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
@@ -11587,10 +11601,22 @@ async def test_store_manager_backup_jobs_read_denied(client, db_session):
     assert denied_export.status_code == 403, denied_export.text
     assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    denied_get = await ac.get(f"/api/v1/backup/{backup_id}", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_dl = await ac.get(f"/api/v1/backup/{backup_id}/download", headers=headers)
+    assert denied_dl.status_code == 403, denied_dl.text
+    assert denied_dl.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok = await ac.get("/api/v1/backup", headers=admin_headers)
     assert ok.status_code == 200, ok.text
     ok_export = await ac.get("/api/v1/backup/export", headers=admin_headers)
     assert ok_export.status_code == 200, ok_export.text
+    ok_get = await ac.get(f"/api/v1/backup/{backup_id}", headers=admin_headers)
+    assert ok_get.status_code == 200, ok_get.text
+    ok_dl = await ac.get(f"/api/v1/backup/{backup_id}/download", headers=admin_headers)
+    assert ok_dl.status_code == 200, ok_dl.text
 
 
 @pytest.mark.asyncio

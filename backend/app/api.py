@@ -18897,9 +18897,16 @@ async def backup_run_due(
 @api.get("/backup/{backup_id}")
 async def backup_get(
     backup_id: str,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_read_denied(
+        managed,
+        message="Store managers cannot view company backup job detail.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     job = await backup_svc.get_backup(db, claims["tenant_id"], backup_id)
     return env(backup_svc.serialize_job(job))
@@ -18909,9 +18916,16 @@ async def backup_get(
 async def backup_download(
     backup_id: str,
     request: Request,
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_backup_jobs_read_denied(
+        managed,
+        message="Store managers cannot download company backup archives.",
+    )
     workspace_svc.assert_tenant_workspace(claims)
     job = await backup_svc.get_backup(db, claims["tenant_id"], backup_id)
     data = await backup_svc.read_backup_bytes(job)
