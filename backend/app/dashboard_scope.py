@@ -992,6 +992,32 @@ def assert_party_code_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_party_email_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master emails.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``email`` (company contact master).
+
+    Nested contact create/delete is already denied; primary party email is the
+    same company CRM identity surface. Name/phone/address/notes remain.
+    Create without email still allowed (``clear_counts=False``). PATCH present
+    ``email`` denies including clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "email" in payload
+    else:
+        email = payload.get("email")
+        changing = email is not None and str(email).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_import_denied(
     managed_ids: list[str] | None,
     *,

@@ -6955,6 +6955,12 @@ async def add_customer(
         clear_counts=False,
         message="Store managers cannot set customer master codes on create.",
     )
+    dashboard_scope_svc.assert_party_email_write_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        clear_counts=False,
+        message="Store managers cannot set customer master emails on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await customers_svc.create_customer(
         db,
@@ -7029,6 +7035,12 @@ async def patch_customer(
         managed,
         fields,
         message="Store managers cannot change customer status.",
+    )
+    dashboard_scope_svc.assert_party_email_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set customer master emails.",
     )
     party = await customers_svc.update_customer(
         db,
@@ -7245,6 +7257,12 @@ async def add_supplier(
         clear_counts=False,
         message="Store managers cannot set supplier master codes on create.",
     )
+    dashboard_scope_svc.assert_party_email_write_denied(
+        managed,
+        payload.model_dump(exclude_unset=True),
+        clear_counts=False,
+        message="Store managers cannot set supplier master emails on create.",
+    )
     contacts = data.pop("contacts", None) or []
     party = await suppliers_svc.create_supplier(
         db,
@@ -7311,6 +7329,12 @@ async def patch_supplier(
         managed,
         fields,
         message="Store managers cannot change supplier status.",
+    )
+    dashboard_scope_svc.assert_party_email_write_denied(
+        managed,
+        fields,
+        clear_counts=True,
+        message="Store managers cannot set supplier master emails.",
     )
     party = await suppliers_svc.update_supplier(
         db,
@@ -10077,8 +10101,9 @@ async def pos_open_session(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    # store_manager: require managed store_id (null-store sessions fail-closed elsewhere).
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, payload.store_id
+        managed, payload.store_id, allow_unset=False
     )
     session = await pos_svc.open_session(
         db,
