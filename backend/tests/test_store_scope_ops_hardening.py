@@ -400,6 +400,19 @@ async def test_store_manager_expenses_and_stores_scoped(client, db_session):
     assert foreign_create.status_code == 403
     assert foreign_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    unset_create = await ac.post(
+        "/api/v1/expenses",
+        headers=headers,
+        json={
+            "category": "Travel",
+            "amount": 6,
+            "description": "Unset store create blocked",
+            "payment_method": "cash",
+        },
+    )
+    assert unset_create.status_code == 403
+    assert unset_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
     ok_create = await ac.post(
         "/api/v1/expenses",
         headers=headers,
@@ -428,6 +441,35 @@ async def test_store_manager_expenses_and_stores_scoped(client, db_session):
     )
     assert foreign_recurring.status_code == 403
     assert foreign_recurring.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    unset_recurring = await ac.post(
+        "/api/v1/expenses/recurring",
+        headers=headers,
+        json={
+            "category": "Rent",
+            "amount": 40,
+            "description": "Unset store recurring blocked",
+            "frequency": "monthly",
+            "payment_method": "cash",
+        },
+    )
+    assert unset_recurring.status_code == 403
+    assert unset_recurring.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_recurring = await ac.post(
+        "/api/v1/expenses/recurring",
+        headers=headers,
+        json={
+            "category": "Rent",
+            "amount": 45,
+            "description": "Managed recurring ok",
+            "frequency": "monthly",
+            "payment_method": "cash",
+            "store_id": store.id,
+        },
+    )
+    assert ok_recurring.status_code == 200, ok_recurring.text
+    assert ok_recurring.json()["data"]["store_id"] == store.id
 
     # Cannot reassign an in-scope expense onto an unmanaged store
     reassign = await ac.patch(

@@ -11193,7 +11193,9 @@ async def create_recurring_expense(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id, allow_unset=False
+    )
     dashboard_scope_svc.assert_expense_department_assignment_write_denied(
         managed,
         department_id=payload.department_id,
@@ -11351,7 +11353,9 @@ async def add_expense(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    dashboard_scope_svc.assert_store_in_manager_scope(managed, payload.store_id)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id, allow_unset=False
+    )
     dashboard_scope_svc.assert_expense_department_assignment_write_denied(
         managed,
         department_id=payload.department_id,
