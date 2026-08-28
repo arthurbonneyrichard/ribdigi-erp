@@ -106,6 +106,8 @@ export default function Page() {
     had_store: boolean;
     branch_id: string;
     had_branch: boolean;
+    department_id: string;
+    had_department: boolean;
   } | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -633,6 +635,8 @@ export default function Page() {
       had_store: Boolean(r.store_id),
       branch_id: r.branch_id || '',
       had_branch: Boolean(r.branch_id),
+      department_id: r.department_id || '',
+      had_department: Boolean(r.department_id),
     });
   }
 
@@ -670,6 +674,12 @@ export default function Page() {
         body.branch_id = branchTrim;
       } else if (editDraft.had_branch) {
         body.clear_branch = true;
+      }
+      const departmentTrim = editDraft.department_id.trim();
+      if (departmentTrim) {
+        body.department_id = departmentTrim;
+      } else if (editDraft.had_department) {
+        body.clear_department = true;
       }
       const r = await api(`/expenses/${editFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage(
@@ -1503,6 +1513,7 @@ export default function Page() {
                   ...editDraft,
                   branch_id: e.target.value,
                   store_id: '',
+                  department_id: '',
                 })
               }
               aria-label="Edit expense branch"
@@ -1514,6 +1525,27 @@ export default function Page() {
                 .map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.code} — {b.name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={editDraft.department_id}
+              onChange={(e) => setEditDraft({ ...editDraft, department_id: e.target.value })}
+              aria-label="Edit expense department"
+              title="Optional department (UuidIdValue); blank clears when previously set"
+            >
+              <option value="">
+                {editDraft.had_department ? 'Clear department' : 'No department'}
+              </option>
+              {departments
+                .filter((d) => d.is_active !== false || d.id === editDraft.department_id)
+                .filter(
+                  (d) =>
+                    !editDraft.branch_id || !d.branch_id || d.branch_id === editDraft.branch_id,
+                )
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.code} — {d.name}
                   </option>
                 ))}
             </select>

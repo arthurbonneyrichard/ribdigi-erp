@@ -1778,7 +1778,11 @@ class ExpenseUpdate(BaseModel):
     # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
     # as ExpenseCreate.branch_id. Use `clear_branch` to remove.
     branch_id: UuidIdValue | None = None
-    department_id: str | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**). Same
+    # honesty as ExpenseCreate.department_id. Use `clear_department` to remove.
+    department_id: UuidIdValue | None = None
     clear_store: bool = False
     clear_branch: bool = False
     clear_department: bool = False
