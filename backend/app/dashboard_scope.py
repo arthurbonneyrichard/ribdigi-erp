@@ -502,6 +502,15 @@ def assert_company_level_org_create_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_expense_category_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update expense categories or budget limits.",
+) -> None:
+    """403 when store_manager attempts expense category master writes (incl. budget limits)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 PARTY_CREDIT_MASTER_FIELDS = frozenset(
     {"credit_limit", "early_pay_discount_pct", "early_pay_discount_days"}
 )

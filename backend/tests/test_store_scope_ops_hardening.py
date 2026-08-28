@@ -7971,3 +7971,43 @@ async def test_store_manager_party_credit_master_writes_denied(client, db_sessio
         json={"name": "Mgr Plain Supplier"},
     )
     assert ok_supplier_create.status_code == 200, ok_supplier_create.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expense_category_writes_denied(client, db_session):
+    """Expense category create/patch (incl. budget limits) denied for store_manager."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    cat = m.ExpenseCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="CAT-DENY",
+        name="Category Deny Target",
+        budget_amount=1000,
+    )
+    db_session.add(cat)
+    await db_session.commit()
+
+    denied_create = await ac.post(
+        "/api/v1/expenses/categories",
+        headers=headers,
+        json={"code": "MGR-CAT", "name": "Mgr Category", "budget_amount": 250},
+    )
+    assert denied_create.status_code == 403
+    assert denied_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_patch = await ac.patch(
+        f"/api/v1/expenses/categories/{cat.id}",
+        headers=headers,
+        json={"budget_amount": 5000, "name": "Hijacked Budget"},
+    )
+    assert denied_patch.status_code == 403
+    assert denied_patch.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Reads remain allowed
+    listed = await ac.get("/api/v1/expenses/categories", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["code"] == "CAT-DENY" for row in listed.json()["data"])
