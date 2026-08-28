@@ -9816,3 +9816,91 @@ async def test_store_manager_inventory_labels_wh_scoped(client, db_session):
     assert denied_post.status_code == 403, denied_post.text
     assert denied_post.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+@pytest.mark.asyncio
+async def test_store_manager_liquid_account_lifecycle_writes_denied(client, db_session):
+    """store_manager cannot activate/deactivate liquid accounts; name remains."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["accounting"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Liq Life Deny Store",
+        code="LIQ-LIFE-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    cash = await accounting_svc.get_account_by_code(db_session, tid, "1000", company_id=cid)
+    assert cash is not None
+    await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        description="Touch cash for liquid lifecycle",
+        reference="JE-LIQ-LIFE",
+        store_id=store.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 50, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 50},
+        ],
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    denied_off = await ac.patch(
+        f"/api/v1/accounting/liquid-accounts/{cash.id}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert denied_off.status_code == 403, denied_off.text
+    assert denied_off.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    assert "activate or deactivate" in denied_off.json()["detail"]["message"].lower()
+
+    ok_name = await ac.patch(
+        f"/api/v1/accounting/liquid-accounts/{cash.id}",
+        headers=headers,
+        json={"name": "Managed Cash Renamed"},
+    )
+    assert ok_name.status_code == 200, ok_name.text
+    assert ok_name.json()["data"]["name"] == "Managed Cash Renamed"
+
+    cash.is_active = False
+    await db_session.commit()
+
+    # Inactive liquid accounts may drop from managed liquid scope; reactivation
+    # remains denied (lifecycle assert when still in scope, else scope fail-closed).
+    denied_on = await ac.patch(
+        f"/api/v1/accounting/liquid-accounts/{cash.id}",
+        headers=headers,
+        json={"is_active": True},
+    )
+    assert denied_on.status_code == 403, denied_on.text
+    assert denied_on.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    await db_session.refresh(cash)
+    assert cash.is_active is False
+    assert cash.name == "Managed Cash Renamed"

@@ -11916,6 +11916,12 @@ async def update_liquid_account(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    changing_liquid_active = payload.is_active is not None
+    dashboard_scope_svc.assert_liquid_account_lifecycle_write_denied(
+        managed,
+        changing_active=changing_liquid_active,
+        message="Store managers cannot activate or deactivate liquid accounts.",
+    )
     _single, multi = dashboard_scope_svc.constrain_store_query(managed, None)
     await dashboard_scope_svc.assert_liquid_account_in_manager_scope(
         db,
