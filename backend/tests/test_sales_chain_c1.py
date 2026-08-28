@@ -37,6 +37,19 @@ def test_sale_line_tax_on_net_after_discount():
 async def test_customer_quote_order_invoice_payment_chain(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Chain Store",
+        code="CHAIN-ST",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    store_id = store.id
+    await db_session.commit()
+
     product_id = seed["p1"].id
     tenant_id = seed["t1"].id
 
@@ -60,9 +73,6 @@ async def test_customer_quote_order_invoice_payment_chain(client, db_session):
         headers=headers,
         json={
             "name": "OTC Chain Customer",
-            "email": "otc-chain@example.com",
-            "party_type": "registered",
-            "credit_limit": 1000,
         },
     )
     assert customer.status_code == 200, customer.text
@@ -75,6 +85,7 @@ async def test_customer_quote_order_invoice_payment_chain(client, db_session):
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store_id,
             "items": [
                 {
                     "product_id": product_id,

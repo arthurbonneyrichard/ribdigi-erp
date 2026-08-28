@@ -7,6 +7,7 @@ from pathlib import Path
 import pyotp
 import pytest
 
+from app import models as m
 from app.inventory import apply_stock_change
 from tests.conftest import auth_headers
 
@@ -148,13 +149,31 @@ async def test_sales_api_br_18_4_thin_regression(client, db_session):
     )
     await db_session.commit()
 
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="S19 Store",
+        code="S19-ST",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="S19 WH",
+        code="S19-WH",
+    )
+    db_session.add(wh)
+    await db_session.commit()
+
     customer = await ac.post(
         "/api/v1/customers",
         headers=headers,
         json={
             "name": "S19 S1 Customer",
-            "party_type": "registered",
-            "credit_limit": 2000,
         },
     )
     assert customer.status_code == 200, customer.text
@@ -165,6 +184,7 @@ async def test_sales_api_br_18_4_thin_regression(client, db_session):
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store.id,
             "items": [{"product_id": product_id, "quantity": 2, "unit_price": 10}],
         },
     )

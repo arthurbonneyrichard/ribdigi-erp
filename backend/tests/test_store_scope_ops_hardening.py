@@ -1320,7 +1320,7 @@ async def test_store_manager_sales_orders_scoped(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_sales_quotations_scoped(client, db_session):
-    """Quotations: own drafts + converted in-scope docs; foreign open quotes hidden."""
+    """Quotations: native store_id + converted in-scope docs; foreign store fail-closed."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -1375,6 +1375,7 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
         company_id=cid,
         quotation_number="QT-M-OPEN",
         customer_id=cust.id,
+        store_id=mine.id,
         status="draft",
         subtotal=10,
         total_amount=10,
@@ -1385,9 +1386,21 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
         company_id=cid,
         quotation_number="QT-O-OPEN",
         customer_id=cust.id,
+        store_id=other.id,
         status="sent",
         subtotal=20,
         total_amount=20,
+        created_by=admin.id,
+    )
+    qt_admin_mine = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-ADMIN-MINE",
+        customer_id=cust.id,
+        store_id=mine.id,
+        status="sent",
+        subtotal=11,
+        total_amount=11,
         created_by=admin.id,
     )
     qt_m_conv = m.SalesQuotation(
@@ -1395,6 +1408,7 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
         company_id=cid,
         quotation_number="QT-M-CONV",
         customer_id=cust.id,
+        store_id=mine.id,
         status="converted",
         subtotal=40,
         total_amount=40,
@@ -1406,13 +1420,14 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
         company_id=cid,
         quotation_number="QT-O-CONV",
         customer_id=cust.id,
+        store_id=other.id,
         status="converted",
         subtotal=90,
         total_amount=90,
         created_by=admin.id,
         converted_invoice_id=inv_other.id,
     )
-    db_session.add_all([qt_m_open, qt_o_open, qt_m_conv, qt_o_conv])
+    db_session.add_all([qt_m_open, qt_o_open, qt_admin_mine, qt_m_conv, qt_o_conv])
     await db_session.commit()
 
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
@@ -1421,14 +1436,46 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
     numbers = {row["quotation_number"] for row in listed.json()["data"]}
     assert "QT-M-OPEN" in numbers
     assert "QT-M-CONV" in numbers
+    assert "QT-ADMIN-MINE" in numbers
     assert "QT-O-OPEN" not in numbers
     assert "QT-O-CONV" not in numbers
 
     exported = await ac.get("/api/v1/sales/quotations/export", headers=headers)
     assert exported.status_code == 200, exported.text
     assert "QT-M-OPEN" in exported.text
+    assert "QT-ADMIN-MINE" in exported.text
     assert "QT-O-OPEN" not in exported.text
     assert "QT-O-CONV" not in exported.text
+
+    ok_admin_mine = await ac.get(
+        f"/api/v1/sales/quotations/{qt_admin_mine.id}", headers=headers
+    )
+    assert ok_admin_mine.status_code == 200, ok_admin_mine.text
+
+    denied_foreign_create = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=headers,
+        json={
+            "customer_id": cust.id,
+            "store_id": other.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
+        },
+    )
+    assert denied_foreign_create.status_code == 403
+    assert denied_foreign_create.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    draft = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=headers,
+        json={
+            "customer_id": cust.id,
+            "store_id": mine.id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 12}],
+        },
+    )
+    assert draft.status_code == 200, draft.text
+    qid = draft.json()["data"]["id"]
+    assert draft.json()["data"]["store_id"] == mine.id
 
     ok = await ac.get(f"/api/v1/sales/quotations/{qt_m_open.id}", headers=headers)
     assert ok.status_code == 200, ok.text
@@ -1443,19 +1490,22 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
     assert denied_accept.status_code == 403
     assert denied_accept.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    draft = await ac.post(
-        "/api/v1/sales/quotations",
-        headers=headers,
-        json={
-            "customer_id": cust.id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 12}],
-        },
+    qt_legacy = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        quotation_number="QT-LEGACY-NULL",
+        customer_id=cust.id,
+        store_id=None,
+        status="draft",
+        subtotal=6,
+        total_amount=6,
+        created_by=mgr.id,
     )
-    assert draft.status_code == 200, draft.text
-    qid = draft.json()["data"]["id"]
+    db_session.add(qt_legacy)
+    await db_session.commit()
 
     denied_convert = await ac.post(
-        f"/api/v1/sales/quotations/{qid}/convert-order",
+        f"/api/v1/sales/quotations/{qt_legacy.id}/convert-order",
         headers=headers,
         json={},
     )
@@ -1465,7 +1515,7 @@ async def test_store_manager_sales_quotations_scoped(client, db_session):
     ok_convert = await ac.post(
         f"/api/v1/sales/quotations/{qid}/convert-order",
         headers=headers,
-        json={"store_id": mine.id},
+        json={},
     )
     assert ok_convert.status_code == 200, ok_convert.text
     assert ok_convert.json()["data"]["store_id"] == mine.id

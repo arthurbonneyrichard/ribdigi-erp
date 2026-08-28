@@ -152,6 +152,17 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
     )
     assert patched.status_code == 200, patched.text
 
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Record Scope Store",
+        code="REC-SCOPE",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
     assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=mgr)).status_code == 404
@@ -177,6 +188,7 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
         headers=mgr,
         json={
             "customer_id": seed["party1"].id,
+            "store_id": store.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
         },
     )

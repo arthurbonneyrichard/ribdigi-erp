@@ -220,8 +220,8 @@ def _manager_broadcast_visibility(
 ):
     """SQL predicate: broadcast (user_id IS NULL) visible under store/WH scope.
 
-    Fail-closed for entities without store/WH linkage (quotations, product,
-    billing, bare system, null-store expenses, etc.).
+    Fail-closed for entities without store/WH linkage (legacy null-store quotations,
+    product, billing, bare system, null-store expenses, etc.).
     """
     arms: list = []
     store_ids = list(managed_store_ids or [])
@@ -245,6 +245,15 @@ def _manager_broadcast_visibility(
                         select(m.SalesOrder.id).where(
                             m.SalesOrder.id == m.Notification.entity_id,
                             m.SalesOrder.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "sales_quotation",
+                    exists(
+                        select(m.SalesQuotation.id).where(
+                            m.SalesQuotation.id == m.Notification.entity_id,
+                            m.SalesQuotation.store_id.in_(store_ids),
                         )
                     ),
                 ),
@@ -807,12 +816,14 @@ async def scan_quotation_expiry(
     within_days: int = 1,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
     skip: bool = False,
 ) -> dict[str, int]:
     """Remind before quotation validity ends; mark past-due draft/sent quotes expired.
 
     USER_MANUAL: remind 1 day before quotation expiry (BR-7.2).
-    Quotation has no store_id — store_managers skip this scanner (fail-closed).
+    When ``store_ids`` is set (store_manager), only native ``store_id`` rows in scope
+    are scanned; legacy null-store quotes are fail-closed.
     """
     if skip:
         return {"reminded": 0, "expired": 0}
@@ -825,6 +836,10 @@ async def scan_quotation_expiry(
     )
     if company_id:
         q = q.where(m.SalesQuotation.company_id == company_id)
+    if store_ids is not None:
+        if not store_ids:
+            return {"reminded": 0, "expired": 0}
+        q = q.where(m.SalesQuotation.store_id.in_(store_ids))
     quotes = (await db.execute(q)).scalars().all()
     reminded = 0
     expired = 0

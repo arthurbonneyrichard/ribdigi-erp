@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -725,7 +725,6 @@ async def customer_history(
         .limit(50)
     )
     if store_ids is not None:
-        # No store_id on quotations — only surface quotes converted into in-scope docs.
         if not store_ids:
             quote_stmt = quote_stmt.where(m.SalesQuotation.id.is_(None))
         else:
@@ -741,8 +740,11 @@ async def customer_history(
                 in_scope_order = in_scope_order.where(m.SalesOrder.company_id == company_id)
                 in_scope_inv = in_scope_inv.where(m.SalesInvoice.company_id == company_id)
             quote_stmt = quote_stmt.where(
-                (m.SalesQuotation.converted_order_id.in_(in_scope_order))
-                | (m.SalesQuotation.converted_invoice_id.in_(in_scope_inv))
+                or_(
+                    m.SalesQuotation.store_id.in_(store_ids),
+                    m.SalesQuotation.converted_order_id.in_(in_scope_order),
+                    m.SalesQuotation.converted_invoice_id.in_(in_scope_inv),
+                )
             )
     quotations = list((await db.execute(quote_stmt)).scalars().all())
 

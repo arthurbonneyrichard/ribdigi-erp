@@ -8092,6 +8092,12 @@ async def create_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_in_manager_scope(
+        managed, payload.store_id, allow_unset=False
+    )
     quote = await sales_docs_svc.create_quotation(
         db,
         tenant_id=claims["tenant_id"],
@@ -8100,6 +8106,7 @@ async def create_quotation(
         discount_amount=payload.discount_amount,
         notes=payload.notes,
         valid_days=payload.valid_days,
+        store_id=payload.store_id,
         items=[i.model_dump() for i in payload.items],
         company_id=claims.get("company_id"),
     )
@@ -8305,15 +8312,16 @@ async def convert_quotation_order(
     workspace_svc.assert_record_company(claims, existing)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    store_for_convert = body.store_id or getattr(existing, "store_id", None)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, body.store_id, allow_unset=False
+        managed, store_for_convert, allow_unset=False
     )
     order = await sales_docs_svc.convert_quotation_to_order(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         quotation_id=quotation_id,
-        store_id=body.store_id,
+        store_id=store_for_convert,
     )
     await db.commit()
     # Stage 99 T1 — honesty: convert creates draft order; Confirm reserves stock
@@ -8338,15 +8346,16 @@ async def convert_quotation_invoice(
     workspace_svc.assert_record_company(claims, existing)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    store_for_convert = body.store_id or getattr(existing, "store_id", None)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, body.store_id, allow_unset=False
+        managed, store_for_convert, allow_unset=False
     )
     invoice = await sales_docs_svc.convert_quotation_to_invoice(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         quotation_id=quotation_id,
-        store_id=body.store_id,
+        store_id=store_for_convert,
     )
     await db.commit()
     # Stage 97 S1 — honesty: convert creates draft; Post required before AR recognition
@@ -17053,12 +17062,12 @@ async def scan_due_notifications(
         store_ids=managed,
         warehouse_ids=managed_wh,
     )
-    # Quotations lack store_id — store_managers must not expire/remind company-wide.
+    # Native store_id on quotations — scope expiry scan to managed stores.
     quote_scan = await notifications_svc.scan_quotation_expiry(
         db,
         claims["tenant_id"],
         company_id=claims.get("company_id"),
-        skip=managed is not None,
+        store_ids=managed,
     )
     recurring_scan = await notifications_svc.scan_recurring_expense_upcoming(
         db,

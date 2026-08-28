@@ -129,6 +129,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "company_id": getattr(quote, "company_id", None),
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
+        "store_id": getattr(quote, "store_id", None),
         "status": quote.status,
         "subtotal": float(quote.subtotal),
         "tax_amount": float(quote.tax_amount),
@@ -415,6 +416,7 @@ async def create_quotation(
     discount_amount: float = 0,
     notes: str | None = None,
     valid_days: int = 14,
+    store_id: str | None = None,
     company_id: str | None = None,
 ) -> m.SalesQuotation:
     await get_customer(db, tenant_id, customer_id, company_id=company_id)
@@ -433,6 +435,7 @@ async def create_quotation(
         company_id=company_id,
         quotation_number=await _allocate(db, tenant_id, "sales_quotation", company_id=company_id),
         customer_id=customer_id,
+        store_id=(store_id or None),
         status="draft",
         subtotal=subtotal,
         tax_amount=tax_total,
@@ -926,6 +929,8 @@ async def convert_quotation_to_order(
     )
     quote.status = "converted"
     quote.converted_order_id = order.id
+    if store_id:
+        quote.store_id = store_id
     quote.updated_at = datetime.utcnow()
     await db.flush()
     return order

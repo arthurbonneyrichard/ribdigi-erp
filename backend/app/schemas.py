@@ -1001,6 +1001,7 @@ class SalesInvoiceCreate(BaseModel):
 
 class SalesQuotationCreate(BaseModel):
     customer_id: str
+    store_id: str | None = None
     discount_amount: float = Field(default=0, ge=0)
     notes: str | None = None
     valid_days: int = Field(default=14, ge=1, le=365)

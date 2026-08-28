@@ -19,6 +19,7 @@ from app.session_passkey_doc_export import _cell
 QUOTATION_EXPORT_COLUMNS = [
     "quotation_number",
     "customer_id",
+    "store_id",
     "status",
     "subtotal",
     "tax_amount",

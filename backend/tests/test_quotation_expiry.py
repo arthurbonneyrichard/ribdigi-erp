@@ -25,11 +25,31 @@ def test_quotation_expiry_in_default_preferences():
 async def test_scan_quotation_expiry_reminds_and_marks_expired(client, db_session):
     ac, seed = client
     headers = await _mgr(ac)
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Quote Expiry Store",
+        code="QT-EXP-ST",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    store_id = store.id
+    wh = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store_id,
+        name="Quote Expiry WH",
+        code="QT-EXP-WH",
+    )
+    db_session.add(wh)
+    await db_session.commit()
 
     cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "Expiry Quote Buyer", "credit_limit": 500},
+        json={"name": "Expiry Quote Buyer"},
     )
     customer_id = cust.json()["data"]["id"]
 
@@ -38,6 +58,7 @@ async def test_scan_quotation_expiry_reminds_and_marks_expired(client, db_sessio
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store_id,
             "valid_days": 1,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
         },
@@ -51,6 +72,7 @@ async def test_scan_quotation_expiry_reminds_and_marks_expired(client, db_sessio
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store_id,
             "valid_days": 14,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
         },

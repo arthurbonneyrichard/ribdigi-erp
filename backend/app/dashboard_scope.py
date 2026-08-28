@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import exists, or_, select, func
+from sqlalchemy import exists, or_, select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -374,15 +374,21 @@ def apply_quotation_store_scope(
     tenant_id: str,
     company_id: str | None = None,
 ):
-    """Scope quotations without ``store_id``: own drafts + converted in-scope docs.
+    """Scope quotations via native ``store_id`` plus legacy conversion / own-draft fallbacks.
 
-    Open/unconverted foreign quotes are fail-closed (no store column; ADR-005 deferred).
+    Rows with ``store_id`` use direct managed-store filter. Legacy null-store rows keep
+    own-draft + converted in-scope docs until backfilled (ADR-005 membership deferred).
     """
     if managed_store_ids is None:
         return stmt
     if not managed_store_ids:
         if user_id:
-            return stmt.where(m.SalesQuotation.created_by == user_id)
+            return stmt.where(
+                or_(
+                    m.SalesQuotation.created_by == user_id,
+                    m.SalesQuotation.store_id.is_(None),
+                )
+            )
         return stmt.where(m.SalesQuotation.id.is_(None))
 
     in_scope_order = select(m.SalesOrder.id).where(
@@ -397,22 +403,38 @@ def apply_quotation_store_scope(
         in_scope_order = in_scope_order.where(m.SalesOrder.company_id == company_id)
         in_scope_inv = in_scope_inv.where(m.SalesInvoice.company_id == company_id)
 
-    visible = or_(
+    legacy_visible = or_(
         m.SalesQuotation.converted_order_id.in_(in_scope_order),
         m.SalesQuotation.converted_invoice_id.in_(in_scope_inv),
     )
+    visible = or_(
+        m.SalesQuotation.store_id.in_(managed_store_ids),
+        legacy_visible,
+    )
     if user_id:
-        visible = or_(visible, m.SalesQuotation.created_by == user_id)
+        visible = or_(
+            visible,
+            and_(
+                m.SalesQuotation.created_by == user_id,
+                m.SalesQuotation.store_id.is_(None),
+            ),
+        )
     return stmt.where(visible)
 
 
 async def assert_quotation_in_manager_scope(
     db: AsyncSession, claims: dict, quote: m.SalesQuotation
 ) -> None:
-    """403 when quotation is outside managed store scope (via conversion or own draft)."""
+    """403 when quotation is outside managed store scope."""
     managed = await managed_store_ids(db, claims)
     if managed is None:
         return
+
+    sid = getattr(quote, "store_id", None)
+    if sid:
+        assert_store_in_manager_scope(managed, str(sid), allow_unset=False)
+        return
+
     user_id = claims.get("sub")
     if user_id and quote.created_by == user_id:
         return
