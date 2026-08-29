@@ -1067,6 +1067,7 @@ export default function Page() {
                   (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive',
                 )
               }
+              aria-label="Toggle customer active status"
             >
               {(customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
                 ? 'Activate'

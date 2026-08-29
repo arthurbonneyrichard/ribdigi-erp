@@ -1496,6 +1496,7 @@ export default function Page() {
                   setOcrDraft(null);
                   setOcrMeta(null);
                 }}
+                aria-label="Dismiss expense OCR"
               >
                 Dismiss
               </button>

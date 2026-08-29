@@ -345,8 +345,8 @@ async def set_store_reorder_policy(
     row = await get_or_create_warehouse_stock(
         db, tenant_id=tenant_id, warehouse_id=wh.id, product_id=product_id
     )
-    row.reorder_level = max(float(reorder_level or 0), 0)
-    row.reorder_qty = max(float(reorder_qty or 0), 0)
+    row.reorder_level = max(money_json(reorder_level or 0), 0)
+    row.reorder_qty = max(money_json(reorder_qty or 0), 0)
     await db.flush()
     qty = money_json(row.quantity or 0)
     reorder = money_json(row.reorder_level or 0)
@@ -544,7 +544,7 @@ async def create_transfer(
 
     for item in items:
         product_id = item["product_id"]
-        qty = float(item["quantity"])
+        qty = money_json(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Transfer quantities must be positive")
         product = (
@@ -765,17 +765,17 @@ async def ship_transfer(
             tenant_id=tenant_id,
             warehouse_id=transfer.from_warehouse_id,
             product_id=item.product_id,
-            quantity_delta=-float(item.quantity),
+            quantity_delta=-money_json(item.quantity),
         )
         product = await db.get(m.Product, item.product_id)
-        before = float(product.stock_qty or 0) if product else 0
+        before = money_json(product.stock_qty or 0) if product else 0
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
                 product_id=item.product_id,
                 warehouse_id=transfer.from_warehouse_id,
                 movement_type="transfer_out",
-                quantity=-float(item.quantity),
+                quantity=-money_json(item.quantity),
                 quantity_before=before,
                 quantity_after=before,
                 reference_type="stock_transfer",
@@ -784,7 +784,7 @@ async def ship_transfer(
                 created_by=user_id,
             )
         )
-        item.shipped_qty = float(item.quantity)
+        item.shipped_qty = money_json(item.quantity)
 
     transfer.status = "in_transit"
     transfer.shipped_by = user_id
@@ -812,7 +812,7 @@ async def receive_transfer(
         raise HTTPException(status_code=409, detail=f"Cannot receive transfer in status {transfer.status}")
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
-        qty = float(item.shipped_qty or item.quantity)
+        qty = money_json(item.shipped_qty or item.quantity)
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,
@@ -821,7 +821,7 @@ async def receive_transfer(
             quantity_delta=qty,
         )
         product = await db.get(m.Product, item.product_id)
-        before = float(product.stock_qty or 0) if product else 0
+        before = money_json(product.stock_qty or 0) if product else 0
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
@@ -862,7 +862,7 @@ async def cancel_transfer(
     if transfer.status == "in_transit":
         items = await list_transfer_items(db, tenant_id, transfer_id)
         for item in items:
-            qty = float(item.shipped_qty or item.quantity)
+            qty = money_json(item.shipped_qty or item.quantity)
             await apply_warehouse_stock_change(
                 db,
                 tenant_id=tenant_id,
@@ -871,7 +871,7 @@ async def cancel_transfer(
                 quantity_delta=qty,
             )
             product = await db.get(m.Product, item.product_id)
-            before = float(product.stock_qty or 0) if product else 0
+            before = money_json(product.stock_qty or 0) if product else 0
             db.add(
                 m.StockMovement(
                     tenant_id=tenant_id,

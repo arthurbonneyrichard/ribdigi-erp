@@ -269,7 +269,7 @@ async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
 def scale_monthly_budget(budget_monthly: float, period_days: int) -> float:
     """Scale a monthly category budget to an arbitrary reporting window (AI + reports)."""
     days = max(1, int(period_days))
-    return money_json(float(budget_monthly or 0) * (days / 30.0))
+    return money_json(money_json(budget_monthly or 0) * (days / 30.0))
 
 
 def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None) -> dict:
@@ -420,12 +420,12 @@ async def update_approval_settings(
     if levels is not None:
         normalized = normalize_approval_matrix({"levels": levels})
     else:
-        auto_t = float(
+        auto_t = money_json(
             expense_approval_threshold
             if expense_approval_threshold is not None
             else (tenant.expense_approval_threshold or DEFAULT_APPROVAL_THRESHOLD)
         )
-        l2_t = float(
+        l2_t = money_json(
             expense_l2_threshold
             if expense_l2_threshold is not None
             else (getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
@@ -452,8 +452,8 @@ async def update_approval_settings(
             normalized = default_approval_levels(auto_threshold=auto_t, l2_threshold=l2_t)
 
     tenant.expense_approval_matrix = matrix_payload(normalized)
-    tenant.expense_approval_threshold = float(normalized[0]["min_amount"])
-    tenant.expense_l2_threshold = float(
+    tenant.expense_approval_threshold = money_json(normalized[0]["min_amount"])
+    tenant.expense_l2_threshold = money_json(
         normalized[1]["min_amount"] if len(normalized) > 1 else normalized[0]["min_amount"]
     )
     await db.flush()
@@ -685,7 +685,7 @@ async def create_expense(
         category_id=cat_id,
         category=cat_name,
         description=desc,
-        amount=round(float(amount), 2),
+        amount=round(money_json(amount), 2),
         expense_date=expense_date or datetime.utcnow(),
         payment_method=method,
         liquid_account_id=liquid_account_id,
@@ -796,7 +796,7 @@ async def approve_expense(
             category="expense_approval",
             title="Expense Needs Next-Level Approval",
             message=(
-                f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
+                f"Expense {expense.category} of {money_json(expense.amount):.2f} passed level {step} "
                 f"and awaits level {next_step} approval."
             ),
             entity_type="expense",
@@ -964,7 +964,7 @@ async def update_expense(
             )
 
     if amount is not None:
-        new_amount = round(float(amount), 2)
+        new_amount = round(money_json(amount), 2)
         if new_amount <= 0:
             raise HTTPException(status_code=400, detail="amount must be positive")
         expense.amount = new_amount
@@ -1076,7 +1076,7 @@ async def create_recurring(
         category=cat_name,
         description=optional_honest_narrative(description, label="expense description")
         or "",
-        amount=round(float(amount), 2),
+        amount=round(money_json(amount), 2),
         frequency=freq,
         payment_method=method,
         payee=optional_honest_narrative(payee, label="expense payee", max_length=150),
@@ -1169,7 +1169,7 @@ async def update_recurring(
         row.category = cat_name
 
     if amount is not None:
-        row.amount = round(float(amount), 2)
+        row.amount = round(money_json(amount), 2)
     if clear_payee:
         row.payee = None
     elif payee is not None:
@@ -1298,7 +1298,7 @@ async def generate_due_recurring(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
-            amount=float(row.amount),
+            amount=money_json(row.amount),
             description=desc,
             category_id=row.category_id,
             category=row.category,

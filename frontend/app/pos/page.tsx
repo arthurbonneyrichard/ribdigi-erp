@@ -1256,6 +1256,7 @@ export default function Page() {
                   setQ('');
                   browse('').catch((err) => setError(err.message));
                 }}
+                aria-label="Browse all POS products"
               >
                 All
               </button>

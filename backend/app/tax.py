@@ -291,8 +291,8 @@ def compute_line_total(
     components: list[dict] | None = None,
     is_reverse_charge: bool = False,
 ) -> tuple[float, float, float]:
-    qty = float(quantity or 0)
-    price = float(unit_price or 0)
+    qty = money_json(quantity or 0)
+    price = money_json(unit_price or 0)
     line_amount = qty * price
     return compute_tax_amounts(
         line_amount,
@@ -410,7 +410,7 @@ async def update_tax_rate(
 def tax_spec_from_rate(rate: m.TaxRate, *, supply_class: str = "standard") -> TaxSpec:
     comps = normalize_components(rate.components) if rate.components else None
     return TaxSpec(
-        rate_pct=float(rate.rate),
+        rate_pct=money_json(rate.rate),
         pricing_mode=rate.pricing_mode or "exclusive",
         components=tuple(comps) if comps else None,
         is_reverse_charge=bool(rate.is_reverse_charge),
@@ -475,7 +475,7 @@ async def resolve_product_tax(
         mode = default.pricing_mode if default else "exclusive"
         # Explicit override uses single-rate path (no compound legs).
         return TaxSpec(
-            rate_pct=float(explicit_rate),
+            rate_pct=money_json(explicit_rate),
             pricing_mode=mode,
             supply_class="standard",
         )
@@ -627,9 +627,9 @@ async def tax_filing_pack(
             standard_outputs += net
 
     for inv in invoices:
-        tax = float(inv.tax_amount or 0)
-        rc = float(getattr(inv, "reverse_charge_tax", 0) or 0)
-        net = float(inv.subtotal or 0)
+        tax = money_json(inv.tax_amount or 0)
+        rc = money_json(getattr(inv, "reverse_charge_tax", 0) or 0)
+        net = money_json(inv.subtotal or 0)
         output_invoices += tax
         reverse_charge_tax += rc
         items = (
@@ -642,12 +642,12 @@ async def tax_filing_pack(
         ).scalars().all()
         if items:
             for item in items:
-                line_net = float(getattr(item, "line_subtotal", None) or 0)
+                line_net = money_json(getattr(item, "line_subtotal", None) or 0)
                 if line_net <= 0:
                     # Legacy rows: approximate net from qty * price - discount
                     line_net = max(
-                        float(item.quantity or 0) * float(item.unit_price or 0)
-                        - float(item.discount or 0),
+                        money_json(item.quantity or 0) * money_json(item.unit_price or 0)
+                        - money_json(item.discount or 0),
                         0,
                     )
                 _bump_supply(getattr(item, "tax_supply_class", None) or "standard", line_net)
@@ -663,7 +663,7 @@ async def tax_filing_pack(
                 "net_amount": money_json(round(net, 2)),
                 "tax_amount": money_json(round(tax, 2)),
                 "reverse_charge_tax": money_json(round(rc, 2)),
-                "gross_amount": money_json(round(float(inv.total_amount or 0), 2)),
+                "gross_amount": money_json(round(money_json(inv.total_amount or 0), 2)),
                 "party_id": inv.customer_id,
                 "store_id": inv.store_id,
             }
@@ -691,15 +691,15 @@ async def tax_filing_pack(
     pos_sales = (await db.execute(pos_stmt)).scalars().all()
     output_pos = 0.0
     for tx in pos_sales:
-        tax = float(tx.tax or 0)
-        net = float(tx.subtotal or 0)
+        tax = money_json(tx.tax or 0)
+        net = money_json(tx.subtotal or 0)
         output_pos += tax
         payload_items = list((tx.payload or {}).get("items") or [])
         if payload_items:
             for item in payload_items:
                 if not isinstance(item, dict):
                     continue
-                line_net = float(item.get("line_subtotal") or 0)
+                line_net = money_json(item.get("line_subtotal") or 0)
                 _bump_supply(item.get("tax_supply_class") or "standard", line_net)
         else:
             _bump_supply("standard", net)
@@ -713,7 +713,7 @@ async def tax_filing_pack(
                 "net_amount": money_json(round(net, 2)),
                 "tax_amount": money_json(round(tax, 2)),
                 "reverse_charge_tax": money_json(0),
-                "gross_amount": money_json(round(float(tx.total or 0), 2)),
+                "gross_amount": money_json(round(money_json(tx.total or 0), 2)),
                 "party_id": tx.party_id,
                 "store_id": store_id,
             }
@@ -758,9 +758,9 @@ async def tax_filing_pack(
     input_source = "purchase_invoices"
     if purchase_invoices:
         for inv in purchase_invoices:
-            tax = float(inv.tax_amount or 0)
-            rc = float(getattr(inv, "reverse_charge_tax", 0) or 0)
-            net = float(inv.subtotal or 0)
+            tax = money_json(inv.tax_amount or 0)
+            rc = money_json(getattr(inv, "reverse_charge_tax", 0) or 0)
+            net = money_json(inv.subtotal or 0)
             # Supplier-charged input + self-assessed RC input (claimable).
             input_tax += tax + rc
             purchase_reverse_charge += rc
@@ -777,7 +777,7 @@ async def tax_filing_pack(
                     "tax_amount": money_json(round(tax, 2)),
                     "reverse_charge_tax": money_json(round(rc, 2)),
                     "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
-                    "gross_amount": money_json(round(float(inv.total_amount or 0), 2)),
+                    "gross_amount": money_json(round(money_json(inv.total_amount or 0), 2)),
                     "party_id": inv.supplier_id,
                 }
             )
@@ -798,8 +798,8 @@ async def tax_filing_pack(
                 po_stmt = po_stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
         orders = (await db.execute(po_stmt)).scalars().all()
         for po in orders:
-            tax = float(po.tax_amount or 0)
-            net = float(po.subtotal or 0)
+            tax = money_json(po.tax_amount or 0)
+            net = money_json(po.subtotal or 0)
             input_tax += tax
             taxable_inputs += net
             input_schedule.append(
@@ -811,7 +811,7 @@ async def tax_filing_pack(
                     "document_date": po.created_at,
                     "net_amount": money_json(round(net, 2)),
                     "tax_amount": money_json(round(tax, 2)),
-                    "gross_amount": money_json(round(float(po.total_amount or 0), 2)),
+                    "gross_amount": money_json(round(money_json(po.total_amount or 0), 2)),
                     "party_id": po.supplier_id,
                 }
             )

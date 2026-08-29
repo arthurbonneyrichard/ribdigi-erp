@@ -64,13 +64,13 @@ async def _prepare_lines(
             tenant_id=tenant_id,
             product=product,
             unit_id=item.get("unit_id"),
-            quantity=float(item["quantity"]),
+            quantity=money_json(item["quantity"]),
         )
-        discount = float(item.get("discount") or 0)
+        discount = money_json(item.get("discount") or 0)
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
-                db, tenant_id, product, explicit_rate=float(explicit)
+                db, tenant_id, product, explicit_rate=money_json(explicit)
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
@@ -180,7 +180,7 @@ async def create_quotation(
     subtotal, tax_total, prepared = await _prepare_lines(
         db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = float(discount_amount or 0)
+    discount_amount = money_json(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)
     if total < 0:
         raise HTTPException(status_code=400, detail="Total cannot be negative")
@@ -411,7 +411,7 @@ async def create_order(
     subtotal, tax_total, prepared = await _prepare_lines(
         db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = float(discount_amount or 0)
+    discount_amount = money_json(discount_amount or 0)
     total = round(subtotal + tax_total - discount_amount, 2)
     order = m.SalesOrder(
         tenant_id=tenant_id,
@@ -444,7 +444,7 @@ async def create_order(
         tenant_id=tenant_id,
         category="new_order",
         title="Sales order created",
-        message=f"Order {order.order_number} created for {float(order.total_amount or 0):.2f}.",
+        message=f"Order {order.order_number} created for {money_json(order.total_amount or 0):.2f}.",
         entity_type="sales_order",
         entity_id=order.id,
     )
@@ -849,11 +849,11 @@ async def create_return(
                 vid = src.variant_id
         if not src:
             raise HTTPException(status_code=400, detail=f"Product {pid} not on original invoice")
-        qty = float(item["quantity"])
-        if qty <= 0 or qty > float(src.quantity) + 1e-9:
+        qty = money_json(item["quantity"])
+        if qty <= 0 or qty > money_json(src.quantity) + 1e-9:
             raise HTTPException(status_code=400, detail="Return quantity exceeds invoice quantity")
-        unit = float(src.unit_price)
-        rate = float(src.tax_rate or 0)
+        unit = money_json(src.unit_price)
+        rate = money_json(src.tax_rate or 0)
         line_net = round(qty * unit, 2)
         line_tax = round(line_net * (rate / 100.0), 2)
         line_total = round(line_net + line_tax, 2)
@@ -920,7 +920,7 @@ async def post_return(
 
     for item in items:
         if ret.restock and item.condition == "sellable":
-            qty = float(item.quantity)
+            qty = money_json(item.quantity)
             await apply_stock_change(
                 db,
                 tenant_id=tenant_id,
@@ -935,7 +935,7 @@ async def post_return(
             )
             if item.variant_id:
                 variant = await get_variant(db, tenant_id, item.variant_id)
-                variant.stock_qty = float(variant.stock_qty or 0) + qty
+                variant.stock_qty = money_json(variant.stock_qty or 0) + qty
         else:
             db.add(
                 m.AuditLog(
@@ -985,8 +985,8 @@ async def post_return(
         method = method or "adjust"
 
     invoice.paid_amount = min(
-        float(invoice.total_amount),
-        float(invoice.paid_amount or 0) + apply_to_invoice,
+        money_json(invoice.total_amount),
+        money_json(invoice.paid_amount or 0) + apply_to_invoice,
     )
     from app.sales import apply_invoice_status
 
@@ -996,7 +996,7 @@ async def post_return(
 
     customer = await get_customer(db, tenant_id, ret.customer_id)
     # Negative balance = customer store credit after return
-    customer.balance = round(float(customer.balance or 0) - return_total, 2)
+    customer.balance = round(money_json(customer.balance or 0) - return_total, 2)
 
     ret.credit_note_number = await next_credit_note_number(db, tenant_id)
     ret.settlement_method = method
@@ -1023,7 +1023,7 @@ async def post_return(
         ret.refund_liquid_account_id = liquid_account_id
         ret.refunded_amount = excess
         # Cash paid out instead of leaving store credit for the excess
-        customer.balance = round(float(customer.balance or 0) + excess, 2)
+        customer.balance = round(money_json(customer.balance or 0) + excess, 2)
 
     from app.notifications import create_notification
 

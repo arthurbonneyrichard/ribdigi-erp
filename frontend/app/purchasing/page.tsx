@@ -1862,6 +1862,7 @@ export default function Page() {
                   (suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive',
                 )
               }
+              aria-label="Toggle supplier active status"
             >
               {(suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive'
                 ? 'Activate'
@@ -2757,6 +2758,7 @@ export default function Page() {
                       setOcrDraft(null);
                       setOcrMeta(null);
                     }}
+                    aria-label="Dismiss purchase invoice OCR"
                   >
                     Dismiss
                   </button>

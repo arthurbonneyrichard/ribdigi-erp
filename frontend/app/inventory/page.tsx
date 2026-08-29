@@ -2272,6 +2272,7 @@ export default function Page() {
                     <button
                       onClick={() => setSelectedId(p.id)}
                       style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                      aria-label={`Select inventory product ${p.id}`}
                     >
                       {p.name}
                       {p.is_active === false ? ' [inactive]' : ''}

@@ -204,16 +204,16 @@ def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
 
 def _po_line_discount(qty: float, unit_price: float, line_total: float, discount: float) -> tuple[float, float]:
     """Tax-before-discount (match PI). Returns (discount, discounted line_total)."""
-    disc = float(discount or 0)
+    disc = money_json(discount or 0)
     if disc < 0:
         raise HTTPException(status_code=400, detail="discount must be >= 0")
-    merch = float(qty) * float(unit_price)
+    merch = money_json(qty) * money_json(unit_price)
     if disc > merch + 1e-9:
         raise HTTPException(
             status_code=400,
             detail="discount cannot exceed quantity × unit_price",
         )
-    return disc, max(float(line_total) - disc, 0)
+    return disc, max(money_json(line_total) - disc, 0)
 
 
 def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
@@ -1225,7 +1225,7 @@ async def record_supplier_payment(
                 detail=f"Payment currency {pay_cur} must match invoice currency {default_cur}",
             )
         if exchange_rate is not None:
-            pay_rate = float(exchange_rate)
+            pay_rate = money_json(exchange_rate)
             if pay_rate <= 0:
                 raise HTTPException(status_code=400, detail="exchange_rate must be positive")
         else:
@@ -1390,7 +1390,7 @@ async def _returned_qty_by_grn_item(
     rows = (await db.execute(q)).all()
     totals: dict[str, float] = {}
     for item_id, qty in rows:
-        totals[item_id] = totals.get(item_id, 0.0) + float(qty or 0)
+        totals[item_id] = totals.get(item_id, 0.0) + money_json(qty or 0)
     return totals
 
 
@@ -1508,10 +1508,10 @@ async def create_purchase_return(
         grn_item = grn_items.get(grn_item_id)
         if not grn_item:
             raise HTTPException(status_code=400, detail=f"Invalid goods_receipt_item_id: {grn_item_id}")
-        qty = float(raw["quantity"])
+        qty = money_json(raw["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Return quantity must be positive")
-        available = float(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
+        available = money_json(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
         if qty > available + 1e-9:
             raise HTTPException(
                 status_code=409,
@@ -1525,10 +1525,10 @@ async def create_purchase_return(
         po_item = po_items.get(grn_item.po_item_id)
         if not po_item:
             raise HTTPException(status_code=400, detail="GRN line missing PO item")
-        unit = float(po_item.unit_price)
-        rate = float(po_item.tax_rate or 0)
-        ordered = float(po_item.quantity or 0)
-        line_disc_po = float(getattr(po_item, "discount", 0) or 0)
+        unit = money_json(po_item.unit_price)
+        rate = money_json(po_item.tax_rate or 0)
+        ordered = money_json(po_item.quantity or 0)
+        line_disc_po = money_json(getattr(po_item, "discount", 0) or 0)
         disc = 0.0
         if ordered > 1e-9 and line_disc_po > 0:
             disc = round(line_disc_po * (qty / ordered), 2)
@@ -1606,10 +1606,10 @@ async def post_purchase_return(
         grn_item = grn_items.get(item.goods_receipt_item_id)
         if not grn_item:
             raise HTTPException(status_code=400, detail="GRN line missing for return item")
-        available = float(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
-        if float(item.quantity) > available + 1e-9:
+        available = money_json(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
+        if money_json(item.quantity) > available + 1e-9:
             raise HTTPException(status_code=409, detail="Return quantity no longer available")
-        already[grn_item.id] = already.get(grn_item.id, 0.0) + float(item.quantity)
+        already[grn_item.id] = already.get(grn_item.id, 0.0) + money_json(item.quantity)
 
         from app.uom import to_stock_qty
 
@@ -1620,7 +1620,7 @@ async def post_purchase_return(
         stock_qty, _u, _e = await to_stock_qty(
             db,
             tenant_id=tenant_id,
-            quantity=float(item.quantity),
+            quantity=money_json(item.quantity),
             from_unit_id=line_unit_id,
             product=product,
         )
@@ -1640,7 +1640,7 @@ async def post_purchase_return(
         po_item = po_items.get(grn_item.po_item_id)
         if po_item:
             # received_qty tracked in entered UoM
-            po_item.received_qty = max(float(po_item.received_qty or 0) - float(item.quantity), 0)
+            po_item.received_qty = max(money_json(po_item.received_qty or 0) - money_json(item.quantity), 0)
 
     updated_items = await list_po_items(db, tenant_id, po.id)
     if po.status not in {"cancelled", "draft"}:
@@ -1648,12 +1648,12 @@ async def post_purchase_return(
         po.updated_at = datetime.utcnow()
 
     # Credit against open AP (mirror sales return increasing invoice paid_amount)
-    credit = float(ret.total_amount)
-    po.paid_amount = min(float(po.total_amount), float(po.paid_amount or 0) + credit)
+    credit = money_json(ret.total_amount)
+    po.paid_amount = min(money_json(po.total_amount), money_json(po.paid_amount or 0) + credit)
     po.updated_at = datetime.utcnow()
 
     supplier = await get_supplier(db, tenant_id, ret.supplier_id)
-    supplier.balance = max(float(supplier.balance or 0) - credit, 0)
+    supplier.balance = max(money_json(supplier.balance or 0) - credit, 0)
 
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
@@ -1788,7 +1788,7 @@ def _pi_line_subtotal(item: m.PurchaseInvoiceItem) -> float:
     stored = money_json(getattr(item, "line_subtotal", None) or 0)
     if stored > 0:
         return stored
-    return money_json(round(float(item.quantity or 0) * float(item.unit_price or 0), 2))
+    return money_json(round(money_json(item.quantity or 0) * money_json(item.unit_price or 0), 2))
 
 
 def _pi_line_tax_value(item: m.PurchaseInvoiceItem) -> float:
@@ -1869,11 +1869,11 @@ async def _prepare_invoice_lines(
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
         if not product.is_active:
             raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
-        qty = float(item["quantity"])
+        qty = money_json(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be positive")
-        unit = float(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
-        discount = float(item.get("discount") or 0)
+        unit = money_json(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
+        discount = money_json(item.get("discount") or 0)
         line_item = {**item, "quantity": qty, "unit_price": unit}
         line_sub, line_tax, line_total, rate_pct, comps = await _purchase_line_tax(
             db, tenant_id, product, line_item
@@ -1941,17 +1941,17 @@ async def create_purchase_invoice(
             po_items = {i.id: i for i in await list_po_items(db, tenant_id, po.id)}
             items = []
             for gi in await list_grn_items(db, tenant_id, grn.id):
-                qty = float(gi.accepted_qty or 0)
+                qty = money_json(gi.accepted_qty or 0)
                 if qty <= 0:
                     continue
                 poi = po_items.get(gi.po_item_id)
-                unit_price = float(poi.unit_price) if poi else 0.0
-                tax_rate = float(poi.tax_rate or 0) if poi else 0.0
+                unit_price = money_json(poi.unit_price) if poi else 0.0
+                tax_rate = money_json(poi.tax_rate or 0) if poi else 0.0
                 # Carry proportional PO line discount (BR-6.3 → BR-6.5)
                 disc = 0.0
                 if poi is not None:
-                    ordered = float(poi.quantity or 0)
-                    line_disc = float(getattr(poi, "discount", 0) or 0)
+                    ordered = money_json(poi.quantity or 0)
+                    line_disc = money_json(getattr(poi, "discount", 0) or 0)
                     if ordered > 1e-9 and line_disc > 0:
                         disc = round(line_disc * (qty / ordered), 2)
                         merch = qty * unit_price
@@ -1968,9 +1968,9 @@ async def create_purchase_invoice(
                 )
             # When client leaves header discount at 0, mirror sum of carried line discounts
             # so invoice total_amount matches negotiated PO economics (PI totals use header).
-            if float(discount_amount or 0) <= 0:
+            if money_json(discount_amount or 0) <= 0:
                 discount_amount = round(
-                    sum(float(i.get("discount") or 0) for i in items),
+                    sum(money_json(i.get("discount") or 0) for i in items),
                     2,
                 )
     elif purchase_order_id:
@@ -1988,7 +1988,7 @@ async def create_purchase_invoice(
         raise HTTPException(status_code=400, detail="Invoice requires line items")
 
     subtotal, tax_total, gross, prepared = await _prepare_invoice_lines(db, tenant_id, items)
-    discount_amount = float(discount_amount or 0)
+    discount_amount = money_json(discount_amount or 0)
     is_rc = bool(is_reverse_charge)
     if is_rc:
         # Supplier invoice is net; tax is self-assessed and excluded from AP.
@@ -2061,8 +2061,8 @@ async def approve_purchase_invoice(
         from app.fx import doc_rate, to_base
 
         supplier = await get_supplier(db, tenant_id, inv.supplier_id)
-        supplier.balance = float(supplier.balance or 0) + to_base(
-            float(inv.total_amount), doc_rate(inv)
+        supplier.balance = money_json(supplier.balance or 0) + to_base(
+            money_json(inv.total_amount), doc_rate(inv)
         )
         from app.accounting import post_purchase_invoice_journal
 
@@ -2071,7 +2071,7 @@ async def approve_purchase_invoice(
         )
         inv.ap_posted = True
 
-    inv.status = purchase_invoice_status(float(inv.total_amount), float(inv.paid_amount or 0), inv.due_date)
+    inv.status = purchase_invoice_status(money_json(inv.total_amount), money_json(inv.paid_amount or 0), inv.due_date)
     inv.approved_at = datetime.utcnow()
     inv.updated_at = datetime.utcnow()
 
@@ -2082,7 +2082,7 @@ async def approve_purchase_invoice(
         tenant_id=tenant_id,
         category="system",
         title="Purchase invoice approved",
-        message=f"Invoice {inv.invoice_number} approved for {float(inv.total_amount):.2f}.",
+        message=f"Invoice {inv.invoice_number} approved for {money_json(inv.total_amount):.2f}.",
         entity_type="purchase_invoice",
         entity_id=inv.id,
     )
@@ -2121,13 +2121,13 @@ async def cancel_purchase_invoice(
     if inv.status == "cancelled":
         return inv
     reason_s = require_honest_narrative(reason, label="cancel reason")
-    if float(inv.paid_amount or 0) > 0:
+    if money_json(inv.paid_amount or 0) > 0:
         raise HTTPException(status_code=409, detail="Cannot cancel invoice with payments")
     if inv.status not in {"draft", "unpaid", "overdue"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel invoice in status {inv.status}")
     if inv.ap_posted and inv.status != "draft":
         supplier = await get_supplier(db, tenant_id, inv.supplier_id)
-        supplier.balance = max(float(supplier.balance or 0) - float(inv.total_amount), 0)
+        supplier.balance = max(money_json(supplier.balance or 0) - money_json(inv.total_amount), 0)
         from app.accounting import post_purchase_invoice_reversal_journal
 
         await post_purchase_invoice_reversal_journal(

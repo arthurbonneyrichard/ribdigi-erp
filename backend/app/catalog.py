@@ -172,12 +172,12 @@ async def resolve_sale_line(
         if not variant.is_active:
             raise HTTPException(status_code=409, detail="Variant is inactive")
     if item.get("unit_price") is not None:
-        unit_price = float(item["unit_price"])
+        unit_price = money_json(item["unit_price"])
     else:
         if variant is not None:
-            unit_price = float(variant.selling_price or 0)
+            unit_price = money_json(variant.selling_price or 0)
         else:
-            unit_price = float(product.selling_price or 0)
+            unit_price = money_json(product.selling_price or 0)
         if customer_id:
             from app.customer_groups import apply_discount, customer_group_discount
 
@@ -255,8 +255,8 @@ async def create_variant(
         color=_clean_attr(color),
         flavor=_clean_attr(flavor),
         dosage=_clean_attr(dosage),
-        cost_price=float(cost_price if cost_price is not None else product.cost_price or 0),
-        selling_price=float(
+        cost_price=money_json(cost_price if cost_price is not None else product.cost_price or 0),
+        selling_price=money_json(
             selling_price if selling_price is not None else product.selling_price or 0
         ),
         stock_qty=0,
@@ -337,9 +337,9 @@ async def update_variant(
     elif dosage is not None:
         variant.dosage = _clean_attr(dosage)
     if cost_price is not None:
-        variant.cost_price = float(cost_price)
+        variant.cost_price = money_json(cost_price)
     if selling_price is not None:
-        variant.selling_price = float(selling_price)
+        variant.selling_price = money_json(selling_price)
     if is_active is not None:
         variant.is_active = bool(is_active)
     await db.flush()
@@ -439,7 +439,7 @@ async def stock_in_with_batch(
 ) -> dict:
     from app.uom import to_stock_qty
 
-    entered_qty = float(quantity)
+    entered_qty = money_json(quantity)
     if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     product = await get_product(db, tenant_id, product_id)
@@ -502,7 +502,7 @@ async def stock_in_with_batch(
                 batch.expiry_date = expiry_date
             if warehouse_id:
                 batch.warehouse_id = warehouse_id
-        batch.quantity = float(batch.quantity or 0) + quantity_base
+        batch.quantity = money_json(batch.quantity or 0) + quantity_base
         batch.updated_at = datetime.utcnow()
 
     notes = optional_honest_narrative(notes, label="stock movement notes")
@@ -526,7 +526,7 @@ async def stock_in_with_batch(
         reference_id=reference_id,
     )
     if variant:
-        variant.stock_qty = float(variant.stock_qty or 0) + quantity_base
+        variant.stock_qty = money_json(variant.stock_qty or 0) + quantity_base
 
     return {
         "product_id": product.id,
@@ -558,7 +558,7 @@ async def stock_out_with_batch(
 ) -> dict:
     from app.uom import to_stock_qty
 
-    entered_qty = float(quantity)
+    entered_qty = money_json(quantity)
     if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     product = await get_product(db, tenant_id, product_id)
@@ -574,7 +574,7 @@ async def stock_out_with_batch(
         variant = await get_variant(db, tenant_id, variant_id)
         if variant.product_id != product.id:
             raise HTTPException(status_code=400, detail="Variant does not belong to product")
-        if float(variant.stock_qty or 0) + 1e-9 < quantity:
+        if money_json(variant.stock_qty or 0) + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient variant stock")
 
     remaining = quantity
@@ -594,7 +594,7 @@ async def stock_out_with_batch(
         ).scalar_one_or_none()
         if not batch:
             raise HTTPException(status_code=404, detail="Batch not found")
-        avail = float(batch.quantity or 0)
+        avail = money_json(batch.quantity or 0)
         if avail + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient batch quantity")
         batch.quantity = avail - quantity
@@ -637,10 +637,10 @@ async def stock_out_with_batch(
             for batch in batches:
                 if remaining <= 1e-9:
                     break
-                take = min(float(batch.quantity or 0), remaining)
+                take = min(money_json(batch.quantity or 0), remaining)
                 if take <= 0:
                     continue
-                batch.quantity = float(batch.quantity or 0) - take
+                batch.quantity = money_json(batch.quantity or 0) - take
                 batch.updated_at = datetime.utcnow()
                 consumed.append({"batch_id": batch.id, "quantity": take})
                 if primary_batch_id is None:
@@ -681,7 +681,7 @@ async def stock_out_with_batch(
         reference_id=reference_id,
     )
     if variant:
-        variant.stock_qty = max(float(variant.stock_qty or 0) - quantity, 0)
+        variant.stock_qty = max(money_json(variant.stock_qty or 0) - quantity, 0)
 
     return {
         "product_id": product.id,

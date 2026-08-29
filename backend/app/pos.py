@@ -14,11 +14,11 @@ from app.honesty import money_json, optional_honest_narrative
 
 
 def compute_expected_cash(opening_cash: float, cash_sales: float) -> float:
-    return money_json(round(float(opening_cash or 0) + float(cash_sales or 0), 2))
+    return money_json(round(money_json(opening_cash or 0) + money_json(cash_sales or 0), 2))
 
 
 def compute_variance(actual_cash: float, expected_cash: float) -> float:
-    return money_json(round(float(actual_cash) - float(expected_cash), 2))
+    return money_json(round(money_json(actual_cash) - money_json(expected_cash), 2))
 
 
 PAYMENT_METHODS = frozenset({"cash", "card", "wallet", "credit", "other"})
@@ -134,7 +134,7 @@ async def open_session(
 
         store = await stores_svc.require_active_store(db, tenant_id, store_id)
 
-    cash = money_json(round(float(opening_cash or 0), 2))
+    cash = money_json(round(money_json(opening_cash or 0), 2))
     if cash < 0:
         raise HTTPException(status_code=400, detail="opening_cash must be >= 0")
 
@@ -165,7 +165,7 @@ def resolve_sale_payments(
     payments: list[dict] | None,
 ) -> list[dict]:
     """Normalize single or split tenders; amounts must sum to sale total."""
-    sale_total = money_json(round(float(total or 0), 2))
+    sale_total = money_json(round(money_json(total or 0), 2))
     if sale_total < 0:
         raise HTTPException(status_code=400, detail="Sale total cannot be negative")
 
@@ -175,7 +175,7 @@ def resolve_sale_payments(
         normalized: list[dict] = []
         for raw in payments:
             method = normalize_payment_method(raw.get("payment_method"))
-            amount = money_json(round(float(raw.get("amount") or 0), 2))
+            amount = money_json(round(money_json(raw.get("amount") or 0), 2))
             if amount <= 0:
                 raise HTTPException(status_code=400, detail="Each payment amount must be > 0")
             normalized.append(
@@ -242,21 +242,21 @@ async def apply_sale_to_session(
     payment_method: str,
     payments: list[dict] | None = None,
 ) -> None:
-    amount = money_json(round(float(total or 0), 2))
+    amount = money_json(round(money_json(total or 0), 2))
     tenders = payments or [
         {"payment_method": normalize_payment_method(payment_method), "amount": amount}
     ]
-    session.total_sales = money_json(round(float(session.total_sales or 0) + amount, 2))
+    session.total_sales = money_json(round(money_json(session.total_sales or 0) + amount, 2))
     session.sale_count = int(session.sale_count or 0) + 1
     for tender in tenders:
         method = normalize_payment_method(tender.get("payment_method"))
-        part = money_json(round(float(tender.get("amount") or 0), 2))
+        part = money_json(round(money_json(tender.get("amount") or 0), 2))
         if method == "cash":
-            session.cash_sales = money_json(round(float(session.cash_sales or 0) + part, 2))
+            session.cash_sales = money_json(round(money_json(session.cash_sales or 0) + part, 2))
         elif method == "card":
-            session.card_sales = money_json(round(float(session.card_sales or 0) + part, 2))
+            session.card_sales = money_json(round(money_json(session.card_sales or 0) + part, 2))
         else:
-            session.other_sales = money_json(round(float(session.other_sales or 0) + part, 2))
+            session.other_sales = money_json(round(money_json(session.other_sales or 0) + part, 2))
     session.expected_cash = compute_expected_cash(session.opening_cash, session.cash_sales)
 
 
@@ -311,7 +311,7 @@ async def close_session(
         raise HTTPException(status_code=409, detail="POS session is already closed")
 
     expected = compute_expected_cash(session.opening_cash, session.cash_sales)
-    actual = money_json(round(float(actual_cash), 2))
+    actual = money_json(round(money_json(actual_cash), 2))
     variance = compute_variance(actual, expected)
 
     session.expected_cash = expected
