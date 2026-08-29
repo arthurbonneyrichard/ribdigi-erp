@@ -67,7 +67,7 @@ async def list_count_items(
 def serialize_item(item: m.StockCountItem, *, product: m.Product | None = None) -> dict:
     counted = None if item.counted_qty is None else money_json(item.counted_qty)
     expected = money_json(item.expected_qty)
-    variance = None if counted is None else round(counted - expected, 3)
+    variance = None if counted is None else money_json(round(counted - expected, 3))
     return {
         "id": item.id,
         "product_id": item.product_id,
@@ -322,7 +322,7 @@ async def complete_count(
     for item in items:
         expected = money_json(item.expected_qty or 0)
         counted = money_json(item.counted_qty or 0)
-        variance = round(counted - expected, 3)
+        variance = money_json(round(counted - expected, 3))
         if abs(variance) < 1e-9:
             continue
         await apply_stock_change(

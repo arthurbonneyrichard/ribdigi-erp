@@ -89,6 +89,7 @@ export default function OnboardingChecklist({
           type="button"
           disabled={busy}
           onClick={() => run('/onboarding/checklist/restore')}
+          aria-label="Restore onboarding checklist"
         >
           Restore checklist
         </button>

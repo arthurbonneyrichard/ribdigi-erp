@@ -2834,10 +2834,10 @@ async def budget_vs_actual(
             continue
         if budget_monthly <= 0:
             status = "no_budget"
-            variance = actual
+            variance = money_json(actual)
             variance_pct = None
         else:
-            variance = actual - scaled
+            variance = money_json(round(actual - scaled, 2))
             variance_pct = (
                 money_json(round((variance / scaled) * 100.0, 1)) if scaled else money_json(0)
             )
@@ -2883,7 +2883,7 @@ async def budget_vs_actual(
 
     rows_out.sort(key=lambda r: (-money_json(r["actual"]), r["category"] or ""))
     top_categories = rows_out[:5]
-    total_variance = total_actual - total_budget
+    total_variance = money_json(round(total_actual - total_budget, 2))
     return {
         "from_date": from_date.isoformat() if from_date else None,
         "to_date": to_date.isoformat() if to_date else None,

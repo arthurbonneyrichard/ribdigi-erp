@@ -212,61 +212,61 @@ def compute_tax_breakdown(
         if mode == "inclusive":
             eff = effective_rate_from_components(comps, rate)
             if eff <= 0:
-                net = round(amount, 2)
+                net = money_json(round(amount, 2))
                 return {
                     "net": net,
                     "tax": 0.0,
                     "gross": net,
-                    "effective_rate": 0.0,
+                    "effective_rate": money_json(0.0),
                     "is_reverse_charge": bool(is_reverse_charge),
                     "components": [],
                 }
-            gross = round(amount, 2)
-            tax = round(gross * eff / (100.0 + eff), 2)
-            net = round(gross - tax, 2)
+            gross = money_json(round(amount, 2))
+            tax = money_json(round(gross * eff / (100.0 + eff), 2))
+            net = money_json(round(gross - tax, 2))
             net_comps = [c for c in comps if c["basis"] == "net"] or list(comps)
             denom = sum(money_json(c["rate"]) for c in net_comps) or eff
             allocated = 0.0
             for i, c in enumerate(net_comps):
                 if i == len(net_comps) - 1:
-                    share = round(tax - allocated, 2)
+                    share = money_json(round(tax - allocated, 2))
                 else:
-                    share = round(tax * (money_json(c["rate"]) / denom), 2)
-                    allocated += share
+                    share = money_json(round(tax * (money_json(c["rate"]) / denom), 2))
+                    allocated = money_json(round(allocated + share, 2))
                 component_lines.append({**c, "amount": money_json(share)})
         else:
-            net = round(amount, 2)
+            net = money_json(round(amount, 2))
             running = net
             tax = 0.0
             for c in comps:
                 if c["basis"] == "compound":
-                    part = round(running * money_json(c["rate"]) / 100.0, 2)
+                    part = money_json(round(running * money_json(c["rate"]) / 100.0, 2))
                 else:
-                    part = round(net * money_json(c["rate"]) / 100.0, 2)
-                running += part
-                tax += part
+                    part = money_json(round(net * money_json(c["rate"]) / 100.0, 2))
+                running = money_json(round(running + part, 2))
+                tax = money_json(round(tax + part, 2))
                 component_lines.append({**c, "amount": money_json(part)})
-            tax = round(tax, 2)
-            gross = round(net + tax, 2)
+            tax = money_json(round(tax, 2))
+            gross = money_json(round(net + tax, 2))
     else:
         if rate <= 0:
-            net = round(amount, 2)
+            net = money_json(round(amount, 2))
             return {
                 "net": net,
                 "tax": 0.0,
                 "gross": net,
-                "effective_rate": 0.0,
+                "effective_rate": money_json(0.0),
                 "is_reverse_charge": bool(is_reverse_charge),
                 "components": [],
             }
         if mode == "inclusive":
-            gross = round(amount, 2)
-            tax = round(gross * rate / (100.0 + rate), 2)
-            net = round(gross - tax, 2)
+            gross = money_json(round(amount, 2))
+            tax = money_json(round(gross * rate / (100.0 + rate), 2))
+            net = money_json(round(gross - tax, 2))
         else:
-            net = round(amount, 2)
-            tax = round(net * rate / 100.0, 2)
-            gross = round(net + tax, 2)
+            net = money_json(round(amount, 2))
+            tax = money_json(round(net * rate / 100.0, 2))
+            gross = money_json(round(net + tax, 2))
 
     if is_reverse_charge:
         # Chargeable document total excludes tax; tax kept for memo / self-assessment.
@@ -293,7 +293,7 @@ def compute_line_total(
 ) -> tuple[float, float, float]:
     qty = money_json(quantity or 0)
     price = money_json(unit_price or 0)
-    line_amount = qty * price
+    line_amount = money_json(round(qty * price, 2))
     return compute_tax_amounts(
         line_amount,
         tax_rate,
@@ -816,17 +816,17 @@ async def tax_filing_pack(
                 }
             )
 
-    purchase_reverse_charge = round(purchase_reverse_charge, 2)
+    purchase_reverse_charge = money_json(round(purchase_reverse_charge, 2))
     # Sales RC is seller memo; purchase RC is buyer self-assess (also claimable input).
-    reverse_charge_tax = round(reverse_charge_tax + purchase_reverse_charge, 2)
+    reverse_charge_tax = money_json(round(reverse_charge_tax + purchase_reverse_charge, 2))
     # Include purchase RC in output tax so self-assess + matching input nets to zero.
-    output_tax = round(output_invoices + output_pos + purchase_reverse_charge, 2)
-    input_tax = round(input_tax, 2)
-    net = round(output_tax - input_tax, 2)
-    taxable_outputs = round(taxable_outputs, 2)
-    zero_rated_outputs = round(zero_rated_outputs, 2)
-    exempt_outputs = round(exempt_outputs, 2)
-    taxable_inputs = round(taxable_inputs, 2)
+    output_tax = money_json(round(output_invoices + output_pos + purchase_reverse_charge, 2))
+    input_tax = money_json(round(input_tax, 2))
+    net = money_json(round(output_tax - input_tax, 2))
+    taxable_outputs = money_json(round(taxable_outputs, 2))
+    zero_rated_outputs = money_json(round(zero_rated_outputs, 2))
+    exempt_outputs = money_json(round(exempt_outputs, 2))
+    taxable_inputs = money_json(round(taxable_inputs, 2))
 
     filing_boxes = [
         {

@@ -273,7 +273,7 @@ def _normalize_txn(raw: dict) -> dict | None:
     if amount is None and ("debit" in raw or "credit" in raw):
         debit = money_json(raw.get("debit") or 0)
         credit = money_json(raw.get("credit") or 0)
-        amount = credit - debit
+        amount = money_json(round(credit - debit, 2))
     if amount is None:
         return None
     amount = money_json(amount)

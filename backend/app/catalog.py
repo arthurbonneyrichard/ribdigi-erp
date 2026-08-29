@@ -597,9 +597,9 @@ async def stock_out_with_batch(
         avail = money_json(batch.quantity or 0)
         if avail + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient batch quantity")
-        batch.quantity = avail - quantity
+        batch.quantity = money_json(round(avail - quantity, 6))
         batch.updated_at = datetime.utcnow()
-        consumed.append({"batch_id": batch.id, "quantity": quantity})
+        consumed.append({"batch_id": batch.id, "quantity": money_json(quantity)})
         remaining = 0
         primary_batch_id = batch.id
     else:
@@ -642,17 +642,17 @@ async def stock_out_with_batch(
                     continue
                 batch.quantity = money_json(batch.quantity or 0) - take
                 batch.updated_at = datetime.utcnow()
-                consumed.append({"batch_id": batch.id, "quantity": take})
+                consumed.append({"batch_id": batch.id, "quantity": money_json(take)})
                 if primary_batch_id is None:
                     primary_batch_id = batch.id
-                remaining = round(remaining - take, 6)
+                remaining = money_json(round(remaining - take, 6))
             if remaining > 1e-9 and (product.tracks_batches or consumed):
                 raise HTTPException(
                     status_code=409,
                     detail={
                         "code": "INSUFFICIENT_BATCH_STOCK",
                         "message": "Not enough batch quantity (FEFO)",
-                        "shortfall": remaining,
+                        "shortfall": money_json(remaining),
                     },
                 )
 

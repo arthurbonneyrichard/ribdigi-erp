@@ -1759,9 +1759,9 @@ def _pnl_pack(
     branch_id: str | None,
     mode: str,
 ) -> dict:
-    expense = cogs + operating_expenses
-    gross_profit = revenue - cogs
-    net_profit = revenue - expense
+    expense = money_json(round(cogs + operating_expenses, 2))
+    gross_profit = money_json(round(revenue - cogs, 2))
+    net_profit = money_json(round(revenue - expense, 2))
     return {
         "income": money_json(round(money_json(revenue), 2)),  # back-compat alias
         "revenue": money_json(round(money_json(revenue), 2)),
@@ -1875,14 +1875,14 @@ async def profit_and_loss(
         debit = money_json(line.debit)
         credit = money_json(line.credit)
         if account.account_type == "income":
-            net = credit - debit
-            revenue += net
+            net = money_json(round(credit - debit, 2))
+            revenue = money_json(round(revenue + net, 2))
         else:
-            net = debit - credit
+            net = money_json(round(debit - credit, 2))
             if account.code == "5000":
-                cogs += net
+                cogs = money_json(round(cogs + net, 2))
             else:
-                operating_expenses += net
+                operating_expenses = money_json(round(operating_expenses + net, 2))
         bucket = by_account.setdefault(
             account.id,
             {
