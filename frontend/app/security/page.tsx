@@ -297,7 +297,8 @@ export default function Page() {
               <button
                 type="button"
                 disabled={revokingId === s.id}
-                onClick={() => revokeSession(s.id, Boolean(s.current))}
+                onClick={() => revokeSession(String(s.id).trim(), Boolean(s.current))}
+                aria-label={s.current ? 'Sign out this device' : 'Revoke session'}
               >
                 {revokingId === s.id ? 'Revoking…' : s.current ? 'Sign out here' : 'Revoke'}
               </button>

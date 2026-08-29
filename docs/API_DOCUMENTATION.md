@@ -206,7 +206,7 @@ Token is single-use and expires in 1 hour; new password must pass complexity rul
 ### 2.6 Session Management
 **Endpoint:** `GET /auth/sessions`
 
-**Endpoint:** `DELETE /auth/sessions/{session_id}`
+**Endpoint:** `DELETE /auth/sessions/{session_id}` — Path `session_id` ∈ `UuidIdValue` (strip; lower; valid UUID); blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage reached session lookup **404**). Existence remains own-session lookup **404**. Security **Revoke session** / **Sign out this device** (`aria-label`s).
 
 Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, range `5`–`480`). Configure via `PATCH /tenants/me`; current value is also returned on `GET /me` and `GET /tenants/me`.
 

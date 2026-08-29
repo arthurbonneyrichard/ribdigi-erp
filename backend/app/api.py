@@ -1954,7 +1954,11 @@ async def list_sessions(claims=Depends(current_claims), db: AsyncSession = Depen
 
 
 @api.delete("/auth/sessions/{session_id}")
-async def revoke_session(session_id: str, claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+async def revoke_session(
+    session_id: UuidIdValue,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
     session = (
         await db.execute(
             select(m.AuthSession).where(
