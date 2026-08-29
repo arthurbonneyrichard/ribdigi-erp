@@ -51,7 +51,9 @@ export default function Page() {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
-    if (storeId) params.set('store_id', storeId);
+    // trim so UuidIdValue Query store_id does not 422
+    const storeTrim = storeId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
     if (filingJurisdictionFilter) params.set('jurisdiction', filingJurisdictionFilter);
     const s = params.toString();
     return s ? `?${s}` : '';
@@ -185,7 +187,8 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
-      if (storeId) params.set('store_id', storeId);
+      const storeTrim = storeId.trim();
+      if (storeTrim) params.set('store_id', storeTrim);
       if (reportType === 'tax_filing_gh') {
         params.set('jurisdiction', filingJurisdictionFilter || 'GH');
       } else if (filingJurisdictionFilter) {

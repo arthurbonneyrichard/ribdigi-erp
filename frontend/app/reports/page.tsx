@@ -155,6 +155,7 @@ export default function Page() {
     if (branchTrim) params.set('branch_id', branchTrim);
     if (departmentTrim) params.set('department_id', departmentTrim);
     if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
+    // callers pass category_id (trimmed) in extra when needed
     Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
     const s = params.toString();
     return s ? `?${s}` : '';
@@ -197,7 +198,10 @@ export default function Page() {
       }
       let path = '/reports/summary';
       if (nextTab === 'sales') {
-        path = `/reports/sales/products${qs(categoryId ? { category_id: categoryId } : {})}`;
+        const categoryTrim = categoryId.trim();
+        path = `/reports/sales/products${qs(
+          categoryTrim ? { category_id: categoryTrim } : {}
+        )}`;
       }
       if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
       if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
@@ -238,7 +242,7 @@ export default function Page() {
           api(`/reports/inventory/balance${qs()}`),
           api(`/reports/inventory/valuation${qs({ method: valuationMethod })}`),
           api(`/reports/inventory/movements${qs()}`),
-          api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
+          api(`/purchasing/suggestions/low-stock${qs()}`).catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs(transferStatus ? { status: transferStatus } : {})}`),
           api(`/reports/inventory/expiry${qs({ days: expiryDays || '30' })}`),
           api(`/reports/inventory/stock-counts${qs({ variance_only: 'true', status: stockCountStatus })}`),
@@ -373,15 +377,21 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
-      if (storeId) params.set('store_id', storeId);
-      if (branchId) params.set('branch_id', branchId);
-      if (departmentId) params.set('department_id', departmentId);
-      if (warehouseId) params.set('warehouse_id', warehouseId);
+      // trim so UuidIdValue Query filters do not 422 on whitespace
+      const storeTrim = storeId.trim();
+      const branchTrim = branchId.trim();
+      const departmentTrim = departmentId.trim();
+      const warehouseTrim = warehouseId.trim();
+      const categoryTrim = categoryId.trim();
+      if (storeTrim) params.set('store_id', storeTrim);
+      if (branchTrim) params.set('branch_id', branchTrim);
+      if (departmentTrim) params.set('department_id', departmentTrim);
+      if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
       if (
         (reportType || TAB_EXPORT[tab]) === 'sales_products' ||
         (!reportType && tab === 'sales')
       ) {
-        if (categoryId) params.set('category_id', categoryId);
+        if (categoryTrim) params.set('category_id', categoryTrim);
       }
       if (
         (reportType || TAB_EXPORT[tab]) === 'balance_sheet' ||
@@ -622,6 +632,7 @@ export default function Page() {
                 setCtxStoreId(e.target.value);
                 setWarehouseId('');
               }}
+              aria-label="Report purchases store filter"
             >
               <option value="">All stores</option>
               {stores
@@ -632,7 +643,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+            <select
+              value={warehouseId}
+              onChange={(e) => setWarehouseId(e.target.value)}
+              aria-label="Report purchases warehouse filter"
+            >
               <option value="">All warehouses</option>
               {warehouses
                 .filter((w) => w.is_active !== false)
@@ -701,6 +716,7 @@ export default function Page() {
           <select
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
+            aria-label="Report department filter"
           >
             <option value="">All departments</option>
             {departments
@@ -713,7 +729,11 @@ export default function Page() {
           </select>
         )}
         {tab === 'sales' && (
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            aria-label="Report sales category filter"
+          >
             <option value="">All categories</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>

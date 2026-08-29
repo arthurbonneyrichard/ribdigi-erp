@@ -2415,7 +2415,7 @@ async def update_branch(
 
 @api.get("/departments")
 async def list_departments(
-    branch_id: str | None = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     active_only: bool = False,
     is_active: bool | None = None,
     claims=Depends(require_permission("users", "read")),
@@ -4847,8 +4847,10 @@ async def delete_customer_contact(
 @api.get("/products/{product_id}/price")
 async def product_price_for_customer(
     product_id: str,
-    customer_id: str | None = None,
-    variant_id: str | None = None,
+    # Optional customer/variant ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party/variant lookup).
+    customer_id: Annotated[UuidIdValue | None, Query()] = None,
+    variant_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6187,8 +6189,10 @@ async def update_purchase_request_settings(
 
 @api.get("/purchasing/suggestions/low-stock")
 async def list_low_stock_suggestions(
-    store_id: str | None = None,
-    warehouse_id: str | None = None,
+    # Optional location ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach store/warehouse lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     include_open: bool = False,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
@@ -9592,7 +9596,9 @@ async def report_schedules_run_due(
 @api.get("/reports/sales/daily")
 async def report_sales_daily(
     date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
+    # Optional store ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach store lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9610,7 +9616,7 @@ async def report_sales_daily(
 async def report_sales_monthly(
     year: int | None = None,
     month: int | None = None,
-    store_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9630,8 +9636,10 @@ async def report_sales_monthly(
 async def report_sales_products(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
-    category_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    # Optional category ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach category lookup).
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9652,7 +9660,7 @@ async def report_sales_products(
 async def report_sales_customers(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     limit: int | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -9674,10 +9682,12 @@ async def report_sales_customers(
 async def report_sales_returns(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    customer_id: str | None = None,
+    # Optional customer ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup).
+    customer_id: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[SalesReturnReportReasonValue | None, Query()] = None,
     status: Annotated[ReturnReportStatusValue | None, Query()] = None,
-    store_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9700,8 +9710,10 @@ async def report_sales_returns(
 async def report_sales_salesperson(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    department_id: str | None = None,
-    store_id: str | None = None,
+    # Optional department ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach department lookup).
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9721,7 +9733,7 @@ async def report_sales_salesperson(
 async def report_sales_by_store(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    department_id: str | None = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9740,7 +9752,7 @@ async def report_sales_by_store(
 async def report_sales_by_department(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    department_id: str | None = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9920,8 +9932,10 @@ async def report_inventory_stock_counts(
 async def report_purchases_summary(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Optional location ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach warehouse/store lookup).
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9939,11 +9953,13 @@ async def report_purchases_summary(
 
 @api.get("/reports/purchases/suppliers")
 async def report_purchases_suppliers(
-    supplier_id: str | None = None,
+    # Optional supplier ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup).
+    supplier_id: Annotated[UuidIdValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9964,10 +9980,10 @@ async def report_purchases_suppliers(
 async def report_purchases_pending_orders(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    supplier_id: str | None = None,
+    supplier_id: Annotated[UuidIdValue | None, Query()] = None,
     status: Annotated[PendingPoReportStatusValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9990,11 +10006,11 @@ async def report_purchases_pending_orders(
 async def report_purchases_returns(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    supplier_id: str | None = None,
+    supplier_id: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[PurchaseReturnReportReasonValue | None, Query()] = None,
     status: Annotated[ReturnReportStatusValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10018,10 +10034,12 @@ async def report_purchases_returns(
 async def report_expenses_summary(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    category_id: str | None = None,
-    branch_id: str | None = None,
-    department_id: str | None = None,
-    store_id: str | None = None,
+    # Optional filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach category/branch/department/store lookup).
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10043,10 +10061,10 @@ async def report_expenses_summary(
 async def report_expenses_budget_vs_actual(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    category_id: str | None = None,
-    branch_id: str | None = None,
-    department_id: str | None = None,
-    store_id: str | None = None,
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10674,7 +10692,9 @@ async def calculate_tax(
 async def reports_tax(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
+    # Optional store ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach store lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10695,7 +10715,7 @@ async def reports_tax_filing(
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → tenant tax_jurisdiction (neutral pack if unsupported); blank/unsupported → 422
     jurisdiction: Annotated[TaxFilingJurisdictionValue | None, Query()] = None,
-    store_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):

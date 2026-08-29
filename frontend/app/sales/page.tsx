@@ -246,8 +246,11 @@ export default function Page() {
     if (!productId || !useGroupPrice) return;
     let cancelled = false;
     const qs = new URLSearchParams();
-    if (customerId) qs.set('customer_id', customerId);
-    if (variantId) qs.set('variant_id', variantId);
+    const customerTrim = customerId.trim();
+    const variantTrim = variantId.trim();
+    // omit blank so UuidIdValue Query customer_id / variant_id do not 422
+    if (customerTrim) qs.set('customer_id', customerTrim);
+    if (variantTrim) qs.set('variant_id', variantTrim);
     api(`/products/${productId}/price?${qs.toString()}`)
       .then((r) => {
         if (!cancelled && r.data?.unit_price != null) {
