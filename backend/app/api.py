@@ -1181,7 +1181,8 @@ async def platform_reports_packages(
 
 @api.get("/platform/reports/trials")
 async def platform_reports_trials(
-    within_days: int = 45,
+    # omit → 45; 0/negative/>365 → **422** (was free int; service silently clamped 1–365)
+    within_days: Annotated[int, Query(ge=1, le=365)] = 45,
     claims=Depends(require_platform_permission("platform_reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3742,7 +3743,8 @@ async def product_barcode_png(
 @api.get("/products/{product_id}/barcode/label")
 async def product_barcode_label(
     product_id: UuidIdValue,
-    copies: int = 1,
+    # omit → 1; 0/negative/>40 → **422** (was free int; service silently clamped 1–40)
+    copies: Annotated[int, Query(ge=1, le=40)] = 1,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4047,7 +4049,8 @@ async def opening_stock_post(
 async def opening_stock_list(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
-    limit: int = 100,
+    # omit → 100; 0/negative/>500 → **422** (was free int; service silently clamped 1–500)
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
     from app import opening_stock as opening_stock_svc
 
@@ -4140,7 +4143,8 @@ async def inventory_warehouse_stock_reorder(
 async def inventory_products_lookup(
     q: Annotated[ProductSearchQueryValue, Query()] = "",
     barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
-    limit: int = 48,
+    # omit → 48; 0/negative/>100 → **422** (was free int; service silently clamped 1–100)
+    limit: Annotated[int, Query(ge=1, le=100)] = 48,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4326,7 +4330,8 @@ async def variant_barcode_png(
 async def variant_barcode_label(
     product_id: UuidIdValue,
     variant_id: UuidIdValue,
-    copies: int = 1,
+    # omit → 1; 0/negative/>40 → **422** (was free int; service silently clamped 1–40)
+    copies: Annotated[int, Query(ge=1, le=40)] = 1,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4392,7 +4397,8 @@ async def list_product_batches(
 
 @api.get("/inventory/batches/expiring")
 async def inventory_batches_expiring(
-    days: int = 30,
+    # omit → 30; 0/negative/>365 → **422** (was free int; negative/huge horizons accepted)
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9445,7 +9451,8 @@ async def reports_export(
     store_id: Annotated[UuidIdValue | None, Query()] = None,
     branch_id: Annotated[UuidIdValue | None, Query()] = None,
     category_id: Annotated[UuidIdValue | None, Query()] = None,
-    days: int | None = None,
+    # omit/`null` → export default horizon; 0/negative/>365 → **422** (was free int)
+    days: Annotated[int, Query(ge=1, le=365)] | None = None,
     as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → no compare; blank/invalid → 422 (same Literal as balance-sheet routes)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
@@ -9859,7 +9866,8 @@ async def report_low_stock(
 
 @api.get("/reports/inventory/expiry")
 async def report_inventory_expiry(
-    days: int = 30,
+    # omit → 30; 0/negative/>365 → **422** (was free int; Reports UI max was 3650)
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
     # Same UuidIdValue Query honesty as low-stock location filters.
     warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     store_id: Annotated[UuidIdValue | None, Query()] = None,
@@ -11493,7 +11501,8 @@ async def notifications(
     status: Annotated[NotificationStatusValue | None, Query()] = None,
     # omit → all categories; blank/invalid → 422
     category: Annotated[NotificationCategoryValue | None, Query()] = None,
-    limit: int = 100,
+    # omit → 100; 0/negative/>200 → **422** (was free int; API silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12492,7 +12501,8 @@ async def ai_inventory_predictions(
 
 @api.get("/ai/inventory/low-stock-prediction")
 async def ai_low_stock_prediction(
-    days_ahead: int = 14,
+    # omit → 14; 0/negative/>90 → **422** (was free int; service silently clamped 1–90)
+    days_ahead: Annotated[int, Query(ge=1, le=90)] = 14,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):

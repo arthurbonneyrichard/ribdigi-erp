@@ -244,7 +244,11 @@ export default function Page() {
           api(`/reports/inventory/movements${qs()}`),
           api(`/purchasing/suggestions/low-stock${qs()}`).catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs(transferStatus ? { status: transferStatus } : {})}`),
-          api(`/reports/inventory/expiry${qs({ days: expiryDays || '30' })}`),
+          api(
+            `/reports/inventory/expiry${qs({
+              days: String(Math.max(1, Math.min(365, Number(expiryDays) || 30))),
+            })}`
+          ),
           api(`/reports/inventory/stock-counts${qs({ variance_only: 'true', status: stockCountStatus })}`),
         ]);
         setData({
@@ -411,7 +415,8 @@ export default function Page() {
         if (warehouseId) params.set('warehouse_id', warehouseId);
       }
       if ((reportType || TAB_EXPORT[tab]) === 'inventory_expiry' && expiryDays) {
-        params.set('days', expiryDays);
+        const d = Math.max(1, Math.min(365, Number(expiryDays) || 30));
+        params.set('days', String(d));
       }
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
@@ -613,13 +618,14 @@ export default function Page() {
             </select>
             <input
               type="number"
-              min={0}
-              max={3650}
+              min={1}
+              max={365}
               value={expiryDays}
               onChange={(e) => setExpiryDays(e.target.value)}
               placeholder="Expiry days"
               style={{ width: 110 }}
-              title="Expiry horizon (days)"
+              title="Expiry horizon (1–365 days)"
+              aria-label="Inventory expiry days"
             />
           </>
         )}
