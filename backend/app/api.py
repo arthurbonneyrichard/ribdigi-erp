@@ -3197,7 +3197,7 @@ async def patch_product(
             except Exception:
                 return str(value)
         if isinstance(value, float):
-            return round(value, 4)
+            return money_json(round(value, 4))
         return value
 
     changes = {
@@ -4487,8 +4487,8 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
         "email": row.email,
         "phone": row.phone,
         "address": getattr(row, "address", None),
-        "latitude": float(lat) if lat is not None else None,
-        "longitude": float(lng) if lng is not None else None,
+        "latitude": money_json(lat) if lat is not None else None,
+        "longitude": money_json(lng) if lng is not None else None,
         "credit_limit": money_json(row.credit_limit),
         "payment_terms_days": int(getattr(row, "payment_terms_days", None) or 30),
         "balance": money_json(row.balance),
@@ -4575,7 +4575,7 @@ def _normalize_party_profile(data: dict, *, kind: str) -> dict:
         if coord not in data or data[coord] is None:
             continue
         try:
-            val = float(data[coord])
+            val = money_json(data[coord])
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid {coord}") from exc
         if val < lo or val > hi:

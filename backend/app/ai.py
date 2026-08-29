@@ -214,7 +214,7 @@ def _sales_spike_drop_notes(dash: dict) -> list[str]:
         if pct is None:
             continue
         try:
-            pct_f = float(pct)
+            pct_f = money_json(pct)
         except (TypeError, ValueError):
             continue
         if pct_f >= SALES_ANOMALY_PCT:
@@ -298,13 +298,17 @@ async def compose_insights(
         dts = row.get("days_to_stockout")
         stock = money_json(row.get("stock_qty") or 0)
         reorder = money_json(row.get("reorder_level") or 0)
-        at_risk = stock <= reorder or (dts is not None and float(dts) <= 14)
+        try:
+            dts_f = money_json(dts) if dts is not None else None
+        except (TypeError, ValueError):
+            dts_f = None
+        at_risk = stock <= reorder or (dts_f is not None and dts_f <= 14)
         rec_qty = money_json(row.get("recommended_order_qty") or 0)
         if not (rising and at_risk and rec_qty > 0):
             continue
         ratio = season.get("ratio")
         try:
-            ratio_f = float(ratio) if ratio is not None else None
+            ratio_f = money_json(ratio) if ratio is not None else None
         except (TypeError, ValueError):
             ratio_f = None
         if ratio_f and ratio_f > 1:
@@ -312,8 +316,8 @@ async def compose_insights(
         else:
             up_txt = "recently"
         detail = None
-        if dts is not None:
-            detail = f"stockout in ~{dts} days; suggest order {rec_qty:g}"
+        if dts_f is not None:
+            detail = f"stockout in ~{dts_f:g} days; suggest order {rec_qty:g}"
         elif rec_qty > 0:
             detail = f"suggest order {rec_qty:g}"
         add(

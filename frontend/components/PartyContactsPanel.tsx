@@ -190,7 +190,12 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
           placeholder="Phone (E.164 e.g. +233...)"
           aria-label="Party contact phone"
         />
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          aria-label="Party contact email"
+        />
         <label className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <input
             type="checkbox"

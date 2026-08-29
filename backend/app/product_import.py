@@ -189,10 +189,10 @@ def _truthy(value: str | None) -> bool:
 def _parse_float(value: str | None, *, field: str, default: float = 0.0) -> float:
     text = (value or "").strip()
     if not text:
-        return default
+        return money_json(default)
     try:
-        return float(text)
-    except ValueError as exc:
+        return money_json(float(text))
+    except (ValueError, TypeError) as exc:
         raise ValueError(f"{field} must be a number") from exc
 
 

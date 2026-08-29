@@ -187,16 +187,19 @@ async def build_product_forecasts(
     for pid, rq in wh_rows:
         reorder_qty_map[str(pid)] = max(money_json(rq or 0), reorder_qty_map.get(str(pid), 0.0))
 
-    lead = float(default_lead_days())
-    cover = float(cover_days())
+    lead = money_json(default_lead_days())
+    cover = money_json(cover_days())
+    lb_f = money_json(lb)
+    half_f = money_json(half)
+    prior_span = money_json(max(1, lb - half))
     out: list[dict[str, Any]] = []
     for p in products:
         pid = p.id
         stock = money_json(p.stock_qty or 0)
         sold = money_json(sold_all.get(pid, 0))
-        velocity = sold / float(lb) if lb else 0.0
-        recent_v = money_json(sold_recent.get(pid, 0)) / float(half)
-        prior_v = money_json(sold_prior.get(pid, 0)) / float(max(1, lb - half))
+        velocity = sold / lb_f if lb_f else 0.0
+        recent_v = money_json(sold_recent.get(pid, 0)) / half_f
+        prior_v = money_json(sold_prior.get(pid, 0)) / prior_span
         days_to = (stock / velocity) if velocity > 1e-9 else None
         rq = money_json(reorder_qty_map.get(pid, 0))
         rec = _recommended_qty(

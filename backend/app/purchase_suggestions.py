@@ -301,8 +301,8 @@ async def create_requests_from_predictions(
     """Turn AI low-stock prediction rows into draft PRs (BR-21.4 auto-suggestions)."""
     lines: list[dict] = []
     for raw in at_risk_lines or []:
-        conf = float(raw.get("confidence") or 0)
-        if conf < float(min_confidence or 0):
+        conf = money_json(raw.get("confidence") or 0)
+        if conf < money_json(min_confidence or 0):
             continue
         qty = money_json(raw.get("suggested_order_qty") or raw.get("recommended_order_qty") or 0)
         if qty <= 0:

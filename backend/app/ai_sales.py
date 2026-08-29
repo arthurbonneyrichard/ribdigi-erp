@@ -154,7 +154,7 @@ async def build_rfm(
     recency_days = {
         cid: (now - (row["last"] or start)).days for cid, row in cust.items()
     }
-    freq = {cid: float(row["frequency"]) for cid, row in cust.items()}
+    freq = {cid: money_json(row["frequency"]) for cid, row in cust.items()}
     mon = {cid: money_json(row["monetary"]) for cid, row in cust.items()}
     r_scores = _score_map(recency_days, higher_is_better=False)
     f_scores = _score_map(freq, higher_is_better=True)

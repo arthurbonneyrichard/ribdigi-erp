@@ -264,7 +264,7 @@ async def analyze_upload(
     ocr = ocr_svc.suggest_from_media(media)
     fields = dict(ocr.get("suggestions") or {})
     raw = ocr.get("raw_text_preview") or ""
-    confidence = float(ocr.get("confidence") or 0)
+    confidence = money_json(ocr.get("confidence") or 0)
     resolved_type = infer_document_type(raw, doc_type)
 
     parties = (
