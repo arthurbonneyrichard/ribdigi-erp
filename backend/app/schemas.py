@@ -674,6 +674,8 @@ class RefreshRequest(BaseModel):
 
 
 class TenantCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required trading name ∈ CompanyNameValue; blank/`!!!`/`http://…`/`X` → **422**
     # (was free `str` with no create-path length/content check).
     company_name: CompanyNameValue
@@ -694,6 +696,8 @@ class TenantCreate(BaseModel):
 
 
 class TenantProfileUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`;
     # blank/`X` late service **400**; garbage could persist). Required trading name.
     company_name: CompanyNameValue | None = None
@@ -754,6 +758,8 @@ class TenantSuspendRequest(BaseModel):
     Shared by platform `POST /tenants/{ref}/suspend` and company
     `POST /tenants/me/suspend`.
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: TenantSuspendReasonValue
 
@@ -778,6 +784,8 @@ class TenantSubscriptionAssign(BaseModel):
 
 
 class TenantModulesUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Same Literal list as subscription assign; omit when reset_to_package
     enabled_modules: list[PackageableModuleValue] | None = None
     reset_to_package: bool = False
@@ -785,6 +793,8 @@ class TenantModulesUpdate(BaseModel):
 
 class TenantStoreLimitUpdate(BaseModel):
     """Company (== Tenant) store allocation within subscription entitlement."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # null = use full subscription entitlement
     store_limit: int | None = Field(default=None, ge=0)
@@ -792,12 +802,16 @@ class TenantStoreLimitUpdate(BaseModel):
 
 class TenantMaxStoresOverrideUpdate(BaseModel):
     """Platform-owner per-tenant store entitlement override."""
+    model_config = ConfigDict(extra="forbid")
+
 
     max_stores_override: int | None = Field(default=None, ge=0)
     clear: bool = False
 
 
 class UserCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
     # Required display name ∈ UserFullNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; empty/whitespace/`!!!`/URL could persist).
@@ -824,6 +838,8 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # empty/whitespace/`!!!`/URL could persist).
     full_name: UserFullNameValue | None = None
@@ -891,6 +907,8 @@ class PlatformStaffCreate(BaseModel):
 
 class PlatformStaffUpdate(BaseModel):
     """Patch platform staff — omit = no change; blank role → 422."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`
     # min_length=1; whitespace/`!!!`/URL could persist).
@@ -1012,6 +1030,8 @@ class CashTransferCreate(BaseModel):
 
 
 class BranchCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required branch code ∈ BranchCodeValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/invalid reached service **400** via `_clean_code`;
     # punctuation/URL could otherwise slip past OpenAPI). Tenant uniqueness remains
@@ -1034,6 +1054,8 @@ class BranchCreate(BaseModel):
 
 
 class BranchUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on branch display name).
     name: BranchNameValue | None = None
@@ -1054,6 +1076,8 @@ class BranchUpdate(BaseModel):
 
 
 class DepartmentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required department code ∈ DepartmentCodeValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/invalid reached service **400** via `_clean_code`;
     # punctuation/URL could otherwise slip past OpenAPI). Tenant uniqueness remains
@@ -1073,6 +1097,8 @@ class DepartmentCreate(BaseModel):
 
 
 class DepartmentUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on department display name).
     name: DepartmentNameValue | None = None
@@ -1372,6 +1398,8 @@ class StockCountCancel(BaseModel):
 
 
 class ProductCategoryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required category code ∈ CategoryCodeValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank reached service **400**; punctuation/URL could persist).
     # Tenant uniqueness remains create_category **409**.
@@ -1390,6 +1418,8 @@ class ProductCategoryCreate(BaseModel):
 
 
 class ProductCategoryUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on ProductCategory.code).
     code: CategoryCodeValue | None = None
@@ -1410,6 +1440,8 @@ class ProductCategoryUpdate(BaseModel):
 
 
 class BrandCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required brand code ∈ BrandCodeValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank reached service **400**; punctuation/URL could persist).
     # Tenant uniqueness remains create_brand **409**.
@@ -1423,6 +1455,8 @@ class BrandCreate(BaseModel):
 
 
 class BrandUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank reached service **400**; punctuation/URL could persist on Brand.code).
     code: BrandCodeValue | None = None
@@ -1436,6 +1470,8 @@ class BrandUpdate(BaseModel):
 
 
 class UnitOfMeasureCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required UoM code ∈ UnitCodeValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank reached service **400**; punctuation/URL could persist).
     # Tenant uniqueness remains create_unit **409**.
@@ -1452,6 +1488,8 @@ class UnitOfMeasureCreate(BaseModel):
 
 
 class UnitOfMeasureUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank reached service **400**; punctuation/URL could persist on UnitOfMeasure.code).
     code: UnitCodeValue | None = None
@@ -1469,6 +1507,8 @@ class UnitOfMeasureUpdate(BaseModel):
 
 
 class UnitConvertPreview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
@@ -1482,6 +1522,8 @@ class UnitConvertPreview(BaseModel):
 
 
 class ProductVariantCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required variant label ∈ VariantNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on product variant create).
     name: VariantNameValue
@@ -1505,6 +1547,8 @@ class ProductVariantCreate(BaseModel):
 
 
 class ProductVariantUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on variant display name).
     name: VariantNameValue | None = None
@@ -1528,6 +1572,8 @@ class ProductVariantUpdate(BaseModel):
 
 
 class ProductImagePrimaryUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     is_primary: bool = True
 
 
@@ -1641,6 +1687,8 @@ class PartyContactUpdate(BaseModel):
 
 
 class CustomerGroupCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required group label ∈ CustomerGroupNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on customer group create).
     name: CustomerGroupNameValue
@@ -1653,6 +1701,8 @@ class CustomerGroupCreate(BaseModel):
 
 
 class CustomerGroupUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: CustomerGroupNameValue | None = None
     # omit/`null` → no change; nan/inf/out-of-range → **422**
     discount_percent: PercentRateValue | None = None
@@ -2464,6 +2514,8 @@ class StoreUpdate(BaseModel):
 
 
 class StoreDrawerSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-8.1 — schema Literal; omit = no change; blank/invalid → 422 (no silent none)
     drawer_mode: Literal["none", "mock", "network", "browser_bridge"] | None = None
     # omit/`null` → no change / clear; blank/`http://…`/`not a host` → **422**
@@ -2490,6 +2542,8 @@ class PosDrawerOpen(BaseModel):
 
 
 class StoreReorderPolicyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**). Multi-Store **Store reorder product**
@@ -2502,6 +2556,8 @@ class StoreReorderPolicyUpdate(BaseModel):
 
 
 class WarehouseReorderPolicyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required warehouse ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach warehouse lookup). Existence remains
     # tenant-scoped warehouse lookup (**404**). Inventory **Warehouse stock
@@ -2519,6 +2575,8 @@ class WarehouseReorderPolicyUpdate(BaseModel):
 
 
 class InventoryFefoSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     fefo_strict_warehouse: bool | None = None
     stock_transfer_numbering: DocumentNumberingFields | None = None
     stock_count_numbering: DocumentNumberingFields | None = None
@@ -3027,6 +3085,8 @@ class LowStockSuggestionLine(BaseModel):
     Optional `notes` ∈ PurchaseRequestNotesValue; omit/`null` → no line notes;
     blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -3052,6 +3112,8 @@ class LowStockSuggestionsCreate(BaseModel):
     default; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
     could persist on draft PREQ notes).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     lines: list[LowStockSuggestionLine] = Field(min_length=1)
     # omit/`null` → service default note; blank/`!!!`/`http://…` → **422** (was
@@ -3599,6 +3661,8 @@ class CustomerPaymentCreate(BaseModel):
 
 
 class EarlyPaySettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # ∈ PercentRateValue; nan/inf/out-of-range → **422** (was Field(ge=0, le=100) — Inf/NaN edge cases)
     early_pay_discount_pct: PercentRateValue
     early_pay_discount_days: int = Field(ge=0, le=365)
@@ -3634,6 +3698,8 @@ DocumentPrefixValue = Annotated[
 
 class SalesInvoiceNumberingUpdate(BaseModel):
     """Legacy flat body for invoice-only PATCH /sales/settings."""
+    model_config = ConfigDict(extra="forbid")
+
 
     prefix: DocumentPrefixValue
     next_number: int = Field(default=1, ge=1, le=999999)
@@ -3651,6 +3717,8 @@ class DocumentNumberingFields(BaseModel):
 
 
 class SalesSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     invoice_numbering: DocumentNumberingFields | None = None
     quotation_numbering: DocumentNumberingFields | None = None
     sales_order_numbering: DocumentNumberingFields | None = None
@@ -3663,6 +3731,8 @@ class SalesSettingsUpdate(BaseModel):
 
 
 class PurchasingNumberingUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     purchase_order_numbering: DocumentNumberingFields | None = None
     grn_numbering: DocumentNumberingFields | None = None
     purchase_invoice_numbering: DocumentNumberingFields | None = None
@@ -3673,11 +3743,15 @@ class PurchasingNumberingUpdate(BaseModel):
 
 
 class AccountingSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     journal_numbering: DocumentNumberingFields | None = None
     cash_transfer_numbering: DocumentNumberingFields | None = None
 
 
 class PosSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     pos_sale_numbering: DocumentNumberingFields | None = None
     pos_session_numbering: DocumentNumberingFields | None = None
 
@@ -3690,6 +3764,8 @@ class PrintBrandingUpdate(BaseModel):
     (was free `str` max_length=200; blank/garbage could persist on print branding).
     Optional `footer_text` ∈ PrintFooterTextValue (strip; 1–300; same honesty).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     header_text: PrintHeaderTextValue | None = None
     footer_text: PrintFooterTextValue | None = None
@@ -3701,6 +3777,8 @@ class PrintBrandingUpdate(BaseModel):
 
 class BackupSettingsUpdate(BaseModel):
     """Logical backup schedule settings (BR-16)."""
+    model_config = ConfigDict(extra="forbid")
+
 
     enabled: bool | None = None
     # Schema Literal; omit = no change; blank/invalid → 422 (was free dict str → service 400)
@@ -6915,6 +6993,8 @@ class ExchangeRateRefresh(BaseModel):
 
 
 class FxAutoRefreshUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     fx_auto_refresh: bool
 
 
@@ -6964,6 +7044,8 @@ class BankConnectionUpdate(BaseModel):
 
 class BankAutoClearBody(BaseModel):
     """One-shot bank↔book auto-clear confidence floor (BR-10.3 reconcile)."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # omit → high; blank/invalid → 422 (was free dict; ""/garbage silently coerced to high)
     min_confidence: Annotated[
@@ -8442,6 +8524,8 @@ class PeriodCloseBody(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could land in audit `period_closed.details.reason`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # IsoDateQueryValue as JournalCreate.entry_date / expense_date.
     through_date: IsoDateQueryValue
@@ -8455,6 +8539,8 @@ class PeriodReopenBody(BaseModel):
     `reason` ∈ PeriodCloseReasonValue (same honesty as close; omit/blank/garbage → **422** —
     was free `str` with `min_length=1` only; whitespace still reached service **400**).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     through_date: IsoDateQueryValue | None = None
     reason: PeriodCloseReasonValue
@@ -8487,6 +8573,8 @@ class PosPaymentLine(BaseModel):
     reference; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
     could persist on POS payment `reference`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # BR-8.1 — schema Literal (+ wallet aliases via BeforeValidator); blank/invalid → 422
     payment_method: PosTenderMethod = "cash"
