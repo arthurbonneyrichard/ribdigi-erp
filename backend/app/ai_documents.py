@@ -584,7 +584,7 @@ async def create_purchase_invoice_from_extract(
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order has no line items")
 
-    discount_amount = round(sum(float(i.get("discount") or 0) for i in items), 2)
+    discount_amount = money_json(round(sum(float(i.get("discount") or 0) for i in items), 2))
     parsed_date = _parse_invoice_date(invoice_date)
     # OpenAPI PurchaseInvoiceNotesValue → 422; omit/`null`/blank → OCR default note.
     inv_notes = optional_honest_narrative(notes, label="purchase invoice notes")

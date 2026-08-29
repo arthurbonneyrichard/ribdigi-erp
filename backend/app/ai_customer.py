@@ -46,7 +46,7 @@ def churn_score(row: dict[str, Any]) -> dict[str, Any]:
     recency = int(row.get("recency_days") or 0)
     # Older recency increases risk
     bump = min(0.25, recency / 365.0)
-    score = round(min(0.99, base + bump * 0.5), 3)
+    score = money_json(round(min(0.99, base + bump * 0.5), 3))
     if score >= 0.7:
         level = "high"
     elif score >= 0.4:

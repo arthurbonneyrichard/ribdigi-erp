@@ -206,7 +206,7 @@ def empty_buckets() -> dict[str, float]:
 
 def add_to_bucket(buckets: dict[str, float], days: int, amount: float) -> None:
     key = age_bucket(days)
-    buckets[key] = round(buckets.get(key, 0.0) + float(amount), 2)
+    buckets[key] = money_json(round(buckets.get(key, 0.0) + float(amount), 2))
 
 
 async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
@@ -245,9 +245,9 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             {
                 "party_id": inv.customer_id,
                 "name": cust.name if cust else inv.customer_id,
-                "credit_limit": money_json(cust.credit_limit) if cust else 0.0,
-                "balance": money_json(cust.balance) if cust else 0.0,
-                "total_due": 0.0,
+                "credit_limit": money_json(cust.credit_limit) if cust else money_json(0),
+                "balance": money_json(cust.balance) if cust else money_json(0),
+                "total_due": money_json(0),
                 **empty_buckets(),
             },
         )
@@ -260,7 +260,7 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "party_id": inv.customer_id,
                 "party_name": row["name"],
                 "due_date": inv.due_date,
-                "balance_due": due,
+                "balance_due": money_json(due),
                 "currency": getattr(inv, "currency", None) or "",
                 "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
                 "balance_due_base": money_json(
@@ -323,9 +323,9 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             {
                 "party_id": supplier_id,
                 "name": sup.name if sup else supplier_id,
-                "credit_limit": money_json(sup.credit_limit) if sup else 0.0,
-                "balance": money_json(sup.balance) if sup else 0.0,
-                "total_due": 0.0,
+                "credit_limit": money_json(sup.credit_limit) if sup else money_json(0),
+                "balance": money_json(sup.balance) if sup else money_json(0),
+                "total_due": money_json(0),
                 **empty_buckets(),
             },
         )
@@ -348,7 +348,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "party_id": inv.supplier_id,
                 "party_name": row["name"],
                 "due_date": inv.due_date,
-                "balance_due": due,
+                "balance_due": money_json(due),
                 "currency": getattr(inv, "currency", None) or "",
                 "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
                 "balance_due_base": money_json(
@@ -381,7 +381,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "party_id": po.supplier_id,
                 "party_name": row["name"],
                 "due_date": po.due_date,
-                "balance_due": due,
+                "balance_due": money_json(due),
                 "days_overdue": days,
                 "bucket": bucket,
             }
@@ -438,12 +438,14 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
                 "date": inv.posted_at or inv.created_at,
                 "type": "invoice",
                 "reference": inv.invoice_number,
-                "debit": money_json(inv.total_amount) if inv.status != "cancelled" else 0.0,
-                "credit": 0,
+                "debit": money_json(inv.total_amount) if inv.status != "cancelled" else money_json(0),
+                "credit": money_json(0),
                 "status": inv.status,
-                "balance_due": max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+                "balance_due": money_json(
+                    max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+                )
                 if inv.status in {"posted", "sent", "partial", "overdue"}
-                else 0,
+                else money_json(0),
             }
         )
     for pay in payments:
@@ -452,7 +454,7 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
                 "date": pay.created_at,
                 "type": "payment",
                 "reference": pay.payment_number,
-                "debit": 0,
+                "debit": money_json(0),
                 "credit": money_json(pay.amount),
                 "status": "posted",
                 "balance_due": None,
@@ -513,10 +515,12 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
                 "date": po.created_at,
                 "type": "purchase_order",
                 "reference": po.po_number,
-                "debit": 0,
+                "debit": money_json(0),
                 "credit": money_json(po.total_amount),
                 "status": po.status,
-                "balance_due": max(money_json(po.total_amount) - money_json(po.paid_amount), 0),
+                "balance_due": money_json(
+                    max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
+                ),
             }
         )
     for pay in payments:
@@ -526,7 +530,7 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
                 "type": "payment",
                 "reference": pay.payment_number,
                 "debit": money_json(pay.amount),
-                "credit": 0,
+                "credit": money_json(0),
                 "status": "posted",
                 "balance_due": None,
             }
@@ -670,9 +674,9 @@ async def customer_history(
         for p in payments
     ]
 
-    purchase_total = round(sum(x["total_amount"] for x in purchase_rows), 2)
-    return_total = round(sum(x["total_amount"] for x in return_rows), 2)
-    payment_total = round(sum(x["amount"] for x in payment_rows), 2)
+    purchase_total = money_json(round(sum(x["total_amount"] for x in purchase_rows), 2))
+    return_total = money_json(round(sum(x["total_amount"] for x in return_rows), 2))
+    payment_total = money_json(round(sum(x["amount"] for x in payment_rows), 2))
     return {
         "customer": {
             "id": customer.id,
@@ -817,9 +821,9 @@ async def supplier_history(
         for p in payments
     ]
 
-    purchase_total = round(sum(x["total_amount"] for x in purchase_rows), 2)
-    return_total = round(sum(x["total_amount"] for x in return_rows), 2)
-    payment_total = round(sum(x["amount"] for x in payment_rows), 2)
+    purchase_total = money_json(round(sum(x["total_amount"] for x in purchase_rows), 2))
+    return_total = money_json(round(sum(x["total_amount"] for x in return_rows), 2))
+    payment_total = money_json(round(sum(x["amount"] for x in payment_rows), 2))
     return {
         "supplier": {
             "id": supplier.id,

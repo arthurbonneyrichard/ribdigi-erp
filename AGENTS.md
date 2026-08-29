@@ -1313,6 +1313,46 @@
 - **Reports Show trialbalance tab aria OpenAPI (BR-14.5):** Reports **Show reports trialbalance tab** button (`aria-label`).
 - **Reports Show balancesheet tab aria OpenAPI (BR-14.5):** Reports **Show reports balancesheet tab** button (`aria-label`).
 - **Reports Show schedules tab aria OpenAPI (BR-14):** Reports **Show reports schedules tab** button (`aria-label`).
+- **AI insight pct_delta money_json Decimal pilot OpenAPI (BR-21):** `_pct_delta` return uses `honesty.money_json`.
+- **AI insight pct_delta 100 money_json Decimal pilot OpenAPI (BR-21):** `_pct_delta` zero-previous branch uses `honesty.money_json(100.0)`.
+- **AI customer churn_risk money_json Decimal pilot OpenAPI (BR-21.9):** customer assist `churn_risk` uses `honesty.money_json`.
+- **AI inventory confidence_score money_json Decimal pilot OpenAPI (BR-21.4):** `confidence_score` return uses `honesty.money_json`.
+- **AI inventory confidence no-velocity money_json Decimal pilot OpenAPI (BR-21.4):** no-sales confidence uses `honesty.money_json(0.25)`.
+- **AI inventory recommended_order_qty helper money_json Decimal pilot OpenAPI (BR-21.4):** `_recommended_qty` returns use `honesty.money_json`.
+- **Expense OCR confidence money_json Decimal pilot OpenAPI (BR-9.2):** OCR suggestion `confidence` uses `honesty.money_json`.
+- **Credit customer history purchase_total money_json Decimal pilot OpenAPI (BR-7.1):** history `summary.purchase_total` uses `honesty.money_json`.
+- **Credit customer history return_total money_json Decimal pilot OpenAPI (BR-7.1):** history `summary.return_total` uses `honesty.money_json`.
+- **Credit customer history payment_total money_json Decimal pilot OpenAPI (BR-7.1):** history `summary.payment_total` uses `honesty.money_json`.
+- **Credit supplier history purchase_total money_json Decimal pilot OpenAPI (BR-6.1):** supplier history `summary.purchase_total` uses `honesty.money_json`.
+- **Credit supplier history return_total money_json Decimal pilot OpenAPI (BR-6.1):** supplier history `summary.return_total` uses `honesty.money_json`.
+- **Credit supplier history payment_total money_json Decimal pilot OpenAPI (BR-6.1):** supplier history `summary.payment_total` uses `honesty.money_json`.
+- **Reports sales_monthly_total money_json Decimal pilot OpenAPI (BR-14.1):** `sales_monthly_total` return uses `honesty.money_json`.
+- **Customer group apply_discount money_json Decimal pilot OpenAPI (BR-7.1):** `apply_discount` return uses `honesty.money_json`.
+- **Bank recon journal_line_signed_amount money_json Decimal pilot OpenAPI (BR-10.3):** `journal_line_signed_amount` uses `honesty.money_json`.
+- **Credit AR aging document balance_due money_json Decimal pilot OpenAPI (BR-11):** AR aging `documents[].balance_due` uses `honesty.money_json`.
+- **Credit AP aging document balance_due money_json Decimal pilot OpenAPI (BR-11):** AP aging `documents[].balance_due` uses `honesty.money_json`.
+- **Credit aging add_to_bucket money_json Decimal pilot OpenAPI (BR-11):** `add_to_bucket` bucket amounts use `honesty.money_json`.
+- **AI document PI draft discount_amount money_json Decimal pilot OpenAPI (BR-21.8):** OCR draft PI `discount_amount` uses `honesty.money_json`.
+- **Expenses approval matrix min_amount money_json Decimal pilot OpenAPI (BR-9.3):** threshold-preserve matrix `min_amount` uses `honesty.money_json`.
+- **Credit statement line balance_due money_json Decimal pilot OpenAPI (BR-11):** customer/supplier statement line `balance_due` / debit/credit zeros use `honesty.money_json`.
+- **Expenses Save expense numbering aria OpenAPI (BR-20.4):** Expenses **Save expense numbering** button (`aria-label`).
+- **Expenses Add expense approval level aria OpenAPI (BR-9.3):** Expenses **Add expense approval level** button (`aria-label`).
+- **Expenses Save expense approval matrix aria OpenAPI (BR-9.3):** Expenses **Save expense approval matrix** button (`aria-label`).
+- **Expenses Add expense category aria OpenAPI (BR-9.1):** Expenses **Add expense category** button (`aria-label`).
+- **Expenses Expense category status filter aria OpenAPI (BR-9.1):** Expenses **Expense category status filter** select (`aria-label`).
+- **Expenses Generate due recurring expenses aria OpenAPI (BR-9.5):** Expenses **Generate due recurring expenses** button (`aria-label`).
+- **Expenses Recurring expense status filter aria OpenAPI (BR-9.5):** Expenses **Recurring expense status filter** select (`aria-label`).
+- **Users Custom role status filter aria OpenAPI (BR-3.2):** Users **Custom role status filter** select (`aria-label`).
+- **Users User status filter aria OpenAPI (BR-3.1):** Users **User status filter** select (`aria-label`).
+- **Stores Branch status filter aria OpenAPI (BR-2.2):** Multi-Store **Branch status filter** select (`aria-label`).
+- **Stores Department status filter aria OpenAPI (BR-2.5):** Multi-Store **Department status filter** select (`aria-label`).
+- **Stores Store status filter aria OpenAPI (BR-2.3):** Multi-Store **Store status filter** select (`aria-label`).
+- **Stores Warehouse status filter aria OpenAPI (BR-2.4):** Multi-Store **Warehouse status filter** select (`aria-label`).
+- **Credit Early pay discount days aria OpenAPI (BR-11):** Credit **Early pay discount days** input (`aria-label`).
+- **Credit FX currency code aria OpenAPI (BR-2.6):** Credit **FX currency code** input (`aria-label`).
+- **Credit Save FX rate aria OpenAPI (BR-2.6):** Credit **Save FX rate** button (`aria-label`).
+- **Credit Refresh FX rates from feed aria OpenAPI (BR-2.6):** Credit **Refresh FX rates from feed** button (`aria-label`).
+- **Credit Load party history aria OpenAPI (BR-7.1 / BR-6.1):** Credit **Load party history** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

@@ -256,7 +256,7 @@ async def sales_monthly_total(
     if store_id:
         pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
     pos = float((await db.execute(pos_stmt)).scalar() or 0)
-    return round(inv + pos, 2)
+    return money_json(round(inv + pos, 2))
 
 
 async def sales_by_product(

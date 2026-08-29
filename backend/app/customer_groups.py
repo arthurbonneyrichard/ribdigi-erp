@@ -196,4 +196,4 @@ async def customer_group_discount(
 def apply_discount(base_price: float, discount_percent: float) -> float:
     base = float(base_price or 0)
     pct = max(0.0, min(100.0, float(discount_percent or 0)))
-    return round(base * (1.0 - pct / 100.0), 2)
+    return money_json(round(base * (1.0 - pct / 100.0), 2))

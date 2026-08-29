@@ -74,7 +74,7 @@ def serialize_statement(stmt: m.BankStatement, lines: list[m.BankStatementLine] 
 
 def journal_line_signed_amount(line: m.JournalEntryLine) -> float:
     """Asset convention: debit positive (inflow), credit negative (outflow)."""
-    return round(float(line.debit or 0) - float(line.credit or 0), 2)
+    return money_json(round(float(line.debit or 0) - float(line.credit or 0), 2))
 
 
 async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) -> m.Account:

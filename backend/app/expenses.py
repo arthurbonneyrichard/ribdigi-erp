@@ -435,8 +435,8 @@ async def update_approval_settings(
         existing = resolve_tenant_levels(tenant)
         if len(existing) >= 2:
             normalized = [
-                {**existing[0], "min_amount": round(auto_t, 2), "step": 1},
-                {**existing[1], "min_amount": round(l2_t, 2), "step": 2},
+                {**existing[0], "min_amount": money_json(round(auto_t, 2)), "step": 1},
+                {**existing[1], "min_amount": money_json(round(l2_t, 2)), "step": 2},
                 *[{**lvl, "step": i + 3} for i, lvl in enumerate(existing[2:])],
             ]
             # Re-validate increasing mins if extra levels exist

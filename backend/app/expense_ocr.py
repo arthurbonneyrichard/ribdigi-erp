@@ -185,7 +185,7 @@ def parse_receipt_text(text: str) -> dict[str, Any]:
             confidence = min(0.95, confidence + 0.15)
     return {
         "fields": fields,
-        "confidence": round(confidence, 2),
+        "confidence": money_json(round(confidence, 2)),
         "raw_text_preview": cleaned[:2000] if cleaned else "",
     }
 

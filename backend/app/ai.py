@@ -182,8 +182,8 @@ MAX_INSIGHT_NOTES = 20
 
 def _pct_delta(current: float, previous: float) -> float | None:
     if previous == 0:
-        return None if current == 0 else 100.0
-    return round((current - previous) / abs(previous) * 100.0, 1)
+        return None if current == 0 else money_json(100.0)
+    return money_json(round((current - previous) / abs(previous) * 100.0, 1))
 
 
 def build_insight_notes(dash: dict) -> list[str]:

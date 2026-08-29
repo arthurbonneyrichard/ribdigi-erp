@@ -40,10 +40,10 @@ def _clamp(v: float, lo: float = 0.0, hi: float = 1.0) -> float:
 def confidence_score(*, sold_qty: float, lookback: int, sale_days_present: int) -> float:
     """Heuristic 0–1: more sale activity + coverage of lookback → higher confidence."""
     if sold_qty <= 0:
-        return 0.25  # low-confidence "no velocity" observation
+        return money_json(0.25)  # low-confidence "no velocity" observation
     coverage = sale_days_present / max(1, lookback)
     volume = _clamp(math.log10(sold_qty + 1) / 3.0)  # ~1000 units → 1.0
-    return round(_clamp(0.35 + 0.45 * coverage + 0.2 * volume), 3)
+    return money_json(round(_clamp(0.35 + 0.45 * coverage + 0.2 * volume), 3))
 
 
 def seasonality_hint(*, recent_velocity: float, prior_velocity: float) -> dict[str, Any]:
@@ -140,10 +140,10 @@ def _recommended_qty(
     gap = max(0.0, target - stock)
     # Prefer configured reorder_qty when product is already at/below reorder
     if stock <= reorder_level and reorder_qty > 0:
-        return round(max(reorder_qty, gap), 3)
+        return money_json(round(max(reorder_qty, gap), 3))
     if gap <= 0:
-        return 0.0
-    return round(max(1.0, gap) if velocity > 0 else 0.0, 3)
+        return money_json(0)
+    return money_json(round(max(1.0, gap) if velocity > 0 else 0.0, 3))
 
 
 async def build_product_forecasts(
