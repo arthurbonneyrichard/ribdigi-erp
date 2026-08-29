@@ -2950,7 +2950,8 @@ async def test_store_manager_ai_dead_stock_cost_redacted(client, db_session):
         name="Dead Stock Cost SKU",
         sku="DEAD-COST-991",
         is_active=True,
-        stock_qty=0,
+        # Admin dead-stock path uses product.stock_qty; manager uses WarehouseStock.
+        stock_qty=4,
         cost_price=42.75,
         selling_price=50,
         reorder_level=1,
