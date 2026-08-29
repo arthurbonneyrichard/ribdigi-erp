@@ -165,6 +165,7 @@ export default function Page() {
             type="button"
             className={category === c.id ? 'notif-chip active' : 'notif-chip'}
             onClick={() => setCategory(c.id)}
+            aria-label={`Filter notifications by ${c.label}`}
           >
             {c.label}
           </button>

@@ -2897,6 +2897,7 @@ export default function Page() {
                     <>
                       <button
                         type="button"
+                        aria-label={`Preview purchase invoice attachment ${inv.id}`}
                         onClick={() =>
                           setAttachPreview({
                             apiPath: `/purchasing/invoices/${inv.id}/attachment`,

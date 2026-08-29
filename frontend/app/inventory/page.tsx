@@ -2420,6 +2420,7 @@ export default function Page() {
                       <button
                         type="button"
                         className="btn-ok"
+                        aria-label={`Activate category ${c.id}`}
                         onClick={async () => {
                           setError('');
                           try {
@@ -2502,6 +2503,7 @@ export default function Page() {
                         <button
                           type="button"
                           className="btn-danger"
+                          aria-label={`Deactivate category ${c.id}`}
                           onClick={async () => {
                             setError('');
                             try {
@@ -2612,6 +2614,7 @@ export default function Page() {
                     <button
                       type="button"
                       className="btn-ok"
+                      aria-label={`Activate brand ${b.id}`}
                       onClick={async () => {
                         setError('');
                         try {
@@ -2650,6 +2653,7 @@ export default function Page() {
                       <button
                         type="button"
                         className="btn-danger"
+                        aria-label={`Deactivate brand ${b.id}`}
                         onClick={async () => {
                           setError('');
                           try {
@@ -2762,6 +2766,7 @@ export default function Page() {
                     <button
                       type="button"
                       className="btn-ok"
+                      aria-label={`Activate unit ${u.id}`}
                       onClick={async () => {
                         setError('');
                         try {
@@ -2782,6 +2787,7 @@ export default function Page() {
                     <button
                       type="button"
                       className="btn-danger"
+                      aria-label={`Deactivate unit ${u.id}`}
                       onClick={async () => {
                         setError('');
                         try {

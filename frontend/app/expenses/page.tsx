@@ -1709,16 +1709,17 @@ export default function Page() {
                 {r.has_attachment ? (
                   <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
                     <button
-                      type="button"
-                      onClick={() =>
-                        setAttachPreview({
-                          apiPath: `/expenses/${r.id}/attachment`,
-                          title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
-                        })
-                      }
-                    >
-                      Preview
-                    </button>
+                    type="button"
+                    aria-label={`Preview expense attachment ${r.id}`}
+                    onClick={() =>
+                      setAttachPreview({
+                        apiPath: `/expenses/${r.id}/attachment`,
+                        title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
+                      })
+                    }
+                  >
+                    Preview
+                  </button>
                     <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
                       Download
                     </button>

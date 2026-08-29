@@ -416,7 +416,7 @@ async def send_ai_insight_digest_email(
 
 def _fmt_money(value: Any) -> str:
     try:
-        return f"{float(value or 0):.2f}"
+        return f"{money_json(value or 0):.2f}"
     except (TypeError, ValueError):
         return "0.00"
 

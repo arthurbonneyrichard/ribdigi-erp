@@ -307,6 +307,7 @@ export default function Login() {
             <button
               className="login-ghost"
               type="button"
+              aria-label="Back to sign in"
               onClick={() => {
                 setNeeds2fa(false);
                 setChallengeToken('');

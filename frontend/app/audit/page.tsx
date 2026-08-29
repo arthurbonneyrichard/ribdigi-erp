@@ -323,6 +323,7 @@ export default function Page() {
         />
         <button
           type="button"
+          aria-label="Apply audit filters"
           onClick={() => {
             if (action.trim() && !auditActionQueryValue(action)) {
               setError('Action must be snake_case (2+ chars; 2fa_* OK)');

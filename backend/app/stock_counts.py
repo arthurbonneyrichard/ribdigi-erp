@@ -320,8 +320,8 @@ async def complete_count(
         )
 
     for item in items:
-        expected = float(item.expected_qty or 0)
-        counted = float(item.counted_qty or 0)
+        expected = money_json(item.expected_qty or 0)
+        counted = money_json(item.counted_qty or 0)
         variance = round(counted - expected, 3)
         if abs(variance) < 1e-9:
             continue

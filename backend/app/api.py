@@ -2943,8 +2943,8 @@ async def add_product(
     sync_product_tax_flags(product, supply_class=supply)
     db.add(product)
     await db.flush()
-    if float(product.stock_qty or 0) > 0:
-        opening = float(product.stock_qty)
+    if money_json(product.stock_qty or 0) > 0:
+        opening = money_json(product.stock_qty)
         product.stock_qty = 0
         await apply_stock_change(
             db,
@@ -3815,7 +3815,7 @@ async def product_barcode_label(
         product_name=product.name,
         sku=product.sku,
         barcode_value=str(code),
-        price=float(product.selling_price or 0),
+        price=money_json(product.selling_price or 0),
         currency=(tenant.currency if tenant else "GHS"),
         png_data_uri=data_uri,
         copies=copies,
@@ -4006,7 +4006,7 @@ async def adjust(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
-        quantity_delta=float(payload.quantity),
+        quantity_delta=money_json(payload.quantity),
         movement_type="adjustment",
         user_id=claims["sub"],
         notes=payload.notes,
@@ -4038,7 +4038,7 @@ async def stock_in(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         product_id=payload.product_id,
-        quantity=float(payload.quantity),
+        quantity=money_json(payload.quantity),
         unit_id=payload.unit_id,
         notes=payload.notes,
         warehouse_id=payload.warehouse_id,
@@ -4123,7 +4123,7 @@ async def stock_out(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         product_id=payload.product_id,
-        quantity=float(payload.quantity),
+        quantity=money_json(payload.quantity),
         unit_id=payload.unit_id,
         notes=payload.notes,
         warehouse_id=payload.warehouse_id,
@@ -4400,7 +4400,7 @@ async def variant_barcode_label(
         product_name=f"{product.name} / {variant.name}",
         sku=variant.sku,
         barcode_value=str(code),
-        price=float(variant.selling_price or product.selling_price or 0),
+        price=money_json(variant.selling_price or product.selling_price or 0),
         currency=(tenant.currency if tenant else "GHS"),
         png_data_uri=data_uri,
         copies=copies,
@@ -4941,7 +4941,7 @@ async def product_price_for_customer(
     variant = None
     if variant_id:
         variant = await get_variant(db, claims["tenant_id"], variant_id)
-    list_price = float(
+    list_price = money_json(
         (variant.selling_price if variant is not None else product.selling_price) or 0
     )
     _product, _variant, unit_price = await resolve_sale_line(
@@ -5211,7 +5211,7 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
         party = await require_active_customer(db, claims["tenant_id"], payload.party_id)
         tx_override_info = enforce_customer_credit_limit(
             party,
-            amount=float(payload.total or 0),
+            amount=money_json(payload.total or 0),
             override=bool(payload.override_credit_limit),
             override_allowed=claims_may_override_credit(claims),
             override_reason=payload.override_reason,
@@ -5245,11 +5245,11 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
     if payload.party_id and kind in {"sale", "pos_sale"}:
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(payload.total or 0)
+            party.balance = money_json(party.balance or 0) + money_json(payload.total or 0)
     if payload.party_id and kind == "purchase":
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(payload.total or 0)
+            party.balance = money_json(party.balance or 0) + money_json(payload.total or 0)
 
     if tx_override_info:
         db.add(
@@ -7279,10 +7279,12 @@ async def pos_sale(
             customer_id=payload.party_id,
         )
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
-        line_discount = round(float(item.get("discount") or 0), 2)
+        line_discount = round(money_json(item.get("discount") or 0), 2)
         if line_discount < 0:
             raise HTTPException(status_code=400, detail="Line discount must be >= 0")
-        gross_before_discount = round(float(item["quantity"]) * float(unit_price), 2)
+        gross_before_discount = round(
+            money_json(item["quantity"]) * money_json(unit_price), 2
+        )
         if line_discount > gross_before_discount + 1e-9:
             raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
         taxable_base = round(gross_before_discount - line_discount, 2)
@@ -7307,7 +7309,7 @@ async def pos_sale(
                 "is_reverse_charge": spec.is_reverse_charge,
             }
         )
-    cart_discount = round(float(payload.discount_amount or 0), 2)
+    cart_discount = round(money_json(payload.discount_amount or 0), 2)
     if cart_discount < 0:
         raise HTTPException(status_code=400, detail="discount_amount must be >= 0")
     max_cart_discount = round(subtotal + tax_total, 2)
@@ -7348,7 +7350,7 @@ async def pos_sale(
 
         pos_override_info = enforce_customer_credit_limit(
             party,
-            amount=float(credit_amount),
+            amount=money_json(credit_amount),
             override=bool(payload.override_credit_limit),
             override_allowed=claims_may_override_credit(claims),
             override_reason=payload.override_reason,
@@ -7419,7 +7421,7 @@ async def pos_sale(
     if payload.party_id and credit_amount > 0:
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(credit_amount)
+            party.balance = money_json(party.balance or 0) + money_json(credit_amount)
 
     from app.accounting import post_pos_sale_journal
 
@@ -7475,7 +7477,7 @@ async def pos_sale(
         },
     )
     # Fully settled at till (no on-account credit tender) → also emit sale.paid.
-    if float(credit_amount or 0) <= 0:
+    if money_json(credit_amount or 0) <= 0:
         await webhooks_svc.emit_event(
             db,
             tenant_id=claims["tenant_id"],
@@ -7799,7 +7801,7 @@ async def pos_receipt_send(
 
 def _money_safe(value) -> str:
     try:
-        return f"{float(value or 0):.2f}"
+        return f"{money_json(value or 0):.2f}"
     except (TypeError, ValueError):
         return "0.00"
 
@@ -8766,8 +8768,8 @@ async def create_bank_statement(
         user_id=claims.get("sub"),
         account_id=payload.account_id,
         statement_date=payload.statement_date,
-        opening_balance=float(payload.opening_balance or 0),
-        closing_balance=float(payload.closing_balance or 0),
+        opening_balance=money_json(payload.opening_balance or 0),
+        closing_balance=money_json(payload.closing_balance or 0),
         notes=payload.notes,
         lines=[ln.model_dump() for ln in payload.lines],
     )
@@ -10456,14 +10458,14 @@ async def customer_outstanding(
     ).scalars().all()
     rows = []
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         rows.append(
             {
                 "invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
-                "amount": due,
+                "amount": money_json(due),
                 "due_date": inv.due_date,
                 "status": inv.status,
             }
@@ -10546,7 +10548,7 @@ async def supplier_outstanding(
     ).scalars().all()
     out = []
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         out.append(
@@ -10554,7 +10556,7 @@ async def supplier_outstanding(
                 "purchase_invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "purchase_order_id": inv.purchase_order_id,
-                "amount": due,
+                "amount": money_json(due),
                 "due_date": inv.due_date,
                 "status": inv.status,
                 "document_type": "purchase_invoice",
@@ -10564,14 +10566,14 @@ async def supplier_outstanding(
     for po in orders:
         if po.id in invoiced_pos:
             continue
-        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        due = max(money_json(po.total_amount) - money_json(po.paid_amount or 0), 0)
         if due <= 0:
             continue
         out.append(
             {
                 "purchase_order_id": po.id,
                 "po_number": po.po_number,
-                "amount": due,
+                "amount": money_json(due),
                 "due_date": po.due_date,
                 "status": po.status,
                 "document_type": "purchase_order",
@@ -10750,7 +10752,7 @@ async def calculate_tax(
     is_rc = bool(payload.is_reverse_charge) if payload.is_reverse_charge is not None else False
     if payload.tax_rate_id:
         row = await tax_svc.get_tax_rate(db, claims["tenant_id"], payload.tax_rate_id)
-        rate_pct = float(row.rate)
+        rate_pct = money_json(row.rate)
         mode = payload.pricing_mode or row.pricing_mode
         if components is None:
             components = row.components
@@ -10760,7 +10762,7 @@ async def calculate_tax(
         default = await tax_svc.get_default_tax_rate(db, claims["tenant_id"])
         if not default:
             raise HTTPException(status_code=400, detail="No tax rate available")
-        rate_pct = float(default.rate)
+        rate_pct = money_json(default.rate)
         mode = payload.pricing_mode or default.pricing_mode
         if components is None:
             components = default.components

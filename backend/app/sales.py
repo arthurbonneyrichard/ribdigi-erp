@@ -827,7 +827,7 @@ async def record_customer_payment(
                 detail=f"Payment currency {pay_cur} must match invoice currency {default_cur}",
             )
         if exchange_rate is not None:
-            pay_rate = float(exchange_rate)
+            pay_rate = money_json(exchange_rate)
             if pay_rate <= 0:
                 raise HTTPException(status_code=400, detail="exchange_rate must be positive")
             pay_cur = default_cur

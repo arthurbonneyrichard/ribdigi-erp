@@ -94,7 +94,7 @@ async def reserve_order(
         stock_qty, _u, _e = await to_stock_qty(
             db,
             tenant_id=tenant_id,
-            quantity=float(item.quantity),
+            quantity=money_json(item.quantity),
             from_unit_id=item.unit_id,
             product=product,
         )

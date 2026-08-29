@@ -165,7 +165,9 @@ async def post_coa_opening_balances(
         if residual > 0:
             # Need more credit
             if existing_plug:
-                existing_plug["credit"] = round(float(existing_plug["credit"]) + residual, 2)
+                existing_plug["credit"] = round(
+                    money_json(existing_plug["credit"]) + residual, 2
+                )
             else:
                 journal_lines.append(
                     {
@@ -176,14 +178,16 @@ async def post_coa_opening_balances(
                     }
                 )
             plug_account.opening_balance = round(
-                float(plug_account.opening_balance or 0) + residual, 2
+                money_json(plug_account.opening_balance or 0) + residual, 2
             )
         else:
             need_debit = abs(residual)
             if existing_plug:
                 # reduce credit or flip — simplest: add debit side
-                if float(existing_plug["credit"]) >= need_debit:
-                    existing_plug["credit"] = round(float(existing_plug["credit"]) - need_debit, 2)
+                if money_json(existing_plug["credit"]) >= need_debit:
+                    existing_plug["credit"] = round(
+                        money_json(existing_plug["credit"]) - need_debit, 2
+                    )
                     if existing_plug["credit"] == 0 and existing_plug["debit"] == 0:
                         journal_lines.remove(existing_plug)
                 else:
@@ -201,7 +205,7 @@ async def post_coa_opening_balances(
                     }
                 )
             plug_account.opening_balance = round(
-                float(plug_account.opening_balance or 0) - need_debit, 2
+                money_json(plug_account.opening_balance or 0) - need_debit, 2
             )
 
     if len(journal_lines) < 2:

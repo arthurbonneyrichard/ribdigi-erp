@@ -2058,6 +2058,7 @@ export default function Page() {
                       <button
                         type="button"
                         className="btn-ok"
+                        aria-label={`Post sales return credit ${r.id}`}
                         onClick={() =>
                           act(`/sales/returns/${r.id}/post`, 'Posted (credit)', {
                             settlement_method: 'adjust',
@@ -2069,6 +2070,7 @@ export default function Page() {
                       <button
                         type="button"
                         className="btn-ok"
+                        aria-label={`Post sales return refund ${r.id}`}
                         onClick={() =>
                           act(`/sales/returns/${r.id}/post`, 'Posted (refund)', {
                             settlement_method: 'refund',

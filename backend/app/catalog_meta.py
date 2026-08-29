@@ -142,8 +142,8 @@ def compute_stock_status(stock_qty: float, reorder_level: float) -> dict:
     - yellow: reorder > 0 and reorder < on-hand ≤ reorder × 1.5
     - green: otherwise (incl. reorder unset/0 with positive stock)
     """
-    qty = float(stock_qty or 0)
-    reorder = float(reorder_level or 0)
+    qty = money_json(stock_qty or 0)
+    reorder = money_json(reorder_level or 0)
     if qty <= 0 or (reorder > 0 and qty <= reorder):
         code = "red"
         label = "out_of_stock" if qty <= 0 else "low"

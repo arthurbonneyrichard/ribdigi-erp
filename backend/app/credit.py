@@ -206,7 +206,7 @@ def empty_buckets() -> dict[str, float]:
 
 def add_to_bucket(buckets: dict[str, float], days: int, amount: float) -> None:
     key = age_bucket(days)
-    buckets[key] = money_json(round(buckets.get(key, 0.0) + float(amount), 2))
+    buckets[key] = money_json(round(buckets.get(key, 0.0) + money_json(amount), 2))
 
 
 async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:

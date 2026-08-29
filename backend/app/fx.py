@@ -33,7 +33,7 @@ def normalize_currency(code: str | None) -> str:
 
 
 def to_base(amount: float, rate: float) -> float:
-    return money_json(round(float(amount or 0) * float(rate or 1), 2))
+    return money_json(round(money_json(amount or 0) * money_json(rate or 1), 2))
 
 
 def doc_rate(obj) -> float:

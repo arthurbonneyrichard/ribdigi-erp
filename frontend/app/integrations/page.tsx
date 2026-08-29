@@ -495,6 +495,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
 # v1=8ba12e1df3b867331f2ccf13f760ace4afd370df9d542012046eb4aba49bb2e2`}</pre>
             <button
               type="button"
+              aria-label="Copy Python webhook verifier"
               onClick={() =>
                 navigator.clipboard?.writeText(
                   `import hashlib, hmac, time\n\ndef verify(secret, body: bytes, header: str, skew=300) -> bool:\n    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)\n    ts = int(parts.get("t", "0"))\n    if abs(int(time.time()) - ts) > skew:\n        return False\n    signed = f"{ts}.".encode() + body\n    got = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()\n    return hmac.compare_digest(got, parts.get("v1", ""))\n`
