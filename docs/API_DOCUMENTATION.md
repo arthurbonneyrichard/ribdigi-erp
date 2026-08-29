@@ -41,14 +41,14 @@
 ## 1. API Standards
 
 ### 1.1 Request Format
-- All requests and responses use **JSON**.
-- Content-Type header must be: `application/json`
-- Date format: **ISO 8601** (`YYYY-MM-DDTHH:MM:SSZ`)
+- **Default** request/response bodies are **JSON** with `Content-Type: application/json`.
+- **Multipart** uploads use `multipart/form-data` (company/brand logos, product images, expense/PI/journal attachments, bank statement import, AI document analyze, catalog/product CSV import, etc.). Those routes are documented per endpoint — do not send JSON bodies there.
+- Date / datetime **inputs** (`IsoDateQueryValue` and related): accept calendar **`YYYY-MM-DD`** or ISO datetime (e.g. `2026-08-07T13:51:00Z`); blank/invalid/`01/02/2024` → **422**. Not limited to a single `YYYY-MM-DDTHH:MM:SSZ` form.
 - Currency / money fields on **request bodies** are JSON **numbers** (IEEE-754 doubles via Pydantic `float` Values such as `PositiveMoneyValue` / `NonNegativeMoneyValue`). Clients may send `199.99` (not required as `"199.99"` strings). NaN/Inf and out-of-range values → **422**.
-- Currency / money fields in **responses** are likewise JSON **numbers** (serializers use `float(...)`, e.g. sales invoice `subtotal` / `total_amount`).
+- Currency / money fields in **JSON responses** are likewise JSON **numbers** (serializers use `float(...)`, e.g. sales invoice `subtotal` / `total_amount`). CSV product export may still render prices as text columns.
 
 ### 1.2 Response Envelope
-Successful API responses use the `env()` helper envelope:
+Successful **JSON** API responses use the `env()` helper envelope:
 
 ```json
 {
@@ -59,6 +59,8 @@ Successful API responses use the `env()` helper envelope:
 ```
 
 There is **no** `timestamp` or `request_id` field in the JSON body. Correlation uses the **`X-Request-ID`** response header (echoes a client-supplied id when safe; otherwise a generated hex id). See `docs/OPS_MONITORING_MVP.md`.
+
+**Non-JSON responses** (no `env()` wrapper): report export CSV/PDF/XLSX, product/POS CSV export, invoice/receipt PDF or plain text, barcode PNG / HTML labels, Prometheus `GET /metrics`, and raw attachment/file downloads. Media types are set per route.
 
 ### 1.3 Pagination
 Most list endpoints return an **unpaginated** array in `data` (no `cursor` / `limit` / `sort` list Query contract, no `{ items, pagination }` wrapper):
@@ -71,15 +73,18 @@ Most list endpoints return an **unpaginated** array in `data` (no `cursor` / `li
 }
 ```
 
-A few surfaces expose their own bounded `limit` Query params (e.g. audit logs) — those are documented on the endpoint, not a global cursor protocol.
+A few surfaces expose their own bounded `limit` Query params (e.g. audit logs, notifications, product lookup) — those are documented on the endpoint, not a global cursor protocol.
+
+**Lookup exception (not cursor pagination):** `GET /inventory/products/lookup` returns `data: { q, barcode, count, items: Product[] }` with Query `limit` ∈ 1–100 (omit → 48). This is a search payload, not the fictional global `{ items, pagination }` cursor contract.
+
 ### 1.4 HTTP Methods
 | Method | Usage |
 |--------|-------|
 | `GET` | Retrieve resources |
-| `POST` | Create resources |
-| `PUT` | Full update |
-| `PATCH` | Partial update |
-| `DELETE` | Remove resources |
+| `POST` | Create resources / actions |
+| `PUT` | Rare upsert/replace only — today: `PUT /credit/exchange-rates/{currency_code}`, `PUT /inventory/warehouse-stock/reorder`, `PUT /stores/{store_id}/reorder-policy` (not a general “full update” verb) |
+| `PATCH` | Partial update (primarily PATCH — the update verb across modules) |
+| `DELETE` | Remove / soft-deactivate resources |
 
 ---
 
@@ -628,7 +633,7 @@ Product responses include `stock_qty`, `reorder_level`, plus traffic-light field
 - Variant equivalents: `POST|GET /products/{pid}/variants/{vid}/barcode/generate|png|label` (same symbology query params). Inventory Variants tab: barcode column + Generate/Label.  
 Barcodes are unique across **products and variants** in the tenant (409 on clash). Assigning a 12/13-digit barcode via create/PATCH validates the check digit.
 
-**Integrator lookup (BR-18.2):** `GET /inventory/products/lookup` — Query `q` ∈ `ProductSearchQueryValue` (strip; max 120; empty default OK; ≥1 letter/digit when non-empty; no `://`; blank/`!!!`/`http://…` → **422**); Query `barcode` ∈ `ProductBarcodeValue` (strip + upper; 4–48; omit/`null` → name/SKU `q` path; blank/`!!!!`/`ab`/`http://…` → **422**); Query `limit` ∈ 1–100 (omit → 48; `0`/`-1`/`101` → **422** — was free `int`; service silently clamped 1–100). Inventory **Product lookup search** / **Product lookup barcode** (`aria-label`s); lookup omits blank. Also `GET /products/{id}/warehouse-stock` and `GET /products/export`.
+**Integrator lookup (BR-18.2):** `GET /inventory/products/lookup` — Query `q` ∈ `ProductSearchQueryValue` (strip; max 120; empty default OK; ≥1 letter/digit when non-empty; no `://`; blank/`!!!`/`http://…` → **422**); Query `barcode` ∈ `ProductBarcodeValue` (strip + upper; 4–48; omit/`null` → name/SKU `q` path; blank/`!!!!`/`ab`/`http://…` → **422**); Query `limit` ∈ 1–100 (omit → 48; `0`/`-1`/`101` → **422** — was free `int`; service silently clamped 1–100). Response `data` shape is `{ "q", "barcode", "count", "items": [ ... ] }` (not a bare product array; not cursor pagination). Inventory **Product lookup search** / **Product lookup barcode** (`aria-label`s); lookup omits blank. Also `GET /products/{id}/warehouse-stock` and `GET /products/export`.
 
 ### 5.5 Stock Operations
 
@@ -1959,20 +1964,22 @@ FastAPI validation / `HTTPException` errors use the framework shape (not the suc
 Business errors often return `detail` as a string or `{ "code": "CREDIT_LIMIT_EXCEEDED", "message": "...", ... }`. Correlation remains the **`X-Request-ID`** header (not a body `request_id` field).
 
 ### Common Error Codes
-| Code | Description |
-|------|-------------|
-| `VALIDATION_ERROR` | Input validation failed |
-| `AUTHENTICATION_FAILED` | Invalid credentials |
-| `TOKEN_EXPIRED` | JWT token has expired |
-| `INSUFFICIENT_PERMISSIONS` | User lacks required role/permission |
-| `TENANT_SUSPENDED` | Tenant account is suspended |
-| `RESOURCE_NOT_FOUND` | Requested resource not found |
-| `INSUFFICIENT_STOCK` | Not enough stock for operation |
-| `CREDIT_LIMIT_EXCEEDED` | Customer credit limit reached (override via `override_credit_limit` + required `override_reason` + `credit:approve`) |
-| `CREDIT_OVERRIDE_FORBIDDEN` | Credit limit override attempted without `credit:approve` |
-| `CREDIT_OVERRIDE_REASON_REQUIRED` | `override_credit_limit=true` without a non-empty `override_reason` |
-| `DUPLICATE_ENTRY` | Resource already exists |
-| `RATE_LIMIT_EXCEEDED` | Too many requests |
+Codes below are values clients may see on **`detail.code`** (object `detail`) or as a plain **`detail`** string. FastAPI **422** validation uses a `detail` **array** (no body `VALIDATION_ERROR` code). Metrics/request-log maps (e.g. status→`VALIDATION_ERROR` / `UNAUTHENTICATED`) are operator-side only — not response body fields.
+
+| Code / detail | Where | Description |
+|---------------|-------|-------------|
+| (422 `detail[]`) | body | Pydantic/OpenAPI validation failed |
+| `Invalid credentials` / `Invalid refresh token` / … | `detail` string (401) | Auth failures (plain strings — no dedicated auth failure code enum) |
+| `Tenant is suspended` | `detail` string (403) | Tenant suspended (plain string — no dedicated suspended body code) |
+| `RATE_LIMIT_EXCEEDED` | `detail` string (429) | Too many requests |
+| `EMAIL_NOT_VERIFIED` | `detail.code` (403) | Login blocked until email verified |
+| `INSUFFICIENT_STOCK` | `detail.code` (409) | Not enough stock for operation |
+| `CREDIT_LIMIT_EXCEEDED` | `detail.code` (409) | Credit limit reached (override via `override_credit_limit` + `override_reason` + `credit:approve`) |
+| `CREDIT_OVERRIDE_FORBIDDEN` | `detail.code` (403) | Override without `credit:approve` |
+| `CREDIT_OVERRIDE_REASON_REQUIRED` | `detail.code` (400) | Override flag without reason |
+| `STORE_LIMIT_REACHED` | `detail.code` (403) | Active store entitlement exhausted |
+| `SETTLEMENT_REQUIRED` | `detail.code` (400) | Sales return needs explicit settlement method |
+| `TENANT_READ_ONLY` | `detail.code` (403) | Tenant in read-only / grace restriction |
 
 ---
 
