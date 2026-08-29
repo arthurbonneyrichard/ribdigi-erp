@@ -667,7 +667,7 @@ export default function Page() {
       discount_amount: cartDiscountAmount,
       status: 'completed',
       party_id: customerId.trim() || null,
-      customer_name: name || null,
+      customer_name: name.trim() || null,
       items,
     };
     let payments: { payment_method: string; amount: number; reference?: string | null }[] | null =

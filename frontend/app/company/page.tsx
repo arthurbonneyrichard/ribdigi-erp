@@ -874,13 +874,13 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
-                  const body: Record<string, unknown> = {
-                    // Keep prior phone behavior for SMS test save path.
-                    phone: profilePhone,
-                  };
+                  const body: Record<string, unknown> = {};
                   // Omit blank name so Save does not 422 (UserFullNameValue); leave prior.
                   const trimmedName = profileFullName.trim();
                   if (trimmedName) body.full_name = trimmedName;
+                  // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior.
+                  const trimmedPhone = profilePhone.trim();
+                  if (trimmedPhone) body.phone = trimmedPhone;
                   await api('/me', {
                     method: 'PATCH',
                     body: JSON.stringify(body),

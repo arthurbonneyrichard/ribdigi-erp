@@ -480,8 +480,10 @@ class WebAuthnAttestationResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    clientDataJSON: str = Field(min_length=1)
-    attestationObject: str = Field(min_length=1)
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    clientDataJSON: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    attestationObject: Base64UrlValue
     # omit/`null` → no transports; unknown token / non-list → **422** (was free `list[str]`)
     transports: AuthenticatorTransportListValue | None = None
 
@@ -491,10 +493,14 @@ class WebAuthnAssertionResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    clientDataJSON: str = Field(min_length=1)
-    authenticatorData: str = Field(min_length=1)
-    signature: str = Field(min_length=1)
-    userHandle: str | None = None
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    clientDataJSON: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    authenticatorData: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    signature: Base64UrlValue
+    # omit/`null` OK; blank/`+`/`/`/`http://…` → **422** (was free `str`)
+    userHandle: Base64UrlValue | None = None
 
 
 class WebAuthnRegistrationCredential(BaseModel):
@@ -506,8 +512,10 @@ class WebAuthnRegistrationCredential(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str = Field(min_length=1)
-    rawId: str = Field(min_length=1)
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    id: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    rawId: Base64UrlValue
     type: Literal["public-key"] = "public-key"
     response: WebAuthnAttestationResponse
     # Must be a JSON object (≤32 keys); list/string/number → **422** (was free `dict[str, Any]`)
@@ -524,8 +532,10 @@ class WebAuthnAuthenticationCredential(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str = Field(min_length=1)
-    rawId: str = Field(min_length=1)
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    id: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    rawId: Base64UrlValue
     type: Literal["public-key"] = "public-key"
     response: WebAuthnAssertionResponse
     # Must be a JSON object (≤32 keys); list/string/number → **422** (was free `dict[str, Any]`)
@@ -5947,6 +5957,48 @@ PasskeyNameValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_passkey_name_value),
+]
+
+
+def coerce_base64url_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip WebAuthn base64url; blank stays blank."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_base64url_value(value: str) -> str:
+    """AfterValidator: WebAuthn base64url blob; blank/URL/standard-b64 → 422.
+
+    Allows unpadded or `=`-padded `A-Za-z0-9_-` (browser PublicKeyCredential JSON).
+    Rejects spaces, `+`/`/` (standard base64), `://`/`@`. Authenticity remains
+    webauthn verify → **400**/**401**.
+    """
+    if not value:
+        raise ValueError("must be a non-empty base64url string")
+    if len(value) > 65536:
+        raise ValueError("must be a non-empty base64url string")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("must be a non-empty base64url string")
+    if "+" in value or "/" in value:
+        raise ValueError("must be a non-empty base64url string")
+    core = value.rstrip("=")
+    if not core or not re.fullmatch(r"[A-Za-z0-9_-]+", core):
+        raise ValueError("must be a non-empty base64url string")
+    if value[len(core) :].count("=") > 2 or (
+        value[len(core) :] and any(ch != "=" for ch in value[len(core) :])
+    ):
+        raise ValueError("must be a non-empty base64url string")
+    return value
+
+
+# WebAuthn PublicKeyCredential / authenticator response base64url fields (BR-19).
+Base64UrlValue = Annotated[
+    str,
+    BeforeValidator(coerce_base64url_value),
+    AfterValidator(validate_base64url_value),
 ]
 
 
