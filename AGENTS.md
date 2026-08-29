@@ -1153,6 +1153,46 @@
 - **Party contact Delete aria OpenAPI (BR-6.1 / BR-7.1):** Party contacts **Delete party contact** button (`aria-label`).
 - **Onboarding Open step aria OpenAPI:** Getting started **Open onboarding step** button (`aria-label`).
 - **Purchasing View purchase invoice aria OpenAPI (BR-6.5):** Purchasing Invoices **View purchase invoice** button (`aria-label`).
+- **Journal line account_code defense-in-depth OpenAPI (BR-10.2 / BR-10.1):** `get_account_by_code` / `require_account_code` uses `validate_account_code_value` (**400**) matching `AccountCodeValue` (**422**); was strip-then-404/400 “not found” for malformed journal line codes.
+- **Opening balance account_code defense-in-depth OpenAPI (BR-10.1):** COA opening `_resolve_account` uses `get_account_by_code` / `require_account_code` (**400**) matching `AccountCodeValue` (**422**); was strip-then-404 for malformed codes.
+- **Sales daily invoice_revenue money_json Decimal pilot OpenAPI (BR-14.1):** `sales_daily.invoice_revenue` uses `honesty.money_json`.
+- **Sales daily pos_revenue money_json Decimal pilot OpenAPI (BR-14.1):** `sales_daily.pos_revenue` uses `honesty.money_json`.
+- **Sales daily total_revenue money_json Decimal pilot OpenAPI (BR-14.1):** `sales_daily.total_revenue` uses `honesty.money_json`.
+- **Sales daily tax money_json Decimal pilot OpenAPI (BR-14.1):** `sales_daily.tax` uses `honesty.money_json`.
+- **Sales daily discounts money_json Decimal pilot OpenAPI (BR-14.1):** `sales_daily.discounts` uses `honesty.money_json`.
+- **Sales daily net_sales money_json Decimal pilot OpenAPI (BR-14.1):** `sales_daily.net_sales` uses `honesty.money_json`.
+- **Sales monthly total_revenue money_json Decimal pilot OpenAPI (BR-14.1):** `sales_monthly.total_revenue` uses `honesty.money_json`.
+- **Sales by product total_revenue money_json Decimal pilot OpenAPI (BR-14.1):** `sales_by_product.total_revenue` uses `honesty.money_json`.
+- **Sales by customer total_revenue money_json Decimal pilot OpenAPI (BR-14.1):** `sales_by_customer.total_revenue` uses `honesty.money_json`.
+- **Sales returns total_amount money_json Decimal pilot OpenAPI (BR-14.1):** `sales_returns_summary.total_amount` uses `honesty.money_json`.
+- **Sales returns posted_amount money_json Decimal pilot OpenAPI (BR-14.1):** `sales_returns_summary.posted_amount` uses `honesty.money_json`.
+- **Sales returns refunded_amount money_json Decimal pilot OpenAPI (BR-14.1):** `sales_returns_summary.refunded_amount` uses `honesty.money_json`.
+- **Purchases summary total_amount money_json Decimal pilot OpenAPI (BR-14.3):** `purchases_summary.total_amount` uses `honesty.money_json`.
+- **Purchases summary outstanding_amount money_json Decimal pilot OpenAPI (BR-14.3):** `purchases_summary.outstanding_amount` uses `honesty.money_json`.
+- **Expenses summary total_amount money_json Decimal pilot OpenAPI (BR-14.4):** `expenses_summary.total_amount` uses `honesty.money_json`.
+- **Expenses summary by_category amount money_json Decimal pilot OpenAPI (BR-14.4):** `expenses_summary.by_category[].amount` uses `honesty.money_json`.
+- **Budget vs actual budget_monthly money_json Decimal pilot OpenAPI (BR-14.4):** budget-vs-actual row `budget_monthly` uses `honesty.money_json`.
+- **Budget vs actual actual money_json Decimal pilot OpenAPI (BR-14.4):** budget-vs-actual row `actual` uses `honesty.money_json`.
+- **Budget vs actual total_actual money_json Decimal pilot OpenAPI (BR-14.4):** budget-vs-actual `total_actual` uses `honesty.money_json`.
+- **Balance sheet total_assets money_json Decimal pilot OpenAPI (BR-14.5):** `_pack_balance_sheet.total_assets` (+ liabilities/equity) uses `honesty.money_json`.
+- **Balance sheet compare prior_balance money_json Decimal pilot OpenAPI (BR-14.5):** BS compare row `prior_balance` / `delta` use `honesty.money_json`.
+- **Cash flow inflows money_json Decimal pilot OpenAPI (BR-14 / BR-10.6):** `cash_flow.inflows` (+ outflows/net/buckets) uses `honesty.money_json`.
+- **Login Sign in aria OpenAPI (BR-19):** Login **Sign in** button (`aria-label`).
+- **Login Use passkey aria OpenAPI (BR-19):** Login **Use passkey** button (`aria-label`).
+- **Forgot password Send reset link aria OpenAPI (BR-19):** Forgot password **Send password reset link** button (`aria-label`).
+- **Notifications Filter unread aria OpenAPI (BR-4.4):** Notifications **Filter unread notifications** button (`aria-label`).
+- **Notifications Filter all aria OpenAPI (BR-4.4):** Notifications **Filter all notifications** button (`aria-label`).
+- **Onboarding Expand checklist aria OpenAPI:** Getting started **Expand/Collapse onboarding checklist** button (`aria-label`).
+- **Onboarding Dismiss checklist aria OpenAPI:** Getting started **Dismiss onboarding checklist** button (`aria-label`).
+- **Inventory Run product lookup aria OpenAPI (BR-5.1 / BR-18.2):** Inventory Lookup **Run product lookup** button (`aria-label`).
+- **Multi-Store Cancel branch edit aria OpenAPI (BR-2.2):** Multi-Store **Cancel branch edit** button (`aria-label`).
+- **Multi-Store Cancel department edit aria OpenAPI (BR-2.5):** Multi-Store **Cancel department edit** button (`aria-label`).
+- **Multi-Store Cancel store edit aria OpenAPI (BR-13.1):** Multi-Store **Cancel store edit** button (`aria-label`).
+- **Multi-Store Cancel warehouse edit aria OpenAPI (BR-2.4):** Multi-Store **Cancel warehouse edit** button (`aria-label`).
+- **Accounting Show ledger tab aria OpenAPI (BR-10):** Accounting **Show accounting ledger tab** button (`aria-label`).
+- **Accounting Show cash and bank tab aria OpenAPI (BR-10.3):** Accounting **Show accounting cash and bank tab** button (`aria-label`).
+- **Accounting Show reconcile tab aria OpenAPI (BR-10.3):** Accounting **Show accounting reconcile tab** button (`aria-label`).
+- **Accounting Show cheques tab aria OpenAPI (BR-10.4):** Accounting **Show accounting cheques tab** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

@@ -288,12 +288,17 @@ export default function Login() {
 
           {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
 
-          <button className="login-primary" type="submit">
+          <button className="login-primary" type="submit" aria-label="Sign in">
             {needs2fa ? (methods.includes('totp') ? 'Verify & continue' : 'Continue') : 'Sign in'}
           </button>
 
           {showPasskey && (
-            <button className="login-secondary" type="button" onClick={verifyPasskey}>
+            <button
+              className="login-secondary"
+              type="button"
+              onClick={verifyPasskey}
+              aria-label="Use passkey"
+            >
               Use passkey
             </button>
           )}

@@ -1916,7 +1916,12 @@ export default function Page() {
                 }
               }}
             />
-            <button type="button" onClick={() => runProductLookup()} disabled={lookupBusy}>
+            <button
+              type="button"
+              onClick={() => runProductLookup()}
+              disabled={lookupBusy}
+              aria-label="Run product lookup"
+            >
               {lookupBusy ? 'Searching…' : 'Lookup'}
             </button>
           </div>

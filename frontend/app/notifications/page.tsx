@@ -138,10 +138,18 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-        <button onClick={() => setStatus('unread')} disabled={status === 'unread'}>
+        <button
+          onClick={() => setStatus('unread')}
+          disabled={status === 'unread'}
+          aria-label="Filter unread notifications"
+        >
           Unread
         </button>
-        <button onClick={() => setStatus('')} disabled={status === ''}>
+        <button
+          onClick={() => setStatus('')}
+          disabled={status === ''}
+          aria-label="Filter all notifications"
+        >
           All (90 days)
         </button>
         <button onClick={markAll} aria-label="Mark all notifications read">Mark all read</button>

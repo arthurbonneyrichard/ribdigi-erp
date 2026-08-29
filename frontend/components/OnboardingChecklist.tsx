@@ -108,7 +108,12 @@ export default function OnboardingChecklist({
         <span className="muted">
           {data.completed_count}/{data.total_count} · {pct}%
         </span>
-        <button type="button" onClick={() => setExpanded((v) => !v)} disabled={busy}>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          disabled={busy}
+          aria-label={expanded ? 'Collapse onboarding checklist' : 'Expand onboarding checklist'}
+        >
           {expanded ? 'Collapse' : 'Expand'}
         </button>
         {canManage && data.dismissible && (
@@ -116,6 +121,7 @@ export default function OnboardingChecklist({
             type="button"
             onClick={() => run('/onboarding/checklist/dismiss')}
             disabled={busy}
+            aria-label="Dismiss onboarding checklist"
           >
             Dismiss
           </button>

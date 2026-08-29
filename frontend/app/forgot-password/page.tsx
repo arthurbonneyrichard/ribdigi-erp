@@ -100,7 +100,12 @@ function ForgotPasswordForm() {
             />
           </label>
 
-          <button className="login-primary" type="submit" disabled={submitting}>
+          <button
+            className="login-primary"
+            type="submit"
+            disabled={submitting}
+            aria-label="Send password reset link"
+          >
             {submitting ? 'Sending…' : 'Send reset link'}
           </button>
 

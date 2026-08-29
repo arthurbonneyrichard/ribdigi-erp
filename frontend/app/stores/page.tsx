@@ -868,7 +868,7 @@ export default function Page() {
                 <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()} aria-label="Save branch">
                   Save branch
                 </button>
-                <button type="button" onClick={resetBranchForm}>
+                <button type="button" onClick={resetBranchForm} aria-label="Cancel branch edit">
                   Cancel
                 </button>
               </div>
@@ -935,7 +935,7 @@ export default function Page() {
                 <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()} aria-label="Save department">
                   Save department
                 </button>
-                <button type="button" onClick={resetDeptForm}>
+                <button type="button" onClick={resetDeptForm} aria-label="Cancel department edit">
                   Cancel
                 </button>
               </div>
@@ -1105,6 +1105,7 @@ export default function Page() {
                     setWhManagerId('');
                     setWhStoreId('');
                   }}
+                  aria-label="Cancel warehouse edit"
                 >
                   Cancel
                 </button>
@@ -1534,7 +1535,11 @@ export default function Page() {
               >
                 Save store
               </button>
-              <button type="button" onClick={() => setEditStoreId('')}>
+              <button
+                type="button"
+                onClick={() => setEditStoreId('')}
+                aria-label="Cancel store edit"
+              >
                 Cancel
               </button>
             </div>

@@ -888,16 +888,32 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={() => setTab('ledger')} disabled={tab === 'ledger'}>
+        <button
+          onClick={() => setTab('ledger')}
+          disabled={tab === 'ledger'}
+          aria-label="Show accounting ledger tab"
+        >
           Ledger
         </button>
-        <button onClick={() => setTab('cash')} disabled={tab === 'cash'}>
+        <button
+          onClick={() => setTab('cash')}
+          disabled={tab === 'cash'}
+          aria-label="Show accounting cash and bank tab"
+        >
           Cash &amp; Bank
         </button>
-        <button onClick={() => setTab('reconcile')} disabled={tab === 'reconcile'}>
+        <button
+          onClick={() => setTab('reconcile')}
+          disabled={tab === 'reconcile'}
+          aria-label="Show accounting reconcile tab"
+        >
           Reconcile
         </button>
-        <button onClick={() => setTab('cheques')} disabled={tab === 'cheques'}>
+        <button
+          onClick={() => setTab('cheques')}
+          disabled={tab === 'cheques'}
+          aria-label="Show accounting cheques tab"
+        >
           Cheques
         </button>
       </div>

@@ -140,7 +140,23 @@ async def resolve_settlement_gl(
     return liquid_gl_for_payment_method(payment_method)
 
 
+def require_account_code(value: str | None) -> str:
+    """OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+
+    Used by journal lines + COA opening balances that resolve by ``account_code``
+    (was strip-then-404/400 “not found” for malformed codes).
+    """
+    from app.schemas import validate_account_code_value
+
+    try:
+        return validate_account_code_value((value or "").strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 async def get_account_by_code(db: AsyncSession, tenant_id: str, code: str) -> m.Account:
+    # OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+    code = require_account_code(code)
     account = (
         await db.execute(
             select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code)
@@ -1739,13 +1755,13 @@ def _pnl_pack(
     gross_profit = revenue - cogs
     net_profit = revenue - expense
     return {
-        "income": round(money_json(revenue), 2),  # back-compat alias
-        "revenue": round(money_json(revenue), 2),
-        "cogs": round(money_json(cogs), 2),
-        "gross_profit": round(money_json(gross_profit), 2),
-        "operating_expenses": round(money_json(operating_expenses), 2),
-        "expense": round(money_json(expense), 2),  # back-compat: total expenses incl. COGS
-        "net_profit": round(money_json(net_profit), 2),
+        "income": money_json(round(money_json(revenue), 2)),  # back-compat alias
+        "revenue": money_json(round(money_json(revenue), 2)),
+        "cogs": money_json(round(money_json(cogs), 2)),
+        "gross_profit": money_json(round(money_json(gross_profit), 2)),
+        "operating_expenses": money_json(round(money_json(operating_expenses), 2)),
+        "expense": money_json(round(money_json(expense), 2)),  # back-compat: total expenses incl. COGS
+        "net_profit": money_json(round(money_json(net_profit), 2)),
         "accounts": accounts,
         "from_date": from_date.isoformat() if from_date else None,
         "to_date": to_date.isoformat() if to_date else None,

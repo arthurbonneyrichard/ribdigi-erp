@@ -42,7 +42,8 @@ async def _resolve_account(
         assert_account_active(row)
         return row
     if account_code:
-        row = await get_account_by_code(db, tenant_id, account_code.strip())
+        # OpenAPI AccountCodeValue → 422; get_account_by_code defense-in-depth → 400.
+        row = await get_account_by_code(db, tenant_id, account_code)
         if not row:
             raise HTTPException(status_code=404, detail=f"Account not found: {account_code}")
         assert_account_active(row)
