@@ -105,7 +105,13 @@ async def create_group(
 ) -> m.CustomerGroup:
     await ensure_default_groups(db, tenant_id)
     name = require_honest_narrative(name, label="customer group name", max_length=120)
-    code_key = (code or _slug_code(name)).strip().upper()[:40]
+    # OpenAPI CustomerGroupCodeValue → 422; service defense-in-depth → 400.
+    if code is not None and str(code).strip():
+        code_key = require_honest_narrative(
+            str(code).strip().upper(), label="customer group code", max_length=40
+        )
+    else:
+        code_key = _slug_code(name).strip().upper()[:40]
     pct = float(discount_percent or 0)
     if pct < 0 or pct > 100:
         raise HTTPException(status_code=422, detail="discount_percent must be between 0 and 100")

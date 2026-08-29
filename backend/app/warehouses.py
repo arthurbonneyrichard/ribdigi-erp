@@ -99,9 +99,10 @@ async def create_warehouse(
     address: str | None = None,
     capacity: float | None = None,
 ) -> m.Warehouse:
-    code_clean = (code or "").strip().upper()
-    if not code_clean:
-        raise HTTPException(status_code=400, detail="code is required")
+    # OpenAPI WarehouseCodeValue → 422; service defense-in-depth → 400.
+    code_clean = require_honest_narrative(
+        (code or "").strip().upper(), label="warehouse code", max_length=50
+    )
     # OpenAPI WarehouseNameValue → 422; service defense-in-depth → 400.
     name_clean = require_honest_narrative(name, label="warehouse name", max_length=150)
     existing = (

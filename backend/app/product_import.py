@@ -18,6 +18,7 @@ from app.tax import normalize_supply_class
 from pydantic import TypeAdapter, ValidationError
 
 from app.schemas import (
+    ProductBarcodeValue,
     ProductDescriptionValue,
     ProductNameValue,
     ProductSkuValue,
@@ -346,10 +347,20 @@ async def validate_import_rows(
             seen_skus.add(sku_key)
 
         barcode = None
-        try:
-            barcode = barcodes_svc.normalize_barcode(raw.get("barcode") or None)
-        except HTTPException as exc:
-            errors.append(str(exc.detail))
+        raw_barcode = (raw.get("barcode") or "").strip()
+        if raw_barcode:
+            try:
+                # OpenAPI ProductBarcodeValue → 422; CSV TypeAdapter defense → row error.
+                TypeAdapter(ProductBarcodeValue).validate_python(raw_barcode)
+            except ValidationError:
+                errors.append(
+                    "barcode must be 4–48 characters (letters, numbers, - . _)"
+                )
+            else:
+                try:
+                    barcode = barcodes_svc.normalize_barcode(raw_barcode)
+                except HTTPException as exc:
+                    errors.append(str(exc.detail))
         if barcode:
             if barcode in seen_barcodes:
                 errors.append("duplicate barcode in file")

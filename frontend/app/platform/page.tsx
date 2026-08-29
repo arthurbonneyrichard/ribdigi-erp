@@ -838,7 +838,7 @@ export default function PlatformConsole() {
               })}
             </div>
             <div className="plat-actions" style={{ marginTop: 14 }}>
-              <button type="button" disabled={busy === selected.id} onClick={saveModules}>
+              <button type="button" disabled={busy === selected.id} onClick={saveModules} aria-label="Save feature modules">
                 Save feature modules
               </button>
               <button type="button" disabled={busy === selected.id} onClick={resetModules}>

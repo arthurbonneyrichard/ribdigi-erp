@@ -437,7 +437,7 @@ export default function Page() {
                 {r.provider_fetched_at
                   ? ` · ${String(r.provider_fetched_at).replace('T', ' ').slice(0, 16)}`
                   : ''}{' '}
-                <button type="button" onClick={() => removeFxRate(r.currency_code)}>
+                <button type="button" onClick={() => removeFxRate(r.currency_code)} aria-label={`Remove exchange rate ${r.currency_code}`}>
                   Remove
                 </button>
               </li>

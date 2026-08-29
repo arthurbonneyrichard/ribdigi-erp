@@ -904,15 +904,19 @@ async def record_customer_payment(
             entity="customer_payment",
             entity_id=payment.id,
             details={
-                "amount": amount,
-                "early_payment_discount": total_discount,
+                "amount": money_json(amount),
+                "early_payment_discount": money_json(total_discount),
                 "currency": pay_cur,
-                "exchange_rate": pay_rate,
-                "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+                "exchange_rate": money_json(pay_rate),
+                "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
                 "customer_id": customer_id,
                 "invoice_id": sales_invoice_id,
                 "allocations": [
-                    {"invoice_id": inv.id, "amount": amt, "discount": disc}
+                    {
+                        "invoice_id": inv.id,
+                        "amount": money_json(amt),
+                        "discount": money_json(disc),
+                    }
                     for inv, amt, disc in allocations
                 ],
             },
@@ -932,7 +936,11 @@ async def record_customer_payment(
             "sales_invoice_id": payment.sales_invoice_id,
             "currency": pay_cur,
             "invoice_statuses": [
-                {"invoice_id": inv.id, "status": inv.status, "amount_applied": amt}
+                {
+                    "invoice_id": inv.id,
+                    "status": inv.status,
+                    "amount_applied": money_json(amt),
+                }
                 for inv, amt, _disc in allocations
             ],
         },

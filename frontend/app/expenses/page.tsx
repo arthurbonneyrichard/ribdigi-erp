@@ -1021,6 +1021,11 @@ export default function Page() {
                     type="button"
                     className={c.is_active === false ? 'btn-ok' : 'btn-danger'}
                     onClick={() => setCategoryActive(c, c.is_active === false)}
+                    aria-label={
+                      c.is_active === false
+                        ? `Activate expense category ${c.id}`
+                        : `Deactivate expense category ${c.id}`
+                    }
                     title={
                       c.is_active === false
                         ? 'Reactivate category for new expenses'
@@ -1165,7 +1170,7 @@ export default function Page() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {recEditId ? (
               <>
-                <button type="button" onClick={saveRecurringEdit} disabled={!recCategoryId || recBusy}>
+                <button type="button" onClick={saveRecurringEdit} disabled={!recCategoryId || recBusy} aria-label="Save recurring expense schedule">
                   {recBusy ? 'Saving…' : 'Save schedule'}
                 </button>
                 <button type="button" onClick={cancelRecurringEdit} disabled={recBusy}>
@@ -1173,7 +1178,7 @@ export default function Page() {
                 </button>
               </>
             ) : (
-              <button type="button" onClick={createRecurring} disabled={!recCategoryId || recBusy}>
+              <button type="button" onClick={createRecurring} disabled={!recCategoryId || recBusy} aria-label="Create recurring expense schedule">
                 {recBusy ? 'Creating…' : 'Create schedule'}
               </button>
             )}
@@ -1238,7 +1243,7 @@ export default function Page() {
                 </td>
                 <td>{r.is_active ? 'yes' : 'no'}</td>
                 <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => startRecurringEdit(r)}>
+                  <button type="button" onClick={() => startRecurringEdit(r)} aria-label={`Edit recurring expense schedule ${r.id}`}>
                     Edit schedule
                   </button>
                   {r.is_active ? (
@@ -1261,6 +1266,11 @@ export default function Page() {
                     type="button"
                     className={r.is_active ? 'btn-danger' : 'btn-ok'}
                     onClick={() => setRecurringActive(r.id, !r.is_active)}
+                    aria-label={
+                      r.is_active
+                        ? `Deactivate recurring expense ${r.id}`
+                        : `Activate recurring expense ${r.id}`
+                    }
                   >
                     {r.is_active ? 'Deactivate' : 'Activate'}
                   </button>
@@ -1612,7 +1622,7 @@ export default function Page() {
               <option value="mobile_money">Mobile money</option>
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={saveEdit} disabled={editBusy}>
+              <button type="button" onClick={saveEdit} disabled={editBusy} aria-label="Save expense changes">
                 {editBusy ? 'Saving…' : 'Save changes'}
               </button>
               <button type="button" onClick={cancelEdit} disabled={editBusy}>
@@ -1712,7 +1722,7 @@ export default function Page() {
                       Download
                     </button>
                     <button onClick={() => suggestOcr(r.id)}>OCR</button>
-                    <button onClick={() => removeAttachment(r.id)}>Remove</button>
+                    <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
                   </span>
                 ) : (
                   <label style={{ cursor: 'pointer' }}>

@@ -256,9 +256,10 @@ async def create_category(
     parent_id: str | None = None,
     tax_rate_id: str | None = None,
 ) -> m.ProductCategory:
-    code = code.strip().upper()
-    if not code:
-        raise HTTPException(status_code=400, detail="code and name are required")
+    # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
+    code = require_honest_narrative(
+        (code or "").strip().upper(), label="category code", max_length=40
+    )
     name = require_honest_narrative(name, label="category name", max_length=120)
     if parent_id:
         parent = await db.get(m.ProductCategory, parent_id)
@@ -305,9 +306,10 @@ async def update_category(
     if row is None or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Category not found")
     if code is not None:
-        code = code.strip().upper()
-        if not code:
-            raise HTTPException(status_code=400, detail="code is required")
+        # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(
+            (code or "").strip().upper(), label="category code", max_length=40
+        )
         dup = (
             await db.execute(
                 select(m.ProductCategory).where(
@@ -366,9 +368,10 @@ async def create_brand(
     name: str,
     description: str | None = None,
 ) -> m.Brand:
-    code = code.strip().upper()
-    if not code:
-        raise HTTPException(status_code=400, detail="code and name are required")
+    # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
+    code = require_honest_narrative(
+        (code or "").strip().upper(), label="brand code", max_length=40
+    )
     name = require_honest_narrative(name, label="brand name", max_length=120)
     dup = (
         await db.execute(
@@ -404,9 +407,10 @@ async def update_brand(
     if row is None or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Brand not found")
     if code is not None:
-        code = code.strip().upper()
-        if not code:
-            raise HTTPException(status_code=400, detail="code is required")
+        # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(
+            (code or "").strip().upper(), label="brand code", max_length=40
+        )
         dup = (
             await db.execute(
                 select(m.Brand).where(
@@ -479,9 +483,10 @@ async def create_unit(
 ) -> m.UnitOfMeasure:
     from app.uom import validate_unit_base
 
-    code = code.strip().upper()
-    if not code:
-        raise HTTPException(status_code=400, detail="code and name are required")
+    # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
+    code = require_honest_narrative(
+        (code or "").strip().upper(), label="unit code", max_length=20
+    )
     name = require_honest_narrative(name, label="unit name", max_length=80)
     dup = (
         await db.execute(
@@ -531,9 +536,10 @@ async def update_unit(
     if row is None or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Unit not found")
     if code is not None:
-        code = code.strip().upper()
-        if not code:
-            raise HTTPException(status_code=400, detail="code is required")
+        # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(
+            (code or "").strip().upper(), label="unit code", max_length=20
+        )
         dup = (
             await db.execute(
                 select(m.UnitOfMeasure).where(

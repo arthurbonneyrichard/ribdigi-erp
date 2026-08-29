@@ -1414,7 +1414,7 @@ export default function Page() {
                 aria-label="Supplier payment next number"
               />
               <span className="muted">{spyPreview || '—'}</span>
-              <button type="button" onClick={savePurchasingNumbering}>
+              <button type="button" onClick={savePurchasingNumbering} aria-label="Save purchasing numbering">
                 Save numbering
               </button>
             </div>
@@ -1638,6 +1638,7 @@ export default function Page() {
                         type="button"
                         disabled={prBusy === `submit:${r.id}`}
                         onClick={() => prAction(r.id, 'submit')}
+                        aria-label={`Submit purchase request ${r.id}`}
                       >
                         Submit
                       </button>
@@ -2069,7 +2070,7 @@ export default function Page() {
                       </button>
                     )}
                     {(o.status === 'sent' || o.status === 'partially_received') && (
-                      <button type="button" className="btn-ok" onClick={() => receiveAll(o)}>
+                      <button type="button" className="btn-ok" onClick={() => receiveAll(o)} aria-label={`Receive all for purchase order ${o.id}`}>
                         Receive all
                       </button>
                     )}
@@ -2856,7 +2857,7 @@ export default function Page() {
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {inv.status === 'draft' && (
-                    <button className="btn-ok" onClick={() => approveInvoice(inv.id)}>Approve</button>
+                    <button className="btn-ok" onClick={() => approveInvoice(inv.id)} aria-label={`Approve purchase invoice ${inv.id}`}>Approve</button>
                   )}
                   {inv.can_cancel && (
                     <button
@@ -3159,7 +3160,7 @@ export default function Page() {
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {r.status === 'draft' && (
                     <>
-                      <button type="button" className="btn-ok" onClick={() => postReturn(r.id)}>
+                      <button type="button" className="btn-ok" onClick={() => postReturn(r.id)} aria-label={`Post purchase return ${r.id}`}>
                         Post
                       </button>
                       <button

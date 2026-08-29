@@ -184,10 +184,14 @@ async def create_store(
             raise HTTPException(status_code=404, detail="User not found in tenant")
     # OpenAPI StoreNameValue → 422; service defense-in-depth → 400.
     name_clean = require_honest_narrative(name, label="store name", max_length=150)
+    # OpenAPI StoreCodeValue → 422; service defense-in-depth → 400.
+    code_clean = require_honest_narrative(
+        (code or "").strip().upper(), label="store code", max_length=50
+    )
     store = m.Store(
         tenant_id=tenant_id,
         name=name_clean,
-        code=code.strip().upper(),
+        code=code_clean,
         address=optional_honest_narrative(address, label="store address", max_length=500),
         phone=_optional_store_phone(phone),
         manager_id=manager_id,

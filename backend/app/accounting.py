@@ -516,7 +516,7 @@ async def post_journal_entry(
             entity_id=entry.id,
             details={
                 "entry_number": entry.entry_number,
-                "total_debit": total_debit,
+                "total_debit": money_json(total_debit),
                 "source_type": source_type,
                 "source_id": source_id,
             },

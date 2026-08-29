@@ -955,7 +955,7 @@ export default function Page() {
                   title="Discount percent"
                   aria-label={`${g.name} discount percent`}
                 />
-                <button type="button" onClick={() => saveGroupDiscount(g)}>
+                <button type="button" onClick={() => saveGroupDiscount(g)} aria-label={`Save customer group discount ${g.id}`}>
                   Save discount
                 </button>
                 <button

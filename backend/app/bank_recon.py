@@ -728,8 +728,8 @@ def serialize_clearing_group(
         "created_at": group.created_at,
         "statement_line_ids": bank_line_ids,
         "journal_line_ids": journal_line_ids,
-        "bank_total": bank_total,
-        "book_total": book_total,
+        "bank_total": money_json(bank_total),
+        "book_total": money_json(book_total),
     }
 
 
@@ -895,8 +895,8 @@ async def create_clearing_group(
             detail={
                 "code": "AMOUNT_MISMATCH",
                 "message": "Sum of bank lines must equal sum of journal signed amounts",
-                "bank_total": bank_total,
-                "book_total": book_total,
+                "bank_total": money_json(bank_total),
+                "book_total": money_json(book_total),
             },
         )
 

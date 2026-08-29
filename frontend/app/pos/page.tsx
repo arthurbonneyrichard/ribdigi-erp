@@ -1244,7 +1244,7 @@ export default function Page() {
                 inputMode="text"
                 aria-label="Barcode scan or product search"
               />
-              <button type="submit" className="tpos-btn tpos-btn-primary" disabled={!session}>
+              <button type="submit" className="tpos-btn tpos-btn-primary" disabled={!session} aria-label="POS scan or search products">
                 Scan / Search
               </button>
               <button

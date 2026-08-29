@@ -909,7 +909,7 @@ async def create_grn(
                 "grn_number": grn.grn_number,
                 "po_id": po.id,
                 "po_status": po.status,
-                "accepted_value": accepted_value,
+                "accepted_value": money_json(accepted_value),
             },
         )
     )
@@ -1682,7 +1682,7 @@ async def post_purchase_return(
             details={
                 "return_number": ret.return_number,
                 "debit_note_number": ret.debit_note_number,
-                "total_amount": credit,
+                "total_amount": money_json(credit),
                 "reason": ret.reason,
             },
         )

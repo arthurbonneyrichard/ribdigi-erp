@@ -7853,7 +7853,10 @@ async def create_expense_category(
     )
     cat = m.ExpenseCategory(
         tenant_id=claims["tenant_id"],
-        code=payload.code.strip().upper(),
+        # OpenAPI ExpenseCategoryCodeValue → 422; service defense-in-depth → 400.
+        code=require_honest_narrative(
+            payload.code.strip().upper(), label="expense category code", max_length=40
+        ),
         name=require_honest_narrative(
             payload.name, label="expense category name", max_length=120
         ),

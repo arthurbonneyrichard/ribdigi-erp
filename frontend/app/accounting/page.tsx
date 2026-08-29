@@ -1321,17 +1321,18 @@ export default function Page() {
                   <td>{r.is_active === false ? 'no' : 'yes'}</td>
                   <td>
                     {r.is_active === false ? (
-                      <button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)}>
-                        Activate
-                      </button>
+<button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)} aria-label={`Activate account ${r.id}`}>
+                          Activate
+                        </button>
                     ) : (
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        onClick={() => setAccountActive(r.id, false)}
-                      >
-                        Deactivate
-                      </button>
+<button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => setAccountActive(r.id, false)}
+                          aria-label={`Deactivate account ${r.id}`}
+                        >
+                          Deactivate
+                        </button>
                     )}
                   </td>
                 </tr>
@@ -2063,6 +2064,7 @@ export default function Page() {
                 onClick={() => autoClear('high')}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12, marginRight: 8 }}
+                aria-label="Auto-clear high confidence matches"
               >
                 Auto-clear high confidence
               </button>
@@ -2070,6 +2072,7 @@ export default function Page() {
                 onClick={() => autoClear('medium')}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12, marginRight: 8 }}
+                aria-label="Auto-clear medium confidence matches"
               >
                 Auto-clear medium+
               </button>
@@ -2077,6 +2080,7 @@ export default function Page() {
                 onClick={() => autoClear('low')}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12 }}
+                aria-label="Auto-clear low confidence matches"
               >
                 Auto-clear low+
               </button>
@@ -2090,7 +2094,7 @@ export default function Page() {
                         [{s.confidence}] {s.entry_number}: bank {s.bank_amount} ↔ book{' '}
                         {s.journal_signed_amount}
                         {s.ref_match ? ' (ref)' : ''} Δ{s.date_delta_days}d{' '}
-                        <button onClick={() => applySuggestion(s)}>Apply</button>
+                        <button onClick={() => applySuggestion(s)} aria-label="Apply bank match suggestion">Apply</button>
                       </li>
                     ))}
                   </ul>

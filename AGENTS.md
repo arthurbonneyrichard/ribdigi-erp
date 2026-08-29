@@ -993,6 +993,46 @@
 - **Sales Assign customer group aria OpenAPI (BR-7.1):** Sales **Assign customer group** button (`aria-label`).
 - **Stores Save branch aria OpenAPI (BR-2.2):** Multi-Store **Save branch** button (`aria-label`).
 - **Users Activate user aria OpenAPI (BR-3.1):** Users **Activate user** button (`aria-label`).
+- **Store code defense-in-depth OpenAPI (BR-13.1):** `create_store` uses `require_honest_narrative` (**400**) matching `StoreCodeValue` (**422**); was strip/upper only.
+- **Warehouse code defense-in-depth OpenAPI (BR-2.4 / BR-13):** `create_warehouse` uses `require_honest_narrative` (**400**) matching `WarehouseCodeValue` (**422**); was blank-only check after strip/upper.
+- **Category code defense-in-depth OpenAPI (BR-5.1):** `create_category` / `update_category` use `require_honest_narrative` (**400**) matching `CategoryCodeValue` (**422**); was strip/upper only.
+- **Brand code defense-in-depth OpenAPI (BR-5.1):** `create_brand` / `update_brand` use `require_honest_narrative` (**400**) matching `BrandCodeValue` (**422**); was strip/upper only.
+- **Unit code defense-in-depth OpenAPI (BR-5.1):** `create_unit` / `update_unit` use `require_honest_narrative` (**400**) matching `UnitCodeValue` (**422**); was strip/upper only.
+- **Customer group code defense-in-depth OpenAPI (BR-7.1):** `create_group` uses `require_honest_narrative` (**400**) matching `CustomerGroupCodeValue` (**422**) when code provided; omit still slugs from name.
+- **Expense category code defense-in-depth OpenAPI (BR-9.1):** `POST /expenses/categories` uses `require_honest_narrative` (**400**) matching `ExpenseCategoryCodeValue` (**422**); was strip/upper only.
+- **Product CSV barcode defense-in-depth OpenAPI (BR-5.1 / BR-18.2):** Product CSV validate uses `TypeAdapter(ProductBarcodeValue)` before `normalize_barcode` so `!!!!`/`http://…`/`ab` fail the row report (was normalize-only).
+- **Customer payment audit money_json Decimal pilot OpenAPI (BR-11):** Customer payment audit `details.amount` / `early_payment_discount` / `exchange_rate` / `fx_gain_loss` + allocation amount/discount use `honesty.money_json`.
+- **Journal post audit money_json Decimal pilot OpenAPI (BR-10.2):** Journal post audit `details.total_debit` uses `honesty.money_json`.
+- **Purchase return post audit money_json Decimal pilot OpenAPI (BR-6.6):** Purchase return post audit `details.total_amount` uses `honesty.money_json`.
+- **GRN post accepted_value money_json Decimal pilot OpenAPI (BR-6.4):** GRN post audit `details.accepted_value` uses `honesty.money_json`.
+- **Bank clearing group money_json Decimal pilot OpenAPI (BR-10.3):** `serialize_clearing_group` `bank_total` / `book_total` use `honesty.money_json`.
+- **Bank clearing mismatch money_json Decimal pilot OpenAPI (BR-10.3):** Clear-group `AMOUNT_MISMATCH` `bank_total` / `book_total` use `honesty.money_json`.
+- **Sale paid webhook amount_applied money_json Decimal pilot OpenAPI (BR-11 / BR-18.6):** `sale.paid` webhook `invoice_statuses[].amount_applied` uses `honesty.money_json`.
+- **Accounting Activate account aria OpenAPI (BR-10.1):** Accounting COA **Activate account** button (`aria-label`).
+- **Accounting Deactivate account aria OpenAPI (BR-10.1):** Accounting COA **Deactivate account** button (`aria-label`).
+- **Accounting Apply bank match suggestion aria OpenAPI (BR-10.3):** Accounting Reconcile **Apply bank match suggestion** button (`aria-label`).
+- **Accounting Auto-clear high confidence aria OpenAPI (BR-10.3):** Accounting Reconcile **Auto-clear high confidence matches** button (`aria-label`).
+- **Accounting Auto-clear medium confidence aria OpenAPI (BR-10.3):** Accounting Reconcile **Auto-clear medium confidence matches** button (`aria-label`).
+- **Accounting Auto-clear low confidence aria OpenAPI (BR-10.3):** Accounting Reconcile **Auto-clear low confidence matches** button (`aria-label`).
+- **Purchasing Save numbering aria OpenAPI (BR-6 / BR-20.4):** Purchasing **Save purchasing numbering** button (`aria-label`).
+- **Purchasing Submit request aria OpenAPI (BR-6.2):** Purchasing Requests **Submit purchase request** button (`aria-label`).
+- **Purchasing Receive all aria OpenAPI (BR-6.4):** Purchasing Orders **Receive all for purchase order** button (`aria-label`).
+- **Purchasing Approve invoice aria OpenAPI (BR-6.5):** Purchasing Invoices **Approve purchase invoice** button (`aria-label`).
+- **Purchasing Post return aria OpenAPI (BR-6.6):** Purchasing Returns **Post purchase return** button (`aria-label`).
+- **Stores Create transfer aria OpenAPI (BR-13.2):** Multi-Store **Create and request stock transfer** button (`aria-label`).
+- **Stores Submit transfer aria OpenAPI (BR-13.2):** Multi-Store **Submit stock transfer** button (`aria-label`).
+- **Stores Ship transfer aria OpenAPI (BR-13.2):** Multi-Store **Ship stock transfer** button (`aria-label`).
+- **Stores Receive transfer aria OpenAPI (BR-13.2):** Multi-Store **Receive stock transfer** button (`aria-label`).
+- **Stores Approve transfer aria OpenAPI (BR-13.2):** Multi-Store **Approve stock transfer** button (`aria-label`).
+- **Stores Cancel transfer aria OpenAPI (BR-13.2):** Multi-Store **Cancel stock transfer** button (`aria-label`).
+- **Stores Inventory reorder aria OpenAPI (BR-13):** Multi-Store **Open inventory reorder for store** button (`aria-label`).
+- **Sales Save group discount aria OpenAPI (BR-7.1):** Sales **Save customer group discount** button (`aria-label`).
+- **Expenses Save recurring schedule aria OpenAPI (BR-9.5):** Expenses **Save recurring expense schedule** button (`aria-label`).
+- **Expenses Create recurring schedule aria OpenAPI (BR-9.5):** Expenses **Create recurring expense schedule** button (`aria-label`).
+- **Expenses Edit recurring schedule aria OpenAPI (BR-9.5):** Expenses **Edit recurring expense schedule** button (`aria-label`).
+- **Platform Save feature modules aria OpenAPI:** Platform **Save feature modules** button (`aria-label`).
+- **Credit Remove exchange rate aria OpenAPI (BR-2.6):** Credit **Remove exchange rate** button (`aria-label`).
+- **POS Scan or search aria OpenAPI (BR-8.1):** POS **POS scan or search products** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).
