@@ -216,12 +216,16 @@ async def build_product_forecasts(
                 "reorder_level": money_json(p.reorder_level),
                 "reorder_qty": money_json(rq),
                 "lookback_days": lb,
-                "sold_qty_lookback": round(money_json(sold), 3),
-                "velocity_per_day": round(money_json(velocity), 6),
-                "days_to_stockout": round(money_json(days_to), 2) if days_to is not None else None,
-                "forecast_demand_7": round(money_json(velocity) * 7, 3),
-                "forecast_demand_30": round(money_json(velocity) * 30, 3),
-                "forecast_demand_90": round(money_json(velocity) * 90, 3),
+                "sold_qty_lookback": money_json(round(money_json(sold), 3)),
+                "velocity_per_day": money_json(round(money_json(velocity), 6)),
+                "days_to_stockout": (
+                    money_json(round(money_json(days_to), 2))
+                    if days_to is not None
+                    else None
+                ),
+                "forecast_demand_7": money_json(round(money_json(velocity) * 7, 3)),
+                "forecast_demand_30": money_json(round(money_json(velocity) * 30, 3)),
+                "forecast_demand_90": money_json(round(money_json(velocity) * 90, 3)),
                 "recommended_order_qty": money_json(rec),
                 "lead_time_days": lead,
                 "cover_days": cover,

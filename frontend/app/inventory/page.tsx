@@ -1549,7 +1549,12 @@ export default function Page() {
             ['adjust', 'Adjust'],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            disabled={tab === id}
+            aria-label={`Show inventory ${id} tab`}
+          >
             {label}
           </button>
         ))}

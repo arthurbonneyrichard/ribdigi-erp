@@ -785,7 +785,12 @@ export default function Page() {
             ['returns', 'Returns'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            disabled={tab === id}
+            aria-label={`Show sales ${id} tab`}
+          >
             {label}
           </button>
         ))}

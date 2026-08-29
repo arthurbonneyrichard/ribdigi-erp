@@ -531,7 +531,12 @@ export default function Page() {
             ['schedules', 'Email schedules'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
-          <button key={id} onClick={() => switchTab(id)} disabled={tab === id}>
+          <button
+            key={id}
+            onClick={() => switchTab(id)}
+            disabled={tab === id}
+            aria-label={`Show reports ${id} tab`}
+          >
             {label}
           </button>
         ))}

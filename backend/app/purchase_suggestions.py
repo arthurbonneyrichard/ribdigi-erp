@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import purchase_requests as purchase_requests_svc
 from app import reports as reports_svc
-from app.honesty import money_json
+from app.honesty import money_json, optional_honest_narrative
 
 
 def _product_suggested_qty(*, stock_qty: float, reorder_level: float, reorder_qty: float = 0) -> float:
@@ -299,14 +299,20 @@ async def create_requests_from_predictions(
         qty = float(raw.get("suggested_order_qty") or raw.get("recommended_order_qty") or 0)
         if qty <= 0:
             continue
+        risk = optional_honest_narrative(
+            raw.get("risk_reason"), label="AI prediction risk reason"
+        )
+        line_notes = optional_honest_narrative(
+            raw.get("notes"), label="purchase request notes"
+        )
         lines.append(
             {
                 "product_id": raw.get("product_id"),
                 "quantity": qty,
                 "warehouse_id": raw.get("warehouse_id"),
                 "preferred_supplier_id": raw.get("preferred_supplier_id"),
-                "notes": raw.get("notes")
-                or f"AI prediction ({raw.get('risk_reason') or 'at_risk'}); conf={conf}",
+                "notes": line_notes
+                or f"AI prediction ({risk or 'at_risk'}); conf={conf}",
             }
         )
     return await create_requests_from_low_stock(

@@ -1193,6 +1193,46 @@
 - **Accounting Show cash and bank tab aria OpenAPI (BR-10.3):** Accounting **Show accounting cash and bank tab** button (`aria-label`).
 - **Accounting Show reconcile tab aria OpenAPI (BR-10.3):** Accounting **Show accounting reconcile tab** button (`aria-label`).
 - **Accounting Show cheques tab aria OpenAPI (BR-10.4):** Accounting **Show accounting cheques tab** button (`aria-label`).
+- **AI prediction risk_reason defense-in-depth OpenAPI (BR-21.4):** `create_requests_from_predictions` uses `optional_honest_narrative` on line `risk_reason` (+ `notes`) (**400**) matching `AiPredictionRiskReasonValue` / `PurchaseRequestNotesValue` (**422**); omit → `at_risk` / header notes.
+- **Inventory balance total_quantity money_json Decimal pilot OpenAPI (BR-14.2):** `inventory_balance.total_quantity` uses `honesty.money_json`.
+- **Inventory balance total_value money_json Decimal pilot OpenAPI (BR-14.2):** `inventory_balance.total_value` uses `honesty.money_json`.
+- **Inventory balance item value money_json Decimal pilot OpenAPI (BR-14.2):** `inventory_balance.items[].value` uses `honesty.money_json`.
+- **Inventory valuation total_quantity money_json Decimal pilot OpenAPI (BR-14.2):** `inventory_valuation.total_quantity` uses `honesty.money_json`.
+- **Inventory valuation total_value money_json Decimal pilot OpenAPI (BR-14.2):** `inventory_valuation.total_value` uses `honesty.money_json`.
+- **Inventory expiry total_quantity money_json Decimal pilot OpenAPI (BR-5.2 / BR-14.2):** `inventory_expiry.total_quantity` uses `honesty.money_json`.
+- **Inventory transfers total_quantity money_json Decimal pilot OpenAPI (BR-13.2):** `inventory_transfers.total_quantity` uses `honesty.money_json`.
+- **Inventory stock counts total_variance_qty money_json Decimal pilot OpenAPI (BR-5.2):** `inventory_stock_counts.total_variance_qty` uses `honesty.money_json`.
+- **Inventory stock counts session variance_qty money_json Decimal pilot OpenAPI (BR-5.2):** stock-count session `total_variance_qty` uses `honesty.money_json`.
+- **Inventory low-stock suggested_order_qty money_json Decimal pilot OpenAPI (BR-14.2):** low-stock warehouse row `suggested_order_qty` uses `honesty.money_json`.
+- **Balance sheet retained earnings money_json Decimal pilot OpenAPI (BR-14.5):** computed retained-earnings `balance` uses `honesty.money_json`.
+- **Balance sheet account balance money_json Decimal pilot OpenAPI (BR-14.5):** BS section row `balance` uses `honesty.money_json`.
+- **Cash flow line inflow money_json Decimal pilot OpenAPI (BR-14 / BR-10.6):** `cash_flow.lines[].inflow` uses `honesty.money_json`.
+- **Cash flow line outflow money_json Decimal pilot OpenAPI (BR-14 / BR-10.6):** `cash_flow.lines[].outflow` uses `honesty.money_json`.
+- **Cash flow outflows money_json Decimal pilot OpenAPI (BR-14 / BR-10.6):** `cash_flow.outflows` uses `honesty.money_json`.
+- **Cash flow net money_json Decimal pilot OpenAPI (BR-14 / BR-10.6):** `cash_flow.net` uses `honesty.money_json`.
+- **Sales by customer avg_ticket money_json Decimal pilot OpenAPI (BR-14.1):** `sales_by_customer` row `avg_ticket` uses `honesty.money_json`.
+- **Sales by salesperson avg_ticket money_json Decimal pilot OpenAPI (BR-14.1):** `sales_by_salesperson` row `avg_ticket` uses `honesty.money_json`.
+- **Sales by store avg_ticket money_json Decimal pilot OpenAPI (BR-14.1 / BR-2.5):** `sales_by_store` row `avg_ticket` uses `honesty.money_json`.
+- **Sales by department avg_ticket money_json Decimal pilot OpenAPI (BR-14.1 / BR-2.5):** `sales_by_department` row `avg_ticket` uses `honesty.money_json`.
+- **Sales returns by_reason total_amount money_json Decimal pilot OpenAPI (BR-14.1):** `sales_returns_summary.by_reason[].total_amount` uses `honesty.money_json`.
+- **Sales returns by_customer total_amount money_json Decimal pilot OpenAPI (BR-14.1):** `sales_returns_summary.by_customer[].total_amount` uses `honesty.money_json`.
+- **Purchases returns by_reason total_amount money_json Decimal pilot OpenAPI (BR-14.3):** `purchases_returns_summary.by_reason[].total_amount` uses `honesty.money_json`.
+- **Purchases returns by_supplier total_amount money_json Decimal pilot OpenAPI (BR-14.3):** `purchases_returns_summary.by_supplier[].total_amount` uses `honesty.money_json`.
+- **Purchases by supplier row total_amount money_json Decimal pilot OpenAPI (BR-14.3):** `purchases_by_supplier.suppliers[].total_amount` uses `honesty.money_json`.
+- **Dashboard sales_today money_json Decimal pilot OpenAPI:** dashboard `comparisons.sales_today` (+ yesterday) uses `honesty.money_json`.
+- **Dashboard sales_mtd money_json Decimal pilot OpenAPI:** dashboard `comparisons.sales_mtd` (+ prev month) uses `honesty.money_json`.
+- **AI inventory velocity_per_day money_json Decimal pilot OpenAPI (BR-21.4):** prediction `velocity_per_day` (+ sold_qty_lookback / days_to_stockout) uses `honesty.money_json`.
+- **AI inventory forecast_demand_7 money_json Decimal pilot OpenAPI (BR-21.4):** prediction `forecast_demand_7` / `_30` / `_90` use `honesty.money_json`.
+- **Sales Show invoices tab aria OpenAPI (BR-7.4):** Sales **Show sales invoices tab** button (`aria-label`).
+- **Sales Show quotations tab aria OpenAPI (BR-7.2):** Sales **Show sales quotations tab** button (`aria-label`).
+- **Sales Show orders tab aria OpenAPI (BR-7.3):** Sales **Show sales orders tab** button (`aria-label`).
+- **Sales Show returns tab aria OpenAPI (BR-7.5):** Sales **Show sales returns tab** button (`aria-label`).
+- **Purchasing Show requests tab aria OpenAPI (BR-6.2):** Purchasing **Show purchasing requests tab** button (`aria-label`).
+- **Purchasing Show orders tab aria OpenAPI (BR-6.3):** Purchasing **Show purchasing orders tab** button (`aria-label`).
+- **Purchasing Show invoices tab aria OpenAPI (BR-6.5):** Purchasing **Show purchasing invoices tab** button (`aria-label`).
+- **Inventory Show products tab aria OpenAPI (BR-5.1):** Inventory **Show inventory products tab** button (`aria-label`).
+- **Inventory Show transfers tab aria OpenAPI (BR-5.2):** Inventory **Show inventory transfers tab** button (`aria-label`).
+- **Reports Show summary tab aria OpenAPI (BR-14):** Reports **Show reports summary tab** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).
