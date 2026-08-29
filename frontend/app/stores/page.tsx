@@ -865,7 +865,7 @@ export default function Page() {
             </select>
             {editBrId ? (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()}>
+                <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()} aria-label="Save branch">
                   Save branch
                 </button>
                 <button type="button" onClick={resetBranchForm}>
@@ -932,7 +932,7 @@ export default function Page() {
             </select>
             {editDeptId ? (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()}>
+                <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()} aria-label="Save department">
                   Save department
                 </button>
                 <button type="button" onClick={resetDeptForm}>
@@ -1090,7 +1090,7 @@ export default function Page() {
             </select>
             {editWhId ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" onClick={saveWarehouseEdit} disabled={!whName.trim()}>
+                <button type="button" onClick={saveWarehouseEdit} disabled={!whName.trim()} aria-label="Save warehouse">
                   Save warehouse
                 </button>
                 <button
@@ -1283,15 +1283,15 @@ export default function Page() {
               <td>{b.address || '—'}</td>
               <td>{b.is_active === false ? 'no' : 'yes'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditBranch(b)}>
+                <button type="button" onClick={() => startEditBranch(b)} aria-label={`Edit branch ${b.id}`}>
                   Edit
                 </button>
                 {b.is_active === false ? (
-                  <button type="button" className="btn-ok" onClick={() => setBranchActive(b.id, true)}>
+                  <button type="button" className="btn-ok" onClick={() => setBranchActive(b.id, true)} aria-label={`Reactivate branch ${b.id}`}>
                     Reactivate
                   </button>
                 ) : (
-                  <button type="button" className="btn-danger" onClick={() => setBranchActive(b.id, false)}>
+                  <button type="button" className="btn-danger" onClick={() => setBranchActive(b.id, false)} aria-label={`Deactivate branch ${b.id}`}>
                     Deactivate
                   </button>
                 )}
@@ -1456,11 +1456,11 @@ export default function Page() {
                 </button>
                 <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>
                 {s.is_active === false ? (
-                  <button type="button" className="btn-ok" onClick={() => setStoreActive(s.id, true)}>
+                  <button type="button" className="btn-ok" onClick={() => setStoreActive(s.id, true)} aria-label={`Activate store ${s.id}`}>
                     Activate
                   </button>
                 ) : (
-                  <button type="button" className="btn-danger" onClick={() => setStoreActive(s.id, false)}>
+                  <button type="button" className="btn-danger" onClick={() => setStoreActive(s.id, false)} aria-label={`Deactivate store ${s.id}`}>
                     Deactivate
                   </button>
                 )}

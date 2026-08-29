@@ -475,15 +475,15 @@ async def convert_quotation_to_order(
             {
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
             }
             for i in items
         ],
-        discount_amount=float(quote.discount_amount or 0),
+        discount_amount=money_json(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
     )
@@ -682,15 +682,15 @@ async def convert_order_to_invoice(
             {
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
             }
             for i in items
         ],
-        discount_amount=float(order.discount_amount or 0),
+        discount_amount=money_json(order.discount_amount or 0),
         notes=order.notes,
     )
     invoice.sales_order_id = order.id
@@ -1053,7 +1053,7 @@ async def post_return(
                 "credit_note_number": ret.credit_note_number,
                 "total_amount": return_total,
                 "settlement_method": method,
-                "refunded_amount": float(ret.refunded_amount or 0),
+                "refunded_amount": money_json(ret.refunded_amount or 0),
                 "applied_to_invoice": apply_to_invoice,
             },
         )

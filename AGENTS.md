@@ -953,6 +953,46 @@
 - **Expenses Apply OCR suggestion aria OpenAPI (BR-9.2):** Expenses **Apply expense OCR suggestion** button (`aria-label`).
 - **Integrations Create webhook aria OpenAPI (BR-18.6):** Integrations **Create webhook** button (`aria-label`).
 - **Integrations Revoke API key aria OpenAPI (BR-18.1):** Integrations **Revoke API key** button (`aria-label`).
+- **User CSV full name defense-in-depth OpenAPI (BR-3):** User CSV validate uses `TypeAdapter(UserFullNameValue)` so `!!!`/`http://…` fail the row report (was strip-only required name).
+- **User CSV phone defense-in-depth OpenAPI (BR-3):** User CSV validate uses `TypeAdapter(E164PhoneValue)` so blank-invalid/`123` fail the row report (was free strip).
+- **User CSV temporary password defense-in-depth OpenAPI (BR-3):** User CSV validate uses `TypeAdapter(UserPasswordValue)` before strength checks so `!!!`/`http://…` fail the row report (was strength-only).
+- **Quotation to order convert money_json Decimal pilot OpenAPI (BR-7.2 / BR-7.3):** Quotation→order convert line qty/price/tax/discount + header discount use `honesty.money_json`.
+- **Order to invoice convert money_json Decimal pilot OpenAPI (BR-7.3 / BR-7.4):** Order→invoice convert line qty/price/tax/discount + header discount use `honesty.money_json`.
+- **Sales return post audit money_json Decimal pilot OpenAPI (BR-7.5):** Sales return post audit `details.refunded_amount` uses `honesty.money_json`.
+- **Journal unpost audit money_json Decimal pilot OpenAPI (BR-10.2):** Journal unpost audit `details.total_debit` / `total_credit` use `honesty.money_json`.
+- **Purchase invoice approve reverse-charge money_json Decimal pilot OpenAPI (BR-6.5):** PI approve audit `details.reverse_charge_tax` uses `honesty.money_json`.
+- **Sales credit-limit override extras money_json Decimal pilot OpenAPI (BR-7.4 / BR-11):** SI post credit-limit override extras `invoice_total` / `invoice_total_base` (+ limit compare inputs) use `honesty.money_json`.
+- **Tenant export expense approval threshold money_json Decimal pilot OpenAPI (BR-9.3 / BR-16):** Tenant backup export `expense_approval_threshold` uses `honesty.money_json`.
+- **Tenant export expense L2 threshold money_json Decimal pilot OpenAPI (BR-9.3 / BR-16):** Tenant backup export `expense_l2_threshold` uses `honesty.money_json`.
+- **Tenant export early-pay discount pct money_json Decimal pilot OpenAPI (BR-11 / BR-16):** Tenant backup export `early_pay_discount_pct` uses `honesty.money_json`.
+- **Purchase request to PO convert money_json Decimal pilot OpenAPI (BR-6.2 / BR-6.3):** PR→PO convert line qty + unit cost use `honesty.money_json`.
+- **Invoice print discount money_json Decimal pilot OpenAPI (BR-7.4 / BR-20.4):** Invoice print/thermal/PDF discount amount uses `honesty.money_json`.
+- **Invoice print reverse-charge tax money_json Decimal pilot OpenAPI (BR-7.4 / BR-20.4):** Invoice print reverse-charge tax memo uses `honesty.money_json`.
+- **Cheque early-payment discount money_json Decimal pilot OpenAPI (BR-10.4 / BR-11):** Cheque bounce/reverse early-payment discount uses `honesty.money_json`.
+- **Credit early-pay settings money_json Decimal pilot OpenAPI (BR-11):** `early_pay_settings` discount pct uses `honesty.money_json`.
+- **Inventory Save numbering aria OpenAPI (BR-5 / BR-20.4):** Inventory **Save inventory numbering** button (`aria-label`).
+- **Inventory Set primary image aria OpenAPI (BR-5.1):** Inventory Edit **Set primary product image** button (`aria-label`).
+- **Inventory Remove gallery image aria OpenAPI (BR-5.1):** Inventory Edit **Remove product gallery image** button (`aria-label`).
+- **Inventory Activate product aria OpenAPI (BR-5.1):** Inventory **Activate product** button (`aria-label`).
+- **Inventory Deactivate product aria OpenAPI (BR-5.1):** Inventory **Deactivate product** button (`aria-label`).
+- **Inventory Select lookup product aria OpenAPI (BR-5.1):** Inventory Lookup **Select lookup product** button (`aria-label`).
+- **Inventory Remove brand logo aria OpenAPI (BR-5.1):** Inventory Catalog **Remove brand logo** button (`aria-label`).
+- **Inventory Activate variant aria OpenAPI (BR-5.1):** Inventory Variants **Activate variant** button (`aria-label`).
+- **Inventory Deactivate variant aria OpenAPI (BR-5.1):** Inventory Variants **Deactivate variant** button (`aria-label`).
+- **Inventory Open stock count aria OpenAPI (BR-5.2):** Inventory Counts **Open stock count** button (`aria-label`).
+- **Inventory Complete stock count aria OpenAPI (BR-5.2):** Inventory Counts **Complete stock count and post variances** button (`aria-label`).
+- **Inventory Refresh movements aria OpenAPI (BR-5.3):** Inventory Movements **Refresh inventory movements** button (`aria-label`).
+- **Inventory Refresh warehouse stock aria OpenAPI (BR-5.2):** Inventory **Refresh warehouse stock** button (`aria-label`).
+- **Inventory Refresh transfers aria OpenAPI (BR-5.2 / BR-13.2):** Inventory Transfers **Refresh stock transfers** button (`aria-label`).
+- **Inventory Submit transfer aria OpenAPI (BR-5.2 / BR-13.2):** Inventory Transfers **Submit stock transfer** button (`aria-label`).
+- **Inventory Approve transfer aria OpenAPI (BR-5.2 / BR-13.2):** Inventory Transfers **Approve stock transfer** button (`aria-label`).
+- **Inventory Ship transfer aria OpenAPI (BR-5.2 / BR-13.2):** Inventory Transfers **Ship stock transfer** button (`aria-label`).
+- **Inventory Receive transfer aria OpenAPI (BR-5.2 / BR-13.2):** Inventory Transfers **Receive stock transfer** button (`aria-label`).
+- **Inventory Cancel transfer aria OpenAPI (BR-5.2 / BR-13.2):** Inventory Transfers **Cancel stock transfer** button (`aria-label`).
+- **Sales Save numbering aria OpenAPI (BR-7 / BR-20.4):** Sales **Save sales numbering** button (`aria-label`).
+- **Sales Assign customer group aria OpenAPI (BR-7.1):** Sales **Assign customer group** button (`aria-label`).
+- **Stores Save branch aria OpenAPI (BR-2.2):** Multi-Store **Save branch** button (`aria-label`).
+- **Users Activate user aria OpenAPI (BR-3.1):** Users **Activate user** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

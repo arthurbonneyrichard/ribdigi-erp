@@ -456,8 +456,8 @@ async def post_sales_invoice(
     from app.fx import doc_rate, to_base
     from app.credit import enforce_customer_credit_limit
 
-    inv_base = to_base(float(invoice.total_amount), doc_rate(invoice))
-    credit_limit = float(customer.credit_limit or 0)
+    inv_base = to_base(money_json(invoice.total_amount), doc_rate(invoice))
+    credit_limit = money_json(customer.credit_limit or 0)
     override_info = enforce_customer_credit_limit(
         customer,
         amount=inv_base,
@@ -468,8 +468,8 @@ async def post_sales_invoice(
             "message": "Posting this invoice would exceed the customer credit limit",
             "invoice_id": invoice.id,
             "invoice_number": invoice.invoice_number,
-            "invoice_total": float(invoice.total_amount),
-            "invoice_total_base": inv_base,
+            "invoice_total": money_json(invoice.total_amount),
+            "invoice_total_base": money_json(inv_base),
             "currency": getattr(invoice, "currency", None) or "",
         },
     )

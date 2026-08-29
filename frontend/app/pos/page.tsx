@@ -994,7 +994,7 @@ export default function Page() {
               aria-label="POS session next number"
             />
             <span className="muted">{shiftPreview || '—'}</span>
-            <button type="button" className="tpos-btn" onClick={savePosNumbering}>
+            <button type="button" className="tpos-btn" onClick={savePosNumbering} aria-label="Save POS numbering">
               Save numbering
             </button>
           </div>
@@ -1058,7 +1058,7 @@ export default function Page() {
           <section className="tpos-report" aria-label="Shift report">
             <div className="tpos-report-head">
               <h2>Shift report</h2>
-              <button type="button" className="tpos-btn" onClick={() => setShiftReport(null)}>
+              <button type="button" className="tpos-btn" onClick={() => setShiftReport(null)} aria-label="Close POS shift report">
                 Close
               </button>
             </div>
@@ -1555,7 +1555,7 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={clearCart}
                   disabled={!cart.length}
-                >
+                 aria-label="Clear POS cart">
                   Clear
                 </button>
                 <button

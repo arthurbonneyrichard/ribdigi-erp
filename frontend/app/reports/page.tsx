@@ -2392,7 +2392,7 @@ export default function Page() {
                       <button onClick={() => toggleSchedule(s)} aria-label={`${s.enabled ? 'Disable' : 'Enable'} report schedule ${s.id}`}>
                         {s.enabled ? 'Disable' : 'Enable'}
                       </button>
-                      <button onClick={() => deleteSchedule(s.id)}>Delete</button>
+                      <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete report schedule ${s.id}`}>Delete</button>
                     </td>
                   </tr>
                 ))

@@ -2093,7 +2093,9 @@ async def approve_purchase_invoice(
                 "ap_posted": inv.ap_posted,
                 "goods_receipt_id": inv.goods_receipt_id,
                 "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
-                "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+                "reverse_charge_tax": money_json(
+                    getattr(inv, "reverse_charge_tax", 0) or 0
+                ),
             },
         )
     )

@@ -909,7 +909,7 @@ export default function Page() {
             aria-label="Payment receipt next number"
           />
           <span className="muted">{rcpPreview || '—'}</span>
-          <button type="button" onClick={saveInvoiceNumbering}>
+          <button type="button" onClick={saveInvoiceNumbering} aria-label="Save sales numbering">
             Save numbering
           </button>
         </div>
@@ -1244,7 +1244,7 @@ export default function Page() {
           <button type="button" onClick={createCustomer} aria-label="Add customer">
             Add customer
           </button>
-          <button type="button" onClick={assignCustomerGroup}>
+          <button type="button" onClick={assignCustomerGroup} aria-label="Assign customer group">
             Assign group
           </button>
         </div>

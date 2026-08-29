@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import HTTPException
 
-from app.honesty import optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -226,13 +226,19 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
             "industry": tenant.industry,
             "currency": tenant.currency,
             "status": tenant.status,
-            "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
-            "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
+            "expense_approval_threshold": money_json(
+                tenant.expense_approval_threshold or 0
+            ),
+            "expense_l2_threshold": money_json(
+                getattr(tenant, "expense_l2_threshold", None), default=1000.0
+            ),
             "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
             "tax_jurisdiction": getattr(tenant, "tax_jurisdiction", None) or "GH",
             "tax_registration_number": getattr(tenant, "tax_registration_number", None),
             "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
-            "early_pay_discount_pct": float(getattr(tenant, "early_pay_discount_pct", None) or 0),
+            "early_pay_discount_pct": money_json(
+                getattr(tenant, "early_pay_discount_pct", None) or 0
+            ),
             "early_pay_discount_days": int(getattr(tenant, "early_pay_discount_days", None) or 0),
         },
         "created_at": datetime.utcnow().isoformat(),

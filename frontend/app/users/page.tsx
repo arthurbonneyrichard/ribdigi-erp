@@ -481,7 +481,7 @@ export default function Page() {
                     className="btn-ok"
                     style={{ marginLeft: 8 }}
                     onClick={() => setCustomRoleActive(r.role, true)}
-                  >
+                   aria-label={`Activate custom role ${r.role}`}>
                     Activate
                   </button>
                 ) : (
@@ -490,7 +490,7 @@ export default function Page() {
                     className="btn-danger"
                     style={{ marginLeft: 8 }}
                     onClick={() => setCustomRoleActive(r.role, false)}
-                  >
+                   aria-label={`Deactivate custom role ${r.role}`}>
                     Deactivate
                   </button>
                 )}
@@ -498,7 +498,7 @@ export default function Page() {
                   type="button"
                   style={{ marginLeft: 8 }}
                   onClick={() => deleteCustomRole(r.role)}
-                >
+                 aria-label={`Delete custom role ${r.role}`}>
                   Delete
                 </button>
               </li>
@@ -798,11 +798,11 @@ export default function Page() {
               {canWrite && (
                 <td>
                   {r.is_active ? (
-                    <button type="button" className="btn-danger" onClick={() => setActive(r.id, false)}>
+                    <button type="button" className="btn-danger" onClick={() => setActive(r.id, false)} aria-label={`Deactivate user ${r.id}`}>
                       Deactivate
                     </button>
                   ) : (
-                    <button type="button" className="btn-ok" onClick={() => setActive(r.id, true)}>
+                    <button type="button" className="btn-ok" onClick={() => setActive(r.id, true)} aria-label={`Activate user ${r.id}`}>
                       Activate
                     </button>
                   )}

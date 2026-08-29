@@ -1617,7 +1617,7 @@ export default function Page() {
             aria-label="Opening stock next number"
           />
           <span className="muted">{osPreview || '—'}</span>
-          <button type="button" onClick={saveInventoryNumbering}>
+          <button type="button" onClick={saveInventoryNumbering} aria-label="Save inventory numbering">
             Save numbering
           </button>
         </div>
@@ -1684,11 +1684,11 @@ export default function Page() {
                   {img.is_primary ? ' (primary)' : ''}
                 </span>
                 {!img.is_primary && (
-                  <button type="button" onClick={() => setPrimaryImage(img.id)}>
+                  <button type="button" onClick={() => setPrimaryImage(img.id)} aria-label={`Set primary product image ${img.id}`}>
                     Set primary
                   </button>
                 )}
-                <button type="button" onClick={() => removeGalleryImage(img.id)}>
+                <button type="button" onClick={() => removeGalleryImage(img.id)} aria-label={`Remove product gallery image ${img.id}`}>
                   Remove
                 </button>
               </li>
@@ -1868,11 +1868,11 @@ export default function Page() {
                 Save product
               </button>
               {selected?.is_active === false ? (
-                <button type="button" className="btn-ok" onClick={() => setProductActive(true)}>
+                <button type="button" className="btn-ok" aria-label="Activate product" onClick={() => setProductActive(true)}>
                   Activate
                 </button>
               ) : (
-                <button type="button" className="btn-danger" onClick={() => setProductActive(false)}>
+                <button type="button" className="btn-danger" aria-label="Deactivate product" onClick={() => setProductActive(false)}>
                   Deactivate
                 </button>
               )}
@@ -1949,7 +1949,7 @@ export default function Page() {
                   </td>
                   <td>{p.is_active === false ? 'inactive' : 'active'}</td>
                   <td>
-                    <button type="button" onClick={() => selectLookupHit(p.id)}>
+                    <button type="button" onClick={() => selectLookupHit(p.id)} aria-label={`Select lookup product ${p.id}`}>
                       Select
                     </button>
                   </td>
@@ -2632,7 +2632,7 @@ export default function Page() {
                         />
                       </label>
                       {b.has_logo && (
-                        <button type="button" onClick={() => removeBrandLogo(b.id)}>
+                        <button type="button" onClick={() => removeBrandLogo(b.id)} aria-label={`Remove brand logo ${b.id}`}>
                           Remove logo
                         </button>
                       )}
@@ -2954,13 +2954,14 @@ export default function Page() {
                       Label
                     </button>
                     {v.is_active === false ? (
-                      <button type="button" className="btn-ok" onClick={() => activateVariant(v.id)}>
+                      <button type="button" className="btn-ok" aria-label={`Activate variant ${v.id}`} onClick={() => activateVariant(v.id)}>
                         Activate
                       </button>
                     ) : (
                       <button
                         type="button"
                         className="btn-danger"
+                        aria-label={`Deactivate variant ${v.id}`}
                         onClick={() => deactivateVariant(v.id)}
                       >
                         Deactivate
@@ -3399,7 +3400,7 @@ export default function Page() {
                     {c.notes || '—'}
                   </td>
                   <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    <button type="button" onClick={() => openCount(c.id)}>
+                    <button type="button" onClick={() => openCount(c.id)} aria-label={`Open stock count ${c.id}`}>
                       Open
                     </button>
                     {(c.can_cancel || c.status === 'draft') && (
@@ -3494,7 +3495,7 @@ export default function Page() {
                   <button type="button" onClick={saveCountLines} aria-label="Save count lines">
                     Save counts
                   </button>
-                  <button type="button" onClick={completeActiveCount}>
+                  <button type="button" onClick={completeActiveCount} aria-label="Complete stock count and post variances">
                     Complete &amp; post variances
                   </button>
                   <button
@@ -3586,7 +3587,7 @@ export default function Page() {
                 />
                 Selected product only
               </label>
-              <button type="button" onClick={() => loadMovements()}>
+              <button type="button" onClick={() => loadMovements()} aria-label="Refresh inventory movements">
                 Refresh
               </button>
             </div>
@@ -3867,7 +3868,7 @@ export default function Page() {
               />
               <span className="muted">Include zero-qty rows</span>
             </label>
-            <button type="button" onClick={() => loadWarehouseStock()} disabled={!whStockWarehouseId}>
+            <button type="button" onClick={() => loadWarehouseStock()} disabled={!whStockWarehouseId} aria-label="Refresh warehouse stock">
               Refresh
             </button>
             <p className="muted" style={{ margin: 0 }}>
@@ -4055,7 +4056,7 @@ export default function Page() {
               Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
             </p>
           </div>
-          <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }}>
+          <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }} aria-label="Refresh stock transfers">
             Refresh
           </button>
           <select
@@ -4115,13 +4116,13 @@ export default function Page() {
                   <td className="muted">{t.rejection_reason || '—'}</td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {t.status === 'draft' && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'submit')}>
+                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'submit')} aria-label={`Submit stock transfer ${t.id}`}>
                         Submit
                       </button>
                     )}
                     {t.status === 'requested' && !t.fully_approved && (
                       <>
-                        <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'approve')}>
+                        <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'approve')} aria-label={`Approve stock transfer ${t.id}`}>
                           Approve
                           {t.approval_steps_required > 1
                             ? t.awaiting_approval === 'dest'
@@ -4140,17 +4141,17 @@ export default function Page() {
                       </>
                     )}
                     {t.can_ship && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'ship')}>
+                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'ship')} aria-label={`Ship stock transfer ${t.id}`}>
                         Ship
                       </button>
                     )}
                     {t.status === 'in_transit' && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'receive')}>
+                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'receive')} aria-label={`Receive stock transfer ${t.id}`}>
                         Receive
                       </button>
                     )}
                     {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                      <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'cancel')}>
+                      <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'cancel')} aria-label={`Cancel stock transfer ${t.id}`}>
                         Cancel
                       </button>
                     )}

@@ -275,7 +275,7 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
     from app.sales import get_customer, get_invoice, apply_invoice_status
 
     amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     settlement = round(amount + discount, 2)
     # Prefer invoice rate for base restore when linked.
     if payment.sales_invoice_id:
@@ -327,7 +327,7 @@ async def _reverse_supplier_payment(db: AsyncSession, tenant_id: str, payment: m
     from app.purchasing import get_po, get_purchase_invoice, purchase_invoice_status
 
     amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     settlement = round(amount + discount, 2)
     if payment.purchase_invoice_id:
         inv = await get_purchase_invoice(db, tenant_id, payment.purchase_invoice_id)
@@ -396,7 +396,7 @@ async def bounce_cheque(
                 )
             ).scalar_one_or_none()
             if payment:
-                discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+                discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
                 pay_amount = float(payment.amount)
                 await _reverse_customer_payment(db, tenant_id, payment)
         ar_restore = round(pay_amount + discount, 2)
@@ -450,7 +450,7 @@ async def bounce_cheque(
                 )
             ).scalar_one_or_none()
             if payment:
-                discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+                discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
                 pay_amount = float(payment.amount)
                 await _reverse_supplier_payment(db, tenant_id, payment)
         ap_restore = round(pay_amount + discount, 2)

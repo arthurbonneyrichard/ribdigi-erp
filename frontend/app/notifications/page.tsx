@@ -182,9 +182,9 @@ export default function Page() {
               <td>{n.status}</td>
               <td>
                 {n.status === 'unread' ? (
-                  <button onClick={() => markRead(n.id)}>Mark read</button>
+                  <button onClick={() => markRead(n.id)} aria-label={`Mark notification ${n.id} read`}>Mark read</button>
                 ) : (
-                  <button onClick={() => markUnread(n.id)}>Mark unread</button>
+                  <button onClick={() => markUnread(n.id)} aria-label={`Mark notification ${n.id} unread`}>Mark unread</button>
                 )}
               </td>
             </tr>

@@ -603,11 +603,13 @@ async def convert_to_po(
                 )
             )
         ).scalar_one_or_none()
-        unit_price = float(product.cost_price or 0) if product else 0.0
+        unit_price = (
+            money_json(product.cost_price or 0) if product else 0.0
+        )
         po_items.append(
             {
                 "product_id": item.product_id,
-                "quantity": float(item.quantity),
+                "quantity": money_json(item.quantity),
                 "unit_price": unit_price,
                 "tax_rate": 0,
             }

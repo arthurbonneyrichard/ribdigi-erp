@@ -395,8 +395,8 @@ async def unpost_journal_entry(
             entity_id=entry.id,
             details={
                 "entry_number": entry.entry_number,
-                "total_debit": float(entry.total_debit or 0),
-                "total_credit": float(entry.total_credit or 0),
+                "total_debit": money_json(entry.total_debit or 0),
+                "total_credit": money_json(entry.total_credit or 0),
                 "reason": reason_s,
             },
         )

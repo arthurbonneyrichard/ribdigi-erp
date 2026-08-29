@@ -510,7 +510,7 @@ export default function Page() {
               </td>
               <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {r.is_active !== false && !r.is_default && (
-                  <button type="button" onClick={() => makeDefault(r.id)}>
+                  <button type="button" onClick={() => makeDefault(r.id)} aria-label={`Set default tax rate ${r.id}`}>
                     Set default
                   </button>
                 )}

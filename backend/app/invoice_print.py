@@ -187,7 +187,7 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
     currency = payload.get("currency") or ""
     lines.append(_lr("Subtotal", _money(payload.get("subtotal") or 0), width))
     lines.append(_lr("Tax", _money(payload.get("tax") or 0), width))
-    discount_amount = float(payload.get("discount_amount") or 0)
+    discount_amount = money_json(payload.get("discount_amount") or 0)
     if discount_amount > 0:
         lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(payload.get("total") or 0), width))
@@ -296,10 +296,10 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     currency = payload.get("currency") or ""
     add(f"Subtotal: {currency} {_money(payload.get('subtotal') or 0)}", 10)
     add(f"Tax: {currency} {_money(payload.get('tax') or 0)}", 10)
-    rc = float(payload.get("reverse_charge_tax") or 0)
+    rc = money_json(payload.get("reverse_charge_tax") or 0)
     if rc > 0:
         add(f"Reverse-charge tax (memo): {currency} {_money(rc)}", 9)
-    disc = float(payload.get("discount_amount") or 0)
+    disc = money_json(payload.get("discount_amount") or 0)
     if disc > 0:
         add(f"Discount: -{currency} {_money(disc)}", 10)
     add(f"TOTAL: {currency} {_money(payload.get('total') or 0)}", 12)

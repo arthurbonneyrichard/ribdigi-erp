@@ -604,11 +604,11 @@ export default function PlatformConsole() {
                     </td>
                     <td>
                       <div className="plat-actions">
-                        <button type="button" disabled={busy === t.id} onClick={() => setSelectedId(t.id)}>
+                        <button type="button" disabled={busy === t.id} onClick={() => setSelectedId(t.id)} aria-label={`Manage tenant ${t.id}`}>
                           Manage
                         </button>
                         {t.status === 'suspended' ? (
-                          <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)}>
+                          <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
                             Activate
                           </button>
                         ) : (
@@ -639,7 +639,7 @@ export default function PlatformConsole() {
                 type="button"
                 style={{ float: 'right', fontSize: 13 }}
                 onClick={() => setSelectedId(null)}
-              >
+               aria-label="Close tenant management panel">
                 Close
               </button>
             </h2>

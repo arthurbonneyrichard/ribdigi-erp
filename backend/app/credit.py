@@ -103,7 +103,7 @@ def enforce_customer_credit_limit(
 
 
 def early_pay_settings(tenant: m.Tenant) -> dict:
-    pct = float(getattr(tenant, "early_pay_discount_pct", None) or 0)
+    pct = money_json(getattr(tenant, "early_pay_discount_pct", None) or 0)
     days = int(getattr(tenant, "early_pay_discount_days", None) or 0)
     return {
         "early_pay_discount_pct": pct,
