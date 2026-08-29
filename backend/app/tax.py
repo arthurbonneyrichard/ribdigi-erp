@@ -156,7 +156,7 @@ def effective_rate_from_components(components: list[dict] | None, fallback: floa
             total += float(c.get("rate") or 0)
     if total <= 0:
         total = sum(float(c.get("rate") or 0) for c in components)
-    return round(total, 4)
+    return money_json(round(total, 4))
 
 
 def compute_tax_amounts(

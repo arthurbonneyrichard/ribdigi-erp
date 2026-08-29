@@ -245,7 +245,7 @@ async def create_transfer(
             status_code=422,
             detail=f"kind must be one of: {', '.join(sorted(TRANSFER_KINDS))}",
         )
-    amt = round(float(amount or 0), 2)
+    amt = money_json(round(float(amount or 0), 2))
     if amt <= 0:
         raise HTTPException(status_code=400, detail="amount must be greater than zero")
 

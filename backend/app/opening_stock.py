@@ -76,13 +76,13 @@ async def post_opening_stock(
             unit_cost = float(unit_cost)
             if unit_cost < 0:
                 raise HTTPException(status_code=400, detail="unit_cost cannot be negative")
-        line_value = round(float(moved["quantity_base"]) * unit_cost, 2)
+        line_value = money_json(round(float(moved["quantity_base"]) * unit_cost, 2))
         inventory_value += line_value
         results.append(
             {
                 **moved,
                 "unit_cost": money_json(unit_cost),
-                "line_value": money_json(line_value),
+                "line_value": line_value,
             }
         )
 

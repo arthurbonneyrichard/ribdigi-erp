@@ -1771,7 +1771,7 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
                 "tax_rate": money_json(i.tax_rate),
                 "discount": money_json(i.discount),
                 "line_subtotal": money_json(getattr(i, "line_subtotal", None) or _pi_line_subtotal(i)),
-                "line_tax": _pi_line_tax_value(i),
+                "line_tax": money_json(_pi_line_tax_value(i)),
                 "tax_components": getattr(i, "tax_components", None) or None,
                 "line_total": money_json(i.line_total),
             }
@@ -1781,25 +1781,25 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
 
 
 def _pi_line_subtotal(item: m.PurchaseInvoiceItem) -> float:
-    stored = float(getattr(item, "line_subtotal", None) or 0)
+    stored = money_json(getattr(item, "line_subtotal", None) or 0)
     if stored > 0:
         return stored
-    return round(float(item.quantity or 0) * float(item.unit_price or 0), 2)
+    return money_json(round(float(item.quantity or 0) * float(item.unit_price or 0), 2))
 
 
 def _pi_line_tax_value(item: m.PurchaseInvoiceItem) -> float:
-    stored = float(getattr(item, "line_tax", None) or 0)
+    stored = money_json(getattr(item, "line_tax", None) or 0)
     if stored > 0 or getattr(item, "tax_components", None) is not None:
         return stored
-    rate = float(item.tax_rate or 0)
+    rate = money_json(item.tax_rate or 0)
     if rate <= 0:
-        return 0.0
+        return money_json(0)
     sub = _pi_line_subtotal(item)
-    total = float(item.line_total or 0)
-    discount = float(item.discount or 0)
-    derived = round(total - sub + discount, 2)
+    total = money_json(item.line_total or 0)
+    discount = money_json(item.discount or 0)
+    derived = money_json(round(total - sub + discount, 2))
     if derived < 0:
-        return round(sub * rate / 100.0, 2)
+        return money_json(round(sub * rate / 100.0, 2))
     return derived
 
 

@@ -33,7 +33,7 @@ def normalize_currency(code: str | None) -> str:
 
 
 def to_base(amount: float, rate: float) -> float:
-    return round(float(amount or 0) * float(rate or 1), 2)
+    return money_json(round(float(amount or 0) * float(rate or 1), 2))
 
 
 def doc_rate(obj) -> float:
@@ -287,7 +287,7 @@ def quotes_to_rate_to_base(quotes: dict[str, float], currency: str) -> float:
     q = float(quotes.get(code) or 0)
     if q <= 0:
         raise HTTPException(status_code=502, detail=f"No live quote for {code}")
-    return round(1.0 / q, 8)
+    return money_json(round(1.0 / q, 8))
 
 
 async def refresh_tenant_rates(

@@ -788,12 +788,12 @@ async def compute_standard_cogs(
             variant_id=line.get("variant_id"),
         )
         total += stock_qty * cost
-    return round(total, 2)
+    return money_json(round(total, 2))
 
 
 def append_cogs_lines(lines: list[dict], cogs: float, *, reverse: bool = False) -> None:
     """Append Dr 5000 / Cr 1200 (or reverse) when cogs > 0."""
-    cogs = round(float(cogs or 0), 2)
+    cogs = money_json(round(float(cogs or 0), 2))
     if cogs <= 0:
         return
     if reverse:

@@ -205,7 +205,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
                 "tax_supply_class": getattr(i, "tax_supply_class", None) or "standard",
                 "discount": money_json(i.discount),
                 "line_subtotal": money_json(getattr(i, "line_subtotal", None) or 0),
-                "line_tax": _line_tax_value(i),
+                "line_tax": money_json(_line_tax_value(i)),
                 "is_reverse_charge": bool(getattr(i, "is_reverse_charge", False)),
                 "tax_components": getattr(i, "tax_components", None) or None,
                 "line_total": money_json(i.line_total),
@@ -224,13 +224,13 @@ def _line_tax_value(item: m.SalesInvoiceItem) -> float:
         return stored
     rate = money_json(item.tax_rate)
     if rate <= 0:
-        return 0.0
+        return money_json(0)
     sub = money_json(getattr(item, "line_subtotal", None))
     total = money_json(item.line_total)
     discount = money_json(item.discount)
-    derived = round(total - sub + discount, 2)
+    derived = money_json(round(total - sub + discount, 2))
     if derived < 0:
-        return round(sub * rate / 100.0, 2)
+        return money_json(round(sub * rate / 100.0, 2))
     return derived
 
 

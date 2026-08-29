@@ -110,7 +110,7 @@ def _parse_amount(text: str) -> float | None:
         # Prefer last match (often the grand total)
         raw = matches[-1] if isinstance(matches[-1], str) else matches[-1][0]
         try:
-            return round(float(str(raw).replace(",", "")), 2)
+            return money_json(round(float(str(raw).replace(",", "")), 2))
         except ValueError:
             continue
     return None

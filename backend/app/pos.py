@@ -14,11 +14,11 @@ from app.honesty import money_json, optional_honest_narrative
 
 
 def compute_expected_cash(opening_cash: float, cash_sales: float) -> float:
-    return round(float(opening_cash or 0) + float(cash_sales or 0), 2)
+    return money_json(round(float(opening_cash or 0) + float(cash_sales or 0), 2))
 
 
 def compute_variance(actual_cash: float, expected_cash: float) -> float:
-    return round(float(actual_cash) - float(expected_cash), 2)
+    return money_json(round(float(actual_cash) - float(expected_cash), 2))
 
 
 PAYMENT_METHODS = frozenset({"cash", "card", "wallet", "credit", "other"})

@@ -94,7 +94,7 @@ async def _prepare_lines(
                 line_total,
             )
         )
-    return round(subtotal, 2), round(tax_total, 2), prepared
+    return money_json(round(subtotal, 2)), money_json(round(tax_total, 2)), prepared
 
 
 def _stamp(prefix: str) -> str:
