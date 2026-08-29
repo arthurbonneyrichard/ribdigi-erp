@@ -368,6 +368,27 @@
 - **Store path store_id OpenAPI (BR-2.3):** Path `store_id` ∈ `UuidIdValue` on store patch/drawer/reorder routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
 - **Stock count path count_id OpenAPI (BR-5.2):** Path `count_id` ∈ `UuidIdValue` on stock-count get/items/complete/cancel; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
 - **POS session path session_id OpenAPI (BR-8):** Path `session_id` ∈ `UuidIdValue` on POS session get/close/sale routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Transfer path transfer_id OpenAPI (BR-13 / cash):** Path `transfer_id` ∈ `UuidIdValue` on cash transfers + store/inventory stock-transfer get/submit/approve/reject/ship/receive/cancel; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Bank statement path statement_id OpenAPI (BR-10):** Path `statement_id` ∈ `UuidIdValue` on bank-statement get/match/clear-group routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Webhook path webhook_id OpenAPI (BR-17):** Path `webhook_id` ∈ `UuidIdValue` on webhook get/patch/delete/test/deliveries; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Purchase request path request_id OpenAPI (BR-6.2):** Path `request_id` ∈ `UuidIdValue` on PR get/approve/reject/convert; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Purchase order path po_id OpenAPI (BR-6.3):** Path `po_id` ∈ `UuidIdValue` on PO get/send/receive/cancel routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Cheque path cheque_id OpenAPI (BR-10):** Path `cheque_id` ∈ `UuidIdValue` on cheque get/lifecycle routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Journal entry path entry_id OpenAPI (BR-10):** Path `entry_id` ∈ `UuidIdValue` on journal unpost/attachment routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Backup path backup_id OpenAPI:** Path `backup_id` ∈ `UuidIdValue` on backup get/download/verify/restore; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **COA path account_id OpenAPI (BR-10):** Path `account_id` ∈ `UuidIdValue` on accounting account patch/routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Bank connection path connection_id OpenAPI (BR-10):** Path `connection_id` ∈ `UuidIdValue` on bank-connection patch/sync/delete; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Bank statement line path line_id OpenAPI (BR-10):** Path `line_id` ∈ `UuidIdValue` on statement line match/unmatch; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Report schedule path schedule_id OpenAPI (BR-14):** Path `schedule_id` ∈ `UuidIdValue` on report schedule patch/delete; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Tax rate path rate_id OpenAPI:** Path `rate_id` ∈ `UuidIdValue` on tax rate get/patch/default; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **API key path key_id OpenAPI:** Path `key_id` ∈ `UuidIdValue` on API key get/revoke; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **POS sale path sale_id OpenAPI (BR-8):** Path `sale_id` ∈ `UuidIdValue` on POS receipt/send routes; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Recurring expense path recurring_id OpenAPI (BR-9):** Path `recurring_id` ∈ `UuidIdValue` on recurring expense patch/delete; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Audit log path log_id OpenAPI (BR-17):** Path `log_id` ∈ `UuidIdValue` on blocked audit delete route; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **WebAuthn path credential_id OpenAPI:** Path `credential_id` ∈ `UuidIdValue` on WebAuthn credential delete; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **GRN path grn_id OpenAPI (BR-6.4):** Path `grn_id` ∈ `UuidIdValue` on GRN get; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **Webhook delivery path delivery_id OpenAPI (BR-17):** Path `delivery_id` ∈ `UuidIdValue` on webhook delivery retry; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
+- **AI report template path template_id OpenAPI (BR-21.7):** Path `template_id` ∈ `UuidIdValue` on AI report template delete; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`).
 - **Inventory report store_id Query OpenAPI (BR-14.2):** `GET /reports/inventory/low-stock` + `/expiry` + `/balance` + `/valuation` Query `store_id` ∈ `UuidIdValue`; omit/`null` → all stores; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach store lookup). Reports **Report inventory store filter** (`aria-label`); qs sends trim.
 - **Inventory report warehouse_id Query OpenAPI (BR-14.2):** same inventory report endpoints Query `warehouse_id` ∈ `UuidIdValue`; omit/`null` → all warehouses; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup). Reports **Report inventory warehouse filter** (`aria-label`); qs sends trim.
 - **Transfer report store_id Query OpenAPI (BR-13.2):** `GET /reports/inventory/transfers` Query `store_id` ∈ `UuidIdValue`; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; matches source or destination). Reports qs sends trim.

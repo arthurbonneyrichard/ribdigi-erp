@@ -1676,7 +1676,7 @@ async def webauthn_list_credentials(
 
 @api.delete("/auth/webauthn/credentials/{credential_id}")
 async def webauthn_delete_credential(
-    credential_id: str,
+    credential_id: UuidIdValue,
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6251,7 +6251,7 @@ async def create_purchase_request(
 
 @api.get("/purchasing/requests/{request_id}")
 async def get_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6262,7 +6262,7 @@ async def get_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/submit")
 async def submit_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6277,7 +6277,7 @@ async def submit_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/approve")
 async def approve_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6302,7 +6302,7 @@ async def approve_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/reject")
 async def reject_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     payload: PurchaseRequestReject,
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
@@ -6321,7 +6321,7 @@ async def reject_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/convert")
 async def convert_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     payload: PurchaseRequestConvert | None = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6410,7 +6410,7 @@ async def create_purchase_order(
 
 @api.get("/purchasing/orders/{po_id}")
 async def get_purchase_order(
-    po_id: str,
+    po_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6421,7 +6421,7 @@ async def get_purchase_order(
 
 @api.post("/purchasing/orders/{po_id}/send")
 async def send_purchase_order(
-    po_id: str,
+    po_id: UuidIdValue,
     to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6454,7 +6454,7 @@ async def send_purchase_order(
 
 @api.post("/purchasing/orders/{po_id}/amend")
 async def amend_purchase_order(
-    po_id: str,
+    po_id: UuidIdValue,
     payload: PurchaseOrderAmend,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6504,7 +6504,7 @@ async def amend_purchase_order(
 
 @api.get("/purchasing/orders/{po_id}/amendments")
 async def list_purchase_order_amendments(
-    po_id: str,
+    po_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6516,7 +6516,7 @@ async def list_purchase_order_amendments(
 
 @api.post("/purchasing/orders/{po_id}/cancel")
 async def cancel_purchase_order(
-    po_id: str,
+    po_id: UuidIdValue,
     payload: PurchaseOrderCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6590,7 +6590,7 @@ async def create_grn(
 
 @api.get("/purchasing/grn/{grn_id}")
 async def get_grn(
-    grn_id: str,
+    grn_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7557,7 +7557,7 @@ async def pos_search(
 
 @api.get("/pos/sales/{sale_id}/receipt")
 async def pos_receipt(
-    sale_id: str,
+    sale_id: UuidIdValue,
     # omit → json; blank/invalid → 422 (was `format or "json"`)
     format: Annotated[ReceiptPrintFormatValue, Query()] = "json",
     # omit → branding default; blank/invalid → 422 (was silent branding fallback)
@@ -7605,7 +7605,7 @@ async def pos_receipt(
 
 @api.post("/pos/sales/{sale_id}/receipt/send")
 async def pos_receipt_send(
-    sale_id: str,
+    sale_id: UuidIdValue,
     # omit → email; blank/invalid → 422 (was `channel or "email"`)
     channel: Annotated[ReceiptChannelValue, Query()] = "email",
     # omit → cashier email/phone; blank/invalid → 422 (blank was silent fallthrough;
@@ -7920,7 +7920,7 @@ async def create_recurring_expense(
 
 @api.patch("/expenses/recurring/{recurring_id}")
 async def update_recurring_expense(
-    recurring_id: str,
+    recurring_id: UuidIdValue,
     payload: RecurringExpenseUpdate,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7955,7 +7955,7 @@ async def update_recurring_expense(
 
 @api.post("/expenses/recurring/{recurring_id}/skip-next")
 async def skip_next_recurring_expense(
-    recurring_id: str,
+    recurring_id: UuidIdValue,
     payload: RecurringSkipNext,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8333,7 +8333,7 @@ async def create_account(
 
 @api.patch("/accounting/accounts/{account_id}")
 async def patch_account(
-    account_id: str,
+    account_id: UuidIdValue,
     payload: AccountUpdate,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8371,7 +8371,7 @@ async def patch_account(
 
 @api.get("/accounting/accounts/{account_id}")
 async def get_account(
-    account_id: str,
+    account_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8489,7 +8489,7 @@ async def create_cash_transfer(
 
 @api.get("/accounting/transfers/{transfer_id}")
 async def get_cash_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8562,7 +8562,7 @@ async def create_bank_connection(
 
 @api.patch("/accounting/bank-connections/{connection_id}")
 async def update_bank_connection(
-    connection_id: str,
+    connection_id: UuidIdValue,
     payload: BankConnectionUpdate,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8581,7 +8581,7 @@ async def update_bank_connection(
 
 @api.delete("/accounting/bank-connections/{connection_id}")
 async def delete_bank_connection(
-    connection_id: str,
+    connection_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8606,7 +8606,7 @@ async def delete_bank_connection(
 
 @api.post("/accounting/bank-connections/{connection_id}/sync")
 async def sync_bank_connection(
-    connection_id: str,
+    connection_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8688,7 +8688,7 @@ async def create_bank_statement(
 
 @api.post("/accounting/bank-statements/import")
 async def import_bank_statement(
-    account_id: str,
+    account_id: UuidIdValue,
     file: UploadFile = File(...),
     opening_balance: float | None = None,
     closing_balance: float | None = None,
@@ -8731,7 +8731,7 @@ async def import_bank_statement(
 
 @api.get("/accounting/bank-statements/{statement_id}")
 async def get_bank_statement(
-    statement_id: str,
+    statement_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8754,7 +8754,7 @@ async def get_bank_statement(
 
 @api.post("/accounting/bank-statements/{statement_id}/clear-group")
 async def clear_bank_statement_group(
-    statement_id: str,
+    statement_id: UuidIdValue,
     payload: BankClearGroupBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8791,7 +8791,7 @@ async def clear_bank_statement_group(
 
 @api.post("/accounting/bank-statements/{statement_id}/clear-groups/{group_id}/dissolve")
 async def dissolve_bank_clearing_group(
-    statement_id: str,
+    statement_id: UuidIdValue,
     group_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8814,7 +8814,7 @@ async def dissolve_bank_clearing_group(
 
 @api.post("/accounting/bank-statements/{statement_id}/auto-clear")
 async def auto_clear_bank_statement(
-    statement_id: str,
+    statement_id: UuidIdValue,
     payload: BankAutoClearBody | None = None,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8843,8 +8843,8 @@ async def auto_clear_bank_statement(
 
 @api.post("/accounting/bank-statements/{statement_id}/lines/{line_id}/match")
 async def match_bank_statement_line(
-    statement_id: str,
-    line_id: str,
+    statement_id: UuidIdValue,
+    line_id: UuidIdValue,
     payload: BankStatementMatchBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8867,8 +8867,8 @@ async def match_bank_statement_line(
 
 @api.post("/accounting/bank-statements/{statement_id}/lines/{line_id}/unmatch")
 async def unmatch_bank_statement_line(
-    statement_id: str,
-    line_id: str,
+    statement_id: UuidIdValue,
+    line_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8884,8 +8884,8 @@ async def unmatch_bank_statement_line(
 
 @api.post("/accounting/bank-statements/{statement_id}/lines/{line_id}/ignore")
 async def ignore_bank_statement_line(
-    statement_id: str,
-    line_id: str,
+    statement_id: UuidIdValue,
+    line_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8901,7 +8901,7 @@ async def ignore_bank_statement_line(
 
 @api.post("/accounting/bank-statements/{statement_id}/complete")
 async def complete_bank_statement(
-    statement_id: str,
+    statement_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8930,7 +8930,7 @@ async def list_cheques(
 
 @api.get("/accounting/cheques/{cheque_id}")
 async def get_cheque_detail(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8940,7 +8940,7 @@ async def get_cheque_detail(
 
 @api.post("/accounting/cheques/{cheque_id}/deposit")
 async def deposit_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8953,7 +8953,7 @@ async def deposit_cheque_api(
 
 @api.post("/accounting/cheques/{cheque_id}/clear")
 async def clear_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8966,7 +8966,7 @@ async def clear_cheque_api(
 
 @api.post("/accounting/cheques/{cheque_id}/bounce")
 async def bounce_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     payload: ChequeLifecycleReason,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8984,7 +8984,7 @@ async def bounce_cheque_api(
 
 @api.post("/accounting/cheques/{cheque_id}/cancel")
 async def cancel_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     payload: ChequeLifecycleReason,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -9157,7 +9157,7 @@ async def accounting_period_reopen(
 
 @api.post("/accounting/journal-entries/{entry_id}/unpost")
 async def unpost_journal(
-    entry_id: str,
+    entry_id: UuidIdValue,
     payload: JournalUnpost,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -9177,7 +9177,7 @@ async def unpost_journal(
 
 @api.post("/accounting/journal-entries/{entry_id}/attachment")
 async def upload_journal_attachment(
-    entry_id: str,
+    entry_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -9218,7 +9218,7 @@ async def upload_journal_attachment(
 
 @api.get("/accounting/journal-entries/{entry_id}/attachment")
 async def download_journal_attachment(
-    entry_id: str,
+    entry_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9239,7 +9239,7 @@ async def download_journal_attachment(
 
 @api.delete("/accounting/journal-entries/{entry_id}/attachment")
 async def delete_journal_attachment(
-    entry_id: str,
+    entry_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9529,7 +9529,7 @@ async def report_schedules_create(
 
 @api.patch("/reports/schedules/{schedule_id}")
 async def report_schedules_patch(
-    schedule_id: str,
+    schedule_id: UuidIdValue,
     payload: ReportScheduleUpdate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -9554,7 +9554,7 @@ async def report_schedules_patch(
 
 @api.delete("/reports/schedules/{schedule_id}")
 async def report_schedules_delete(
-    schedule_id: str,
+    schedule_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9565,7 +9565,7 @@ async def report_schedules_delete(
 
 @api.post("/reports/schedules/{schedule_id}/run")
 async def report_schedules_run(
-    schedule_id: str,
+    schedule_id: UuidIdValue,
     force: bool = True,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -10581,7 +10581,7 @@ async def add_tax(
 
 @api.get("/tax/rates/{rate_id}")
 async def get_tax_rate(
-    rate_id: str,
+    rate_id: UuidIdValue,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10591,7 +10591,7 @@ async def get_tax_rate(
 
 @api.patch("/tax/rates/{rate_id}")
 async def patch_tax_rate(
-    rate_id: str,
+    rate_id: UuidIdValue,
     payload: TaxUpdate,
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10621,7 +10621,7 @@ async def patch_tax_rate(
 
 @api.post("/tax/rates/{rate_id}/default")
 async def set_default_tax(
-    rate_id: str,
+    rate_id: UuidIdValue,
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11101,7 +11101,7 @@ async def create_transfer(
 
 @api.get("/stores/transfers/{transfer_id}")
 async def get_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11112,7 +11112,7 @@ async def get_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/submit")
 async def submit_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11125,7 +11125,7 @@ async def submit_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/approve")
 async def approve_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11149,7 +11149,7 @@ async def approve_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/reject")
 async def reject_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11168,7 +11168,7 @@ async def reject_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/ship")
 async def ship_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11181,7 +11181,7 @@ async def ship_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/receive")
 async def receive_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11194,7 +11194,7 @@ async def receive_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/cancel")
 async def cancel_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11249,7 +11249,7 @@ async def inventory_create_transfer(
 
 @api.get("/inventory/stock-transfers/{transfer_id}")
 async def inventory_get_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11259,7 +11259,7 @@ async def inventory_get_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/submit")
 async def inventory_submit_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11272,7 +11272,7 @@ async def inventory_submit_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/approve")
 async def inventory_approve_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11296,7 +11296,7 @@ async def inventory_approve_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/reject")
 async def inventory_reject_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11315,7 +11315,7 @@ async def inventory_reject_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/ship")
 async def inventory_ship_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11328,7 +11328,7 @@ async def inventory_ship_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/receive")
 async def inventory_receive_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11341,7 +11341,7 @@ async def inventory_receive_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/cancel")
 async def inventory_cancel_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11779,7 +11779,7 @@ async def audit_logs_verify(
 
 @api.delete("/audit-logs/{log_id}")
 async def audit_logs_delete_blocked(
-    log_id: str,
+    log_id: UuidIdValue,
     claims=Depends(require_permission("audit", "read")),
 ):
     audit_svc.reject_mutation()
@@ -11787,7 +11787,7 @@ async def audit_logs_delete_blocked(
 
 @api.patch("/audit-logs/{log_id}")
 async def audit_logs_patch_blocked(
-    log_id: str,
+    log_id: UuidIdValue,
     claims=Depends(require_permission("audit", "read")),
 ):
     audit_svc.reject_mutation()
@@ -11881,7 +11881,7 @@ async def backup_run_due(
 
 @api.get("/backup/{backup_id}")
 async def backup_get(
-    backup_id: str,
+    backup_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11891,7 +11891,7 @@ async def backup_get(
 
 @api.get("/backup/{backup_id}/download")
 async def backup_download(
-    backup_id: str,
+    backup_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -11923,7 +11923,7 @@ async def backup_download(
 
 @api.post("/backup/{backup_id}/verify")
 async def backup_verify(
-    backup_id: str,
+    backup_id: UuidIdValue,
     request: Request,
     payload: BackupVerifyBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
@@ -11965,7 +11965,7 @@ async def backup_verify(
 
 @api.post("/backup/{backup_id}/restore")
 async def backup_restore(
-    backup_id: str,
+    backup_id: UuidIdValue,
     request: Request,
     payload: BackupRestoreBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
@@ -12057,7 +12057,7 @@ async def api_keys_create(
 
 @api.get("/api-keys/{key_id}")
 async def api_keys_get(
-    key_id: str,
+    key_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12067,7 +12067,7 @@ async def api_keys_get(
 
 @api.get("/api-keys/{key_id}/usage")
 async def api_keys_usage(
-    key_id: str,
+    key_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12076,7 +12076,7 @@ async def api_keys_usage(
 
 @api.delete("/api-keys/{key_id}")
 async def api_keys_revoke(
-    key_id: str,
+    key_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -12156,7 +12156,7 @@ async def webhooks_create(
 
 @api.get("/webhooks/{webhook_id}")
 async def webhooks_get(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12166,7 +12166,7 @@ async def webhooks_get(
 
 @api.patch("/webhooks/{webhook_id}")
 async def webhooks_patch(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     request: Request,
     payload: WebhookUpdate,
     claims=Depends(require_roles("company_admin", "super_admin")),
@@ -12205,7 +12205,7 @@ async def webhooks_patch(
 
 @api.delete("/webhooks/{webhook_id}")
 async def webhooks_delete(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -12230,7 +12230,7 @@ async def webhooks_delete(
 
 @api.post("/webhooks/{webhook_id}/test")
 async def webhooks_test_delivery(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -12262,7 +12262,7 @@ async def webhooks_test_delivery(
 
 @api.get("/webhooks/{webhook_id}/deliveries")
 async def webhooks_list_deliveries(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     status: Annotated[WebhookDeliveryStatusFilterValue | None, Query()] = None,
     limit: int = 50,
     claims=Depends(require_roles("company_admin", "super_admin")),
@@ -12277,8 +12277,8 @@ async def webhooks_list_deliveries(
 
 @api.post("/webhooks/{webhook_id}/deliveries/{delivery_id}/retry")
 async def webhooks_retry_delivery(
-    webhook_id: str,
-    delivery_id: str,
+    webhook_id: UuidIdValue,
+    delivery_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -12745,7 +12745,7 @@ async def ai_report_templates_create(
 
 @api.delete("/ai/reports/templates/{template_id}")
 async def ai_report_templates_delete(
-    template_id: str,
+    template_id: UuidIdValue,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
