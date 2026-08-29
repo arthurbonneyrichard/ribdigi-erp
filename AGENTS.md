@@ -925,7 +925,7 @@
 - **Party phone defense-in-depth OpenAPI (BR-6.1 / BR-7.1):** `_normalize_party_profile` uses `validate_e164_phone_value` (**400**) matching `E164PhoneValue` (**422**).
 - **Party contact phone defense-in-depth OpenAPI (BR-6.1 / BR-7.1):** Party contact create/update uses `validate_e164_phone_value` (**400**) matching `E164PhoneValue` (**422**).
 - **Purchase order create audit money_json Decimal pilot OpenAPI (BR-6.3):** PO create audit `details.total` uses `honesty.money_json`.
-- **Purchase invoice create audit money_json Decimal pilot OpenAPI (BR-6.5):** PI create audit `details.total` uses `honesty.money_json`.
+- **Purchase invoice approve audit money_json Decimal pilot OpenAPI (BR-6.5):** PI approve audit `details.total` uses `honesty.money_json`.
 - **Expense update audit money_json Decimal pilot OpenAPI (BR-9.2):** Expense PATCH audit `details.amount` uses `honesty.money_json`.
 - **Sales invoice create audit money_json Decimal pilot OpenAPI (BR-7.4):** SI create audit `details.total` uses `honesty.money_json`.
 - **Sales invoice post audit money_json Decimal pilot OpenAPI (BR-7.4):** SI post audit `details.total` uses `honesty.money_json`.

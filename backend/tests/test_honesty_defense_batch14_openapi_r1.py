@@ -40,7 +40,7 @@ def test_honesty_batch14_docs_and_agents():
         "Party phone defense-in-depth OpenAPI",
         "Party contact phone defense-in-depth OpenAPI",
         "Purchase order create audit money_json Decimal pilot OpenAPI",
-        "Purchase invoice create audit money_json Decimal pilot OpenAPI",
+        "Purchase invoice approve audit money_json Decimal pilot OpenAPI",
         "Expense update audit money_json Decimal pilot OpenAPI",
         "Sales invoice create audit money_json Decimal pilot OpenAPI",
         "Sales invoice post audit money_json Decimal pilot OpenAPI",
@@ -172,7 +172,7 @@ def test_money_json_wired_batch14():
     po_src = inspect.getsource(purchasing_mod.create_purchase_order)
     assert "money_json(po.total_amount)" in po_src
 
-    pi_src = inspect.getsource(purchasing_mod.create_purchase_invoice)
+    pi_src = inspect.getsource(purchasing_mod.approve_purchase_invoice)
     assert "money_json(inv.total_amount)" in pi_src
 
     exp_src = inspect.getsource(api_mod.patch_expense)
