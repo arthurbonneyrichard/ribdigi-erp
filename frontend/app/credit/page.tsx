@@ -460,8 +460,8 @@ export default function Page() {
             ))}
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            <button onClick={loadStatement}>Statement</button>
-            <button type="button" onClick={loadCreditInfo}>
+            <button aria-label="Load party statement" onClick={loadStatement}>Statement</button>
+            <button type="button" aria-label="Load credit balance" onClick={loadCreditInfo}>
               Balance
             </button>
             <input
@@ -478,11 +478,11 @@ export default function Page() {
               title="History to date (YYYY-MM-DD)"
               aria-label="Credit history to date"
             />
-            <button type="button" onClick={loadHistory}>
+            <button type="button" aria-label="Load party history" onClick={loadHistory}>
               History
             </button>
             {kind === 'payable' && (
-              <button type="button" onClick={loadPaymentSchedule}>
+              <button type="button" aria-label="Load payment schedule" onClick={loadPaymentSchedule}>
                 Payment schedule
               </button>
             )}
@@ -596,7 +596,7 @@ export default function Page() {
                 title="Payment terms (days)"
                 aria-label="Customer payment terms days"
               />
-              <button onClick={updateLimit}>Set limit / terms</button>
+              <button aria-label="Set customer credit limit and terms" onClick={updateLimit}>Set limit / terms</button>
             </div>
           )}
           {kind === 'payable' && (
@@ -609,7 +609,7 @@ export default function Page() {
                 title="Supplier payment terms (days)"
                 aria-label="Supplier payment terms days"
               />
-              <button type="button" onClick={updateSupplierTerms}>
+              <button type="button" aria-label="Set supplier payment terms" onClick={updateSupplierTerms}>
                 Set terms
               </button>
             </div>

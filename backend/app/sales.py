@@ -426,7 +426,7 @@ async def create_sales_invoice(
             entity_id=invoice.id,
             details={
                 "invoice_number": invoice.invoice_number,
-                "total": float(invoice.total_amount),
+                "total": money_json(invoice.total_amount),
                 "is_reverse_charge": header_rc,
             },
         )
@@ -585,7 +585,7 @@ async def post_sales_invoice(
             entity_id=invoice.id,
             details={
                 "invoice_number": invoice.invoice_number,
-                "total": float(invoice.total_amount),
+                "total": money_json(invoice.total_amount),
                 "credit_limit_overridden": bool(override_info),
             },
         )

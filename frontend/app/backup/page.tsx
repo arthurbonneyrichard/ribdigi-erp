@@ -178,7 +178,7 @@ export default function Page() {
               aria-label="Backup hour UTC"
               style={{ width: 100 }}
             />
-            <button onClick={saveSettings}>Save settings</button>
+            <button aria-label="Save backup settings" onClick={saveSettings}>Save settings</button>
             <input
               value={backupNotes}
               onChange={(e) => setBackupNotes(e.target.value)}

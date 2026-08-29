@@ -420,7 +420,11 @@ export default function Page() {
                     Usage
                   </button>
                   {k.status === 'active' && (
-                    <button type="button" onClick={() => revokeKey(k.id)}>
+                    <button
+                      type="button"
+                      onClick={() => revokeKey(k.id)}
+                      aria-label={`Revoke API key ${k.id}`}
+                    >
                       Revoke
                     </button>
                   )}
@@ -544,7 +548,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             </label>
           ))}
         </div>
-        <button type="button" onClick={createWebhook} disabled={busy || !hookUrl}>
+        <button type="button" onClick={createWebhook} disabled={busy || !hookUrl} aria-label="Create webhook">
           Create webhook
         </button>
 
@@ -597,16 +601,16 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                   <button type="button" onClick={() => testWebhook(h.id)}>
                     Test
                   </button>
-                  <button type="button" onClick={() => loadDeliveries(h.id)}>
+                  <button type="button" onClick={() => loadDeliveries(h.id)} aria-label={`Load webhook deliveries ${h.id}`}>
                     Deliveries
                   </button>
                   <button type="button" onClick={() => rotateSecret(h.id)}>
                     Rotate secret
                   </button>
-                  <button type="button" onClick={() => toggleActive(h)}>
+                  <button type="button" onClick={() => toggleActive(h)} aria-label={`${h.is_active ? "Disable" : "Enable"} webhook ${h.id}`}>
                     {h.is_active ? 'Disable' : 'Enable'}
                   </button>
-                  <button type="button" onClick={() => deleteWebhook(h.id)}>
+                  <button type="button" onClick={() => deleteWebhook(h.id)} aria-label={`Delete webhook ${h.id}`}>
                     Delete
                   </button>
                 </td>

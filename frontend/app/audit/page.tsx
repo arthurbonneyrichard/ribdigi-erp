@@ -339,7 +339,7 @@ export default function Page() {
         >
           Filter
         </button>
-        <button type="button" onClick={runVerify}>
+        <button type="button" aria-label="Verify audit chain" onClick={runVerify}>
           Verify chain
         </button>
         <button type="button" onClick={exportCsv} aria-label="Export audit CSV">

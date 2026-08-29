@@ -10,8 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 
 MAX_PARTY_CONTACTS = 20
+
+
+def _optional_contact_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def serialize_contact(row: m.PartyContact) -> dict:
@@ -104,7 +115,7 @@ async def create_contact(
         for row in existing:
             row.is_primary = False
 
-    phone_n = (phone or "").strip() or None
+    phone_n = _optional_contact_phone(phone)
     email_n = (email or "").strip() or None
     desig_n = optional_honest_narrative(
         designation, label="party contact designation", max_length=120
@@ -155,7 +166,7 @@ async def update_contact(
             name, label="party contact name", min_length=1, max_length=150
         )
     if phone is not None:
-        target.phone = phone.strip() or None
+        target.phone = _optional_contact_phone(phone)
     if email is not None:
         target.email = email.strip() or None
     if designation is not None:

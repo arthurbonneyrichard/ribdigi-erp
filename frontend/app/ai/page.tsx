@@ -810,8 +810,8 @@ export default function Page() {
           >
             {draftPiBusy ? 'Creating draft PI…' : 'Create draft purchase invoice'}
           </button>
-          <button onClick={loadInsights}>Load insights</button>
-          <button onClick={emailInsightDigest} disabled={digestBusy}>
+          <button aria-label="Load AI insights" onClick={loadInsights}>Load insights</button>
+          <button aria-label="Email AI insight digest" onClick={emailInsightDigest} disabled={digestBusy}>
             {digestBusy ? 'Emailing digest…' : 'Email digest to me'}
           </button>
           <button
@@ -885,7 +885,7 @@ export default function Page() {
           <button onClick={loadExpenseAnalysis} aria-label="Expense analysis">
             Expense analysis
           </button>
-          <button onClick={loadSecurityAlerts}>Security alerts</button>
+          <button aria-label="Load AI security alerts" onClick={loadSecurityAlerts}>Security alerts</button>
         </div>
         <p className="muted" style={{ marginTop: 8, fontSize: 12 }}>
           Weekly AI insight digests are sent to active company and super admins every Monday at 07:00 UTC.

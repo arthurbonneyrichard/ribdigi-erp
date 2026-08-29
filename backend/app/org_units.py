@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 
 CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 
@@ -23,6 +24,16 @@ def _clean_code(code: str) -> str:
             detail="code must be 1–40 chars: letters, digits, underscore, or hyphen",
         )
     return value
+
+
+def _optional_branch_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 async def _assert_tenant_user(db: AsyncSession, tenant_id: str, user_id: str | None) -> str | None:
@@ -153,7 +164,7 @@ async def create_branch(
         code=code,
         name=name_clean,
         address=optional_honest_narrative(address, label="branch address", max_length=500),
-        phone=phone,
+        phone=_optional_branch_phone(phone),
         email=(email or "").strip() or None,
         manager_id=manager_id,
         is_active=True,
@@ -188,7 +199,7 @@ async def update_branch(
         )
     if phone is not None:
         # Defense in depth: BranchUpdate E164PhoneValue → 422 on blank/invalid.
-        row.phone = phone
+        row.phone = _optional_branch_phone(phone)
     if email is not None:
         row.email = email.strip() or None
     if clear_manager:

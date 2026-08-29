@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import audit as audit_svc
 from app import models as m
 from app.config import settings
+from app.honesty import money_json, require_honest_narrative
 
 APPROVED_PROVIDERS = frozenset({"openai"})
 # Dev/test only — never allowed when APP_ENV=production.
@@ -120,16 +121,10 @@ def parse_chat_message(payload: dict | None) -> str:
         raise HTTPException(status_code=422, detail="message is required")
     if not isinstance(raw, str):
         raise HTTPException(status_code=422, detail="message must be a string")
-    message = raw.strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="message must not be empty")
-    limit = max_message_chars()
-    if len(message) > limit:
-        raise HTTPException(
-            status_code=400,
-            detail=f"message exceeds maximum length of {limit} characters",
-        )
-    return message
+    # OpenAPI AiChatMessageValue → 422; service defense-in-depth → 400.
+    return require_honest_narrative(
+        raw, label="AI chat message", max_length=max_message_chars()
+    )
 
 
 async def record_query(
@@ -197,8 +192,8 @@ def build_insight_notes(dash: dict) -> list[str]:
     low = int(dash.get("low_stock") or 0)
     if low > 0:
         notes.append(f"{low} product(s) are at or below reorder level.")
-    expenses = float(dash.get("total_expenses") or 0)
-    sales = float(dash.get("total_sales") or 0)
+    expenses = money_json(dash.get("total_expenses") or 0)
+    sales = money_json(dash.get("total_sales") or 0)
     if expenses > sales and sales > 0:
         notes.append("Expenses currently exceed recorded sales.")
     notes.extend(_sales_spike_drop_notes(dash))
@@ -260,8 +255,8 @@ async def compose_insights(
     if low > 0:
         add("stock", f"{low} product(s) are at or below reorder level.")
 
-    expenses = float(dash.get("total_expenses") or 0)
-    sales = float(dash.get("total_sales") or 0)
+    expenses = money_json(dash.get("total_expenses") or 0)
+    sales = money_json(dash.get("total_sales") or 0)
     if expenses > sales and sales > 0:
         add("expense_anomaly", "Expenses currently exceed recorded sales.")
 
@@ -301,10 +296,10 @@ async def compose_insights(
         label = str(season.get("label") or "")
         rising = label in {"rising", "emerging_demand"}
         dts = row.get("days_to_stockout")
-        stock = float(row.get("stock_qty") or 0)
-        reorder = float(row.get("reorder_level") or 0)
+        stock = money_json(row.get("stock_qty") or 0)
+        reorder = money_json(row.get("reorder_level") or 0)
         at_risk = stock <= reorder or (dts is not None and float(dts) <= 14)
-        rec_qty = float(row.get("recommended_order_qty") or 0)
+        rec_qty = money_json(row.get("recommended_order_qty") or 0)
         if not (rising and at_risk and rec_qty > 0):
             continue
         ratio = season.get("ratio")

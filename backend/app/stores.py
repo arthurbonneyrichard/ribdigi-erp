@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 from app.inventory import allocate_unlocated_stock, apply_warehouse_stock_change, get_or_create_warehouse_stock
 
 TRANSFER_EDITABLE = {"draft"}
@@ -24,6 +25,16 @@ TRANSFER_MANAGER_ROLES = frozenset({"store_manager"}) | TRANSFER_ADMIN_ROLES
 
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 _TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+
+
+def _optional_store_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def normalize_operating_hours(value: dict | None) -> dict | None:
@@ -178,7 +189,7 @@ async def create_store(
         name=name_clean,
         code=code.strip().upper(),
         address=optional_honest_narrative(address, label="store address", max_length=500),
-        phone=phone,
+        phone=_optional_store_phone(phone),
         manager_id=manager_id,
         branch_id=branch_id,
         operating_hours=normalize_operating_hours(operating_hours),
@@ -224,7 +235,7 @@ async def update_store(
         )
     if phone is not None:
         # Defense in depth: StoreUpdate E164PhoneValue → 422 on blank/invalid.
-        store.phone = phone
+        store.phone = _optional_store_phone(phone)
     if clear_manager:
         store.manager_id = None
     elif manager_id is not None:

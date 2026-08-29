@@ -58,6 +58,7 @@ from app import tenants as tenants_svc
 from app import packages as packages_svc
 from app import storage as storage_svc
 from app.honesty import money_json, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
@@ -305,6 +306,16 @@ from app import platform_reports as platform_reports_svc
 from app.rbac import PLATFORM_ROLES, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
+
+
+def _optional_user_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def env(data=None, message: str = "Operation completed successfully"):
@@ -2176,8 +2187,13 @@ async def update_me(
             payload.full_name, label="full name", max_length=150
         )
     if payload.phone is not None:
-        # ProfileUpdate.phone ∈ E164PhoneValue — already stripped/normalized (+…).
-        user.phone = payload.phone
+        # ProfileUpdate.phone ∈ E164PhoneValue — defense-in-depth → 400.
+        from app.schemas import validate_e164_phone_value
+
+        try:
+            user.phone = validate_e164_phone_value(str(payload.phone).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     await db.commit()
     return env(
         {
@@ -2652,7 +2668,7 @@ async def add_user(
         full_name=require_honest_narrative(
             payload.full_name, label="full name", max_length=150
         ),
-        phone=payload.phone,
+        phone=_optional_user_phone(payload.phone),
         password_hash=hash_password(payload.password),
         role=role_key,
         permissions=role_perms,
@@ -2721,8 +2737,8 @@ async def update_user(
         changes["full_name"] = name
 
     if payload.phone is not None:
-        # UserUpdate.phone ∈ E164PhoneValue — already stripped/normalized (+…).
-        user.phone = payload.phone
+        # UserUpdate.phone ∈ E164PhoneValue — defense-in-depth → 400.
+        user.phone = _optional_user_phone(payload.phone)
         changes["phone"] = user.phone
 
     if payload.role is not None:
@@ -4544,6 +4560,14 @@ def _normalize_party_profile(data: dict, *, kind: str) -> dict:
         data["address"] = optional_honest_narrative(
             data["address"], label="party address", max_length=500
         )
+    if "phone" in data and data["phone"] is not None:
+        # OpenAPI E164PhoneValue → 422; service defense-in-depth → 400.
+        from app.schemas import validate_e164_phone_value
+
+        try:
+            data["phone"] = validate_e164_phone_value(str(data["phone"]).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     for coord, lo, hi in (("latitude", -90.0, 90.0), ("longitude", -180.0, 180.0)):
         if coord not in data or data[coord] is None:
             continue
@@ -8154,7 +8178,7 @@ async def patch_expense(
         action="expense_update",
         entity="expense",
         entity_id=expense.id,
-        details={"status": expense.status, "amount": float(expense.amount)},
+        details={"status": expense.status, "amount": money_json(expense.amount)},
     )
     await db.commit()
     return env(await expenses_svc.serialize_expense_full(db, expense), "Expense updated")

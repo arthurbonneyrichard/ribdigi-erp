@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.config import settings
 from app.honesty import money_json, optional_honest_narrative
+from app.schemas import validate_webhook_url_value
 
 PROVIDERS = frozenset({"mock", "http_json"})
 
@@ -165,13 +166,20 @@ async def create_connection(
     )
 
     now = datetime.utcnow()
+    # OpenAPI WebhookUrlValue → 422; service defense-in-depth → 400.
+    feed_url_clean: str | None = None
+    if feed_url is not None and str(feed_url).strip():
+        try:
+            feed_url_clean = validate_webhook_url_value(str(feed_url).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     row = m.BankAccountConnection(
         tenant_id=tenant_id,
         account_id=account_id,
         provider=prov,
         display_name=display_name,
         external_account_id=external_account_id,
-        feed_url=(feed_url or "").strip() or None,
+        feed_url=feed_url_clean,
         credentials_enc=creds,
         auto_sync=bool(auto_sync),
         auto_match_after_sync=bool(auto_match_after_sync),
@@ -204,7 +212,15 @@ async def update_connection(
             max_length=120,
         )
     if "feed_url" in payload and payload["feed_url"] is not None:
-        row.feed_url = str(payload["feed_url"]).strip() or None
+        # OpenAPI WebhookUrlValue → 422; service defense-in-depth → 400.
+        raw_url = str(payload["feed_url"]).strip()
+        if not raw_url:
+            row.feed_url = None
+        else:
+            try:
+                row.feed_url = validate_webhook_url_value(raw_url)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
     if "provider" in payload and payload["provider"] is not None:
         row.provider = _normalize_provider(payload["provider"])
     if "auto_sync" in payload and payload["auto_sync"] is not None:

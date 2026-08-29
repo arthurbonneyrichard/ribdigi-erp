@@ -17,7 +17,7 @@ from app import ai as ai_svc
 from app import ai_sales as ai_sales_svc
 from app import credit as credit_svc
 from app import models as m
-from app.honesty import money_json
+from app.honesty import money_json, optional_honest_narrative
 
 CHURN_BASE = {
     "champions": 0.08,
@@ -119,6 +119,10 @@ async def customer_assist(
     customer_id: str | None = None,
     query: str | None = None,
 ) -> dict[str, Any]:
+    # OpenAPI AiChatMessageValue → 422; service defense-in-depth → 400.
+    query = optional_honest_narrative(
+        query, label="AI customer assist query", max_length=ai_svc.max_message_chars()
+    )
     if query:
         injection = ai_svc.find_injection(query)
         if injection:

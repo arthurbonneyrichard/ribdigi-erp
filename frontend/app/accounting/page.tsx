@@ -1182,7 +1182,7 @@ export default function Page() {
                     aria-label="Opening balance amount"
                     style={{ width: 120 }}
                   />
-                  <button type="button" onClick={addCoaOpenLine}>
+                  <button type="button" aria-label="Add opening balance line" onClick={addCoaOpenLine}>
                     Add line
                   </button>
                 </div>
@@ -1969,7 +1969,7 @@ export default function Page() {
                     Sync now
                   </button>{' '}
                   {c.is_active === false ? (
-                    <button type="button" className="btn-ok" onClick={() => setConnectionActive(c.id, true)}>
+                    <button type="button" className="btn-ok" onClick={() => setConnectionActive(c.id, true)} aria-label={`Activate bank connection ${c.id}`}>
                       Activate
                     </button>
                   ) : (
@@ -1977,11 +1977,12 @@ export default function Page() {
                       type="button"
                       className="btn-danger"
                       onClick={() => setConnectionActive(c.id, false)}
+                      aria-label={`Deactivate bank connection ${c.id}`}
                     >
                       Deactivate
                     </button>
                   )}{' '}
-                  <button type="button" onClick={() => removeConnection(c.id)}>
+                  <button type="button" onClick={() => removeConnection(c.id)} aria-label={`Remove bank connection ${c.id}`}>
                     Remove
                   </button>
                 </li>
@@ -2031,7 +2032,7 @@ export default function Page() {
                   <td>{s.closing_balance}</td>
                   <td>{s.unmatched_count}</td>
                   <td>
-                    <button onClick={() => openStatement(s.id)}>Open</button>
+                    <button onClick={() => openStatement(s.id)} aria-label={`Open bank statement ${s.id}`}>Open</button>
                   </td>
                 </tr>
               ))}
@@ -2054,6 +2055,7 @@ export default function Page() {
                 onClick={completeStatement}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12, marginRight: 8 }}
+                aria-label="Mark bank statement reconciled"
               >
                 Mark reconciled
               </button>
@@ -2103,7 +2105,7 @@ export default function Page() {
                       <li key={g.id}>
                         {g.statement_line_ids?.length || 0} bank ↔ {g.journal_line_ids?.length || 0}{' '}
                         book = {g.bank_total}{' '}
-                        <button onClick={() => dissolveGroup(g.id)}>Dissolve</button>
+                        <button onClick={() => dissolveGroup(g.id)} aria-label={`Dissolve clearing group ${g.id}`}>Dissolve</button>
                       </li>
                     ))}
                   </ul>
@@ -2170,7 +2172,7 @@ export default function Page() {
                           <td>{ln.status}</td>
                           <td>
                             {ln.status === 'unmatched' && (
-                              <button onClick={() => ignoreLine(ln.id)}>Ignore</button>
+                              <button onClick={() => ignoreLine(ln.id)} aria-label={`Ignore bank statement line ${ln.id}`}>Ignore</button>
                             )}
                             {ln.status === 'matched' && (
                               <button
@@ -2327,10 +2329,10 @@ export default function Page() {
                   </td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {c.direction === 'received' && c.status === 'pending' && (
-                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'deposit')}>Deposit</button>
+                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'deposit')} aria-label={`Deposit cheque ${c.id}`}>Deposit</button>
                     )}
                     {(c.status === 'pending' || c.status === 'deposited') && (
-                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'clear')}>Clear</button>
+                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'clear')} aria-label={`Clear cheque ${c.id}`}>Clear</button>
                     )}
                     {c.status !== 'bounced' && c.status !== 'cancelled' && (
                       <button

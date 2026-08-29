@@ -610,11 +610,22 @@ async def update_profile(
         tenant.currency = normalize_currency(currency)
     if phone is not None:
         # Defense in depth: TenantProfileUpdate E164PhoneValue → 422 on blank/invalid.
-        tenant.phone = phone
+        from app.schemas import validate_e164_phone_value
+
+        try:
+            tenant.phone = validate_e164_phone_value(str(phone).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if email is not None:
         tenant.email = email.strip() or None
     if website is not None:
-        tenant.website = website.strip() or None
+        # Defense in depth: TenantProfileUpdate WebhookUrlValue → 422 on blank/invalid.
+        from app.schemas import validate_webhook_url_value
+
+        try:
+            tenant.website = validate_webhook_url_value(str(website).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if address is not None:
         # OpenAPI AddressValue → 422; service defense-in-depth → 400.
         tenant.address = optional_honest_narrative(

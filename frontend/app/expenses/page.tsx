@@ -821,7 +821,7 @@ export default function Page() {
             aria-label="Expense next number"
           />
           <span className="muted">{expPreview || '—'}</span>
-          <button type="button" onClick={saveExpenseNumbering}>
+          <button type="button" aria-label="Save expense numbering" onClick={saveExpenseNumbering}>
             Save numbering
           </button>
         </div>
@@ -1177,7 +1177,7 @@ export default function Page() {
                 {recBusy ? 'Creating…' : 'Create schedule'}
               </button>
             )}
-            <button type="button" onClick={generateDueRecurring}>
+            <button type="button" aria-label="Generate due recurring expenses" onClick={generateDueRecurring}>
               Generate due now
             </button>
           </div>
@@ -1400,7 +1400,7 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <button type="button" className="btn-ok" onClick={createExpense}>
+          <button type="button" className="btn-ok" aria-label="Submit expense" onClick={createExpense}>
             Submit expense
           </button>
         </div>
@@ -1476,7 +1476,7 @@ export default function Page() {
               aria-label="Expense OCR date"
             />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={applyOcr}>
+              <button type="button" aria-label="Apply expense OCR suggestion" onClick={applyOcr}>
                 Apply to expense
               </button>
               <button

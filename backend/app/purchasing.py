@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_webhook_url_value
 from app.inventory import apply_stock_change
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
@@ -21,6 +22,16 @@ from app.doc_numbers import (
     next_purchase_return_number,
     next_supplier_payment_number,
 )
+
+
+def _optional_attachment_url(value: str | None) -> str | None:
+    """OpenAPI WebhookUrlValue → 422; service defense-in-depth → 400."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        return validate_webhook_url_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 async def _purchase_line_tax(
@@ -405,7 +416,7 @@ async def create_purchase_order(
             action="po_created",
             entity="purchase_order",
             entity_id=po.id,
-            details={"po_number": po.po_number, "total": float(po.total_amount)},
+            details={"po_number": po.po_number, "total": money_json(po.total_amount)},
         )
     )
     return po
@@ -2011,7 +2022,7 @@ async def create_purchase_invoice(
         currency=cur,
         exchange_rate=rate,
         ap_posted=False,
-        attachment_url=attachment_url,
+        attachment_url=_optional_attachment_url(attachment_url),
         notes=optional_honest_narrative(notes, label="purchase invoice notes"),
         created_by=user_id,
     )
@@ -2078,7 +2089,7 @@ async def approve_purchase_invoice(
             entity_id=inv.id,
             details={
                 "invoice_number": inv.invoice_number,
-                "total": float(inv.total_amount),
+                "total": money_json(inv.total_amount),
                 "ap_posted": inv.ap_posted,
                 "goods_receipt_id": inv.goods_receipt_id,
                 "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
