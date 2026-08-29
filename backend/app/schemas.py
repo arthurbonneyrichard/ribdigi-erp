@@ -765,6 +765,8 @@ class TenantSuspendRequest(BaseModel):
 
 
 class TenantSubscriptionAssign(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-1.x / platform — schema Literal (+ strip/lower); blank/invalid → 422
     # (was free str; service still defense-in-depth vs VALID_PACKAGE_CODES)
     package_code: PackageCodeValue
@@ -868,6 +870,8 @@ class UserUpdate(BaseModel):
 
 class PlatformGrantAccess(BaseModel):
     """Grant an existing app user access to the software-owner dashboard."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # Required app user ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach user lookup). Existence remains
@@ -922,6 +926,8 @@ class PlatformStaffUpdate(BaseModel):
 
 class PlatformRevokeAccess(BaseModel):
     """Revoke software-owner dashboard access; keep the account as an app user."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # Non-platform system roles Literal (+ strip/lower); omit → company_admin;
     # blank/invalid/platform → 422 (was free str; "" silently coerced to company_admin)
@@ -2241,6 +2247,8 @@ class ExpenseDecision(BaseModel):
     (service may still set a level-awaiting system note); blank/`!!!`/`http://…` →
     **422** (was free `str`; blank/garbage could persist on `approval_comment`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # omit/`null` → no typed comment; blank/`!!!`/`http://…` → **422**
     comment: ExpenseApproveCommentValue | None = None
@@ -2340,6 +2348,8 @@ class RecurringSkipNext(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could persist on audit `recurring_expense_skipped`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: RecurringSkipReasonValue
 
@@ -2537,6 +2547,8 @@ class PosDrawerOpen(BaseModel):
     URL-like garbage could be logged on drawer open). Auto-open on cash sale
     bypasses this body (internal `pos_sale:{id}`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: PosDrawerOpenReasonValue
 
@@ -8496,6 +8508,8 @@ class JournalUnpost(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could be appended to journal `description` / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: JournalUnpostReasonValue
 
@@ -8547,6 +8561,8 @@ class PeriodReopenBody(BaseModel):
 
 
 class PosSessionOpen(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Optional store ∈ UuidIdValue; omit/`null` → no store / HQ path; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
     # lookup). Existence remains tenant-scoped store lookup (**404**). POS
@@ -8557,6 +8573,8 @@ class PosSessionOpen(BaseModel):
 
 
 class PosSessionClose(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     actual_cash: NonNegativeMoneyValue
     # omit/`null` → no separate closing figure; nan/inf/<0 → **422**
