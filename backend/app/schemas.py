@@ -2151,6 +2151,8 @@ class ExpenseUpdate(BaseModel):
 
 
 class ExpenseCategoryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required expense category code ∈ ExpenseCategoryCodeValue; blank/`!!!`/`http://…`
     # → **422** (was free `str`; blank/punctuation/URL could persist on ExpenseCategory.code).
     # Tenant uniqueness remains create **409** (UniqueConstraint).
@@ -2167,6 +2169,8 @@ class ExpenseCategoryCreate(BaseModel):
 
 
 class ExpenseCategoryUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: ExpenseCategoryNameValue | None = None
     # omit/`null` → no change; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     budget_amount: NonNegativeMoneyValue | None = None
@@ -2200,11 +2204,15 @@ class ExpenseReject(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could persist on `Expense.rejection_reason`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: ExpenseRejectReasonValue
 
 
 class RecurringExpenseCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
     # when `category_id` set; blank/`!!!`/`http://…` → **422** (was free `str`;
     # punctuation/URL could persist on RecurringExpense.category).
@@ -2239,6 +2247,8 @@ class RecurringExpenseCreate(BaseModel):
 
 
 class RecurringExpenseUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     is_active: bool | None = None
     amount: PositiveMoneyValue | None = None
     # omit/`null` → no change (unless `clear_payee`); blank/`!!!`/`http://…` → **422**
@@ -2577,6 +2587,8 @@ class StockTransferItemCreate(BaseModel):
     (was free `str`; garbage could reach catalog lookup). Existence remains
     tenant-scoped product lookup (**404**).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -2587,6 +2599,8 @@ class StockTransferItemCreate(BaseModel):
 
 
 class StockTransferCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Optional source store ∈ UuidIdValue; omit/`null` OK when warehouse pair set;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # store lookup). Existence remains tenant-scoped store lookup (**404**).
@@ -2629,6 +2643,8 @@ class StockTransferReject(BaseModel):
     only / URL-like garbage could persist on `StockTransfer.rejection_reason`).
     Shared by reject and cancel endpoints (Inventory + Multi-Store).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: StockTransferRejectReasonValue
 
@@ -2716,6 +2732,8 @@ class TaxComponent(BaseModel):
 
 
 class TaxCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required tax rate label ∈ TaxRateNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on tax rate create).
     name: TaxRateNameValue
@@ -2731,6 +2749,8 @@ class TaxCreate(BaseModel):
 
 
 class TaxUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: TaxRateNameValue | None = None
     # omit/`null` → no change; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     rate: NonNegativeMoneyValue | None = None
@@ -2743,6 +2763,8 @@ class TaxUpdate(BaseModel):
 
 
 class TaxCalculateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
     amount: PositiveMoneyValue
     # omit/`null` → use tax_rate_id / tenant default; nan/inf/<0 → **422** (was unconstrained float)
@@ -2884,6 +2906,8 @@ class PurchaseOrderCancel(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could be appended to PO `notes` / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: PurchaseOrderCancelReasonValue
 
@@ -2894,6 +2918,8 @@ class PurchaseRequestItemCreate(BaseModel):
     Optional `notes`; omit/`null` → no line notes; blank/`!!!`/`http://…` → **422**
     (was free `str`; blank/garbage could persist on `PurchaseRequestItem.notes`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -2919,6 +2945,8 @@ class PurchaseRequestCreate(BaseModel):
     Optional `notes` ∈ PurchaseRequestNotesValue; omit/`null` → no notes; blank/`!!!`/
     `http://…` → **422** (was free `str`; blank/garbage could persist on PREQ).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # Optional preferred supplier ∈ UuidIdValue; omit/`null` → no preference; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach supplier lookup).
@@ -2946,11 +2974,15 @@ class PurchaseRequestReject(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could persist on `PurchaseRequest.rejection_reason`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: PurchaseRequestRejectReasonValue
 
 
 class PurchaseRequestConvert(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Optional supplier override ∈ UuidIdValue; omit/`null` → preferred / first
     # line supplier path; blank/`!!!`/`http://…`/non-UUID → **422** (was free
     # `str`; garbage could reach party lookup). Existence remains tenant-scoped
@@ -3116,6 +3148,8 @@ class GrnItemCreate(BaseModel):
     Receive all send `po_item_id` trim.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     po_item_id: UuidIdValue
     # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
     received_qty: PositiveQtyValue
@@ -3143,6 +3177,8 @@ class GrnItemCreate(BaseModel):
 
 
 class GrnCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required purchase order ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach PO lookup). Existence remains tenant-scoped
     # PO lookup (**404**). Purchasing **GRN purchase order** control; Post GRN sends trim.
@@ -3158,6 +3194,8 @@ class GrnCreate(BaseModel):
 
 
 class PurchaseReturnItemCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required GRN line ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach goods-receipt item lookup). Existence
     # remains tenant-scoped GRN line lookup (**404**/400). Purchasing **Purchase
@@ -3168,6 +3206,8 @@ class PurchaseReturnItemCreate(BaseModel):
 
 
 class PurchaseReturnCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required source GRN ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach GRN lookup). Existence remains
     # tenant-scoped goods-receipt lookup (**404**).
@@ -3188,6 +3228,8 @@ class PurchaseReturnCancel(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could be appended to return `notes` / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: PurchaseReturnCancelReasonValue
 
@@ -3285,6 +3327,8 @@ class PurchaseInvoiceCancel(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could be appended to invoice `notes` / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: PurchaseInvoiceCancelReasonValue
 
@@ -3367,6 +3411,8 @@ class SalesQuotationReject(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could persist on `SalesQuotation.rejection_reason`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: SalesQuotationRejectReasonValue
 
@@ -3404,6 +3450,8 @@ class SalesOrderCreate(BaseModel):
 
 
 class SalesOrderConfirm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Optional store ∈ UuidIdValue; omit/`null` → keep order store / require when
     # confirming without one; blank/`!!!`/`http://…`/non-UUID → **422** (was free
     # `str`; garbage could reach store lookup). Existence remains tenant-scoped
@@ -3425,6 +3473,8 @@ class SalesOrderCancel(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could be appended to order `notes` / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: SalesOrderCancelReasonValue
 
@@ -3437,6 +3487,8 @@ class SalesInvoiceCancel(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could be appended to invoice `notes` / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: SalesInvoiceCancelReasonValue
 
@@ -3481,6 +3533,8 @@ class SalesReturnCancel(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could be appended to return `notes` / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: SalesReturnCancelReasonValue
 
@@ -6644,6 +6698,8 @@ class ReportScheduleCreate(BaseModel):
     ReportScheduleRecipientsValue (`list[EmailStr]` or comma/`;` string); required ≥1;
     blank/`bad` → **422**.
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     name: ReportScheduleNameValue
     # Schema Literal; blank/unknown → 422 (was free str → service 400)
@@ -6664,6 +6720,8 @@ class ReportScheduleUpdate(BaseModel):
     Optional `recipients` ∈ ReportScheduleRecipientsValue; omit/`null` → no change;
     blank/invalid → **422** (do not clear to empty).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     name: ReportScheduleNameValue | None = None
     report_type: ReportTypeValue | None = None
@@ -6798,6 +6856,8 @@ WebhookSecretValue = Annotated[
 
 class WebhookCreate(BaseModel):
     """Outbound webhook endpoint create."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # omit not allowed; blank/non-http(s)/non-localhost http → 422 (was free str; late **400**)
     url: WebhookUrlValue
@@ -6816,6 +6876,8 @@ class WebhookCreate(BaseModel):
 
 class WebhookUpdate(BaseModel):
     """Outbound webhook endpoint patch — omit = no change."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # omit = no change; blank/non-http(s) → 422 (was free str min_length=1; late **400**)
     url: WebhookUrlValue | None = None
