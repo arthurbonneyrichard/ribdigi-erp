@@ -247,7 +247,7 @@ async def build_product_forecasts(
         row["dead_stock"] = (
             row["velocity_per_day"] <= 1e-9
             and row["stock_qty"] > 0
-            and float(sold_90.get(pid, 0)) <= 0
+            and money_json(sold_90.get(pid, 0)) <= 0
         )
     return out
 

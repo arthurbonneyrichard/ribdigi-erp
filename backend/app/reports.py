@@ -240,7 +240,7 @@ async def sales_monthly_total(
     )
     if store_id:
         inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
-    inv = float((await db.execute(inv_stmt)).scalar() or 0)
+    inv = money_json((await db.execute(inv_stmt)).scalar() or 0)
 
     pos_stmt = (
         select(func.coalesce(func.sum(m.Transaction.total), 0))
@@ -255,7 +255,7 @@ async def sales_monthly_total(
     )
     if store_id:
         pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
-    pos = float((await db.execute(pos_stmt)).scalar() or 0)
+    pos = money_json((await db.execute(pos_stmt)).scalar() or 0)
     return money_json(round(inv + pos, 2))
 
 
@@ -2881,7 +2881,7 @@ async def budget_vs_actual(
             }
         )
 
-    rows_out.sort(key=lambda r: (-float(r["actual"]), r["category"] or ""))
+    rows_out.sort(key=lambda r: (-money_json(r["actual"]), r["category"] or ""))
     top_categories = rows_out[:5]
     total_variance = total_actual - total_budget
     return {

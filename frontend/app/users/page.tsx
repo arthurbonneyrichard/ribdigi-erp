@@ -525,6 +525,7 @@ export default function Page() {
           <input
             type="file"
             accept=".csv,text/csv"
+            aria-label="User CSV import file"
             onChange={(e) => {
               setImportFile(e.target.files?.[0] || null);
               setImportReport(null);

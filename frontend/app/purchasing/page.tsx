@@ -2192,6 +2192,7 @@ export default function Page() {
                                 <input
                                   style={{ width: 72 }}
                                   value={draft.received}
+                                  aria-label={`GRN received qty ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -2886,6 +2887,7 @@ export default function Page() {
                       type="file"
                       accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
                       style={{ display: 'none' }}
+                      aria-label={`Upload purchase invoice attachment ${inv.id}`}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) uploadInvoiceAttachment(inv.id, file);

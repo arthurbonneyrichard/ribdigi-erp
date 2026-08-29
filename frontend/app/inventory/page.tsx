@@ -1674,6 +1674,7 @@ export default function Page() {
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           disabled={!selectedId || gallery.length >= 5}
+          aria-label="Product gallery image file"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) uploadImage(file, { asPrimary: gallery.length === 0 });
@@ -2040,6 +2041,7 @@ export default function Page() {
           <input
             type="file"
             accept=".csv,text/csv"
+            aria-label="Product CSV import file"
             onChange={(e) => {
               setImportFile(e.target.files?.[0] || null);
               setImportReport(null);
@@ -2638,6 +2640,7 @@ export default function Page() {
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp,image/gif"
+                          aria-label={`Brand logo file ${b.id}`}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) uploadBrandLogo(b.id, file);

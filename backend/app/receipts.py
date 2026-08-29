@@ -16,7 +16,7 @@ THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
 
 
 def _money(value: float) -> str:
-    return f"{float(value):.2f}"
+    return f"{money_json(value or 0):.2f}"
 
 
 def _wrap(text: str, width: int) -> list[str]:

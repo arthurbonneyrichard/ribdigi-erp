@@ -1558,6 +1558,7 @@ export default function Page() {
                         <input
                           type="file"
                           style={{ display: 'none' }}
+                          aria-label={`Attach journal file ${j.id}`}
                           onChange={(e) => {
                             const f = e.target.files?.[0];
                             if (f) uploadJournalAttachment(j.id, f);
@@ -1893,6 +1894,7 @@ export default function Page() {
               <input
                 type="file"
                 accept=".csv,.ofx,.qfx,.txt"
+                aria-label="Bank statement import file"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
               />
               <button

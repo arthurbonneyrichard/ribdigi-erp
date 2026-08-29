@@ -1732,6 +1732,7 @@ export default function Page() {
                     <input
                       type="file"
                       style={{ display: 'none' }}
+                      aria-label={`Upload expense attachment ${r.id}`}
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) uploadAttachment(r.id, f);

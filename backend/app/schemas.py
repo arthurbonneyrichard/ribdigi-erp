@@ -30,6 +30,7 @@ from app.tax_filings import coerce_tax_filing_jurisdiction_value
 from app.expenses import coerce_expense_payment_method_value
 from app.print_branding import coerce_invoice_template_value, coerce_receipt_paper_value
 from app.fx import coerce_currency_code_value
+from app.honesty import money_json
 
 PosTenderMethod = Annotated[
     Literal["cash", "card", "wallet", "credit", "other"],
@@ -3250,11 +3251,11 @@ class GrnItemCreate(BaseModel):
     @model_validator(mode="after")
     def require_reason_when_rejected(self):
         """OpenAPI honesty (BR-6.4): reason required when any qty is rejected."""
-        received = float(self.received_qty or 0)
-        rejected = float(self.rejected_qty or 0)
+        received = money_json(self.received_qty or 0)
+        rejected = money_json(self.rejected_qty or 0)
         accepted = self.accepted_qty
-        if rejected <= 1e-9 and accepted is not None and float(accepted) < received - 1e-9:
-            rejected = round(received - float(accepted), 6)
+        if rejected <= 1e-9 and accepted is not None and money_json(accepted) < received - 1e-9:
+            rejected = round(received - money_json(accepted), 6)
         if rejected > 1e-9 and not self.rejection_reason:
             raise ValueError("rejection_reason is required when rejected_qty > 0")
         return self
@@ -7188,9 +7189,10 @@ class BankStatementLineCreate(BaseModel):
     @field_validator("amount")
     @classmethod
     def _nonzero_amount(cls, value: float) -> float:
-        if abs(float(value)) < 1e-9:
+        amount = money_json(value)
+        if abs(amount) < 1e-9:
             raise ValueError("Statement line amount cannot be zero")
-        return float(value)
+        return amount
 
 
 class BankStatementCreateBody(BaseModel):

@@ -284,7 +284,7 @@ async def fetch_provider_rates(base_currency: str) -> tuple[str, dict[str, float
 def quotes_to_rate_to_base(quotes: dict[str, float], currency: str) -> float:
     """Convert provider quote (1 base = X foreign) → 1 foreign = rate_to_base base."""
     code = currency.upper()
-    q = float(quotes.get(code) or 0)
+    q = money_json(quotes.get(code) or 0)
     if q <= 0:
         raise HTTPException(status_code=502, detail=f"No live quote for {code}")
     return money_json(round(1.0 / q, 8))

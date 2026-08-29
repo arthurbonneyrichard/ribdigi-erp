@@ -669,6 +669,7 @@ export default function Page() {
               type="file"
               accept="application/pdf,image/*"
               style={{ display: 'none' }}
+              aria-label="AI analyze document file"
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) void analyzeDocument(f);

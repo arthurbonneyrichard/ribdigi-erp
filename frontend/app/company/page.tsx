@@ -257,6 +257,7 @@ export default function Page() {
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           disabled={!!tenant.read_only}
+          aria-label="Company logo file"
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;

@@ -2932,7 +2932,7 @@ async def add_product(
         )
     for dim in ("weight", "length", "width", "height"):
         if data.get(dim) is not None:
-            data[dim] = float(data[dim])
+            data[dim] = money_json(data[dim])
     sku_norm = catalog_svc.normalize_sku(data.get("sku"))
     if not sku_norm:
         sku_norm = await catalog_svc.allocate_sku(db, claims["tenant_id"], prefix="SKU")
@@ -3157,7 +3157,7 @@ async def patch_product(
                 )
             product.barcode = code
         elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
-            setattr(product, key, float(value))
+            setattr(product, key, money_json(value))
         elif key == "description":
             from app.honesty import optional_honest_narrative
 
@@ -3168,7 +3168,7 @@ async def patch_product(
                     value, label="product description"
                 )
         elif key in {"weight", "length", "width", "height"}:
-            setattr(product, key, float(value) if value is not None else None)
+            setattr(product, key, money_json(value) if value is not None else None)
         elif key == "tax_rate_id":
             product.tax_rate_id = value
         elif key == "tax_supply_class" and value is not None:
@@ -3190,7 +3190,7 @@ async def patch_product(
         from decimal import Decimal
 
         if isinstance(value, Decimal):
-            return float(value)
+            return money_json(value)
         if hasattr(value, "isoformat"):
             try:
                 return value.isoformat()

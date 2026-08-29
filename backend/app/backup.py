@@ -111,7 +111,7 @@ def _json_default(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     if isinstance(value, Decimal):
-        return float(value)
+        return money_json(value)
     if isinstance(value, bytes):
         return base64.b64encode(value).decode("ascii")
     return str(value)
@@ -505,7 +505,7 @@ def _proof_values_equal(expected: Any, actual: Any) -> bool:
         return True
     if isinstance(expected, (int, float, Decimal)) or isinstance(actual, (int, float, Decimal)):
         try:
-            return float(expected or 0) == float(actual or 0)
+            return money_json(expected or 0) == money_json(actual or 0)
         except (TypeError, ValueError):
             return str(expected) == str(actual)
     return str(expected) == str(actual)

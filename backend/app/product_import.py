@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import barcodes as barcodes_svc
 from app import catalog_meta as catalog_meta_svc
 from app import models as m
+from app.honesty import money_json
 from app.inventory import apply_stock_change
 from app.tax import normalize_supply_class
 from pydantic import TypeAdapter, ValidationError
@@ -23,6 +24,19 @@ from app.schemas import (
     ProductNameValue,
     ProductSkuValue,
 )
+
+
+def _csv_money(value: Any, *, places: int = 4) -> str:
+    """Format money/qty for CSV text columns via money_json (no bare float)."""
+    n = money_json(value or 0)
+    return f"{n:.{places}f}".rstrip("0").rstrip(".") or "0"
+
+
+def _csv_dim(value: Any) -> str:
+    """Format optional product dimension via money_json (no bare float)."""
+    if value is None:
+        return ""
+    return str(money_json(value))
 
 TEMPLATE_HEADERS = (
     "name",
@@ -102,16 +116,14 @@ def products_to_csv(
                 "category": (cat.name if cat else None) or (p.category or ""),
                 "brand": (brand.name if brand else "") or "",
                 "unit": (unit.code if unit else "") or "",
-                "cost_price": f"{float(p.cost_price or 0):.4f}".rstrip("0").rstrip(".") or "0",
-                "selling_price": f"{float(p.selling_price or 0):.4f}".rstrip("0").rstrip(".")
-                or "0",
-                "weight": "" if getattr(p, "weight", None) is None else str(float(p.weight)),
-                "length": "" if getattr(p, "length", None) is None else str(float(p.length)),
-                "width": "" if getattr(p, "width", None) is None else str(float(p.width)),
-                "height": "" if getattr(p, "height", None) is None else str(float(p.height)),
-                "stock_qty": f"{float(p.stock_qty or 0):.3f}".rstrip("0").rstrip(".") or "0",
-                "reorder_level": f"{float(p.reorder_level or 0):.3f}".rstrip("0").rstrip(".")
-                or "0",
+                "cost_price": _csv_money(p.cost_price, places=4),
+                "selling_price": _csv_money(p.selling_price, places=4),
+                "weight": _csv_dim(getattr(p, "weight", None)),
+                "length": _csv_dim(getattr(p, "length", None)),
+                "width": _csv_dim(getattr(p, "width", None)),
+                "height": _csv_dim(getattr(p, "height", None)),
+                "stock_qty": _csv_money(p.stock_qty, places=3),
+                "reorder_level": _csv_money(p.reorder_level, places=3),
                 "tax_exempt": "true" if p.tax_exempt else "false",
                 "tax_supply_class": getattr(p, "tax_supply_class", None)
                 or ("exempt" if p.tax_exempt else "standard"),
@@ -471,7 +483,7 @@ async def commit_import(
 ) -> list[dict[str, Any]]:
     created: list[dict[str, Any]] = []
     for data in prepared:
-        stock_qty = float(data.get("stock_qty") or 0)
+        stock_qty = money_json(data.get("stock_qty") or 0)
         product = m.Product(
             tenant_id=tenant_id,
             name=data["name"],
@@ -482,14 +494,14 @@ async def commit_import(
             category_id=data.get("category_id"),
             brand_id=data.get("brand_id"),
             unit_id=data.get("unit_id"),
-            cost_price=data.get("cost_price") or 0,
-            selling_price=data.get("selling_price") or 0,
-            weight=data.get("weight"),
-            length=data.get("length"),
-            width=data.get("width"),
-            height=data.get("height"),
+            cost_price=money_json(data.get("cost_price") or 0),
+            selling_price=money_json(data.get("selling_price") or 0),
+            weight=None if data.get("weight") is None else money_json(data.get("weight")),
+            length=None if data.get("length") is None else money_json(data.get("length")),
+            width=None if data.get("width") is None else money_json(data.get("width")),
+            height=None if data.get("height") is None else money_json(data.get("height")),
             stock_qty=0,
-            reorder_level=data.get("reorder_level") or 0,
+            reorder_level=money_json(data.get("reorder_level") or 0),
             tax_exempt=bool(data.get("tax_supply_class") == "exempt" or data.get("tax_exempt")),
             tax_supply_class=data.get("tax_supply_class") or "standard",
             tracks_batches=bool(data.get("tracks_batches")),

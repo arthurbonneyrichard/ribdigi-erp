@@ -849,7 +849,12 @@ export default function Page() {
               placeholder="Phone (optional, E.164 e.g. +233...)"
               aria-label="Branch phone"
             />
-            <input value={brEmail} onChange={(e) => setBrEmail(e.target.value)} placeholder="Email" />
+            <input
+              value={brEmail}
+              onChange={(e) => setBrEmail(e.target.value)}
+              placeholder="Email"
+              aria-label="Branch email"
+            />
             <select
               value={brManagerId}
               onChange={(e) => setBrManagerId(e.target.value)}
