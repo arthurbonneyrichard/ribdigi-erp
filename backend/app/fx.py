@@ -171,7 +171,7 @@ async def resolve_rate(
             status_code=400,
             detail=f"No exchange rate configured for {code} (base {base})",
         )
-    return code, float(row.rate_to_base)
+    return code, money_json(row.rate_to_base)
 
 
 def fx_lines_for_receipt(

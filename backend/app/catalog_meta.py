@@ -568,7 +568,7 @@ async def update_unit(
             target_ratio = (
                 conversion_ratio
                 if conversion_ratio is not None
-                else float(row.conversion_ratio or 1)
+                else money_json(row.conversion_ratio or 1)
             )
             base_id, ratio = await validate_unit_base(
                 db,

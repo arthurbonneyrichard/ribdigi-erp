@@ -406,8 +406,8 @@ async def _fetch_http_json(
         if norm:
             lines.append(norm)
     return "http_json", lines, (
-        float(opening) if opening is not None else None
-    ), (float(closing) if closing is not None else None)
+        money_json(opening) if opening is not None else None
+    ), (money_json(closing) if closing is not None else None)
 
 
 async def _known_external_refs(

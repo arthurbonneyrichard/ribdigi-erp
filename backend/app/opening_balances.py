@@ -114,7 +114,7 @@ async def post_coa_opening_balances(
                 detail=f"Duplicate opening line for account {account.code}",
             )
         seen.add(account.id)
-        amount = float(raw.get("amount") or 0)
+        amount = money_json(raw.get("amount") or 0)
         if amount <= 0:
             raise HTTPException(status_code=400, detail="amount must be positive")
 

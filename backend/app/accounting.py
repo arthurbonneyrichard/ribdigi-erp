@@ -440,8 +440,8 @@ async def post_journal_entry(
 
     normalized = []
     for line in lines:
-        debit = float(line.get("debit") or 0)
-        credit = float(line.get("credit") or 0)
+        debit = money_json(line.get("debit") or 0)
+        credit = money_json(line.get("credit") or 0)
         if debit < 0 or credit < 0:
             raise HTTPException(status_code=400, detail="Debit/credit cannot be negative")
         if debit == 0 and credit == 0:
@@ -705,7 +705,7 @@ async def unit_cost_for_line(
             )
         ).scalar_one_or_none()
         if variant is not None:
-            v_cost = float(variant.cost_price or 0)
+            v_cost = money_json(variant.cost_price or 0)
             if v_cost > 0:
                 return v_cost
     product = (
@@ -718,7 +718,7 @@ async def unit_cost_for_line(
     ).scalar_one_or_none()
     if not product:
         return 0.0
-    return float(product.cost_price or 0)
+    return money_json(product.cost_price or 0)
 
 
 async def stock_qty_for_cogs(

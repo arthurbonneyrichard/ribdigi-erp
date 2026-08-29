@@ -248,7 +248,7 @@ async def create_count(
                 tenant_id=tenant_id,
                 stock_count_id=count.id,
                 product_id=product_id,
-                expected_qty=float(stock.quantity or 0),
+                expected_qty=money_json(stock.quantity or 0),
                 counted_qty=None,
             )
         )
@@ -277,13 +277,13 @@ async def update_count_items(
         if "counted_qty" not in raw:
             raise HTTPException(status_code=400, detail="counted_qty is required for each item")
         try:
-            qty = float(raw.get("counted_qty"))
+            qty = money_json(raw.get("counted_qty"))
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail="counted_qty must be a number") from exc
         if qty < 0:
             raise HTTPException(status_code=400, detail="counted_qty cannot be negative")
         line = existing[product_id]
-        line.counted_qty = round(qty, 3)
+        line.counted_qty = money_json(round(qty, 3))
         # Schema StockCountItemNotesValue rejects blank/garbage → 422; explicit null clears.
         if "notes" in raw:
             notes_val = raw.get("notes")

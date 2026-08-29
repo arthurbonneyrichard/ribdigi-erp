@@ -112,7 +112,7 @@ async def create_group(
         )
     else:
         code_key = _slug_code(name).strip().upper()[:40]
-    pct = float(discount_percent or 0)
+    pct = money_json(discount_percent or 0)
     if pct < 0 or pct > 100:
         raise HTTPException(status_code=422, detail="discount_percent must be between 0 and 100")
     exists = (
@@ -152,7 +152,7 @@ async def update_group(
             name, label="customer group name", max_length=120
         )
     if discount_percent is not None:
-        pct = float(discount_percent)
+        pct = money_json(discount_percent)
         if pct < 0 or pct > 100:
             raise HTTPException(status_code=422, detail="discount_percent must be between 0 and 100")
         row.discount_percent = pct

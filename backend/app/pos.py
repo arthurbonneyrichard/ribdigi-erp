@@ -408,12 +408,12 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
     net_sum = 0.0
     for s in sales:
         payload = s.payload or {}
-        cart_disc = float(payload.get("discount_amount") or 0)
-        line_disc = float(payload.get("line_discounts") or 0)
-        disc = round(cart_disc + line_disc, 2)
-        subtotal = float(s.subtotal or 0)
-        tax = float(s.tax or 0)
-        total = float(s.total or 0)
+        cart_disc = money_json(payload.get("discount_amount") or 0)
+        line_disc = money_json(payload.get("line_discounts") or 0)
+        disc = money_json(round(cart_disc + line_disc, 2))
+        subtotal = money_json(s.subtotal or 0)
+        tax = money_json(s.tax or 0)
+        total = money_json(s.total or 0)
         subtotal_sum += subtotal
         tax_sum += tax
         discount_sum += disc
@@ -422,16 +422,16 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             {
                 "id": s.id,
                 "reference": s.reference,
-                "total": total,
-                "tax": tax,
-                "subtotal": subtotal,
+                "total": money_json(total),
+                "tax": money_json(tax),
+                "subtotal": money_json(subtotal),
                 "status": s.status,
                 "payment_method": payload.get("payment_method", "cash"),
                 "payments": payload.get("payments") or [],
                 "customer_name": payload.get("customer_name"),
-                "discount_amount": cart_disc,
-                "line_discounts": line_disc,
-                "discounts": disc,
+                "discount_amount": money_json(cart_disc),
+                "line_discounts": money_json(line_disc),
+                "discounts": money_json(disc),
                 "created_at": s.created_at,
             }
         )

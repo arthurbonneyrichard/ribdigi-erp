@@ -123,7 +123,7 @@ async def create_from_customer_payment(
         direction=RECEIVED,
         status=PENDING,
         cheque_number=number,
-        amount=float(payment.amount),
+        amount=money_json(payment.amount),
         bank_name=bank_name,
         cheque_date=cheque_date,
         party_id=payment.customer_id,
@@ -162,7 +162,7 @@ async def create_from_supplier_payment(
         direction=ISSUED,
         status=PENDING,
         cheque_number=number,
-        amount=float(payment.amount),
+        amount=money_json(payment.amount),
         bank_name=bank_name,
         cheque_date=cheque_date,
         party_id=payment.supplier_id,
@@ -190,7 +190,7 @@ async def deposit_cheque(
         raise HTTPException(status_code=409, detail=f"Cannot deposit cheque in status {cheque.status}")
 
     await ensure_default_accounts(db, tenant_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
     await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -219,7 +219,7 @@ async def clear_cheque(
 ) -> m.Cheque:
     """Mark cleared. Issued pending cheques also post Bank out of Cheques Payable."""
     cheque = await get_cheque(db, tenant_id, cheque_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
     await ensure_default_accounts(db, tenant_id)
 
     if cheque.direction == RECEIVED:

@@ -556,7 +556,9 @@ async def prove_restore_integrity(
                             "id": pk,
                             "field": field,
                             "expected": raw[field],
-                            "actual": actual if not isinstance(actual, Decimal) else float(actual),
+                            "actual": actual
+                            if not isinstance(actual, Decimal)
+                            else money_json(actual),
                         }
                     )
                     break

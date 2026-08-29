@@ -897,6 +897,7 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={loadShiftReport}
                   disabled={reportBusy}
+                  aria-label={shiftReport ? 'Hide POS shift report' : 'Load POS shift report'}
                 >
                   {reportBusy ? 'Loading…' : shiftReport ? 'Hide report' : 'Shift report'}
                 </button>

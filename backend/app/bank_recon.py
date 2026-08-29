@@ -203,8 +203,8 @@ async def create_statement(
         tenant_id=tenant_id,
         account_id=account_id,
         statement_date=_parse_dt(statement_date),
-        opening_balance=float(opening_balance or 0),
-        closing_balance=float(closing_balance or 0),
+        opening_balance=money_json(opening_balance or 0),
+        closing_balance=money_json(closing_balance or 0),
         status="in_progress" if lines else "draft",
         notes=optional_honest_narrative(notes, label="bank statement notes"),
         created_by=user_id,
@@ -212,7 +212,7 @@ async def create_statement(
     db.add(stmt)
     await db.flush()
     for raw in lines or []:
-        amount = float(raw.get("amount") or 0)
+        amount = money_json(raw.get("amount") or 0)
         if abs(amount) < 1e-9:
             raise HTTPException(status_code=400, detail="Statement line amount cannot be zero")
         db.add(
@@ -254,23 +254,23 @@ async def import_statement_from_feed(
 
     parsed = parse_bank_feed(content, filename=filename)
     lines = parsed["lines"]
-    net = round(sum(float(ln["amount"]) for ln in lines), 2)
+    net = money_json(round(sum(money_json(ln["amount"]) for ln in lines), 2))
 
     open_bal = (
-        float(opening_balance)
+        money_json(opening_balance)
         if opening_balance is not None
         else (
-            float(parsed["opening_balance"])
+            money_json(parsed["opening_balance"])
             if parsed.get("opening_balance") is not None
             else 0.0
         )
     )
     if closing_balance is not None:
-        close_bal = float(closing_balance)
+        close_bal = money_json(closing_balance)
     elif parsed.get("closing_balance") is not None:
-        close_bal = float(parsed["closing_balance"])
+        close_bal = money_json(parsed["closing_balance"])
     else:
-        close_bal = round(open_bal + net, 2)
+        close_bal = money_json(round(open_bal + net, 2))
 
     # Statement date: explicit, else latest txn date
     if statement_date is None:
