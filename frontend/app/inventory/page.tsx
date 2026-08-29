@@ -138,6 +138,7 @@ export default function Page() {
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
   const [productPrice, setProductPrice] = useState('0');
+  const [productCost, setProductCost] = useState('0');
   const [productDescription, setProductDescription] = useState('');
   const [productWeight, setProductWeight] = useState('');
   const [productLength, setProductLength] = useState('');
@@ -149,6 +150,7 @@ export default function Page() {
   const [productUnitId, setProductUnitId] = useState('');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
+  const [editCost, setEditCost] = useState('0');
   const [editBarcode, setEditBarcode] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editWeight, setEditWeight] = useState('');
@@ -621,6 +623,7 @@ export default function Page() {
       if (p) {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
+        setEditCost(String(p.cost_price ?? 0));
         setEditBarcode(String(p.barcode || ''));
         setEditDescription(String(p.description || ''));
         setEditWeight(p.weight != null ? String(p.weight) : '');
@@ -645,6 +648,7 @@ export default function Page() {
         body: JSON.stringify({
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
+          cost_price: Number(editCost) || 0,
           barcode: editBarcode.trim() || null,
           description: editDescription.trim() || null,
           weight: editWeight === '' ? null : Number(editWeight),
@@ -845,6 +849,7 @@ export default function Page() {
           barcode: productBarcode.trim() || null,
           description: productDescription.trim() || null,
           selling_price: Number(productPrice) || 0,
+          cost_price: Number(productCost) || 0,
           weight: productWeight === '' ? null : Number(productWeight),
           length: productLength === '' ? null : Number(productLength),
           width: productWidth === '' ? null : Number(productWidth),
@@ -866,6 +871,7 @@ export default function Page() {
       setProductWidth('');
       setProductHeight('');
       setProductPrice('0');
+      setProductCost('0');
       setProductSupplyClass('standard');
       setProductTaxRateId('');
       await refresh();
@@ -1199,6 +1205,21 @@ export default function Page() {
         body: JSON.stringify({ selling_price: Number(price) || 0 }),
       });
       setMessage('Variant updated');
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveVariantCost(variantId: string, cost: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/variants/${variantId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ cost_price: Number(cost) || 0 }),
+      });
+      setMessage('Variant cost updated');
       await refreshSelected(selectedId);
     } catch (err: any) {
       setError(err.message);
@@ -1755,6 +1776,12 @@ export default function Page() {
               onChange={(e) => setEditReorder(e.target.value)}
               aria-label="Edit product reorder level"
             />
+            <label className="muted">Cost price</label>
+            <input
+              value={editCost}
+              onChange={(e) => setEditCost(e.target.value)}
+              aria-label="Edit product cost price"
+            />
             <label className="muted">Selling price</label>
             <input
               value={editPrice}
@@ -2091,6 +2118,12 @@ export default function Page() {
               aria-label="Product description"
               title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
+            />
+            <input
+              value={productCost}
+              onChange={(e) => setProductCost(e.target.value)}
+              placeholder="Cost price"
+              aria-label="Product cost price"
             />
             <input
               value={productPrice}
@@ -2847,6 +2880,7 @@ export default function Page() {
                 <th>Flavor</th>
                 <th>Dosage</th>
                 <th>Stock</th>
+                <th>Cost</th>
                 <th>Price</th>
                 <th>Active</th>
                 <th />
@@ -2877,6 +2911,18 @@ export default function Page() {
                   <td>{v.flavor || '—'}</td>
                   <td>{v.dosage || '—'}</td>
                   <td>{v.stock_qty}</td>
+                  <td>
+                    <input
+                      defaultValue={String(v.cost_price ?? 0)}
+                      style={{ width: 80 }}
+                      onBlur={(e) => {
+                        if (String(v.cost_price) !== e.target.value) {
+                          saveVariantCost(v.id, e.target.value);
+                        }
+                      }}
+                      aria-label={`Variant cost price ${v.name || v.sku || v.id}`}
+                    />
+                  </td>
                   <td>
                     <input
                       defaultValue={String(v.selling_price ?? 0)}

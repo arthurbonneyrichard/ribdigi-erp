@@ -852,7 +852,9 @@ async def record_customer_payment(
         currency=pay_cur,
         exchange_rate=pay_rate,
         liquid_account_id=liquid_account_id,
-        reference=reference,
+        reference=optional_honest_narrative(
+            reference, label="payment reference", max_length=100
+        ),
         notes=optional_honest_narrative(notes, label="payment notes")
         or (
             f"Auto-allocated: {alloc_note}"

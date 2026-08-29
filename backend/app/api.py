@@ -2900,7 +2900,11 @@ async def add_product(
     data["tax_supply_class"] = supply
     data["tax_exempt"] = supply == "exempt"
     if data.get("description") is not None:
-        data["description"] = str(data["description"]).strip() or None
+        from app.honesty import optional_honest_narrative
+
+        data["description"] = optional_honest_narrative(
+            data["description"], label="product description"
+        )
     for dim in ("weight", "length", "width", "height"):
         if data.get(dim) is not None:
             data[dim] = float(data[dim])
@@ -3129,7 +3133,14 @@ async def patch_product(
         elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
             setattr(product, key, float(value))
         elif key == "description":
-            product.description = str(value).strip() or None if value is not None else None
+            from app.honesty import optional_honest_narrative
+
+            if value is None:
+                product.description = None
+            else:
+                product.description = optional_honest_narrative(
+                    value, label="product description"
+                )
         elif key in {"weight", "length", "width", "height"}:
             setattr(product, key, float(value) if value is not None else None)
         elif key == "tax_rate_id":

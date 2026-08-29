@@ -83,7 +83,14 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
                 roles.append(role)
         if not roles:
             raise HTTPException(status_code=400, detail=f"level {i + 1} roles must be a non-empty list")
-        label = str(item.get("label") or f"Level {i + 1}").strip() or f"Level {i + 1}"
+        # OpenAPI ApprovalLevelLabelValue → 422; service defense-in-depth → 400.
+        raw_label = item.get("label")
+        if raw_label is None or not str(raw_label).strip():
+            label = f"Level {i + 1}"
+        else:
+            label = optional_honest_narrative(
+                str(raw_label), label="approval level label", max_length=120
+            ) or f"Level {i + 1}"
         levels.append({"step": i + 1, "roles": roles, "label": label})
     return levels
 
@@ -354,7 +361,9 @@ async def create_request(
         preferred_supplier_id=preferred_supplier_id,
         warehouse_id=warehouse_id,
         required_date=required_date,
-        department=((department or "").strip()[:120] or None),
+        department=optional_honest_narrative(
+            department, label="purchase request department", max_length=120
+        ),
         notes=optional_honest_narrative(notes, label="purchase request notes"),
         created_by=user_id,
         approval_step=0,

@@ -28,7 +28,10 @@ async def post_opening_stock(
         raise HTTPException(status_code=400, detail="Opening stock requires at least one line")
 
     entry_id = str(uuid.uuid4())
-    ref_label = (reference or "").strip() or None
+    # OpenAPI OpeningStockReferenceValue → 422; service defense-in-depth → 400.
+    ref_label = optional_honest_narrative(
+        reference, label="opening stock reference", max_length=100
+    )
     if ref_label is None:
         ref_label = await next_opening_stock_number(db, tenant_id)
     results: list[dict] = []

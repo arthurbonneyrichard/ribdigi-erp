@@ -159,7 +159,14 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
                 roles.append(role)
         if not roles:
             raise HTTPException(status_code=400, detail=f"level {i + 1} roles must be a non-empty list")
-        label = str(item.get("label") or f"Level {i + 1}").strip() or f"Level {i + 1}"
+        # OpenAPI ApprovalLevelLabelValue → 422; service defense-in-depth → 400.
+        raw_label = item.get("label")
+        if raw_label is None or not str(raw_label).strip():
+            label = f"Level {i + 1}"
+        else:
+            label = optional_honest_narrative(
+                str(raw_label), label="approval level label", max_length=120
+            ) or f"Level {i + 1}"
         levels.append(
             {
                 "step": i + 1,
@@ -661,21 +668,25 @@ async def create_expense(
             outflow=True,
         )
 
-    ref = (reference or "").strip() or None
+    # OpenAPI ExpenseReferenceValue / ExpenseDescriptionValue / ExpensePayeeValue → 422;
+    # service defense-in-depth → 400.
+    ref = optional_honest_narrative(reference, label="expense reference", max_length=100)
     if not ref:
         ref = await next_expense_number(db, tenant_id)
+    desc = optional_honest_narrative(description, label="expense description") or ""
+    payee_s = optional_honest_narrative(payee, label="expense payee", max_length=150)
 
     expense = m.Expense(
         tenant_id=tenant_id,
         category_id=cat_id,
         category=cat_name,
-        description=description or "",
+        description=desc,
         amount=round(float(amount), 2),
         expense_date=expense_date or datetime.utcnow(),
         payment_method=method,
         liquid_account_id=liquid_account_id,
         reference=ref,
-        payee=payee,
+        payee=payee_s,
         store_id=resolved_store,
         branch_id=resolved_branch,
         department_id=resolved_dept,
@@ -901,11 +912,17 @@ async def update_expense(
         expense.category = cat_name
 
     if description is not None:
-        expense.description = description
+        expense.description = (
+            optional_honest_narrative(description, label="expense description") or ""
+        )
     if payee is not None:
-        expense.payee = payee.strip() or None
+        expense.payee = optional_honest_narrative(
+            payee, label="expense payee", max_length=150
+        )
     if reference is not None:
-        expense.reference = reference.strip() or None
+        expense.reference = optional_honest_narrative(
+            reference, label="expense reference", max_length=100
+        )
     if expense_date is not None:
         expense.expense_date = expense_date
     if payment_method is not None:
@@ -1053,11 +1070,12 @@ async def create_recurring(
         tenant_id=tenant_id,
         category_id=cat_id,
         category=cat_name,
-        description=description or "",
+        description=optional_honest_narrative(description, label="expense description")
+        or "",
         amount=round(float(amount), 2),
         frequency=freq,
         payment_method=method,
-        payee=payee,
+        payee=optional_honest_narrative(payee, label="expense payee", max_length=150),
         branch_id=resolved_branch,
         department_id=resolved_dept,
         start_date=start,
@@ -1151,9 +1169,13 @@ async def update_recurring(
     if clear_payee:
         row.payee = None
     elif payee is not None:
-        row.payee = payee.strip() or None
+        row.payee = optional_honest_narrative(
+            payee, label="expense payee", max_length=150
+        )
     if description is not None:
-        row.description = description
+        row.description = (
+            optional_honest_narrative(description, label="expense description") or ""
+        )
     if payment_method is not None:
         row.payment_method = normalize_expense_payment_method(
             payment_method, default="bank_transfer", required=True

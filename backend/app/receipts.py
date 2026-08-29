@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
@@ -75,14 +76,16 @@ def build_receipt_payload(
             or raw.get("product_id")
             or "Item"
         )
-        qty = float(raw.get("quantity") or 0)
-        unit = float(
+        qty = money_json(raw.get("quantity") or 0)
+        unit = money_json(
             raw.get("unit_price")
             if raw.get("unit_price") is not None
             else raw.get("selling_price")
             or 0
         )
-        line_total = float(raw.get("line_total") if raw.get("line_total") is not None else qty * unit)
+        line_total = money_json(
+            raw.get("line_total") if raw.get("line_total") is not None else qty * unit
+        )
         normalized_items.append(
             {
                 "name": str(name),
@@ -136,11 +139,11 @@ def build_receipt_payload(
         "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
         "customer_name": customer_name,
-        "subtotal": float(tx.subtotal or 0),
-        "tax": float(tx.tax or 0),
-        "discount_amount": float(payload.get("discount_amount") or 0),
-        "line_discounts": float(payload.get("line_discounts") or 0),
-        "total": float(tx.total or 0),
+        "subtotal": money_json(tx.subtotal),
+        "tax": money_json(tx.tax),
+        "discount_amount": money_json(payload.get("discount_amount") or 0),
+        "line_discounts": money_json(payload.get("line_discounts") or 0),
+        "total": money_json(tx.total),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
         "payments": payload.get("payments") or [],

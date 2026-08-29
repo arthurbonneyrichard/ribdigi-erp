@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative
 from app.accounting import (
     DEFAULT_ACCOUNTS,
     ensure_default_accounts,
@@ -90,7 +90,10 @@ async def post_coa_opening_balances(
         )
 
     entry_id = str(uuid.uuid4())
-    ref_label = (reference or "").strip() or f"COA-OPEN-{datetime.utcnow():%Y%m%d}"
+    # OpenAPI OpeningBalanceReferenceValue → 422; service defense-in-depth → 400.
+    ref_label = optional_honest_narrative(
+        reference, label="opening balance reference", max_length=100
+    ) or f"COA-OPEN-{datetime.utcnow():%Y%m%d}"
     journal_lines: list[dict] = []
     snapshots: list[dict] = []
     seen: set[str] = set()
@@ -240,9 +243,9 @@ async def post_coa_opening_balances(
         "reference": ref_label,
         "journal_id": journal.id,
         "journal_number": journal.entry_number,
-        "total_debit": float(journal.total_debit),
-        "total_credit": float(journal.total_credit),
-        "equity_plug_amount": residual if abs(residual) > 0.009 else 0.0,
+        "total_debit": money_json(journal.total_debit),
+        "total_credit": money_json(journal.total_credit),
+        "equity_plug_amount": money_json(residual) if abs(residual) > 0.009 else 0.0,
         "lines": snapshots,
         "system_account_codes": sorted(system_codes),
     }

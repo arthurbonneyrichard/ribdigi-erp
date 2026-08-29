@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative
 
 STOCK_ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost"})
 # BR-5.2 Stock Out reference (sales / transfer / adjustment / damage + internal/other)
@@ -468,9 +468,9 @@ async def list_warehouse_stock(
     rows = (await db.execute(stmt)).all()
     items = []
     for stock, product in rows:
-        qty = float(stock.quantity or 0)
-        reorder = float(stock.reorder_level or 0)
-        reorder_qty = float(stock.reorder_qty or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(stock.reorder_level)
+        reorder_qty = money_json(stock.reorder_qty)
         items.append(
             {
                 "product_id": product.id,
@@ -484,7 +484,7 @@ async def list_warehouse_stock(
                 if reorder > 0 and qty <= reorder
                 else reorder_qty,
                 "warehouse_id": wh.id,
-                "consolidated_stock": float(product.stock_qty or 0),
+                "consolidated_stock": money_json(product.stock_qty),
             }
         )
     return {
@@ -527,15 +527,15 @@ async def set_warehouse_reorder_policy(
     row.reorder_level = max(float(reorder_level or 0), 0)
     row.reorder_qty = max(float(reorder_qty or 0), 0)
     await db.flush()
-    qty = float(row.quantity or 0)
-    reorder = float(row.reorder_level or 0)
+    qty = money_json(row.quantity)
+    reorder = money_json(row.reorder_level)
     return {
         "product_id": product.id,
         "sku": product.sku,
         "name": product.name,
         "quantity": qty,
         "reorder_level": reorder,
-        "reorder_qty": float(row.reorder_qty or 0),
+        "reorder_qty": money_json(row.reorder_qty),
         "below_reorder": reorder > 0 and qty <= reorder,
         "warehouse_id": wh.id,
         "store_id": wh.store_id,
@@ -628,8 +628,8 @@ async def list_product_warehouse_stock(
     rows = (await db.execute(stmt)).all()
     items = []
     for stock, wh in rows:
-        qty = float(stock.quantity or 0)
-        reorder = float(stock.reorder_level or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(stock.reorder_level)
         items.append(
             {
                 "warehouse_id": wh.id,
@@ -638,7 +638,7 @@ async def list_product_warehouse_stock(
                 "store_id": wh.store_id,
                 "quantity": qty,
                 "reorder_level": reorder,
-                "reorder_qty": float(stock.reorder_qty or 0),
+                "reorder_qty": money_json(stock.reorder_qty),
                 "below_reorder": reorder > 0 and qty <= reorder,
             }
         )
@@ -646,7 +646,7 @@ async def list_product_warehouse_stock(
         "product_id": product.id,
         "sku": product.sku,
         "name": product.name,
-        "consolidated_stock": float(product.stock_qty or 0),
+        "consolidated_stock": money_json(product.stock_qty),
         "reorder_level": float(product.reorder_level or 0),
         "count": len(items),
         "items": items,

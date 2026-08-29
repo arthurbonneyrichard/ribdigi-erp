@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 from app.receipts import (
     THERMAL_WIDTHS,
     _center,
@@ -71,15 +72,15 @@ async def build_invoice_print_payload(
             {
                 "name": str(name),
                 "sku": sku,
-                "quantity": float(item.quantity),
-                "unit_price": float(item.unit_price),
-                "tax_rate": float(item.tax_rate or 0),
-                "line_tax": float(getattr(item, "line_tax", None) or 0),
+                "quantity": money_json(item.quantity),
+                "unit_price": money_json(item.unit_price),
+                "tax_rate": money_json(item.tax_rate),
+                "line_tax": money_json(getattr(item, "line_tax", None) or 0),
                 "is_reverse_charge": bool(getattr(item, "is_reverse_charge", False)),
                 "tax_components": getattr(item, "tax_components", None),
-                "discount": float(item.discount or 0),
-                "line_subtotal": float(getattr(item, "line_subtotal", None) or 0),
-                "line_total": float(item.line_total),
+                "discount": money_json(item.discount),
+                "line_subtotal": money_json(getattr(item, "line_subtotal", None) or 0),
+                "line_total": money_json(item.line_total),
                 "product_id": item.product_id,
                 "variant_id": item.variant_id,
             }
@@ -89,8 +90,8 @@ async def build_invoice_print_payload(
     currency = (getattr(invoice, "currency", None) or "").strip() or (
         tenant.currency if tenant else "GHS"
     )
-    paid = float(invoice.paid_amount or 0)
-    total = float(invoice.total_amount or 0)
+    paid = money_json(invoice.paid_amount)
+    total = money_json(invoice.total_amount)
     balance = max(total - paid, 0)
 
     from app.print_branding import branding_fields_for_payload
@@ -123,11 +124,11 @@ async def build_invoice_print_payload(
         "customer_name": customer.name,
         "customer_email": _clean_text(customer.email),
         "customer_phone": _clean_text(getattr(customer, "phone", None)),
-        "subtotal": float(invoice.subtotal or 0),
-        "tax": float(invoice.tax_amount or 0),
-        "tax_amount": float(invoice.tax_amount or 0),
-        "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
-        "discount_amount": float(invoice.discount_amount or 0),
+        "subtotal": money_json(invoice.subtotal),
+        "tax": money_json(invoice.tax_amount),
+        "tax_amount": money_json(invoice.tax_amount),
+        "reverse_charge_tax": money_json(getattr(invoice, "reverse_charge_tax", 0) or 0),
+        "discount_amount": money_json(invoice.discount_amount),
         "total": total,
         "total_amount": total,
         "paid_amount": paid,

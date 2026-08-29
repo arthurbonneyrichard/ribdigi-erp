@@ -182,7 +182,9 @@ def resolve_sale_payments(
                 {
                     "payment_method": method,
                     "amount": amount,
-                    "reference": (raw.get("reference") or None),
+                    "reference": optional_honest_narrative(
+                        raw.get("reference"), label="payment reference", max_length=100
+                    ),
                     "liquid_account_id": raw.get("liquid_account_id") or None,
                 }
             )

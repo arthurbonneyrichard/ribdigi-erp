@@ -447,6 +447,10 @@ async def post_journal_entry(
         line["description"] = optional_honest_narrative(
             line.get("description"), label="journal line description"
         )
+    # OpenAPI JournalReferenceValue → 422; service defense-in-depth → 400.
+    reference = optional_honest_narrative(
+        reference, label="journal reference", max_length=100
+    )
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)

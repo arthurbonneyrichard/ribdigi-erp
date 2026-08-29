@@ -281,7 +281,8 @@ async def create_transfer(
     if notes:
         description = f"{description}: {notes[:120]}"
 
-    ref = (reference or "").strip() or None
+    # OpenAPI CashTransferReferenceValue → 422; service defense-in-depth → 400.
+    ref = optional_honest_narrative(reference, label="transfer reference", max_length=80)
     if ref is None:
         ref = await next_cash_transfer_number(db, tenant_id)
 

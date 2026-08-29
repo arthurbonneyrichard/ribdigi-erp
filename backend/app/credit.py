@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 from app.rbac import has_permission
 
 DEFAULT_PAYMENT_TERMS_DAYS = 30
@@ -121,7 +121,7 @@ def invoice_early_discount(
 ) -> dict:
     """Return eligibility and discount amounts for settling an open invoice early."""
     as_of = as_of or datetime.utcnow()
-    due = max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0)
+    due = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount), 0)
     result = {
         "eligible": False,
         "discount_amount": 0.0,
@@ -156,7 +156,7 @@ def purchase_invoice_early_discount(
 ) -> dict:
     """Buyer take-discount quote for settling an open purchase invoice early."""
     as_of = as_of or datetime.utcnow()
-    due = max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0)
+    due = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount), 0)
     result = {
         "eligible": False,
         "discount_amount": 0.0,
@@ -233,7 +233,7 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     documents = []
 
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
         if due <= 0:
             continue
         days = days_overdue(as_of, inv.due_date, inv.posted_at or inv.created_at)
@@ -245,8 +245,8 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             {
                 "party_id": inv.customer_id,
                 "name": cust.name if cust else inv.customer_id,
-                "credit_limit": float(cust.credit_limit or 0) if cust else 0,
-                "balance": float(cust.balance or 0) if cust else 0,
+                "credit_limit": money_json(cust.credit_limit) if cust else 0.0,
+                "balance": money_json(cust.balance) if cust else 0.0,
                 "total_due": 0.0,
                 **empty_buckets(),
             },
@@ -262,9 +262,9 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "due_date": inv.due_date,
                 "balance_due": due,
                 "currency": getattr(inv, "currency", None) or "",
-                "exchange_rate": float(getattr(inv, "exchange_rate", None) or 1),
+                "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
                 "balance_due_base": round(
-                    due * float(getattr(inv, "exchange_rate", None) or 1), 2
+                    due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
                 ),
                 "days_overdue": days,
                 "bucket": bucket,
@@ -321,15 +321,15 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             {
                 "party_id": supplier_id,
                 "name": sup.name if sup else supplier_id,
-                "credit_limit": float(sup.credit_limit or 0) if sup else 0,
-                "balance": float(sup.balance or 0) if sup else 0,
+                "credit_limit": money_json(sup.credit_limit) if sup else 0.0,
+                "balance": money_json(sup.balance) if sup else 0.0,
                 "total_due": 0.0,
                 **empty_buckets(),
             },
         )
 
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
         if due <= 0:
             continue
         days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
@@ -348,9 +348,9 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "due_date": inv.due_date,
                 "balance_due": due,
                 "currency": getattr(inv, "currency", None) or "",
-                "exchange_rate": float(getattr(inv, "exchange_rate", None) or 1),
+                "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
                 "balance_due_base": round(
-                    due * float(getattr(inv, "exchange_rate", None) or 1), 2
+                    due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
                 ),
                 "days_overdue": days,
                 "bucket": bucket,
@@ -360,7 +360,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     for po in orders:
         if po.id in invoiced_po_ids:
             continue
-        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        due = max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
         if due <= 0:
             continue
         days = days_overdue(as_of, po.due_date, po.created_at)
@@ -434,10 +434,10 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
                 "date": inv.posted_at or inv.created_at,
                 "type": "invoice",
                 "reference": inv.invoice_number,
-                "debit": float(inv.total_amount) if inv.status != "cancelled" else 0,
+                "debit": money_json(inv.total_amount) if inv.status != "cancelled" else 0.0,
                 "credit": 0,
                 "status": inv.status,
-                "balance_due": max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+                "balance_due": max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
                 if inv.status in {"posted", "sent", "partial", "overdue"}
                 else 0,
             }
@@ -449,7 +449,7 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
                 "type": "payment",
                 "reference": pay.payment_number,
                 "debit": 0,
-                "credit": float(pay.amount),
+                "credit": money_json(pay.amount),
                 "status": "posted",
                 "balance_due": None,
             }
@@ -459,8 +459,8 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
         "customer": {
             "id": customer.id,
             "name": customer.name,
-            "credit_limit": float(customer.credit_limit or 0),
-            "balance": float(customer.balance or 0),
+            "credit_limit": money_json(customer.credit_limit),
+            "balance": money_json(customer.balance),
         },
         "lines": lines,
     }
@@ -510,9 +510,9 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
                 "type": "purchase_order",
                 "reference": po.po_number,
                 "debit": 0,
-                "credit": float(po.total_amount),
+                "credit": money_json(po.total_amount),
                 "status": po.status,
-                "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
+                "balance_due": max(money_json(po.total_amount) - money_json(po.paid_amount), 0),
             }
         )
     for pay in payments:
@@ -521,7 +521,7 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
                 "date": pay.created_at,
                 "type": "payment",
                 "reference": pay.payment_number,
-                "debit": float(pay.amount),
+                "debit": money_json(pay.amount),
                 "credit": 0,
                 "status": "posted",
                 "balance_due": None,
@@ -532,7 +532,7 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
         "supplier": {
             "id": supplier.id,
             "name": supplier.name,
-            "balance": float(supplier.balance or 0),
+            "balance": money_json(supplier.balance),
         },
         "lines": lines,
     }
@@ -612,10 +612,10 @@ async def customer_history(
                 "type": "invoice",
                 "reference": inv.invoice_number,
                 "status": inv.status,
-                "subtotal": float(inv.subtotal or 0),
-                "tax_amount": float(inv.tax_amount or 0),
-                "total_amount": float(inv.total_amount or 0),
-                "paid_amount": float(inv.paid_amount or 0),
+                "subtotal": money_json(inv.subtotal or 0),
+                "tax_amount": money_json(inv.tax_amount or 0),
+                "total_amount": money_json(inv.total_amount or 0),
+                "paid_amount": money_json(inv.paid_amount or 0),
                 "posted_at": inv.posted_at,
                 "created_at": inv.created_at,
             }
@@ -627,10 +627,10 @@ async def customer_history(
                 "type": "pos",
                 "reference": tx.reference,
                 "status": tx.status,
-                "subtotal": float(tx.subtotal or 0),
-                "tax_amount": float(tx.tax or 0),
-                "total_amount": float(tx.total or 0),
-                "paid_amount": float(tx.total or 0),
+                "subtotal": money_json(tx.subtotal or 0),
+                "tax_amount": money_json(tx.tax or 0),
+                "total_amount": money_json(tx.total or 0),
+                "paid_amount": money_json(tx.total or 0),
                 "posted_at": tx.created_at,
                 "created_at": tx.created_at,
             }
@@ -644,8 +644,8 @@ async def customer_history(
             "credit_note_number": r.credit_note_number,
             "status": r.status,
             "reason": r.reason,
-            "total_amount": float(r.total_amount or 0),
-            "refunded_amount": float(r.refunded_amount or 0),
+            "total_amount": money_json(r.total_amount or 0),
+            "refunded_amount": money_json(r.refunded_amount),
             "settlement_method": r.settlement_method,
             "sales_invoice_id": r.sales_invoice_id,
             "posted_at": r.posted_at,
@@ -657,7 +657,7 @@ async def customer_history(
         {
             "id": p.id,
             "payment_number": p.payment_number,
-            "amount": float(p.amount or 0),
+            "amount": money_json(p.amount or 0),
             "payment_method": p.payment_method,
             "sales_invoice_id": p.sales_invoice_id,
             "reference": p.reference,
@@ -673,8 +673,8 @@ async def customer_history(
         "customer": {
             "id": customer.id,
             "name": customer.name,
-            "credit_limit": float(customer.credit_limit or 0),
-            "balance": float(customer.balance or 0),
+            "credit_limit": money_json(customer.credit_limit),
+            "balance": money_json(customer.balance),
         },
         "from_date": from_date,
         "to_date": to_date,
@@ -765,8 +765,8 @@ async def supplier_history(
                 "type": "purchase_order",
                 "reference": po.po_number,
                 "status": po.status,
-                "total_amount": float(po.total_amount or 0),
-                "paid_amount": float(po.paid_amount or 0),
+                "total_amount": money_json(po.total_amount or 0),
+                "paid_amount": money_json(po.paid_amount or 0),
                 "created_at": po.created_at,
             }
         )
@@ -777,8 +777,8 @@ async def supplier_history(
                 "type": "purchase_invoice",
                 "reference": inv.invoice_number,
                 "status": inv.status,
-                "total_amount": float(inv.total_amount or 0),
-                "paid_amount": float(inv.paid_amount or 0),
+                "total_amount": money_json(inv.total_amount or 0),
+                "paid_amount": money_json(inv.paid_amount or 0),
                 "created_at": inv.created_at,
             }
         )
@@ -791,7 +791,7 @@ async def supplier_history(
             "debit_note_number": r.debit_note_number,
             "status": r.status,
             "reason": r.reason,
-            "total_amount": float(r.total_amount or 0),
+            "total_amount": money_json(r.total_amount or 0),
             "purchase_order_id": r.purchase_order_id,
             "goods_receipt_id": r.goods_receipt_id,
             "posted_at": r.posted_at,
@@ -803,7 +803,7 @@ async def supplier_history(
         {
             "id": p.id,
             "payment_number": p.payment_number,
-            "amount": float(p.amount or 0),
+            "amount": money_json(p.amount or 0),
             "payment_method": p.payment_method,
             "purchase_order_id": p.purchase_order_id,
             "purchase_invoice_id": p.purchase_invoice_id,
@@ -820,7 +820,7 @@ async def supplier_history(
         "supplier": {
             "id": supplier.id,
             "name": supplier.name,
-            "balance": float(supplier.balance or 0),
+            "balance": money_json(supplier.balance),
             "payment_terms_days": getattr(supplier, "payment_terms_days", None),
         },
         "from_date": from_date,
@@ -868,7 +868,7 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
     credit_sales: list[dict] = []
     open_invoice_total = 0.0
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
         if due <= 0:
             continue
         open_invoice_total += due
@@ -877,8 +877,8 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
                 "invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "amount": round(due, 2),
-                "total_amount": float(inv.total_amount or 0),
-                "paid_amount": float(inv.paid_amount or 0),
+                "total_amount": money_json(inv.total_amount or 0),
+                "paid_amount": money_json(inv.paid_amount or 0),
                 "due_date": inv.due_date,
                 "status": inv.status,
             }
@@ -948,7 +948,7 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
     open_bills: list[dict] = []
     open_total = 0.0
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
         if due <= 0:
             continue
         open_total += due
@@ -967,7 +967,7 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
     for po in orders:
         if po.id in invoiced_pos:
             continue
-        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        due = max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
         if due <= 0:
             continue
         open_total += due
@@ -1132,7 +1132,7 @@ async def supplier_payment_schedule(
         "supplier": {
             "id": supplier.id,
             "name": supplier.name,
-            "balance": float(supplier.balance or 0),
+            "balance": money_json(supplier.balance),
         },
         "total_due": round(sum(r["balance_due"] for r in items), 2),
         "overdue_count": len(overdue),

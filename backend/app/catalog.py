@@ -522,12 +522,12 @@ async def stock_in_with_batch(
 
     return {
         "product_id": product.id,
-        "stock_qty": float(product.stock_qty),
-        "quantity_entered": entered_qty,
-        "quantity_base": quantity_base,
+        "stock_qty": money_json(product.stock_qty),
+        "quantity_entered": money_json(entered_qty),
+        "quantity_base": money_json(quantity_base),
         "unit_id": entered_unit_id,
         "stock_unit_id": product.unit_id,
-        "cost_price": float(product.cost_price or 0),
+        "cost_price": money_json(product.cost_price),
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
     }
@@ -673,9 +673,9 @@ async def stock_out_with_batch(
 
     return {
         "product_id": product.id,
-        "stock_qty": float(product.stock_qty),
-        "quantity_entered": entered_qty,
-        "quantity_base": quantity,
+        "stock_qty": money_json(product.stock_qty),
+        "quantity_entered": money_json(entered_qty),
+        "quantity_base": money_json(quantity),
         "unit_id": entered_unit_id,
         "stock_unit_id": product.unit_id,
         "variant": serialize_variant(variant) if variant else None,

@@ -283,9 +283,9 @@ async def store_inventory(
     rows = (await db.execute(stmt)).all()
     out = []
     for stock, product in rows:
-        qty = float(stock.quantity or 0)
-        reorder = float(getattr(stock, "reorder_level", 0) or 0)
-        reorder_qty = float(getattr(stock, "reorder_qty", 0) or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(getattr(stock, "reorder_level", 0) or 0)
+        reorder_qty = money_json(getattr(stock, "reorder_qty", 0) or 0)
         out.append(
             {
                 "product_id": product.id,
@@ -299,7 +299,7 @@ async def store_inventory(
                 if reorder > 0 and qty <= reorder
                 else reorder_qty,
                 "warehouse_id": wh.id,
-                "consolidated_stock": float(product.stock_qty or 0),
+                "consolidated_stock": money_json(product.stock_qty),
             }
         )
     return out

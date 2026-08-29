@@ -224,7 +224,11 @@ async def create_statement(
                 description=optional_honest_narrative(
                     raw.get("description"), label="statement line description"
                 ),
-                external_ref=(raw.get("external_ref") or "").strip() or None,
+                external_ref=optional_honest_narrative(
+                    raw.get("external_ref"),
+                    label="statement line external ref",
+                    max_length=120,
+                ),
                 status="unmatched",
             )
         )
