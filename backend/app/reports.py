@@ -375,8 +375,8 @@ async def sales_by_product(
     agg: dict[str, dict] = {}
     for item, _inv, product in rows:
         row = _bucket(agg, product)
-        row["quantity"] = round(row["quantity"] + float(item.quantity or 0), 3)
-        row["revenue"] = round(row["revenue"] + float(item.line_total or 0), 2)
+        row["quantity"] = round(row["quantity"] + money_json(item.quantity), 3)
+        row["revenue"] = round(row["revenue"] + money_json(item.line_total), 2)
 
     for tx in pos_txs:
         for line in (tx.payload or {}).get("items") or []:
@@ -389,10 +389,10 @@ async def sales_by_product(
             if category_id and product.category_id != category_id:
                 continue
             row = _bucket(agg, product)
-            qty = float(line.get("quantity") or 0)
-            revenue = float(
+            qty = money_json(line.get("quantity") or 0)
+            revenue = money_json(
                 line.get("line_total")
-                or (float(line.get("unit_price") or product.selling_price or 0) * qty)
+                or (money_json(line.get("unit_price") or product.selling_price or 0) * qty)
             )
             row["quantity"] = round(row["quantity"] + qty, 3)
             row["revenue"] = round(row["revenue"] + revenue, 2)
@@ -476,8 +476,8 @@ async def sales_by_customer(
         inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.customer_id)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
         row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
@@ -500,8 +500,8 @@ async def sales_by_customer(
         )
     for tx in (await db.execute(pos_stmt)).scalars().all():
         row = _bucket(agg, tx.party_id)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
         row["pos_tax"] = round(row["pos_tax"] + tax, 2)
@@ -643,9 +643,9 @@ async def sales_returns_summary(
                 )
             )
         ).scalars().all()
-        qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        amount = float(ret.total_amount or 0)
-        refunded = float(ret.refunded_amount or 0)
+        qty = round(sum(money_json(i.quantity) for i in items), 3)
+        amount = money_json(ret.total_amount)
+        refunded = money_json(ret.refunded_amount)
         total_amount += amount
         total_qty += qty
         refunded_total += refunded
@@ -687,8 +687,8 @@ async def sales_returns_summary(
                 "restock": bool(ret.restock),
                 "settlement_method": ret.settlement_method,
                 "quantity": qty,
-                "subtotal": float(ret.subtotal or 0),
-                "tax_amount": float(ret.tax_amount or 0),
+                "subtotal": money_json(ret.subtotal),
+                "tax_amount": money_json(ret.tax_amount),
                 "total_amount": amount,
                 "refunded_amount": refunded,
                 "sales_invoice_id": ret.sales_invoice_id,
@@ -828,8 +828,8 @@ async def sales_by_salesperson(
             inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.created_by)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
         row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
@@ -859,8 +859,8 @@ async def sales_by_salesperson(
     for tx, session in (await db.execute(pos_stmt)).all():
         user_id = session.user_id if session else None
         row = _bucket(agg, user_id)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
         row["pos_tax"] = round(row["pos_tax"] + tax, 2)
@@ -983,8 +983,8 @@ async def sales_by_store(
             inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.store_id)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
         row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
@@ -1012,8 +1012,8 @@ async def sales_by_store(
     for tx, session in (await db.execute(pos_stmt)).all():
         store_id = session.store_id if session else None
         row = _bucket(agg, store_id)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
         row["pos_tax"] = round(row["pos_tax"] + tax, 2)
@@ -1132,8 +1132,8 @@ async def sales_by_department(
         if filter_id and seller_dept != filter_id:
             continue
         row = _bucket(agg, seller_dept)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
         row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
@@ -1159,8 +1159,8 @@ async def sales_by_department(
         if filter_id and seller_dept != filter_id:
             continue
         row = _bucket(agg, seller_dept)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
         row["pos_tax"] = round(row["pos_tax"] + tax, 2)
@@ -1542,12 +1542,12 @@ async def inventory_low_stock(
             "id": p.id,
             "sku": p.sku,
             "name": p.name,
-            "stock_qty": float(p.stock_qty or 0),
-            "reorder_level": float(p.reorder_level or 0),
+            "stock_qty": money_json(p.stock_qty),
+            "reorder_level": money_json(p.reorder_level),
             "suggested_order_qty": max(
-                1.0, round(float(p.reorder_level or 0) - float(p.stock_qty or 0), 3)
+                1.0, round(money_json(p.reorder_level) - money_json(p.stock_qty), 3)
             )
-            if float(p.stock_qty or 0) <= float(p.reorder_level or 0)
+            if money_json(p.stock_qty) <= money_json(p.reorder_level)
             else 0.0,
             "scope": "product",
         }
@@ -1578,9 +1578,9 @@ async def inventory_low_stock(
     if wh_filter:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == wh_filter)
     for stock, product, wh in (await db.execute(stmt)).all():
-        qty = float(stock.quantity or 0)
-        reorder = float(stock.reorder_level or 0)
-        reorder_qty = float(stock.reorder_qty or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(stock.reorder_level)
+        reorder_qty = money_json(stock.reorder_qty)
         warehouse_rows.append(
             {
                 "product_id": product.id,
@@ -1661,7 +1661,7 @@ async def inventory_expiry(
         days_until = (exp - today).days if exp else None
         if days_until is not None and days_until < 0:
             expired_count += 1
-        qty = float(b.quantity or 0)
+        qty = money_json(b.quantity)
         total_qty += qty
         row = catalog_svc.serialize_batch(b)
         row.update(
@@ -1792,9 +1792,9 @@ async def inventory_transfers(
                 )
             )
         ).scalars().all()
-        qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        shipped_qty = round(sum(float(i.shipped_qty or 0) for i in items), 3)
-        received_qty = round(sum(float(i.received_qty or 0) for i in items), 3)
+        qty = round(sum(money_json(i.quantity) for i in items), 3)
+        shipped_qty = round(sum(money_json(i.shipped_qty) for i in items), 3)
+        received_qty = round(sum(money_json(i.received_qty) for i in items), 3)
         total_qty += qty
         by_status[xfer.status] += 1
         route_key = f"{xfer.from_store_id}->{xfer.to_store_id}"
@@ -1978,10 +1978,10 @@ async def inventory_stock_counts(
             if row["counted_qty"] is not None:
                 lines_counted += 1
             variance = row["variance"]
-            if variance is not None and abs(float(variance)) > 1e-9:
+            if variance is not None and abs(money_json(variance)) > 1e-9:
                 lines_with_variance += 1
-                variance_qty += float(variance)
-            if variance_only and (variance is None or abs(float(variance)) < 1e-9):
+                variance_qty += money_json(variance)
+            if variance_only and (variance is None or abs(money_json(variance)) < 1e-9):
                 continue
             serialized_items.append(row)
             flat_lines.append(
@@ -2154,8 +2154,8 @@ async def purchases_summary(
     pending = 0.0
     for po in orders:
         by_status[po.status] += 1
-        total += float(po.total_amount or 0)
-        pending += max(float(po.total_amount or 0) - float(po.paid_amount or 0), 0)
+        total += money_json(po.total_amount)
+        pending += max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -2253,10 +2253,10 @@ async def purchases_pending_orders(
                 )
             )
         ).scalars().all()
-        ordered_qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        received_qty = round(sum(float(i.received_qty or 0) for i in items), 3)
+        ordered_qty = round(sum(money_json(i.quantity) for i in items), 3)
+        received_qty = round(sum(money_json(i.received_qty) for i in items), 3)
         outstanding_qty = round(max(ordered_qty - received_qty, 0), 3)
-        amount = float(po.total_amount or 0)
+        amount = money_json(po.total_amount)
         by_status[po.status] += 1
         total_amount += amount
         total_outstanding_qty += outstanding_qty
@@ -2395,8 +2395,8 @@ async def purchases_returns_summary(
                 )
             )
         ).scalars().all()
-        qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        amount = float(ret.total_amount or 0)
+        qty = round(sum(money_json(i.quantity) for i in items), 3)
+        amount = money_json(ret.total_amount)
         total_amount += amount
         total_qty += qty
         by_status[ret.status] += 1
@@ -2435,8 +2435,8 @@ async def purchases_returns_summary(
                 "status": ret.status,
                 "reason": ret.reason,
                 "quantity": qty,
-                "subtotal": float(ret.subtotal or 0),
-                "tax_amount": float(ret.tax_amount or 0),
+                "subtotal": money_json(ret.subtotal),
+                "tax_amount": money_json(ret.tax_amount),
                 "total_amount": amount,
                 "goods_receipt_id": ret.goods_receipt_id,
                 "purchase_order_id": ret.purchase_order_id,
@@ -2510,7 +2510,7 @@ async def purchases_by_supplier(
             {"supplier_id": party.id, "name": party.name, "order_count": 0, "total_amount": 0.0},
         )
         row["order_count"] += 1
-        row["total_amount"] = round(row["total_amount"] + float(po.total_amount or 0), 2)
+        row["total_amount"] = round(row["total_amount"] + money_json(po.total_amount), 2)
     suppliers = sorted(agg.values(), key=lambda x: x["total_amount"], reverse=True)
     return {
         "warehouse_id": warehouse_id,
@@ -2566,14 +2566,14 @@ async def expenses_summary(
     rows = (await db.execute(stmt)).scalars().all()
     by_category: dict[str, float] = defaultdict(float)
     for e in rows:
-        by_category[e.category or "Uncategorized"] += float(e.amount or 0)
+        by_category[e.category or "Uncategorized"] += money_json(e.amount)
     categories = [
         {"category": k, "amount": round(v, 2)}
         for k, v in sorted(by_category.items(), key=lambda x: x[1], reverse=True)
     ]
     return {
         "count": len(rows),
-        "total_amount": round(sum(float(e.amount or 0) for e in rows), 2),
+        "total_amount": round(sum(money_json(e.amount) for e in rows), 2),
         "by_category": categories,
         "branch_id": branch_id,
         "branch_name": branch_name,
@@ -2811,9 +2811,9 @@ def _empty_cf_bucket() -> dict:
 
 def _round_cf_bucket(bucket: dict) -> dict:
     return {
-        "inflows": round(float(bucket["inflows"]), 2),
-        "outflows": round(float(bucket["outflows"]), 2),
-        "net": round(float(bucket["inflows"]) - float(bucket["outflows"]), 2),
+        "inflows": round(money_json(bucket["inflows"]), 2),
+        "outflows": round(money_json(bucket["outflows"]), 2),
+        "net": round(money_json(bucket["inflows"]) - money_json(bucket["outflows"]), 2),
     }
 
 
@@ -2971,8 +2971,8 @@ async def cash_flow(
     outflows = 0.0
     lines = []
     for line, entry in rows:
-        debit = float(line.debit or 0)
-        credit = float(line.credit or 0)
+        debit = money_json(line.debit)
+        credit = money_json(line.credit)
         inflows += debit
         outflows += credit
         activity = cash_flow_activity(
@@ -2996,9 +2996,9 @@ async def cash_flow(
             }
         )
     return {
-        "inflows": round(inflows, 2),
-        "outflows": round(outflows, 2),
-        "net": round(inflows - outflows, 2),
+        "inflows": round(money_json(inflows), 2),
+        "outflows": round(money_json(outflows), 2),
+        "net": round(money_json(inflows) - money_json(outflows), 2),
         "operating": _round_cf_bucket(buckets["operating"]),
         "investing": _round_cf_bucket(buckets["investing"]),
         "financing": _round_cf_bucket(buckets["financing"]),
@@ -3084,9 +3084,9 @@ def _pack_balance_sheet(
     store_id: str | None = None,
     branch_id: str | None = None,
 ) -> dict:
-    total_assets = round(sum(float(r["balance"]) for r in assets), 2)
-    total_liabilities = round(sum(float(r["balance"]) for r in liabilities), 2)
-    total_equity = round(sum(float(r["balance"]) for r in equity), 2)
+    total_assets = round(sum(money_json(r["balance"]) for r in assets), 2)
+    total_liabilities = round(sum(money_json(r["balance"]) for r in liabilities), 2)
+    total_equity = round(sum(money_json(r["balance"]) for r in equity), 2)
     total_le = round(total_liabilities + total_equity, 2)
     payload = {
         "as_of": as_of_day.isoformat() if hasattr(as_of_day, "isoformat") else str(as_of_day),
@@ -3110,14 +3110,14 @@ def _merge_bs_compare(current: dict, prior: dict, compare_mode: str) -> dict:
     """Attach prior balances / deltas onto current BS sections."""
 
     def merge_section(cur_rows: list[dict], prior_rows: list[dict]) -> list[dict]:
-        prior_by = {r["code"]: float(r["balance"]) for r in prior_rows}
+        prior_by = {r["code"]: money_json(r["balance"]) for r in prior_rows}
         seen = set()
         out = []
         for r in cur_rows:
             code = r["code"]
             seen.add(code)
             prior_bal = prior_by.get(code, 0.0)
-            bal = float(r["balance"])
+            bal = money_json(r["balance"])
             out.append(
                 {
                     **r,
@@ -3128,7 +3128,7 @@ def _merge_bs_compare(current: dict, prior: dict, compare_mode: str) -> dict:
         for r in prior_rows:
             if r["code"] in seen:
                 continue
-            prior_bal = float(r["balance"])
+            prior_bal = money_json(r["balance"])
             out.append(
                 {
                     "code": r["code"],
@@ -3152,17 +3152,17 @@ def _merge_bs_compare(current: dict, prior: dict, compare_mode: str) -> dict:
         "total_liabilities_and_equity": prior["total_liabilities_and_equity"],
         "deltas": {
             "total_assets": round(
-                float(current["total_assets"]) - float(prior["total_assets"]), 2
+                money_json(current["total_assets"]) - money_json(prior["total_assets"]), 2
             ),
             "total_liabilities": round(
-                float(current["total_liabilities"]) - float(prior["total_liabilities"]), 2
+                money_json(current["total_liabilities"]) - money_json(prior["total_liabilities"]), 2
             ),
             "total_equity": round(
-                float(current["total_equity"]) - float(prior["total_equity"]), 2
+                money_json(current["total_equity"]) - money_json(prior["total_equity"]), 2
             ),
             "total_liabilities_and_equity": round(
-                float(current["total_liabilities_and_equity"])
-                - float(prior["total_liabilities_and_equity"]),
+                money_json(current["total_liabilities_and_equity"])
+                - money_json(prior["total_liabilities_and_equity"]),
                 2,
             ),
         },
@@ -3216,7 +3216,7 @@ async def _balance_sheet_at(
         )
 
     if effective_as_of is None:
-        bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
+        bal_by_id = {a.id: money_json(a.balance) for a in accounts}
         as_of_day = datetime.utcnow().date()
         mode = "balances"
     else:
@@ -3244,10 +3244,10 @@ async def _balance_sheet_at(
             else:
                 stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
         for line, account in (await db.execute(stmt)).all():
-            bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
+            bal_by_id[account.id] = money_json(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
                 account.account_type,
-                float(line.debit or 0),
-                float(line.credit or 0),
+                money_json(line.debit),
+                money_json(line.credit),
             )
         as_of_day = effective_as_of.date()
         mode = "journals"
@@ -3257,7 +3257,7 @@ async def _balance_sheet_at(
         for a in accounts:
             if a.account_type != account_type:
                 continue
-            bal = round(float(bal_by_id.get(a.id, 0)), 2)
+            bal = round(money_json(bal_by_id.get(a.id, 0)), 2)
             # Live balances mode keeps zero rows (back-compat); journal as-of omits zeros.
             if mode == "journals" and abs(bal) < 0.0001:
                 continue
@@ -3268,10 +3268,10 @@ async def _balance_sheet_at(
     liabilities = rows_for("liability")
     equity = rows_for("equity")
     income = sum(
-        float(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "income"
+        money_json(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "income"
     )
     expense = sum(
-        float(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "expense"
+        money_json(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "expense"
     )
     retained = round(income - expense, 2)
     if abs(retained) > 0.0001:

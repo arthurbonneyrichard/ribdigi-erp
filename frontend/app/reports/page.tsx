@@ -755,9 +755,15 @@ export default function Page() {
         <button onClick={() => load()} disabled={loading}>
           {loading ? 'Loading…' : 'Apply filters'}
         </button>
-        <button onClick={() => download('csv')}>Export CSV</button>
-        <button onClick={() => download('xlsx')}>Export Excel</button>
-        <button onClick={() => download('pdf')}>Export PDF</button>
+        <button onClick={() => download('csv')} aria-label="Export report CSV">
+          Export CSV
+        </button>
+        <button onClick={() => download('xlsx')} aria-label="Export report Excel">
+          Export Excel
+        </button>
+        <button onClick={() => download('pdf')} aria-label="Export report PDF">
+          Export PDF
+        </button>
         {tab === 'sales' && (
           <>
             <button onClick={() => download('csv', 'sales_daily')}>Daily CSV</button>

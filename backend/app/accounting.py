@@ -1483,7 +1483,7 @@ async def trial_balance(
         )
 
     if effective_as_of is None:
-        bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
+        bal_by_id = {a.id: money_json(a.balance) for a in accounts}
         as_of_day = datetime.utcnow().date()
         mode = "balances"
     else:
@@ -1511,10 +1511,10 @@ async def trial_balance(
             else:
                 stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
         for line, account in (await db.execute(stmt)).all():
-            bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
+            bal_by_id[account.id] = money_json(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
                 account.account_type,
-                float(line.debit or 0),
-                float(line.credit or 0),
+                money_json(line.debit),
+                money_json(line.credit),
             )
         as_of_day = effective_as_of.date()
         mode = "journals"
@@ -1523,7 +1523,7 @@ async def trial_balance(
     debit_total = 0.0
     credit_total = 0.0
     for account in accounts:
-        bal = round(float(bal_by_id.get(account.id, 0)), 2)
+        bal = round(money_json(bal_by_id.get(account.id, 0)), 2)
         if mode == "journals" and abs(bal) < 0.0001:
             continue
         if account.account_type in {"asset", "expense"}:
@@ -1737,13 +1737,13 @@ def _pnl_pack(
     gross_profit = revenue - cogs
     net_profit = revenue - expense
     return {
-        "income": round(revenue, 2),  # back-compat alias
-        "revenue": round(revenue, 2),
-        "cogs": round(cogs, 2),
-        "gross_profit": round(gross_profit, 2),
-        "operating_expenses": round(operating_expenses, 2),
-        "expense": round(expense, 2),  # back-compat: total expenses incl. COGS
-        "net_profit": round(net_profit, 2),
+        "income": round(money_json(revenue), 2),  # back-compat alias
+        "revenue": round(money_json(revenue), 2),
+        "cogs": round(money_json(cogs), 2),
+        "gross_profit": round(money_json(gross_profit), 2),
+        "operating_expenses": round(money_json(operating_expenses), 2),
+        "expense": round(money_json(expense), 2),  # back-compat: total expenses incl. COGS
+        "net_profit": round(money_json(net_profit), 2),
         "accounts": accounts,
         "from_date": from_date.isoformat() if from_date else None,
         "to_date": to_date.isoformat() if to_date else None,
@@ -1778,10 +1778,10 @@ async def profit_and_loss(
         accounts = (
             await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
         ).scalars().all()
-        revenue = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
-        cogs = sum(float(a.balance or 0) for a in accounts if a.code == "5000")
+        revenue = sum(money_json(a.balance) for a in accounts if a.account_type == "income")
+        cogs = sum(money_json(a.balance) for a in accounts if a.code == "5000")
         operating_expenses = sum(
-            float(a.balance or 0)
+            money_json(a.balance)
             for a in accounts
             if a.account_type == "expense" and a.code != "5000"
         )
@@ -1794,7 +1794,7 @@ async def profit_and_loss(
                     "code": a.code,
                     "name": a.name,
                     "account_type": a.account_type,
-                    "balance": float(a.balance or 0),
+                    "balance": money_json(a.balance),
                 }
                 for a in accounts
                 if a.account_type in {"income", "expense"}
@@ -1846,8 +1846,8 @@ async def profit_and_loss(
     cogs = 0.0
     operating_expenses = 0.0
     for line, _entry, account in rows:
-        debit = float(line.debit or 0)
-        credit = float(line.credit or 0)
+        debit = money_json(line.debit)
+        credit = money_json(line.credit)
         if account.account_type == "income":
             net = credit - debit
             revenue += net
@@ -1866,7 +1866,7 @@ async def profit_and_loss(
                 "balance": 0.0,
             },
         )
-        bucket["balance"] = round(float(bucket["balance"]) + net, 2)
+        bucket["balance"] = round(money_json(bucket["balance"]) + net, 2)
 
     accounts_out = sorted(by_account.values(), key=lambda r: r["code"] or "")
     return _pnl_pack(

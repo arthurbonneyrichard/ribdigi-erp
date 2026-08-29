@@ -57,7 +57,7 @@ from app import backup as backup_svc
 from app import tenants as tenants_svc
 from app import packages as packages_svc
 from app import storage as storage_svc
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
@@ -4463,9 +4463,9 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
         "address": getattr(row, "address", None),
         "latitude": float(lat) if lat is not None else None,
         "longitude": float(lng) if lng is not None else None,
-        "credit_limit": float(row.credit_limit or 0),
+        "credit_limit": money_json(row.credit_limit),
         "payment_terms_days": int(getattr(row, "payment_terms_days", None) or 30),
-        "balance": float(row.balance or 0),
+        "balance": money_json(row.balance),
         "customer_group_id": getattr(row, "customer_group_id", None),
     }
     if group is not None:
@@ -10375,9 +10375,9 @@ async def update_customer_credit_limit(
         {
             "id": customer.id,
             "name": customer.name,
-            "credit_limit": float(customer.credit_limit),
+            "credit_limit": money_json(customer.credit_limit),
             "payment_terms_days": int(customer.payment_terms_days or 30),
-            "balance": float(customer.balance or 0),
+            "balance": money_json(customer.balance),
         }
     )
 
