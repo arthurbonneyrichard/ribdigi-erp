@@ -766,21 +766,55 @@ export default function Page() {
         </button>
         {tab === 'sales' && (
           <>
-            <button onClick={() => download('csv', 'sales_daily')}>Daily CSV</button>
-            <button onClick={() => download('xlsx', 'sales_salesperson')}>Salespeople Excel</button>
-            <button onClick={() => download('xlsx', 'trial_balance')}>Trial balance Excel</button>
-            <button onClick={() => download('csv', 'trial_balance')}>Trial balance CSV</button>
-            <button onClick={() => download('pdf', 'profit_loss')}>P&amp;L PDF</button>
+            <button onClick={() => download('csv', 'sales_daily')} aria-label="Export sales daily CSV">
+              Daily CSV
+            </button>
+            <button
+              onClick={() => download('xlsx', 'sales_salesperson')}
+              aria-label="Export salespeople Excel"
+            >
+              Salespeople Excel
+            </button>
+            <button
+              onClick={() => download('xlsx', 'trial_balance')}
+              aria-label="Export trial balance Excel"
+            >
+              Trial balance Excel
+            </button>
+            <button
+              onClick={() => download('csv', 'trial_balance')}
+              aria-label="Export trial balance CSV"
+            >
+              Trial balance CSV
+            </button>
+            <button onClick={() => download('pdf', 'profit_loss')} aria-label="Export P&L PDF">
+              P&amp;L PDF
+            </button>
           </>
         )}
         {tab === 'salesperson' && (
-          <button onClick={() => download('xlsx', 'sales_salesperson')}>Export Excel</button>
+          <button
+            onClick={() => download('xlsx', 'sales_salesperson')}
+            aria-label="Export salespeople Excel"
+          >
+            Export Excel
+          </button>
         )}
         {tab === 'customers' && (
-          <button onClick={() => download('xlsx', 'sales_customers')}>Export Excel</button>
+          <button
+            onClick={() => download('xlsx', 'sales_customers')}
+            aria-label="Export sales customers Excel"
+          >
+            Export Excel
+          </button>
         )}
         {tab === 'stores' && (
-          <button onClick={() => download('xlsx', 'sales_by_store')}>Export Excel</button>
+          <button
+            onClick={() => download('xlsx', 'sales_by_store')}
+            aria-label="Export sales by store Excel"
+          >
+            Export Excel
+          </button>
         )}
       </div>
       )}

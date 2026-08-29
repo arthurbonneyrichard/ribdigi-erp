@@ -4492,8 +4492,13 @@ async def _party_with_contacts(
 
 
 def _normalize_party_profile(data: dict, *, kind: str) -> dict:
-    from app.honesty import optional_honest_narrative
+    from app.honesty import optional_honest_narrative, require_honest_narrative
 
+    if "name" in data and data["name"] is not None:
+        # OpenAPI PartyNameValue → 422; service defense-in-depth → 400.
+        data["name"] = require_honest_narrative(
+            data["name"], label="party name", max_length=180
+        )
     if "code" in data:
         # OpenAPI PartyCodeValue → 422; service defense-in-depth → 400.
         data["code"] = optional_honest_narrative(

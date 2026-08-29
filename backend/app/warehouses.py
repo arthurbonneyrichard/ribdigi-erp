@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 WAREHOUSE_TYPES = frozenset({"retail", "bulk", "cold_storage", "other"})
 
@@ -102,9 +102,8 @@ async def create_warehouse(
     code_clean = (code or "").strip().upper()
     if not code_clean:
         raise HTTPException(status_code=400, detail="code is required")
-    name_clean = (name or "").strip()
-    if not name_clean:
-        raise HTTPException(status_code=400, detail="name is required")
+    # OpenAPI WarehouseNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(name, label="warehouse name", max_length=150)
     existing = (
         await db.execute(
             select(m.Warehouse).where(
@@ -150,10 +149,8 @@ async def update_warehouse(
 ) -> m.Warehouse:
     row = await get_warehouse(db, tenant_id, warehouse_id)
     if name is not None:
-        name_clean = name.strip()
-        if not name_clean:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name_clean
+        # OpenAPI WarehouseNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(name, label="warehouse name", max_length=150)
     if clear_store:
         row.store_id = None
     elif store_id is not None:

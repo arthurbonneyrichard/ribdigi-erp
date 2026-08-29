@@ -171,9 +171,11 @@ async def create_store(
         ).scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=404, detail="User not found in tenant")
+    # OpenAPI StoreNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(name, label="store name", max_length=150)
     store = m.Store(
         tenant_id=tenant_id,
-        name=name,
+        name=name_clean,
         code=code.strip().upper(),
         address=optional_honest_narrative(address, label="store address", max_length=500),
         phone=phone,
@@ -214,10 +216,8 @@ async def update_store(
 ) -> m.Store:
     store = await get_store(db, tenant_id, store_id)
     if name is not None:
-        cleaned = name.strip()
-        if not cleaned:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        store.name = cleaned
+        # OpenAPI StoreNameValue → 422; service defense-in-depth → 400.
+        store.name = require_honest_narrative(name, label="store name", max_length=150)
     if address is not None:
         store.address = optional_honest_narrative(
             address, label="store address", max_length=500

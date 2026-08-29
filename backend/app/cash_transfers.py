@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.accounting import ensure_default_accounts, get_account_by_code, post_journal_entry
 from app.doc_numbers import next_cash_transfer_number
-from app.honesty import money_json, optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 TRANSFER_KINDS = frozenset({"transfer", "deposit", "withdrawal"})
 ACCOUNT_TYPES = frozenset({"asset", "liability", "equity", "income", "expense"})
@@ -90,16 +90,20 @@ async def update_account(
 ) -> m.Account:
     row = await get_account(db, tenant_id, account_id)
     if name is not None:
-        name_key = name.strip()
-        if not name_key:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name_key
+        # OpenAPI AccountNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(name, label="account name", max_length=150)
     if bank_name is not None:
-        row.bank_name = bank_name.strip() or None
+        # OpenAPI BankNameValue → 422; service defense-in-depth → 400.
+        row.bank_name = optional_honest_narrative(
+            bank_name, label="bank name", max_length=120
+        )
     if account_number is not None:
         row.account_number = account_number.strip() or None
     if bank_branch is not None:
-        row.bank_branch = bank_branch.strip() or None
+        # OpenAPI BankBranchValue → 422; service defense-in-depth → 400.
+        row.bank_branch = optional_honest_narrative(
+            bank_branch, label="bank branch", max_length=120
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     if row.is_bank_account and not row.bank_name:
@@ -122,8 +126,9 @@ async def create_account(
 ) -> m.Account:
     await ensure_default_accounts(db, tenant_id)
     code_key = (code or "").strip()
-    name_key = (name or "").strip()
-    if not code_key or not name_key:
+    # OpenAPI AccountNameValue → 422; service defense-in-depth → 400.
+    name_key = require_honest_narrative(name, label="account name", max_length=150)
+    if not code_key:
         raise HTTPException(status_code=400, detail="code and name are required")
     # Defense in depth: AccountCreate Literals reject blank/unknown with 422
     # before this runs. Empty account_type used to coerce to "asset".
@@ -157,9 +162,13 @@ async def create_account(
         balance=0,
         is_cash_account=kind == "cash",
         is_bank_account=kind == "bank",
-        bank_name=(bank_name or "").strip() or None,
+        bank_name=optional_honest_narrative(
+            bank_name, label="bank name", max_length=120
+        ),
         account_number=(account_number or "").strip() or None,
-        bank_branch=(bank_branch or "").strip() or None,
+        bank_branch=optional_honest_narrative(
+            bank_branch, label="bank branch", max_length=120
+        ),
     )
     if kind == "bank" and not row.bank_name:
         raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")

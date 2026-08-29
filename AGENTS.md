@@ -779,6 +779,30 @@
 - **Tax Ghana VAT export Excel aria OpenAPI (BR-12):** Tax **Export Ghana VAT Excel** button (`aria-label`).
 - **Tax Ghana VAT export CSV aria OpenAPI (BR-12):** Tax **Export Ghana VAT CSV** button (`aria-label`).
 - **Tax Ghana VAT export PDF aria OpenAPI (BR-12):** Tax **Export Ghana VAT PDF** button (`aria-label`).
+- **Company company_name defense-in-depth OpenAPI (BR-20.1):** `update_profile` uses `require_honest_narrative` (min 2) (**400**) matching `CompanyNameValue` (**422**).
+- **Company legal_name defense-in-depth OpenAPI (BR-20.1):** `update_profile` uses `optional_honest_narrative` (min 2) (**400**) matching `LegalNameValue` (**422**).
+- **Company contact_person defense-in-depth OpenAPI (BR-20.1):** `update_profile` uses `optional_honest_narrative` (**400**) matching `ContactPersonValue` (**422**).
+- **Company address defense-in-depth OpenAPI (BR-20.1):** `update_profile` headquarters `address` uses `optional_honest_narrative` (**400**) matching `AddressValue` (**422**).
+- **Company billing_address defense-in-depth OpenAPI (BR-20.1):** `update_profile` uses `optional_honest_narrative` (**400**) matching `AddressValue` (**422**).
+- **Company shipping_address defense-in-depth OpenAPI (BR-20.1):** `update_profile` uses `optional_honest_narrative` (**400**) matching `AddressValue` (**422**).
+- **Company registration_number defense-in-depth OpenAPI (BR-20.1):** `update_profile` uses `optional_honest_narrative` (**400**) matching `RegistrationNumberValue` (**422**).
+- **Company tax_registration_number defense-in-depth OpenAPI (BR-20.1):** `update_profile` uses `optional_honest_narrative` (**400**) matching `TaxRegistrationNumberValue` (**422**).
+- **Store name defense-in-depth OpenAPI (BR-13.1):** `create_store` / `update_store` use `require_honest_narrative` (**400**) matching `StoreNameValue` (**422**).
+- **Warehouse name defense-in-depth OpenAPI (BR-2.4 / BR-13):** `create_warehouse` / `update_warehouse` use `require_honest_narrative` (**400**) matching `WarehouseNameValue` (**422**).
+- **Branch name defense-in-depth OpenAPI (BR-2.3 / BR-13):** `create_branch` / `update_branch` use `require_honest_narrative` (min 2) (**400**) matching `BranchNameValue` (**422**).
+- **Department name defense-in-depth OpenAPI (BR-2.4 / BR-13):** `create_department` / `update_department` use `require_honest_narrative` (min 2) (**400**) matching `DepartmentNameValue` (**422**).
+- **Account name defense-in-depth OpenAPI (BR-10.3):** `create_account` / `update_account` use `require_honest_narrative` (**400**) matching `AccountNameValue` (**422**).
+- **Account bank_name defense-in-depth OpenAPI (BR-10.3):** account create/update use `optional_honest_narrative` (**400**) matching `BankNameValue` (**422**); bank liquid still requires name (**400**).
+- **Account bank_branch defense-in-depth OpenAPI (BR-10.3):** account create/update use `optional_honest_narrative` (**400**) matching `BankBranchValue` (**422**).
+- **Party name defense-in-depth OpenAPI (BR-6.1 / BR-7.1):** `_normalize_party_profile` uses `require_honest_narrative` (**400**) matching `PartyNameValue` (**422**).
+- **Expense OCR amount money_json Decimal pilot OpenAPI (BR-9.2):** `parse_receipt_text` suggestion `amount` uses `honesty.money_json`.
+- **Report sales daily CSV aria OpenAPI (BR-14.1):** Reports **Export sales daily CSV** button (`aria-label`).
+- **Report salespeople Excel aria OpenAPI (BR-14.1):** Reports **Export salespeople Excel** button (`aria-label`).
+- **Report trial balance Excel aria OpenAPI (BR-14.5):** Reports **Export trial balance Excel** button (`aria-label`).
+- **Report trial balance CSV aria OpenAPI (BR-14.5):** Reports **Export trial balance CSV** button (`aria-label`).
+- **Report P&L PDF aria OpenAPI (BR-14.5):** Reports **Export P&L PDF** button (`aria-label`).
+- **Report sales customers Excel aria OpenAPI (BR-14.1):** Reports **Export sales customers Excel** button (`aria-label`).
+- **Report sales by store Excel aria OpenAPI (BR-14.1 / BR-2.5):** Reports **Export sales by store Excel** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

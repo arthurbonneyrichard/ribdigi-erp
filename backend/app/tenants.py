@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import packages as packages_svc
 from app.config import settings
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_INDUSTRIES = frozenset(
@@ -597,10 +597,10 @@ async def update_profile(
     inactivity_timeout_minutes: int | None = None,
 ) -> m.Tenant:
     if company_name is not None:
-        name = company_name.strip()
-        if len(name) < 2:
-            raise HTTPException(status_code=400, detail="company_name is required")
-        tenant.company_name = name
+        # OpenAPI CompanyNameValue → 422; service defense-in-depth → 400.
+        tenant.company_name = require_honest_narrative(
+            company_name, label="company name", min_length=2, max_length=200
+        )
     if industry is not None:
         tenant.industry = normalize_industry(industry)
     if currency is not None:
@@ -616,28 +616,35 @@ async def update_profile(
     if website is not None:
         tenant.website = website.strip() or None
     if address is not None:
-        tenant.address = address.strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        tenant.address = optional_honest_narrative(
+            address, label="company address", max_length=500
+        )
     if legal_name is not None:
-        ln = legal_name.strip()
-        if ln and len(ln) < 2:
-            raise HTTPException(status_code=400, detail="legal_name must be at least 2 characters")
-        if len(ln) > 200:
-            raise HTTPException(status_code=400, detail="legal_name must be at most 200 characters")
-        tenant.legal_name = ln or None
+        # OpenAPI LegalNameValue → 422; service defense-in-depth → 400.
+        tenant.legal_name = optional_honest_narrative(
+            legal_name, label="legal name", min_length=2, max_length=200
+        )
     if registration_number is not None:
-        reg = registration_number.strip()
-        if len(reg) > 80:
-            raise HTTPException(status_code=400, detail="registration_number must be at most 80 characters")
-        tenant.registration_number = reg or None
+        # OpenAPI RegistrationNumberValue → 422; service defense-in-depth → 400.
+        tenant.registration_number = optional_honest_narrative(
+            registration_number, label="registration number", max_length=80
+        )
     if contact_person is not None:
-        cp = contact_person.strip()
-        if len(cp) > 150:
-            raise HTTPException(status_code=400, detail="contact_person must be at most 150 characters")
-        tenant.contact_person = cp or None
+        # OpenAPI ContactPersonValue → 422; service defense-in-depth → 400.
+        tenant.contact_person = optional_honest_narrative(
+            contact_person, label="contact person", max_length=150
+        )
     if billing_address is not None:
-        tenant.billing_address = billing_address.strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        tenant.billing_address = optional_honest_narrative(
+            billing_address, label="billing address", max_length=500
+        )
     if shipping_address is not None:
-        tenant.shipping_address = shipping_address.strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        tenant.shipping_address = optional_honest_narrative(
+            shipping_address, label="shipping address", max_length=500
+        )
     if timezone is not None:
         # Defense in depth: TenantProfileUpdate TimezoneValue → 422 on blank/non-IANA.
         from zoneinfo import ZoneInfo
@@ -672,8 +679,10 @@ async def update_profile(
             )
         tenant.tax_jurisdiction = juris
     if tax_registration_number is not None:
-        tin = tax_registration_number.strip()
-        tenant.tax_registration_number = tin or None
+        # OpenAPI TaxRegistrationNumberValue → 422; service defense-in-depth → 400.
+        tenant.tax_registration_number = optional_honest_narrative(
+            tax_registration_number, label="tax registration number", max_length=40
+        )
     if tax_filing_period is not None:
         # Defense in depth: TenantProfileUpdate Literal rejects blank/unknown with 422.
         period = tax_filing_period.strip().lower()

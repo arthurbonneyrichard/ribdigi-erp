@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from app import storage as storage_svc
+from app.honesty import money_json
 
 # Common total labels (case-insensitive)
 _AMOUNT_PATTERNS = [
@@ -170,7 +171,7 @@ def parse_receipt_text(text: str) -> dict[str, Any]:
         description = "Receipt capture"
 
     fields = {
-        "amount": amount,
+        "amount": money_json(amount) if amount is not None else None,
         "expense_date": expense_date,
         "payee": payee,
         "description": description,
