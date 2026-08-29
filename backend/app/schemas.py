@@ -1158,7 +1158,10 @@ class StockCountCreate(BaseModel):
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped / garbage could persist on StockCount.notes Text).
     notes: StockCountNotesValue | None = None
-    product_ids: list[str] | None = None
+    # Optional seed catalog ∈ list[UuidIdValue]; omit/`null` → all warehouse stock;
+    # blank/`!!!`/`http://…`/non-UUID element → **422** (was free `list[str]`;
+    # garbage could reach product lookup). Existence remains tenant-scoped (**404**).
+    product_ids: list[UuidIdValue] | None = None
 
 
 class StockCountItemUpdate(BaseModel):
@@ -6414,15 +6417,21 @@ class BankClearGroupBody(BaseModel):
     """POST .../bank-statements/{id}/clear-group (BR-10.3).
 
     Unknown keys → **422**. Empty either id list (after stripping blanks) → **422**
-    (was free `dict` with late **400**). Optional `notes` ∈ `BankClearGroupNotesValue`;
-    omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
-    blank/garbage could persist on clearing group).
+    (was free `dict` with late **400**). Required `statement_line_ids` /
+    `journal_line_ids` ∈ `list[UuidIdValue]` (each element strip; lower; valid UUID;
+    blank/`!!!`/`http://…`/non-UUID element → **422** — was free `list[str]` with
+    blank-strip only; non-UUID garbage could reach line lookup). Optional `notes` ∈
+    `BankClearGroupNotesValue`; omit/`null` → no notes; blank/`!!!`/`http://…` →
+    **422** (was free `str`; blank/garbage could persist on clearing group).
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    statement_line_ids: list[str] = Field(min_length=1)
-    journal_line_ids: list[str] = Field(min_length=1)
+    # Required bank statement lines ∈ list[UuidIdValue]; empty after strip → **422**;
+    # non-UUID element → **422** (was free `list[str]`).
+    statement_line_ids: list[UuidIdValue] = Field(min_length=1)
+    # Required journal lines ∈ list[UuidIdValue]; same honesty as statement_line_ids.
+    journal_line_ids: list[UuidIdValue] = Field(min_length=1)
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on clearing group).
     notes: BankClearGroupNotesValue | None = None

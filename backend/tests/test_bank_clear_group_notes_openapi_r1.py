@@ -13,20 +13,23 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_A = "11111111-2222-3333-4444-555555555555"
+_B = "22222222-3333-4444-5555-666666666666"
+
 
 def test_bank_clear_group_notes_schema():
     omit = BankClearGroupBody.model_validate(
-        {"statement_line_ids": ["a"], "journal_line_ids": ["b"]}
+        {"statement_line_ids": [_A], "journal_line_ids": [_B]}
     )
     assert omit.notes is None
     nullish = BankClearGroupBody.model_validate(
-        {"statement_line_ids": ["a"], "journal_line_ids": ["b"], "notes": None}
+        {"statement_line_ids": [_A], "journal_line_ids": [_B], "notes": None}
     )
     assert nullish.notes is None
     ok = BankClearGroupBody.model_validate(
         {
-            "statement_line_ids": ["a"],
-            "journal_line_ids": ["b"],
+            "statement_line_ids": [_A],
+            "journal_line_ids": [_B],
             "notes": "  Split deposit clear  ",
         }
     )
@@ -35,8 +38,8 @@ def test_bank_clear_group_notes_schema():
         with pytest.raises(ValidationError):
             BankClearGroupBody.model_validate(
                 {
-                    "statement_line_ids": ["a"],
-                    "journal_line_ids": ["b"],
+                    "statement_line_ids": [_A],
+                    "journal_line_ids": [_B],
                     "notes": bad,
                 }
             )
@@ -68,8 +71,8 @@ async def test_bank_clear_group_notes_api_blank_invalid_422(client):
             f"/api/v1/accounting/bank-statements/{statement_id}/clear-group",
             headers=headers,
             json={
-                "statement_line_ids": ["a"],
-                "journal_line_ids": ["b"],
+                "statement_line_ids": [_A],
+                "journal_line_ids": [_B],
                 "notes": bad,
             },
         )
@@ -80,8 +83,8 @@ async def test_bank_clear_group_notes_api_blank_invalid_422(client):
         f"/api/v1/accounting/bank-statements/{statement_id}/clear-group",
         headers=headers,
         json={
-            "statement_line_ids": ["a"],
-            "journal_line_ids": ["b"],
+            "statement_line_ids": [_A],
+            "journal_line_ids": [_B],
             "notes": f"  Tip167 notes {suffix}  ",
         },
     )

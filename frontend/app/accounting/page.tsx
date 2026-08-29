@@ -807,9 +807,10 @@ export default function Page() {
     try {
       const r = await api(`/accounting/bank-statements/${selected.id}/clear-group`, {
         method: 'POST',
-        body: JSON.stringify({
-          statement_line_ids: pickBank,
-          journal_line_ids: pickBook,
+                  body: JSON.stringify({
+          // trim so Clear group (list[UuidIdValue]) does not 422 on whitespace
+          statement_line_ids: pickBank.map((id) => String(id).trim()),
+          journal_line_ids: pickBook.map((id) => String(id).trim()),
           notes: clearGroupNotes.trim() || null,
         }),
       });

@@ -12,6 +12,10 @@ from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_A = "11111111-2222-3333-4444-555555555555"
+_B = "22222222-3333-4444-5555-666666666666"
+_C = "33333333-4444-5555-6666-777777777777"
+
 
 def test_bank_match_clear_schema_forbid():
     _jl = "11111111-2222-3333-4444-555555555555"
@@ -33,27 +37,31 @@ def test_bank_match_clear_schema_forbid():
 
     group = BankClearGroupBody.model_validate(
         {
-            "statement_line_ids": ["  a  ", "", "b"],
-            "journal_line_ids": ["c"],
+            "statement_line_ids": [f"  {_A}  ", "", _B],
+            "journal_line_ids": [_C],
             "notes": "ok",
         }
     )
-    assert group.statement_line_ids == ["a", "b"]
-    assert group.journal_line_ids == ["c"]
+    assert group.statement_line_ids == [_A, _B]
+    assert group.journal_line_ids == [_C]
 
     with pytest.raises(ValidationError):
         BankClearGroupBody.model_validate(
-            {"statement_line_ids": [], "journal_line_ids": ["c"]}
+            {"statement_line_ids": [], "journal_line_ids": [_C]}
         )
     with pytest.raises(ValidationError):
         BankClearGroupBody.model_validate(
-            {"statement_line_ids": ["a"], "journal_line_ids": [""]}
+            {"statement_line_ids": [_A], "journal_line_ids": [""]}
+        )
+    with pytest.raises(ValidationError):
+        BankClearGroupBody.model_validate(
+            {"statement_line_ids": ["a"], "journal_line_ids": [_B]}
         )
     with pytest.raises(ValidationError):
         BankClearGroupBody.model_validate(
             {
-                "statement_line_ids": ["a"],
-                "journal_line_ids": ["b"],
+                "statement_line_ids": [_A],
+                "journal_line_ids": [_B],
                 "unknown": 1,
             }
         )
@@ -65,6 +73,7 @@ def test_bank_match_clear_ui_and_docs():
     assert "clear-group" in page
     assert 'aria-label="Clear selected as group"' in page
     assert 'aria-label="Match bank line to journal line"' in page
+    assert "pickBank.map((id) => String(id).trim())" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Bank recon match/clear-group OpenAPI" in agents
     assert "BankStatementMatchBody" in agents
@@ -107,7 +116,7 @@ async def test_bank_match_clear_api_unknown_422(client):
     empty_clear = await ac.post(
         f"/api/v1/accounting/bank-statements/{statement_id}/clear-group",
         headers=headers,
-        json={"statement_line_ids": [], "journal_line_ids": ["jl-x"]},
+        json={"statement_line_ids": [], "journal_line_ids": [_C]},
     )
     assert empty_clear.status_code == 422, empty_clear.text
 
@@ -115,8 +124,8 @@ async def test_bank_match_clear_api_unknown_422(client):
         f"/api/v1/accounting/bank-statements/{statement_id}/clear-group",
         headers=headers,
         json={
-            "statement_line_ids": ["a"],
-            "journal_line_ids": ["b"],
+            "statement_line_ids": [_A],
+            "journal_line_ids": [_B],
             "extra": True,
         },
     )
