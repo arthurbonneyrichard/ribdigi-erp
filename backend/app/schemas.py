@@ -3574,6 +3574,35 @@ AuditActionValue = Annotated[
 ]
 
 
+def coerce_audit_entity_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for shape 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_audit_entity_value(value: str) -> str:
+    """AfterValidator: snake_case entity shape (not a closed Literal — growing writers)."""
+    import re
+
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", value or ""):
+        raise ValueError(
+            "entity must be lowercase letters/numbers/underscore, 1–63 chars "
+            "(must start with a letter)"
+        )
+    return value
+
+
+# Shape-only Audit Logs entity Query (not a closed Literal).
+AuditEntityValue = Annotated[
+    str,
+    BeforeValidator(coerce_audit_entity_value),
+    AfterValidator(validate_audit_entity_value),
+]
+
+
 def coerce_iso_date_query_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for date 422."""
     if value is None:

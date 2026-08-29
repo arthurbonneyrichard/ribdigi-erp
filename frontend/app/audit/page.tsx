@@ -45,11 +45,21 @@ function auditActionQueryValue(raw: string): string | null {
   return v;
 }
 
+/** Keep aligned with backend AuditEntityValue (strip/lower; must start with a letter). */
+function auditEntityQueryValue(raw: string): string | null {
+  const v = raw.trim().toLowerCase();
+  if (!v) return null;
+  if (!/^[a-z][a-z0-9_]{0,62}$/.test(v)) return null;
+  return v;
+}
+
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
   const [appliedAction, setAppliedAction] = useState('');
+  const [entity, setEntity] = useState('');
+  const [appliedEntity, setAppliedEntity] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [userId, setUserId] = useState('');
@@ -66,6 +76,8 @@ export default function Page() {
     if (module) params.set('module', module);
     const actionQ = auditActionQueryValue(appliedAction);
     if (actionQ) params.set('action', actionQ);
+    const entityQ = auditEntityQueryValue(appliedEntity);
+    if (entityQ) params.set('entity', entityQ);
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
     // trim/omit so UuidIdValue Query user_id does not 422
@@ -75,7 +87,7 @@ export default function Page() {
     const r = await api(`/audit-logs${q}`);
     setRows(r.data || []);
     setError('');
-  }, [module, appliedAction, fromDate, toDate, userId]);
+  }, [module, appliedAction, appliedEntity, fromDate, toDate, userId]);
 
   const refreshPolicy = useCallback(async () => {
     const [policy, me] = await Promise.all([api('/audit-logs/retention'), api('/me')]);
@@ -117,12 +129,18 @@ export default function Page() {
         setError('Action must be snake_case (2+ chars; 2fa_* OK)');
         return;
       }
+      if (entity.trim() && !auditEntityQueryValue(entity)) {
+        setError('Entity must be snake_case starting with a letter');
+        return;
+      }
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (module) params.set('module', module);
       const actionQ = auditActionQueryValue(action);
       if (actionQ) params.set('action', actionQ);
+      const entityQ = auditEntityQueryValue(entity);
+      if (entityQ) params.set('entity', entityQ);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       const userTrim = userId.trim();
@@ -276,6 +294,13 @@ export default function Page() {
           aria-label="Audit action filter"
         />
         <input
+          value={entity}
+          onChange={(e) => setEntity(e.target.value)}
+          placeholder="Entity"
+          title="Filter by audit entity (snake_case; start with a letter)"
+          aria-label="Audit entity filter"
+        />
+        <input
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
@@ -303,8 +328,13 @@ export default function Page() {
               setError('Action must be snake_case (2+ chars; 2fa_* OK)');
               return;
             }
+            if (entity.trim() && !auditEntityQueryValue(entity)) {
+              setError('Entity must be snake_case starting with a letter');
+              return;
+            }
             setError('');
             setAppliedAction(auditActionQueryValue(action) || '');
+            setAppliedEntity(auditEntityQueryValue(entity) || '');
           }}
         >
           Filter

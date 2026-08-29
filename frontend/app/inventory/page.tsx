@@ -1843,6 +1843,7 @@ export default function Page() {
               onChange={(e) => setLookupBarcode(e.target.value)}
               placeholder="Barcode (exact)"
               style={{ minWidth: 180 }}
+              aria-label="Product lookup barcode"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -1855,6 +1856,7 @@ export default function Page() {
               onChange={(e) => setLookupQuery(e.target.value)}
               placeholder="Name / SKU search"
               style={{ minWidth: 200 }}
+              aria-label="Product lookup search"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();

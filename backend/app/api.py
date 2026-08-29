@@ -108,6 +108,11 @@ from app.schemas import (
     WebhookDeliveryStatusFilterValue,
     AuditModuleValue,
     AuditActionValue,
+    TenantRefValue,
+    RoleKeyValue,
+    BankStatementNotesValue,
+    AuditEntityValue,
+    ProductBarcodeValue,
     IsoDateQueryValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
@@ -720,7 +725,7 @@ async def tenants_list(
 
 @api.post("/tenants/{tenant_ref}/suspend")
 async def tenant_suspend_by_ref(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantSuspendRequest,
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
@@ -748,7 +753,7 @@ async def tenant_suspend_by_ref(
 
 @api.post("/tenants/{tenant_ref}/activate")
 async def tenant_activate_by_ref(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -784,7 +789,7 @@ async def packages_catalog(
 
 @api.post("/tenants/{tenant_ref}/subscription")
 async def tenant_assign_subscription(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantSubscriptionAssign,
     claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
@@ -832,7 +837,7 @@ async def tenant_assign_subscription(
 
 @api.patch("/tenants/{tenant_ref}/modules")
 async def tenant_update_modules(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantModulesUpdate,
     claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
@@ -870,7 +875,7 @@ async def tenant_update_modules(
 
 @api.get("/tenants/{tenant_ref}/usage")
 async def tenant_usage(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     claims=Depends(require_platform_permission("platform_packages", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -880,7 +885,7 @@ async def tenant_usage(
 
 @api.patch("/tenants/{tenant_ref}/store-entitlement")
 async def tenant_store_entitlement_override(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantMaxStoresOverrideUpdate,
     claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2221,7 +2226,7 @@ async def roles_catalog(
 
 @api.get("/roles/{role}")
 async def role_detail(
-    role: str,
+    role: RoleKeyValue,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2270,7 +2275,7 @@ async def create_custom_role(
 
 @api.patch("/roles/{role}")
 async def update_custom_role(
-    role: str,
+    role: RoleKeyValue,
     payload: CustomRoleUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2304,7 +2309,7 @@ async def update_custom_role(
 
 @api.delete("/roles/{role}")
 async def delete_custom_role(
-    role: str,
+    role: RoleKeyValue,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4128,7 +4133,7 @@ async def inventory_warehouse_stock_reorder(
 @api.get("/inventory/products/lookup")
 async def inventory_products_lookup(
     q: str = "",
-    barcode: str | None = None,
+    barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
     limit: int = 48,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -7429,7 +7434,7 @@ async def pos_sale(
 @api.get("/pos/products/search")
 async def pos_search(
     q: str = "",
-    barcode: str | None = None,
+    barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8693,7 +8698,7 @@ async def import_bank_statement(
     opening_balance: float | None = None,
     closing_balance: float | None = None,
     statement_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    notes: str | None = None,
+    notes: Annotated[BankStatementNotesValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11515,7 +11520,7 @@ async def notifications_unread_count(
 
 @api.patch("/notifications/{nid}/read")
 async def notification_read(
-    nid: str,
+    nid: UuidIdValue,
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11528,7 +11533,7 @@ async def notification_read(
 
 @api.patch("/notifications/{nid}/unread")
 async def notification_unread(
-    nid: str,
+    nid: UuidIdValue,
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11668,7 +11673,7 @@ async def audit_logs(
     user_id: Annotated[UuidIdValue | None, Query()] = None,
     module: Annotated[AuditModuleValue | None, Query()] = None,
     action: Annotated[AuditActionValue | None, Query()] = None,
-    entity: str | None = None,
+    entity: Annotated[AuditEntityValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     limit: int = 200,
@@ -11741,6 +11746,7 @@ async def audit_logs_export(
     user_id: Annotated[UuidIdValue | None, Query()] = None,
     module: Annotated[AuditModuleValue | None, Query()] = None,
     action: Annotated[AuditActionValue | None, Query()] = None,
+    entity: Annotated[AuditEntityValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("audit", "read")),
@@ -11756,6 +11762,7 @@ async def audit_logs_export(
         user_id=scoped_user,
         module=module,
         action=action,
+        entity=entity,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=1000,

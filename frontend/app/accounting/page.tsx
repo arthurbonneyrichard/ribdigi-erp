@@ -595,6 +595,9 @@ export default function Page() {
       });
       if (closing !== '' && closing != null) qs.set('closing_balance', String(Number(closing)));
       if (stmtDate) qs.set('statement_date', stmtDate);
+      // omit blank so BankStatementNotesValue Query notes does not 422
+      const notesTrim = stmtNotes.trim();
+      if (notesTrim) qs.set('notes', notesTrim);
       const res = await fetch(`${apiBase}/accounting/bank-statements/import?${qs}`, {
         method: 'POST',
         headers: {
