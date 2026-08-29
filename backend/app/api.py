@@ -114,6 +114,7 @@ from app.schemas import (
     AuditEntityValue,
     ProductBarcodeValue,
     ReceiptOverrideToValue,
+    FiniteMoneyValue,
     ProductSearchQueryValue,
     IsoDateQueryValue,
     SalesReturnReportReasonValue,
@@ -8701,8 +8702,9 @@ async def create_bank_statement(
 async def import_bank_statement(
     account_id: UuidIdValue,
     file: UploadFile = File(...),
-    opening_balance: float | None = None,
-    closing_balance: float | None = None,
+    # omit/`null` → feed/default; nan/inf/out-of-range → **422** (was free float)
+    opening_balance: Annotated[FiniteMoneyValue | None, Query()] = None,
+    closing_balance: Annotated[FiniteMoneyValue | None, Query()] = None,
     statement_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     notes: Annotated[BankStatementNotesValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "write")),
@@ -12624,7 +12626,8 @@ async def ai_documents_analyze(
     file: UploadFile = File(...),
     # None default (not "auto"): empty Form "" must 422, not silently become auto.
     document_type: Annotated[AiDocumentTypeValue | None, Form()] = None,
-    expected_amount: float | None = Form(None),
+    # omit/`null` → no expected amount; nan/inf/out-of-range → **422** (was free float)
+    expected_amount: Annotated[FiniteMoneyValue | None, Form()] = None,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):

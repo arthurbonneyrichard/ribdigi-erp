@@ -20,6 +20,7 @@ export default function Page() {
   const [predictionRiskReason, setPredictionRiskReason] = useState('');
   const [lastDocExtract, setLastDocExtract] = useState<any | null>(null);
   const [documentType, setDocumentType] = useState<'auto' | 'receipt' | 'invoice' | 'purchase_order'>('auto');
+  const [expectedAmount, setExpectedAmount] = useState('');
   const [draftExpenseBusy, setDraftExpenseBusy] = useState(false);
   const [draftPiBusy, setDraftPiBusy] = useState(false);
   const [tmplName, setTmplName] = useState('');
@@ -442,6 +443,15 @@ export default function Page() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('document_type', documentType);
+      const amt = expectedAmount.trim();
+      if (amt !== '') {
+        const n = Number(amt);
+        if (!Number.isFinite(n)) {
+          setError('Expected amount must be a finite number');
+          return;
+        }
+        fd.append('expected_amount', String(n));
+      }
       const r = await api('/ai/documents/analyze', { method: 'POST', body: fd });
       const d = r.data || {};
       setLastDocExtract(d);
@@ -633,6 +643,16 @@ export default function Page() {
               <option value="purchase_order">purchase_order</option>
             </select>
           </label>
+          <input
+            type="number"
+            step="any"
+            value={expectedAmount}
+            onChange={(e) => setExpectedAmount(e.target.value)}
+            placeholder="Expected amount (optional)"
+            title="Optional expected amount for discrepancy checks (finite money)"
+            aria-label="AI document expected amount"
+            style={{ width: 180 }}
+          />
           <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
             <span style={{ border: '1px solid #ccc', padding: '6px 10px', borderRadius: 4 }}>Analyze document</span>
             <input

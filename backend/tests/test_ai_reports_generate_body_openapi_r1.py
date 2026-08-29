@@ -25,12 +25,26 @@ def test_ai_reports_generate_body_schema_forbid():
             "report_type": "Sales_Monthly",
             "period": "  this_month  ",
             "format": "xlsx",
-            "params": {"warehouse_id": "w1"},
+            "params": {
+                "warehouse_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                "year": 2026,
+                "month": 8,
+            },
         }
     )
     assert structured.report_type == "sales_monthly"
     assert structured.period == "this_month"
-    assert structured.params == {"warehouse_id": "w1"}
+    assert structured.params is not None
+    assert structured.params.warehouse_id == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    assert structured.params.year == 2026
+    with pytest.raises(ValidationError):
+        AiReportsGenerateBody.model_validate(
+            {"report_type": "sales_monthly", "params": {"warehouse_id": "w1"}}
+        )
+    with pytest.raises(ValidationError):
+        AiReportsGenerateBody.model_validate(
+            {"report_type": "sales_monthly", "filters": {"evil": True}}
+        )
 
     with pytest.raises(ValidationError):
         AiReportsGenerateBody.model_validate({})

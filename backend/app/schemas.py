@@ -6010,6 +6010,33 @@ ReportTypeValue = Annotated[
 ]
 
 
+class AiReportFilters(BaseModel):
+    """AI report `filters` / `params` bag (BR-21.7).
+
+    Unknown keys → **422** (`extra=forbid`). Optional fields mirror report-export
+    Query honesty (dates / UUIDs / year-month / days / jurisdiction). Was free
+    `dict[str, Any]` — garbage keys and non-UUID ids could reach
+    `build_report_payload`. Shared by generate + export bodies (`params` alias).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    from_date: IsoDateQueryValue | None = None
+    to_date: IsoDateQueryValue | None = None
+    date: IsoDateQueryValue | None = None
+    as_of: IsoDateQueryValue | None = None
+    year: int | None = Field(default=None, ge=2000, le=2100)
+    month: int | None = Field(default=None, ge=1, le=12)
+    days: int | None = Field(default=None, ge=1, le=365)
+    warehouse_id: UuidIdValue | None = None
+    store_id: UuidIdValue | None = None
+    branch_id: UuidIdValue | None = None
+    category_id: UuidIdValue | None = None
+    department_id: UuidIdValue | None = None
+    jurisdiction: TaxFilingJurisdictionValue | None = None
+    compare: BalanceSheetCompareValue | None = None
+
+
 class AiReportsGenerateBody(BaseModel):
     """POST /ai/reports/generate — typed report generator body (BR-21.7).
 
@@ -6025,8 +6052,8 @@ class AiReportsGenerateBody(BaseModel):
     `http://…` → **422** (was free `str` soft-nulled on blank; punctuation/URL could
     reach period_label / parse_prompt). Invalid `format` / `report_type` → **422**
     (format garbage was silently remapped to csv; unknown report_type was late **400**).
-    `params` is an alias for `filters`. Service `generate_report` / `parse_prompt`
-    remain defense-in-depth.
+    Optional `filters` / `params` ∈ `AiReportFilters` (`extra=forbid`; was free
+    `dict[str, Any]`). Service `generate_report` / `parse_prompt` remain defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -6040,8 +6067,8 @@ class AiReportsGenerateBody(BaseModel):
     report_type: ReportTypeValue | None = None
     # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
     period: AiReportPeriodValue | None = None
-    filters: dict[str, Any] | None = None
-    params: dict[str, Any] | None = None
+    filters: AiReportFilters | None = None
+    params: AiReportFilters | None = None
 
     @model_validator(mode="after")
     def _require_prompt_template_or_type(self) -> AiReportsGenerateBody:
@@ -6064,8 +6091,8 @@ class AiReportsExportBody(BaseModel):
     `http://…` → **422** (field was absent — unknown `period` key → **422** via
     `extra=forbid`; generate already typed the same Value). `format` ∈ csv|pdf|xlsx
     (omit → **csv**; blank/invalid → **422** — was free `dict` with `or "csv"`).
-    Invalid `report_type` → **422**. Service `export_from_intent` remains
-    defense-in-depth.
+    Invalid `report_type` → **422**. Optional `filters` / `params` ∈ `AiReportFilters`
+    (same honesty as generate). Service `export_from_intent` remains defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -6080,8 +6107,8 @@ class AiReportsExportBody(BaseModel):
     # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
     # (same AiReportPeriodValue as AiReportsGenerateBody.period).
     period: AiReportPeriodValue | None = None
-    filters: dict[str, Any] | None = None
-    params: dict[str, Any] | None = None
+    filters: AiReportFilters | None = None
+    params: AiReportFilters | None = None
 
     @model_validator(mode="after")
     def _require_prompt_template_or_type(self) -> AiReportsExportBody:
@@ -6462,6 +6489,14 @@ class BankStatementLineCreate(BaseModel):
         return float(value)
 
 
+# Finite money amounts for Query/Form/body balances — reject NaN/Inf and absurd
+# magnitudes (was unconstrained `float`; `nan`/`inf`/1e308 could persist or break math).
+FiniteMoneyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-1_000_000_000_000_000, le=1_000_000_000_000_000),
+]
+
+
 class BankStatementCreateBody(BaseModel):
     """POST /accounting/bank-statements (BR-10.3).
 
@@ -6473,8 +6508,10 @@ class BankStatementCreateBody(BaseModel):
     blank/invalid → **422** (blank was silent today; invalid was uncaught **500**).
     Optional `notes` ∈ `BankStatementNotesValue`; omit/`null` → no notes; blank/
     `!!!`/`http://…` → **422** (was free `str`; blank silently dropped via
-    strip-to-None / garbage could persist). Service `create_statement` remains
-    defense-in-depth.
+    strip-to-None / garbage could persist). Optional `opening_balance` /
+    `closing_balance` ∈ `FiniteMoneyValue` (finite; ±1e15; omit → 0; `nan`/`inf`/
+    out-of-range → **422** — was unconstrained `float`). Service `create_statement`
+    remains defense-in-depth.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -6484,8 +6521,8 @@ class BankStatementCreateBody(BaseModel):
     # Existence remains tenant-scoped liquid account lookup (**404**).
     account_id: UuidIdValue
     statement_date: IsoDateQueryValue | None = None
-    opening_balance: float = 0
-    closing_balance: float = 0
+    opening_balance: FiniteMoneyValue = 0
+    closing_balance: FiniteMoneyValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped via strip-to-None / garbage could persist).
     notes: BankStatementNotesValue | None = None
