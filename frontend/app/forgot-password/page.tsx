@@ -35,7 +35,7 @@ function ForgotPasswordForm() {
     try {
       const r = await api('/auth/password-reset-request', {
         method: 'POST',
-        body: JSON.stringify({ email, tenant_id: trimmedTenant }),
+        body: JSON.stringify({ email: email.trim(), tenant_id: trimmedTenant }),
       });
       setMessage(
         r.message ||
@@ -90,6 +90,7 @@ function ForgotPasswordForm() {
           <label className="login-field">
             <span>Email</span>
             <input
+              aria-label="Password reset email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"

@@ -206,7 +206,7 @@ export default function Page() {
           preferred_supplier_id: x.preferred_supplier_id
             ? String(x.preferred_supplier_id).trim()
             : null,
-          notes: x.notes || null,
+          notes: String(x.notes || '').trim() || null,
           // Optional UI override; else prediction risk_reason; blank → null (omit).
           risk_reason:
             predictionRiskReason.trim() ||

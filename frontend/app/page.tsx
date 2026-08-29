@@ -140,7 +140,7 @@ export default function Login() {
       const r = await api('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           password: trimmedPassword,
           tenant_id: trimmedTenant,
           totp_code: totpCode.trim() || null,
@@ -179,7 +179,7 @@ export default function Login() {
     try {
       const r = await api('/auth/resend-verification', {
         method: 'POST',
-        body: JSON.stringify({ email, tenant_id: trimmedTenant }),
+        body: JSON.stringify({ email: email.trim(), tenant_id: trimmedTenant }),
       });
       setVerifyMessage(r.message || 'If verification is needed, a link was sent');
       if (r.data?.verification_token) {
@@ -229,6 +229,7 @@ export default function Login() {
               <label className="login-field">
                 <span>Email</span>
                 <input
+                  aria-label="Login email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"

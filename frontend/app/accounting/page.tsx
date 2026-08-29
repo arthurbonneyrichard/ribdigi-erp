@@ -639,7 +639,8 @@ export default function Page() {
           provider: connProvider,
           display_name: displayName || null,
           external_account_id: connExtId.trim() || null,
-          feed_url: connProvider === 'http_json' ? connFeedUrl : null,
+          feed_url:
+            connProvider === 'http_json' ? connFeedUrl.trim() || null : null,
           access_token:
             connProvider === 'http_json' && connAccessToken.trim()
               ? connAccessToken.trim()

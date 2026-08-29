@@ -312,7 +312,7 @@ export default function Page() {
           profile_type: customerProfileType || 'registered',
           category: customerCategory.trim() || null,
           status: customerStatus || 'active',
-          email: customerEmail || null,
+          email: customerEmail.trim() || null,
           phone: customerPhone.trim() || null,
           // null when blank so Create does not 422 (AddressValue).
           address: customerAddress.trim() || null,
@@ -1156,6 +1156,7 @@ export default function Page() {
             value={customerEmail}
             onChange={(e) => setCustomerEmail(e.target.value)}
             placeholder="Customer email"
+            aria-label="Customer email"
           />
           <input
             value={customerPhone}
