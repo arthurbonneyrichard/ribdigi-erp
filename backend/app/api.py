@@ -9441,8 +9441,10 @@ async def reports_export(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    year: int | None = None,
-    month: int | None = None,
+    # omit/`null` → export default year; <2000/>2100 → **422** (was free int)
+    year: Annotated[int, Query(ge=2000, le=2100)] | None = None,
+    # omit/`null` → export default month; <1/>12 → **422** (was free int)
+    month: Annotated[int, Query(ge=1, le=12)] | None = None,
     # Optional location/category filters ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`).
     warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
@@ -9626,8 +9628,10 @@ async def report_sales_daily(
 
 @api.get("/reports/sales/monthly")
 async def report_sales_monthly(
-    year: int | None = None,
-    month: int | None = None,
+    # omit/`null` → current UTC year; <2000/>2100 → **422** (was free int)
+    year: Annotated[int, Query(ge=2000, le=2100)] | None = None,
+    # omit/`null` → current UTC month; <1/>12 → **422** (was free int)
+    month: Annotated[int, Query(ge=1, le=12)] | None = None,
     store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -11685,7 +11689,8 @@ async def audit_logs(
     entity: Annotated[AuditEntityValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    limit: int = 200,
+    # omit → 200; 0/negative/>1000 → **422** (was free int; service only capped at 1000)
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11716,7 +11721,8 @@ async def audit_logs_retention(
 
 @api.get("/audit-logs/archives")
 async def audit_logs_archives(
-    limit: int = 50,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service capped at 200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11728,7 +11734,8 @@ async def audit_logs_archives(
 
 @api.post("/audit-logs/archive-cold")
 async def audit_logs_archive_cold(
-    older_than_days: int | None = None,
+    # omit/`null` → retention policy days; 0/negative/>3650 → **422** (was free int; service max(1, days))
+    older_than_days: Annotated[int, Query(ge=1, le=3650)] | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12280,7 +12287,8 @@ async def webhooks_test_delivery(
 async def webhooks_list_deliveries(
     webhook_id: UuidIdValue,
     status: Annotated[WebhookDeliveryStatusFilterValue | None, Query()] = None,
-    limit: int = 50,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12395,7 +12403,8 @@ async def ai_status(claims=Depends(require_permission("ai", "read"))):
 
 @api.get("/ai/queries")
 async def ai_queries(
-    limit: int = 50,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12405,8 +12414,10 @@ async def ai_queries(
 
 @api.get("/ai/security/alerts")
 async def ai_security_alerts(
-    limit: int = 50,
-    min_score: int | None = None,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    # omit/`null` → no floor; <0/>100 → **422** (was free int)
+    min_score: Annotated[int, Query(ge=0, le=100)] | None = None,
     scan: bool = False,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
@@ -12730,7 +12741,8 @@ async def ai_reports_export(
 
 @api.get("/ai/reports/templates")
 async def ai_report_templates_list(
-    limit: int = 50,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):

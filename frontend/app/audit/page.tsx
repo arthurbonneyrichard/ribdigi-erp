@@ -218,7 +218,7 @@ export default function Page() {
           </div>
           {canArchive && (
             <div>
-              <button type="button" onClick={archiveCold} disabled={busy}>
+              <button type="button" onClick={archiveCold} disabled={busy} aria-label="Archive cold audit logs">
                 {busy ? 'Archiving…' : 'Archive cold now'}
               </button>
             </div>
