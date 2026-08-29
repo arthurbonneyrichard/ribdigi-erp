@@ -213,7 +213,9 @@ async def sales_monthly(
         "pos_count": len(pos_rows),
         "total_revenue": money_json(round(total, 2)),
         "previous_month_revenue": money_json(prev),
-        "change_pct": round(((total - prev) / prev) * 100, 2) if prev else None,
+        "change_pct": (
+            money_json(round(((total - prev) / prev) * 100, 2)) if prev else None
+        ),
         "daily": [
             {"date": d, "revenue": money_json(round(money_json(v), 2))}
             for d, v in sorted(by_day.items())
@@ -399,6 +401,9 @@ async def sales_by_product(
             row["revenue"] = round(row["revenue"] + revenue, 2)
 
     products = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
+    for row in products:
+        row["quantity"] = money_json(round(row["quantity"], 3))
+        row["revenue"] = money_json(round(row["revenue"], 2))
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -534,8 +539,17 @@ async def sales_by_customer(
         row["avg_ticket"] = (
             money_json(round(row["revenue"] / row["sale_count"], 2))
             if row["sale_count"]
-            else 0.0
+            else money_json(0)
         )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     customers = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
     if limit is not None and limit > 0:
@@ -646,7 +660,7 @@ async def sales_returns_summary(
                 )
             )
         ).scalars().all()
-        qty = round(sum(money_json(i.quantity) for i in items), 3)
+        qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
         amount = money_json(ret.total_amount)
         refunded = money_json(ret.refunded_amount)
         total_amount += amount
@@ -915,8 +929,17 @@ async def sales_by_salesperson(
         row["avg_ticket"] = (
             money_json(round(row["revenue"] / row["sale_count"], 2))
             if row["sale_count"]
-            else 0.0
+            else money_json(0)
         )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     salespeople = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
     return {
@@ -1060,8 +1083,17 @@ async def sales_by_store(
         row["avg_ticket"] = (
             money_json(round(row["revenue"] / row["sale_count"], 2))
             if row["sale_count"]
-            else 0.0
+            else money_json(0)
         )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     # Drop pure zero rows for unknown only if empty; keep real stores even at zero.
     stores_out = []
@@ -1212,8 +1244,17 @@ async def sales_by_department(
         row["avg_ticket"] = (
             money_json(round(row["revenue"] / row["sale_count"], 2))
             if row["sale_count"]
-            else 0.0
+            else money_json(0)
         )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     departments_out = []
     for key, row in agg.items():
@@ -1837,9 +1878,9 @@ async def inventory_transfers(
                 )
             )
         ).scalars().all()
-        qty = round(sum(money_json(i.quantity) for i in items), 3)
-        shipped_qty = round(sum(money_json(i.shipped_qty) for i in items), 3)
-        received_qty = round(sum(money_json(i.received_qty) for i in items), 3)
+        qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
+        shipped_qty = money_json(round(sum(money_json(i.shipped_qty) for i in items), 3))
+        received_qty = money_json(round(sum(money_json(i.received_qty) for i in items), 3))
         total_qty += qty
         by_status[xfer.status] += 1
         route_key = f"{xfer.from_store_id}->{xfer.to_store_id}"
@@ -1884,6 +1925,8 @@ async def inventory_transfers(
         )
 
     routes = sorted(by_route.values(), key=lambda x: x["transfer_count"], reverse=True)
+    for row in routes:
+        row["quantity"] = money_json(round(row["quantity"], 3))
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -2298,9 +2341,9 @@ async def purchases_pending_orders(
                 )
             )
         ).scalars().all()
-        ordered_qty = round(sum(money_json(i.quantity) for i in items), 3)
-        received_qty = round(sum(money_json(i.received_qty) for i in items), 3)
-        outstanding_qty = round(max(ordered_qty - received_qty, 0), 3)
+        ordered_qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
+        received_qty = money_json(round(sum(money_json(i.received_qty) for i in items), 3))
+        outstanding_qty = money_json(round(max(ordered_qty - received_qty, 0), 3))
         amount = money_json(po.total_amount)
         by_status[po.status] += 1
         total_amount += amount
@@ -2440,7 +2483,7 @@ async def purchases_returns_summary(
                 )
             )
         ).scalars().all()
-        qty = round(sum(money_json(i.quantity) for i in items), 3)
+        qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
         amount = money_json(ret.total_amount)
         total_amount += amount
         total_qty += qty
@@ -2792,7 +2835,9 @@ async def budget_vs_actual(
             variance_pct = None
         else:
             variance = actual - scaled
-            variance_pct = round((variance / scaled) * 100.0, 1) if scaled else 0.0
+            variance_pct = (
+                money_json(round((variance / scaled) * 100.0, 1)) if scaled else money_json(0)
+            )
             if abs(variance) < 0.01:
                 status = "on_budget"
             elif variance > 0:
@@ -2807,7 +2852,7 @@ async def budget_vs_actual(
                 "code": cat.code,
                 "category": cat.name,
                 "budget_monthly": money_json(round(budget_monthly, 2)),
-                "budget_scaled": money_json(round(scaled, 2)) if budget_monthly > 0 else 0.0,
+                "budget_scaled": money_json(round(scaled, 2)) if budget_monthly > 0 else money_json(0),
                 "actual": money_json(round(actual, 2)),
                 "variance": money_json(round(variance, 2)),
                 "variance_pct": variance_pct,
@@ -2823,8 +2868,8 @@ async def budget_vs_actual(
                 "category_id": None,
                 "code": None,
                 "category": "Uncategorized",
-                "budget_monthly": 0.0,
-                "budget_scaled": 0.0,
+                "budget_monthly": money_json(0),
+                "budget_scaled": money_json(0),
                 "actual": money_json(round(uncategorized, 2)),
                 "variance": money_json(round(uncategorized, 2)),
                 "variance_pct": None,

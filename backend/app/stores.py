@@ -312,9 +312,11 @@ async def store_inventory(
                 "reorder_level": reorder,
                 "reorder_qty": reorder_qty,
                 "below_reorder": reorder > 0 and qty <= reorder,
-                "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3))
-                if reorder > 0 and qty <= reorder
-                else reorder_qty,
+                "suggested_order_qty": (
+                    money_json(max(reorder_qty, round(reorder - qty, 3)))
+                    if reorder > 0 and qty <= reorder
+                    else reorder_qty
+                ),
                 "warehouse_id": wh.id,
                 "consolidated_stock": money_json(product.stock_qty),
             }

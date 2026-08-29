@@ -79,8 +79,8 @@ async def apply_warehouse_stock_change(
             detail={
                 "code": "INSUFFICIENT_WAREHOUSE_STOCK",
                 "message": "Insufficient stock at source warehouse",
-                "available": before,
-                "requested": abs(float(quantity_delta)),
+                "available": money_json(before),
+                "requested": money_json(abs(float(quantity_delta))),
                 "warehouse_id": warehouse_id,
                 "product_id": product_id,
             },
@@ -251,8 +251,8 @@ async def apply_stock_change(
             detail={
                 "code": "INSUFFICIENT_STOCK",
                 "message": f"Insufficient stock for {product.sku}",
-                "available": before,
-                "requested": abs(float(quantity_delta)),
+                "available": money_json(before),
+                "requested": money_json(abs(float(quantity_delta))),
             },
         )
 
@@ -480,9 +480,11 @@ async def list_warehouse_stock(
                 "reorder_level": reorder,
                 "reorder_qty": reorder_qty,
                 "below_reorder": reorder > 0 and qty <= reorder,
-                "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3))
-                if reorder > 0 and qty <= reorder
-                else reorder_qty,
+                "suggested_order_qty": (
+                    money_json(max(reorder_qty, round(reorder - qty, 3)))
+                    if reorder > 0 and qty <= reorder
+                    else reorder_qty
+                ),
                 "warehouse_id": wh.id,
                 "consolidated_stock": money_json(product.stock_qty),
             }

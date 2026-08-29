@@ -59,7 +59,11 @@ def seasonality_hint(*, recent_velocity: float, prior_velocity: float) -> dict[s
         label = "falling"
     else:
         label = "stable"
-    return {"detected": label != "stable", "ratio": round(ratio, 3), "label": label}
+    return {
+        "detected": label != "stable",
+        "ratio": money_json(round(ratio, 3)),
+        "label": label,
+    }
 
 
 async def _sales_qty_by_product(
@@ -229,7 +233,7 @@ async def build_product_forecasts(
                 "recommended_order_qty": money_json(rec),
                 "lead_time_days": lead,
                 "cover_days": cover,
-                "confidence": conf,
+                "confidence": money_json(conf),
                 "seasonality": season,
                 "dead_stock": False,  # filled below
             }
