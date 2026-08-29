@@ -2333,7 +2333,11 @@ export default function Page() {
               {selected.can_amend && (
                 <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
                   <h4 style={{ margin: 0 }}>Amend (first line)</h4>
-                  <select value={amendUnitId} onChange={(e) => setAmendUnitId(e.target.value)}>
+                  <select
+                    value={amendUnitId}
+                    onChange={(e) => setAmendUnitId(e.target.value)}
+                    aria-label="PO unit"
+                  >
                     <option value="">Unit (product default)</option>
                     {units.map((u) => (
                       <option key={u.id} value={u.id}>

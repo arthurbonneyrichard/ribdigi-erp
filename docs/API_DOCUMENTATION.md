@@ -44,46 +44,34 @@
 - All requests and responses use **JSON**.
 - Content-Type header must be: `application/json`
 - Date format: **ISO 8601** (`YYYY-MM-DDTHH:MM:SSZ`)
-- Currency values are sent as **decimal strings** (e.g., `"199.99"`) to preserve precision.
+- Currency / money fields on **request bodies** are JSON **numbers** (IEEE-754 doubles via Pydantic `float` Values such as `PositiveMoneyValue` / `NonNegativeMoneyValue`). Clients may send `199.99` (not required as `"199.99"` strings). NaN/Inf and out-of-range values → **422**.
+- Currency / money fields in **responses** are likewise JSON **numbers** (serializers use `float(...)`, e.g. sales invoice `subtotal` / `total_amount`).
 
 ### 1.2 Response Envelope
-Every API response follows a standard envelope:
+Successful API responses use the `env()` helper envelope:
 
 ```json
 {
   "success": true,
   "data": { ... },
-  "message": "Operation completed successfully",
-  "timestamp": "2026-08-07T13:51:00Z",
-  "request_id": "req_8f3a9b2c1d4e"
+  "message": "Operation completed successfully"
 }
 ```
 
+There is **no** `timestamp` or `request_id` field in the JSON body. Correlation uses the **`X-Request-ID`** response header (echoes a client-supplied id when safe; otherwise a generated hex id). See `docs/OPS_MONITORING_MVP.md`.
+
 ### 1.3 Pagination
-List endpoints support cursor-based pagination:
+Most list endpoints return an **unpaginated** array in `data` (no `cursor` / `limit` / `sort` list Query contract, no `{ items, pagination }` wrapper):
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `limit` | integer | Max items per page (default: 20, max: 100) |
-| `cursor` | string | Opaque cursor for next page |
-| `sort` | string | Sort field (e.g., `-created_at` for descending) |
-
-**Pagination Response:**
 ```json
 {
   "success": true,
-  "data": {
-    "items": [...],
-    "pagination": {
-      "total_count": 150,
-      "has_next": true,
-      "next_cursor": "c2Nhbjs1OzM6",
-      "limit": 20
-    }
-  }
+  "data": [ ... ],
+  "message": "Operation completed successfully"
 }
 ```
 
+A few surfaces expose their own bounded `limit` Query params (e.g. audit logs) — those are documented on the endpoint, not a global cursor protocol.
 ### 1.4 HTTP Methods
 | Method | Usage |
 |--------|-------|
@@ -1953,22 +1941,22 @@ X-RateLimit-Reset: 1691415060
 | `500` | Internal Server Error |
 
 ### Error Response Format
+FastAPI validation / `HTTPException` errors use the framework shape (not the success `env()` envelope). Typical **422** validation:
+
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "The request validation failed",
-    "details": [
-      {
-        "field": "email",
-        "message": "Email is required"
-      }
-    ]
-  },
-  "request_id": "req_8f3a9b2c1d4e"
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body", "email"],
+      "msg": "...",
+      "input": "..."
+    }
+  ]
 }
 ```
+
+Business errors often return `detail` as a string or `{ "code": "CREDIT_LIMIT_EXCEEDED", "message": "...", ... }`. Correlation remains the **`X-Request-ID`** header (not a body `request_id` field).
 
 ### Common Error Codes
 | Code | Description |
@@ -1992,11 +1980,11 @@ X-RateLimit-Reset: 1691415060
 
 | Type | Format | Example |
 |------|--------|---------|
-| `id` | string | `usr_001`, `prod_abc123` |
-| `decimal` | string | `"199.99"` |
-| `date` | ISO 8601 | `2026-08-07` |
-| `datetime` | ISO 8601 | `2026-08-07T13:51:00Z` |
-| `currency` | ISO 4217 | `USD`, `EUR`, `NGN` |
+| `id` | string (UUID) | `11111111-2222-3333-4444-555555555555` |
+| `decimal` / money | JSON number | `199.99` |
+| `date` | ISO 8601 date | `2026-08-07` |
+| `datetime` | ISO 8601 datetime | `2026-08-07T13:51:00Z` |
+| `currency` | ISO 4217 | `USD`, `EUR`, `GHS` |
 | `status` | string enum | `active`, `inactive`, `pending` |
 
 ## Appendix B: Multi-Tenant Headers
@@ -2007,6 +1995,14 @@ All API requests (except tenant registration) must include:
 X-Tenant-ID: tenant_abc123
 Authorization: Bearer <jwt_token>
 ```
+
+Optional / response correlation:
+
+```
+X-Request-ID: <client-or-server-id>
+```
+
+The API echoes a safe client `X-Request-ID` or generates one; it is **not** duplicated as a JSON body field on success/`env()` responses.
 
 ---
 

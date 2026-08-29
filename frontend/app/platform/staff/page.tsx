@@ -351,6 +351,7 @@ export default function PlatformStaffPage() {
                       value={u.role}
                       disabled={busy}
                       onChange={(e) => changeRole(u, e.target.value)}
+                      aria-label={`Change platform staff role for ${u.email}`}
                     >
                       {roles.map((r) => (
                         <option key={r.key} value={r.key}>
