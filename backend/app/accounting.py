@@ -741,15 +741,15 @@ async def stock_qty_for_cogs(
         )
     ).scalar_one_or_none()
     if not product:
-        return float(quantity or 0)
+        return money_json(quantity or 0)
     qty_base, _, _ = await to_stock_qty(
         db,
         tenant_id=tenant_id,
-        quantity=float(quantity),
+        quantity=money_json(quantity),
         from_unit_id=unit_id,
         product=product,
     )
-    return float(qty_base)
+    return money_json(qty_base)
 
 
 async def compute_standard_cogs(
@@ -793,7 +793,7 @@ async def compute_standard_cogs(
 
 def append_cogs_lines(lines: list[dict], cogs: float, *, reverse: bool = False) -> None:
     """Append Dr 5000 / Cr 1200 (or reverse) when cogs > 0."""
-    cogs = money_json(round(float(cogs or 0), 2))
+    cogs = money_json(round(money_json(cogs or 0), 2))
     if cogs <= 0:
         return
     if reverse:
@@ -950,7 +950,7 @@ async def post_sales_return_refund_journal(
 ) -> m.JournalEntry:
     """Pay out customer credit from a return: Dr AR, Cr cash/bank."""
     await ensure_default_accounts(db, tenant_id)
-    amount = round(float(amount), 2)
+    amount = money_json(round(money_json(amount), 2))
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Refund amount must be positive")
     liquid_code, liquid_label = await resolve_settlement_gl(
@@ -994,8 +994,8 @@ async def post_customer_payment_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, fx_lines_for_receipt, to_base
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     pay_rate = doc_rate(payment)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -1077,8 +1077,8 @@ async def post_supplier_payment_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, fx_lines_for_payment, to_base
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     pay_rate = doc_rate(payment)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -1204,7 +1204,7 @@ async def post_purchase_return_journal(
 ) -> m.JournalEntry:
     """Reverse GRN impact: Dr AP / Cr Inventory for return total (tax-inclusive inventory value)."""
     await ensure_default_accounts(db, tenant_id)
-    total = float(purchase_return.total_amount)
+    total = money_json(purchase_return.total_amount)
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1234,12 +1234,15 @@ async def post_purchase_invoice_journal(
     rate = doc_rate(purchase_invoice)
     net = to_base(
         round(
-            float(purchase_invoice.subtotal or 0) - float(purchase_invoice.discount_amount or 0),
+            money_json(purchase_invoice.subtotal or 0)
+            - money_json(purchase_invoice.discount_amount or 0),
             2,
         ),
         rate,
     )
-    rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
+    rc = to_base(
+        money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
+    )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
     if is_rc:
         lines = [
@@ -1249,8 +1252,8 @@ async def post_purchase_invoice_journal(
             {"account_code": "2100", "debit": 0, "credit": rc, "description": "Tax payable (RC self-assess)"},
         ]
     else:
-        total = to_base(float(purchase_invoice.total_amount), rate)
-        tax = to_base(float(purchase_invoice.tax_amount or 0), rate)
+        total = to_base(money_json(purchase_invoice.total_amount), rate)
+        tax = to_base(money_json(purchase_invoice.tax_amount or 0), rate)
         if tax > 0 and abs(total - (net + tax)) < 0.02:
             lines = [
                 {"account_code": "1200", "debit": net, "credit": 0, "description": "Inventory/purchases"},
@@ -1287,12 +1290,15 @@ async def post_purchase_invoice_reversal_journal(
     rate = doc_rate(purchase_invoice)
     net = to_base(
         round(
-            float(purchase_invoice.subtotal or 0) - float(purchase_invoice.discount_amount or 0),
+            money_json(purchase_invoice.subtotal or 0)
+            - money_json(purchase_invoice.discount_amount or 0),
             2,
         ),
         rate,
     )
-    rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
+    rc = to_base(
+        money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
+    )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
     if is_rc:
         lines = [
@@ -1302,8 +1308,8 @@ async def post_purchase_invoice_reversal_journal(
             {"account_code": "1300", "debit": 0, "credit": rc, "description": "Input tax reverse"},
         ]
     else:
-        total = to_base(float(purchase_invoice.total_amount), rate)
-        tax = to_base(float(purchase_invoice.tax_amount or 0), rate)
+        total = to_base(money_json(purchase_invoice.total_amount), rate)
+        tax = to_base(money_json(purchase_invoice.tax_amount or 0), rate)
         if tax > 0 and abs(total - (net + tax)) < 0.02:
             lines = [
                 {"account_code": "2000", "debit": total, "credit": 0, "description": "AP reverse"},
@@ -1335,7 +1341,7 @@ async def post_expense_journal(
     expense: m.Expense,
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
-    amount = float(expense.amount)
+    amount = money_json(expense.amount)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
         tenant_id,
@@ -1393,8 +1399,8 @@ async def post_pos_sale_journal(
 ) -> m.JournalEntry:
     """Post POS sale GL; supports split tenders as multiple debit lines."""
     await ensure_default_accounts(db, tenant_id)
-    amount = float(tx.total or 0)
-    tax = float(tx.tax or 0)
+    amount = money_json(tx.total or 0)
+    tax = money_json(tx.tax or 0)
     revenue = round(amount - tax, 2)
     if abs(amount - (revenue + tax)) > 0.02:
         raise HTTPException(status_code=400, detail="POS journal amounts do not balance")
@@ -1406,7 +1412,7 @@ async def post_pos_sale_journal(
     debit_sum = 0.0
     for tender in tenders:
         method = (tender.get("payment_method") or "cash").strip().lower()
-        part = round(float(tender.get("amount") or 0), 2)
+        part = round(money_json(tender.get("amount") or 0), 2)
         if part <= 0:
             continue
         liquid_id = tender.get("liquid_account_id")
@@ -1444,7 +1450,7 @@ async def post_pos_sale_journal(
         lines=[
             {
                 "product_id": it.get("product_id"),
-                "quantity": float(it.get("quantity") or 0),
+                "quantity": money_json(it.get("quantity") or 0),
                 "unit_id": it.get("unit_id"),
                 "variant_id": it.get("variant_id"),
             }

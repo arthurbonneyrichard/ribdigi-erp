@@ -37,7 +37,7 @@ def invoice_payment_status(
     Open unpaid: posted (approved) → sent (emailed) → overdue (past due).
     Partial payments stay partial unless past due (then overdue).
     """
-    if paid + 1e-9 >= float(total):
+    if paid + 1e-9 >= money_json(total):
         return "paid"
     now = as_of or datetime.utcnow()
     if due_date and now.date() > due_date.date():
@@ -64,8 +64,8 @@ def apply_invoice_status(
     if invoice.status == "draft" and not leave_draft:
         return invoice.status
     invoice.status = invoice_payment_status(
-        float(invoice.total_amount),
-        float(invoice.paid_amount or 0),
+        money_json(invoice.total_amount),
+        money_json(invoice.paid_amount or 0),
         invoice.due_date,
         emailed_at=invoice.emailed_at,
         as_of=as_of,
@@ -328,26 +328,26 @@ async def create_sales_invoice(
             tenant_id=tenant_id,
             product=product,
             unit_id=item.get("unit_id"),
-            quantity=float(item["quantity"]),
+            quantity=money_json(item["quantity"]),
         )
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
-                db, tenant_id, product, explicit_rate=float(explicit)
+                db, tenant_id, product, explicit_rate=money_json(explicit)
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_amount = qty * float(unit_price)
+        line_amount = qty * money_json(unit_price)
         breakdown = spec.compute_breakdown(line_amount)
-        line_sub = float(breakdown["net"])
-        line_tax = float(breakdown["tax"])
+        line_sub = money_json(breakdown["net"])
+        line_tax = money_json(breakdown["tax"])
         line_is_rc = header_rc or bool(spec.is_reverse_charge)
         # Customer-charged line: exclude tax when reverse charge (header or rate).
         if line_is_rc:
             line_total = line_sub
         else:
-            line_total = float(breakdown["gross"])
-        discount = float(item.get("discount") or 0)
+            line_total = money_json(breakdown["gross"])
+        discount = money_json(item.get("discount") or 0)
         line_total = max(line_total - discount, 0)
         subtotal += line_sub
         if line_is_rc:
@@ -374,7 +374,7 @@ async def create_sales_invoice(
             )
         )
 
-    discount_amount = float(discount_amount or 0)
+    discount_amount = money_json(discount_amount or 0)
     total = max(subtotal + tax_total - discount_amount, 0)
 
     invoice = m.SalesInvoice(
@@ -504,7 +504,7 @@ async def post_sales_invoice(
             tenant_id=tenant_id,
             user_id=user_id,
             product_id=item.product_id,
-            quantity=float(item.quantity),
+            quantity=money_json(item.quantity),
             unit_id=item.unit_id,
             notes=f"Invoice {invoice.invoice_number}",
             variant_id=item.variant_id,
@@ -513,7 +513,7 @@ async def post_sales_invoice(
             reference_id=invoice.id,
         )
 
-    customer.balance = float(customer.balance or 0) + inv_base
+    customer.balance = money_json(customer.balance or 0) + inv_base
     invoice.posted_at = datetime.utcnow()
     invoice.due_date = invoice.due_date or default_due_date(
         invoice.posted_at, party_terms_days(customer)
@@ -528,7 +528,7 @@ async def post_sales_invoice(
     )
 
     if credit_limit > 0:
-        utilization = float(customer.balance or 0) / credit_limit
+        utilization = money_json(customer.balance or 0) / credit_limit
         if utilization >= 0.8 or override_info:
             from app.notifications import create_notification
 
@@ -540,7 +540,7 @@ async def post_sales_invoice(
                 title=title,
                 message=(
                     f"{customer.name} credit utilization is {utilization:.0%} "
-                    f"({float(customer.balance or 0):.2f} / {credit_limit:.2f})."
+                    f"({money_json(customer.balance or 0):.2f} / {credit_limit:.2f})."
                     + (
                         f" Overridden by user on invoice {invoice.invoice_number}."
                         if override_info
@@ -558,7 +558,7 @@ async def post_sales_invoice(
         tenant_id=tenant_id,
         category="system",
         title="Sales invoice posted",
-        message=f"Invoice {invoice.invoice_number} posted for {float(invoice.total_amount):.2f}.",
+        message=f"Invoice {invoice.invoice_number} posted for {money_json(invoice.total_amount):.2f}.",
         entity_type="sales_invoice",
         entity_id=invoice.id,
     )
@@ -717,7 +717,7 @@ async def record_customer_payment(
 ) -> m.CustomerPayment:
     from app.expenses import normalize_expense_payment_method
 
-    amount = float(amount)
+    amount = money_json(amount)
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
     payment_method = normalize_expense_payment_method(payment_method, default="cash")
@@ -746,7 +746,7 @@ async def record_customer_payment(
             apply_invoice_status(invoice)
         if invoice.status not in SALES_INVOICE_OPEN:
             raise HTTPException(status_code=409, detail=f"Cannot pay invoice in status {invoice.status}")
-        due = float(invoice.total_amount) - float(invoice.paid_amount or 0)
+        due = money_json(invoice.total_amount) - money_json(invoice.paid_amount or 0)
         quote = invoice_early_discount(
             invoice, pct=ep["early_pay_discount_pct"], days=ep["early_pay_discount_days"]
         )
@@ -785,7 +785,7 @@ async def record_customer_payment(
         ).scalars().all()
         remaining = amount
         for invoice in open_invoices:
-            due = float(invoice.total_amount) - float(invoice.paid_amount or 0)
+            due = money_json(invoice.total_amount) - money_json(invoice.paid_amount or 0)
             if due <= 0:
                 continue
             quote = invoice_early_discount(
@@ -870,9 +870,9 @@ async def record_customer_payment(
     db.add(payment)
 
     # AR balance reduced by base settlement (invoice rates)
-    customer.balance = max(float(customer.balance or 0) - settlement_base, 0)
+    customer.balance = max(money_json(customer.balance or 0) - settlement_base, 0)
     for invoice, apply_amt, _disc in allocations:
-        invoice.paid_amount = float(invoice.paid_amount or 0) + apply_amt
+        invoice.paid_amount = money_json(invoice.paid_amount or 0) + apply_amt
         apply_invoice_status(invoice)
         invoice.updated_at = datetime.utcnow()
 
