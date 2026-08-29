@@ -198,10 +198,10 @@ def compute_tax_breakdown(
 
     if amount <= 0:
         return {
-            "net": round(amount, 2),
+            "net": money_json(round(amount, 2)),
             "tax": 0.0,
-            "gross": round(amount, 2),
-            "effective_rate": rate,
+            "gross": money_json(round(amount, 2)),
+            "effective_rate": money_json(rate),
             "is_reverse_charge": bool(is_reverse_charge),
             "components": [],
         }
@@ -273,10 +273,10 @@ def compute_tax_breakdown(
         gross = net
 
     return {
-        "net": net,
-        "tax": tax,
-        "gross": gross,
-        "effective_rate": rate,
+        "net": money_json(net),
+        "tax": money_json(tax),
+        "gross": money_json(gross),
+        "effective_rate": money_json(rate),
         "is_reverse_charge": bool(is_reverse_charge),
         "components": component_lines,
     }
@@ -540,19 +540,19 @@ async def tax_report(
         "to_date": to_date,
         "store_id": pack.get("store_id"),
         "store_name": pack.get("store_name"),
-        "output_tax": pack["output_tax"],
-        "output_tax_invoices": pack["output_tax_invoices"],
-        "output_tax_pos": pack["output_tax_pos"],
-        "reverse_charge_tax": pack["reverse_charge_tax"],
-        "input_tax": pack["input_tax"],
+        "output_tax": money_json(pack["output_tax"]),
+        "output_tax_invoices": money_json(pack["output_tax_invoices"]),
+        "output_tax_pos": money_json(pack["output_tax_pos"]),
+        "reverse_charge_tax": money_json(pack["reverse_charge_tax"]),
+        "input_tax": money_json(pack["input_tax"]),
         "input_tax_source": pack["input_tax_source"],
-        "net_tax_payable": pack["net_tax_payable"],
+        "net_tax_payable": money_json(pack["net_tax_payable"]),
         "invoice_count": pack["invoice_count"],
         "pos_sale_count": pack["pos_sale_count"],
         "purchase_count": pack["purchase_count"],
         "purchase_order_count": pack["purchase_order_count"],
-        "taxable_outputs_net": pack["filing_boxes"]["taxable_outputs_net"],
-        "taxable_inputs_net": pack["filing_boxes"]["taxable_inputs_net"],
+        "taxable_outputs_net": money_json(pack["filing_boxes"]["taxable_outputs_net"]),
+        "taxable_inputs_net": money_json(pack["filing_boxes"]["taxable_inputs_net"]),
     }
 
 

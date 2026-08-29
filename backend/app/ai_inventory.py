@@ -16,6 +16,7 @@ from app import ai as ai_svc
 from app import models as m
 from app import reports as reports_svc
 from app.config import settings
+from app.honesty import money_json
 
 POSTED_STATUSES = ("posted", "sent", "partial", "paid", "overdue")
 
@@ -211,17 +212,17 @@ async def build_product_forecasts(
                 "product_id": pid,
                 "sku": p.sku,
                 "name": p.name,
-                "stock_qty": stock,
-                "reorder_level": float(p.reorder_level or 0),
-                "reorder_qty": rq,
+                "stock_qty": money_json(stock),
+                "reorder_level": money_json(p.reorder_level),
+                "reorder_qty": money_json(rq),
                 "lookback_days": lb,
-                "sold_qty_lookback": round(sold, 3),
-                "velocity_per_day": round(velocity, 6),
-                "days_to_stockout": round(days_to, 2) if days_to is not None else None,
-                "forecast_demand_7": round(velocity * 7, 3),
-                "forecast_demand_30": round(velocity * 30, 3),
-                "forecast_demand_90": round(velocity * 90, 3),
-                "recommended_order_qty": rec,
+                "sold_qty_lookback": round(money_json(sold), 3),
+                "velocity_per_day": round(money_json(velocity), 6),
+                "days_to_stockout": round(money_json(days_to), 2) if days_to is not None else None,
+                "forecast_demand_7": round(money_json(velocity) * 7, 3),
+                "forecast_demand_30": round(money_json(velocity) * 30, 3),
+                "forecast_demand_90": round(money_json(velocity) * 90, 3),
+                "recommended_order_qty": money_json(rec),
                 "lead_time_days": lead,
                 "cover_days": cover,
                 "confidence": conf,

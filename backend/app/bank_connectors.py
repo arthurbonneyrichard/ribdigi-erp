@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
+from app.honesty import optional_honest_narrative
 
 PROVIDERS = frozenset({"mock", "http_json"})
 
@@ -147,13 +148,21 @@ async def create_connection(
     if access_token:
         creds = _encrypt(json.dumps({"access_token": access_token.strip()}))
 
+    # OpenAPI BankConnectionDisplayNameValue / BankExternalAccountIdValue → 422.
+    display_name = optional_honest_narrative(
+        display_name, label="bank connection display name", max_length=120
+    )
+    external_account_id = optional_honest_narrative(
+        external_account_id, label="bank external account id", max_length=120
+    )
+
     now = datetime.utcnow()
     row = m.BankAccountConnection(
         tenant_id=tenant_id,
         account_id=account_id,
         provider=prov,
-        display_name=(display_name or "").strip() or None,
-        external_account_id=(external_account_id or "").strip() or None,
+        display_name=display_name,
+        external_account_id=external_account_id,
         feed_url=(feed_url or "").strip() or None,
         credentials_enc=creds,
         auto_sync=bool(auto_sync),
@@ -177,9 +186,15 @@ async def update_connection(
 ) -> m.BankAccountConnection:
     row = await get_connection(db, tenant_id=tenant_id, connection_id=connection_id)
     if "display_name" in payload and payload["display_name"] is not None:
-        row.display_name = str(payload["display_name"]).strip() or None
+        row.display_name = optional_honest_narrative(
+            payload["display_name"], label="bank connection display name", max_length=120
+        )
     if "external_account_id" in payload and payload["external_account_id"] is not None:
-        row.external_account_id = str(payload["external_account_id"]).strip() or None
+        row.external_account_id = optional_honest_narrative(
+            payload["external_account_id"],
+            label="bank external account id",
+            max_length=120,
+        )
     if "feed_url" in payload and payload["feed_url"] is not None:
         row.feed_url = str(payload["feed_url"]).strip() or None
     if "provider" in payload and payload["provider"] is not None:

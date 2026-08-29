@@ -15,6 +15,7 @@ from app import ai as ai_svc
 from app import expenses as expenses_svc
 from app import models as m
 from app import reports as reports_svc
+from app.honesty import money_json
 
 # Keyword → default category code (suggest-only for OCR)
 CATEGORY_KEYWORDS: list[tuple[str, re.Pattern[str]]] = [
@@ -133,9 +134,9 @@ async def expense_analysis(
                 {
                     "category_id": cat.id,
                     "category": cat.name,
-                    "budget_monthly": budget,
-                    "budget_scaled": round(scaled, 2),
-                    "spent": round(spent, 2),
+                    "budget_monthly": money_json(budget),
+                    "budget_scaled": round(money_json(scaled), 2),
+                    "spent": round(money_json(spent), 2),
                     "variance_pct": variance_pct,
                     "severity": "over_budget",
                 }
@@ -165,7 +166,7 @@ async def expense_analysis(
                     "expense_id": e.id,
                     "category": e.category,
                     "category_id": e.category_id,
-                    "amount": amt,
+                    "amount": money_json(amt),
                     "payee": e.payee,
                     "expense_date": e.expense_date.isoformat() if e.expense_date else None,
                     "reason": reason,
@@ -260,7 +261,7 @@ async def expense_analysis(
                 "id": c.id,
                 "code": c.code,
                 "name": c.name,
-                "budget_amount": float(c.budget_amount or 0),
+                "budget_amount": money_json(c.budget_amount),
             }
             for c in categories
         ],

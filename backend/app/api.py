@@ -4086,7 +4086,12 @@ async def stock_out(
             status_code=400,
             detail=f"reference_type must be one of {sorted(STOCK_OUT_REFERENCE_TYPES)}",
         )
-    ref_id = (payload.reference_id or "").strip() or None
+    # OpenAPI StockMovementReferenceIdValue → 422; catalog also defends → 400.
+    from app.honesty import optional_honest_narrative
+
+    ref_id = optional_honest_narrative(
+        payload.reference_id, label="stock movement reference id", max_length=36
+    )
     result = await catalog_svc.stock_out_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -4487,11 +4492,13 @@ async def _party_with_contacts(
 
 
 def _normalize_party_profile(data: dict, *, kind: str) -> dict:
+    from app.honesty import optional_honest_narrative
+
     if "code" in data:
-        code = data["code"]
-        if code is not None:
-            code = str(code).strip() or None
-        data["code"] = code
+        # OpenAPI PartyCodeValue → 422; service defense-in-depth → 400.
+        data["code"] = optional_honest_narrative(
+            data["code"], label="party code", max_length=64
+        )
     if "profile_type" in data:
         pt = data["profile_type"]
         # Defense in depth: PartyCreate/Update Literals reject blank/unknown with
@@ -4516,9 +4523,15 @@ def _normalize_party_profile(data: dict, *, kind: str) -> dict:
             raise HTTPException(status_code=400, detail="Invalid status; expected active or inactive")
         data["status"] = st
     if "category" in data and data["category"] is not None:
-        data["category"] = str(data["category"]).strip() or None
+        # OpenAPI PartyCategoryValue → 422; service defense-in-depth → 400.
+        data["category"] = optional_honest_narrative(
+            data["category"], label="party category", max_length=80
+        )
     if "address" in data and data["address"] is not None:
-        data["address"] = str(data["address"]).strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        data["address"] = optional_honest_narrative(
+            data["address"], label="party address", max_length=500
+        )
     for coord, lo, hi in (("latitude", -90.0, 90.0), ("longitude", -180.0, 180.0)):
         if coord not in data or data[coord] is None:
             continue
@@ -7277,7 +7290,12 @@ async def pos_sale(
         )
 
     party = None
-    customer_name = (payload.customer_name or "").strip() or None
+    # OpenAPI PosCustomerNameValue → 422; service defense-in-depth → 400.
+    from app.honesty import optional_honest_narrative
+
+    customer_name = optional_honest_narrative(
+        payload.customer_name, label="POS customer name", max_length=180
+    )
     if payload.party_id:
         from app.sales import require_active_customer
 

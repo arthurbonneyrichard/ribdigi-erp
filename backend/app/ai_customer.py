@@ -17,6 +17,7 @@ from app import ai as ai_svc
 from app import ai_sales as ai_sales_svc
 from app import credit as credit_svc
 from app import models as m
+from app.honesty import money_json
 
 CHURN_BASE = {
     "champions": 0.08,
@@ -215,8 +216,8 @@ async def customer_assist(
             raise
         customer_pack = {
             "customer": stmt["customer"],
-            "open_balance": float(stmt["customer"].get("balance") or 0),
-            "credit_limit": float(stmt["customer"].get("credit_limit") or 0),
+            "open_balance": money_json(stmt["customer"].get("balance")),
+            "credit_limit": money_json(stmt["customer"].get("credit_limit")),
             "rfm": next((r for r in rfm_rows if r["customer_id"] == customer_id), None),
             "churn": next((c for c in churn_rows if c["customer_id"] == customer_id), None),
             "promotion": next((p for p in promotions if p["customer_id"] == customer_id), None),

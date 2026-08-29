@@ -464,9 +464,22 @@ async def stock_in_with_batch(
     if product.tracks_batches and not (batch_number or "").strip():
         raise HTTPException(status_code=400, detail="batch_number required for batch-tracked products")
 
+    # OpenAPI BatchNumberValue → 422; service defense-in-depth → 400.
+    batch_number = optional_honest_narrative(
+        batch_number, label="batch number", max_length=80
+    )
+    # OpenAPI StockInReferenceTypeValue / StockMovementReferenceIdValue → 422.
+    reference_type = optional_honest_narrative(
+        reference_type, label="stock-in reference type", max_length=50
+    )
+    if reference_type is not None:
+        reference_type = reference_type.lower()
+    reference_id = optional_honest_narrative(
+        reference_id, label="stock movement reference id", max_length=36
+    )
+
     batch = None
     if batch_number:
-        batch_number = batch_number.strip()
         batch = await _find_batch(
             db,
             tenant_id=tenant_id,
@@ -649,6 +662,10 @@ async def stock_out_with_batch(
                 )
 
     notes = optional_honest_narrative(notes, label="stock movement notes")
+    # OpenAPI StockMovementReferenceIdValue → 422; stock-out type is Literal at schema.
+    reference_id = optional_honest_narrative(
+        reference_id, label="stock movement reference id", max_length=36
+    )
     note_text = notes
     if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
         suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity:g} stock"

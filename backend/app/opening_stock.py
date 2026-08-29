@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.catalog import stock_in_with_batch
-from app.honesty import optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative
 from app.doc_numbers import next_opening_stock_number
 
 
@@ -81,8 +81,8 @@ async def post_opening_stock(
         results.append(
             {
                 **moved,
-                "unit_cost": unit_cost,
-                "line_value": line_value,
+                "unit_cost": money_json(unit_cost),
+                "line_value": money_json(line_value),
             }
         )
 

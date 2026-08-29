@@ -820,7 +820,10 @@ async def create_grn(
         if accepted_qty > 0:
             from app.catalog import stock_in_with_batch
 
-            batch_number = (raw.get("batch_number") or "").strip() or None
+            # OpenAPI BatchNumberValue → 422; stock_in_with_batch also defends → 400.
+            batch_number = optional_honest_narrative(
+                raw.get("batch_number"), label="batch number", max_length=80
+            )
             await stock_in_with_batch(
                 db,
                 tenant_id=tenant_id,

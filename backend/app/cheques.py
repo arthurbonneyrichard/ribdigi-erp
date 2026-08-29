@@ -14,7 +14,7 @@ from app.accounting import (
     is_cheque_method,
     post_journal_entry,
 )
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 RECEIVED = "received"
 ISSUED = "issued"
@@ -109,7 +109,15 @@ async def create_from_customer_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    # OpenAPI ChequeNumberValue → 422; service defense-in-depth → 400.
+    number = optional_honest_narrative(
+        cheque_number, label="cheque number", max_length=50
+    )
+    if number is None:
+        number = _cheque_number_from_payment(payment.reference, payment.payment_number)
+    bank_name = optional_honest_narrative(
+        bank_name, label="bank name", max_length=120
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
         direction=RECEIVED,
@@ -140,7 +148,15 @@ async def create_from_supplier_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    # OpenAPI ChequeNumberValue → 422; service defense-in-depth → 400.
+    number = optional_honest_narrative(
+        cheque_number, label="cheque number", max_length=50
+    )
+    if number is None:
+        number = _cheque_number_from_payment(payment.reference, payment.payment_number)
+    bank_name = optional_honest_narrative(
+        bank_name, label="bank name", max_length=120
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
         direction=ISSUED,

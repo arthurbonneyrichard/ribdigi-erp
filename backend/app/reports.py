@@ -10,6 +10,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 
 def parse_date(value: str | datetime | None, *, end_of_day: bool = False) -> datetime | None:
@@ -134,11 +135,11 @@ async def sales_daily(
         pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
     pos_rows = (await db.execute(pos_stmt)).all()
 
-    invoice_total = sum(float(i.total_amount or 0) for i in invoices)
-    invoice_tax = sum(float(i.tax_amount or 0) for i in invoices)
-    invoice_discount = sum(float(i.discount_amount or 0) for i in invoices)
-    pos_total = sum(float(t.total or 0) for t, _ in pos_rows)
-    pos_tax = sum(float(t.tax or 0) for t, _ in pos_rows)
+    invoice_total = sum(money_json(i.total_amount) for i in invoices)
+    invoice_tax = sum(money_json(i.tax_amount) for i in invoices)
+    invoice_discount = sum(money_json(i.discount_amount) for i in invoices)
+    pos_total = sum(money_json(t.total) for t, _ in pos_rows)
+    pos_tax = sum(money_json(t.tax) for t, _ in pos_rows)
 
     return {
         "date": start.date().isoformat(),
@@ -193,10 +194,10 @@ async def sales_monthly(
     by_day: dict[str, float] = defaultdict(float)
     for inv in invoices:
         key = (inv.posted_at or inv.created_at).date().isoformat()
-        by_day[key] += float(inv.total_amount or 0)
+        by_day[key] += money_json(inv.total_amount)
     for tx, _ in pos_rows:
         key = tx.created_at.date().isoformat()
-        by_day[key] += float(tx.total or 0)
+        by_day[key] += money_json(tx.total)
 
     total = sum(by_day.values())
     prev_year, prev_month = (year - 1, month) if month == 1 else (year, month - 1)
@@ -211,9 +212,11 @@ async def sales_monthly(
         "invoice_count": len(invoices),
         "pos_count": len(pos_rows),
         "total_revenue": round(total, 2),
-        "previous_month_revenue": prev,
+        "previous_month_revenue": money_json(prev),
         "change_pct": round(((total - prev) / prev) * 100, 2) if prev else None,
-        "daily": [{"date": d, "revenue": round(v, 2)} for d, v in sorted(by_day.items())],
+        "daily": [
+            {"date": d, "revenue": round(money_json(v), 2)} for d, v in sorted(by_day.items())
+        ],
     }
 
 
@@ -1248,7 +1251,7 @@ async def inventory_balance(
             agg: dict[str, dict] = {}
             for stock, product in rows:
                 row = agg.get(product.id)
-                qty = float(stock.quantity or 0)
+                qty = money_json(stock.quantity)
                 if not row:
                     agg[product.id] = {
                         "product_id": product.id,
@@ -1258,15 +1261,15 @@ async def inventory_balance(
                         if warehouse_id
                         else (stock.warehouse_id if len(warehouse_ids) == 1 else None),
                         "quantity": qty,
-                        "cost_price": float(product.cost_price or 0),
+                        "cost_price": money_json(product.cost_price),
                         "value": 0.0,
                     }
                 else:
-                    row["quantity"] = round(float(row["quantity"]) + qty, 3)
+                    row["quantity"] = round(money_json(row["quantity"]) + qty, 3)
             items = []
             for row in agg.values():
                 row["value"] = round(
-                    float(row["quantity"]) * float(row["cost_price"] or 0), 2
+                    money_json(row["quantity"]) * money_json(row["cost_price"]), 2
                 )
                 items.append(row)
             items.sort(key=lambda x: x["name"] or "")
@@ -1284,9 +1287,9 @@ async def inventory_balance(
                 "sku": p.sku,
                 "name": p.name,
                 "warehouse_id": None,
-                "quantity": float(p.stock_qty or 0),
-                "cost_price": float(p.cost_price or 0),
-                "value": round(float(p.stock_qty or 0) * float(p.cost_price or 0), 2),
+                "quantity": money_json(p.stock_qty),
+                "cost_price": money_json(p.cost_price),
+                "value": round(money_json(p.stock_qty) * money_json(p.cost_price), 2),
             }
             for p in products
         ]
@@ -1296,8 +1299,8 @@ async def inventory_balance(
         "store_id": store_id,
         "store_name": store_name,
         "items": items,
-        "total_quantity": round(sum(i["quantity"] for i in items), 3),
-        "total_value": round(sum(i["value"] for i in items), 2),
+        "total_quantity": round(sum(money_json(i["quantity"]) for i in items), 3),
+        "total_value": round(sum(money_json(i["value"]) for i in items), 2),
     }
 
 
@@ -1346,7 +1349,7 @@ async def inventory_valuation(
             "value": i["value"],
         }
         for i in balance["items"]
-        if abs(float(i["quantity"] or 0)) > 0.0001 or abs(float(i["value"] or 0)) > 0.0001
+        if abs(money_json(i["quantity"])) > 0.0001 or abs(money_json(i["value"])) > 0.0001
     ]
     return {
         "method": method_key,
@@ -1355,8 +1358,8 @@ async def inventory_valuation(
         "store_id": balance.get("store_id"),
         "store_name": balance.get("store_name"),
         "items": items,
-        "total_quantity": round(sum(float(i["quantity"]) for i in items), 3),
-        "total_value": round(sum(float(i["value"]) for i in items), 2),
+        "total_quantity": round(sum(money_json(i["quantity"]) for i in items), 3),
+        "total_value": round(sum(money_json(i["value"]) for i in items), 2),
     }
 
 
@@ -1490,9 +1493,9 @@ async def inventory_movements(
                 "product_name": product.name if product else None,
                 "warehouse_id": r.warehouse_id,
                 "movement_type": r.movement_type,
-                "quantity": float(r.quantity),
-                "quantity_before": float(r.quantity_before),
-                "quantity_after": float(r.quantity_after),
+                "quantity": money_json(r.quantity),
+                "quantity_before": money_json(r.quantity_before),
+                "quantity_after": money_json(r.quantity_after),
                 "reference_type": r.reference_type,
                 "reference_id": r.reference_id,
                 "notes": r.notes,
@@ -2715,7 +2718,7 @@ async def budget_vs_actual(
     actual_by_id: dict[str, float] = defaultdict(float)
     uncategorized = 0.0
     for e in expenses:
-        amt = float(e.amount or 0)
+        amt = money_json(e.amount)
         if e.category_id:
             actual_by_id[e.category_id] += amt
         else:
@@ -2725,9 +2728,9 @@ async def budget_vs_actual(
     total_budget = 0.0
     total_actual = 0.0
     for cat in categories:
-        budget_monthly = float(cat.budget_amount or 0)
+        budget_monthly = money_json(cat.budget_amount)
         scaled = scale_monthly_budget(budget_monthly, period_days)
-        actual = float(actual_by_id.get(cat.id, 0))
+        actual = money_json(actual_by_id.get(cat.id, 0))
         if not cat.is_active and actual <= 0 and budget_monthly <= 0:
             continue
         if budget_monthly <= 0:

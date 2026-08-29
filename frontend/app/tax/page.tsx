@@ -316,6 +316,7 @@ export default function Page() {
                 type="checkbox"
                 checked={reverseCharge}
                 onChange={(e) => setReverseCharge(e.target.checked)}
+                aria-label="Tax reverse charge"
               />{' '}
               Reverse charge
             </label>
@@ -340,7 +341,7 @@ export default function Page() {
             onChange={(e) => setCalcAmount(e.target.value)}
             aria-label="Tax calculator amount"
           />
-          <button onClick={calculate} style={{ marginTop: 8 }}>
+          <button onClick={calculate} style={{ marginTop: 8 }} aria-label="Calculate tax">
             Calculate with default rate
           </button>
           {calcResult && (
