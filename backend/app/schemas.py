@@ -426,6 +426,10 @@ class ORMSchema(BaseModel):
 
 
 class Login(BaseModel):
+    """POST /auth/login — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
     # Required password ∈ LoginPasswordValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached verify_password as 401).
@@ -438,12 +442,20 @@ class Login(BaseModel):
 
 
 class TwoFactorConfirm(BaseModel):
+    """POST /auth/2fa/confirm — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; empty/garbage reached service verify).
     code: TwoFactorCodeValue
 
 
 class TwoFactorVerify(BaseModel):
+    """POST /auth/2fa/verify — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
     challenge_token: ChallengeTokenValue
@@ -452,6 +464,10 @@ class TwoFactorVerify(BaseModel):
 
 
 class TwoFactorDisable(BaseModel):
+    """POST /auth/2fa/disable — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required password ∈ TwoFactorDisablePasswordValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached verify_password as 401).
     password: TwoFactorDisablePasswordValue
@@ -466,7 +482,8 @@ class WebAuthnAttestationResponse(BaseModel):
 
     clientDataJSON: str = Field(min_length=1)
     attestationObject: str = Field(min_length=1)
-    transports: list[str] | None = None
+    # omit/`null` → no transports; unknown token / non-list → **422** (was free `list[str]`)
+    transports: AuthenticatorTransportListValue | None = None
 
 
 class WebAuthnAssertionResponse(BaseModel):
@@ -493,7 +510,8 @@ class WebAuthnRegistrationCredential(BaseModel):
     rawId: str = Field(min_length=1)
     type: Literal["public-key"] = "public-key"
     response: WebAuthnAttestationResponse
-    clientExtensionResults: dict[str, Any] = Field(default_factory=dict)
+    # Must be a JSON object (≤32 keys); list/string/number → **422** (was free `dict[str, Any]`)
+    clientExtensionResults: WebAuthnClientExtensionResultsValue = Field(default_factory=dict)
 
 
 class WebAuthnAuthenticationCredential(BaseModel):
@@ -510,7 +528,8 @@ class WebAuthnAuthenticationCredential(BaseModel):
     rawId: str = Field(min_length=1)
     type: Literal["public-key"] = "public-key"
     response: WebAuthnAssertionResponse
-    clientExtensionResults: dict[str, Any] = Field(default_factory=dict)
+    # Must be a JSON object (≤32 keys); list/string/number → **422** (was free `dict[str, Any]`)
+    clientExtensionResults: WebAuthnClientExtensionResultsValue = Field(default_factory=dict)
 
 
 class WebAuthnRegisterVerify(BaseModel):
@@ -631,6 +650,10 @@ class SmsSettingsUpdate(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
+    """PATCH /auth/profile — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank reached service **400** "full_name cannot be empty"; punctuation/URL
     # could persist on User.full_name). Same UserFullNameValue as UserCreate/Update.
@@ -641,6 +664,10 @@ class ProfileUpdate(BaseModel):
 
 
 class RefreshRequest(BaseModel):
+    """POST /auth/refresh — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required session refresh token ∈ RefreshTokenValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached refresh lookup as invalid).
     refresh_token: RefreshTokenValue
@@ -1274,6 +1301,10 @@ class ProductUpdate(BaseModel):
 
 
 class StockCountCreate(BaseModel):
+    """POST /inventory/stock-counts — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required warehouse ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach warehouse lookup). Existence remains
     # tenant-scoped warehouse lookup (**404**).
@@ -1288,6 +1319,10 @@ class StockCountCreate(BaseModel):
 
 
 class StockCountItemUpdate(BaseModel):
+    """Nested stock-count line — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog / count-line lookup). Existence
     # remains tenant-scoped product on count (**404**/400). Inventory Counts save
@@ -1301,17 +1336,23 @@ class StockCountItemUpdate(BaseModel):
 
 
 class StockCountItemsUpdate(BaseModel):
+    """PATCH .../stock-counts/{id}/items — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     items: list[StockCountItemUpdate]
 
 
 class StockCountCancel(BaseModel):
     """Draft stock count cancel — typed reason required (BR-5.2 honesty).
 
-    `reason` ∈ StockCountCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
-    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
-    `min_length=1` only — whitespace still reached service **400**; punctuation-
-    only / URL-like garbage could be appended to count `notes` / audit).
+    Unknown keys → **422** (`extra=forbid`). `reason` ∈ StockCountCancelReasonValue
+    (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/blank/`!!!`/`http://…` → **422**
+    (was free `str` with `min_length=1` only — whitespace still reached service **400**;
+    punctuation-only / URL-like garbage could be appended to count `notes` / audit).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     reason: StockCountCancelReasonValue
 
@@ -1597,6 +1638,10 @@ class CustomerGroupUpdate(BaseModel):
 
 
 class LineItem(BaseModel):
+    """POS / legacy sale line — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**). Shared by TransactionCreate + PosSaleCreate.
@@ -1682,6 +1727,10 @@ class CreditLimitOverrideBody(BaseModel):
 
 
 class StockAdjust(BaseModel):
+    """Manual stock adjust — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # ∈ FiniteQtyValue (signed stock adjust); nan/inf → **422** (was unconstrained float)
     quantity: FiniteQtyValue
     # Coded reason (BR-5.2); OpenAPI Literal → omit/blank/invalid → 422
@@ -1698,20 +1747,23 @@ class StockAdjust(BaseModel):
 class StockMove(BaseModel):
     """Manual stock-in — optional batch lot + dates (BR-5.2).
 
-    Optional `warehouse_id` ∈ UuidIdValue; omit/`null` → company / product stock path;
-    blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
-    warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
-    Optional `batch_number` ∈ BatchNumberValue; omit/`null` → no lot (service still
-    requires a lot when product.tracks_batches); blank/`!!!`/`http://…` → **422**
-    (was free `str`; blank silently stripped to None / punctuation/URL could persist
-    on ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
-    IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
-    free `datetime`; OpenAPI date-time; padded dates inconsistent). API
-    `reports.parse_date` remains defense-in-depth. Optional `reference_type` ∈
-    StockInReferenceTypeValue (strip/lower; 1–50; ≥1 letter/digit; no `://`/`@`);
-    omit/`null` → no coded source; blank/`!!!`/`http://…` → **422** (was free `str`;
-    blank/garbage could persist on StockMovement.reference_type String(50)).
+    Unknown keys → **422** (`extra=forbid`). Optional `warehouse_id` ∈ UuidIdValue;
+    omit/`null` → company / product stock path; blank/`!!!`/`http://…`/non-UUID → **422**
+    (was free `str`; garbage could reach warehouse lookup). Existence remains
+    tenant-scoped warehouse lookup (**404**). Optional `batch_number` ∈ BatchNumberValue;
+    omit/`null` → no lot (service still requires a lot when product.tracks_batches);
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank silently stripped to None /
+    punctuation/URL could persist on ProductBatch.batch_number). Optional
+    `manufacturing_date` / `expiry_date` ∈ IsoDateQueryValue; omit/`null` → no batch
+    dates; blank/invalid → **422** (was free `datetime`; OpenAPI date-time; padded
+    dates inconsistent). API `reports.parse_date` remains defense-in-depth. Optional
+    `reference_type` ∈ StockInReferenceTypeValue (strip/lower; 1–50; ≥1 letter/digit;
+    no `://`/`@`); omit/`null` → no coded source; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank/garbage could persist on StockMovement.reference_type
+    String(50)).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -1751,13 +1803,15 @@ class StockMove(BaseModel):
 class StockOut(BaseModel):
     """Manual stock-out (BR-5.2) — coded reference_type required at schema.
 
-    Required `product_id` ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
-    (was free `str`; garbage could reach catalog lookup). Existence remains
-    tenant-scoped product lookup (**404**). Optional `reference_id` ∈
-    StockMovementReferenceIdValue; omit/`null` → no external ref; blank/`!!!`/
-    `http://…` → **422** (was free `str`; blank/garbage could persist on
-    StockMovement.reference_id String(36)).
+    Unknown keys → **422** (`extra=forbid`). Required `product_id` ∈ UuidIdValue;
+    blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    catalog lookup). Existence remains tenant-scoped product lookup (**404**).
+    Optional `reference_id` ∈ StockMovementReferenceIdValue; omit/`null` → no
+    external ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
+    could persist on StockMovement.reference_id String(36)).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -1790,14 +1844,17 @@ class StockOut(BaseModel):
 class OpeningStockLine(BaseModel):
     """Opening-stock line — optional batch lot + dates (BR-5.2).
 
-    Optional `batch_number` ∈ BatchNumberValue; omit/`null` → no lot (service still
-    requires a lot when product.tracks_batches); blank/`!!!`/`http://…` → **422**
-    (was free `str`; blank silently stripped to None / punctuation/URL could persist
-    on ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
+    Unknown keys → **422** (`extra=forbid`). Optional `batch_number` ∈
+    BatchNumberValue; omit/`null` → no lot (service still requires a lot when
+    product.tracks_batches); blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank silently stripped to None / punctuation/URL could persist on
+    ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
     IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
     free `datetime`; OpenAPI date-time; padded dates inconsistent). API
     `reports.parse_date` remains defense-in-depth.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -1828,6 +1885,10 @@ class OpeningStockLine(BaseModel):
 
 
 class OpeningStockCreate(BaseModel):
+    """POST opening stock — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     lines: list[OpeningStockLine] = Field(min_length=1)
     post_journal: bool = True
     # omit/`null` → auto OS-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
@@ -2662,6 +2723,10 @@ class TaxCalculateRequest(BaseModel):
 
 
 class PasswordResetRequest(BaseModel):
+    """POST /auth/password-reset-request — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
     # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
@@ -2669,6 +2734,10 @@ class PasswordResetRequest(BaseModel):
 
 
 class PasswordResetConfirm(BaseModel):
+    """POST /auth/password-reset-confirm — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required one-time token ∈ PasswordResetTokenValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached hash lookup as invalid/expired).
     token: PasswordResetTokenValue
@@ -2679,12 +2748,20 @@ class PasswordResetConfirm(BaseModel):
 
 
 class EmailVerifyConfirm(BaseModel):
+    """POST /auth/verify-email — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required one-time token ∈ EmailVerifyTokenValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached hash_token / invalid-token **400**).
     token: EmailVerifyTokenValue
 
 
 class ResendVerificationRequest(BaseModel):
+    """POST /auth/resend-verification — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
     # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
@@ -3165,6 +3242,10 @@ class PurchaseInvoiceCancel(BaseModel):
 
 
 class SalesInvoiceItemCreate(BaseModel):
+    """SI / QT / SO create line — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**). Shared by SI / QT / SO create lines.
@@ -5663,6 +5744,71 @@ PasskeyNameValue = Annotated[
 ]
 
 
+_AUTHENTICATOR_TRANSPORTS = frozenset(
+    {"usb", "nfc", "ble", "internal", "hybrid", "smart-card"}
+)
+
+
+def coerce_authenticator_transport_list(value: object) -> object:
+    """Pydantic BeforeValidator: WebAuthn AuthenticatorTransport list.
+
+    Strip/lower each token; map legacy `cable` → `hybrid`; unknown → **422**.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError(
+            "transports must be a list of usb|nfc|ble|internal|hybrid|smart-card"
+        )
+    out: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise ValueError(
+                "transports must be a list of usb|nfc|ble|internal|hybrid|smart-card"
+            )
+        token = item.strip().lower()
+        if token == "cable":
+            token = "hybrid"
+        if token not in _AUTHENTICATOR_TRANSPORTS:
+            raise ValueError(
+                "transports must be a list of usb|nfc|ble|internal|hybrid|smart-card"
+            )
+        if token not in out:
+            out.append(token)
+    return out
+
+
+# WebAuthn AuthenticatorTransport list (W3C + smart-card; cable→hybrid).
+AuthenticatorTransportListValue = Annotated[
+    list[Literal["usb", "nfc", "ble", "internal", "hybrid", "smart-card"]],
+    BeforeValidator(coerce_authenticator_transport_list),
+]
+
+
+def coerce_webauthn_client_extension_results(value: object) -> object:
+    """Pydantic BeforeValidator: clientExtensionResults must be a JSON object.
+
+    Extensions are open-ended (keys preserved). Reject list/string/number/bool;
+    cap at 32 keys so poison bags cannot balloon.
+    """
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError("clientExtensionResults must be a JSON object")
+    if any(not isinstance(k, str) for k in value.keys()):
+        raise ValueError("clientExtensionResults keys must be strings")
+    if len(value) > 32:
+        raise ValueError("clientExtensionResults must have at most 32 keys")
+    return value
+
+
+# WebAuthn clientExtensionResults — object-only (open-ended keys; ≤32).
+WebAuthnClientExtensionResultsValue = Annotated[
+    dict[str, Any],
+    BeforeValidator(coerce_webauthn_client_extension_results),
+]
+
+
 def validate_two_factor_code_value(value: str) -> str:
     """AfterValidator: TOTP / backup code; blank/URL/garbage → 422 (4–64)."""
     if not value:
@@ -6904,8 +7050,10 @@ class NotificationPreferencesMap(BaseModel):
 class NotificationPreferencesUpdate(BaseModel):
     """PATCH /notifications/settings — typed preference map (BR-4.4 / BR-15.2).
 
-    Unknown category keys or channel keys → **422** (no silent drop via merge).
+    Unknown top-level keys or nested category/channel keys → **422** (`extra=forbid`).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     preferences: NotificationPreferencesMap
 

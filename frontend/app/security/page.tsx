@@ -51,7 +51,10 @@ function credentialToJson(cred: PublicKeyCredential): Record<string, unknown> {
   const att = anyCred.response as AuthenticatorAttestationResponse;
   if (att.attestationObject) {
     response.attestationObject = bufferToBase64url(att.attestationObject);
-    response.transports = att.getTransports?.() || [];
+    const allowed = new Set(['usb', 'nfc', 'ble', 'internal', 'hybrid', 'smart-card']);
+    response.transports = (att.getTransports?.() || [])
+      .map((t) => (t === 'cable' ? 'hybrid' : String(t).trim().toLowerCase()))
+      .filter((t) => allowed.has(t));
   }
   const assertion = anyCred.response as AuthenticatorAssertionResponse;
   if (assertion.authenticatorData) {
