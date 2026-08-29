@@ -13,6 +13,16 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 _name = TypeAdapter(PasskeyNameValue)
 
+_MIN_CRED = {
+    "id": "not-a-real-cred",
+    "rawId": "not-a-real-cred",
+    "type": "public-key",
+    "response": {
+        "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIn0",
+        "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YQ",
+    },
+}
+
 
 def test_passkey_name_value_schema():
     assert _name.validate_python("  Laptop Key  ") == "Laptop Key"
@@ -21,23 +31,23 @@ def test_passkey_name_value_schema():
         with pytest.raises(ValidationError):
             _name.validate_python(bad)
 
-    omit = WebAuthnRegisterVerify.model_validate({"credential": {"id": "x"}})
+    omit = WebAuthnRegisterVerify.model_validate({"credential": _MIN_CRED})
     assert omit.name is None
     ok = WebAuthnRegisterVerify.model_validate(
-        {"credential": {"id": "x"}, "name": "  Tip-236 Key  "}
+        {"credential": _MIN_CRED, "name": "  Tip-236 Key  "}
     )
     assert ok.name == "Tip-236 Key"
     with pytest.raises(ValidationError):
         WebAuthnRegisterVerify.model_validate(
-            {"credential": {"id": "x"}, "name": "!!!"}
+            {"credential": _MIN_CRED, "name": "!!!"}
         )
     with pytest.raises(ValidationError):
         WebAuthnRegisterVerify.model_validate(
-            {"credential": {"id": "x"}, "name": ""}
+            {"credential": _MIN_CRED, "name": ""}
         )
     with pytest.raises(ValidationError):
         WebAuthnRegisterVerify.model_validate(
-            {"credential": {"id": "x"}, "name": "http://evil.example"}
+            {"credential": _MIN_CRED, "name": "http://evil.example"}
         )
 
 
@@ -65,7 +75,7 @@ async def test_passkey_name_api_blank_invalid_422(client):
         r = await ac.post(
             "/api/v1/auth/webauthn/register/verify",
             headers=headers,
-            json={"credential": {"id": "not-a-real-cred"}, "name": bad},
+            json={"credential": _MIN_CRED, "name": bad},
         )
         assert r.status_code == 422, (bad, r.text)
 
@@ -73,7 +83,7 @@ async def test_passkey_name_api_blank_invalid_422(client):
     omit = await ac.post(
         "/api/v1/auth/webauthn/register/verify",
         headers=headers,
-        json={"credential": {"id": "not-a-real-cred"}},
+        json={"credential": _MIN_CRED},
     )
     assert omit.status_code != 422, omit.text
 
@@ -81,7 +91,7 @@ async def test_passkey_name_api_blank_invalid_422(client):
         "/api/v1/auth/webauthn/register/verify",
         headers=headers,
         json={
-            "credential": {"id": "not-a-real-cred"},
+            "credential": _MIN_CRED,
             "name": "  Tip236 Hello Key  ",
         },
     )

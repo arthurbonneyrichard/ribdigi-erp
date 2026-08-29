@@ -36,9 +36,19 @@ def test_challenge_token_value_schema():
         ).challenge_token
         == "tip257-wa-opt"
     )
+    _assert_cred = {
+        "id": "cred-id",
+        "rawId": "cred-id",
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0In0",
+            "authenticatorData": "authenticator-data",
+            "signature": "signature-bytes",
+        },
+    }
     assert (
         WebAuthnLoginVerify.model_validate(
-            {"challenge_token": "  tip257-wa-ver  ", "credential": {"id": "x"}}
+            {"challenge_token": "  tip257-wa-ver  ", "credential": _assert_cred}
         ).challenge_token
         == "tip257-wa-ver"
     )

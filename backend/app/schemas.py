@@ -459,34 +459,107 @@ class TwoFactorDisable(BaseModel):
     code: TwoFactorCodeValue
 
 
+class WebAuthnAttestationResponse(BaseModel):
+    """Registration authenticator response (create). Unknown keys → **422**."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    clientDataJSON: str = Field(min_length=1)
+    attestationObject: str = Field(min_length=1)
+    transports: list[str] | None = None
+
+
+class WebAuthnAssertionResponse(BaseModel):
+    """Assertion authenticator response (get). Unknown keys → **422**."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    clientDataJSON: str = Field(min_length=1)
+    authenticatorData: str = Field(min_length=1)
+    signature: str = Field(min_length=1)
+    userHandle: str | None = None
+
+
+class WebAuthnRegistrationCredential(BaseModel):
+    """Browser PublicKeyCredential JSON for registration verify.
+
+    Unknown keys → **422** (`extra=forbid`). Was free `dict` — garbage shape
+    reached `verify_registration_response` as opaque **400**.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    rawId: str = Field(min_length=1)
+    type: Literal["public-key"] = "public-key"
+    response: WebAuthnAttestationResponse
+    clientExtensionResults: dict[str, Any] = Field(default_factory=dict)
+
+
+class WebAuthnAuthenticationCredential(BaseModel):
+    """Browser PublicKeyCredential JSON for login verify.
+
+    Unknown keys → **422** (`extra=forbid`). Was free `dict` — missing `id`/
+    `rawId` was late service **400**; garbage shape reached
+    `verify_authentication_response` as opaque **400**.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    rawId: str = Field(min_length=1)
+    type: Literal["public-key"] = "public-key"
+    response: WebAuthnAssertionResponse
+    clientExtensionResults: dict[str, Any] = Field(default_factory=dict)
+
+
 class WebAuthnRegisterVerify(BaseModel):
     """POST /auth/webauthn/register/verify — optional passkey label.
 
-    Optional `name` ∈ PasskeyNameValue; omit/`null` → service default `"Passkey"`;
-    blank/`!!!`/`http://…` → **422** (was free `str`; blank silently became
-    `"Passkey"` via strip-or-default; punctuation/URL could persist on
-    `WebAuthnCredential.name` String(120)).
+    Unknown keys → **422** (`extra=forbid`). Required `credential` ∈
+    `WebAuthnRegistrationCredential`. Optional `name` ∈ PasskeyNameValue;
+    omit/`null` → service default `"Passkey"`; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank silently became `"Passkey"` via strip-or-default;
+    punctuation/URL could persist on `WebAuthnCredential.name` String(120)).
     """
 
-    credential: dict
+    model_config = ConfigDict(extra="forbid")
+
+    credential: WebAuthnRegistrationCredential
     # omit/`null` → service default "Passkey"; blank/`!!!`/`http://…` → **422**
     name: PasskeyNameValue | None = None
 
 
 class WebAuthnLoginOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
     challenge_token: ChallengeTokenValue
 
 
 class WebAuthnLoginVerify(BaseModel):
+    """POST /auth/webauthn/login/verify — challenge + assertion credential.
+
+    Unknown keys → **422** (`extra=forbid`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
     challenge_token: ChallengeTokenValue
-    credential: dict
+    credential: WebAuthnAuthenticationCredential
 
 
 class EmailTestRequest(BaseModel):
+    """POST /settings/email/test — optional override recipient.
+
+    Unknown keys → **422** (`extra=forbid`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     to: EmailStr | None = None
 
 
@@ -1542,7 +1615,29 @@ class LineItem(BaseModel):
     discount: NonNegativeMoneyValue = 0
 
 
+class LegacyTransactionPayload(BaseModel):
+    """Optional bag on legacy POST /sales|/purchases (BR-8.1).
+
+    Only `items[]` is accepted (`extra=forbid`). Prefer top-level `items`.
+    Nested lines use the same `LineItem` honesty (UUID/qty). Unknown keys → **422**
+    (was free `dict`; garbage keys could persist on `transactions.payload` and
+    `payload.items` bypassed top-level LineItem when top-level items empty).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[LineItem] | None = None
+
+
 class TransactionCreate(BaseModel):
+    """Legacy POST /sales|/purchases body (BR-8.1).
+
+    Unknown keys → **422** (`extra=forbid`). Prefer top-level `items[]`; optional
+    `payload.items` uses the same `LineItem` honesty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     # Optional customer party ∈ UuidIdValue; omit/`null` → walk-in / no party;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
     # reach party lookup). Existence remains tenant-scoped customer lookup
@@ -1554,7 +1649,8 @@ class TransactionCreate(BaseModel):
     total: NonNegativeMoneyValue = 0
     # BR-8.1 / legacy sale — only completed create path; blank/invalid → 422 (no garbage persist)
     status: Literal["completed"] = "completed"
-    payload: dict = Field(default_factory=dict)
+    # omit/`null` → no bag; unknown keys → **422** (was free `dict`)
+    payload: LegacyTransactionPayload | None = None
     items: list[LineItem] = Field(default_factory=list)
     override_credit_limit: bool = False
     # omit/`null` OK when not overriding; blank/`!!!`/`http://…` → **422**;
@@ -8120,6 +8216,14 @@ class PosPaymentLine(BaseModel):
 
 
 class PosSaleCreate(BaseModel):
+    """POST /pos/sales — completed POS checkout (BR-8.1).
+
+    Unknown keys → **422** (`extra=forbid`). Server builds `transactions.payload`
+    (items/payments/session); clients must not send a free `payload` bag.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     # Optional open shift ∈ UuidIdValue; omit/`null` → current session path; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach session
     # lookup). Existence remains tenant-scoped POS session lookup (**404**/400).
@@ -8144,7 +8248,6 @@ class PosSaleCreate(BaseModel):
     # BR-8.1 — omit → cash; blank/invalid → 422; split allowed when payments[] present
     payment_method: PosSalePaymentMethod = "cash"
     payments: list[PosPaymentLine] | None = None
-    payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(min_length=1)
     override_credit_limit: bool = False
     # omit/`null` OK when not overriding; blank/`!!!`/`http://…` → **422**;

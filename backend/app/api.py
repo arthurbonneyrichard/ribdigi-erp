@@ -1655,7 +1655,7 @@ async def webauthn_register_verify(
 
     user = await db.get(m.User, claims["sub"])
     row = await webauthn.verify_registration(
-        db, user, credential=payload.credential, name=payload.name
+        db, user, credential=payload.credential.model_dump(mode="json"), name=payload.name
     )
     await audit_svc.record_event(
         db,
@@ -1733,7 +1733,9 @@ async def webauthn_login_verify(
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
-    await webauthn.verify_authentication(db, user, credential=payload.credential)
+    await webauthn.verify_authentication(
+        db, user, credential=payload.credential.model_dump(mode="json")
+    )
     access, refresh = await create_session(
         db, user=user, request=request, login_method="webauthn"
     )
@@ -5132,7 +5134,9 @@ async def tx_list(kind: str, claims: dict, db: AsyncSession):
 
 
 async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncSession):
-    items = [i.model_dump() for i in payload.items] or list(payload.payload.get("items") or [])
+    items = [i.model_dump() for i in payload.items]
+    if not items and payload.payload and payload.payload.items:
+        items = [i.model_dump() for i in payload.payload.items]
     if kind in {"sale", "pos_sale", "purchase"} and not items:
         raise HTTPException(
             status_code=400,
@@ -5159,7 +5163,9 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
     body.pop("items", None)
     body.pop("override_credit_limit", None)
     body.pop("override_reason", None)
-    body["payload"] = {**(body.get("payload") or {}), "items": items}
+    body.pop("payload", None)
+    # Server-owned bag — only typed LineItem rows (no client poison keys).
+    body["payload"] = {"items": items}
     tx = m.Transaction(tenant_id=claims["tenant_id"], tx_type=kind, reference=ref, **body)
     db.add(tx)
     await db.flush()
@@ -7295,7 +7301,6 @@ async def pos_sale(
     body.pop("override_credit_limit", None)
     body.pop("override_reason", None)
     body["payload"] = {
-        **(body.get("payload") or {}),
         "items": priced_items,
         "payment_method": payment_method,
         "payments": payments,
