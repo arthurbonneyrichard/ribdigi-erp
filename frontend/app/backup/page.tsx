@@ -165,6 +165,7 @@ export default function Page() {
               value={settings.retention_count ?? 30}
               onChange={(e) => setSettings({ ...settings, retention_count: e.target.value })}
               placeholder="Retention"
+              aria-label="Backup retention count"
               style={{ width: 100 }}
             />
             <input
@@ -174,6 +175,7 @@ export default function Page() {
               value={settings.hour_utc ?? 2}
               onChange={(e) => setSettings({ ...settings, hour_utc: e.target.value })}
               placeholder="Hour UTC"
+              aria-label="Backup hour UTC"
               style={{ width: 100 }}
             />
             <button onClick={saveSettings}>Save settings</button>

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_journal_entry_number
+from app.honesty import require_honest_narrative
 
 DEFAULT_ACCOUNTS = [
     ("1000", "Cash", "asset", True, False),
@@ -339,9 +340,7 @@ async def unpost_journal_entry(
     reason: str | None = None,
 ) -> m.JournalEntry:
     """Reverse a posted manual journal within the current fiscal period (BR-10.2)."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="unpost reason is required")
+    reason_s = require_honest_narrative(reason, label="unpost reason")
 
     entry = await get_journal_entry(db, tenant_id, entry_id)
     if entry.status != "posted":
@@ -577,9 +576,7 @@ async def close_books(
     reason: str | None = None,
 ) -> dict:
     """Advance tenants.books_closed_through (inclusive). Cannot close future dates."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="close reason is required")
+    reason_s = require_honest_narrative(reason, label="close reason")
     tenant = await get_tenant_or_404(db, tenant_id)
     today = datetime.utcnow().date()
     if through_date > today:
@@ -623,9 +620,7 @@ async def reopen_books(
     reason: str | None = None,
 ) -> dict:
     """Move books_closed_through earlier, or clear when through_date is null."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="reopen reason is required")
+    reason_s = require_honest_narrative(reason, label="reopen reason")
     tenant = await get_tenant_or_404(db, tenant_id)
     current = as_calendar_date(tenant.books_closed_through)
     if current is None:

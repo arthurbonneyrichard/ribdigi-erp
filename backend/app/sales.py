@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
 from app.catalog import resolve_sale_line, stock_out_with_batch
@@ -149,8 +150,8 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
     status = invoice.status
     if status not in {"draft", "cancelled"}:
         status = invoice_payment_status(
-            float(invoice.total_amount),
-            float(invoice.paid_amount or 0),
+            money_json(invoice.total_amount),
+            money_json(invoice.paid_amount),
             invoice.due_date,
             emailed_at=invoice.emailed_at,
         )
@@ -160,30 +161,28 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
     if status == "overdue" or (
         invoice.due_date
         and status in SALES_INVOICE_OPEN
-        and float(invoice.paid_amount or 0) + 1e-9 < float(invoice.total_amount)
+        and money_json(invoice.paid_amount) + 1e-9 < money_json(invoice.total_amount)
     ):
         overdue_days = days_overdue(datetime.utcnow(), invoice.due_date, invoice.posted_at or invoice.created_at)
+    balance_due = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount), 0)
+    fx = money_json(getattr(invoice, "exchange_rate", None), default=1.0)
     return {
         "id": invoice.id,
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
         "store_id": invoice.store_id,
         "status": status,
-        "subtotal": float(invoice.subtotal),
-        "tax_amount": float(invoice.tax_amount),
-        "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
+        "subtotal": money_json(invoice.subtotal),
+        "tax_amount": money_json(invoice.tax_amount),
+        "reverse_charge_tax": money_json(getattr(invoice, "reverse_charge_tax", 0) or 0),
         "is_reverse_charge": bool(getattr(invoice, "is_reverse_charge", False)),
-        "discount_amount": float(invoice.discount_amount),
-        "total_amount": float(invoice.total_amount),
-        "paid_amount": float(invoice.paid_amount),
-        "balance_due": max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0),
+        "discount_amount": money_json(invoice.discount_amount),
+        "total_amount": money_json(invoice.total_amount),
+        "paid_amount": money_json(invoice.paid_amount),
+        "balance_due": balance_due,
         "currency": getattr(invoice, "currency", None) or "",
-        "exchange_rate": float(getattr(invoice, "exchange_rate", None) or 1),
-        "balance_due_base": round(
-            max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0)
-            * float(getattr(invoice, "exchange_rate", None) or 1),
-            2,
-        ),
+        "exchange_rate": fx,
+        "balance_due_base": round(balance_due * fx, 2),
         "notes": invoice.notes,
         "posted_at": invoice.posted_at,
         "due_date": invoice.due_date,
@@ -199,17 +198,17 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
                 "tax_supply_class": getattr(i, "tax_supply_class", None) or "standard",
-                "discount": float(i.discount),
-                "line_subtotal": float(getattr(i, "line_subtotal", None) or 0),
+                "discount": money_json(i.discount),
+                "line_subtotal": money_json(getattr(i, "line_subtotal", None) or 0),
                 "line_tax": _line_tax_value(i),
                 "is_reverse_charge": bool(getattr(i, "is_reverse_charge", False)),
                 "tax_components": getattr(i, "tax_components", None) or None,
-                "line_total": float(i.line_total),
+                "line_total": money_json(i.line_total),
             }
             for i in items
         ],
@@ -218,17 +217,17 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
 
 def _line_tax_value(item: m.SalesInvoiceItem) -> float:
     """Persisted line_tax, with legacy backfill when column is still 0 but rate > 0."""
-    stored = float(getattr(item, "line_tax", None) or 0)
+    stored = money_json(getattr(item, "line_tax", None))
     if stored > 0 or bool(getattr(item, "is_reverse_charge", False)):
         return stored
     if getattr(item, "tax_components", None) is not None:
         return stored
-    rate = float(item.tax_rate or 0)
+    rate = money_json(item.tax_rate)
     if rate <= 0:
         return 0.0
-    sub = float(getattr(item, "line_subtotal", None) or 0)
-    total = float(item.line_total or 0)
-    discount = float(item.discount or 0)
+    sub = money_json(getattr(item, "line_subtotal", None))
+    total = money_json(item.line_total)
+    discount = money_json(item.discount)
     derived = round(total - sub + discount, 2)
     if derived < 0:
         return round(sub * rate / 100.0, 2)

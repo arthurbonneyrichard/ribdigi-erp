@@ -1483,6 +1483,7 @@ export default function Page() {
                         setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
                       }}
                       inputMode="decimal"
+                      aria-label="POS cash tender"
                     />
                   </label>
                   <label className="tpos-field">
@@ -1499,6 +1500,7 @@ export default function Page() {
                         setCashTender(String(Math.max(0, Math.round((cartTotal - card) * 100) / 100)));
                       }}
                       inputMode="decimal"
+                      aria-label="POS card tender"
                     />
                   </label>
                   <p className="tpos-split-hint">

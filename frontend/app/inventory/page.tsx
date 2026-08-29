@@ -2979,7 +2979,12 @@ export default function Page() {
               value={expiryDate}
               onChange={(e) => setExpiryDate(e.target.value)}
             />
-            <input value={stockQty} onChange={(e) => setStockQty(e.target.value)} placeholder="Quantity" />
+            <input
+              value={stockQty}
+              onChange={(e) => setStockQty(e.target.value)}
+              placeholder="Quantity"
+              aria-label="Stock-in quantity"
+            />
             <select
               value={stockUnitId}
               onChange={(e) => setStockUnitId(e.target.value)}
@@ -3100,6 +3105,7 @@ export default function Page() {
               value={openingQty}
               onChange={(e) => setOpeningQty(e.target.value)}
               placeholder="Quantity"
+              aria-label="Opening stock quantity"
             />
             <select
               value={openingUnitId}
@@ -3598,6 +3604,7 @@ export default function Page() {
             value={adjQty}
             onChange={(e) => setAdjQty(e.target.value)}
             placeholder="-1"
+            aria-label="Stock adjustment quantity"
           />
           <label className="muted">Reason</label>
           <select
@@ -3665,6 +3672,7 @@ export default function Page() {
             value={outQty}
             onChange={(e) => setOutQty(e.target.value)}
             placeholder="1"
+            aria-label="Stock-out quantity"
           />
           <label className="muted">Reference type</label>
           <select

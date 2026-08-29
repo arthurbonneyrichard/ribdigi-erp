@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import packages as packages_svc
 from app.config import settings
+from app.honesty import require_honest_narrative
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_INDUSTRIES = frozenset(
@@ -420,9 +421,10 @@ async def suspend_tenant(
 ) -> m.Tenant:
     if tenant.status == "suspended":
         raise HTTPException(status_code=400, detail="Tenant is already suspended")
+    reason_s = require_honest_narrative(reason, label="suspend reason")
     tenant.status = "suspended"
     tenant.suspended_at = datetime.utcnow()
-    tenant.suspended_reason = (reason or "").strip() or None
+    tenant.suspended_reason = reason_s
     tenant.grace_ends_at = None
     await revoke_all_sessions(db, tenant.id)
     await db.flush()

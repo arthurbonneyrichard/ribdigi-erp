@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_expense_number
+from app.honesty import require_honest_narrative
 
 DEFAULT_CATEGORIES = [
     ("RENT", "Rent"),
@@ -811,8 +812,7 @@ async def reject_expense(
     reason: str,
     actor_role: str | None = None,
 ) -> m.Expense:
-    if not (reason or "").strip():
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     expense = await get_expense(db, tenant_id, expense_id)
     if expense.status != "pending":
         raise HTTPException(status_code=409, detail="Only pending expenses can be rejected")
@@ -828,13 +828,13 @@ async def reject_expense(
         step=step,
         action="reject",
         actor_id=user_id,
-        comment=reason.strip(),
+        comment=reason_s,
     )
 
     expense.status = "rejected"
     expense.approved_by = user_id
     expense.approved_at = datetime.utcnow()
-    expense.rejection_reason = reason.strip()
+    expense.rejection_reason = reason_s
     await db.flush()
     return expense
 
@@ -1201,9 +1201,7 @@ async def skip_next_recurring(
 
     Reason is audit-only — do not mutate ``description`` (that is the generate template).
     """
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="skip reason is required")
+    reason_s = require_honest_narrative(reason, label="skip reason")
     row = (
         await db.execute(
             select(m.RecurringExpense).where(

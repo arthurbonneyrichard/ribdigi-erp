@@ -571,7 +571,7 @@
 - **Multi-tenant headers docs honesty OpenAPI:** Appendix B / API Keys auth headers document `X-Tenant-ID` as JWT/key **UUID** (not slug `tenant_abc123`).
 - **Response envelope honesty OpenAPI:** Success `env()` body is `{ success, data, message }` only — no JSON `timestamp` / `request_id`; correlation via **`X-Request-ID`** header.
 - **List pagination honesty OpenAPI:** Most lists return unpaginated `data: T[]` (no global cursor/`items`+`pagination` contract).
-- **Money JSON number honesty OpenAPI:** Request Values and response serializers use JSON **numbers** (not decimal strings) for money/qty floats.
+- **Money JSON number honesty OpenAPI:** Request Values and response serializers use JSON **numbers** (not decimal strings) for money/qty; sales invoice pilot uses `honesty.money_json` (Decimal→finite float).
 - **Error envelope honesty OpenAPI:** Errors use FastAPI `detail` shapes; no success-style `{ success:false, error, request_id }` body field.
 - **Request Content-Type honesty OpenAPI:** Default JSON `application/json`; multipart uploads are documented exceptions (not “all requests must be JSON”).
 - **Response media-type honesty OpenAPI:** `env()` wraps JSON successes; CSV/PDF/XLSX/PNG/HTML/metrics/file downloads are non-envelope responses.
@@ -579,6 +579,23 @@
 - **HTTP Methods honesty OpenAPI:** `PUT` only on three upsert routes (FX rates, WH reorder, store reorder-policy); updates are primarily `PATCH`.
 - **Product lookup list shape honesty OpenAPI (BR-18.2):** Lookup returns `{ q, barcode, count, items }` with bounded `limit` — not a bare array / not global cursor pagination.
 - **Error code catalog honesty OpenAPI:** Docs list real `detail` / `detail.code` values; metrics status→code maps (e.g. `VALIDATION_ERROR`) are not response body fields.
+- **Expense reject reason defense-in-depth OpenAPI (BR-9.3):** Service `reject_expense` uses `require_honest_narrative` (**400** on blank/URL/punctuation) matching OpenAPI `ExpenseRejectReasonValue` (**422**).
+- **Recurring skip reason defense-in-depth OpenAPI (BR-9.5):** Service `skip_next_recurring` uses `require_honest_narrative` (**400**) matching `RecurringSkipReasonValue` (**422**).
+- **Journal unpost reason defense-in-depth OpenAPI (BR-10.2):** Service `unpost_journal_entry` uses `require_honest_narrative` (**400**) matching `JournalUnpostReasonValue` (**422**).
+- **Tenant suspend reason defense-in-depth OpenAPI (BR-1 / BR-19):** `POST /tenants/me/suspend` + `POST /tenants/{ref}/suspend` use `require_honest_narrative` (**400**) matching `TenantSuspendReasonValue` (**422**).
+- **Sales invoice money_json Decimal pilot OpenAPI (BR-7.4):** `serialize_invoice` money/qty fields use `honesty.money_json` (Decimal→finite JSON number; not decimal strings).
+- **Tenant company name aria OpenAPI (BR-1):** Platform create **Tenant company name** input (`aria-label`).
+- **Tenant currency aria OpenAPI (BR-1 / BR-2.6):** Platform create **Tenant currency** input (`aria-label`).
+- **Tenant admin email aria OpenAPI (BR-1):** Platform create **Tenant admin email** input (`aria-label`).
+- **Subscription term length aria OpenAPI:** Platform **Subscription term length** input (`aria-label`).
+- **Store entitlement override aria OpenAPI:** Platform **Store entitlement override** + **Store entitlement override draft** inputs (`aria-label`s).
+- **Backup retention hour aria OpenAPI (BR-16):** Backup **Backup retention count** + **Backup hour UTC** inputs (`aria-label`s).
+- **POS split tender aria OpenAPI (BR-8.1):** POS **POS cash tender** + **POS card tender** inputs (`aria-label`s).
+- **Period close/reopen reason defense-in-depth OpenAPI (BR-10.2):** Service `close_books` / `reopen_books` use `require_honest_narrative` (**400**) matching `PeriodCloseReasonValue` (**422**).
+- **Cheque bounce/cancel reason defense-in-depth OpenAPI (BR-10.4):** Service `bounce_cheque` / `cancel_cheque` use `require_honest_narrative` (**400**) matching `ChequeLifecycleReasonValue` (**422**).
+- **Product CSV import free-text honesty OpenAPI (BR-5.1 / BR-18.2):** CSV validate path applies `ProductNameValue` / `ProductSkuValue` / `ProductDescriptionValue` (TypeAdapter) so `!!!`/`http://…`/bad SKU fail the row report (was strip-only name/sku required).
+- **Company SMTP port aria OpenAPI (BR-20.3):** Company **Company SMTP port** input (`aria-label`).
+- **Stock quantity aria OpenAPI (BR-5.2):** Inventory **Stock-in quantity** + **Opening stock quantity** + **Stock adjustment quantity** + **Stock-out quantity** inputs (`aria-label`s).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

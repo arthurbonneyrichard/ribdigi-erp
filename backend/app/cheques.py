@@ -14,6 +14,7 @@ from app.accounting import (
     is_cheque_method,
     post_journal_entry,
 )
+from app.honesty import require_honest_narrative
 
 RECEIVED = "received"
 ISSUED = "issued"
@@ -351,9 +352,7 @@ async def bounce_cheque(
     reason: str | None = None,
 ) -> m.Cheque:
     """Dishonour cheque: reverse GL to AR/AP and restore document balances."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="bounce reason is required")
+    reason_s = require_honest_narrative(reason, label="bounce reason")
     cheque = await get_cheque(db, tenant_id, cheque_id)
     if cheque.status in {BOUNCED, CANCELLED}:
         raise HTTPException(status_code=409, detail=f"Cheque already {cheque.status}")
@@ -504,9 +503,7 @@ async def cancel_cheque(
     reason: str | None = None,
 ) -> m.Cheque:
     """Cancel an issued pending cheque (stop payment) before bank clearing."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     cheque = await get_cheque(db, tenant_id, cheque_id)
     if cheque.direction != ISSUED:
         raise HTTPException(status_code=409, detail="Only issued cheques can be cancelled; use bounce for received")

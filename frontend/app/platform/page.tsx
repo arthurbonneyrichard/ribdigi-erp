@@ -458,6 +458,7 @@ export default function PlatformConsole() {
                   }));
                 }}
                 placeholder="Sunrise Mart Ltd"
+                aria-label="Tenant company name"
                 required
               />
             </label>
@@ -491,6 +492,7 @@ export default function PlatformConsole() {
               <input
                 value={form.currency}
                 onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
+                aria-label="Tenant currency"
                 required
               />
             </label>
@@ -501,6 +503,7 @@ export default function PlatformConsole() {
                 value={form.admin_email}
                 onChange={(e) => setForm((f) => ({ ...f, admin_email: e.target.value }))}
                 placeholder="admin@company.example.com"
+                aria-label="Tenant admin email"
                 required
               />
             </label>
@@ -697,6 +700,7 @@ export default function PlatformConsole() {
                   onChange={(e) =>
                     setSubForm((f) => ({ ...f, term_value: Number(e.target.value) || 1 }))
                   }
+                  aria-label="Subscription term length"
                   required
                 />
               </label>
@@ -732,6 +736,7 @@ export default function PlatformConsole() {
                   onChange={(e) =>
                     setSubForm((f) => ({ ...f, max_stores_override: e.target.value }))
                   }
+                  aria-label="Store entitlement override"
                 />
               </label>
               <button type="submit" disabled={busy === selected.id}>
@@ -759,6 +764,7 @@ export default function PlatformConsole() {
                   placeholder="Clear / package"
                   value={overrideDraft}
                   onChange={(e) => setOverrideDraft(e.target.value)}
+                  aria-label="Store entitlement override draft"
                   style={{ width: 120 }}
                 />
               </label>

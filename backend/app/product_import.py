@@ -15,6 +15,13 @@ from app import catalog_meta as catalog_meta_svc
 from app import models as m
 from app.inventory import apply_stock_change
 from app.tax import normalize_supply_class
+from pydantic import TypeAdapter, ValidationError
+
+from app.schemas import (
+    ProductDescriptionValue,
+    ProductNameValue,
+    ProductSkuValue,
+)
 
 TEMPLATE_HEADERS = (
     "name",
@@ -320,8 +327,18 @@ async def validate_import_rows(
         sku = (raw.get("sku") or "").strip()
         if not name:
             errors.append("name is required")
+        else:
+            try:
+                name = TypeAdapter(ProductNameValue).validate_python(name)
+            except ValidationError:
+                errors.append("name must be a plain product label (no URL/punctuation-only)")
         if not sku:
             errors.append("sku is required")
+        else:
+            try:
+                sku = TypeAdapter(ProductSkuValue).validate_python(sku)
+            except ValidationError:
+                errors.append("sku must be a valid product SKU")
         sku_key = sku.lower()
         if sku and sku_key in seen_skus:
             errors.append("duplicate sku in file")
@@ -361,6 +378,11 @@ async def validate_import_rows(
         except ValueError as exc:
             errors.append(str(exc))
         description = (raw.get("description") or "").strip() or None
+        if description is not None:
+            try:
+                description = TypeAdapter(ProductDescriptionValue).validate_python(description)
+            except ValidationError:
+                errors.append("description must be a plain product narrative (no URL/punctuation-only)")
 
         category_id = None
         category_label = "General"

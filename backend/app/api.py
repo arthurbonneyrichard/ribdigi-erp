@@ -57,6 +57,7 @@ from app import backup as backup_svc
 from app import tenants as tenants_svc
 from app import packages as packages_svc
 from app import storage as storage_svc
+from app.honesty import require_honest_narrative
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
@@ -592,9 +593,7 @@ async def tenant_me_suspend(
 ):
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    reason_s = (payload.reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="suspension reason is required")
+    reason_s = require_honest_narrative(payload.reason, label="suspension reason")
     tenant = await tenants_svc.suspend_tenant(
         db, tenant, reason=reason_s, suspended_by=claims["sub"]
     )
@@ -734,9 +733,7 @@ async def tenant_suspend_by_ref(
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
-    reason_s = (payload.reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="suspension reason is required")
+    reason_s = require_honest_narrative(payload.reason, label="suspension reason")
     tenant = await tenants_svc.suspend_tenant(
         db, tenant, reason=reason_s, suspended_by=claims["sub"]
     )

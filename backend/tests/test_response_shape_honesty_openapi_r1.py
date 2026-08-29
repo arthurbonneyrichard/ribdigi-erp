@@ -57,8 +57,10 @@ def test_final_aria_and_response_shape_docs():
 
 def test_money_response_is_json_number_not_string():
     src = inspect.getsource(serialize_invoice)
-    assert "float(invoice.subtotal)" in src
-    assert "float(invoice.total_amount)" in src
+    assert "money_json(invoice.subtotal)" in src
+    assert "money_json(invoice.total_amount)" in src
+    assert "float(invoice.subtotal)" not in src
+    assert "float(invoice.total_amount)" not in src
 
 
 @pytest.mark.asyncio

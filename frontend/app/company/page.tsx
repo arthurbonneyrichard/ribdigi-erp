@@ -677,6 +677,7 @@ export default function Page() {
           <input
             value={emailPort}
             onChange={(e) => setEmailPort(e.target.value)}
+            aria-label="Company SMTP port"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">Username</label>
