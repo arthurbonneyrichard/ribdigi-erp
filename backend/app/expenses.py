@@ -685,7 +685,7 @@ async def create_expense(
         category_id=cat_id,
         category=cat_name,
         description=desc,
-        amount=round(money_json(amount), 2),
+        amount=money_json(round(money_json(amount), 2)),
         expense_date=expense_date or datetime.utcnow(),
         payment_method=method,
         liquid_account_id=liquid_account_id,
@@ -964,7 +964,7 @@ async def update_expense(
             )
 
     if amount is not None:
-        new_amount = round(money_json(amount), 2)
+        new_amount = money_json(round(money_json(amount), 2))
         if new_amount <= 0:
             raise HTTPException(status_code=400, detail="amount must be positive")
         expense.amount = new_amount
@@ -1076,7 +1076,7 @@ async def create_recurring(
         category=cat_name,
         description=optional_honest_narrative(description, label="expense description")
         or "",
-        amount=round(money_json(amount), 2),
+        amount=money_json(round(money_json(amount), 2)),
         frequency=freq,
         payment_method=method,
         payee=optional_honest_narrative(payee, label="expense payee", max_length=150),
@@ -1169,7 +1169,7 @@ async def update_recurring(
         row.category = cat_name
 
     if amount is not None:
-        row.amount = round(money_json(amount), 2)
+        row.amount = money_json(round(money_json(amount), 2))
     if clear_payee:
         row.payee = None
     elif payee is not None:

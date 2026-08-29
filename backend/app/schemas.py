@@ -3255,7 +3255,7 @@ class GrnItemCreate(BaseModel):
         rejected = money_json(self.rejected_qty or 0)
         accepted = self.accepted_qty
         if rejected <= 1e-9 and accepted is not None and money_json(accepted) < received - 1e-9:
-            rejected = round(received - money_json(accepted), 6)
+            rejected = money_json(round(received - money_json(accepted), 6))
         if rejected > 1e-9 and not self.rejection_reason:
             raise ValueError("rejection_reason is required when rejected_qty > 0")
         return self

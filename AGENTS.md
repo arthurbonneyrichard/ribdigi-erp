@@ -1815,6 +1815,17 @@
 - **Accounting P&L gross_profit intermediate money_json Decimal pilot OpenAPI (BR-10.6 / BR-14.5):** P&L pack `gross_profit` intermediate uses `honesty.money_json(round(...))`.
 - **Accounting P&L net_profit intermediate money_json Decimal pilot OpenAPI (BR-10.6 / BR-14.5):** P&L pack `net_profit` intermediate uses `honesty.money_json(round(...))`.
 - **Onboarding restore checklist aria OpenAPI:** Shell Getting started **Restore onboarding checklist** button (`aria-label`).
+- **Purchase suggestion gap money_json Decimal pilot OpenAPI (BR-6.2):** `_product_suggested_qty` gap uses `honesty.money_json(round(...))`.
+- **Purchase suggestion warehouse gap money_json Decimal pilot OpenAPI (BR-6.2):** low-stock draft PR warehouse gap uses `honesty.money_json(round(...))`.
+- **Purchase suggestion product max return money_json Decimal pilot OpenAPI (BR-6.2):** `_product_suggested_qty` `max(rq, gap)` return uses `honesty.money_json`.
+- **Purchase suggestion product floor return money_json Decimal pilot OpenAPI (BR-6.2):** `_product_suggested_qty` `max(1.0, gap)` return uses `honesty.money_json`.
+- **Purchase suggestion product zero return money_json Decimal pilot OpenAPI (BR-6.2):** `_product_suggested_qty` else-branch zeros use `honesty.money_json(0)`.
+- **Inventory warehouse suggested_order_qty gap money_json Decimal pilot OpenAPI (BR-5.2 / BR-5.4):** warehouse stock list `suggested_order_qty` gap uses `honesty.money_json(round(...))` (aligned with stores).
+- **Expense create amount money_json Decimal pilot OpenAPI (BR-9.2):** `create_expense` ORM `amount` uses `honesty.money_json(round(...))`.
+- **Expense update amount money_json Decimal pilot OpenAPI (BR-9.2):** `update_expense` `new_amount` uses `honesty.money_json(round(...))`.
+- **Recurring expense create amount money_json Decimal pilot OpenAPI (BR-9.5):** `create_recurring` ORM `amount` uses `honesty.money_json(round(...))`.
+- **Recurring expense update amount money_json Decimal pilot OpenAPI (BR-9.5):** `update_recurring` `row.amount` uses `honesty.money_json(round(...))`.
+- **GRN schema inferred rejected_qty money_json Decimal pilot OpenAPI (BR-6.4):** `GrnItemCreate` validator inferred reject qty uses `honesty.money_json(round(...))`.
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

@@ -15,15 +15,22 @@ from app.honesty import money_json, optional_honest_narrative
 
 
 def _product_suggested_qty(*, stock_qty: float, reorder_level: float, reorder_qty: float = 0) -> float:
-    gap = max(0.0, round(money_json(reorder_level) - money_json(stock_qty), 3))
+    gap = max(
+        0.0,
+        money_json(round(money_json(reorder_level) - money_json(stock_qty), 3)),
+    )
     rq = money_json(reorder_qty or 0)
     if rq > 0:
         return (
-            max(rq, gap)
+            money_json(max(rq, gap))
             if gap > 0 or money_json(stock_qty) <= money_json(reorder_level)
-            else 0.0
+            else money_json(0)
         )
-    return max(1.0, gap) if money_json(stock_qty) <= money_json(reorder_level) else 0.0
+    return (
+        money_json(max(1.0, gap))
+        if money_json(stock_qty) <= money_json(reorder_level)
+        else money_json(0)
+    )
 
 
 async def _preferred_suppliers_for_products(
@@ -204,13 +211,17 @@ async def create_requests_from_low_stock(
                     )
                 ).scalar_one_or_none()
                 if stock:
-                    qty = max(
-                        money_json(stock.reorder_qty or 0),
-                        round(
-                            money_json(stock.reorder_level or 0)
-                            - money_json(stock.quantity or 0),
-                            3,
-                        ),
+                    qty = money_json(
+                        max(
+                            money_json(stock.reorder_qty or 0),
+                            money_json(
+                                round(
+                                    money_json(stock.reorder_level or 0)
+                                    - money_json(stock.quantity or 0),
+                                    3,
+                                )
+                            ),
+                        )
                     )
             if qty <= 0:
                 qty = _product_suggested_qty(
