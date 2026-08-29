@@ -118,7 +118,10 @@ export default function Login() {
         }
         const r = await api('/auth/2fa/verify', {
           method: 'POST',
-          body: JSON.stringify({ challenge_token: trimmedChallenge, code: totpCode }),
+          body: JSON.stringify({
+            challenge_token: trimmedChallenge,
+            code: totpCode.trim(),
+          }),
         });
         finishLogin(r.data);
         return;
@@ -140,7 +143,7 @@ export default function Login() {
           email,
           password: trimmedPassword,
           tenant_id: trimmedTenant,
-          totp_code: totpCode || null,
+          totp_code: totpCode.trim() || null,
         }),
       });
       if (r.data?.requires_2fa) {

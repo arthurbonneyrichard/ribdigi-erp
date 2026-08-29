@@ -168,7 +168,7 @@ export default function Page() {
       const r = await api('/webhooks', {
         method: 'POST',
         body: JSON.stringify({
-          url: hookUrl,
+          url: hookUrl.trim(),
           events: hookEvents,
           secret: hookSecret.trim() || null,
           description: hookDesc.trim() || null,

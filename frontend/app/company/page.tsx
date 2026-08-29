@@ -115,7 +115,10 @@ export default function Page() {
           ...(String(tenant.phone || '').trim()
             ? { phone: String(tenant.phone).trim() }
             : {}),
-          email: tenant.email,
+          // Omit blank email so Save does not 422 (EmailStr); leave prior value.
+          ...(String(tenant.email || '').trim()
+            ? { email: String(tenant.email).trim() }
+            : {}),
           // Omit blank website so Save does not 422 (WebhookUrlValue); leave prior value.
           ...(String(tenant.website || '').trim()
             ? { website: String(tenant.website).trim() }
@@ -363,6 +366,7 @@ export default function Page() {
           value={tenant.email || ''}
           onChange={(e) => setTenant({ ...tenant, email: e.target.value })}
           placeholder="Email"
+          aria-label="Company email"
         />
         <input
           value={tenant.website || ''}

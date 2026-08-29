@@ -159,7 +159,7 @@ export default function Page() {
     try {
       const r = await api('/auth/2fa/confirm', {
         method: 'POST',
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code: code.trim() }),
       });
       setBackupCodes(r.data?.backup_codes || []);
       setSetup(null);
@@ -212,7 +212,7 @@ export default function Page() {
     try {
       const r = await api('/auth/2fa/backup-codes', {
         method: 'POST',
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code: code.trim() }),
       });
       setBackupCodes(r.data?.backup_codes || []);
       setCode('');
@@ -232,7 +232,7 @@ export default function Page() {
     try {
       const r = await api('/auth/2fa/disable', {
         method: 'POST',
-        body: JSON.stringify({ password: trimmedPassword, code }),
+        body: JSON.stringify({ password: trimmedPassword, code: code.trim() }),
       });
       setMessage(r.message || '2FA disabled');
       setCode('');

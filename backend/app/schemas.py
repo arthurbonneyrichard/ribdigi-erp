@@ -3732,7 +3732,11 @@ class DocumentNumberingFields(BaseModel):
 
     Blank/`!!!`/`JE!`/`a b` → **422** (was free `str` min_length=1; service
     `normalize_prefix` late **400**). Strip + upper at schema boundary.
+    Unknown nested keys → **422** (`extra=forbid`; parent forbid alone did not
+    reject junk under `*_numbering`).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     prefix: DocumentPrefixValue
     next_number: int = Field(default=1, ge=1, le=999999)

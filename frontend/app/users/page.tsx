@@ -184,7 +184,7 @@ export default function Page() {
           full_name: fullName,
           password: trimmedPassword,
           role: form.role,
-          phone: form.phone || null,
+          phone: form.phone.trim() || null,
           branch_id: form.branch_id.trim() || null,
           department_id: form.department_id.trim() || null,
           record_scope: form.record_scope || null,
