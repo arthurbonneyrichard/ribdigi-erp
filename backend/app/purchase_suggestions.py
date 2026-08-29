@@ -15,11 +15,15 @@ from app.honesty import money_json, optional_honest_narrative
 
 
 def _product_suggested_qty(*, stock_qty: float, reorder_level: float, reorder_qty: float = 0) -> float:
-    gap = max(0.0, round(float(reorder_level) - float(stock_qty), 3))
-    rq = float(reorder_qty or 0)
+    gap = max(0.0, round(money_json(reorder_level) - money_json(stock_qty), 3))
+    rq = money_json(reorder_qty or 0)
     if rq > 0:
-        return max(rq, gap) if gap > 0 or float(stock_qty) <= float(reorder_level) else 0.0
-    return max(1.0, gap) if float(stock_qty) <= float(reorder_level) else 0.0
+        return (
+            max(rq, gap)
+            if gap > 0 or money_json(stock_qty) <= money_json(reorder_level)
+            else 0.0
+        )
+    return max(1.0, gap) if money_json(stock_qty) <= money_json(reorder_level) else 0.0
 
 
 async def _preferred_suppliers_for_products(

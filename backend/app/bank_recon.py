@@ -444,7 +444,7 @@ async def match_line(
         raise HTTPException(status_code=409, detail="Journal line already in a clearing group")
 
     signed = journal_line_signed_amount(jl)
-    bank_amt = round(float(line.amount), 2)
+    bank_amt = money_json(round(money_json(line.amount), 2))
     if abs(signed - bank_amt) > 0.01:
         raise HTTPException(
             status_code=400,
@@ -598,7 +598,7 @@ async def auto_match_suggestions(
     for bl in lines:
         if bl.status != "unmatched":
             continue
-        amt = round(float(bl.amount), 2)
+        amt = money_json(round(money_json(bl.amount), 2))
         bank_tokens = _tokens(bl.description) | _tokens(bl.external_ref)
         best = None
         for jl in book:
@@ -774,7 +774,7 @@ async def list_clearing_groups(
             .scalars()
             .all()
         )
-        bank_total = round(sum(float(ln.amount) for ln in bank_lines), 2)
+        bank_total = money_json(round(sum(money_json(ln.amount) for ln in bank_lines), 2))
         book_total = 0.0
         jl_ids = [lk.journal_line_id for lk in links]
         if jl_ids:
@@ -787,7 +787,7 @@ async def list_clearing_groups(
                 .scalars()
                 .all()
             )
-            book_total = round(sum(journal_line_signed_amount(jl) for jl in jlines), 2)
+            book_total = money_json(round(sum(journal_line_signed_amount(jl) for jl in jlines), 2))
         out.append(
             serialize_clearing_group(
                 g,
@@ -887,8 +887,8 @@ async def create_clearing_group(
             raise HTTPException(status_code=409, detail=f"Journal line {jid} already in a clearing group")
         book_lines.append(jl)
 
-    bank_total = round(sum(float(ln.amount) for ln in bank_lines), 2)
-    book_total = round(sum(journal_line_signed_amount(jl) for jl in book_lines), 2)
+    bank_total = money_json(round(sum(money_json(ln.amount) for ln in bank_lines), 2))
+    book_total = money_json(round(sum(journal_line_signed_amount(jl) for jl in book_lines), 2))
     if abs(bank_total - book_total) > 0.01:
         raise HTTPException(
             status_code=400,

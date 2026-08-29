@@ -37,7 +37,7 @@ def to_base(amount: float, rate: float) -> float:
 
 
 def doc_rate(obj) -> float:
-    rate = float(getattr(obj, "exchange_rate", None) or 1)
+    rate = money_json(getattr(obj, "exchange_rate", None) or 1)
     return rate if rate > 0 else 1.0
 
 
@@ -92,7 +92,7 @@ async def upsert_rate(
     base = await get_base_currency(db, tenant_id)
     if code == base:
         raise HTTPException(status_code=400, detail="Cannot set a rate for the base currency")
-    rate = float(rate_to_base)
+    rate = money_json(rate_to_base)
     if rate <= 0:
         raise HTTPException(status_code=400, detail="rate_to_base must be positive")
     row = (
@@ -154,7 +154,7 @@ async def resolve_rate(
     if code == base:
         return base, 1.0
     if explicit_rate is not None:
-        rate = float(explicit_rate)
+        rate = money_json(explicit_rate)
         if rate <= 0:
             raise HTTPException(status_code=400, detail="exchange_rate must be positive")
         return code, rate
@@ -263,7 +263,7 @@ async def fetch_provider_rates(base_currency: str) -> tuple[str, dict[str, float
     if provider == "frankfurter":
         url = custom or "https://api.frankfurter.app"
         data = await _http_get_json(f"{url}/latest?from={base}")
-        rates = {str(k).upper(): float(v) for k, v in (data.get("rates") or {}).items()}
+        rates = {str(k).upper(): money_json(v) for k, v in (data.get("rates") or {}).items()}
         return "frankfurter", rates
 
     # Default: open.er-api.com (no key)
@@ -275,7 +275,7 @@ async def fetch_provider_rates(base_currency: str) -> tuple[str, dict[str, float
             status_code=502,
             detail=data.get("error-type") or data.get("message") or "FX provider error",
         )
-    rates = {str(k).upper(): float(v) for k, v in (data.get("rates") or {}).items()}
+    rates = {str(k).upper(): money_json(v) for k, v in (data.get("rates") or {}).items()}
     if not rates:
         raise HTTPException(status_code=502, detail="FX provider returned no rates")
     return "open_er_api", rates

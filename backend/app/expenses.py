@@ -89,8 +89,8 @@ def default_approval_levels(
     auto_threshold: float = DEFAULT_APPROVAL_THRESHOLD,
     l2_threshold: float = DEFAULT_L2_THRESHOLD,
 ) -> list[dict]:
-    auto_t = float(auto_threshold)
-    l2_t = max(float(l2_threshold), auto_t)
+    auto_t = money_json(auto_threshold)
+    l2_t = max(money_json(l2_threshold), auto_t)
     return [
         {
             "step": 1,
@@ -135,7 +135,7 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"level {i + 1} must be an object")
         try:
-            min_amount = float(item.get("min_amount"))
+            min_amount = money_json(item.get("min_amount"))
         except (TypeError, ValueError):
             raise HTTPException(status_code=400, detail=f"level {i + 1} min_amount is required") from None
         if min_amount <= 0:
@@ -185,12 +185,12 @@ def matrix_payload(levels: list[dict]) -> dict:
 
 def steps_required_from_matrix(amount: float, levels: list[dict]) -> int:
     """Count levels whose min_amount the expense exceeds (0 = auto-approve)."""
-    amt = float(amount)
-    return sum(1 for lvl in levels if amt > float(lvl["min_amount"]))
+    amt = money_json(amount)
+    return sum(1 for lvl in levels if amt > money_json(lvl["min_amount"]))
 
 
 def requires_approval(amount: float, threshold: float) -> bool:
-    return float(amount) > float(threshold)
+    return money_json(amount) > money_json(threshold)
 
 
 def steps_required_for_amount(amount: float, *, auto_threshold: float, l2_threshold: float) -> int:
@@ -345,7 +345,7 @@ async def update_category(
             name, label="expense category name", max_length=120
         )
     if budget_amount is not None:
-        cat.budget_amount = float(budget_amount)
+        cat.budget_amount = money_json(budget_amount)
     if is_active is not None:
         cat.is_active = bool(is_active)
     if clear_account:
@@ -364,14 +364,18 @@ def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:
             return normalize_approval_matrix(raw)
         except HTTPException:
             pass
-    auto_t = float(tenant.expense_approval_threshold or DEFAULT_APPROVAL_THRESHOLD)
-    l2_t = float(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
+    auto_t = money_json(tenant.expense_approval_threshold or DEFAULT_APPROVAL_THRESHOLD)
+    l2_t = money_json(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
     return default_approval_levels(auto_threshold=auto_t, l2_threshold=l2_t)
 
 
 def settings_from_levels(levels: list[dict]) -> dict:
-    auto_t = float(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
-    l2_t = float(levels[1]["min_amount"]) if len(levels) > 1 else max(DEFAULT_L2_THRESHOLD, auto_t)
+    auto_t = money_json(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
+    l2_t = (
+        money_json(levels[1]["min_amount"])
+        if len(levels) > 1
+        else max(DEFAULT_L2_THRESHOLD, auto_t)
+    )
     return {
         "expense_approval_threshold": money_json(auto_t),
         "expense_l2_threshold": money_json(l2_t),
@@ -385,7 +389,7 @@ async def get_approval_threshold(db: AsyncSession, tenant_id: str) -> float:
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     levels = resolve_tenant_levels(tenant)
-    return float(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
+    return money_json(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
 
 
 async def get_l2_threshold(db: AsyncSession, tenant_id: str) -> float:
@@ -394,8 +398,8 @@ async def get_l2_threshold(db: AsyncSession, tenant_id: str) -> float:
         raise HTTPException(status_code=404, detail="Tenant not found")
     levels = resolve_tenant_levels(tenant)
     if len(levels) > 1:
-        return float(levels[1]["min_amount"])
-    return float(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
+        return money_json(levels[1]["min_amount"])
+    return money_json(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
 
 
 async def get_approval_settings(db: AsyncSession, tenant_id: str) -> dict:

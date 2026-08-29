@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import expense_ocr as ocr_svc
 from app import models as m
 from app import purchasing as purchasing_svc
-from app.honesty import optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative
 from app import storage as storage_svc
 
 
@@ -38,9 +38,12 @@ async def suggest_for_purchase_invoice(
     mapped = map_purchase_suggestions(result.get("suggestions") or {})
     warnings = list(result.get("warnings") or [])
     ocr_amount = mapped.get("ocr_amount")
-    if ocr_amount is not None and abs(float(ocr_amount) - float(inv.total_amount or 0)) > 0.05:
+    if ocr_amount is not None and abs(
+        money_json(ocr_amount) - money_json(inv.total_amount or 0)
+    ) > 0.05:
         warnings.append(
-            f"OCR amount {ocr_amount} differs from invoice total {float(inv.total_amount):.2f} "
+            f"OCR amount {money_json(ocr_amount)} differs from invoice total "
+            f"{money_json(inv.total_amount or 0):.2f} "
             "(header fields only — line amounts are not auto-changed)"
         )
     return {

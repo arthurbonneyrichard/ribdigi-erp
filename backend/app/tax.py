@@ -114,7 +114,7 @@ def normalize_components(raw: list | None) -> list[dict[str, Any]] | None:
             item = item.model_dump()
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail="Each tax component must be an object")
-        rate = float(item.get("rate") or 0)
+        rate = money_json(item.get("rate") or 0)
         if rate < 0:
             raise HTTPException(status_code=400, detail="Component rate must be >= 0")
         if "basis" in item and item.get("basis") is not None:
@@ -153,9 +153,9 @@ def effective_rate_from_components(components: list[dict] | None, fallback: floa
     total = 0.0
     for c in components:
         if c.get("basis", "net") == "net":
-            total += float(c.get("rate") or 0)
+            total += money_json(c.get("rate") or 0)
     if total <= 0:
-        total = sum(float(c.get("rate") or 0) for c in components)
+        total = sum(money_json(c.get("rate") or 0) for c in components)
     return money_json(round(total, 4))
 
 
@@ -187,10 +187,14 @@ def compute_tax_breakdown(
     is_reverse_charge: bool = False,
 ) -> dict[str, Any]:
     """Detailed tax calc including optional compound component lines."""
-    amount = float(amount or 0)
+    amount = money_json(amount or 0)
     mode = normalize_pricing_mode(pricing_mode)
     comps = normalize_components(components) if components else None
-    rate = effective_rate_from_components(comps, rate_pct) if comps else float(rate_pct or 0)
+    rate = (
+        effective_rate_from_components(comps, rate_pct)
+        if comps
+        else money_json(rate_pct or 0)
+    )
 
     if amount <= 0:
         return {
@@ -221,27 +225,27 @@ def compute_tax_breakdown(
             tax = round(gross * eff / (100.0 + eff), 2)
             net = round(gross - tax, 2)
             net_comps = [c for c in comps if c["basis"] == "net"] or list(comps)
-            denom = sum(float(c["rate"]) for c in net_comps) or eff
+            denom = sum(money_json(c["rate"]) for c in net_comps) or eff
             allocated = 0.0
             for i, c in enumerate(net_comps):
                 if i == len(net_comps) - 1:
                     share = round(tax - allocated, 2)
                 else:
-                    share = round(tax * (float(c["rate"]) / denom), 2)
+                    share = round(tax * (money_json(c["rate"]) / denom), 2)
                     allocated += share
-                component_lines.append({**c, "amount": share})
+                component_lines.append({**c, "amount": money_json(share)})
         else:
             net = round(amount, 2)
             running = net
             tax = 0.0
             for c in comps:
                 if c["basis"] == "compound":
-                    part = round(running * float(c["rate"]) / 100.0, 2)
+                    part = round(running * money_json(c["rate"]) / 100.0, 2)
                 else:
-                    part = round(net * float(c["rate"]) / 100.0, 2)
+                    part = round(net * money_json(c["rate"]) / 100.0, 2)
                 running += part
                 tax += part
-                component_lines.append({**c, "amount": part})
+                component_lines.append({**c, "amount": money_json(part)})
             tax = round(tax, 2)
             gross = round(net + tax, 2)
     else:
@@ -378,7 +382,7 @@ async def update_tax_rate(
     if name is not None:
         row.name = require_honest_narrative(name, label="tax rate name", max_length=80)
     if rate is not None:
-        row.rate = float(rate)
+        row.rate = money_json(rate)
     if tax_type is not None:
         row.tax_type = normalize_tax_type(tax_type)
     if pricing_mode is not None:

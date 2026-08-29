@@ -42,7 +42,7 @@ async def post_opening_stock(
         product_id = raw.get("product_id")
         if not product_id:
             raise HTTPException(status_code=400, detail="Each line needs product_id")
-        qty = float(raw.get("quantity") or 0)
+        qty = money_json(raw.get("quantity") or 0)
         if qty <= 0:
             raise HTTPException(status_code=400, detail="quantity must be positive")
 
@@ -71,12 +71,12 @@ async def post_opening_stock(
         )
         unit_cost = raw.get("unit_cost")
         if unit_cost is None:
-            unit_cost = float(moved.get("cost_price") or 0)
+            unit_cost = money_json(moved.get("cost_price") or 0)
         else:
-            unit_cost = float(unit_cost)
+            unit_cost = money_json(unit_cost)
             if unit_cost < 0:
                 raise HTTPException(status_code=400, detail="unit_cost cannot be negative")
-        line_value = money_json(round(float(moved["quantity_base"]) * unit_cost, 2))
+        line_value = money_json(round(money_json(moved["quantity_base"]) * unit_cost, 2))
         inventory_value += line_value
         results.append(
             {

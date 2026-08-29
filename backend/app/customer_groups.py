@@ -190,10 +190,10 @@ async def customer_group_discount(
     ).scalar_one_or_none()
     if not group:
         return 0.0, None
-    return float(group.discount_percent or 0), group
+    return money_json(group.discount_percent or 0), group
 
 
 def apply_discount(base_price: float, discount_percent: float) -> float:
-    base = float(base_price or 0)
-    pct = max(0.0, min(100.0, float(discount_percent or 0)))
+    base = money_json(base_price or 0)
+    pct = max(0.0, min(100.0, money_json(discount_percent or 0)))
     return money_json(round(base * (1.0 - pct / 100.0), 2))
