@@ -2886,6 +2886,7 @@ export default function Page() {
                           saveVariantPrice(v.id, e.target.value);
                         }
                       }}
+                      aria-label={`Variant selling price ${v.name || v.sku || v.id}`}
                     />
                   </td>
                   <td>{v.is_active ? 'yes' : 'no'}</td>
@@ -3125,6 +3126,7 @@ export default function Page() {
               value={openingUnitCost}
               onChange={(e) => setOpeningUnitCost(e.target.value)}
               placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
+              aria-label="Opening stock unit cost"
             />
             <input
               value={openingBatch}
@@ -3952,7 +3954,12 @@ export default function Page() {
                 ))}
             </select>
             <label className="muted">Quantity</label>
-            <input value={xferQty} onChange={(e) => setXferQty(e.target.value)} placeholder="1" />
+            <input
+              value={xferQty}
+              onChange={(e) => setXferQty(e.target.value)}
+              placeholder="1"
+              aria-label="Stock transfer quantity"
+            />
             <label className="muted">Notes (optional)</label>
             <input
               value={xferNotes}

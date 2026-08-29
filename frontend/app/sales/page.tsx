@@ -1134,6 +1134,7 @@ export default function Page() {
             onChange={(e) => setExchangeRate(e.target.value)}
             placeholder="FX rate (optional)"
             style={{ width: 120 }}
+            aria-label="Sales invoice FX rate"
           />
           <input
             value={customerName}
@@ -1871,6 +1872,7 @@ export default function Page() {
                         }}
                         placeholder="Pay"
                         style={{ width: 80 }}
+                        aria-label={`Sales invoice pay amount ${inv.invoice_number || inv.id}`}
                       />
                       <button
                         onClick={() => {

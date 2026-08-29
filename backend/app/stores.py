@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import allocate_unlocated_stock, apply_warehouse_stock_change, get_or_create_warehouse_stock
 
 TRANSFER_EDITABLE = {"draft"}
@@ -515,7 +515,7 @@ async def create_transfer(
         from_warehouse_id=from_wh.id,
         to_warehouse_id=to_wh.id,
         status="requested" if submit else "draft",
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="stock transfer notes"),
         created_by=user_id,
         approval_step=1 if submit else 0,
         approval_steps_required=steps_required,

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import totp as totp_svc
+from app.honesty import optional_honest_narrative
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -282,7 +283,7 @@ async def create_endpoint(
         url=cleaned_url,
         events=event_list,
         secret_enc=encrypt_webhook_secret(raw_secret),
-        description=(description or "").strip() or None,
+        description=optional_honest_narrative(description, label="webhook description"),
         is_active=bool(is_active),
         created_by=user_id,
     )
@@ -309,7 +310,9 @@ async def update_endpoint(
     if events is not None:
         row.events = normalize_events(events)
     if description is not None:
-        row.description = description.strip() or None
+        row.description = optional_honest_narrative(
+            description, label="webhook description"
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     if rotate_secret:

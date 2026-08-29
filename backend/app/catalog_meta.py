@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative
 
 DEFAULT_UNITS = (
     ("PCS", "Pieces"),
@@ -157,10 +158,10 @@ def compute_stock_status(stock_qty: float, reorder_level: float) -> dict:
 
 def serialize_product(row: m.Product) -> dict:
     def _opt_float(value) -> float | None:
-        return float(value) if value is not None else None
+        return None if value is None else money_json(value)
 
-    stock_qty = float(row.stock_qty or 0)
-    reorder_level = float(row.reorder_level or 0)
+    stock_qty = money_json(row.stock_qty)
+    reorder_level = money_json(row.reorder_level)
     status = compute_stock_status(stock_qty, reorder_level)
     return {
         "id": row.id,
@@ -174,8 +175,8 @@ def serialize_product(row: m.Product) -> dict:
         "unit_id": row.unit_id,
         "image_url": row.image_url,
         "has_image": bool(row.image_url),
-        "cost_price": float(row.cost_price or 0),
-        "selling_price": float(row.selling_price or 0),
+        "cost_price": money_json(row.cost_price),
+        "selling_price": money_json(row.selling_price),
         "weight": _opt_float(getattr(row, "weight", None)),
         "length": _opt_float(getattr(row, "length", None)),
         "width": _opt_float(getattr(row, "width", None)),
@@ -383,7 +384,7 @@ async def create_brand(
         tenant_id=tenant_id,
         code=code,
         name=name,
-        description=(description or "").strip() or None,
+        description=optional_honest_narrative(description, label="brand description"),
         is_active=True,
     )
     db.add(row)
@@ -429,7 +430,9 @@ async def update_brand(
     if clear_description:
         row.description = None
     elif description is not None:
-        row.description = description.strip() or None
+        row.description = optional_honest_narrative(
+            description, label="brand description"
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     await db.flush()

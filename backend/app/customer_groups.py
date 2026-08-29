@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 DEFAULT_GROUPS = (
     ("RETAIL", "Retail", 0.0),
@@ -50,7 +51,7 @@ def serialize_group(row: m.CustomerGroup) -> dict:
         "id": row.id,
         "code": row.code,
         "name": row.name,
-        "discount_percent": float(row.discount_percent or 0),
+        "discount_percent": money_json(row.discount_percent),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import expense_ocr as ocr_svc
 from app import models as m
 from app import purchasing as purchasing_svc
+from app.honesty import optional_honest_narrative
 from app import storage as storage_svc
 
 
@@ -78,7 +79,8 @@ async def update_purchase_invoice_draft(
     if supplier_invoice_number is not None:
         inv.supplier_invoice_number = supplier_invoice_number.strip() or None
     if notes is not None:
-        inv.notes = notes.strip() or None
+        # OpenAPI PurchaseInvoiceNotesValue → 422; blank clears; garbage → 400.
+        inv.notes = optional_honest_narrative(notes, label="purchase invoice notes")
     if invoice_date is not None:
         inv.invoice_date = invoice_date
     if due_date is not None:

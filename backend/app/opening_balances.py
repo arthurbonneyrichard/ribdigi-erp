@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import optional_honest_narrative
 from app.accounting import (
     DEFAULT_ACCOUNTS,
     ensure_default_accounts,
@@ -205,11 +206,12 @@ async def post_coa_opening_balances(
             detail="Opening balances must produce at least two journal lines (add more accounts or a balancing plug)",
         )
 
+    notes_s = optional_honest_narrative(notes, label="opening balance notes")
     journal = await post_journal_entry(
         db,
         tenant_id=tenant_id,
         user_id=user_id,
-        description=notes or f"COA opening balances {ref_label}",
+        description=notes_s or f"COA opening balances {ref_label}",
         reference=ref_label,
         source_type="coa_opening",
         source_id=entry_id,

@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
 from app.doc_numbers import (
     next_credit_note_number,
@@ -194,7 +194,7 @@ async def create_quotation(
         discount_amount=discount_amount,
         total_amount=total,
         valid_until=datetime.utcnow() + timedelta(days=max(valid_days, 1)),
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="quotation notes"),
         created_by=user_id,
     )
     db.add(quote)
@@ -426,7 +426,7 @@ async def create_order(
         tax_amount=tax_total,
         discount_amount=discount_amount,
         total_amount=total,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="sales order notes"),
         created_by=user_id,
     )
     db.add(order)
@@ -886,7 +886,7 @@ async def create_return(
         subtotal=round(subtotal, 2),
         tax_amount=round(tax_total, 2),
         total_amount=round(subtotal + tax_total, 2),
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="sales return notes"),
         created_by=user_id,
     )
     db.add(ret)

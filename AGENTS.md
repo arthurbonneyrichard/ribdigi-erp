@@ -648,6 +648,39 @@
 - **Purchase invoice FX rate aria OpenAPI (BR-6.5 / BR-2.6):** Purchasing **Purchase invoice FX rate** input (`aria-label`).
 - **Purchase invoice tax rate percent aria OpenAPI (BR-6.5):** Purchasing **Purchase invoice tax rate percent** input (`aria-label`).
 - **Stock count line notes defense-in-depth OpenAPI (BR-5.2):** `update_count_items` uses `optional_honest_narrative` (**400**) matching `StockCountItemNotesValue` (**422**); explicit `null` clears.
+- **Purchase order notes defense-in-depth OpenAPI (BR-6.3):** `create_purchase_order` / `amend_purchase_order` use `optional_honest_narrative` (**400**) matching `PurchaseOrderNotesValue` (**422**).
+- **GRN notes defense-in-depth OpenAPI (BR-6.4):** `create_grn` uses `optional_honest_narrative` (**400**) matching `GrnNotesValue` (**422**).
+- **Purchase return notes defense-in-depth OpenAPI (BR-6.6):** `create_purchase_return` uses `optional_honest_narrative` (**400**) matching `PurchaseReturnNotesValue` (**422**).
+- **Purchase invoice notes defense-in-depth OpenAPI (BR-6.5):** `create_purchase_invoice` + OCR draft apply use `optional_honest_narrative` (**400**) matching `PurchaseInvoiceNotesValue` (**422**).
+- **Sales document notes defense-in-depth OpenAPI (BR-7.2 / BR-7.3 / BR-7.4):** Quotation / order / invoice create use `optional_honest_narrative` (**400**) matching `SalesDocumentNotesValue` (**422**).
+- **Sales return notes defense-in-depth OpenAPI (BR-7.5):** `create_return` uses `optional_honest_narrative` (**400**) matching `SalesReturnNotesValue` (**422**).
+- **Payment notes defense-in-depth OpenAPI (BR-11):** Customer / supplier payment create use `optional_honest_narrative` (**400**) matching `PaymentNotesValue` (**422**); auto-alloc / early-discount system notes remain when user notes omitted.
+- **Stock transfer notes defense-in-depth OpenAPI (BR-5.2 / BR-13.2):** `create_transfer` uses `optional_honest_narrative` (**400**) matching `StockTransferNotesValue` (**422**).
+- **Purchase request notes defense-in-depth OpenAPI (BR-6.2):** `create_request` header + line notes use `optional_honest_narrative` (**400**) matching `PurchaseRequestNotesValue` (**422**).
+- **Bank statement notes/line description defense-in-depth OpenAPI (BR-10.3):** `create_statement` notes + line `description` use `optional_honest_narrative` (**400**) matching `BankStatementNotesValue` / `BankStatementLineDescriptionValue` (**422**).
+- **Bank clear-group notes defense-in-depth OpenAPI (BR-10.3):** `create_clearing_group` uses `optional_honest_narrative` (**400**) matching `BankClearGroupNotesValue` (**422**).
+- **Backup notes defense-in-depth OpenAPI (BR-16):** `create_backup` uses `optional_honest_narrative` (**400**) matching `BackupNotesValue` (**422**).
+- **Webhook description defense-in-depth OpenAPI (BR-18.6):** `create_endpoint` / `update_endpoint` use `optional_honest_narrative` (**400**) matching `WebhookDescriptionValue` (**422**).
+- **Stock movement notes defense-in-depth OpenAPI (BR-5.2):** `stock_in_with_batch` / `stock_out_with_batch` / `apply_stock_change` use `optional_honest_narrative` (**400**) matching StockIn/Out/AdjustNotesValue (**422**).
+- **Opening stock notes defense-in-depth OpenAPI (BR-5.2):** `post_opening_stock` header + line notes use `optional_honest_narrative` (**400**) matching `OpeningStockNotesValue` (**422**).
+- **Opening balance notes defense-in-depth OpenAPI (BR-10.1):** `post_coa_opening_balances` uses `optional_honest_narrative` (**400**) matching `OpeningBalanceNotesValue` (**422**).
+- **Journal description defense-in-depth OpenAPI (BR-10.2):** `post_journal_entry` description uses `require_honest_narrative` (min 2) + line `description` uses `optional_honest_narrative` (**400**) matching `JournalDescriptionValue` / `JournalLineDescriptionValue` (**422**).
+- **Product money_json Decimal pilot OpenAPI (BR-5.1):** `serialize_product` cost/selling/stock/reorder/dimensions use `honesty.money_json`.
+- **Variant money_json Decimal pilot OpenAPI (BR-5.1):** `serialize_variant` cost/selling/stock use `honesty.money_json`.
+- **Batch qty money_json Decimal pilot OpenAPI (BR-5.2):** `serialize_batch.quantity` uses `honesty.money_json`.
+- **Tax rate money_json Decimal pilot OpenAPI (BR-12.1):** `serialize_tax_rate.rate` uses `honesty.money_json`.
+- **Expense category budget money_json Decimal pilot OpenAPI (BR-9.1):** `serialize_category.budget_amount` uses `honesty.money_json`.
+- **Customer group discount money_json Decimal pilot OpenAPI (BR-7.1):** `serialize_group.discount_percent` uses `honesty.money_json`.
+- **Unit conversion money_json Decimal pilot OpenAPI (BR-5.1):** `serialize_unit.conversion_ratio` uses `honesty.money_json`.
+- **Tenant threshold money_json Decimal pilot OpenAPI (BR-9.3 / BR-11):** `serialize_tenant` expense approval / L2 / early-pay % use `honesty.money_json`.
+- **Warehouse capacity money_json Decimal pilot OpenAPI (BR-2.4):** `serialize_warehouse.capacity` uses `honesty.money_json`.
+- **Variant selling price aria OpenAPI (BR-5.1):** Inventory Variants **Variant selling price …** input (`aria-label`).
+- **Opening stock unit cost aria OpenAPI (BR-5.2):** Inventory Opening **Opening stock unit cost** input (`aria-label`).
+- **Stock transfer quantity aria OpenAPI (BR-5.2 / BR-13.2):** Inventory + Multi-Store **Stock transfer quantity** inputs (`aria-label`s).
+- **Supplier payment terms days aria OpenAPI (BR-6.1):** Purchasing **Supplier payment terms days** input (`aria-label`).
+- **Purchase return quantity aria OpenAPI (BR-6.6):** Purchasing **Purchase return quantity** input (`aria-label`).
+- **Sales invoice FX rate aria OpenAPI (BR-7.4 / BR-2.6):** Sales **Sales invoice FX rate** input (`aria-label`).
+- **Sales invoice pay amount aria OpenAPI (BR-7.4 / BR-11):** Sales Invoices **Sales invoice pay amount …** input (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

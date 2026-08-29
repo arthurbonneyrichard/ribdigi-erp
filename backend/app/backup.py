@@ -15,6 +15,8 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import HTTPException
+
+from app.honesty import optional_honest_narrative
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -305,7 +307,7 @@ async def create_backup(
         encrypted=True,
         record_counts={},
         created_by=user_id,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="backup notes"),
     )
     db.add(job)
     await db.flush()

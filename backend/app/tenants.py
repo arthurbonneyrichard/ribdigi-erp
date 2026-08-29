@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import packages as packages_svc
 from app.config import settings
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_INDUSTRIES = frozenset(
@@ -181,10 +181,14 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "inactivity_timeout_minutes": int(
             getattr(tenant, "inactivity_timeout_minutes", None) or 30
         ),
-        "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
-        "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
+        "expense_approval_threshold": money_json(tenant.expense_approval_threshold),
+        "expense_l2_threshold": money_json(
+            getattr(tenant, "expense_l2_threshold", None), default=1000.0
+        ),
         "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
-        "early_pay_discount_pct": float(getattr(tenant, "early_pay_discount_pct", None) or 0),
+        "early_pay_discount_pct": money_json(
+            getattr(tenant, "early_pay_discount_pct", None)
+        ),
         "early_pay_discount_days": int(getattr(tenant, "early_pay_discount_days", None) or 0),
         "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),
         "trial_ends_at": tenant.trial_ends_at,

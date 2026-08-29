@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative
 from app.inventory import apply_stock_change
 
 _SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
@@ -98,9 +99,9 @@ def serialize_variant(v: m.ProductVariant) -> dict:
         "color": v.color,
         "flavor": v.flavor,
         "dosage": getattr(v, "dosage", None),
-        "cost_price": float(v.cost_price or 0),
-        "selling_price": float(v.selling_price or 0),
-        "stock_qty": float(v.stock_qty or 0),
+        "cost_price": money_json(v.cost_price),
+        "selling_price": money_json(v.selling_price),
+        "stock_qty": money_json(v.stock_qty),
         "is_active": bool(v.is_active),
         "created_at": v.created_at,
     }
@@ -115,7 +116,7 @@ def serialize_batch(b: m.ProductBatch) -> dict:
         "batch_number": b.batch_number,
         "manufacturing_date": b.manufacturing_date,
         "expiry_date": b.expiry_date,
-        "quantity": float(b.quantity or 0),
+        "quantity": money_json(b.quantity),
         "created_at": b.created_at,
         "updated_at": b.updated_at,
     }
@@ -496,6 +497,7 @@ async def stock_in_with_batch(
         batch.quantity = float(batch.quantity or 0) + quantity_base
         batch.updated_at = datetime.utcnow()
 
+    notes = optional_honest_narrative(notes, label="stock movement notes")
     note_text = notes
     if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
         suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity_base:g} stock"
@@ -646,6 +648,7 @@ async def stock_out_with_batch(
                     },
                 )
 
+    notes = optional_honest_narrative(notes, label="stock movement notes")
     note_text = notes
     if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
         suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity:g} stock"

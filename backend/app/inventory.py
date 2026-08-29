@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import optional_honest_narrative
 
 STOCK_ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost"})
 # BR-5.2 Stock Out reference (sales / transfer / adjustment / damage + internal/other)
@@ -229,6 +230,9 @@ async def apply_stock_change(
 ) -> m.Product:
     if quantity_delta == 0:
         raise HTTPException(status_code=400, detail="Stock quantity change cannot be zero")
+
+    # OpenAPI StockIn/Out/AdjustNotesValue → 422; service defense-in-depth → 400.
+    notes = optional_honest_narrative(notes, label="stock movement notes")
 
     result = await db.execute(
         select(m.Product)

@@ -11,6 +11,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 SUPPLY_CLASSES = frozenset({"standard", "zero_rated", "exempt"})
 TAX_TYPES = frozenset({"vat", "gst", "sales_tax", "custom"})
@@ -512,7 +513,7 @@ def serialize_tax_rate(rate: m.TaxRate) -> dict:
     return {
         "id": rate.id,
         "name": rate.name,
-        "rate": float(rate.rate),
+        "rate": money_json(rate.rate),
         "tax_type": rate.tax_type,
         "pricing_mode": rate.pricing_mode,
         "components": comps,

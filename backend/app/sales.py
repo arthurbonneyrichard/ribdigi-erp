@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
 from app.catalog import resolve_sale_line, stock_out_with_batch
@@ -387,7 +387,7 @@ async def create_sales_invoice(
         paid_amount=0,
         currency=cur,
         exchange_rate=rate,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="sales invoice notes"),
         created_by=user_id,
         store_id=resolved_store_id,
     )
@@ -853,11 +853,11 @@ async def record_customer_payment(
         exchange_rate=pay_rate,
         liquid_account_id=liquid_account_id,
         reference=reference,
-        notes=notes
+        notes=optional_honest_narrative(notes, label="payment notes")
         or (
             f"Auto-allocated: {alloc_note}"
             if alloc_note and not sales_invoice_id
-            else (f"Early discount {total_discount:.2f}" if total_discount else notes)
+            else (f"Early discount {total_discount:.2f}" if total_discount else None)
         ),
         created_by=user_id,
     )

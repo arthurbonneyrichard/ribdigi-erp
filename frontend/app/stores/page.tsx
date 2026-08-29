@@ -1165,7 +1165,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Qty" />
+            <input
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              placeholder="Qty"
+              aria-label="Stock transfer quantity"
+            />
             <button onClick={createTransfer}>Create & request</button>
           </div>
         </div>

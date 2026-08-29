@@ -270,7 +270,7 @@ def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None)
         "id": cat.id,
         "code": cat.code,
         "name": cat.name,
-        "budget_amount": float(cat.budget_amount or 0),
+        "budget_amount": money_json(cat.budget_amount),
         "is_active": bool(cat.is_active),
         "account_id": getattr(cat, "account_id", None),
         "account_code": account.code if account else None,

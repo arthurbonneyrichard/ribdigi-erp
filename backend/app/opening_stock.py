@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.catalog import stock_in_with_batch
+from app.honesty import optional_honest_narrative
 from app.doc_numbers import next_opening_stock_number
 
 
@@ -32,6 +33,7 @@ async def post_opening_stock(
         ref_label = await next_opening_stock_number(db, tenant_id)
     results: list[dict] = []
     inventory_value = 0.0
+    notes = optional_honest_narrative(notes, label="opening stock notes")
 
     for raw in lines:
         product_id = raw.get("product_id")
@@ -41,7 +43,10 @@ async def post_opening_stock(
         if qty <= 0:
             raise HTTPException(status_code=400, detail="quantity must be positive")
 
-        parts = [p for p in (notes, raw.get("notes")) if p]
+        line_note = optional_honest_narrative(
+            raw.get("notes"), label="opening stock line notes"
+        )
+        parts = [p for p in (notes, line_note) if p]
         line_notes = "; ".join(parts) if parts else None
 
         moved = await stock_in_with_batch(

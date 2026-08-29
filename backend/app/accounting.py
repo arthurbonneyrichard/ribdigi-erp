@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_journal_entry_number
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_ACCOUNTS = [
     ("1000", "Cash", "asset", True, False),
@@ -438,6 +438,15 @@ async def post_journal_entry(
 
     if not lines_are_balanced(normalized):
         raise HTTPException(status_code=400, detail="Journal entry is not balanced")
+
+    # OpenAPI JournalDescriptionValue → 422; service defense-in-depth → 400.
+    description = require_honest_narrative(
+        description, label="journal description", min_length=2
+    )
+    for line in normalized:
+        line["description"] = optional_honest_narrative(
+            line.get("description"), label="journal line description"
+        )
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)

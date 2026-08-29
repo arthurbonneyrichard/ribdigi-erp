@@ -9,7 +9,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json
+from app.honesty import money_json, optional_honest_narrative
 
 
 def serialize_account(account: m.Account) -> dict:
@@ -206,7 +206,7 @@ async def create_statement(
         opening_balance=float(opening_balance or 0),
         closing_balance=float(closing_balance or 0),
         status="in_progress" if lines else "draft",
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="bank statement notes"),
         created_by=user_id,
     )
     db.add(stmt)
@@ -221,7 +221,9 @@ async def create_statement(
                 statement_id=stmt.id,
                 txn_date=_parse_dt(raw.get("txn_date") or statement_date),
                 amount=amount,
-                description=(raw.get("description") or "").strip() or None,
+                description=optional_honest_narrative(
+                    raw.get("description"), label="statement line description"
+                ),
                 external_ref=(raw.get("external_ref") or "").strip() or None,
                 status="unmatched",
             )
@@ -894,10 +896,11 @@ async def create_clearing_group(
             },
         )
 
+    notes = optional_honest_narrative(notes, label="clear-group notes")
     group = m.BankClearingGroup(
         tenant_id=tenant_id,
         statement_id=statement_id,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="clear-group notes"),
         created_by=user_id,
     )
     db.add(group)

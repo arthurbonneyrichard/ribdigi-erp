@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
@@ -373,7 +373,7 @@ async def create_purchase_order(
         subtotal=round(subtotal, 2),
         tax_amount=round(tax_total, 2),
         total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="purchase order notes"),
         delivery_address=(delivery_address or "").strip() or None,
         created_by=user_id,
     )
@@ -627,7 +627,8 @@ async def amend_purchase_order(
         po.total_amount = round(max(subtotal + tax_total - discount_total, 0), 2)
 
     if notes is not None:
-        po.notes = notes
+        # OpenAPI PurchaseOrderNotesValue → 422; null clears; blank/garbage → 400.
+        po.notes = optional_honest_narrative(notes, label="purchase order notes")
     if delivery_address is not None:
         po.delivery_address = delivery_address.strip() or None
     if clear_due_date:
@@ -756,7 +757,7 @@ async def create_grn(
         supplier_id=po.supplier_id,
         warehouse_id=warehouse_id or po.warehouse_id,
         status="posted",
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="GRN notes"),
         created_by=user_id,
     )
     db.add(grn)
@@ -1239,11 +1240,11 @@ async def record_supplier_payment(
         exchange_rate=pay_rate,
         liquid_account_id=liquid_account_id,
         reference=reference,
-        notes=notes
+        notes=optional_honest_narrative(notes, label="payment notes")
         or (
             f"Auto-allocated: {alloc_note}"
             if alloc_note and not purchase_invoice_id
-            else (f"Early discount {total_discount:.2f}" if total_discount else notes)
+            else (f"Early discount {total_discount:.2f}" if total_discount else None)
         ),
         created_by=user_id,
     )
@@ -1543,7 +1544,7 @@ async def create_purchase_return(
         subtotal=round(subtotal, 2),
         tax_amount=round(tax_total, 2),
         total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="purchase return notes"),
         created_by=user_id,
     )
     db.add(ret)
@@ -2000,7 +2001,7 @@ async def create_purchase_invoice(
         exchange_rate=rate,
         ap_posted=False,
         attachment_url=attachment_url,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="purchase invoice notes"),
         created_by=user_id,
     )
     db.add(inv)

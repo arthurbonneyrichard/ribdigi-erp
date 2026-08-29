@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app import purchasing as purchasing_svc
 from app.doc_numbers import next_purchase_request_number
 
@@ -340,7 +340,9 @@ async def create_request(
                 "product_id": product.id,
                 "variant_id": variant_id,
                 "quantity": qty,
-                "notes": (item.get("notes") or None),
+                "notes": optional_honest_narrative(
+                    item.get("notes"), label="purchase request line notes"
+                ),
             }
         )
 
@@ -353,7 +355,7 @@ async def create_request(
         warehouse_id=warehouse_id,
         required_date=required_date,
         department=((department or "").strip()[:120] or None),
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="purchase request notes"),
         created_by=user_id,
         approval_step=0,
         approval_steps_required=0,

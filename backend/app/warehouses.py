@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 WAREHOUSE_TYPES = frozenset({"retail", "bulk", "cold_storage", "other"})
 
@@ -22,7 +23,7 @@ def serialize_warehouse(row: m.Warehouse) -> dict:
         "warehouse_type": getattr(row, "warehouse_type", None) or "retail",
         "manager_id": getattr(row, "manager_id", None),
         "address": getattr(row, "address", None),
-        "capacity": float(cap) if cap is not None else None,
+        "capacity": money_json(cap) if cap is not None else None,
         "is_active": bool(getattr(row, "is_active", True)),
     }
 

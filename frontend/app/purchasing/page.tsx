@@ -1790,6 +1790,7 @@ export default function Page() {
             placeholder="Net days"
             style={{ width: 90 }}
             title="Payment terms (days)"
+            aria-label="Supplier payment terms days"
           />
           <button
             type="button"
@@ -3070,7 +3071,12 @@ export default function Page() {
             <option value="quality">Quality</option>
             <option value="other">Other</option>
           </select>
-          <input value={returnQty} onChange={(e) => setReturnQty(e.target.value)} placeholder="Return qty" />
+          <input
+            value={returnQty}
+            onChange={(e) => setReturnQty(e.target.value)}
+            placeholder="Return qty"
+            aria-label="Purchase return quantity"
+          />
           <input
             value={returnNotes}
             onChange={(e) => setReturnNotes(e.target.value)}
