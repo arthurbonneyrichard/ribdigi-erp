@@ -1720,6 +1720,7 @@ export default function Page() {
             value={supplierEmail}
             onChange={(e) => setSupplierEmail(e.target.value)}
             placeholder="Email"
+            aria-label="Supplier email"
           />
           <input
             value={supplierPhone}

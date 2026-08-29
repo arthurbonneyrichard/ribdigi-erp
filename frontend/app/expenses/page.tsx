@@ -603,10 +603,14 @@ export default function Page() {
     try {
       const body: Record<string, unknown> = {};
       if (ocrDraft.amount !== '') body.amount = Number(ocrDraft.amount);
-      if (ocrDraft.payee !== '') body.payee = ocrDraft.payee;
-      if (ocrDraft.description !== '') body.description = ocrDraft.description;
-      if (ocrDraft.reference !== '') body.reference = ocrDraft.reference;
-      if (ocrDraft.expense_date !== '') body.expense_date = ocrDraft.expense_date;
+      const payee = String(ocrDraft.payee || '').trim();
+      if (payee) body.payee = payee;
+      const description = String(ocrDraft.description || '').trim();
+      if (description) body.description = description;
+      const reference = String(ocrDraft.reference || '').trim();
+      if (reference) body.reference = reference;
+      const expenseDate = String(ocrDraft.expense_date || '').trim();
+      if (expenseDate) body.expense_date = expenseDate;
       await api(`/expenses/${ocrFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage('OCR suggestions applied (pending expense updated)');
       setOcrFor(null);
@@ -1436,16 +1440,19 @@ export default function Page() {
               value={ocrDraft.payee}
               onChange={(e) => setOcrDraft({ ...ocrDraft, payee: e.target.value })}
               placeholder="Payee"
+              aria-label="Expense OCR payee"
             />
             <input
               value={ocrDraft.description}
               onChange={(e) => setOcrDraft({ ...ocrDraft, description: e.target.value })}
               placeholder="Description"
+              aria-label="Expense OCR description"
             />
             <input
               value={ocrDraft.reference}
               onChange={(e) => setOcrDraft({ ...ocrDraft, reference: e.target.value })}
               placeholder="Reference"
+              aria-label="Expense OCR reference"
             />
             <input
               value={ocrDraft.expense_date}

@@ -598,6 +598,7 @@ export default function Page() {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="Email"
+            aria-label="User email"
             required
           />
           <input

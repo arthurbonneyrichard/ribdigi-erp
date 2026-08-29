@@ -108,7 +108,7 @@ export default function Page() {
       const r = await api('/tenants/me', {
         method: 'PATCH',
         body: JSON.stringify({
-          company_name: tenant.company_name,
+          company_name: String(tenant.company_name || '').trim(),
           industry: tenant.industry,
           currency: tenant.currency,
           // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.

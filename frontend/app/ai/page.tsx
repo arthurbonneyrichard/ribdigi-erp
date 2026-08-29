@@ -509,12 +509,14 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           amount: Number(ex.amount),
-          payee: ex.payee || null,
+          payee: String(ex.payee || '').trim() || null,
           description: draftDocDescription.trim() || null,
-          reference: ex.reference || null,
+          reference: String(ex.reference || '').trim() || null,
           expense_date: expenseDate,
           category_id: draftDocCategoryId.trim() || null,
-          category: ex.category || lastDocExtract.category_suggestion?.category || null,
+          category:
+            String(ex.category || lastDocExtract.category_suggestion?.category || '').trim() ||
+            null,
           payment_method: 'cash',
           store_id: draftDocStoreId.trim() || null,
           branch_id: draftDocBranchId.trim() || null,
@@ -553,8 +555,8 @@ export default function Page() {
         body: JSON.stringify({
           purchase_order_id: poId,
           supplier_id: draftDocSupplierId.trim() || null,
-          supplier_invoice_number: ex.reference || null,
-          notes: ex.description || null,
+          supplier_invoice_number: String(ex.reference || '').trim() || null,
+          notes: String(ex.description || '').trim() || null,
           invoice_date: invoiceDate,
           is_reverse_charge: false,
         }),
