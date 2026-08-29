@@ -2896,7 +2896,12 @@ export default function Page() {
                       >
                         Preview
                       </button>
-                      <button onClick={() => downloadInvoiceAttachment(inv.id)}>Download</button>
+                      <button
+                        onClick={() => downloadInvoiceAttachment(inv.id)}
+                        aria-label="Download purchase invoice attachment"
+                      >
+                        Download
+                      </button>
                       {inv.status === 'draft' && (
                         <button onClick={() => suggestInvoiceOcr(inv.id)}>OCR</button>
                       )}

@@ -273,7 +273,13 @@ async def create_endpoint(
 ) -> tuple[m.WebhookEndpoint, str]:
     cleaned_url = validate_url(url)
     event_list = normalize_events(events)
-    raw_secret = (secret or "").strip() or generate_secret()
+    # OpenAPI WebhookSecretValue → 422; omit/`null`/blank → auto-generate; garbage → 400.
+    cleaned_secret = optional_honest_narrative(
+        secret, label="webhook signing secret", max_length=128
+    )
+    if cleaned_secret and " " in cleaned_secret:
+        raise HTTPException(status_code=400, detail="webhook signing secret must be a plain narrative")
+    raw_secret = cleaned_secret or generate_secret()
     if not raw_secret.startswith("whsec_"):
         # Allow custom secrets but normalize empty; non-whsec custom still ok if long enough
         if len(raw_secret) < 16:

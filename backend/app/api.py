@@ -6457,7 +6457,7 @@ async def create_purchase_order(
             "po_number": po.po_number,
             "supplier_id": po.supplier_id,
             "warehouse_id": po.warehouse_id,
-            "total_amount": float(getattr(po, "total_amount", 0) or 0),
+            "total_amount": money_json(getattr(po, "total_amount", 0) or 0),
             "status": po.status,
         },
     )

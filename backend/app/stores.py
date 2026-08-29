@@ -331,15 +331,15 @@ async def set_store_reorder_policy(
     row.reorder_level = max(float(reorder_level or 0), 0)
     row.reorder_qty = max(float(reorder_qty or 0), 0)
     await db.flush()
-    qty = float(row.quantity or 0)
-    reorder = float(row.reorder_level or 0)
+    qty = money_json(row.quantity or 0)
+    reorder = money_json(row.reorder_level or 0)
     return {
         "product_id": product.id,
         "sku": product.sku,
         "name": product.name,
         "quantity": qty,
         "reorder_level": reorder,
-        "reorder_qty": float(row.reorder_qty or 0),
+        "reorder_qty": money_json(row.reorder_qty or 0),
         "below_reorder": reorder > 0 and qty <= reorder,
         "warehouse_id": wh.id,
         "store_id": store_id,

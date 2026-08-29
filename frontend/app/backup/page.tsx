@@ -242,7 +242,9 @@ export default function Page() {
               <td>{r.status}</td>
               <td>{r.checksum_sha256 ? String(r.checksum_sha256).slice(0, 12) : '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button onClick={() => downloadBackup(r.id, r.filename)}>Download</button>
+                <button onClick={() => downloadBackup(r.id, r.filename)} aria-label="Download backup">
+                  Download
+                </button>
                 <button onClick={() => dryRun(r.id)} aria-label="Backup dry-run restore">
                   Dry-run
                 </button>

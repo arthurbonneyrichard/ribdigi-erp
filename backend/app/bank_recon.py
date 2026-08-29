@@ -530,16 +530,16 @@ async def complete_statement(db: AsyncSession, *, tenant_id: str, statement_id: 
             },
         )
 
-    net = sum(float(ln.amount) for ln in lines)
-    expected_closing = round(float(stmt.opening_balance or 0) + net, 2)
-    if abs(expected_closing - float(stmt.closing_balance or 0)) > 0.01:
+    net = sum(money_json(ln.amount) for ln in lines)
+    expected_closing = round(money_json(stmt.opening_balance or 0) + net, 2)
+    if abs(expected_closing - money_json(stmt.closing_balance or 0)) > 0.01:
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "STATEMENT_ARITHMETIC",
                 "message": "opening + matched/unignored lines does not equal closing balance",
                 "expected_closing": expected_closing,
-                "statement_closing": float(stmt.closing_balance or 0),
+                "statement_closing": money_json(stmt.closing_balance or 0),
             },
         )
 

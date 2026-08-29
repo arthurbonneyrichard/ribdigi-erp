@@ -1835,6 +1835,7 @@ export default function Page() {
                             .then(() => setMessage(`Downloaded A4 ${inv.invoice_number}`))
                             .catch((err) => setError(err.message))
                         }
+                        aria-label="Print sales invoice A4"
                       >
                         Print A4
                       </button>
@@ -1844,6 +1845,7 @@ export default function Page() {
                             .then(() => setMessage(`Downloaded thermal ${inv.invoice_number}`))
                             .catch((err) => setError(err.message))
                         }
+                        aria-label="Print sales invoice thermal"
                       >
                         Print thermal
                       </button>

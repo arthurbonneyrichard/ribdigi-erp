@@ -171,17 +171,18 @@ def build_discrepancies(
             }
         )
     if expected_amount is not None and fields.get("amount") is not None:
-        amt = float(fields["amount"])
-        if abs(amt - float(expected_amount)) > 0.05:
+        amt = money_json(fields["amount"])
+        expected = money_json(expected_amount)
+        if abs(amt - expected) > 0.05:
             flags.append(
                 {
                     "code": "amount_mismatch",
                     "severity": "high",
                     "message": (
-                        f"Extracted amount {amt} differs from expected {float(expected_amount):.2f}"
+                        f"Extracted amount {amt} differs from expected {expected:.2f}"
                     ),
                     "extracted": amt,
-                    "expected": float(expected_amount),
+                    "expected": expected,
                 }
             )
     if fields.get("payee") and not party_matches:
@@ -211,7 +212,7 @@ def build_discrepancies(
         )
     if po_matches and fields.get("amount") is not None:
         top = po_matches[0]
-        if abs(float(fields["amount"]) - float(top["total_amount"])) > 0.05:
+        if abs(money_json(fields["amount"]) - money_json(top["total_amount"])) > 0.05:
             flags.append(
                 {
                     "code": "po_amount_mismatch",
@@ -458,9 +459,14 @@ async def create_expense_from_extract(
     method = (payment_method or "cash").strip().lower() or "cash"
 
     parsed_date = _parse_expense_date(expense_date)
-    desc = (description or "").strip()
-    if not desc and payee:
-        desc = f"OCR receipt — {payee}"
+    # OpenAPI ExpenseDescriptionValue / PayeeValue / ReferenceValue → 422; service → 400.
+    desc = optional_honest_narrative(description, label="expense description") or ""
+    payee_clean = optional_honest_narrative(payee, label="expense payee", max_length=150)
+    reference_clean = optional_honest_narrative(
+        reference, label="expense reference", max_length=100
+    )
+    if not desc and payee_clean:
+        desc = f"OCR receipt — {payee_clean}"
     if not desc:
         desc = "OCR draft expense"
 
@@ -492,8 +498,8 @@ async def create_expense_from_extract(
         category_id=resolved_category_id,
         category=resolved_category,
         payment_method=method,
-        reference=(reference or "").strip() or None,
-        payee=(payee or "").strip() or None,
+        reference=reference_clean,
+        payee=payee_clean,
         store_id=store_id,
         branch_id=branch_id,
         department_id=department_id,
@@ -580,7 +586,8 @@ async def create_purchase_invoice_from_extract(
 
     discount_amount = round(sum(float(i.get("discount") or 0) for i in items), 2)
     parsed_date = _parse_invoice_date(invoice_date)
-    inv_notes = (notes or "").strip() or None
+    # OpenAPI PurchaseInvoiceNotesValue → 422; omit/`null`/blank → OCR default note.
+    inv_notes = optional_honest_narrative(notes, label="purchase invoice notes")
     if not inv_notes:
         inv_notes = f"OCR draft PI from {po.po_number}"
 

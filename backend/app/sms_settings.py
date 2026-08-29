@@ -128,6 +128,12 @@ def apply_sms_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> dict
     elif payload.get("auth_token") is not None and str(payload.get("auth_token") or "") != "":
         from app.totp import encrypt_secret
 
-        current["auth_token_enc"] = encrypt_secret(str(payload["auth_token"]))
+        # OpenAPI TwilioAuthTokenValue → 422; service defense-in-depth → 400.
+        token = optional_honest_narrative(
+            payload["auth_token"], label="Twilio auth token", max_length=128
+        )
+        if not token or " " in token:
+            raise HTTPException(status_code=400, detail="Twilio auth token is required")
+        current["auth_token_enc"] = encrypt_secret(token)
     tenant.sms_settings = current
     return sms_status(tenant)

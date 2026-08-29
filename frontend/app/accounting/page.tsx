@@ -1556,7 +1556,11 @@ export default function Page() {
                           >
                             Preview
                           </button>
-                          <button type="button" onClick={() => downloadJournalAttachment(j.id)}>
+                          <button
+                            type="button"
+                            onClick={() => downloadJournalAttachment(j.id)}
+                            aria-label="Download journal attachment"
+                          >
                             Download
                           </button>
                           <button type="button" onClick={() => removeJournalAttachment(j.id)}>
@@ -1864,7 +1868,11 @@ export default function Page() {
                 accept=".csv,.ofx,.qfx,.txt"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
               />
-              <button onClick={importFeed} disabled={!reconAccountId || !importFile}>
+              <button
+                onClick={importFeed}
+                disabled={!reconAccountId || !importFile}
+                aria-label="Import bank statement CSV or OFX"
+              >
                 Import CSV / OFX
               </button>
             </div>

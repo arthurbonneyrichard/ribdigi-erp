@@ -241,7 +241,7 @@ def _invoice_tax_breakdown(items: list[m.SalesInvoiceItem], invoice: m.SalesInvo
     for i in items:
         line_tax = _line_tax_value(i)
         is_rc = bool(getattr(i, "is_reverse_charge", False))
-        rate = float(i.tax_rate or 0)
+        rate = money_json(i.tax_rate or 0)
         key = f"{rate:.4f}|{'rc' if is_rc else 'std'}"
         bucket = by_rate.setdefault(
             key,
@@ -252,20 +252,22 @@ def _invoice_tax_breakdown(items: list[m.SalesInvoiceItem], invoice: m.SalesInvo
                 "tax": 0.0,
             },
         )
-        bucket["taxable"] = round(bucket["taxable"] + float(getattr(i, "line_subtotal", None) or 0), 2)
-        bucket["tax"] = round(bucket["tax"] + line_tax, 2)
+        bucket["taxable"] = round(
+            bucket["taxable"] + money_json(getattr(i, "line_subtotal", None) or 0), 2
+        )
+        bucket["tax"] = round(bucket["tax"] + money_json(line_tax), 2)
         comps = getattr(i, "tax_components", None) or []
         for c in comps:
             cname = str(c.get("name") or c.get("code") or "component")
             cb = component_totals.setdefault(cname, {"name": cname, "tax": 0.0})
-            cb["tax"] = round(cb["tax"] + float(c.get("amount") or 0), 2)
+            cb["tax"] = round(cb["tax"] + money_json(c.get("amount") or 0), 2)
         line_rows.append(
             {
                 "item_id": i.id,
                 "product_id": i.product_id,
                 "tax_rate": rate,
-                "line_subtotal": float(getattr(i, "line_subtotal", None) or 0),
-                "line_tax": line_tax,
+                "line_subtotal": money_json(getattr(i, "line_subtotal", None) or 0),
+                "line_tax": money_json(line_tax),
                 "is_reverse_charge": is_rc,
                 "tax_components": comps or None,
             }
@@ -274,8 +276,8 @@ def _invoice_tax_breakdown(items: list[m.SalesInvoiceItem], invoice: m.SalesInvo
         "lines": line_rows,
         "by_rate": sorted(by_rate.values(), key=lambda r: (-r["tax_rate"], r["is_reverse_charge"])),
         "by_component": sorted(component_totals.values(), key=lambda r: r["name"]),
-        "tax_amount": float(invoice.tax_amount or 0),
-        "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
+        "tax_amount": money_json(invoice.tax_amount or 0),
+        "reverse_charge_tax": money_json(getattr(invoice, "reverse_charge_tax", 0) or 0),
     }
 
 

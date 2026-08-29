@@ -1708,7 +1708,9 @@ export default function Page() {
                     >
                       Preview
                     </button>
-                    <button onClick={() => downloadAttachment(r.id)}>Download</button>
+                    <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
+                      Download
+                    </button>
                     <button onClick={() => suggestOcr(r.id)}>OCR</button>
                     <button onClick={() => removeAttachment(r.id)}>Remove</button>
                   </span>

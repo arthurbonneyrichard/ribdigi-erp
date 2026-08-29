@@ -1800,26 +1800,26 @@ def _purchase_invoice_tax_breakdown(
     line_rows: list[dict] = []
     for i in items:
         line_tax = _pi_line_tax_value(i)
-        rate = float(i.tax_rate or 0)
+        rate = money_json(i.tax_rate or 0)
         key = f"{rate:.4f}"
         bucket = by_rate.setdefault(
             key,
             {"tax_rate": rate, "taxable": 0.0, "tax": 0.0},
         )
-        bucket["taxable"] = round(bucket["taxable"] + _pi_line_subtotal(i), 2)
-        bucket["tax"] = round(bucket["tax"] + line_tax, 2)
+        bucket["taxable"] = round(bucket["taxable"] + money_json(_pi_line_subtotal(i)), 2)
+        bucket["tax"] = round(bucket["tax"] + money_json(line_tax), 2)
         comps = getattr(i, "tax_components", None) or []
         for c in comps:
             cname = str(c.get("name") or c.get("code") or "component")
             cb = component_totals.setdefault(cname, {"name": cname, "tax": 0.0})
-            cb["tax"] = round(cb["tax"] + float(c.get("amount") or 0), 2)
+            cb["tax"] = round(cb["tax"] + money_json(c.get("amount") or 0), 2)
         line_rows.append(
             {
                 "item_id": i.id,
                 "product_id": i.product_id,
                 "tax_rate": rate,
-                "line_subtotal": _pi_line_subtotal(i),
-                "line_tax": line_tax,
+                "line_subtotal": money_json(_pi_line_subtotal(i)),
+                "line_tax": money_json(line_tax),
                 "tax_components": comps or None,
             }
         )
@@ -1827,8 +1827,8 @@ def _purchase_invoice_tax_breakdown(
         "lines": line_rows,
         "by_rate": sorted(by_rate.values(), key=lambda r: -r["tax_rate"]),
         "by_component": sorted(component_totals.values(), key=lambda r: r["name"]),
-        "tax_amount": float(inv.tax_amount or 0),
-        "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+        "tax_amount": money_json(inv.tax_amount or 0),
+        "reverse_charge_tax": money_json(getattr(inv, "reverse_charge_tax", 0) or 0),
         "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
     }
 

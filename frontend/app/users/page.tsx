@@ -518,7 +518,7 @@ export default function Page() {
             meet policy), validate, then import. Import is all-or-nothing.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={downloadImportTemplate}>
+            <button type="button" onClick={downloadImportTemplate} aria-label="Download user CSV template">
               Download CSV template
             </button>
           </div>
