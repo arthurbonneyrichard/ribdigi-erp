@@ -52,7 +52,7 @@ def name_similarity(a: str, b: str) -> float:
     j = inter / union if union else 0.0
     shorter = ta if len(ta) <= len(tb) else tb
     cover = inter / len(shorter) if shorter else 0.0
-    return round(max(j, cover * 0.85), 3)
+    return money_json(round(max(j, cover * 0.85), 3))
 
 
 def infer_document_type(text: str, explicit: str | None) -> str:
@@ -90,7 +90,7 @@ def match_parties(
                 "party_id": p.id,
                 "name": p.name,
                 "kind": p.kind,
-                "score": round(score, 3),
+                "score": money_json(round(score, 3)),
             }
         )
     hits.sort(key=lambda x: (-x["score"], x["name"]))
@@ -120,7 +120,7 @@ def match_purchase_orders(
                     "total_amount": money_json(po.total_amount),
                     "supplier_id": po.supplier_id,
                     "supplier_name": supplier.name if supplier else None,
-                    "score": 1.0 if po_n.upper() in blob else 0.8,
+                    "score": money_json(1) if po_n.upper() in blob else money_json(0.8),
                 }
             )
     hits.sort(key=lambda x: -x["score"])

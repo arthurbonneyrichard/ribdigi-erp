@@ -128,15 +128,19 @@ async def expense_analysis(
             continue
         scaled = scale_monthly_budget(budget, period_days)
         spent = float(by_cat_id_amount.get(cat.id, 0) or by_cat_id_amount.get(cat.name, 0) or 0)
-        variance_pct = round((spent - scaled) / scaled * 100.0, 1) if scaled else 0.0
+        variance_pct = (
+            money_json(round((spent - scaled) / scaled * 100.0, 1))
+            if scaled
+            else money_json(0)
+        )
         if spent > scaled * 1.0:
             budget_alerts.append(
                 {
                     "category_id": cat.id,
                     "category": cat.name,
                     "budget_monthly": money_json(budget),
-                    "budget_scaled": round(money_json(scaled), 2),
-                    "spent": round(money_json(spent), 2),
+                    "budget_scaled": money_json(round(money_json(scaled), 2)),
+                    "spent": money_json(round(money_json(spent), 2)),
                     "variance_pct": variance_pct,
                     "severity": "over_budget",
                 }

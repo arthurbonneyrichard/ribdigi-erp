@@ -1332,12 +1332,15 @@ async def inventory_balance(
                         else (stock.warehouse_id if len(warehouse_ids) == 1 else None),
                         "quantity": qty,
                         "cost_price": money_json(product.cost_price),
-                        "value": 0.0,
+                        "value": money_json(0),
                     }
                 else:
-                    row["quantity"] = round(money_json(row["quantity"]) + qty, 3)
+                    row["quantity"] = money_json(
+                        round(money_json(row["quantity"]) + qty, 3)
+                    )
             items = []
             for row in agg.values():
+                row["quantity"] = money_json(round(money_json(row["quantity"]), 3))
                 row["value"] = money_json(
                     round(
                         money_json(row["quantity"]) * money_json(row["cost_price"]), 2
@@ -1632,7 +1635,7 @@ async def inventory_low_stock(
                 )
             )
             if money_json(p.stock_qty) <= money_json(p.reorder_level)
-            else 0.0,
+            else money_json(0),
             "scope": "product",
         }
         for p in products

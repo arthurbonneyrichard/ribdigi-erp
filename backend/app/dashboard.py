@@ -16,8 +16,8 @@ from app.honesty import money_json
 
 def _pct_change(current: float, previous: float) -> float | None:
     if previous == 0:
-        return None if current == 0 else 100.0
-    return round((current - previous) / abs(previous) * 100.0, 1)
+        return None if current == 0 else money_json(100)
+    return money_json(round((current - previous) / abs(previous) * 100.0, 1))
 
 
 def _day_start(d: date) -> datetime:

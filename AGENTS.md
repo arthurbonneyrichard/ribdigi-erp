@@ -1273,6 +1273,46 @@
 - **Reports Show sales tab aria OpenAPI (BR-14.1):** Reports **Show reports sales tab** button (`aria-label`).
 - **Reports Show inventory tab aria OpenAPI (BR-14.2):** Reports **Show reports inventory tab** button (`aria-label`).
 - **Reports Show purchases tab aria OpenAPI (BR-14.3):** Reports **Show reports purchases tab** button (`aria-label`).
+- **Dashboard sales_today_pct money_json Decimal pilot OpenAPI:** `comparisons.sales_today_pct` uses `honesty.money_json` via `_pct_change`.
+- **Dashboard sales_mtd_pct money_json Decimal pilot OpenAPI:** `comparisons.sales_mtd_pct` uses `honesty.money_json` via `_pct_change`.
+- **Packages years_assigned money_json Decimal pilot OpenAPI:** subscription usage `years_assigned` uses `honesty.money_json`.
+- **Packages years_used money_json Decimal pilot OpenAPI:** subscription usage `years_used` uses `honesty.money_json`.
+- **Packages years_remaining money_json Decimal pilot OpenAPI:** subscription usage `years_remaining` uses `honesty.money_json`.
+- **AI document name_similarity money_json Decimal pilot OpenAPI (BR-21.8):** `name_similarity` return uses `honesty.money_json`.
+- **AI document party match score money_json Decimal pilot OpenAPI (BR-21.8):** party match `score` uses `honesty.money_json`.
+- **AI document PO match score money_json Decimal pilot OpenAPI (BR-21.8):** purchase-order match `score` uses `honesty.money_json`.
+- **Inventory balance aggregated quantity money_json Decimal pilot OpenAPI (BR-14.2):** warehouse-scoped balance item `quantity` after aggregate uses `honesty.money_json`.
+- **Inventory balance item value zero money_json Decimal pilot OpenAPI (BR-14.2):** balance item initial `value` uses `honesty.money_json(0)`.
+- **Inventory low-stock product suggested zero money_json Decimal pilot OpenAPI (BR-14.2):** product low-stock `suggested_order_qty` else-branch uses `honesty.money_json(0)`.
+- **AI sales RFM monetary money_json Decimal pilot OpenAPI (BR-21.5):** RFM customer `monetary` uses `honesty.money_json`.
+- **AI sales monthly series total money_json Decimal pilot OpenAPI (BR-21.5):** trend `monthly_series[].total` uses `honesty.money_json`.
+- **AI sales forecast_next_month money_json Decimal pilot OpenAPI (BR-21.5):** trend `forecast_next_month` uses `honesty.money_json`.
+- **AI sales seasonality stable ratio money_json Decimal pilot OpenAPI (BR-21.5):** single-month seasonality `ratio` uses `honesty.money_json`.
+- **AI expenses budget_scaled money_json Decimal pilot OpenAPI (BR-21.6):** budget-alert `budget_scaled` uses `honesty.money_json`.
+- **AI expenses spent money_json Decimal pilot OpenAPI (BR-21.6):** budget-alert `spent` uses `honesty.money_json`.
+- **AI expenses variance_pct money_json Decimal pilot OpenAPI (BR-21.6):** budget-alert `variance_pct` uses `honesty.money_json`.
+- **Sales returns by_reason quantity money_json Decimal pilot OpenAPI (BR-14.1):** `sales_returns_summary.by_reason[].quantity` uses `honesty.money_json`.
+- **Sales returns by_customer quantity money_json Decimal pilot OpenAPI (BR-14.1):** `sales_returns_summary.by_customer[].quantity` uses `honesty.money_json`.
+- **Purchases returns by_reason quantity money_json Decimal pilot OpenAPI (BR-14.3):** purchase-return `by_reason[].quantity` uses `honesty.money_json`.
+- **Purchases returns by_supplier quantity money_json Decimal pilot OpenAPI (BR-14.3):** purchase-return `by_supplier[].quantity` uses `honesty.money_json`.
+- **Inventory balance item cost_price money_json Decimal pilot OpenAPI (BR-14.2):** balance item `cost_price` uses `honesty.money_json`.
+- **Inventory Show lookup tab aria OpenAPI (BR-5.1):** Inventory **Show inventory lookup tab** button (`aria-label`).
+- **Inventory Show import tab aria OpenAPI (BR-5.1):** Inventory **Show inventory import tab** button (`aria-label`).
+- **Inventory Show opening tab aria OpenAPI (BR-5.2):** Inventory **Show inventory opening tab** button (`aria-label`).
+- **Inventory Show stockout tab aria OpenAPI (BR-5.2):** Inventory **Show inventory stockout tab** button (`aria-label`).
+- **Inventory Show whstock tab aria OpenAPI (BR-5.2 / BR-5.4):** Inventory **Show inventory whstock tab** button (`aria-label`).
+- **Inventory Show expiry tab aria OpenAPI (BR-5.2):** Inventory **Show inventory expiry tab** button (`aria-label`).
+- **Inventory Show adjust tab aria OpenAPI (BR-5.2):** Inventory **Show inventory adjust tab** button (`aria-label`).
+- **Reports Show salesperson tab aria OpenAPI (BR-14.1):** Reports **Show reports salesperson tab** button (`aria-label`).
+- **Reports Show customers tab aria OpenAPI (BR-14.1):** Reports **Show reports customers tab** button (`aria-label`).
+- **Reports Show stores tab aria OpenAPI (BR-14.1 / BR-2.5):** Reports **Show reports stores tab** button (`aria-label`).
+- **Reports Show departments tab aria OpenAPI (BR-14.1 / BR-2.5):** Reports **Show reports departments tab** button (`aria-label`).
+- **Reports Show expenses tab aria OpenAPI (BR-14.4):** Reports **Show reports expenses tab** button (`aria-label`).
+- **Reports Show cashflow tab aria OpenAPI (BR-14):** Reports **Show reports cashflow tab** button (`aria-label`).
+- **Reports Show pnl tab aria OpenAPI (BR-14):** Reports **Show reports pnl tab** button (`aria-label`).
+- **Reports Show trialbalance tab aria OpenAPI (BR-14.5):** Reports **Show reports trialbalance tab** button (`aria-label`).
+- **Reports Show balancesheet tab aria OpenAPI (BR-14.5):** Reports **Show reports balancesheet tab** button (`aria-label`).
+- **Reports Show schedules tab aria OpenAPI (BR-14):** Reports **Show reports schedules tab** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).
