@@ -458,6 +458,7 @@ export default function Page() {
         <select
           value={tenant.date_format || 'DD/MM/YYYY'}
           onChange={(e) => setTenant({ ...tenant, date_format: e.target.value })}
+          aria-label="Company date format"
         >
           <option value="DD/MM/YYYY">DD/MM/YYYY</option>
           <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -467,6 +468,7 @@ export default function Page() {
         <select
           value={tenant.decimal_separator || '.'}
           onChange={(e) => setTenant({ ...tenant, decimal_separator: e.target.value })}
+          aria-label="Company decimal separator"
         >
           <option value=".">Dot (1,234.56)</option>
           <option value=",">Comma (1.234,56)</option>
@@ -486,6 +488,7 @@ export default function Page() {
               thousand_separator: e.target.value === 'none' ? '' : e.target.value,
             })
           }
+          aria-label="Company thousand separator"
         >
           <option value=",">Comma</option>
           <option value=".">Dot</option>
@@ -496,6 +499,7 @@ export default function Page() {
         <select
           value={tenant.time_format || '24h'}
           onChange={(e) => setTenant({ ...tenant, time_format: e.target.value })}
+          aria-label="Company time format"
         >
           <option value="24h">24-hour</option>
           <option value="12h">12-hour</option>

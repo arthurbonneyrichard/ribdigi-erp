@@ -317,13 +317,13 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 
 Regional / tax format fields (BR-20.2) are schema Literals on this PATCH (omit = no change; blank/invalid → **422**):
 - `tax_jurisdiction` ∈ `GH` (same `TaxFilingJurisdictionValue` / `tax_filings.SUPPORTED` as filing Query; blank/unsupported → **422** — was free `str` with length-only late service **400**; unsupported codes could persist then fail later on filing). Company **Tax jurisdiction** select.
-- `tax_filing_period` ∈ `monthly|quarterly`
-- `date_format` ∈ `DD/MM/YYYY|MM/DD/YYYY|YYYY-MM-DD`
-- `decimal_separator` ∈ `.|,`
-- `thousand_separator` ∈ `,|.|space|""` (`none` coerces to `""`)
-- `time_format` ∈ `12h|24h`
+- `tax_filing_period` ∈ `monthly|quarterly` — Company **Tax filing period** (`aria-label`)
+- `date_format` ∈ `DD/MM/YYYY|MM/DD/YYYY|YYYY-MM-DD` — Company **Company date format** (`aria-label`)
+- `decimal_separator` ∈ `.|,` — Company **Company decimal separator** (`aria-label`)
+- `thousand_separator` ∈ `,|.|space|""` (`none` coerces to `""`) — Company **Company thousand separator** (`aria-label`)
+- `time_format` ∈ `12h|24h` — Company **Company time format** (`aria-label`)
 
-Company UI selects match. Service validators remain defense-in-depth **400** (and still require decimal ≠ thousand).
+Company UI selects match (`aria-label`s). Service validators remain defense-in-depth **400** (and still require decimal ≠ thousand).
 
 Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
 
