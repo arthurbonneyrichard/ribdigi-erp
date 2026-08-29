@@ -552,9 +552,10 @@ async def resolve_category(
         if not bool(cat.is_active):
             raise HTTPException(status_code=400, detail="Expense category is inactive")
         return cat.id, cat.name
-    name = (category or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="category or category_id is required")
+    # OpenAPI ExpenseCategoryLabelValue → 422; service defense-in-depth → 400.
+    name = require_honest_narrative(
+        category, label="expense category label", max_length=100
+    )
     return None, name
 
 

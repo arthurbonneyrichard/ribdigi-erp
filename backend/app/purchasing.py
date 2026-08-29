@@ -1404,7 +1404,7 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         line_tax = round(line_net * (rate / 100.0), 2)
         line_total = money_json(i.line_total)
         # Discount baked into line_total at create (no separate column)
-        disc = max(round(line_net + line_tax - line_total, 2), 0.0)
+        disc = max(money_json(round(line_net + line_tax - line_total, 2)), 0.0)
         discount_total += disc
         serialized_items.append(
             {
@@ -1414,7 +1414,7 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
                 "quantity": qty,
                 "unit_price": unit,
                 "tax_rate": rate,
-                "discount": disc,
+                "discount": money_json(disc),
                 "line_total": line_total,
             }
         )
@@ -1430,7 +1430,7 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         "reason": ret.reason,
         "subtotal": money_json(ret.subtotal),
         "tax_amount": money_json(ret.tax_amount),
-        "discount_amount": round(discount_total, 2),
+        "discount_amount": money_json(round(discount_total, 2)),
         "total_amount": money_json(ret.total_amount),
         "notes": ret.notes,
         "posted_at": ret.posted_at,

@@ -2833,6 +2833,7 @@ export default function Page() {
                       }
                     }}
                     style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                    aria-label={`View purchase invoice ${inv.id}`}
                   >
                     {inv.invoice_number}
                   </button>

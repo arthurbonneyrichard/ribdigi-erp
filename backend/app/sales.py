@@ -182,7 +182,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "balance_due": balance_due,
         "currency": getattr(invoice, "currency", None) or "",
         "exchange_rate": fx,
-        "balance_due_base": round(balance_due * fx, 2),
+        "balance_due_base": money_json(round(balance_due * fx, 2)),
         "notes": invoice.notes,
         "posted_at": invoice.posted_at,
         "due_date": invoice.due_date,

@@ -289,6 +289,7 @@ export default function Page() {
         {tenant.has_logo && (
           <button
             disabled={!!tenant.read_only}
+            aria-label="Remove company logo"
             onClick={async () => {
               setError('');
               try {

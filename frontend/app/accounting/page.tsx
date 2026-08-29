@@ -1117,6 +1117,7 @@ export default function Page() {
                               ? 'Journal requires at least two lines'
                               : 'Remove line'
                           }
+                          aria-label={`Remove journal line ${idx + 1}`}
                         >
                           Remove
                         </button>
@@ -1211,6 +1212,7 @@ export default function Page() {
                           onClick={() =>
                             setCoaOpenLines((prev) => prev.filter((_, idx) => idx !== i))
                           }
+                          aria-label={`Remove opening balance line ${l.code}`}
                         >
                           Remove
                         </button>
@@ -1355,6 +1357,7 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={() => loadTrial().catch((err) => setError(err.message))}
+                  aria-label="Apply trial balance filters"
                 >
                   Apply
                 </button>
@@ -1436,6 +1439,7 @@ export default function Page() {
                   onClick={() =>
                     loadPnl().catch((err: any) => setError(err.message || String(err)))
                   }
+                  aria-label="Apply profit and loss filters"
                 >
                   Apply
                 </button>
@@ -1555,6 +1559,7 @@ export default function Page() {
                                 title: `Journal attachment — ${j.entry_number || j.id.slice(0, 8)}`,
                               })
                             }
+                            aria-label={`Preview journal attachment ${j.id}`}
                           >
                             Preview
                           </button>
@@ -1565,7 +1570,11 @@ export default function Page() {
                           >
                             Download
                           </button>
-                          <button type="button" onClick={() => removeJournalAttachment(j.id)}>
+                          <button
+                            type="button"
+                            onClick={() => removeJournalAttachment(j.id)}
+                            aria-label={`Remove journal attachment ${j.id}`}
+                          >
                             Remove file
                           </button>
                         </>
@@ -2188,6 +2197,7 @@ export default function Page() {
                                   );
                                   await openStatement(selected.id);
                                 }}
+                                aria-label={`Unmatch bank statement line ${ln.id}`}
                               >
                                 Unmatch
                               </button>

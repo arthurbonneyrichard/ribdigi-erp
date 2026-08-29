@@ -1523,13 +1523,15 @@ async def trial_balance(
     debit_total = 0.0
     credit_total = 0.0
     for account in accounts:
-        bal = round(money_json(bal_by_id.get(account.id, 0)), 2)
+        bal = money_json(round(money_json(bal_by_id.get(account.id, 0)), 2))
         if mode == "journals" and abs(bal) < 0.0001:
             continue
         if account.account_type in {"asset", "expense"}:
             d, c = (bal, 0.0) if bal >= 0 else (0.0, abs(bal))
         else:
             d, c = (0.0, bal) if bal >= 0 else (abs(bal), 0.0)
+        d = money_json(d)
+        c = money_json(c)
         debit_total += d
         credit_total += c
         rows.append(
@@ -1549,8 +1551,8 @@ async def trial_balance(
         "store_id": store_id,
         "branch_id": branch_id,
         "rows": rows,
-        "total_debit": round(debit_total, 2),
-        "total_credit": round(credit_total, 2),
+        "total_debit": money_json(round(debit_total, 2)),
+        "total_credit": money_json(round(credit_total, 2)),
         "balanced": abs(debit_total - credit_total) < 0.01,
     }
 

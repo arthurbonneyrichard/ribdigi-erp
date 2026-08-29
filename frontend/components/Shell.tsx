@@ -697,6 +697,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                               className="bell-item-action"
                               disabled={bellBusy}
                               onClick={() => markBellRead(n.id)}
+                              aria-label={`Mark bell notification ${n.id} read`}
                             >
                               Mark read
                             </button>
@@ -705,7 +706,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                       )}
                     </div>
                     <div className="bell-panel-foot">
-                      <button type="button" disabled={bellBusy || unread === 0} onClick={markBellAllRead}>
+                      <button
+                        type="button"
+                        disabled={bellBusy || unread === 0}
+                        onClick={markBellAllRead}
+                        aria-label="Mark all bell notifications read"
+                      >
                         Mark all read
                       </button>
                       <Link href="/notifications" className="bell-view-all" onClick={() => setBellOpen(false)}>

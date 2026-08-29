@@ -170,8 +170,8 @@ async def expense_analysis(
                     "payee": e.payee,
                     "expense_date": e.expense_date.isoformat() if e.expense_date else None,
                     "reason": reason,
-                    "category_mean": round(mean, 2),
-                    "category_std": round(std, 2),
+                    "category_mean": money_json(round(mean, 2)),
+                    "category_std": money_json(round(std, 2)),
                 }
             )
     unusual.sort(key=lambda x: -x["amount"])
@@ -184,7 +184,7 @@ async def expense_analysis(
     duplicates = [
         {
             "payee": k[0],
-            "amount": k[1],
+            "amount": money_json(k[1]),
             "date": k[2],
             "count": len(vs),
             "expense_ids": [v.id for v in vs],

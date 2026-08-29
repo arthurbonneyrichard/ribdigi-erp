@@ -251,8 +251,8 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 **empty_buckets(),
             },
         )
-        row["total_due"] = round(row["total_due"] + due, 2)
-        row[bucket] = round(row[bucket] + due, 2)
+        row["total_due"] = money_json(round(row["total_due"] + due, 2))
+        row[bucket] = money_json(round(row[bucket] + due, 2))
         documents.append(
             {
                 "id": inv.id,
@@ -263,8 +263,10 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "balance_due": due,
                 "currency": getattr(inv, "currency", None) or "",
                 "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
-                "balance_due_base": round(
-                    due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
+                "balance_due_base": money_json(
+                    round(
+                        due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
+                    )
                 ),
                 "days_overdue": days,
                 "bucket": bucket,
@@ -274,8 +276,8 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     return {
         "as_of": as_of,
         "kind": "receivable",
-        "totals": totals,
-        "total_due": round(sum(totals.values()), 2),
+        "totals": {k: money_json(v) for k, v in totals.items()},
+        "total_due": money_json(round(sum(totals.values()), 2)),
         "parties": sorted(by_customer.values(), key=lambda x: x["total_due"], reverse=True),
         "documents": documents,
     }
@@ -336,8 +338,8 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         bucket = age_bucket(days)
         add_to_bucket(totals, days, due)
         row = _party_row(inv.supplier_id)
-        row["total_due"] = round(row["total_due"] + due, 2)
-        row[bucket] = round(row[bucket] + due, 2)
+        row["total_due"] = money_json(round(row["total_due"] + due, 2))
+        row[bucket] = money_json(round(row[bucket] + due, 2))
         documents.append(
             {
                 "id": inv.id,
@@ -349,8 +351,10 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "balance_due": due,
                 "currency": getattr(inv, "currency", None) or "",
                 "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
-                "balance_due_base": round(
-                    due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
+                "balance_due_base": money_json(
+                    round(
+                        due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
+                    )
                 ),
                 "days_overdue": days,
                 "bucket": bucket,
@@ -367,8 +371,8 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         bucket = age_bucket(days)
         add_to_bucket(totals, days, due)
         row = _party_row(po.supplier_id)
-        row["total_due"] = round(row["total_due"] + due, 2)
-        row[bucket] = round(row[bucket] + due, 2)
+        row["total_due"] = money_json(round(row["total_due"] + due, 2))
+        row[bucket] = money_json(round(row[bucket] + due, 2))
         documents.append(
             {
                 "id": po.id,
@@ -386,8 +390,8 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     return {
         "as_of": as_of,
         "kind": "payable",
-        "totals": totals,
-        "total_due": round(sum(totals.values()), 2),
+        "totals": {k: money_json(v) for k, v in totals.items()},
+        "total_due": money_json(round(sum(totals.values()), 2)),
         "parties": sorted(by_supplier.values(), key=lambda x: x["total_due"], reverse=True),
         "documents": documents,
     }
@@ -1082,7 +1086,7 @@ async def supplier_payment_schedule(
                 "document_number": inv.invoice_number,
                 "purchase_order_id": inv.purchase_order_id,
                 "due_date": inv.due_date,
-                "balance_due": round(balance, 2),
+                "balance_due": money_json(round(balance, 2)),
                 "status": inv.status,
                 "days_until_due": days_until,
                 "days_overdue": overdue_days,
@@ -1108,7 +1112,7 @@ async def supplier_payment_schedule(
                 "document_number": po.po_number,
                 "purchase_order_id": po.id,
                 "due_date": po.due_date,
-                "balance_due": round(balance, 2),
+                "balance_due": money_json(round(balance, 2)),
                 "status": po.status,
                 "days_until_due": days_until,
                 "days_overdue": overdue_days,
@@ -1134,7 +1138,7 @@ async def supplier_payment_schedule(
             "name": supplier.name,
             "balance": money_json(supplier.balance),
         },
-        "total_due": round(sum(r["balance_due"] for r in items), 2),
+        "total_due": money_json(round(sum(r["balance_due"] for r in items), 2)),
         "overdue_count": len(overdue),
         "upcoming_count": len(upcoming),
         "items": items,

@@ -149,11 +149,19 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
               <td>{c.email || '—'}</td>
               <td style={{ whiteSpace: 'nowrap' }}>
                 {!c.is_primary && (
-                  <button type="button" onClick={() => makePrimary(c.id)}>
+                  <button
+                    type="button"
+                    onClick={() => makePrimary(c.id)}
+                    aria-label={`Make party contact ${c.id} primary`}
+                  >
                     Make primary
                   </button>
                 )}{' '}
-                <button type="button" onClick={() => removeContact(c.id)}>
+                <button
+                  type="button"
+                  onClick={() => removeContact(c.id)}
+                  aria-label={`Delete party contact ${c.id}`}
+                >
                   Delete
                 </button>
               </td>

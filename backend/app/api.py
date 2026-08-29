@@ -466,8 +466,11 @@ async def metrics_endpoint():
 @api.post("/tenants")
 async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db)):
     validate_password_strength(payload.admin_password)
+    # OpenAPI TenantSlugValue / CompanyNameValue → 422; service defense-in-depth → 400.
+    slug = tenants_svc.require_tenant_slug(payload.slug)
+    company_name = tenants_svc.require_company_name(payload.company_name)
     existing = (
-        await db.execute(select(m.Tenant).where(m.Tenant.slug == payload.slug))
+        await db.execute(select(m.Tenant).where(m.Tenant.slug == slug))
     ).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="Tenant slug exists")
@@ -476,8 +479,8 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
     trial_end = tenants_svc.default_trial_ends_at()
     now = datetime.utcnow()
     tenant = m.Tenant(
-        slug=payload.slug,
-        company_name=payload.company_name,
+        slug=slug,
+        company_name=company_name,
         industry=industry,
         currency=payload.currency,
         status="trial",

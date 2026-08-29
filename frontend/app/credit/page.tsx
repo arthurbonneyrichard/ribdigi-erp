@@ -353,10 +353,18 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setKind('receivable')} disabled={kind === 'receivable'}>
+        <button
+          onClick={() => setKind('receivable')}
+          disabled={kind === 'receivable'}
+          aria-label="Show receivables aging"
+        >
           Receivables
         </button>
-        <button onClick={() => setKind('payable')} disabled={kind === 'payable'}>
+        <button
+          onClick={() => setKind('payable')}
+          disabled={kind === 'payable'}
+          aria-label="Show payables aging"
+        >
           Payables
         </button>
       </div>

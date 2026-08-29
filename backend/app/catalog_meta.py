@@ -614,7 +614,14 @@ async def resolve_product_refs(
     category_name: str | None = None,
 ) -> tuple[str | None, str | None, str | None, str]:
     """Validate FKs and return (category_id, brand_id, unit_id, category_label)."""
-    label = (category_name or "General").strip() or "General"
+    # OpenAPI ProductCategoryLabelValue → 422; service defense-in-depth → 400.
+    # omit/`null`/blank → "General"; non-blank garbage still rejected.
+    label = (
+        optional_honest_narrative(
+            category_name, label="product category label", max_length=100
+        )
+        or "General"
+    )
     resolved_category_id = category_id
     if category_id:
         cat = await db.get(m.ProductCategory, category_id)

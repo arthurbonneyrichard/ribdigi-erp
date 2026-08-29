@@ -194,7 +194,9 @@ export default function OnboardingChecklist({
               )}
               {!step.completed && (
                 <Link href={step.href}>
-                  <button type="button">Open</button>
+                  <button type="button" aria-label={`Open onboarding step ${step.id}`}>
+                    Open
+                  </button>
                 </Link>
               )}
             </li>

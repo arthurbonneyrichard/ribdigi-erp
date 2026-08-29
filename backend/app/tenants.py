@@ -114,6 +114,23 @@ def normalize_industry(industry: str | None, *, required: bool = True) -> str | 
     return ind
 
 
+def require_tenant_slug(value: str | None) -> str:
+    """OpenAPI TenantSlugValue → 422; service defense-in-depth → 400."""
+    from app.schemas import validate_tenant_slug_value
+
+    try:
+        return validate_tenant_slug_value((value or "").strip().lower())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def require_company_name(value: str | None) -> str:
+    """OpenAPI CompanyNameValue → 422; service defense-in-depth → 400."""
+    return require_honest_narrative(
+        value, label="company name", min_length=2, max_length=200
+    )
+
+
 def _validate_separators(decimal_sep: str, thousand_sep: str) -> None:
     if thousand_sep and thousand_sep == decimal_sep:
         raise HTTPException(

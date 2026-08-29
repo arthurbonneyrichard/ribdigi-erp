@@ -110,7 +110,7 @@ async def post_opening_stock(
             details={
                 "reference": ref_label,
                 "line_count": len(results),
-                "inventory_value": round(inventory_value, 2),
+                "inventory_value": money_json(round(inventory_value, 2)),
                 "journal_id": journal.id if journal else None,
                 "post_journal": post_journal,
             },
@@ -121,7 +121,7 @@ async def post_opening_stock(
         "id": entry_id,
         "reference": ref_label,
         "line_count": len(results),
-        "inventory_value": round(inventory_value, 2),
+        "inventory_value": money_json(round(inventory_value, 2)),
         "journal_id": journal.id if journal else None,
         "journal_number": journal.entry_number if journal else None,
         "lines": results,
