@@ -224,8 +224,8 @@ def _sales_spike_drop_notes(dash: dict) -> list[str]:
 
     daily = dash.get("daily_sales") or []
     if len(daily) >= 14:
-        recent = sum(float(d.get("sales") or 0) for d in daily[-7:])
-        prior = sum(float(d.get("sales") or 0) for d in daily[-14:-7])
+        recent = sum(money_json(d.get("sales") or 0) for d in daily[-7:])
+        prior = sum(money_json(d.get("sales") or 0) for d in daily[-14:-7])
         wow = _pct_delta(recent, prior)
         if wow is not None and wow >= SALES_ANOMALY_PCT:
             notes.append(f"Sales spike {wow:g}% (last 7 days vs prior 7).")

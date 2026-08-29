@@ -148,14 +148,14 @@ async def build_rfm(
             cid, {"customer_id": cid, "frequency": 0, "monetary": 0.0, "last": None}
         )
         row["frequency"] += 1
-        row["monetary"] += float(b["total"])
+        row["monetary"] += money_json(b["total"])
         if b["posted_at"] and (row["last"] is None or b["posted_at"] > row["last"]):
             row["last"] = b["posted_at"]
     recency_days = {
         cid: (now - (row["last"] or start)).days for cid, row in cust.items()
     }
     freq = {cid: float(row["frequency"]) for cid, row in cust.items()}
-    mon = {cid: float(row["monetary"]) for cid, row in cust.items()}
+    mon = {cid: money_json(row["monetary"]) for cid, row in cust.items()}
     r_scores = _score_map(recency_days, higher_is_better=False)
     f_scores = _score_map(freq, higher_is_better=True)
     m_scores = _score_map(mon, higher_is_better=True)
@@ -207,11 +207,11 @@ async def sales_analysis(
     for b in baskets:
         if b["posted_at"]:
             key = b["posted_at"].strftime("%Y-%m")
-            months[key] += float(b["total"])
+            months[key] += money_json(b["total"])
     for p in pos:
         if p["created_at"]:
             key = p["created_at"].strftime("%Y-%m")
-            months[key] += float(p["total"])
+            months[key] += money_json(p["total"])
     series = [
         {"month": k, "total": money_json(round(money_json(v), 2))}
         for k, v in sorted(months.items())

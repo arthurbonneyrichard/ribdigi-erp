@@ -33,8 +33,8 @@ DEFAULT_ACCOUNTS = [
 
 
 def lines_are_balanced(lines: list[dict], tolerance: float = 0.01) -> bool:
-    debit = sum(float(x.get("debit") or 0) for x in lines)
-    credit = sum(float(x.get("credit") or 0) for x in lines)
+    debit = sum(money_json(x.get("debit") or 0) for x in lines)
+    credit = sum(money_json(x.get("credit") or 0) for x in lines)
     return abs(debit - credit) <= tolerance
 
 
@@ -396,8 +396,8 @@ async def unpost_journal_entry(
         ).scalar_one_or_none()
         if not account:
             raise HTTPException(status_code=404, detail="Account not found for journal line")
-        account.balance = float(account.balance or 0) - _signed_balance_delta(
-            account.account_type, float(line.debit or 0), float(line.credit or 0)
+        account.balance = money_json(account.balance or 0) - _signed_balance_delta(
+            account.account_type, money_json(line.debit or 0), money_json(line.credit or 0)
         )
 
     entry.status = "unposted"
@@ -519,7 +519,7 @@ async def post_journal_entry(
                 description=line.get("description"),
             )
         )
-        account.balance = float(account.balance or 0) + _signed_balance_delta(
+        account.balance = money_json(account.balance or 0) + _signed_balance_delta(
             account.account_type, line["debit"], line["credit"]
         )
 
@@ -767,7 +767,7 @@ async def compute_standard_cogs(
         product_id = line.get("product_id")
         if not product_id:
             continue
-        qty = float(line.get("quantity") or 0)
+        qty = money_json(line.get("quantity") or 0)
         if qty <= 0:
             continue
         unit_id = line.get("unit_id")
@@ -844,9 +844,11 @@ async def post_sales_invoice_journal(
     from app.sales import list_invoice_items
 
     rate = doc_rate(invoice)
-    revenue = to_base(float(invoice.subtotal) - float(invoice.discount_amount or 0), rate)
-    tax = to_base(float(invoice.tax_amount or 0), rate)
-    total = to_base(float(invoice.total_amount), rate)
+    revenue = to_base(
+        money_json(invoice.subtotal) - money_json(invoice.discount_amount or 0), rate
+    )
+    tax = to_base(money_json(invoice.tax_amount or 0), rate)
+    total = to_base(money_json(invoice.total_amount), rate)
     lines = [
         {"account_code": "1100", "debit": total, "credit": 0, "description": "AR"},
         {"account_code": "4000", "debit": 0, "credit": max(revenue, 0), "description": "Sales"},
@@ -863,7 +865,7 @@ async def post_sales_invoice_journal(
         lines=[
             {
                 "product_id": it.product_id,
-                "quantity": float(it.quantity),
+                "quantity": money_json(it.quantity),
                 "unit_id": it.unit_id,
                 "variant_id": it.variant_id,
             }
@@ -895,9 +897,9 @@ async def post_sales_return_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.sales_docs import list_return_items
 
-    revenue = float(sales_return.subtotal or 0)
-    tax = float(sales_return.tax_amount or 0)
-    total = float(sales_return.total_amount)
+    revenue = money_json(sales_return.subtotal or 0)
+    tax = money_json(sales_return.tax_amount or 0)
+    total = money_json(sales_return.total_amount)
     cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
     lines = [
         {"account_code": "4000", "debit": max(revenue, 0), "credit": 0, "description": "Sales return"},
@@ -915,7 +917,7 @@ async def post_sales_return_journal(
             lines=[
                 {
                     "product_id": it.product_id,
-                    "quantity": float(it.quantity),
+                    "quantity": money_json(it.quantity),
                     "variant_id": it.variant_id,
                 }
                 for it in items

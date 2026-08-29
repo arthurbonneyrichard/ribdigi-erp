@@ -1061,7 +1061,7 @@ async def supplier_payment_schedule(
 
     items: list[dict] = []
     for inv in invoices:
-        balance = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        balance = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if balance <= 0:
             continue
         overdue_days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
@@ -1072,7 +1072,7 @@ async def supplier_payment_schedule(
         if ep.get("enabled"):
             quote = purchase_invoice_early_discount(
                 inv,
-                pct=float(ep["early_pay_discount_pct"]),
+                pct=money_json(ep["early_pay_discount_pct"]),
                 days=int(ep["early_pay_discount_days"]),
                 as_of=as_of,
             )
@@ -1102,7 +1102,7 @@ async def supplier_payment_schedule(
     for po in orders:
         if po.id in invoiced_pos:
             continue
-        balance = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        balance = max(money_json(po.total_amount) - money_json(po.paid_amount or 0), 0)
         if balance <= 0:
             continue
         overdue_days = days_overdue(as_of, po.due_date, po.created_at)

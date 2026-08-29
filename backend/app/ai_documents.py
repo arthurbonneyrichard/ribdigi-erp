@@ -450,7 +450,7 @@ async def create_expense_from_extract(
 ) -> dict:
     """Create a pending/auto-approved expense from reviewed OCR fields (explicit action)."""
     try:
-        amt = float(amount) if amount is not None else 0.0
+        amt = money_json(amount) if amount is not None else 0.0
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="amount is required") from exc
     if amt <= 0:
@@ -569,7 +569,7 @@ async def create_purchase_invoice_from_extract(
     po_items = await purchasing_svc.list_po_items(db, tenant_id, po.id)
     items: list[dict] = []
     for poi in po_items:
-        qty = float(poi.quantity or 0)
+        qty = money_json(poi.quantity or 0)
         if qty <= 0:
             continue
         items.append(
@@ -584,7 +584,7 @@ async def create_purchase_invoice_from_extract(
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order has no line items")
 
-    discount_amount = money_json(round(sum(float(i.get("discount") or 0) for i in items), 2))
+    discount_amount = money_json(round(sum(money_json(i.get("discount") or 0) for i in items), 2))
     parsed_date = _parse_invoice_date(invoice_date)
     # OpenAPI PurchaseInvoiceNotesValue → 422; omit/`null`/blank → OCR default note.
     inv_notes = optional_honest_narrative(notes, label="purchase invoice notes")

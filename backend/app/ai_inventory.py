@@ -77,7 +77,7 @@ async def _sales_qty_by_product(
         db, tenant_id, from_date=from_date, to_date=to_date
     )
     return {
-        str(p["product_id"]): float(p.get("quantity") or 0)
+        str(p["product_id"]): money_json(p.get("quantity") or 0)
         for p in (report.get("products") or [])
     }
 
@@ -185,26 +185,26 @@ async def build_product_forecasts(
     ).all()
     reorder_qty_map: dict[str, float] = {}
     for pid, rq in wh_rows:
-        reorder_qty_map[str(pid)] = max(float(rq or 0), reorder_qty_map.get(str(pid), 0.0))
+        reorder_qty_map[str(pid)] = max(money_json(rq or 0), reorder_qty_map.get(str(pid), 0.0))
 
     lead = float(default_lead_days())
     cover = float(cover_days())
     out: list[dict[str, Any]] = []
     for p in products:
         pid = p.id
-        stock = float(p.stock_qty or 0)
-        sold = float(sold_all.get(pid, 0))
+        stock = money_json(p.stock_qty or 0)
+        sold = money_json(sold_all.get(pid, 0))
         velocity = sold / float(lb) if lb else 0.0
-        recent_v = float(sold_recent.get(pid, 0)) / float(half)
-        prior_v = float(sold_prior.get(pid, 0)) / float(max(1, lb - half))
+        recent_v = money_json(sold_recent.get(pid, 0)) / float(half)
+        prior_v = money_json(sold_prior.get(pid, 0)) / float(max(1, lb - half))
         days_to = (stock / velocity) if velocity > 1e-9 else None
-        rq = float(reorder_qty_map.get(pid, 0))
+        rq = money_json(reorder_qty_map.get(pid, 0))
         rec = _recommended_qty(
             stock=stock,
             velocity=velocity,
             lead=lead,
             cover=cover,
-            reorder_level=float(p.reorder_level or 0),
+            reorder_level=money_json(p.reorder_level or 0),
             reorder_qty=rq,
         )
         conf = confidence_score(
@@ -298,7 +298,7 @@ async def low_stock_prediction(
     at_risk: list[dict[str, Any]] = []
     for r in rows:
         dts = r.get("days_to_stockout")
-        already_low = float(r["stock_qty"]) <= float(r["reorder_level"] or 0)
+        already_low = money_json(r["stock_qty"]) <= money_json(r["reorder_level"] or 0)
         predictive = dts is not None and dts <= days_ahead and r["velocity_per_day"] > 0
         if not (already_low or predictive):
             continue

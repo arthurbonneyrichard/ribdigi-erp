@@ -147,7 +147,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             continue
         key = (created_at.year, created_at.month)
         if key in month_totals:
-            month_totals[key] += float(total or 0)
+            month_totals[key] += money_json(total or 0)
     monthly_sales = [
         {
             "label": datetime(yy, mm, 1).strftime("%b %y"),
@@ -164,7 +164,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
     cost_rows = (
         await db.execute(select(m.Product.id, m.Product.cost_price).where(m.Product.tenant_id == tenant_id))
     ).all()
-    cost_map = {pid: float(cost or 0) for pid, cost in cost_rows}
+    cost_map = {pid: money_json(cost or 0) for pid, cost in cost_rows}
     product_names = {
         pid: name
         for pid, name in (
@@ -194,10 +194,10 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             continue
         d = created_at.date()
         if d in daily:
-            daily[d]["sales"] += float(total or 0)
+            daily[d]["sales"] += money_json(total or 0)
             for it in (payload or {}).get("items") or []:
-                qty = float(it.get("quantity") or 0)
-                unit_price = float(it.get("unit_price") or 0)
+                qty = money_json(it.get("quantity") or 0)
+                unit_price = money_json(it.get("unit_price") or 0)
                 pid = it.get("product_id")
                 cost = cost_map.get(pid, 0.0)
                 daily[d]["profit"] += qty * (unit_price - cost)

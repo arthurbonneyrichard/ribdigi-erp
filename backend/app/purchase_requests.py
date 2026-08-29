@@ -326,7 +326,7 @@ async def create_request(
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
         if not product.is_active:
             raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
-        qty = float(item.get("quantity") or 0)
+        qty = money_json(item.get("quantity") or 0)
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be > 0")
         variant_id = item.get("variant_id")

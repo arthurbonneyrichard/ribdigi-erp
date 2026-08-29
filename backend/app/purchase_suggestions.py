@@ -87,7 +87,7 @@ async def list_low_stock_suggestions(
     for row in report.get("warehouse_low_stock") or []:
         pid = row["product_id"]
         covered.add(pid)
-        qty = float(row.get("suggested_order_qty") or 0)
+        qty = money_json(row.get("suggested_order_qty") or 0)
         if qty <= 0:
             continue
         lines.append(
@@ -111,8 +111,8 @@ async def list_low_stock_suggestions(
         pid = row["id"]
         if pid in covered:
             continue
-        stock = float(row.get("stock_qty") or 0)
-        reorder = float(row.get("reorder_level") or 0)
+        stock = money_json(row.get("stock_qty") or 0)
+        reorder = money_json(row.get("reorder_level") or 0)
         qty = _product_suggested_qty(stock_qty=stock, reorder_level=reorder)
         if qty <= 0:
             continue
@@ -189,7 +189,7 @@ async def create_requests_from_low_stock(
             skipped.append({"product_id": product_id, "reason": "product_not_found"})
             continue
 
-        qty = float(raw.get("quantity") or 0)
+        qty = money_json(raw.get("quantity") or 0)
         warehouse_id = raw.get("warehouse_id") or None
         if qty <= 0:
             # Derive from current stock / warehouse policy
@@ -205,13 +205,17 @@ async def create_requests_from_low_stock(
                 ).scalar_one_or_none()
                 if stock:
                     qty = max(
-                        float(stock.reorder_qty or 0),
-                        round(float(stock.reorder_level or 0) - float(stock.quantity or 0), 3),
+                        money_json(stock.reorder_qty or 0),
+                        round(
+                            money_json(stock.reorder_level or 0)
+                            - money_json(stock.quantity or 0),
+                            3,
+                        ),
                     )
             if qty <= 0:
                 qty = _product_suggested_qty(
-                    stock_qty=float(product.stock_qty or 0),
-                    reorder_level=float(product.reorder_level or 0),
+                    stock_qty=money_json(product.stock_qty or 0),
+                    reorder_level=money_json(product.reorder_level or 0),
                 )
         if qty <= 0:
             skipped.append({"product_id": product_id, "reason": "quantity_not_positive"})
@@ -300,7 +304,7 @@ async def create_requests_from_predictions(
         conf = float(raw.get("confidence") or 0)
         if conf < float(min_confidence or 0):
             continue
-        qty = float(raw.get("suggested_order_qty") or raw.get("recommended_order_qty") or 0)
+        qty = money_json(raw.get("suggested_order_qty") or raw.get("recommended_order_qty") or 0)
         if qty <= 0:
             continue
         risk = optional_honest_narrative(

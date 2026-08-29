@@ -274,7 +274,7 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
     from app.fx import doc_rate, to_base
     from app.sales import get_customer, get_invoice, apply_invoice_status
 
-    amount = float(payment.amount)
+    amount = money_json(payment.amount)
     discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     settlement = money_json(round(amount + discount, 2))
     # Prefer invoice rate for base restore when linked.
@@ -284,7 +284,7 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
     else:
         settlement_base = to_base(settlement, doc_rate(payment))
     customer = await get_customer(db, tenant_id, payment.customer_id)
-    customer.balance = float(customer.balance or 0) + settlement_base
+    customer.balance = money_json(customer.balance or 0) + settlement_base
 
     allocations: list[tuple[str, float]] = []
     notes = payment.notes or ""
@@ -296,7 +296,7 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
                 continue
             inv_no, amt_s = part.rsplit(":", 1)
             try:
-                allocations.append((inv_no.strip(), float(amt_s)))
+                allocations.append((inv_no.strip(), money_json(amt_s)))
             except ValueError:
                 continue
 
@@ -312,12 +312,12 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
             ).scalar_one_or_none()
             if not inv:
                 continue
-            inv.paid_amount = max(float(inv.paid_amount or 0) - amt, 0)
+            inv.paid_amount = max(money_json(inv.paid_amount or 0) - amt, 0)
             apply_invoice_status(inv)
             inv.updated_at = datetime.utcnow()
     elif payment.sales_invoice_id:
         inv = await get_invoice(db, tenant_id, payment.sales_invoice_id)
-        inv.paid_amount = max(float(inv.paid_amount or 0) - settlement, 0)
+        inv.paid_amount = max(money_json(inv.paid_amount or 0) - settlement, 0)
         apply_invoice_status(inv)
         inv.updated_at = datetime.utcnow()
 
@@ -326,7 +326,7 @@ async def _reverse_supplier_payment(db: AsyncSession, tenant_id: str, payment: m
     from app.fx import doc_rate, to_base
     from app.purchasing import get_po, get_purchase_invoice, purchase_invoice_status
 
-    amount = float(payment.amount)
+    amount = money_json(payment.amount)
     discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     settlement = money_json(round(amount + discount, 2))
     if payment.purchase_invoice_id:
@@ -344,18 +344,18 @@ async def _reverse_supplier_payment(db: AsyncSession, tenant_id: str, payment: m
         )
     ).scalar_one_or_none()
     if supplier:
-        supplier.balance = float(supplier.balance or 0) + settlement_base
+        supplier.balance = money_json(supplier.balance or 0) + settlement_base
 
     if payment.purchase_invoice_id:
         inv = await get_purchase_invoice(db, tenant_id, payment.purchase_invoice_id)
-        inv.paid_amount = max(float(inv.paid_amount or 0) - settlement, 0)
+        inv.paid_amount = max(money_json(inv.paid_amount or 0) - settlement, 0)
         inv.status = purchase_invoice_status(
-            float(inv.total_amount), float(inv.paid_amount), inv.due_date
+            money_json(inv.total_amount), money_json(inv.paid_amount), inv.due_date
         )
         inv.updated_at = datetime.utcnow()
     elif payment.purchase_order_id:
         po = await get_po(db, tenant_id, payment.purchase_order_id)
-        po.paid_amount = max(float(po.paid_amount or 0) - settlement, 0)
+        po.paid_amount = max(money_json(po.paid_amount or 0) - settlement, 0)
         po.updated_at = datetime.utcnow()
 
 
@@ -381,7 +381,7 @@ async def bounce_cheque(
         raise HTTPException(status_code=409, detail=f"Cannot bounce cheque in status {cheque.status}")
 
     await ensure_default_accounts(db, tenant_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
 
     if cheque.direction == RECEIVED:
         pay_amount = amount
@@ -397,7 +397,7 @@ async def bounce_cheque(
             ).scalar_one_or_none()
             if payment:
                 discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
-                pay_amount = float(payment.amount)
+                pay_amount = money_json(payment.amount)
                 await _reverse_customer_payment(db, tenant_id, payment)
         ar_restore = money_json(round(pay_amount + discount, 2))
         if cheque.status == PENDING:
@@ -451,7 +451,7 @@ async def bounce_cheque(
             ).scalar_one_or_none()
             if payment:
                 discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
-                pay_amount = float(payment.amount)
+                pay_amount = money_json(payment.amount)
                 await _reverse_supplier_payment(db, tenant_id, payment)
         ap_restore = money_json(round(pay_amount + discount, 2))
         if cheque.status == PENDING:
@@ -527,7 +527,7 @@ async def cancel_cheque(
         raise HTTPException(status_code=409, detail=f"Cannot cancel cheque in status {cheque.status}")
 
     await ensure_default_accounts(db, tenant_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
     await post_journal_entry(
         db,
         tenant_id=tenant_id,
