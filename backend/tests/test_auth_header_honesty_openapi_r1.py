@@ -1,4 +1,4 @@
-"""OpenAPI honesty tips #639–#644: residual aria + auth header Values."""
+"""OpenAPI honesty tips #645–#649: residual aria + auth header Values."""
 
 from __future__ import annotations
 
